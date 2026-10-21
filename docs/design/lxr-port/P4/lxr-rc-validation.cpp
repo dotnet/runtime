@@ -5,6 +5,7 @@
 #include "../../../../src/coreclr/gc/env/gcenv.h"
 #include "../../../../src/coreclr/gc/gcref.h"
 #include "../../../../src/coreclr/gc/lxr_reference_counting.h"
+#include "../../../../src/coreclr/gc/lxr_finalizer_pause.h"
 #include "../../../../src/coreclr/gc/lxr_collection_policy.h"
 
 #include <atomic>
@@ -5077,10 +5078,666 @@ namespace
             ValidateOvershootRandom(kind);
         }
     }
+
+    // ---- P17 S6: the finalizer registry and the retained roots ----
+
+    std::vector<Object*> S6Suppressed;
+    std::vector<Object*> S6Eager;
+
+    bool S6IsSuppressed(Object* object)
+    {
+        return std::find(S6Suppressed.begin(), S6Suppressed.end(), object) != S6Suppressed.end();
+    }
+
+    bool S6IsEager(Object* object)
+    {
+        return std::find(S6Eager.begin(), S6Eager.end(), object) != S6Eager.end();
+    }
+
+    // The engine with the registry glue of the collector: the root capture, the decision of a tracing pause and the
+    // relocation of the entries are the functions of lxr_finalizer_pause.h that the collector calls.
+    struct S6Harness
+    {
+        LxrReferenceCounting engine;
+        LxrFinalizerRegistry registry;
+        LxrFinalizerPauseCounters counters;
+        std::vector<Object*> roots;
+        // Roots that only get an increment, as the targets of weak handles do in a reference-counting pause.
+        std::vector<Object*> weakRoots;
+        LxrPauseKind kind = LxrPauseKind::RefCount;
+        bool evacuateMature = false;
+        LxrRcMutator* mutator = nullptr;
+        int identity = 0;
+
+        static LxrRcResult Capture(LxrReferenceCounting*, void* context)
+        {
+            S6Harness* harness = static_cast<S6Harness*>(context);
+            LxrRcResult result = LxrFinalizerCapture(
+                harness->engine, harness->registry, harness->kind, S6IsSuppressed, &harness->counters);
+            for (Object* root : harness->roots)
+            {
+                if (result == LxrRcResult::Success)
+                {
+                    result = harness->engine.AddRoot(root);
+                }
+            }
+            for (Object* root : harness->weakRoots)
+            {
+                if (result == LxrRcResult::Success)
+                {
+                    result = harness->engine.AddRoot(root, false, false);
+                }
+            }
+            return result;
+        }
+
+        static LxrRcResult Decide(LxrReferenceCounting*, void* context)
+        {
+            S6Harness* harness = static_cast<S6Harness*>(context);
+            return LxrFinalizerDecide(
+                harness->engine, harness->registry, S6IsSuppressed, S6IsEager, &harness->counters);
+        }
+
+        static LxrRcResult Relocate(LxrReferenceCounting*, void* context)
+        {
+            S6Harness* harness = static_cast<S6Harness*>(context);
+            LxrFinalizerRelocate(harness->engine, harness->registry, harness->evacuateMature, harness->kind);
+            LxrRcResult result = LxrRcResult::Success;
+            for (Object*& root : harness->roots)
+            {
+                if (result == LxrRcResult::Success)
+                {
+                    result = harness->engine.RelocateRoot(&root, false, false);
+                }
+            }
+            for (Object*& root : harness->weakRoots)
+            {
+                if (result == LxrRcResult::Success)
+                {
+                    result = harness->engine.RelocateRoot(&root, false, false);
+                }
+            }
+            return result;
+        }
+
+        bool Initialize(bool nursery)
+        {
+            LxrRcConfiguration configuration{
+                16 * ImmixBlockGeometry::BlockBytes, 2 * LxrLargeObjectSpace::MinimumObjectBytes, 4, 4096, 4, 4,
+            };
+            configuration.evacuateNursery = nursery;
+            configuration.lineRecycling = false;
+            LxrPauseRuntimeAdapter adapter{Suspend, Resume, nullptr, false};
+            LxrRcObjectModel model{};
+            model.context = this;
+            model.finishTrace = Decide;
+            model.finishRelocation = Relocate;
+            S6Suppressed.clear();
+            S6Eager.clear();
+            return Check(engine.Initialize(configuration, adapter, &model) == LxrRcResult::Success,
+                    "S6 engine initializes") &&
+                Check(engine.AttachMutator(&identity, &mutator) == LxrRcResult::Success, "S6 mutator attaches");
+        }
+
+        bool Pause(LxrPauseKind pause)
+        {
+            kind = pause;
+            LxrRcResult result = pause == LxrPauseKind::Full ? engine.CollectFull(Capture, this, Timeout) :
+                pause == LxrPauseKind::InitialMark ? engine.BeginTrace(Capture, this, Timeout) :
+                pause == LxrPauseKind::FinalMark ? engine.FinishTrace(Capture, this, Timeout) :
+                engine.Collect(Capture, this, Timeout);
+            return Check(result == LxrRcResult::Success && engine.Drain(Timeout) == LxrRcResult::Success,
+                "S6 pause and its lazy tail complete");
+        }
+
+        std::vector<Object*> Counted() const
+        {
+            std::vector<Object*> objects;
+            registry.ForEachCounted([&](Object* object, bool) { objects.push_back(object); });
+            return objects;
+        }
+
+        std::vector<Object*> Ready() const
+        {
+            std::vector<Object*> objects;
+            registry.ForEachReady([&](Object* object, bool) { objects.push_back(object); });
+            return objects;
+        }
+    };
+
+    bool S6Contains(const std::vector<Object*>& objects, Object* object)
+    {
+        return std::find(objects.begin(), objects.end(), object) != objects.end();
+    }
+
+    // Many threads append at the same time. Every value comes out once; a full chunk is replaced without loss.
+    void ValidateS6ConcurrentAppend()
+    {
+        constexpr size_t Threads = 8;
+        constexpr size_t PerThread = 40000;
+        LxrAppendList list;
+        std::vector<std::thread> threads;
+        std::atomic<bool> failed{false};
+        for (size_t thread = 0; thread < Threads; thread++)
+        {
+            threads.emplace_back([&, thread]()
+            {
+                for (size_t index = 0; index < PerThread; index++)
+                {
+                    if (!list.Append((thread * PerThread + index + 1) * 8))
+                    {
+                        failed = true;
+                    }
+                }
+            });
+        }
+        for (std::thread& thread : threads)
+        {
+            thread.join();
+        }
+        std::vector<uint8_t> seen(Threads * PerThread + 1, 0);
+        size_t duplicates = 0;
+        size_t outOfRange = 0;
+        size_t total = list.Drain([&](uintptr_t value)
+        {
+            size_t slot = value / 8;
+            if (slot == 0 || slot >= seen.size())
+            {
+                outOfRange++;
+            }
+            else if (seen[slot]++ != 0)
+            {
+                duplicates++;
+            }
+        });
+        size_t missing = 0;
+        for (size_t slot = 1; slot < seen.size(); slot++)
+        {
+            missing += seen[slot] == 0;
+        }
+        Check(!failed && total == Threads * PerThread && duplicates == 0 && outOfRange == 0 && missing == 0,
+            "concurrent appends from many threads are all kept exactly once across many chunks");
+        Check(list.IsEmpty() && list.Drain([](uintptr_t) {}) == 0, "a drained list is empty");
+        Check(list.Append(8) && list.Drain([](uintptr_t) {}) == 1, "a drained list takes new values");
+    }
+
+    // The registry states on fake object addresses: new entries, suppressed entries, counts, decisions, duplicates,
+    // the order of the finalizer queue and the relocation of entries. Nothing here reads an object.
+    void ValidateS6RegistryStates()
+    {
+        auto fake = [](size_t index) { return reinterpret_cast<Object*>(0x100000 + index * 64); };
+        LxrFinalizerRegistry registry;
+        std::vector<Object*> retained;
+        std::vector<Object*> marked;
+        std::vector<Object*> suppressed;
+        auto isSuppressed = [&](Object* object) { return S6Contains(suppressed, object); };
+        auto isMarked = [&](Object* object) { return S6Contains(marked, object); };
+        auto never = [](Object*) { return false; };
+        for (size_t index = 0; index < 8; index++)
+        {
+            Check(registry.Register(fake(index), index == 6), "registration appends");
+        }
+        suppressed = {fake(1), fake(2)};
+        Check(registry.CaptureNew(isSuppressed, [&](Object* object) { retained.push_back(object); }),
+            "capture takes the new entries");
+        Check(retained.size() == 6 && !S6Contains(retained, fake(1)) && !S6Contains(retained, fake(2)) &&
+                registry.GetCountedEntries() == 6 && registry.GetDropped() == 2,
+            "a suppressed new entry is dropped without a count; every other entry gets one");
+        Check(registry.GetPendingCount() == 0 && !registry.HasNewEntries(),
+            "an entry that is only counted is not ready, and the new list is empty");
+        // Nothing is marked yet in a reference-counting pause: no decision is made there.
+        Check(registry.GetPendingCount() == 0, "a pause without a decision queues nothing");
+        // A tracing pause: 0 and 3 are marked, 4 is suppressed after its count, 5 is eager, 6 (critical) and 7 are dead.
+        marked = {fake(0), fake(3)};
+        suppressed.push_back(fake(4));
+        std::vector<Object*> dropped;
+        bool decided = registry.Decide([](Object* object) { return object; }, isSuppressed, isMarked,
+            [&](Object* object) { return object == fake(5); }, [&](Object* object) { dropped.push_back(object); });
+        Check(decided && registry.GetPendingCount() == 2 && registry.GetCountedEntries() == 2 &&
+                dropped.size() == 2 && S6Contains(dropped, fake(4)) && S6Contains(dropped, fake(5)),
+            "a decision moves unmarked entries to the ready list, keeps marked entries, drops suppressed and eager ones");
+        std::vector<Object*> traced;
+        registry.ForEachNewReady([&](Object* object) { traced.push_back(object); });
+        Check(traced.size() == 2 && S6Contains(traced, fake(6)) && S6Contains(traced, fake(7)),
+            "the new ready entries are handed out for tracing");
+        traced.clear();
+        registry.ForEachNewReady([&](Object* object) { traced.push_back(object); });
+        Check(traced.empty(), "a ready entry is handed out for tracing once");
+        std::vector<Object*> released;
+        registry.DrainReleased([&](Object* object) { released.push_back(object); });
+        Check(released.size() == 2 && S6Contains(released, fake(4)) && S6Contains(released, fake(5)),
+            "a dropped entry gives its count back");
+        // The finalizer thread takes the normal entry first and the critical one last; it lets go of each count.
+        suppressed.push_back(fake(7));
+        Object* first = registry.TakeNext(isSuppressed);
+        Object* second = registry.TakeNext(isSuppressed);
+        Check(first == fake(6) && second == nullptr && registry.GetPendingCount() == 0,
+            "a ready entry whose finalization was suppressed after the decision is skipped; the critical one comes last");
+        released.clear();
+        registry.DrainReleased([&](Object* object) { released.push_back(object); });
+        Check(released.size() == 2 && S6Contains(released, fake(7)) && S6Contains(released, fake(6)),
+            "the finalizer thread lets go of the count of each entry it takes or skips");
+        // Duplicates: finalization suppressed and registered again before a pause looked at the object, or two
+        // registrations. Both entries reach one decision: one ready entry, one count given back.
+        marked.clear();
+        suppressed.clear();
+        LxrFinalizerRegistry duplicates;
+        duplicates.Register(fake(20), false);
+        duplicates.Register(fake(20), true);
+        duplicates.Register(fake(21), false);
+        duplicates.CaptureNew(isSuppressed, [](Object*) {});
+        duplicates.Decide([](Object* object) { return object; }, isSuppressed, isMarked, never, [](Object*) {});
+        released.clear();
+        duplicates.DrainReleased([&](Object* object) { released.push_back(object); });
+        Check(duplicates.GetPendingCount() == 2 && released.size() == 1 && released[0] == fake(20),
+            "two entries of one object give one ready entry and give one count back");
+        Check(duplicates.TakeNext(isSuppressed) == fake(21) && duplicates.TakeNext(isSuppressed) == fake(20) &&
+                duplicates.TakeNext(isSuppressed) == nullptr,
+            "the merged entry keeps the critical bit of its entries");
+        // Re-registration is idempotent. New entries of one object are merged in the capture (they have no count to
+        // give back); a new entry next to a counted one is merged in the next decision, and the extra count is given
+        // back. Otherwise a pooled object that suppresses and re-registers itself would collect entries and counts.
+        marked.clear();
+        suppressed.clear();
+        LxrFinalizerRegistry pooled;
+        std::vector<Object*> pooledRetained;
+        pooled.Register(fake(40), false);
+        pooled.Register(fake(40), false, true);
+        pooled.Register(fake(40), false, true);
+        pooled.CaptureNew(isSuppressed, [&](Object* object) { pooledRetained.push_back(object); });
+        Check(pooledRetained.size() == 1 && pooled.GetCountedEntries() == 1,
+            "new entries of one re-registered object give one counted entry");
+        pooled.Register(fake(40), false, true);
+        pooled.CaptureNew(isSuppressed, [&](Object* object) { pooledRetained.push_back(object); });
+        Check(pooled.GetCountedEntries() == 2 && pooledRetained.size() == 2,
+            "a re-registration after a pause adds a counted entry until the next decision");
+        marked = {fake(40)};
+        pooled.Decide([](Object* object) { return object; }, isSuppressed, isMarked, never, [](Object*) {});
+        released.clear();
+        pooled.DrainReleased([&](Object* object) { released.push_back(object); });
+        Check(pooled.GetCountedEntries() == 1 && pooled.GetPendingCount() == 0 && released.size() == 1 &&
+                released[0] == fake(40),
+            "the decision merges the counted entries of a live object and gives the extra count back");
+        // A count that a decision gives up is an address too: a mature copy in the same pause can move the object.
+        LxrFinalizerRegistry held;
+        held.Register(fake(50), false);
+        held.CaptureNew(isSuppressed, [](Object*) {});
+        suppressed = {fake(50)};
+        marked.clear();
+        held.Decide([](Object* object) { return object; }, isSuppressed, isMarked, never, [](Object*) {});
+        auto moveAhead = [](Object* object) { return reinterpret_cast<Object*>(reinterpret_cast<uintptr_t>(object) + 0x2000000); };
+        held.Relocate(true, moveAhead);
+        released.clear();
+        held.DrainReleased([&](Object* object) { released.push_back(object); });
+        Check(released.size() == 1 && released[0] == moveAhead(fake(50)),
+            "the count that a decision gives up follows an object that a copy in the same pause moved");
+        suppressed.clear();
+        // Relocation: only the current batch, or every entry.
+        LxrFinalizerRegistry moving;
+        auto relocate = [](Object* object) { return reinterpret_cast<Object*>(reinterpret_cast<uintptr_t>(object) + 0x1000000); };
+        moving.Register(fake(30), false);
+        moving.CaptureNew(isSuppressed, [](Object*) {});
+        moving.Register(fake(31), false);
+        moving.CaptureNew(isSuppressed, [](Object*) {});
+        moving.Relocate(false, relocate);
+        std::vector<Object*> counted;
+        moving.ForEachCounted([&](Object* object, bool) { counted.push_back(object); });
+        Check(counted.size() == 2 && counted[0] == fake(30) && counted[1] == relocate(fake(31)),
+            "relocation of the current batch leaves the older entries alone");
+        moving.Relocate(true, relocate);
+        counted.clear();
+        moving.ForEachCounted([&](Object* object, bool) { counted.push_back(object); });
+        Check(counted.size() == 2 && counted[0] == relocate(fake(30)) && counted[1] == relocate(relocate(fake(31))),
+            "relocation of every entry moves each entry");
+        // Registration from many threads: every object is counted exactly once.
+        LxrFinalizerRegistry many;
+        std::vector<std::thread> threads;
+        for (size_t thread = 0; thread < 8; thread++)
+        {
+            threads.emplace_back([&, thread]()
+            {
+                for (size_t index = 0; index < 20000; index++)
+                {
+                    many.Register(fake(1000 + thread * 20000 + index), false);
+                }
+            });
+        }
+        for (std::thread& thread : threads)
+        {
+            thread.join();
+        }
+        std::vector<uint8_t> seen(8 * 20000, 0);
+        size_t bad = 0;
+        many.CaptureNew(isSuppressed, [&](Object* object)
+        {
+            size_t slot = (reinterpret_cast<uintptr_t>(object) - 0x100000) / 64 - 1000;
+            if (slot >= seen.size() || seen[slot]++ != 0)
+            {
+                bad++;
+            }
+        });
+        Check(bad == 0 && many.GetCountedEntries() == seen.size() && many.GetRegistered() == seen.size(),
+            "concurrent registrations are counted exactly once");
+    }
+
+    // A reference-counting pause keeps every registered object alive, young or old, and decides nothing.
+    void ValidateS6RcPause(bool nursery)
+    {
+        S6Harness harness;
+        if (!harness.Initialize(nursery))
+        {
+            return;
+        }
+        Type leaf(24, 0);
+        Object* dead = Allocate(harness.engine, harness.mutator, leaf);
+        Object* kept = Allocate(harness.engine, harness.mutator, leaf);
+        Object* plain = Allocate(harness.engine, harness.mutator, leaf);
+        Object* old = Allocate(harness.engine, harness.mutator, leaf);
+        if (dead == nullptr || kept == nullptr || plain == nullptr || old == nullptr)
+        {
+            return;
+        }
+        harness.registry.Register(dead, false);
+        harness.registry.Register(kept, false);
+        harness.roots = {kept, old};
+        if (!harness.Pause(LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        std::vector<Object*> counted = harness.Counted();
+        bool allCounted = counted.size() == 2;
+        for (Object* object : counted)
+        {
+            allCounted = allCounted && harness.engine.IsObjectStart(object) && Count(harness.engine, object) > 0;
+        }
+        Check(allCounted && harness.registry.GetPendingCount() == 0,
+            "a registered young object that nothing else references is promoted and survives a reference-counting pause");
+        Check(Count(harness.engine, plain) == 0, "an unregistered young object that nothing references dies");
+        Check(harness.counters.retained.load() == 2, "the root capture retained exactly the two new entries");
+        // An old object (counted by a root) that is registered later gets one more count at the next pause.
+        uintptr_t before = Count(harness.engine, harness.roots[1]);
+        Check(before != 0, "the old object was promoted by its root");
+        harness.registry.Register(harness.roots[1], false);
+        harness.roots = {harness.roots[1]};
+        if (!harness.Pause(LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        Check(Count(harness.engine, harness.roots[0]) == before + 1,
+            "registering an old object adds one count at the next pause");
+        for (int round = 0; round < 3; round++)
+        {
+            harness.roots.clear();
+            if (!harness.Pause(LxrPauseKind::RefCount))
+            {
+                return;
+            }
+        }
+        counted = harness.Counted();
+        bool alive = counted.size() == 3;
+        for (Object* object : counted)
+        {
+            alive = alive && Count(harness.engine, object) > 0;
+        }
+        Check(alive && harness.registry.GetPendingCount() == 0,
+            "registered objects stay alive, and no reference-counting pause moves one to the ready list");
+        // The count that the root capture gave stays: the weak-handle rule of the collector is the same increment
+        // without a trace (AddRoot with trace=false), so a weak target survives these pauses too.
+        harness.roots.clear();
+        Object* weakTarget = Allocate(harness.engine, harness.mutator, leaf);
+        if (weakTarget == nullptr)
+        {
+            return;
+        }
+        harness.weakRoots = {weakTarget};
+        if (!harness.Pause(LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        Check(Count(harness.engine, harness.weakRoots[0]) > 0 && harness.engine.IsObjectStart(harness.weakRoots[0]),
+            "the target of a weak handle gets its increment in a reference-counting pause and survives it");
+        Check(harness.engine.DetachMutator(harness.mutator) == LxrRcResult::Success, "S6 mutator detaches");
+    }
+
+    // A tracing pause decides: an unmarked registered object is queued and traced with its children, a marked one
+    // stays, a suppressed or eagerly finalized one is dropped. The finalizer thread takes the queued object; the next
+    // pause takes its count away and the object dies by reference counting.
+    void ValidateS6TracingDecision()
+    {
+        S6Harness harness;
+        if (!harness.Initialize(false))
+        {
+            return;
+        }
+        Type leaf(24, 0);
+        Type link(24, 1);
+        Object* dead = Allocate(harness.engine, harness.mutator, link);
+        Object* child = Allocate(harness.engine, harness.mutator, leaf);
+        Object* rooted = Allocate(harness.engine, harness.mutator, leaf);
+        Object* suppressedLater = Allocate(harness.engine, harness.mutator, leaf);
+        Object* suppressedEarly = Allocate(harness.engine, harness.mutator, leaf);
+        Object* eager = Allocate(harness.engine, harness.mutator, leaf);
+        if (dead == nullptr || child == nullptr || rooted == nullptr || suppressedLater == nullptr ||
+            suppressedEarly == nullptr || eager == nullptr || !Store(harness.engine, harness.mutator, Field(dead), child))
+        {
+            return;
+        }
+        for (Object* object : {dead, rooted, suppressedLater, suppressedEarly, eager})
+        {
+            harness.registry.Register(object, false);
+        }
+        S6Suppressed = {suppressedEarly};
+        harness.roots = {rooted};
+        if (!harness.Pause(LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        Check(harness.Counted().size() == 4 && harness.registry.GetDropped() == 1 && harness.registry.GetPendingCount() == 0,
+            "the first pause counts four entries, drops the suppressed one and queues nothing");
+        S6Suppressed.push_back(suppressedLater);
+        S6Eager = {eager};
+        if (!harness.Pause(LxrPauseKind::Full))
+        {
+            return;
+        }
+        std::vector<Object*> ready = harness.Ready();
+        Check(ready.size() == 1 && ready[0] == dead && harness.registry.GetPendingCount() == 1,
+            "a full pause queues exactly the unmarked registered object");
+        Check(harness.engine.IsMarked(dead) && harness.engine.IsMarked(child) && Count(harness.engine, child) > 0,
+            "the queued object is traced with its children, so the children survive (f-reachability)");
+        Check(harness.engine.IsMarked(rooted) && S6Contains(harness.Counted(), rooted) && harness.Counted().size() == 1,
+            "a marked registered object stays in the registry, and no other entry stays");
+        Check(harness.engine.IsMarked(suppressedLater) && harness.engine.IsMarked(eager),
+            "a dropped entry is traced, so the cycle sweep cannot free its object before the count is taken away");
+        Check(harness.registry.GetDropped() == 3, "the suppressed (new and counted) and the eager entries are dropped");
+        Object* taken = harness.registry.TakeNext(S6IsSuppressed);
+        Check(taken == dead && harness.registry.GetPendingCount() == 0,
+            "the finalizer thread takes the queued object");
+        harness.roots.clear();
+        if (!harness.Pause(LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        Check(Count(harness.engine, dead) == 0 && Count(harness.engine, child) == 0 &&
+                Count(harness.engine, suppressedLater) == 0 && Count(harness.engine, eager) == 0,
+            "the next pause takes the counts away, and the objects and their children die by reference counting");
+        Check(harness.engine.DetachMutator(harness.mutator) == LxrRcResult::Success, "S6 mutator detaches");
+    }
+
+    // The cycle sweep of a tracing pause frees dead cycles. It must not free a cycle that holds a registered object:
+    // the decision queues the object and traces it, so the whole cycle is marked.
+    void ValidateS6CycleSweepSkipsRegistered()
+    {
+        S6Harness harness;
+        if (!harness.Initialize(false))
+        {
+            return;
+        }
+        Type link(24, 1);
+        Object* registeredX = Allocate(harness.engine, harness.mutator, link);
+        Object* registeredY = Allocate(harness.engine, harness.mutator, link);
+        Object* plainZ = Allocate(harness.engine, harness.mutator, link);
+        Object* plainW = Allocate(harness.engine, harness.mutator, link);
+        if (registeredX == nullptr || registeredY == nullptr || plainZ == nullptr || plainW == nullptr ||
+            !Store(harness.engine, harness.mutator, Field(registeredX), registeredY) ||
+            !Store(harness.engine, harness.mutator, Field(registeredY), registeredX) ||
+            !Store(harness.engine, harness.mutator, Field(plainZ), plainW) ||
+            !Store(harness.engine, harness.mutator, Field(plainW), plainZ))
+        {
+            return;
+        }
+        harness.registry.Register(registeredX, false);
+        harness.roots = {registeredY, plainZ};
+        if (!harness.Pause(LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        harness.roots.clear();
+        if (!harness.Pause(LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        Check(Count(harness.engine, registeredX) > 0 && Count(harness.engine, registeredY) > 0 &&
+                Count(harness.engine, plainZ) > 0 && Count(harness.engine, plainW) > 0,
+            "both cycles are garbage that reference counting cannot free");
+        if (!harness.Pause(LxrPauseKind::Full))
+        {
+            return;
+        }
+        Check(Count(harness.engine, plainZ) == 0 && Count(harness.engine, plainW) == 0,
+            "the cycle sweep frees the dead cycle that holds no registered object");
+        Check(Count(harness.engine, registeredX) > 0 && Count(harness.engine, registeredY) > 0 &&
+                harness.engine.IsMarked(registeredX) && harness.engine.IsMarked(registeredY) &&
+                harness.registry.GetPendingCount() == 1,
+            "the cycle sweep skips the cycle of a registered object: it is queued and marked");
+        Check(harness.engine.DetachMutator(harness.mutator) == LxrRcResult::Success, "S6 mutator detaches");
+    }
+
+    // A nursery copy moves a registered young object in the pause that counts it. The entry follows the object.
+    void ValidateS6Relocation()
+    {
+        S6Harness harness;
+        if (!harness.Initialize(true))
+        {
+            return;
+        }
+        Type leaf(64, 0);
+        std::vector<Object*> originals;
+        for (size_t index = 0; index < 32; index++)
+        {
+            Object* object = Allocate(harness.engine, harness.mutator, leaf);
+            if (object == nullptr)
+            {
+                return;
+            }
+            reinterpret_cast<uint8_t*>(object)[32] = static_cast<uint8_t>(index + 1);
+            harness.registry.Register(object, false);
+            originals.push_back(object);
+        }
+        if (!harness.Pause(LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        std::vector<Object*> counted = harness.Counted();
+        size_t moved = 0;
+        size_t intact = 0;
+        for (size_t index = 0; index < counted.size(); index++)
+        {
+            Object* object = counted[index];
+            moved += object != originals[index];
+            intact += harness.engine.IsObjectStart(object) && Count(harness.engine, object) > 0 &&
+                reinterpret_cast<uint8_t*>(object)[32] == index + 1;
+        }
+        Check(counted.size() == 32 && harness.engine.GetNurseryMetrics().copiedObjects >= 32 && moved >= 16 &&
+                intact == 32,
+            "a nursery copy moves registered objects, and each entry follows its object with its payload");
+        if (!harness.Pause(LxrPauseKind::Full))
+        {
+            return;
+        }
+        std::vector<Object*> ready = harness.Ready();
+        size_t valid = 0;
+        for (Object* object : ready)
+        {
+            valid += harness.engine.IsObjectStart(object) && Count(harness.engine, object) > 0 &&
+                harness.engine.IsMarked(object);
+        }
+        Check(ready.size() == 32 && valid == 32, "the entries that the full pause queues name valid, marked objects");
+        Check(harness.engine.DetachMutator(harness.mutator) == LxrRcResult::Success, "S6 mutator detaches");
+    }
+
+    // The list of objects whose pin or copy flag was set in a pause: the pause clears the flags from the list.
+    void ValidateS6TouchedList()
+    {
+        constexpr size_t Objects = 8 * 5000;
+        std::vector<std::atomic<uint32_t>> flags(Objects);
+        for (std::atomic<uint32_t>& flag : flags)
+        {
+            flag.store(0x80);
+        }
+        LxrAppendList touched;
+        std::vector<std::thread> threads;
+        for (size_t thread = 0; thread < 8; thread++)
+        {
+            threads.emplace_back([&, thread]()
+            {
+                for (size_t index = thread * 5000; index < (thread + 1) * 5000; index++)
+                {
+                    if (index % 3 != 0)
+                    {
+                        flags[index].fetch_or(0x300);
+                        touched.Append((index + 1) * 8);
+                    }
+                }
+            });
+        }
+        for (std::thread& thread : threads)
+        {
+            thread.join();
+        }
+        size_t expected = 0;
+        for (size_t index = 0; index < Objects; index++)
+        {
+            expected += index % 3 != 0;
+        }
+        size_t cleared = touched.Drain([&](uintptr_t value)
+        {
+            flags[value / 8 - 1].fetch_and(~uint32_t{0x300});
+        });
+        size_t left = 0;
+        size_t lost = 0;
+        for (size_t index = 0; index < Objects; index++)
+        {
+            left += (flags[index].load() & 0x300) != 0;
+            lost += (flags[index].load() & 0x80) == 0;
+        }
+        Check(cleared == expected && left == 0 && lost == 0,
+            "the pause clears the pin and copy flags of exactly the objects on the touched list and no other flag");
+        Check(touched.Drain([](uintptr_t) {}) == 0, "the touched list is empty after the pause");
+    }
+
+    void ValidateS6Registry()
+    {
+        ValidateS6ConcurrentAppend();
+        ValidateS6RegistryStates();
+        ValidateS6RcPause(false);
+        ValidateS6RcPause(true);
+        ValidateS6TracingDecision();
+        ValidateS6CycleSweepSkipsRegistered();
+        ValidateS6Relocation();
+        ValidateS6TouchedList();
+    }
 }
 
 int main(int argc, char** argv)
 {
+    if (argc == 2 && strcmp(argv[1], "--s6-registry") == 0)
+    {
+        ValidateS6Registry();
+        std::printf("%s: %d/%d S6 registry checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
     if (argc == 2 && strcmp(argv[1], "--s5b-overshoot") == 0)
     {
         ValidateS5bOvershoot();

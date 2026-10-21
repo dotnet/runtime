@@ -1885,6 +1885,24 @@ internal static partial class Program
                 }
                 VerifyRefCountedRoot(collect);
                 break;
+            case "finalizer-churn":
+                VerifyFinalizerChurn(metric);
+                break;
+            case "finalizer-churn-concurrent":
+                VerifyConcurrentFinalizerChurn();
+                break;
+            case "weak-churn":
+                VerifyWeakChurn();
+                break;
+            case "resurrection":
+                VerifyResurrection();
+                break;
+            case "prompt-collect":
+                VerifyPromptExplicitCollect();
+                break;
+            case "pooled-reregister":
+                VerifyPooledReregistration(metric);
+                break;
             default:
                 throw new ArgumentException("Unknown lifecycle scenario.", nameof(scenario));
         }

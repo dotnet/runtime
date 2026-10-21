@@ -615,7 +615,7 @@ LxrReferenceCounting::LxrReferenceCounting()
       m_trace_pending(0), m_trace_metrics{},
       m_pause_kind(LxrPauseKind::RefCount), m_cycle_sweep(false),
       m_mutators(nullptr), m_mutator_chunks(nullptr),
-      m_banks(nullptr), m_roots{nullptr, nullptr}, m_root_counts{0, 0},
+      m_banks(nullptr), m_roots{nullptr, nullptr}, m_root_counts{0, 0}, m_root_capacity{0, 0},
       m_current_roots(0), m_dead_large(nullptr), m_mature_candidates(nullptr), m_dead_large_count(0),
       m_producer_bank(0), m_work(nullptr), m_trace_todo(nullptr), m_next_id(1),
       m_phase(LxrRcPhase::Uninitialized), m_failure(LxrRcResult::Success), m_metrics{}
@@ -837,6 +837,8 @@ LxrRcResult LxrReferenceCounting::InitializeBuffers(size_t slots)
     }
     m_roots[0] = new (std::nothrow) uintptr_t[m_configuration.maximumRoots]{};
     m_roots[1] = new (std::nothrow) uintptr_t[m_configuration.maximumRoots]{};
+    m_root_capacity[0] = m_configuration.maximumRoots;
+    m_root_capacity[1] = m_configuration.maximumRoots;
     if (m_configuration.largeObjectBytes != 0)
     {
         m_dead_large = new (std::nothrow) uintptr_t[
@@ -1139,6 +1141,10 @@ void LxrReferenceCounting::Shutdown()
     m_trace_scans = nullptr;
     m_roots[0] = nullptr;
     m_roots[1] = nullptr;
+    m_root_capacity[0] = 0;
+    m_root_capacity[1] = 0;
+    m_retained_roots.Truncate(0);
+    m_released_roots.Truncate(0);
     m_dead_large = nullptr;
     m_mature_candidates = nullptr;
     m_allocated_list = nullptr;
@@ -2121,6 +2127,29 @@ LxrRcResult LxrReferenceCounting::PrepareWork()
 #endif
         }
     }
+    for (bool retain : {true, false})
+    {
+        LxrWordArray& array = retain ? m_retained_roots : m_released_roots;
+        for (size_t offset = 0; offset < array.Size(); offset += BufferCapacity)
+        {
+            size_t count = array.Size() - offset;
+            if (count > BufferCapacity)
+            {
+                count = BufferCapacity;
+            }
+            LxrRcResult submitted = SubmitWork(NewWork(
+                retain ? WorkKind::Roots : WorkKind::PreviousRoots, &array[offset], count,
+                retain ? LxrRCProcessIncs :
+                    (m_pause_kind == LxrPauseKind::Full || !m_configuration.lazyDecrements
+                        ? LxrRCProcessDecs : LxrWorkBucketStage::Unconstrained)));
+            if (submitted != LxrRcResult::Success)
+            {
+                return submitted;
+            }
+        }
+        array.Truncate(0);
+        array.Trim();
+    }
     if (m_pause_kind != LxrPauseKind::RefCount || m_configuration.evacuateNursery ||
         m_configuration.evacuateMature)
     {
@@ -2461,12 +2490,63 @@ LxrRcResult LxrReferenceCounting::AddRoot(Object* object, bool interior, bool tr
         return LxrRcResult::InvalidArgument;
     }
     size_t& count = m_root_counts[m_current_roots];
-    if (count == m_configuration.maximumRoots)
+    if (count == m_root_capacity[m_current_roots])
     {
-        return LxrRcResult::CapacityExceeded;
+        // The roots of a pause are not limited by the initial size: a registry or a handle table can hold more.
+        size_t capacity = m_root_capacity[m_current_roots];
+        if (capacity >= RootGrowthLimit)
+        {
+            return LxrRcResult::CapacityExceeded;
+        }
+        capacity = capacity == 0 ? BufferCapacity : capacity * 2;
+        uintptr_t* grown = new (std::nothrow) uintptr_t[capacity];
+        if (grown == nullptr)
+        {
+            return LxrRcResult::OutOfMemory;
+        }
+        memcpy(grown, m_roots[m_current_roots], count * sizeof(uintptr_t));
+        delete[] m_roots[m_current_roots];
+        m_roots[m_current_roots] = grown;
+        m_root_capacity[m_current_roots] = capacity;
     }
     m_roots[m_current_roots][count++] = reinterpret_cast<uintptr_t>(object) | (trace ? 0 : 1);
     return LxrRcResult::Success;
+}
+
+LxrRcResult LxrReferenceCounting::RetainRoot(Object* object)
+{
+    if (GetPhase() != LxrRcPhase::Suspended)
+    {
+        return LxrRcResult::InvalidPhase;
+    }
+    if (object == nullptr)
+    {
+        return LxrRcResult::Success;
+    }
+    uintptr_t valid;
+    SideMetadataResult result = m_metadata.Load(LxrSideMetadataKind::ValidObject,
+        Start(object), SideMetadataMemoryOrder::Relaxed, &valid);
+    if (result != SideMetadataResult::Success || valid != 1)
+    {
+        return LxrRcResult::InvalidArgument;
+    }
+    // The low bit tells the increment not to trace the object. Tracing is a decision of the caller.
+    return m_retained_roots.Push(reinterpret_cast<uintptr_t>(object) | 1)
+        ? LxrRcResult::Success : LxrRcResult::OutOfMemory;
+}
+
+LxrRcResult LxrReferenceCounting::ReleaseRoot(Object* object)
+{
+    if (GetPhase() != LxrRcPhase::Suspended)
+    {
+        return LxrRcResult::InvalidPhase;
+    }
+    if (object == nullptr)
+    {
+        return LxrRcResult::Success;
+    }
+    return m_released_roots.Push(reinterpret_cast<uintptr_t>(object))
+        ? LxrRcResult::Success : LxrRcResult::OutOfMemory;
 }
 
 LxrRcResult LxrReferenceCounting::GetObjectSize(Object* object, size_t* size, size_t worker)
@@ -6362,6 +6442,29 @@ LxrRcResult LxrReferenceCounting::TraceRoot(Object* object)
     uintptr_t root = reinterpret_cast<uintptr_t>(object);
     LxrRcResult result = QueueTrace(&root, 1);
     return result == LxrRcResult::Success ? DrainTraceInsidePause() : result;
+}
+
+LxrRcResult LxrReferenceCounting::TraceRoots(const uintptr_t* objects, size_t count)
+{
+    if (GetPhase() != LxrRcPhase::Suspended ||
+        (GetTracePhase() != LxrTracePhase::Full && GetTracePhase() != LxrTracePhase::FinalMark))
+    {
+        return LxrRcResult::InvalidPhase;
+    }
+    for (size_t offset = 0; offset < count; offset += BufferCapacity)
+    {
+        size_t batch = count - offset;
+        if (batch > BufferCapacity)
+        {
+            batch = BufferCapacity;
+        }
+        LxrRcResult result = QueueTrace(objects + offset, batch);
+        if (result != LxrRcResult::Success)
+        {
+            return result;
+        }
+    }
+    return count == 0 ? LxrRcResult::Success : DrainTraceInsidePause();
 }
 
 bool LxrReferenceCounting::IsMarked(Object* object) const

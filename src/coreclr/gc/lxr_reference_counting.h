@@ -9,6 +9,7 @@
 #include "reference_count.h"
 #include "lxr_pause_coordinator.h"
 #include "lxr_virtual_array.h"
+#include "lxr_finalizer_registry.h"
 
 class Object;
 class LxrReferenceCounting;
@@ -311,6 +312,8 @@ class LxrReferenceCounting final
 public:
     static constexpr size_t BufferCapacity = 1024;
     static constexpr size_t FullTraceBatchCapacity = 8192;
+    // Largest number of roots of one kind in one pause (the roots array grows from its initial size).
+    static constexpr size_t RootGrowthLimit = size_t{1} << 27;
 
     LxrReferenceCounting();
     ~LxrReferenceCounting();
@@ -343,7 +346,14 @@ public:
     LxrRcResult FinishTrace(LxrRcCaptureRoots capture, void* context, uint32_t timeoutMilliseconds);
     LxrRcResult CollectFull(LxrRcCaptureRoots capture, void* context, uint32_t timeoutMilliseconds);
     LxrRcResult AddRoot(Object* object, bool interior = false, bool trace = true);
+    // P17 S6: a count that stays until ReleaseRoot takes it away. AddRoot gives a count for one pause only. Both calls
+    // are for the root capture of a pause. The increment (or the decrement) runs in that pause, as for any root.
+    // The number of such counts is not limited.
+    LxrRcResult RetainRoot(Object* object);
+    LxrRcResult ReleaseRoot(Object* object);
     LxrRcResult TraceRoot(Object* object);
+    // Like TraceRoot for many objects, with one drain at the end. The values are object addresses.
+    LxrRcResult TraceRoots(const uintptr_t* objects, size_t count);
     Object* ResolveForwarded(Object* object) const;
     LxrRcResult RelocateRoot(Object** slot, bool interior, bool pinned) const;
     LxrNurseryMetrics GetNurseryMetrics() const;
@@ -747,6 +757,9 @@ private:
     LogBank* m_banks;
     uintptr_t* m_roots[2];
     size_t m_root_counts[2];
+    size_t m_root_capacity[2];
+    LxrWordArray m_retained_roots;
+    LxrWordArray m_released_roots;
     size_t m_current_roots;
     uintptr_t* m_dead_large;
     std::atomic<uint8_t>* m_mature_candidates;

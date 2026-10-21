@@ -206,7 +206,7 @@ LxrGcHeap::LxrGcHeap()
       m_flags(nullptr), m_frozen{}, m_frozen_readers(0), m_cards(nullptr), m_bundles(nullptr),
       m_collection_lock(), m_gc_done(), m_trace_signal(), m_coordinator_done(), m_concurrent_done(),
       m_initialized(false), m_in_gc(false), m_shutdown(false), m_concurrent_enabled(true),
-      m_collections(0), m_pending_finalizers(0), m_finalizer_cursor{}, m_memory_info{}, m_memory_sequence{},
+      m_collections(0), m_memory_info{}, m_memory_sequence{},
       m_current_pause_kind(LxrPauseKind::RefCount), m_heap_before(0), m_fragmentation_before(0),
       m_trace_heap_before(0), m_trace_fragmentation_before(0), m_initial_pause_ticks(0), m_pinned_roots(0),
       m_scan_failure(LxrRcResult::Success), m_latency(1), m_loh_mode(1),
@@ -634,7 +634,7 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
     {
         Fatal("LXR owned allocator failed an allocation invariant.");
     }
-    uint32_t state = (flags & GC_ALLOC_FINALIZE) != 0 ? Registered : 0;
+    uint32_t state = 0;
     if ((flags & GC_ALLOC_PINNED_OBJECT_HEAP) != 0)
     {
         state |= Pinned;
@@ -790,10 +790,11 @@ void LOCALGC_CALLCONV LxrGcHeap::AllocationComplete(
     }
     if ((static_cast<uint32_t>(flags) & static_cast<uint32_t>(AllocationCompleteFlags::Finalizable)) != 0)
     {
-        state |= Registered;
-        if (object->GetGCSafeMethodTable()->HasCriticalFinalizer())
+        // Alloc does not register: the runtime reports every allocation here with its final type, so an object is
+        // registered exactly once, and the critical bit of its finalizer is known.
+        if (!heap->m_registry.Register(object, object->GetGCSafeMethodTable()->HasCriticalFinalizer()))
         {
-            state |= Critical;
+            heap->Fatal("LXR could not register an object for finalization.");
         }
     }
     heap->m_flags[heap->ObjectIndex(object)].store(state, std::memory_order_release);
@@ -1008,7 +1009,7 @@ LxrRcResult LxrGcHeap::FinishLazy(LxrReferenceCounting* engine, void* context)
     // The engine cleared its cycle-sweep flag before this callback, so the finalizers may run now.
     if (heap->m_finalization_deferred.exchange(false, std::memory_order_seq_cst))
     {
-        GCToEEInterface::EnableFinalization(heap->m_pending_finalizers.load() != 0);
+        GCToEEInterface::EnableFinalization(heap->m_registry.GetPendingCount() != 0);
     }
     size_t mature;
     LxrRcResult result = engine->GetMaturePages(&mature);
@@ -1102,7 +1103,7 @@ void LxrGcHeap::Resume(bool finished, void* context)
         if (!heap->m_engine.IsCycleSweepPending() &&
             heap->m_finalization_deferred.exchange(false, std::memory_order_seq_cst))
         {
-            GCToEEInterface::EnableFinalization(heap->m_pending_finalizers.load() != 0);
+            GCToEEInterface::EnableFinalization(heap->m_registry.GetPendingCount() != 0);
         }
         GCToEEInterface::GcDone(2);
         GCToEEInterface::RestartEE(finished);
@@ -1271,11 +1272,7 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
         int64_t start = timed ? GCToOSInterface::QueryPerformanceCounter() : 0;
         measure(31, LxrPauseTimers::ScanBeforeRoots, [&]() { GCToEEInterface::BeforeGcScanRoots(2, false, false); });
         LxrRcResult result = LxrRcResult::Success;
-        measure(14, LxrPauseTimers::ScanLeaseFinalizers, [&]() { result = heap->m_engine.WalkObjectStarts(LeaseFinalizer, heap); });
-        if (result != LxrRcResult::Success)
-        {
-            heap->m_scan_failure.store(result);
-        }
+        measure(14, LxrPauseTimers::ScanLeaseFinalizers, [&]() { heap->CaptureFinalizers(); });
         measure(15, LxrPauseTimers::ScanRoots, [&]() { GCScan::GcScanRoots(CopyRoot, 2, 2, &scan); });
         measure(16, LxrPauseTimers::ScanHandles, [&]() { GCScan::GcScanHandles(CopyRoot, 2, 2, &scan); });
         measure(17, LxrPauseTimers::ScanProfilerHandles, [&]() { GCScan::GcScanHandlesForProfilerAndETW(2, &scan, LeaseWeakHandle); });
@@ -1308,17 +1305,7 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
             while (GCScan::GcDhReScan(&scan)) { heap->CountScanWork(32); }
         });
         measure(22, LxrPauseTimers::ScanShortWeak, [&]() { GCScan::GcShortWeakPtrScan(2, 2, &scan); });
-        LxrRcResult result = LxrRcResult::Success;
-        measure(23, LxrPauseTimers::ScanQueueFinalizers, [&]() { result = heap->m_engine.WalkObjectStarts(QueueFinalizer, heap); });
-        if (result == LxrRcResult::Success && heap->m_pending_finalizers.load() != 0)
-        {
-            // Discover every unreachable candidate before f-reachability can mark another candidate.
-            measure(24, LxrPauseTimers::ScanTraceFinalizers, [&]() { result = heap->m_engine.WalkObjectStarts(TracePendingFinalizer, heap); });
-        }
-        if (result != LxrRcResult::Success)
-        {
-            heap->m_scan_failure.store(result);
-        }
+        measure(23, LxrPauseTimers::ScanQueueFinalizers, [&]() { heap->DecideFinalization(); });
         measure(25, LxrPauseTimers::ScanDhRescan, [&]()
         {
             GCScan::GcDhInitialScan(TraceRoot, 2, 2, &scan);
@@ -1335,6 +1322,7 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
             scan.promotion = false;
             measure(28, LxrPauseTimers::ScanRelocateRoots, [&]() { GCScan::GcScanRoots(RelocateRoot, 2, 2, &scan); });
             measure(29, LxrPauseTimers::ScanRelocateHandles, [&]() { GCScan::GcScanHandles(RelocateRoot, 2, 2, &scan); });
+            heap->RelocateFinalizers();
             scan.promotion = true;
             GCToEEInterface::DiagWalkSurvivors(nullptr,
                 heap->m_engine.GetNurseryMetrics().pauseCopiedBytes != 0 ||
@@ -1354,6 +1342,7 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
             GCScan::GcPromotionsGranted(2, 2, &scan);
             GCToEEInterface::AfterGcScanRoots(2, 2, &scan);
         });
+        heap->ClearTouchedObjects();
         size_t heapBytes = 0;
         size_t fragmentation = 0;
         LxrRcResult result = LxrRcResult::Success;
@@ -1411,6 +1400,7 @@ void LxrGcHeap::AddRoot(Object* object, uint32_t flags, bool trace)
         if ((previous & ObservedPin) == 0)
         {
             m_pinned_roots.fetch_add(1);
+            TouchObject(object);
         }
     }
     LxrRcResult result = m_engine.AddRoot(object, false, trace);
@@ -1449,11 +1439,7 @@ void LxrGcHeap::DidCopy(Object* source, Object* destination, void* context)
     LxrGcHeap* heap = static_cast<LxrGcHeap*>(context);
     uint32_t flags = heap->m_flags[heap->ObjectIndex(source)].exchange(0, std::memory_order_acq_rel);
     heap->m_flags[heap->ObjectIndex(destination)].store(flags | CopiedThisPause, std::memory_order_release);
-    if ((flags & Pending) != 0)
-    {
-        heap->m_finalizer_cursor[0].store(0, std::memory_order_release);
-        heap->m_finalizer_cursor[1].store(0, std::memory_order_release);
-    }
+    heap->TouchObject(destination);
 }
 
 void LxrGcHeap::TraceRoot(Object** slot, ScanContext*, uint32_t flags)
@@ -1504,63 +1490,54 @@ void CALLBACK LxrGcHeap::LeaseSyncBlock(
     heap->AddRoot(object, 0, false);
 }
 
-bool LxrGcHeap::LeaseFinalizer(Object* object, size_t, void* context)
+bool LxrGcHeap::IsFinalizationSuppressed(Object* object)
 {
-    LxrGcHeap* heap = static_cast<LxrGcHeap*>(context);
-    heap->CountScanWork(33);
-    std::atomic<uint32_t>& flags = heap->m_flags[heap->ObjectIndex(object)];
-    uint32_t state = flags.fetch_and(~(ObservedPin | CopiedThisPause));
-    if ((state & Pinned) != 0)
-    {
-        flags.fetch_or(ObservedPin);
-        heap->m_pinned_roots.fetch_add(1);
-    }
-    if ((state & Pending) != 0)
-    {
-        heap->AddRoot(object, 0, true);
-    }
-    else if ((state & Registered) != 0 && (state & Suppressed) == 0)
-    {
-        heap->AddRoot(object, 0, false);
-    }
-    return true;
+    return (object->GetHeader()->GetBits() & BIT_SBLK_FINALIZER_RUN) != 0;
 }
 
-bool LxrGcHeap::QueueFinalizer(Object* object, size_t, void* context)
+void LxrGcHeap::TouchObject(Object* object)
 {
-    LxrGcHeap* heap = static_cast<LxrGcHeap*>(context);
-    heap->CountScanWork(34);
-    uint32_t state = heap->m_flags[heap->ObjectIndex(object)].load();
-    if ((state & Registered) != 0 && (state & (Pending | Suppressed)) == 0 &&
-        !heap->m_engine.IsMarked(object))
+    if (!m_touched.Append(reinterpret_cast<uintptr_t>(object)))
     {
-        if (GCToEEInterface::EagerFinalized(object))
-        {
-            heap->m_flags[heap->ObjectIndex(object)].fetch_and(~Registered);
-            return true;
-        }
-        heap->m_flags[heap->ObjectIndex(object)].fetch_or(Pending);
-        heap->m_pending_finalizers.fetch_add(1);
-        // Queue construction is suspended; the finalizer consumes these cursors in cooperative mode.
-        heap->m_finalizer_cursor[0].store(0, std::memory_order_release);
-        heap->m_finalizer_cursor[1].store(0, std::memory_order_release);
+        Fatal("LXR could not record an object with a pin or copy flag.");
     }
-    return true;
 }
 
-bool LxrGcHeap::TracePendingFinalizer(Object* object, size_t, void* context)
+void LxrGcHeap::ClearTouchedObjects()
 {
-    LxrGcHeap* heap = static_cast<LxrGcHeap*>(context);
-    if ((heap->m_flags[heap->ObjectIndex(object)].load() & Pending) != 0)
+    size_t cleared = m_touched.Drain([this](uintptr_t value)
     {
-        LxrRcResult result = heap->m_engine.TraceRoot(object);
-        if (result != LxrRcResult::Success)
-        {
-            heap->m_scan_failure.store(result);
-            return false;
-        }
+        m_flags[ObjectIndex(reinterpret_cast<Object*>(value))].fetch_and(~(ObservedPin | CopiedThisPause));
+    });
+    m_touched_cleared.fetch_add(cleared, std::memory_order_relaxed);
+}
+
+void LxrGcHeap::CaptureFinalizers()
+{
+    CountScanWork(33);
+    LxrRcResult result = LxrFinalizerCapture(
+        m_engine, m_registry, m_current_pause_kind, IsFinalizationSuppressed, &m_registry_counters);
+    if (result != LxrRcResult::Success)
+    {
+        m_scan_failure.store(result);
     }
-    return true;
+}
+
+void LxrGcHeap::DecideFinalization()
+{
+    ScanCostScope cost(this, 24);
+    LxrPhaseScope timer(m_engine.GetPauseTimers(), LxrPauseTimers::ScanTraceFinalizers);
+    LxrRcResult result = LxrFinalizerDecide(m_engine, m_registry, IsFinalizationSuppressed,
+        [](Object* object) { return GCToEEInterface::EagerFinalized(object); }, &m_registry_counters);
+    if (result != LxrRcResult::Success)
+    {
+        m_scan_failure.store(result);
+    }
+}
+
+void LxrGcHeap::RelocateFinalizers()
+{
+    LxrFinalizerRelocate(m_engine, m_registry, m_heap_configuration.evacuateMature, m_current_pause_kind);
 }
 
 bool LxrGcHeap::FrozenContains(uintptr_t address, bool retired) const
@@ -1747,12 +1724,12 @@ HRESULT LxrGcHeap::WaitUntilConcurrentGCCompleteAsync(int timeout)
         result == WAIT_TIMEOUT ? HRESULT_FROM_WIN32(ERROR_TIMEOUT) : E_FAIL;
 }
 
-size_t LxrGcHeap::GetNumberOfFinalizable() { return m_pending_finalizers.load(); }
+size_t LxrGcHeap::GetNumberOfFinalizable() { return m_registry.GetPendingCount(); }
 FinalizerWorkItem* LxrGcHeap::GetExtraWorkForFinalization() { return nullptr; }
 
 Object* LxrGcHeap::GetNextFinalizable()
 {
-    if (m_pending_finalizers.load(std::memory_order_acquire) == 0)
+    if (m_registry.GetPendingCount() == 0)
     {
         return nullptr;
     }
@@ -1764,44 +1741,20 @@ Object* LxrGcHeap::GetNextFinalizable()
     {
         return nullptr;
     }
-    size_t slots = m_engine.GetReservationBytes() / sizeof(uintptr_t);
-    for (bool critical : {false, true})
+    Object* object = m_registry.TakeNext(IsFinalizationSuppressed);
+    if (m_registry.GetFailures() != 0)
     {
-        size_t pass = critical ? 1 : 0;
-        for (size_t index = m_engine.FindNextValidSlot(
-                m_finalizer_cursor[pass].load(std::memory_order_acquire)); index < slots;
-             index = m_engine.FindNextValidSlot(index + 1))
-        {
-            std::atomic<uint32_t>& flags = m_flags[m_engine.GetObjectStorageIndex(index)];
-            uint32_t state = flags.load(std::memory_order_acquire);
-            while ((state & Pending) != 0 && ((state & Critical) != 0) == critical)
-            {
-                uint32_t desired = (state & ~(Pending | Registered)) | Finalized;
-                if (flags.compare_exchange_weak(state, desired, std::memory_order_acq_rel))
-                {
-                    if (m_pending_finalizers.fetch_sub(1) == 0)
-                    {
-                        Fatal("LXR finalizer queue underflow.");
-                    }
-                    Object* object = reinterpret_cast<Object*>(
-                        m_engine.GetReservationStart() + index * sizeof(uintptr_t) + sizeof(ObjHeader));
-                    if (!m_engine.IsObjectStart(object))
-                    {
-                        Fatal("LXR finalizer queue lost its managed allocation lease.");
-                    }
-                    if ((state & Suppressed) == 0)
-                    {
-                        CountScanWork(35);
-                        m_finalizer_cursor[pass].store(index + 1, std::memory_order_release);
-                        return object;
-                    }
-                    break;
-                }
-            }
-        }
-        m_finalizer_cursor[pass].store(slots, std::memory_order_release);
+        Fatal("LXR finalizer registry could not record a released count.");
     }
-    return nullptr;
+    if (object != nullptr)
+    {
+        if (!m_engine.IsObjectStart(object))
+        {
+            Fatal("LXR finalizer queue lost its managed allocation lease.");
+        }
+        CountScanWork(35);
+    }
+    return object;
 }
 
 bool LxrGcHeap::RegisterForFinalization(int, Object* object)
@@ -1812,12 +1765,7 @@ bool LxrGcHeap::RegisterForFinalization(int, Object* object)
         return false;
     }
     object->GetHeader()->ClrBit(BIT_SBLK_FINALIZER_RUN);
-    std::atomic<uint32_t>& flags = m_flags[ObjectIndex(object)];
-    uint32_t state = flags.load();
-    while (!flags.compare_exchange_weak(state, (state | Registered) & ~(Suppressed | Finalized)))
-    {
-    }
-    return true;
+    return m_registry.Register(object, object->GetGCSafeMethodTable()->HasCriticalFinalizer(), true);
 }
 
 void LxrGcHeap::SetFinalizationRun(Object* object)
@@ -1826,16 +1774,9 @@ void LxrGcHeap::SetFinalizationRun(Object* object)
     {
         Fatal("LXR finalization suppression received a nonowned object.");
     }
+    // The registry sees the header bit when it next looks at the entry (the next pause for an entry that is not
+    // counted yet, the next tracing pause for a counted one, or the finalizer thread for a ready one).
     object->GetHeader()->SetBit(BIT_SBLK_FINALIZER_RUN);
-    std::atomic<uint32_t>& flags = m_flags[ObjectIndex(object)];
-    uint32_t state = flags.load();
-    while (!flags.compare_exchange_weak(state, (state | Suppressed) & ~(Registered | Pending)))
-    {
-    }
-    if ((state & Pending) != 0 && m_pending_finalizers.fetch_sub(1) == 0)
-    {
-        Fatal("LXR suppression underflowed the pending finalizer count.");
-    }
 }
 
 size_t LxrGcHeap::GetValidSegmentSize(bool) { return m_engine.GetReservationBytes(); }
@@ -1898,7 +1839,7 @@ void LxrGcHeap::PublishMemoryInfo()
     uint64_t values[MemoryFields]{
         available, physical / 10 * 9, physical / 100 * m_last_memory_load.load(),
         m_last_heap_size.load(), m_last_fragmentation.load(), m_last_committed.load(),
-        m_engine.GetUsedBytesEstimate(), m_pinned_roots.load(), m_pending_finalizers.load(),
+        m_engine.GetUsedBytesEstimate(), m_pinned_roots.load(), m_registry.GetPendingCount(),
         m_collections.load(), 2, static_cast<uint64_t>(GetLastGCPercentTimeInGC()),
         concurrent ? 1u : 0u,
         m_engine.GetNurseryMetrics().pauseCopiedBytes != 0 ||
@@ -2277,41 +2218,17 @@ void LxrGcHeap::DiagWalkSurvivorsWithType(
 void LxrGcHeap::DiagWalkFinalizeQueue(void*, fq_walk_fn callback)
 {
     ValidateWalk("LXR DiagWalkFinalizeQueue requires suspension.");
-    struct FinalizerContext { LxrGcHeap* heap; fq_walk_fn callback; } walk{this, callback};
-    LxrRcResult result = m_engine.WalkObjects([](Object* object, size_t, void* state)
-    {
-        FinalizerContext* walk = static_cast<FinalizerContext*>(state);
-        uint32_t flags = walk->heap->m_flags[walk->heap->ObjectIndex(object)].load();
-        if ((flags & Pending) != 0)
-        {
-            walk->callback((flags & Critical) != 0, object);
-        }
-        return true;
-    }, &walk);
-    if (result != LxrRcResult::Success)
-    {
-        Fatal("LXR finalizer walk failed.");
-    }
+    m_registry.ForEachReady([&](Object* object, bool critical) { callback(critical, object); });
 }
 
 void LxrGcHeap::DiagScanFinalizeQueue(fq_scan_fn callback, ScanContext* scan)
 {
     ValidateWalk("LXR DiagScanFinalizeQueue requires suspension.");
-    struct FinalizerContext { LxrGcHeap* heap; fq_scan_fn callback; ScanContext* scan; } walk{this, callback, scan};
-    LxrRcResult result = m_engine.WalkObjects([](Object* object, size_t, void* state)
+    m_registry.ForEachReady([&](Object* object, bool)
     {
-        FinalizerContext* walk = static_cast<FinalizerContext*>(state);
-        if ((walk->heap->m_flags[walk->heap->ObjectIndex(object)].load() & Pending) != 0)
-        {
-            Object* local = object;
-            walk->callback(&local, walk->scan, 0);
-        }
-        return true;
-    }, &walk);
-    if (result != LxrRcResult::Success)
-    {
-        Fatal("LXR finalizer root scan failed.");
-    }
+        Object* local = object;
+        callback(&local, scan, 0);
+    });
 }
 
 void LxrGcHeap::DiagScanHandles(handle_scan_fn callback, int, ScanContext* context)
@@ -2552,7 +2469,7 @@ uint64_t LxrGcHeap::GetPrototypeMetric(uint32_t metric) const
         case 22: return rc.threadFlushes;
         case 23: return rc.incrementEntries;
         case 24: return rc.decrementEntries;
-        case 25: return m_pending_finalizers.load();
+        case 25: return m_registry.GetPendingCount();
         case 26: return m_engine.GetCommittedBytes();
         case 27: return m_barrier_bootstraps.load();
         case 28: return static_cast<uint64_t>(m_engine.GetTracePhase());
@@ -2628,6 +2545,22 @@ uint64_t LxrGcHeap::GetPrototypeMetric(uint32_t metric) const
                 case 248: return m_pause_free_pages.load(std::memory_order_acquire);
                 case 249: return ImmixBlockManager::GetFlipOverlaps();
                 case 250: return ImmixBlockManager::GetFlipBlockedOperations();
+                default: break;
+            }
+            switch (metric)
+            {
+                case 450: return m_registry.GetCountedEntries();
+                case 451: return m_registry.GetRegistered();
+                case 452: return m_registry_counters.retained.load(std::memory_order_relaxed);
+                case 453: return m_registry_counters.released.load(std::memory_order_relaxed);
+                case 454: return m_registry_counters.decisions.load(std::memory_order_relaxed);
+                case 455: return m_registry.GetDropped();
+                case 456: return m_registry.GetTaken();
+                case 461: return m_registry.GetDuplicates();
+                case 457: return m_registry_counters.walked.load(std::memory_order_relaxed);
+                case 458: return m_touched_cleared.load(std::memory_order_relaxed);
+                case 459: return m_registry.GetCountedCapacity() * sizeof(uintptr_t);
+                case 460: return m_registry.GetPendingCount();
                 default: break;
             }
             if (metric >= 410 && metric < 410 + LxrReferenceCounting::OvershootMetricCount)

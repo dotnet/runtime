@@ -350,7 +350,7 @@ if(FEATURE_STANDALONE_GC)
       side_metadata.cpp immix_block.cpp reference_count.cpp immix_allocation.cpp
       large_object_space.cpp lxr_work_packet.cpp lxr_work_scheduler.cpp
       lxr_completion_counter.cpp lxr_pause_schedule.cpp lxr_pause_coordinator.cpp
-      lxr_reference_counting.cpp lxr_gc.cpp lxr_gc.h lxr_gcload.cpp)
+      lxr_reference_counting.cpp lxr_finalizer_registry.h lxr_finalizer_pause.h lxr_gc.cpp lxr_gc.h lxr_gcload.cpp)
     add_dependencies(clrlxrgc eventing_headers)
     target_link_libraries(clrlxrgc PRIVATE ${GC_LINK_LIBRARIES})
     install_clr(TARGETS clrlxrgc DESTINATIONS . sharedFramework COMPONENT runtime)

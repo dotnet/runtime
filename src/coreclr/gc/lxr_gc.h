@@ -6,6 +6,7 @@
 
 #include "gc.h"
 #include "lxr_reference_counting.h"
+#include "lxr_finalizer_pause.h"
 #include "lxr_collection_policy.h"
 
 class LxrGcHeap final : public IGCHeapInternal
@@ -147,12 +148,7 @@ private:
     enum ObjectFlags : uint32_t
     {
         Born = 1,
-        Registered = 2,
-        Pending = 4,
-        Suppressed = 8,
-        Critical = 16,
         Pinned = 32,
-        Finalized = 64,
         Large = 128,
         ObservedPin = 256,
         CopiedThisPause = 512,
@@ -193,9 +189,7 @@ private:
     static void LeaseDependentRoot(Object** slot, ScanContext* context, uint32_t flags);
     static void CALLBACK LeaseSyncBlock(
         PTR_UNCHECKED_OBJECTREF slot, uintptr_t* extra, uintptr_t scan, uintptr_t heap);
-    static bool LeaseFinalizer(Object* object, size_t size, void* context);
-    static bool QueueFinalizer(Object* object, size_t size, void* context);
-    static bool TracePendingFinalizer(Object* object, size_t size, void* context);
+    static bool IsFinalizationSuppressed(Object* object);
     static bool WalkHeapObject(Object* object, size_t size, void* context);
     static bool IsImmortal(Object* object, void* context);
     static void LOCALGC_CALLCONV AllocationComplete(Object* object, size_t size, AllocationCompleteFlags flags, void* context);
@@ -210,6 +204,16 @@ private:
     LxrRcResult RunScan(uint8_t kind);
     void ExecuteScan(uint8_t kind);
     void AddRoot(Object* object, uint32_t flags, bool trace);
+    // P17 S6: the finalizer registry takes part in a pause at three places. CaptureFinalizers runs in the root
+    // capture of every pause. DecideFinalization runs after marking in a tracing pause only. RelocateFinalizers
+    // follows the relocation of roots and handles when objects were copied.
+    void CaptureFinalizers();
+    void DecideFinalization();
+    void RelocateFinalizers();
+    // An object whose pin flag or copy flag was set in this pause is put on a list. The pause clears the flags from
+    // the list, so no walk over the heap is needed.
+    void TouchObject(Object* object);
+    void ClearTouchedObjects();
     void CountScanWork(size_t metric);
     bool FrozenContains(uintptr_t address, bool retired) const;
     void ScanFrozenRoots();
@@ -267,11 +271,13 @@ private:
     std::atomic<bool> m_shutdown;
     std::atomic<bool> m_concurrent_enabled;
     std::atomic<unsigned> m_collections;
-    std::atomic<size_t> m_pending_finalizers;
+    LxrFinalizerRegistry m_registry;
+    LxrFinalizerPauseCounters m_registry_counters;
+    LxrAppendList m_touched;
+    std::atomic<uint64_t> m_touched_cleared{0};
     // Set by Resume when it did not signal the finalizer thread because a cycle sweep was pending (see
     // GetNextFinalizable). FinishLazy sends the signal once the sweep has finished.
     std::atomic<bool> m_finalization_deferred{false};
-    std::atomic<size_t> m_finalizer_cursor[2];
     std::atomic<uint64_t> m_memory_info[4][MemoryFields];
     std::atomic<uint64_t> m_memory_sequence[4];
     LxrPauseKind m_current_pause_kind;
