@@ -7,6 +7,7 @@ case $W in
   binarytrees) S=16; O=0;;
   requests) S=32768; O=600000;;
   listsuffix) S=4096; O=800000;;
+  pinheavy) S=64; O=2000000;;
 esac
 los=$(( H / 8 )); [ $los -lt 8 ] && los=8
 cd /root/gcbench

@@ -257,11 +257,129 @@ internal static class GcBench
         return cs;
     }
 
+    // PINHEAVY_NOPOH=1 replaces the pinned-object-heap arrays of the pin-heavy workload by ordinary arrays.
+    private static readonly bool s_pinHeavyNoPoh = Environment.GetEnvironmentVariable("PINHEAVY_NOPOH") == "1";
+
+    // P17 S7: pinned handles, `fixed` locals and pinned-object-heap arrays while allocating. Four threads, each with its
+    // own random numbers, so the sum of the thread checksums does not depend on the thread schedule.
+    private static unsafe long PinHeavyThread(int thread, int slots, long ops)
+    {
+        ulong state = 0x9E3779B97F4A7C15UL ^ (ulong)(thread + 1) * 0xD1B54A32D192ED03UL;
+        ulong NextLocal()
+        {
+            state ^= state >> 12;
+            state ^= state << 25;
+            state ^= state >> 27;
+            return state * 0x2545F4914F6CDD1DUL;
+        }
+        GCHandle[] handles = new GCHandle[slots];
+        byte[]?[] pinnedArrays = new byte[]?[slots];
+        long cs = 0;
+        for (long op = 0; op < ops; op++)
+        {
+            ulong r = NextLocal();
+            int slot = (int)((r >> 33) % (ulong)slots);
+            int length = 256 + (int)((r >> 20) % 4096);
+            switch ((r >> 8) & 3)
+            {
+                case 0:
+                {
+                    if (handles[slot].IsAllocated)
+                    {
+                        byte[] old = (byte[])handles[slot].Target!;
+                        cs += old[0] + old[old.Length - 1];
+                        handles[slot].Free();
+                    }
+                    byte[] buffer = new byte[length];
+                    buffer[0] = (byte)op;
+                    buffer[length - 1] = (byte)(op >> 3);
+                    handles[slot] = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+                    break;
+                }
+                case 1:
+                {
+                    byte[] buffer = new byte[length];
+                    buffer[length / 2] = (byte)op;
+                    fixed (byte* pointer = buffer)
+                    {
+                        Node? head = null;
+                        for (int i = 0; i < 16; i++)
+                        {
+                            head = new Node { V = i, Next = head };
+                            cs += pointer[length / 2] + head.V;
+                        }
+                    }
+                    break;
+                }
+                case 2:
+                {
+                    byte[]? old = pinnedArrays[slot];
+                    if (old is not null)
+                    {
+                        cs += old[0] + old[old.Length - 1];
+                    }
+                    byte[] array = s_pinHeavyNoPoh ? new byte[length] : GC.AllocateArray<byte>(length, pinned: true);
+                    array[0] = (byte)op;
+                    array[length - 1] = (byte)(op >> 3);
+                    pinnedArrays[slot] = array;
+                    break;
+                }
+                default:
+                {
+                    Node? head = null;
+                    for (int i = 0; i < 24; i++)
+                    {
+                        head = new Node { V = i, Next = head };
+                    }
+                    for (Node? n = head; n is not null; n = n.Next)
+                    {
+                        cs += n.V;
+                    }
+                    break;
+                }
+            }
+        }
+        for (int slot = 0; slot < slots; slot++)
+        {
+            if (handles[slot].IsAllocated)
+            {
+                handles[slot].Free();
+            }
+        }
+        return cs;
+    }
+
+    private static long PinHeavy(int slots, long ops, bool calibrate)
+    {
+        const int Threads = 4;
+        if (calibrate)
+        {
+            s_keep = new byte[Threads * slots * 2048];
+            return 0;
+        }
+        long[] sums = new long[Threads];
+        Thread[] threads = new Thread[Threads];
+        for (int t = 0; t < Threads; t++)
+        {
+            int id = t;
+            threads[t] = new Thread(() => sums[id] = PinHeavyThread(id, slots, ops / Threads));
+            threads[t].Start();
+        }
+        long total = 0;
+        for (int t = 0; t < Threads; t++)
+        {
+            threads[t].Join();
+            total += sums[t];
+        }
+        return total;
+    }
+
     private static long Run(string workload, int size, long ops, long[]? latency, bool calibrate) => workload switch
     {
         "binarytrees" => BinaryTrees(size, calibrate),
         "requests" => Requests(size, ops, latency, calibrate),
         "listsuffix" => ListSuffix(size, ops, calibrate),
+        "pinheavy" => PinHeavy(size, ops, calibrate),
         _ => throw new ArgumentException(workload),
     };
 
@@ -302,7 +420,7 @@ internal static class GcBench
             GC.KeepAlive(s_keep);
             return 0;
         }
-        int warmSize = workload == "binarytrees" ? Math.Max(8, size - 4) : Math.Max(1024, size / 8);
+        int warmSize = workload == "binarytrees" ? Math.Max(8, size - 4) : workload == "pinheavy" ? size : Math.Max(1024, size / 8);
         long warmOps = Math.Max(1, ops / 8);
         s_state = 0x9E3779B97F4A7C15UL;
         Run(workload, warmSize, warmOps, null, false);

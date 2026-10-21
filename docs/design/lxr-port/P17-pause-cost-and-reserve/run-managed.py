@@ -24,6 +24,9 @@ EXTRA_CASES = ("weak-finalizer", "reregister", "weak-identity", "churn", "weak-i
 S6_CASES = ("finalizer-churn", "finalizer-churn-concurrent", "weak-churn", "resurrection", "prompt-collect",
              "pooled-reregister")
 S6_HEAP = dict(DOTNET_LXRImmixInitialMB="192", DOTNET_LXRLOSInitialMB="32", DOTNET_LXRManagedHeapHardLimitMB="224")
+# P17 S7: pinning. Natural collections run while pinned handles, `fixed` locals and pinned-object-heap arrays live.
+S7_CASES = ("pin-handles-churn", "fixed-pressure", "poh-churn", "pin-finalizers-weak", "pin-concurrent-trace")
+S7_HEAP = dict(DOTNET_LXRImmixInitialMB="96", DOTNET_LXRLOSInitialMB="32", DOTNET_LXRManagedHeapHardLimitMB="128")
 MODES = (("nonmoving", "0", "0"), ("nursery", "1", "0"), ("mature", "1", "1"))
 
 
@@ -55,13 +58,15 @@ def main():
             module = modules[native]
             for managed in ("Release", "Debug"):
                 fixture = args.fixtures / f"fixture-scope5-{managed}" / "runtime-tests.dll"
-                cases = FULL_CASES + (EXTRA_CASES + S6_CASES if managed == "Release" else ())
+                cases = FULL_CASES + (EXTRA_CASES + S6_CASES + S7_CASES if managed == "Release" else ())
                 for mode, nursery, mature in MODES:
                     for case in cases:
                         env = dict(base, DOTNET_GCPath=module, DOTNET_LXREvacuateNursery=nursery,
                                    DOTNET_LXREvacuateMature=mature)
                         if case in S6_CASES:
                             env.update(S6_HEAP)
+                        if case in S7_CASES:
+                            env.update(S7_HEAP)
                         command = [str(frame / host), str(fixture)]
                         command += [module] if case == "full" else ["--p7-lifecycle", case, module]
                         log = args.output / f"{native}-{managed}-{mode}-{case}.log"

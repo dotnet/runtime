@@ -5901,10 +5901,10 @@ namespace
         {
             return;
         }
-        Type small(64, 0);
-        Object* pinned = Allocate(engine, mutator, small);
-        Object* neighbour = Allocate(engine, mutator, small);
-        Object* other = Allocate(engine, mutator, small);
+        Type little(64, 0);
+        Object* pinned = Allocate(engine, mutator, little);
+        Object* neighbour = Allocate(engine, mutator, little);
+        Object* other = Allocate(engine, mutator, little);
         if (pinned == nullptr || neighbour == nullptr || other == nullptr)
         {
             return;
@@ -5936,7 +5936,7 @@ namespace
                 engine.GetPinnedRootCount() == 1,
             "the pin bit is clear at the end of the pause, and the pause counted one pinned root");
         // A pause without a pin sets no bit and copies what is young.
-        Object* young = Allocate(engine, mutator, small);
+        Object* young = Allocate(engine, mutator, little);
         roots.pinned = nullptr;
         roots.probeNeighbour = nullptr;
         roots.objects = {roots.objects[2], young};
@@ -6149,11 +6149,11 @@ namespace
         Check(BlockStateOf(engine, block, &lines) == ImmixBlockState::Reusable && lines < 64 &&
                 engine.IsPinnedBlock(StartOf(first)),
             "the lazy sweep makes the pinned block Reusable and it stays pinned");
-        Type small(24, 0);
+        Type little(24, 0);
         size_t inPinnedBlock = 0;
         for (size_t index = 0; index < 3000; index++)
         {
-            Object* object = Allocate(engine, mutator, small);
+            Object* object = Allocate(engine, mutator, little);
             if (object == nullptr)
             {
                 break;

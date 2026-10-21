@@ -4,6 +4,7 @@
     <AssemblyName>gctrace</AssemblyName>
     <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ImplicitUsings>disable</ImplicitUsings>
     <Optimize>true</Optimize>
     <DebugType>portable</DebugType>
