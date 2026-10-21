@@ -744,47 +744,6 @@ CONTEXT * GetManagedLiveCtx(Thread * pThread)
     return pCtx;
 }
 
-// Validate an object. Returns E_INVALIDARG or S_OK.
-HRESULT ValidateObject(Object *objPtr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    EX_TRY
-    {
-        // Use AVInRuntimeImplOkHolder.
-        AVInRuntimeImplOkayHolder AVOkay;
-
-        // NULL is certinally valid...
-        if (objPtr != NULL)
-        {
-            if (!objPtr->ValidateObjectWithPossibleAV())
-            {
-                LOG((LF_CORDB, LL_INFO10000, "GAV: object methodtable-class invariant doesn't hold.\n"));
-                hr = E_INVALIDARG;
-                goto LExit;
-            }
-        }
-
-    LExit: ;
-    }
-    EX_CATCH
-    {
-        LOG((LF_CORDB, LL_INFO10000, "GAV: exception indicated ref is bad.\n"));
-        hr = E_INVALIDARG;
-    }
-    EX_END_CATCH
-
-    return hr;
-}   // ValidateObject
-
-
 #ifdef FEATURE_DBGIPC_TRANSPORT_VM
 void
 ShutdownTransport()
