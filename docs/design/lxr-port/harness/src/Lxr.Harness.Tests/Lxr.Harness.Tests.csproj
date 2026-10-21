@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(HarnessTargetFramework)</TargetFramework>
+    <AssemblyName>Lxr.Harness.Tests</AssemblyName>
+    <RootNamespace>Lxr.Harness.Tests</RootNamespace>
+    <!--
+      No test framework package. The harness carries no PackageReference at all so it restores with no
+      feed and runs on CoreRun, where there is no package resolution; taking xunit for the tests alone
+      would have split it into a part that runs anywhere and a part that does not. TestRunner.cs is the
+      whole of the substitute.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lxr.Harness.Core\Lxr.Harness.Core.csproj" />
+    <ProjectReference Include="..\Lxr.Harness.Scenarios\Lxr.Harness.Scenarios.csproj" />
+    <ProjectReference Include="..\Lxr.Harness.Runner\Lxr.Harness.Runner.csproj" />
+  </ItemGroup>
+
+</Project>

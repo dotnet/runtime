@@ -136,6 +136,29 @@ struct CallbackState
     std::atomic<int>* customGcHeapObjectTypeCount;
 };
 
+struct ObjectReferenceState
+{
+    ObjectID object;
+    GCHeapEnumerationProfiler* instance;
+};
+
+static BOOL STDMETHODCALLTYPE object_reference_callback(
+    ObjectID root,
+    ObjectID* reference,
+    void* callbackState)
+{
+    ObjectReferenceState* state =
+        static_cast<ObjectReferenceState*>(callbackState);
+    if ((root != state->object) || (reference == nullptr) || (*reference == 0))
+    {
+        printf("Error: invalid object-reference callback\n");
+        state->instance->IncrementFailures();
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 static BOOL STDMETHODCALLTYPE heap_walk_fn(ObjectID object, void* callbackState)
 {
     CallbackState* state = static_cast<CallbackState*>(callbackState);
@@ -180,6 +203,21 @@ static BOOL STDMETHODCALLTYPE heap_walk_fn(ObjectID object, void* callbackState)
             state->instance->IncrementFailures();
             return FALSE;
         }
+    }
+
+    ObjectReferenceState referenceState = { object, state->instance };
+    hr = state->instance->pCorProfilerInfo->EnumerateObjectReferences(
+        object,
+        object_reference_callback,
+        &referenceState);
+    if (FAILED(hr))
+    {
+        printf(
+            "Error: failed to enumerate references for object 0x%p. hr=0x%x\n",
+            (void*)object,
+            hr);
+        state->instance->IncrementFailures();
+        return FALSE;
     }
 
     return TRUE;

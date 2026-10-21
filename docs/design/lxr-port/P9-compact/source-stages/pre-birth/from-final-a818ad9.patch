@@ -1,0 +1,188 @@
+--- a/docs/design/lxr-port/P4/lxr-rc-validation.cpp
++++ b/docs/design/lxr-port/P4/lxr-rc-validation.cpp
+@@ -365,7 +365,7 @@
+                 object->RawSetMethodTable(type.table);
+                 bool fast;
+                 if (engine.RecordFastAllocation(mutator, object, 24, &fast) != LxrRcResult::Success ||
+-                    !fast || engine.CompleteAllocation(object, 24, AllocationCompleteFlags::None, mutator) !=
++                    !fast || engine.CompleteAllocation(object, 24, AllocationCompleteFlags::None) !=
+                         LxrRcResult::Success)
+                 {
+                     return 1;
+@@ -417,7 +417,7 @@
+             object->RawSetMethodTable(type.table);
+             Check(engine.RecordFastAllocation(mutator, object, 24, &fast) == LxrRcResult::Success && fast,
+                 "helper consumption is contiguous, aligned and owned");
+-            Check(engine.CompleteAllocation(object, 24, AllocationCompleteFlags::None, mutator) == LxrRcResult::Success &&
++            Check(engine.CompleteAllocation(object, 24, AllocationCompleteFlags::None) == LxrRcResult::Success &&
+                 engine.GetObjectExtent(object) == 24, "every helper birth publishes its extent");
+             cursor += 24;
+             roots.push_back(object);
+--- a/src/coreclr/gc/lxr_gc.cpp
++++ b/src/coreclr/gc/lxr_gc.cpp
+@@ -647,7 +647,7 @@
+     {
+         heap->Fatal("LXR notifying helper did not publish an exact owned allocation.");
+     }
+-    if (heap->m_engine.CompleteAllocation(object, size, flags, mutator) != LxrRcResult::Success)
++    if (heap->m_engine.CompleteAllocation(object, size, flags) != LxrRcResult::Success)
+     {
+         heap->Fatal("LXR allocation-complete metadata publication failed.");
+     }
+--- a/src/coreclr/gc/lxr_reference_counting.cpp
++++ b/src/coreclr/gc/lxr_reference_counting.cpp
+@@ -196,8 +196,7 @@
+ 
+ LxrRcMutator::LxrRcMutator()
+     : engine(nullptr), state(0), identity(0), owner(0), allocator(),
+-      increments(nullptr), decrements(nullptr), publishedCursor(0), publishedLimit(0), birthBlock(0),
+-      pendingFastStart(0), pendingFastSize(0)
++      increments(nullptr), decrements(nullptr), publishedCursor(0), publishedLimit(0), birthBlock(0)
+ {
+ }
+ 
+@@ -705,14 +704,11 @@
+ LxrRcResult LxrReferenceCounting::RecordFastAllocation(
+     LxrRcMutator* mutator, Object* object, size_t size, bool* fast)
+ {
+-    if (mutator == nullptr || mutator->engine != this || fast == nullptr ||
+-        mutator->state.load(std::memory_order_acquire) != 2)
++    if (mutator == nullptr || mutator->engine != this || fast == nullptr)
+     {
+         return LxrRcResult::InvalidArgument;
+     }
+     *fast = false;
+-    mutator->pendingFastStart = 0;
+-    mutator->pendingFastSize = 0;
+     uintptr_t start = Start(object);
+     if (mutator->publishedLimit == 0 || start < mutator->publishedCursor)
+     {
+@@ -724,8 +720,6 @@
+         return LxrRcResult::InvariantViolation;
+     }
+     mutator->publishedCursor += size;
+-    mutator->pendingFastStart = start;
+-    mutator->pendingFastSize = size;
+     m_metrics[Allocations].fetch_add(1, std::memory_order_relaxed);
+     m_metrics[AllocatedBytes].fetch_add(size, std::memory_order_relaxed);
+     *fast = true;
+@@ -769,8 +763,6 @@
+         candidate.publishedCursor = 0;
+         candidate.publishedLimit = 0;
+         candidate.birthBlock = 0;
+-        candidate.pendingFastStart = 0;
+-        candidate.pendingFastSize = 0;
+         candidate.state.store(2, std::memory_order_release);
+         *mutator = &candidate;
+         return LxrRcResult::Success;
+@@ -1089,7 +1081,7 @@
+ }
+ 
+ LxrRcResult LxrReferenceCounting::CompleteAllocation(
+-    Object* object, size_t completeSize, AllocationCompleteFlags flags, LxrRcMutator* mutator)
++    Object* object, size_t completeSize, AllocationCompleteFlags flags)
+ {
+     if (object == nullptr || completeSize < MIN_OBJECT_SIZE ||
+         completeSize % sizeof(uintptr_t) != 0 || GetPhase() != LxrRcPhase::Mutator)
+@@ -1110,24 +1102,10 @@
+         return Fail(LxrRcResult::UnsupportedLifetime);
+     }
+     uintptr_t start = Start(object);
+-    bool cleared = mutator != nullptr && mutator->engine == this &&
+-        mutator->state.load(std::memory_order_acquire) == 2 &&
+-        mutator->pendingFastStart == start && mutator->pendingFastSize == completeSize;
+-    if (mutator != nullptr && mutator->engine == this)
+-    {
+-        mutator->pendingFastStart = 0;
+-        mutator->pendingFastSize = 0;
+-    }
+-    size_t index = (start - GetReservationStart()) / sizeof(uintptr_t);
+     LxrRcResult result;
+     if (IsImmix(start))
+     {
+-        if (ExtentSlot(index).load(std::memory_order_acquire) != 0)
+-        {
+-            return Fail(LxrRcResult::InvariantViolation);
+-        }
+-        result = FromMetadata(cleared ? m_counts.RegisterObjectInClearedSpan(start, completeSize) :
+-            m_counts.InitializeObjectQuiescent(start, completeSize));
++        result = FromMetadata(m_counts.InitializeObjectQuiescent(start, completeSize));
+     }
+     else if (IsLarge(start) && start % LxrLargeObjectSpace::PageBytes == 0 &&
+         m_metadata.IsDataRangeOwned(start, completeSize))
+@@ -1143,6 +1121,7 @@
+     {
+         return result;
+     }
++    size_t index = (start - GetReservationStart()) / sizeof(uintptr_t);
+     if (ExtentSlot(index).exchange(completeSize, std::memory_order_release) != 0)
+     {
+         return Fail(LxrRcResult::InvariantViolation);
+@@ -1396,8 +1375,6 @@
+                 continue;
+             }
+             mutator.birthBlock = 0;
+-            mutator.pendingFastStart = 0;
+-            mutator.pendingFastSize = 0;
+             if (mutator.publishedLimit != 0)
+             {
+                 return Fail(LxrRcResult::InvariantViolation);
+--- a/src/coreclr/gc/lxr_reference_counting.h
++++ b/src/coreclr/gc/lxr_reference_counting.h
+@@ -142,8 +142,6 @@
+     uintptr_t publishedCursor;
+     uintptr_t publishedLimit;
+     uintptr_t birthBlock;
+-    uintptr_t pendingFastStart;
+-    size_t pendingFastSize;
+ };
+ 
+ class LxrReferenceCounting final
+@@ -174,7 +172,7 @@
+     LxrRcResult RecordFastAllocation(LxrRcMutator* mutator, Object* object, size_t size, bool* fast);
+     LxrRcResult Allocate(LxrRcMutator* mutator, size_t completeSize, Object** object);
+     LxrRcResult CompleteAllocation(
+-        Object* object, size_t completeSize, AllocationCompleteFlags flags, LxrRcMutator* mutator = nullptr);
++        Object* object, size_t completeSize, AllocationCompleteFlags flags);
+     LxrRcResult LogBeforeWrite(
+         LxrRcMutator* mutator, Object** slot, Object* oldTarget);
+     LxrRcResult Collect(LxrRcCaptureRoots capture, void* context, uint32_t timeoutMilliseconds);
+--- a/src/coreclr/gc/reference_count.cpp
++++ b/src/coreclr/gc/reference_count.cpp
+@@ -85,26 +85,6 @@
+         result = SetValidObject(object, 1);
+     }
+     return result;
+-}
+-
+-SideMetadataResult ReferenceCountTable::RegisterObjectInClearedSpan(uintptr_t object, size_t size)
+-{
+-    if (size < MinimumObjectSize || size % sizeof(uintptr_t) != 0)
+-    {
+-        return SideMetadataResult::InvalidArgument;
+-    }
+-#ifdef _DEBUG
+-    SideMetadataResult result = ValidateUnregisteredObjectRange(object, size);
+-    if (result == SideMetadataResult::Success)
+-    {
+-        result = ValidateContinuationLines(object, size, true);
+-    }
+-    if (result != SideMetadataResult::Success)
+-    {
+-        return result;
+-    }
+-#endif // _DEBUG
+-    return SetValidObject(object, 1);
+ }
+ 
+ SideMetadataResult ReferenceCountTable::CopyObjectQuiescent(
+--- a/src/coreclr/gc/reference_count.h
++++ b/src/coreclr/gc/reference_count.h
+@@ -27,7 +27,6 @@
+     uintptr_t GetMaximumCount() const;
+ 
+     SideMetadataResult InitializeObjectQuiescent(uintptr_t object, size_t size);
+-    SideMetadataResult RegisterObjectInClearedSpan(uintptr_t object, size_t size);
+     SideMetadataResult CopyObjectQuiescent(
+         uintptr_t source,
+         uintptr_t destination,

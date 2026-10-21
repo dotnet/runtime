@@ -1,0 +1,8 @@
+<Project>
+
+  <!--
+    Intentionally empty. Present only to stop MSBuild's walk-up from reaching the repository's
+    Arcade Directory.Build.targets. See Directory.Build.props for the rationale.
+  -->
+
+</Project>

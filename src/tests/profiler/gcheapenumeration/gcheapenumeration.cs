@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -22,14 +24,14 @@ namespace Profiler.Tests
 
         public static int EnumerateGCHeapObjectsSingleThreadNoPriorSuspension()
         {
-            _rootObjects.Add(new CustomGCHeapObject());
+            AddLayoutRoots();
             EnumerateGCHeapObjectsWithoutProfilerRequestedRuntimeSuspension();
             return 100;
         }
 
         public static int EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension()
         {
-            _rootObjects.Add(new CustomGCHeapObject());
+            AddLayoutRoots();
             EnumerateGCHeapObjectsWithinProfilerRequestedRuntimeSuspension();
             return 100;
         }
@@ -38,9 +40,62 @@ namespace Profiler.Tests
         // ProfToEEInterfaceImpl::EnumerateGCHeapObjects should be invoked by the GarbageCollectionStarted callback
         public static int EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension()
         {
-            _rootObjects.Add(new CustomGCHeapObject());
+            AddLayoutRoots();
             GC.Collect();
             return 100;
+        }
+
+        private static void AddLayoutRoots()
+        {
+            object first = new();
+            object second = new();
+            _rootObjects.Add(new CustomGCHeapObject());
+            _rootObjects.Add(new SparseObject
+            {
+                First = first,
+                Number = 7,
+                Second = second,
+            });
+            _rootObjects.Add(new DerivedObject { Base = first, Derived = second });
+            _rootObjects.Add(new GenericObject<object> { Value = first });
+            _rootObjects.Add(new MixedValue { First = first, Number = 42, Second = null });
+            _rootObjects.Add(new MixedValue[]
+            {
+                new() { First = first, Number = 1, Second = null },
+                new() { First = null, Number = 2, Second = second },
+            });
+            _rootObjects.Add(new object?[] { first, null, second });
+            _rootObjects.Add(new object?[][]
+            {
+                new object?[] { first, null },
+                new object?[] { second },
+            });
+            _rootObjects.Add(new object?[2, 3]
+            {
+                { first, null, second },
+                { null, first, null },
+            });
+            _rootObjects.Add(new object?[22_000]);
+            _rootObjects.Add(GC.AllocateArray<object?>(17, pinned: true));
+            _rootObjects.Add((object)new MixedValue
+            {
+                First = first,
+                Number = 3,
+                Second = second,
+            });
+
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName("P15Collectible"),
+                AssemblyBuilderAccess.RunAndCollect);
+            TypeBuilder builder = assembly
+                .DefineDynamicModule("P15Collectible")
+                .DefineType("CollectibleReferenceObject");
+            builder.DefineField("Reference", typeof(object), FieldAttributes.Public);
+            Type type = builder.CreateType()!;
+            object instance = Activator.CreateInstance(type)!;
+            type.GetField("Reference")!.SetValue(instance, first);
+            _rootObjects.Add(type);
+            _rootObjects.Add(instance);
         }
 
         public static int Main(string[] args)
@@ -100,5 +155,34 @@ namespace Profiler.Tests
         }
 
         class CustomGCHeapObject {}
+
+        class SparseObject
+        {
+            public object? First;
+            public int Number;
+            public object? Second;
+        }
+
+        class BaseObject
+        {
+            public object? Base;
+        }
+
+        class DerivedObject : BaseObject
+        {
+            public object? Derived;
+        }
+
+        class GenericObject<T>
+        {
+            public T? Value;
+        }
+
+        struct MixedValue
+        {
+            public object? First;
+            public int Number;
+            public object? Second;
+        }
     }
 }

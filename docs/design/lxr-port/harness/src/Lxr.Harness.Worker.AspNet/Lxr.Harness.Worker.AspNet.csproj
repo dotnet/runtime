@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(HarnessTargetFramework)</TargetFramework>
+    <AssemblyName>Lxr.Harness.Worker.AspNet</AssemblyName>
+    <RootNamespace>Lxr.Harness.Worker.AspNet</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      This framework reference is why the ASP.NET scenario lives in a separate executable. A
+      FrameworkReference flows transitively to every project that references the assembly carrying it,
+      so putting it on Lxr.Harness.Scenarios would make all ten scenarios depend on a shared framework
+      this repository does not build - and therefore make all ten unable to run on the corerun host
+      that the future LXR arm requires. Isolating it costs one project and preserves that property.
+    -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\Lxr.Harness.Core\Lxr.Harness.Core.csproj" />
+  </ItemGroup>
+
+</Project>

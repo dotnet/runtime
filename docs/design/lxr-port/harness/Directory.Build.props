@@ -1,0 +1,41 @@
+<Project>
+
+  <!--
+    This file deliberately does NOT import a parent Directory.Build.props.
+
+    MSBuild's walk-up for Directory.Build.props stops at the first file it finds, so the mere
+    existence of this file isolates the harness from the repository's Arcade SDK build. That
+    isolation is a requirement, not a convenience: the harness must be buildable and runnable
+    without perturbing - or being perturbed by - a runtime build. See P0.4-harness.md.
+  -->
+
+  <PropertyGroup>
+    <HarnessRoot>$(MSBuildThisFileDirectory)</HarnessRoot>
+    <HarnessRepoRoot>$([MSBuild]::NormalizeDirectory('$(HarnessRoot)', '..', '..', '..', '..'))</HarnessRepoRoot>
+    <!-- Matched to the SDK pinned by the repository's global.json so that harness assemblies and a
+         locally built runtime are in the same version band. Override to retarget. -->
+    <HarnessTargetFramework Condition="'$(HarnessTargetFramework)' == ''">net11.0</HarnessTargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Keep every intermediate and output file out of docs/ so the working tree stays clean. -->
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(HarnessRepoRoot)artifacts\lxr-harness\build</ArtifactsPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>$(HarnessTargetFramework)</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <RollForward>LatestMajor</RollForward>
+    <!-- The harness is Windows-first because crash capture and the machine probes are; the
+         measurement and statistics code is portable. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+</Project>

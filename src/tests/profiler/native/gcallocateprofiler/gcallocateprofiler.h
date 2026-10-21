@@ -20,7 +20,25 @@ public:
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
 
 private:
+    enum class PlacementFlagPerturbation
+    {
+        None,
+        Drop,
+        Swap,
+    };
+
+    typedef int64_t (*GetAllocationNotificationCount)();
+    typedef uint32_t (*GetAllocationNotificationFlags)(int64_t);
+    typedef void* (*GetAllocationNotificationObject)(int64_t);
+    typedef void (*ResetAllocationNotifications)(void*, size_t);
+
     std::atomic<int> _gcLOHAllocations;
     std::atomic<int> _gcPOHAllocations;
     std::atomic<int> _failures;
+    GetAllocationNotificationCount _getAllocationNotificationCount = nullptr;
+    GetAllocationNotificationCount _getAllocationNotificationErrorCount = nullptr;
+    GetAllocationNotificationFlags _getAllocationNotificationFlags = nullptr;
+    GetAllocationNotificationObject _getAllocationNotificationObject = nullptr;
+    ResetAllocationNotifications _resetAllocationNotifications = nullptr;
+    PlacementFlagPerturbation _placementFlagPerturbation = PlacementFlagPerturbation::None;
 };

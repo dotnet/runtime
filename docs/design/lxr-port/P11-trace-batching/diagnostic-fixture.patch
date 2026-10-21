@@ -1,0 +1,98 @@
+--- a/Program.cs
++++ b/Program.cs
+@@ -1136,6 +1136,9 @@
+             ownedStart = Marshal.GetDelegateForFunctionPointer<NativeSize>(NativeLibrary.GetExport(module, "GC_LxrPrototype_GetOwnedStart"));
+             ownedBytes = Marshal.GetDelegateForFunctionPointer<NativeSize>(NativeLibrary.GetExport(module, "GC_LxrPrototype_GetOwnedBytes"));
+             Check(metric(0) == 1 && metric(1) > 0, "Vertical did not load owned LXR execution.");
++            Check(metric(78) == (Environment.GetEnvironmentVariable("DOTNET_LXREvacuateNursery") == "1" ? 1ul : 0ul) &&
++                metric(90) == (Environment.GetEnvironmentVariable("DOTNET_LXREvacuateMature") == "1" ? 1ul : 0ul),
++                "Pressure characterization loaded different movement modes.");
+             if (s_storageDiagnostic)
+             {
+                 enableStorage = Marshal.GetDelegateForFunctionPointer<EnableStorage>(
+@@ -1160,12 +1163,12 @@
+             for (int index = 0; index < preparedMutation.Length; index++) { preparedMutation[index] = AllocateSmall(index); }
+         }
+         GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+-        using Process? scopedCpu = s_storageDiagnostic ? Process.GetCurrentProcess() : null;
++        using Process scopedCpu = Process.GetCurrentProcess();
+         if (enableStorage is not null)
+         {
+             Check(enableStorage() == 0, "Storage accounting must begin with quiescent, inactive tracing.");
+         }
+-        long cpuBefore = scopedCpu?.TotalProcessorTime.Ticks ?? 0;
++        long cpuBefore = scopedCpu.TotalProcessorTime.Ticks;
+         ulong initialBefore = s_storageDiagnostic && lxr ? metric!(10) : 0;
+         ulong finalBefore = s_storageDiagnostic && lxr ? metric!(11) : 0;
+         ulong fullBefore = s_storageDiagnostic && lxr ? metric!(12) : 0;
+@@ -1177,7 +1180,7 @@
+         (object roots, long checksum, long operations, bool exhausted) = VerticalBody(args[1], preparedMutation);
+         if (args[4] == "injected") { Thread.Sleep(200); }
+         double elapsed = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+-        double cpu = TimeSpan.FromTicks((scopedCpu?.TotalProcessorTime.Ticks ?? 0) - cpuBefore).TotalMilliseconds;
++        double cpu = TimeSpan.FromTicks(scopedCpu.TotalProcessorTime.Ticks - cpuBefore).TotalMilliseconds;
+         ulong initial = s_storageDiagnostic && lxr ? metric!(10) - initialBefore : 0;
+         ulong final = s_storageDiagnostic && lxr ? metric!(11) - finalBefore : 0;
+         ulong full = s_storageDiagnostic && lxr ? metric!(12) - fullBefore : 0;
+@@ -1212,9 +1215,30 @@
+                 "Copied-volume prediction must not bypass hard-limit OOM or blocking recovery.");
+             Check(new byte[1024].Length == 1024, "Growth hard-limit exhaustion prevented recovery.");
+         }
++        List<Dictionary<string, string>> pressureModules = new();
++        foreach (ProcessModule native in process.Modules)
++        {
++            if (Path.GetFileName(native.FileName) is "coreclr.dll" or "clrjit.dll" or "clrlxrgc.dll" or
++                "libcoreclr.so" or "libclrjit.so" or "libclrlxrgc.so" or "corerun" or "corerun.exe")
++            {
++                pressureModules.Add(new() { ["path"] = native.FileName, ["sha256"] = Hash(native.FileName) });
++            }
++        }
++        string pressureCorelib = Path.Combine(Path.GetDirectoryName(modulePath)!, "System.Private.CoreLib.dll");
++        Console.WriteLine("pressure_binding=" + JsonSerializer.Serialize(new Dictionary<string, object?>
++        {
++            ["loaded_native_modules"] = pressureModules,
++            ["framework_corelib_input"] = new Dictionary<string, string>
++            {
++                ["path"] = pressureCorelib, ["sha256"] = Hash(pressureCorelib),
++            },
++            ["nursery"] = metric?.Invoke(78), ["mature"] = metric?.Invoke(90),
++            ["admitted_bytes"] = metric?.Invoke(36),
++        }));
+         Console.WriteLine($"vertical={args[1]} collector={args[2]} control={args[4]} " +
+             $"module_sha256={Hash(modulePath)} operations={operations} checksum={checksum} exhausted={exhausted} " +
+             $"elapsed_ms={elapsed.ToString("F3", CultureInfo.InvariantCulture)} " +
++            $"cpu_ms={cpu.ToString("F3", CultureInfo.InvariantCulture)} " +
+             $"post_full_ms={postFull.ToString("F3", CultureInfo.InvariantCulture)} " +
+             $"pause_ms={pause.ToString("F3", CultureInfo.InvariantCulture)} allocated_bytes={allocated} collections={collections} " +
+             $"working_set_bytes={workingSet} private_bytes={process.PrivateMemorySize64} " +
+@@ -2060,6 +2084,30 @@
+                 });
+             }
+             snapshot["components"] = components;
++            GetIdentity identity = Marshal.GetDelegateForFunctionPointer<GetIdentity>(
++                NativeLibrary.GetExport(module, "GC_LxrPrototype_GetIdentity"));
++            bool batchMetrics = Marshal.PtrToStringUTF8(identity())!.Contains(
++                "full-trace-batch-v1", StringComparison.Ordinal);
++            Dictionary<string, ulong?> counters = new();
++            (string Name, uint Metric)[] existing =
++            [
++                ("work_allocations", 48), ("work_bytes", 49), ("work_peak", 50), ("work_copied_bytes", 51),
++                ("scan_allocations", 52), ("scan_bytes", 53), ("scan_peak", 54),
++                ("collections", 5), ("full", 12), ("objects", 13), ("references", 14),
++                ("satb", 15), ("splits", 18), ("increments", 23), ("decrements", 24),
++                ("nursery_objects", 79), ("nursery_bytes", 80), ("mature_objects", 95),
++                ("mature_bytes", 96), ("remembered_entries", 98), ("replayed_entries", 100),
++            ];
++            foreach ((string name, uint index) in existing)
++            {
++                counters[name] = metric(index);
++            }
++            string[] batches = ["batch_instances", "batch_targets", "batch_flushes", "batch_bytes", "batch_peak"];
++            for (uint index = 0; index < batches.Length; index++)
++            {
++                counters[batches[index]] = batchMetrics ? metric(232 + index) : null;
++            }
++            snapshot["packet_counters"] = counters;
+         }
+         return snapshot;
+     }

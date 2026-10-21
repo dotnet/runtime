@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <!-- 'fixed' blocks are a mechanism under test in pinning-heavy-io, not an implementation shortcut. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lxr.Harness.Core\Lxr.Harness.Core.csproj" />
+  </ItemGroup>
+
+</Project>

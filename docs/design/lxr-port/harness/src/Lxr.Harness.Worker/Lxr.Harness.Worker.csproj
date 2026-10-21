@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(HarnessTargetFramework)</TargetFramework>
+    <AssemblyName>Lxr.Harness.Worker</AssemblyName>
+    <RootNamespace>Lxr.Harness.Worker</RootNamespace>
+    <!--
+      Deliberately no FrameworkReference to Microsoft.AspNetCore.App. A framework reference propagates
+      to everything that runs in this process, and the ASP.NET Core shared framework is not produced by
+      this repository, so adding one here would make every scenario - including the nine that have
+      nothing to do with HTTP - unable to run on the corerun host and therefore unable to reach the
+      future LXR arm. The Kestrel scenario lives in Lxr.Harness.Worker.AspNet instead.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lxr.Harness.Core\Lxr.Harness.Core.csproj" />
+    <ProjectReference Include="..\Lxr.Harness.Scenarios\Lxr.Harness.Scenarios.csproj" />
+  </ItemGroup>
+
+</Project>

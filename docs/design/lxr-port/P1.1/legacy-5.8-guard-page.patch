@@ -1,0 +1,89 @@
+diff --git a/src/coreclr/gc/CMakeLists.txt b/src/coreclr/gc/CMakeLists.txt
+index 32eb0a81d14..737db17e06a 100644
+--- a/src/coreclr/gc/CMakeLists.txt
++++ b/src/coreclr/gc/CMakeLists.txt
+@@ -160,6 +160,7 @@ if(FEATURE_STANDALONE_GC)
+-
++
+   add_library_clr(clrgc_gc_wks OBJECT ${GC_WKS_SVR_SOURCES})
+   add_dependencies(clrgc_gc_wks eventing_headers)
++  target_compile_definitions(clrgc_gc_wks PRIVATE P11_WRITE_BARRIER_GUARD_PAGE_TEST)
+   set(CLRGC_OBJECTS
+     $<TARGET_OBJECTS:clrgc_gc_wks>)
+   if(FEATURE_SVR_GC)
+@@ -167,6 +168,7 @@ if(FEATURE_STANDALONE_GC)
+     add_library_clr(clrgc_gc_svr OBJECT ${GC_WKS_SVR_SOURCES})
+     add_dependencies(clrgc_gc_svr eventing_headers)
+     target_compile_definitions(clrgc_gc_svr PRIVATE SERVER_GC)
++    target_compile_definitions(clrgc_gc_svr PRIVATE P11_WRITE_BARRIER_GUARD_PAGE_TEST)
+     list(APPEND CLRGC_OBJECTS
+       $<TARGET_OBJECTS:clrgc_gc_svr>)
+   endif()
+diff --git a/src/coreclr/gc/gc.cpp b/src/coreclr/gc/gc.cpp
+index 6573d07ad8c..f64ab5ab891 100644
+--- a/src/coreclr/gc/gc.cpp
++++ b/src/coreclr/gc/gc.cpp
+@@ -617,24 +617,47 @@ void stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemeral_h
+ #endif //USE_REGIONS
+                                    )
+ {
+-    WriteBarrierParameters args = {};
+-    args.operation = WriteBarrierOp::Initialize;
+-    args.is_runtime_suspended = true;
+-    args.requires_upper_bounds_check = false;
+-    args.card_table = g_gc_card_table;
++#ifdef P11_WRITE_BARRIER_GUARD_PAGE_TEST
++    SYSTEM_INFO system_info;
++    GetSystemInfo(&system_info);
++    size_t page_size = system_info.dwPageSize;
++    uint8_t* pages = static_cast<uint8_t*>(VirtualAlloc(
++        nullptr, page_size * 2, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE));
++    assert(pages != nullptr);
++
++    DWORD old_protection;
++    bool protected_page = !!VirtualProtect(
++        pages + page_size, page_size, PAGE_NOACCESS, &old_protection);
++    assert(protected_page);
++
++    WriteBarrierParameters* args =
++        reinterpret_cast<WriteBarrierParameters*>(pages + page_size - sizeof(WriteBarrierParameters));
++    memset(args, 0, sizeof(*args));
++#else
++    WriteBarrierParameters args_storage = {};
++    WriteBarrierParameters* args = &args_storage;
++#endif
++    args->operation = WriteBarrierOp::Initialize;
++    args->is_runtime_suspended = true;
++    args->requires_upper_bounds_check = false;
++    args->card_table = g_gc_card_table;
+-
++
+ #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+-    args.card_bundle_table = g_gc_card_bundle_table;
++    args->card_bundle_table = g_gc_card_bundle_table;
+ #endif
+-
++
+-    args.lowest_address = g_gc_lowest_address;
+-    args.highest_address = g_gc_highest_address;
+-    args.ephemeral_low = ephemeral_low;
+-    args.ephemeral_high = ephemeral_high;
++    args->lowest_address = g_gc_lowest_address;
++    args->highest_address = g_gc_highest_address;
++    args->ephemeral_low = ephemeral_low;
++    args->ephemeral_high = ephemeral_high;
+-
++
+ #ifdef USE_REGIONS
+-    region_write_barrier_settings (&args, map_region_to_generation_skewed, region_shr);
++    region_write_barrier_settings (args, map_region_to_generation_skewed, region_shr);
+ #endif //USE_REGIONS
+-
++
+-    GCToEEInterface::StompWriteBarrier(&args);
++    GCToEEInterface::StompWriteBarrier(args);
++#ifdef P11_WRITE_BARRIER_GUARD_PAGE_TEST
++    bool released_pages = !!VirtualFree(pages, 0, MEM_RELEASE);
++    assert(released_pages);
++#endif
+ }

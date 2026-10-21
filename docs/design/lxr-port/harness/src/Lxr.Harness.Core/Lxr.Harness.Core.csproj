@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <!-- NativeBuffer<T> holds the harness's per-operation bookkeeping off the GC heap, so that
+         instrumentation is not charged to the heap budget the experiment pins. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WaitUntil is an implementation detail of the dispatcher, but its overshoot is a measured
+         property of the harness: the tests assert it directly rather than inferring it from a run. -->
+    <InternalsVisibleTo Include="Lxr.Harness.Tests" />
+  </ItemGroup>
+
+</Project>

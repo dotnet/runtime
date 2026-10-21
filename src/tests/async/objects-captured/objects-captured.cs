@@ -22,6 +22,50 @@ public class Async2ObjectsWithYields
         return 0;
     }
 
+    private struct MixedElement
+    {
+        public object? First;
+        public nint Scalar;
+        public object? Second;
+    }
+
+    [InlineArray(2048)]
+    private struct VeryLargeMixedElements
+    {
+        private MixedElement _element0;
+    }
+
+    private struct VeryLargeAsyncResult
+    {
+        public nint Prefix;
+        public VeryLargeMixedElements Elements;
+    }
+
+    private static async Task<VeryLargeAsyncResult> GetVeryLargeResult(
+        object first,
+        object second)
+    {
+        await Task.Yield();
+        VeryLargeAsyncResult result = default;
+        result.Prefix = 42;
+        result.Elements[0] = new MixedElement { First = first, Scalar = 101, Second = second };
+        result.Elements[2047] = new MixedElement { First = second, Scalar = 202, Second = first };
+        return result;
+    }
+
+    private static async Task<bool> ValidateVeryLargeResult(
+        object first,
+        object second)
+    {
+        VeryLargeAsyncResult large = await GetVeryLargeResult(first, second);
+        GC.Collect();
+        return (large.Prefix == 42) &&
+            ReferenceEquals(large.Elements[0].First, first) &&
+            ReferenceEquals(large.Elements[0].Second, second) &&
+            ReferenceEquals(large.Elements[2047].First, second) &&
+            ReferenceEquals(large.Elements[2047].Second, first);
+    }
+
     [RuntimeAsyncMethodGeneration(false)]
     private static async Task<int> AsyncEntry()
     {
@@ -32,6 +76,13 @@ public class Async2ObjectsWithYields
             await Task.Yield();
             GC.Collect();
             result = await tsk;
+        }
+
+        object first = new();
+        object second = new();
+        if (!await ValidateVeryLargeResult(first, second))
+        {
+            return -1;
         }
 
         // the result should be 20 * (20 - 1) => 190

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(HarnessTargetFramework)</TargetFramework>
+    <AssemblyName>Lxr.Harness.Runner</AssemblyName>
+    <RootNamespace>Lxr.Harness.Runner</RootNamespace>
+    <!--
+      No reference to either worker project. The runner launches them as separate processes precisely
+      so that its own runtime configuration cannot contaminate the process under test, and referencing
+      them would put the ASP.NET Core framework reference back into the runner's own dependency graph.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lxr.Harness.Core\Lxr.Harness.Core.csproj" />
+  </ItemGroup>
+
+</Project>
