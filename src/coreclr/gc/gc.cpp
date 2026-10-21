@@ -712,7 +712,7 @@ HRESULT stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemera
         return S_OK;
     }
 
-    // Runtimes predating the 5.9 tail implement the historical card-table
+    // Runtimes predating the 6.1 tail implement the historical card-table
     // behavior and leave the acknowledgment untouched.
     if ((args.write_barrier_shape == WriteBarrierShape::CardTable) &&
         (args.write_barrier_request_status == WriteBarrierRequestStatus::NotProcessed))

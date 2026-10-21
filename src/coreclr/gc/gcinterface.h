@@ -379,7 +379,7 @@ struct WriteBarrierParameters
 
     // The write-barrier mechanics requested by the collector. Used only for
     // WriteBarrierOp::Initialize. CardTable is the compatibility default. The
-    // explicit pointer alignment keeps the tail beyond the complete 5.8
+    // explicit pointer alignment keeps the tail beyond the complete 6.0
     // parameter block, including its trailing padding.
     alignas(void*) WriteBarrierShape write_barrier_shape;
 
@@ -391,17 +391,30 @@ struct WriteBarrierParameters
     WriteBarrierSideMetadataParameters write_barrier_side_metadata;
 
     // Used only when write_barrier_shape is SideMetadataFieldLog. This tail is
-    // present when the collector reports interface version 5.10 or later.
+    // present when the collector reports interface version 6.2 or later.
     alignas(void*) WriteBarrierRangeSlowPath write_barrier_range_slow_path;
     WriteBarrierDependentEdgeSlowPath write_barrier_dependent_edge_slow_path;
 
-    // Present when the collector reports interface version 5.11 or later.
+    // Present when the collector reports interface version 6.3 or later.
     WriteBarrierEpochReset write_barrier_epoch_reset;
 
     // Used only when write_barrier_shape is SideMetadataFieldLog. This tail is
-    // present when the collector reports interface version 5.12 or later.
+    // present when the collector reports interface version 6.4 or later.
     alignas(void*) WriteBarrierBulkScanParameters write_barrier_bulk_scan;
 };
+
+// The 6.0 block (custom GC support) ends with parameters_mask. The tail that the LXR port adds must start
+// after it and keep its order, so that a collector built against 6.0 (for example Satori) and a runtime
+// that knows the tail agree on every offset the collector provides.
+static_assert(offsetof(WriteBarrierParameters, write_barrier_shape) >=
+              (offsetof(WriteBarrierParameters, parameters_mask) + sizeof(WriteBarrierParametersMask)),
+              "The LXR tail of WriteBarrierParameters must follow the 6.0 block");
+static_assert(offsetof(WriteBarrierParameters, write_barrier_shape) < offsetof(WriteBarrierParameters, write_barrier_request_status) &&
+              offsetof(WriteBarrierParameters, write_barrier_request_status) < offsetof(WriteBarrierParameters, write_barrier_side_metadata) &&
+              offsetof(WriteBarrierParameters, write_barrier_side_metadata) < offsetof(WriteBarrierParameters, write_barrier_range_slow_path) &&
+              offsetof(WriteBarrierParameters, write_barrier_range_slow_path) < offsetof(WriteBarrierParameters, write_barrier_epoch_reset) &&
+              offsetof(WriteBarrierParameters, write_barrier_epoch_reset) < offsetof(WriteBarrierParameters, write_barrier_bulk_scan),
+              "The LXR tail of WriteBarrierParameters must keep its order");
 
 using WriteBarrierFunction = void (*)(void* context, Object** dst, Object* ref);
 using IsInGCHeapFunction = bool (*)(void* context, void* address);
@@ -1416,7 +1429,7 @@ public:
     // matter where the EE copies it to.
     virtual void GetAssignRefFunctions(void** assignRef, size_t* assignRefSize, void** assignRefChecked, size_t* assignRefCheckedSize, uintptr_t** avLocationsList, GCWriteBarrierPatchableValue** patchableValues) PURE_VIRTUAL
     // Returns the immutable allocation-complete notification request. The EE
-    // calls this only for GC interface version 5.13 or later. Collectors built
+    // calls this only for GC interface version 6.5 or later. Collectors built
     // from older source inherit a process-lifetime disabled request.
     virtual AllocationNotificationParameters* GetAllocationNotificationParameters()
     {
@@ -1425,7 +1438,7 @@ public:
     }
 
     // Returns the object-reference enumeration request. The EE calls this only
-    // for GC interface version 5.14 or later. Collectors built from older
+    // for GC interface version 6.6 or later. Collectors built from older
     // source inherit a process-lifetime disabled request.
     virtual ObjectReferenceEnumerationParameters* GetObjectReferenceEnumerationParameters()
     {
@@ -1434,7 +1447,7 @@ public:
     }
 
     // Returns the object-header bit request. The EE calls this only for GC
-    // interface version 5.15 or later. Collectors built from older source
+    // interface version 6.7 or later. Collectors built from older source
     // inherit a process-lifetime disabled request.
     virtual ObjectHeaderBitsParameters* GetObjectHeaderBitsParameters()
     {
