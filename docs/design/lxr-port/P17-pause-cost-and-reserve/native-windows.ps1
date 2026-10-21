@@ -26,7 +26,7 @@ $failed = 0
 $selectors = '', '--log-storage', '--mature', '--mature-remset', '--mature-reader', '--mature-retained-owner', '--mature-released-candidate',
     '--mature-headroom', '--mature-completed-scan', '--mature-remset-whole', '--mature-remset-wrap', '--mature-remset-same-shape',
     '--mature-remset-boundaries', '--nursery', '--nursery-reader', '--root-batching', '--trace-batching', '--aux-retirement',
-    '--object-planes', '--storage-diagnostics', '--lifetime', '--p8-policy', '--p8-storage', '--trace', '--first-store-churn', '--inline-metadata', '--lazy-large-release', '--s3-bookkeeping', '--s4-sweep', '--s5b-overshoot', '--s6-registry', '--s7-pins'
+    '--object-planes', '--storage-diagnostics', '--lifetime', '--p8-policy', '--p8-storage', '--trace', '--first-store-churn', '--inline-metadata', '--lazy-large-release', '--s3-bookkeeping', '--s4-sweep', '--s5b-overshoot', '--s6-registry', '--s7-pins', '--fresh-block-race'
 foreach ($sel in $selectors) {
     $name = if ($sel) { $sel } else { 'default' }
     $log = Join-Path $Output "run$name.log"

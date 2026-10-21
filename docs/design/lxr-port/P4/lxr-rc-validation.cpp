@@ -6180,10 +6180,136 @@ namespace
         }
         ValidateS7PinnedRecycling();
     }
+
+    // ---- Root capture fix. A fresh block that one thread has taken and returned in the current epoch holds live
+    // objects until the pause. A second thread that read the block state before the first thread took the block must
+    // not take it afterwards: the clear of a fresh block would erase the objects of the first thread. ----
+
+    struct FreshRaceContext final
+    {
+        ImmixBlockManager* blocks;
+        uintptr_t owner;
+        bool armed;
+        bool taken;
+        bool returned;
+        uintptr_t block;
+    };
+
+    constexpr uint64_t FreshRaceSignature = UINT64_C(0x5ca1ab1e0badf00d);
+
+    // Runs between the unlocked checks and the locked acquire of the allocating thread: another thread takes the same
+    // block, writes its objects and returns the block.
+    void FreshRaceHook(void* context, uintptr_t candidate)
+    {
+        FreshRaceContext* race = static_cast<FreshRaceContext*>(context);
+        if (!race->armed)
+        {
+            return;
+        }
+        race->armed = false;
+        ImmixBlockOperationStatus status;
+        race->taken = race->blocks->TryAcquire(
+                candidate, race->owner, ImmixBlockAcquireKind::MutatorFresh, &status) == SideMetadataResult::Success &&
+            status == ImmixBlockOperationStatus::Updated;
+        if (!race->taken)
+        {
+            return;
+        }
+        race->block = candidate;
+        uint64_t* words = reinterpret_cast<uint64_t*>(candidate);
+        for (size_t index = 0; index < ImmixBlockGeometry::BlockBytes / sizeof(uint64_t); index++)
+        {
+            words[index] = FreshRaceSignature + index;
+        }
+        race->returned = race->blocks->TryReturn(candidate, race->owner, &status) == SideMetadataResult::Success &&
+            status == ImmixBlockOperationStatus::Updated;
+    }
+
+    void ValidateFreshBlockRace()
+    {
+        constexpr size_t BlockCount = 4;
+        constexpr size_t ArenaSize = BlockCount * ImmixBlockGeometry::BlockBytes;
+        constexpr uintptr_t OwnerFirst = 0x2400;
+        constexpr uintptr_t OwnerSecond = 0x2500;
+        constexpr uintptr_t OwnerThird = 0x2600;
+        uint8_t* arena = static_cast<uint8_t*>(GCToOSInterface::VirtualReserve(
+            ArenaSize, ImmixBlockGeometry::BlockBytes, VirtualReserveFlags::None));
+        if (!Check(arena != nullptr && reinterpret_cast<uintptr_t>(arena) < ImmixBlockGeometry::AddressLimit &&
+                GCToOSInterface::VirtualCommit(arena, ArenaSize), "the fresh block race arena is reserved"))
+        {
+            return;
+        }
+        uintptr_t start = reinterpret_cast<uintptr_t>(arena);
+        LxrSideMetadataLayout layout;
+        SideMetadataManager metadata;
+        ImmixBlockManager blocks;
+        ImmixAllocationManager allocation;
+        ImmixBumpAllocator allocator;
+        bool ready = LxrSideMetadataLayout::Create(1, &layout) == SideMetadataResult::Success &&
+            metadata.Initialize(&layout) == SideMetadataResult::Success &&
+            blocks.Initialize(&metadata) == SideMetadataResult::Success &&
+            blocks.RegisterBlockRange(start, ArenaSize) == SideMetadataResult::Success &&
+            allocation.Initialize(&metadata, &blocks, start, ArenaSize, 1) == SideMetadataResult::Success &&
+            allocator.Initialize(&allocation, OwnerSecond) == SideMetadataResult::Success;
+        if (Check(ready, "the fresh block race fixture initializes"))
+        {
+            FreshRaceContext race{&blocks, OwnerFirst, true, false, false, 0};
+            allocation.SetAfterPrecheckHookForTest(FreshRaceHook, &race);
+            ImmixAllocationStatus status = ImmixAllocationStatus::InvalidRequest;
+            SideMetadataResult refill = allocator.TryRefill(
+                ImmixAllocationSource::MutatorFresh, ImmixMarkingContext::Inactive, &status);
+            allocation.SetAfterPrecheckHookForTest(nullptr, nullptr);
+            Check(race.taken && race.returned,
+                "the first thread takes the candidate block, fills it and returns it inside the window");
+            Check(refill == SideMetadataResult::Success && status == ImmixAllocationStatus::Ready &&
+                    allocator.GetBlock() != 0,
+                "the second thread still gets a block");
+            Check(allocator.GetBlock() != race.block,
+                "the second thread does not take the block that the first thread filled in the same epoch");
+            const uint64_t* words = reinterpret_cast<const uint64_t*>(race.block);
+            size_t damaged = 0;
+            for (size_t index = 0; index < ImmixBlockGeometry::BlockBytes / sizeof(uint64_t); index++)
+            {
+                damaged += words[index] != FreshRaceSignature + index ? 1 : 0;
+            }
+            Check(damaged == 0, "the objects of the first thread are not cleared by the second thread");
+
+            ImmixBlockOperationStatus blockStatus;
+            bool nursery = false;
+            Check(blocks.IsNursery(race.block, &nursery) == SideMetadataResult::Success && nursery,
+                "the returned block is still a nursery block of this epoch");
+            SideMetadataResult direct = blocks.TryAcquire(
+                race.block, OwnerThird, ImmixBlockAcquireKind::MutatorFresh, &blockStatus);
+            Check(direct == SideMetadataResult::Success && blockStatus == ImmixBlockOperationStatus::Stale,
+                "a locked fresh mutator acquire of a nursery block is stale");
+
+            // The next epoch: the block is no longer a nursery block, and a fresh mutator acquire may take it.
+            ImmixBlockOperationStatus pause;
+            bool flipped = blocks.StartGcPause(&pause) == SideMetadataResult::Success &&
+                pause == ImmixBlockOperationStatus::Updated &&
+                blocks.ReleaseGcPause(&pause) == SideMetadataResult::Success &&
+                pause == ImmixBlockOperationStatus::Updated;
+            Check(flipped, "the pause flips the epoch");
+            direct = blocks.TryAcquire(race.block, OwnerThird, ImmixBlockAcquireKind::MutatorFresh, &blockStatus);
+            Check(direct == SideMetadataResult::Success && blockStatus == ImmixBlockOperationStatus::Updated,
+                "after the epoch flip a fresh mutator acquire takes the block");
+        }
+        allocation.Shutdown();
+        blocks.Shutdown();
+        metadata.Shutdown();
+        GCToOSInterface::VirtualRelease(arena, ArenaSize);
+    }
 }
 
 int main(int argc, char** argv)
 {
+    if (argc == 2 && strcmp(argv[1], "--fresh-block-race") == 0)
+    {
+        ValidateFreshBlockRace();
+        std::printf("%s: %d/%d fresh block race checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
     if (argc == 2 && strcmp(argv[1], "--s7-pins") == 0)
     {
         ValidateS7Pins();

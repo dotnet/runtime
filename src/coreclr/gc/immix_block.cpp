@@ -660,8 +660,17 @@ SideMetadataResult ImmixBlockManager::TryAcquire(
         (blockEpoch == globalEpoch);
     bool nursery =
         (state == ImmixBlockState::Unallocated) && nurseryOrReusing;
+    // A fresh mutator acquire checks the nursery here, under the block lock, and not only in AcquireBlock. AcquireBlock
+    // reads the block state before this call without the lock. A thread that is slow between the two steps would
+    // otherwise take a block that another thread has acquired, filled and returned in the meantime. The block stays
+    // Unallocated until the pause, and the clear of a fresh block would erase the live objects of the other thread.
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_FRESH_NURSERY_RACE_CONTROL)
+    bool nurseryDenied = (kind == ImmixBlockAcquireKind::GcCopyFresh) || (kind == ImmixBlockAcquireKind::MutatorFresh);
+#else
+    bool nurseryDenied = kind == ImmixBlockAcquireKind::GcCopyFresh;
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_FRESH_NURSERY_RACE_CONTROL
     if ((!fresh && (reusing || (!mutator && gcReusing))) ||
-        ((kind == ImmixBlockAcquireKind::GcCopyFresh) && nursery))
+        (nurseryDenied && nursery))
     {
         *status = ImmixBlockOperationStatus::Stale;
         Unlock(block);

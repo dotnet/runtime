@@ -1116,6 +1116,18 @@ namespace
         }
         Expect("exactly one log winner", winners.load() == 1);
 
+        // The first contention test took DataStart in this epoch. A block that a mutator took in an epoch is a nursery
+        // block until the epoch flips, and a fresh mutator acquire refuses it. This test takes the block again after it
+        // reset the owner by hand, so it resets the epoch byte as well.
+        ExpectMetadata(
+            "reset contender epoch",
+            fixture.metadata.Store(
+                LxrSideMetadataKind::PhaseEpoch,
+                DataStart,
+                0,
+                SideMetadataMemoryOrder::SequentiallyConsistent),
+            SideMetadataResult::Success);
+
         ready.store(0);
         start.store(false);
         winners.store(0);

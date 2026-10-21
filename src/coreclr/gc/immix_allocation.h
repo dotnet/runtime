@@ -111,6 +111,16 @@ public:
     };
     static constexpr uint8_t PinnedBlockFlag = 1;
     void SetAcquireNotes(const AcquireNotes& notes);
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    // Test only. The hook runs in AcquireBlock after a candidate has passed the unlocked checks and before the locked
+    // acquire. A test uses it to run the work of another thread inside that window.
+    using AfterPrecheckHook = void (*)(void* context, uintptr_t candidate);
+    void SetAfterPrecheckHookForTest(AfterPrecheckHook hook, void* context)
+    {
+        m_after_precheck_hook = hook;
+        m_after_precheck_context = context;
+    }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
 
 private:
     friend class ImmixBumpAllocator;
@@ -179,6 +189,10 @@ private:
     std::atomic<size_t> m_recycled_blocks_acquired;
     std::atomic<size_t> m_recycled_lines_consumed;
     std::atomic<size_t> m_blocks_in_use{0};
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    AfterPrecheckHook m_after_precheck_hook = nullptr;
+    void* m_after_precheck_context = nullptr;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
 };
 
 class ImmixBumpAllocator final

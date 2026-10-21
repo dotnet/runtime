@@ -503,6 +503,12 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
         }
 
         ImmixBlockOperationStatus blockStatus;
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+        if (m_after_precheck_hook != nullptr)
+        {
+            m_after_precheck_hook(m_after_precheck_context, candidate);
+        }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
         result = m_blocks->TryAcquire(
             candidate,
             owner,
