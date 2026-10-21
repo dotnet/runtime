@@ -7,7 +7,6 @@
 namespace System.Net.Http
 {
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class BrotliCompressedContent : System.Net.Http.HttpContent
     {
         public BrotliCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.BrotliCompressionOptions compressionOptions) { }

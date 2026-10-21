@@ -11,6 +11,18 @@
 #include <minipal/entrypoints.h>
 
 extern "C" {
+    void * BrotliDecoderCreateInstance (void *, void *, void *);
+    int32_t BrotliDecoderDecompress (void *, void *, void *, void *);
+    int32_t BrotliDecoderDecompressStream (void *, void *, void *, void *, void *, void *);
+    void BrotliDecoderDestroyInstance (void *);
+    int32_t BrotliDecoderIsFinished (void *);
+    int32_t BrotliEncoderCompress (int32_t, int32_t, int32_t, void *, void *, void *, void *);
+    int32_t BrotliEncoderCompressStream (void *, int32_t, void *, void *, void *, void *, void *);
+    void * BrotliEncoderCreateInstance (void *, void *, void *);
+    void BrotliEncoderDestroyInstance (void *);
+    int32_t BrotliEncoderHasMoreOutput (void *);
+    void * BrotliEncoderMaxCompressedSize (void *);
+    int32_t BrotliEncoderSetParameter (void *, int32_t, uint32_t);
     uint32_t CompressionNative_Crc32 (uint32_t, void *, int32_t);
     int32_t CompressionNative_Deflate (void *, int32_t);
     int32_t CompressionNative_DeflateEnd (void *);
@@ -289,6 +301,18 @@ static const Entry s_libSystem_Globalization_Native [] = {
 };
 
 static const Entry s_libSystem_IO_Compression_Native [] = {
+    DllImportEntry(BrotliDecoderCreateInstance) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliDecoderDecompress) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliDecoderDecompressStream) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliDecoderDestroyInstance) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliDecoderIsFinished) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderCompress) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderCompressStream) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderCreateInstance) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderDestroyInstance) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderHasMoreOutput) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderMaxCompressedSize) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderSetParameter) // System.IO.Compression.Brotli
     DllImportEntry(CompressionNative_Crc32) // System.IO.Compression
     DllImportEntry(CompressionNative_Deflate) // System.IO.Compression
     DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression
@@ -518,7 +542,7 @@ typedef struct PInvokeTable {
 
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
-    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
+    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 21},
     {"libSystem.Native", s_libSystem_Native, 147},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
