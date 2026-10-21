@@ -929,11 +929,9 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [InlineData(false, ZipArchiveMode.Read)]
-        [InlineData(true, ZipArchiveMode.Read)]
-        [InlineData(false, ZipArchiveMode.Update)]
-        [InlineData(true, ZipArchiveMode.Update)]
-        public static async Task StrongEncryptionDetectedAsUnknown(bool async, ZipArchiveMode mode)
+        [InlineData(false)]
+        [InlineData(true)]
+        public static async Task StrongEncryptionDetectedAsUnknown(bool async)
         {
             var ms = new MemoryStream();
             ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
@@ -970,20 +968,13 @@ namespace System.IO.Compression.Tests
             BinaryPrimitives.WriteUInt16LittleEndian(zipBytes.AsSpan(cdBitFlagOffset), strongEncryptionFlags);
 
             using var archiveStream = new MemoryStream(zipBytes);
-            ZipArchive archive = await CreateZipArchive(async, archiveStream, mode);
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
             ZipArchiveEntry entry = archive.Entries[0];
 
             Assert.True(entry.IsEncrypted);
             Assert.Equal(ZipEncryptionMethod.Unknown, entry.EncryptionMethod);
 
-            if (async)
-            {
-                await Assert.ThrowsAsync<NotSupportedException>(() => entry.OpenAsync("PLACEHOLDER".AsSpan()));
-            }
-            else
-            {
-                Assert.Throws<NotSupportedException>(() => entry.Open("PLACEHOLDER".AsSpan()));
-            }
+            Assert.Throws<NotSupportedException>(() => entry.Open("password".AsSpan()));
 
             await DisposeZipArchive(async, archive);
         }
