@@ -37,7 +37,6 @@ steps:
         fi
 
         if ! "$dotnet" "$tool" purge \
-            --cache illink \
             --cache-directory "$ILLINK_EXPERIMENTAL_CACHE_PATH" \
             --before "$ILLINK_CACHE_BUILD_START"; then
             echo "##vso[task.logissue type=warning]ILLink cache purge failed; see the tool diagnostics above."
@@ -79,7 +78,6 @@ steps:
         }
 
         & $dotnet $tool.FullName purge `
-            --cache illink `
             --cache-directory $env:ILLINK_EXPERIMENTAL_CACHE_PATH `
             --before $env:ILLINK_CACHE_BUILD_START
         if ($LASTEXITCODE -ne 0) {

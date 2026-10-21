@@ -87,8 +87,8 @@ dotnet build-cache purge --cache illink --before 2026-10-01T12:00:00Z
 ```
 
 The UTC cutoff is required. `--cache illink` uses `ILLINK_EXPERIMENTAL_CACHE_PATH` or the
-task's platform default; `--cache-directory /path/to/cache` overrides that selection and
-can also be used without a named cache. Maintenance ignores the task's boolean opt-in and
+task's platform default. Alternatively, use `--cache-directory /path/to/cache` on its own
+to select a directory directly. Maintenance ignores the task's boolean opt-in and
 never creates missing directories. Use the tool built from the same revision as the task.
 See the [tool README](../../../src/tools/BuildCache/README.md) for local
 packaging and installation.
@@ -120,7 +120,7 @@ or created by that build:
 3. Run the build successfully and wait for all processes using the cache to finish.
 4. Run the maintenance tool from the same checkout, with maintenance failures reported but nonfatal:
    ```sh
-   if ! dotnet build-cache purge --cache illink \
+   if ! dotnet build-cache purge \
        --cache-directory "$ILLINK_EXPERIMENTAL_CACHE_PATH" \
        --before "$ILLINK_CACHE_BUILD_START"; then
      echo "Warning: ILLink cache purge failed; see the tool diagnostics above." >&2

@@ -10,10 +10,12 @@ dotnet build-cache purge --cache crossgen2 --before 2026-10-01T12:00:00Z
 dotnet build-cache purge --cache-directory /path/to/cache --before 2026-10-01T12:00:00Z
 ```
 
-Specify `--cache` or `--cache-directory`, or both. Named caches resolve their root in this order:
-an explicit `--cache-directory`, the corresponding `ILLINK_EXPERIMENTAL_CACHE_PATH` or
-`CROSSGEN2_EXPERIMENTAL_CACHE_PATH`, then the task's platform default (`illink` or `crossgen2`
-under the user cache directory). An unset or empty path environment variable uses the default.
+Choose `--cache` for a named cache or `--cache-directory` to select a directory directly.
+Named caches use the corresponding `ILLINK_EXPERIMENTAL_CACHE_PATH` or
+`CROSSGEN2_EXPERIMENTAL_CACHE_PATH`, falling back to the task's platform default (`illink`
+or `crossgen2` under the user cache directory) when the environment variable is unset or empty.
+If both options are supplied, `--cache-directory` determines the target; the name is validated
+and only affects diagnostic labels. It does not check that the directory belongs to that cache.
 An unknown name or invalid selected directory is an error; the tool does not fall back from
 an invalid path or create missing directories. Maintenance ignores the boolean cache-enablement
 environment variables, so disabled caches can still be maintained.
