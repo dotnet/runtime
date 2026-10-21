@@ -1,0 +1,4 @@
+"platform","passed","total","result","log"
+"windows-x64","1096","1096","PASS","logs\validation-windows-x64.log"
+"windows-x86","1","1","PASS","logs\validation-windows-x86.log"
+"linux-x64","1096","1096","PASS","logs\validation-linux-x64.log"

@@ -1,0 +1,7 @@
+"id","source_commit","result","detail","log"
+"windows-x64-enabled","a884207d54c167fd1409446a1f379179cbfa51a7","PASS","P3.2-enabled clr.runtime Debug build","product-build/windows-x64-debug.log"
+"linux-x64-enabled","a884207d54c167fd1409446a1f379179cbfa51a7","PASS","P3.2-enabled clr.runtime Debug build on WSL-native filesystem","product-build/linux-x64-debug.log"
+"windows-x64-default-off","a884207d54c167fd1409446a1f379179cbfa51a7","PASS","fresh-cache default-off build; no P3.2 export in coreclr.dll or clrgc.dll","default-off/windows-x64-debug.log"
+"windows-x64-combined","a884207d54c167fd1409446a1f379179cbfa51a7","PASS","P1/P2/P3.1/P3.2 validation features compile together","combined-feature/windows-x64-debug-rerun.log"
+"windows-x86-translation","a884207d54c167fd1409446a1f379179cbfa51a7","PASS","four portable P3.2 translation units compile with x86 MSVC","cross-target/x86/compile.log"
+"windows-arm64-translation","a884207d54c167fd1409446a1f379179cbfa51a7","PASS","four portable P3.2 translation units compile with ARM64 MSVC","cross-target/arm64/compile.log"

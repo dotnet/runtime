@@ -1,0 +1,7 @@
+Scenario,GC,MeanRatio,StdDev,Min,Max,Pairs
+allocation-churn,srv,0.370273,0.002905,0.367357,0.373473,5
+allocation-churn,wks,0.554932,0.008679,0.543379,0.566562,5
+low-allocation-compute,srv,0.126683,0.001813,0.123629,0.127945,5
+low-allocation-compute,wks,0.127480,0.002888,0.125205,0.132532,5
+low-allocation-compute-fast,srv,0.932810,0.009475,0.919381,0.942261,5
+low-allocation-compute-fast,wks,0.921824,0.021704,0.886604,0.943765,5

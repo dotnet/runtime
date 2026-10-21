@@ -1,0 +1,7 @@
+"build","symbol","instruction_count","normalized_sha256","evidence"
+"baseline","Object::GetHashCodeEx","106","BA6CF4D2DDA70DD4A31646A476F75D71819BA2FC34EDC1A8F0C959F24496EDD6","p1.6-baseline-Object-GetHashCodeEx.normalized.txt"
+"baseline","ObjHeader::GetSyncBlock","140","88EC9DC5A68CB0F13BCEDC692B36C7025898B70F82FC54BD3E8E71629948E602","p1.6-baseline-ObjHeader-GetSyncBlock.normalized.txt"
+"baseline","ObjHeader::GetSyncBlockIndex","86","94F4FB1A52BA62FB7C7C0998853E29CC84EFE49A1A3715E48744D1CAEE15D19A","p1.6-baseline-ObjHeader-GetSyncBlockIndex.normalized.txt"
+"changed","Object::GetHashCodeEx","106","BA6CF4D2DDA70DD4A31646A476F75D71819BA2FC34EDC1A8F0C959F24496EDD6","p1.6-changed-Object-GetHashCodeEx.normalized.txt"
+"changed","ObjHeader::GetSyncBlock","140","88EC9DC5A68CB0F13BCEDC692B36C7025898B70F82FC54BD3E8E71629948E602","p1.6-changed-ObjHeader-GetSyncBlock.normalized.txt"
+"changed","ObjHeader::GetSyncBlockIndex","86","94F4FB1A52BA62FB7C7C0998853E29CC84EFE49A1A3715E48744D1CAEE15D19A","p1.6-changed-ObjHeader-GetSyncBlockIndex.normalized.txt"

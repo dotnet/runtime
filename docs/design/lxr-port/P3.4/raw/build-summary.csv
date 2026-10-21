@@ -1,0 +1,6 @@
+"id","platform","configuration","detail","source_commit","log","result"
+"windows-x64-enabled","windows-x64","Debug","P3.4 option enabled; linked and standalone export count=2","2ee6f0bd3f829fc4858da7f1b0da14bc2b691c57","logs/definitive-build-windows-enabled.log","PASS"
+"linux-x64-enabled","linux-x64","Debug","P3.4 enabled on WSL native filesystem; linked and standalone export count=2; testhost libraries retain NU1903 audit warnings","2ee6f0bd3f829fc4858da7f1b0da14bc2b691c57","logs/definitive-build-linux-enabled.log","PASS"
+"windows-x64-default-off","windows-x64","Debug","default option; coreclr and clrgc P3.4 export count=0","2ee6f0bd3f829fc4858da7f1b0da14bc2b691c57","logs/definitive-build-windows-default-off.log","PASS"
+"linux-x64-default-off","linux-x64","Debug","default option; libcoreclr and libclrgc P3.4 export count=0","2ee6f0bd3f829fc4858da7f1b0da14bc2b691c57","logs/definitive-build-linux-default-off.log","PASS"
+"windows-combined-features","windows-x64","Debug","P2.2/P3.1/P3.3/P3.4 enabled via separate cmakeargs; six linked/standalone LXR exports present","2ee6f0bd3f829fc4858da7f1b0da14bc2b691c57","logs/definitive-build-windows-combined.log","PASS"

@@ -1,0 +1,14 @@
+'vswhere.exe' is not recognized as an internal or external command,
+operable program or batch file.
+'vswhere.exe' is not recognized as an internal or external command,
+operable program or batch file.
+**********************************************************************
+** Visual Studio 2026 Developer Command Prompt v18.0
+** Copyright (c) 2026 Microsoft Corporation
+**********************************************************************
+[vcvarsall.bat] Environment initialized for: 'x64'
+side-metadata-benchmark-native.cpp
+side-metadata-test-platform.cpp
+side_metadata.cpp
+Generating Code...
+   Creating library R:\artifacts\P2.1\evidence\benchmark-c832\side-metadata-benchmark-native.lib and object R:\artifacts\P2.1\evidence\benchmark-c832\side-metadata-benchmark-native.exp

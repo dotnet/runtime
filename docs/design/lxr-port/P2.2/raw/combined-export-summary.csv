@@ -1,0 +1,4 @@
+symbol,result
+GC_ImmixBlockStateTest_Run,PASS
+GC_WriteBarrierTest_Reset,PASS
+GC_AllocationNotificationTest_Reset,PASS

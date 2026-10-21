@@ -1,0 +1,5 @@
+"platform","build","validation","runtime","execution"
+"windows-x64","PASS","2204/2204","4/4","linked and standalone Workstation/Server"
+"linux-x64","PASS","2204/2204","4/4","real gcenv.unix plus OS shim; combined exports 3/3"
+"windows-x86","PASS","1/1","not run","explicit fixed-metadata fail-closed"
+"windows-arm64","PASS","not run","not run","exact-source product TUs build-only"

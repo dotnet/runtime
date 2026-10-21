@@ -1,0 +1,11 @@
+OUTER_CALLER=C:\Users\KONRAD~1\AppData\Local\Temp\p21-final2-public-caller-9790f31225df49c0b7360701677cfc7c
+PASS: 2 Windows side-metadata validation targets
+Output: C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\artifacts\P2.1\evidence\final2-public-wrapper\windows-validation
+PASS: Linux x64 side-metadata validation
+Output: /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-ideal-sniffle/artifacts/P2.1/evidence/final2-public-wrapper/linux-validation
+PASS: 8 linked/standalone, polarity, and GC-mode scenarios
+Output: C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\artifacts\P2.1\evidence\final2-public-wrapper\runtime-smoke
+PASS: 45 metadata benchmark rows and 3 controls
+Output: C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\artifacts\P2.1\evidence\final2-public-wrapper\benchmark
+PASS: full P2.1 evidence path (4 steps)
+Output: C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\artifacts\P2.1\evidence\final2-public-wrapper

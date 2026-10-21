@@ -1,0 +1,30 @@
+{
+  "scope": "Qualified Windows/Linux x64 default-off standalone collector; focused lifecycle and execution-cost vertical, not the full P9 ledger or production qualification.",
+  "timing_fixture_source": "564c76e7020370be8d01e06e048417b1856e13f7",
+  "timing_fixture_sha256": "926459d0554bb0e6877601f8c16cfc1206c426fd554c78e0707e62598b7db8df",
+  "normal_observations_per_arm_input": 4,
+  "explicit_full_requests_per_measured_region": 8,
+  "exclusive_total_gc_cpu_ms": null,
+  "os_scan_thread_retirement_latency_ns": null,
+  "initial_persistent_scan_thread_startup_latency_ns": null,
+  "ee_internal_dependent_table_pass_count": null,
+  "native_allocator_arena_to_worker_owner_mapping": null,
+  "scan_counter_32": "Actual initialization rounds plus successful external rescans; not every external scan call and not CoreCLR's internal table-loop pass count.",
+  "scan_counter_41_and_43": null,
+  "scan_cpu_counter_entries": null,
+  "scan_cpu_scope_entries": "Current-thread CPU deltas exist only for indices 4 through 31; these and wall scopes are nested, on multiple actors, and not additive exclusive GC CPU.",
+  "windows_cpu_clock": "Quantized GetThreadTimes and process-clock deltas can be zero for real short work.",
+  "parent_process_wall": "Includes runtime startup, graph setup, hashing, measured work and shutdown. Subtracting region wall does not isolate pure startup or OS retirement.",
+  "memory_observations": "Separate intrusive single-process observations and read-only glibc XML diagnostics; not replacement latency samples or proof of OS release.",
+  "fault_injection_not_performed": [
+    "EE scan utility-thread creation failure",
+    "readiness-event failure",
+    "scan-operation event timeout",
+    "scan-exit event timeout"
+  ],
+  "existing_completed_scan_and_actual_missing_range_controls": "Qualified independently of payload-only survival.",
+  "log_publication_backing_redesigned": false,
+  "managed_admission_or_log_bounds_changed": false,
+  "native_allocator_trim_or_new_pool_used": false,
+  "full_p9_or_memory_parity_claimed": false
+}

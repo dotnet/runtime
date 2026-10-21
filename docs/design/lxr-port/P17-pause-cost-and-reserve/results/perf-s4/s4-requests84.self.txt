@@ -1,0 +1,357 @@
+    10.85%  libclrlxrgc.so                [.] ReferenceCountTable::RegisterObjectInClearedSpan                                                                                   -      -            
+     9.66%  libclrlxrgc.so                [.] LxrGcHeap::AllocationComplete                                                                                                      -      -            
+     7.97%  memfd:doublemapper (deleted)  [.] 0x000000000014d992                                                                                                                 -      -            
+     5.81%  libclrlxrgc.so                [.] LxrGcHeap::LeaseFinalizer                                                                                                          -      -            
+     4.99%  libclrlxrgc.so                [.] LxrReferenceCounting::RecordFastAllocation                                                                                         -      -            
+     3.01%  libc.so.6                     [.] __memset_evex_unaligned_erms                                                                                                       -      -            
+     2.95%  libclrlxrgc.so                [.] ImmixAllocationManager::AcquireBlock                                                                                               -      -            
+     2.65%  libclrlxrgc.so                [.] ImmixAllocationManager::IsLineDead                                                                                                 -      -            
+     2.57%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessTraceObject                                                                                           -      -            
+     2.40%  libclrlxrgc.so                [.] LxrReferenceCounting::TryCopyNursery                                                                                               -      -            
+     2.10%  libclrlxrgc.so                [.] SideMetadataManager::ResetRangeQuiescentCore                                                                                       -      -            
+     1.91%  libclrlxrgc.so                [.] LxrReferenceCounting::ResolveForwarded                                                                                             -      -            
+     1.79%  libclrlxrgc.so                [.] LxrReferenceCounting::WalkObjectStarts                                                                                             -      -            
+     1.70%  memfd:doublemapper (deleted)  [.] 0x000000000014d98a                                                                                                                 -      -            
+     1.54%  libclrlxrgc.so                [.] LxrReferenceCounting::CompleteAllocation                                                                                           -      -            
+     1.47%  ld-linux-x86-64.so.2          [.] _dl_update_slotinfo                                                                                                                -      -            
+     1.32%  libclrlxrgc.so                [.] SideMetadataManager::Load                                                                                                          -      -            
+     1.14%  libclrlxrgc.so                [.] ImmixBlockManager::TryAcquire                                                                                                      -      -            
+     0.99%  libclrlxrgc.so                [.] LxrReferenceCounting::FindCachedMutator                                                                                            -      -            
+     0.97%  ld-linux-x86-64.so.2          [.] update_get_addr                                                                                                                    -      -            
+     0.86%  libclrlxrgc.so                [.] LxrReferenceCounting::NewWork                                                                                                      -      -            
+     0.82%  libclrlxrgc.so                [.] ImmixBlockManager::TryLock                                                                                                         -      -            
+     0.82%  libclrlxrgc.so                [.] LxrReferenceCounting::GetObjectStorageIndex                                                                                        -      -            
+     0.76%  ld-linux-x86-64.so.2          [.] __tls_get_addr                                                                                                                     -      -            
+     0.74%  libclrlxrgc.so                [.] ImmixBlockManager::Unlock                                                                                                          -      -            
+     0.72%  memfd:doublemapper (deleted)  [.] 0x000000000014d982                                                                                                                 -      -            
+     0.71%  libclrlxrgc.so                [.] LxrGcHeap::IsPinned                                                                                                                -      -            
+     0.69%  libclrlxrgc.so                [.] ReferenceCountTable::InitializeObjectQuiescent                                                                                     -      -            
+     0.67%  libclrlxrgc.so                [.] LxrReferenceCounting::SweepCycles                                                                                                  -      -            
+     0.63%  libc.so.6                     [.] malloc                                                                                                                             -      -            
+     0.63%  libclrlxrgc.so                [.] LxrGcHeap::Alloc                                                                                                                   -      -            
+     0.59%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessDecrements                                                                                            -      -            
+     0.55%  libclrlxrgc.so                [.] LxrReferenceCounting::RetireForwardedSources                                                                                       -      -            
+     0.55%  libclrlxrgc.so                [.] SideMetadataManager::GetLocation                                                                                                   -      -            
+     0.53%  libclrlxrgc.so                [.] LxrReferenceCounting::ScanTraceLocked                                                                                              -      -            
+     0.51%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessIncrement                                                                                             -      -            
+     0.51%  libcoreclr.so                 [.] 0x000000000004f170                                                                                                                 -      -            
+     0.50%  libclrlxrgc.so                [.] ImmixBlockManager::IsNurseryFast                                                                                                   -      -            
+     0.48%  libclrlxrgc.so                [.] SideMetadataAccessor::Store                                                                                                        -      -            
+     0.44%  libc.so.6                     [.] pthread_mutex_lock@@GLIBC_2.2.5                                                                                                    -      -            
+     0.44%  libclrlxrgc.so                [.] ImmixAllocationManager::TryFindNextHole                                                                                            -      -            
+     0.42%  libclrlxrgc.so                [.] ImmixBlockManager::GetBlockPhaseEpoch                                                                                              -      -            
+     0.40%  libclrlxrgc.so                [.] SideMetadataManager::FetchAddWrapping                                                                                              -      -            
+     0.38%  ld-linux-x86-64.so.2          [.] __tls_get_addr_slow                                                                                                                -      -            
+     0.38%  libclrlxrgc.so                [.] ImmixBlockManager::GetState                                                                                                        -      -            
+     0.38%  libclrlxrgc.so                [.] LxrReferenceCounting::GetReservationStart                                                                                          -      -            
+     0.38%  memfd:doublemapper (deleted)  [.] 0x000000000014d97e                                                                                                                 -      -            
+     0.32%  libc.so.6                     [.] pthread_mutex_unlock@@GLIBC_2.2.5                                                                                                  -      -            
+     0.32%  libclrlxrgc.so                [.] LxrLargeObjectSpace::GetAdmittedBytes                                                                                              -      -            
+     0.30%  libclrlxrgc.so                [.] LxrReferenceCounting::ScanDecrements                                                                                               -      -            
+     0.30%  libclrlxrgc.so                [.] LxrWorkPacket::TryTransition                                                                                                       -      -            
+     0.30%  libclrlxrgc.so                [.] SideMetadataAccessor::IsRangeZero                                                                                                  -      -            
+     0.29%  libclrlxrgc.so                [.] LxrReferenceCounting::Execute                                                                                                      -      -            
+     0.29%  libclrlxrgc.so                [.] LxrReferenceCounting::FinishDyingTraceObject                                                                                       -      -            
+     0.29%  libclrlxrgc.so                [.] ReferenceCountTable::DecrementWithDeathCore<true>                                                                                  -      -            
+     0.27%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessIncrementWork                                                                                         -      -            
+     0.27%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessTraceWork                                                                                             -      -            
+     0.25%  libc.so.6                     [.] __GI___lll_lock_wait                                                                                                               -      -            
+     0.25%  libclrlxrgc.so                [.] ImmixBlockManager::StoreByte                                                                                                       -      -            
+     0.25%  libclrlxrgc.so                [.] LxrWorkScheduler::Submit                                                                                                           -      -            
+     0.23%  libclrlxrgc.so                [.] SideMetadataManager::ComputeFirstWordCoverageForByteOrder                                                                          -      -            
+     0.23%  libclrlxrgc.so                [.] SideMetadataManager::Store                                                                                                         -      -            
+     0.21%  libclrlxrgc.so                [.] ImmixBlockManager::TryReturn                                                                                                       -      -            
+     0.21%  libclrlxrgc.so                [.] LxrVirtualArray<LxrReferenceCounting::TraceScan*>::Commit                                                                          -      -            
+     0.19%  libclrlxrgc.so                [.] ImmixBlockManager::GetGlobalPhaseEpoch                                                                                             -      -            
+     0.19%  libclrlxrgc.so                [.] LxrGcHeap::GetCollectionCause                                                                                                      -      -            
+     0.19%  libclrlxrgc.so                [.] SideMetadataManager::IsDataRangeOwned                                                                                              -      -            
+     0.17%  libclrlxrgc.so                [.] ImmixAllocationManager::PrepareRecycledHole                                                                                        -      -            
+     0.17%  libclrlxrgc.so                [.] LxrReferenceCounting::Allocate                                                                                                     -      -            
+     0.17%  libclrlxrgc.so                [.] ReferenceCountTable::IncrementFast                                                                                                 -      -            
+     0.17%  libcoreclr.so                 [.] 0x000000000030dada                                                                                                                 -      -            
+     0.15%  libc.so.6                     [.] __GI___lll_lock_wake                                                                                                               -      -            
+     0.15%  libc.so.6                     [.] _int_free                                                                                                                          -      -            
+     0.15%  libclrlxrgc.so                [.] LxrReferenceCounting::FixForwardingReaders                                                                                         -      -            
+     0.15%  libclrlxrgc.so                [.] LxrWorkScheduler::Impl::WorkerLoop                                                                                                 -      -            
+     0.15%  libcoreclr.so                 [.] 0x00000000003091b9                                                                                                                 -      -            
+     0.15%  libcoreclr.so                 [.] 0x000000000030dad7                                                                                                                 -      -            
+     0.13%  libc.so.6                     [.] malloc_consolidate                                                                                                                 -      -            
+     0.13%  libclrlxrgc.so                [.] LxrWorkPacket::GetStage                                                                                                            -      -            
+     0.13%  libcoreclr.so                 [.] 0x000000000030daee                                                                                                                 -      -            
+     0.13%  libcoreclr.so                 [.] 0x000000000030db03                                                                                                                 -      -            
+     0.11%  libc.so.6                     [.] _int_malloc                                                                                                                        -      -            
+     0.11%  libclrlxrgc.so                [.] ImmixBlockManager::DecodeState                                                                                                     -      -            
+     0.11%  libclrlxrgc.so                [.] ImmixBlockManager::TryReleaseNursery                                                                                               -      -            
+     0.11%  libclrlxrgc.so                [.] LxrGcHeap::DidCopy                                                                                                                 -      -            
+     0.11%  libclrlxrgc.so                [.] LxrReferenceCounting::CommitCopyRecord                                                                                             -      -            
+     0.11%  libclrlxrgc.so                [.] LxrReferenceCounting::ScanIncrements                                                                                               -      -            
+     0.11%  libclrlxrgc.so                [.] LxrVirtualArray<std::atomic<unsigned char> >::Commit                                                                               -      -            
+     0.11%  libclrlxrgc.so                [.] LxrWorkScheduler::Impl::TakeBucketLocked                                                                                           -      -            
+     0.11%  libclrlxrgc.so                [.] ReferenceCountTable::ValidateUnregisteredObjectRange                                                                               -      -            
+     0.11%  libclrlxrgc.so                [.] SideMetadataManager::ResetRangeQuiescent                                                                                           -      -            
+     0.11%  libcoreclr.so                 [.] 0x000000000030dad0                                                                                                                 -      -            
+     0.11%  libcoreclr.so                 [.] 0x000000000030db24                                                                                                                 -      -            
+     0.11%  libcoreclr.so                 [.] 0x00000000003b24e9                                                                                                                 -      -            
+     0.11%  memfd:doublemapper (deleted)  [.] 0x000000000014d900                                                                                                                 -      -            
+     0.11%  memfd:doublemapper (deleted)  [.] 0x000000000014d99c                                                                                                                 -      -            
+     0.10%  [vdso]                        [.] __vdso_clock_gettime                                                                                                               -      -            
+     0.10%  [vdso]                        [.] 0x000000000000078a                                                                                                                 -      -            
+     0.10%  libc.so.6                     [.] clock_gettime@@GLIBC_2.17                                                                                                          -      -            
+     0.10%  libclrlxrgc.so                [.] ImmixBlockManager::IsNurseryOrReusing                                                                                              -      -            
+     0.10%  libclrlxrgc.so                [.] ImmixBumpAllocator::TryAllocate                                                                                                    -      -            
+     0.10%  libclrlxrgc.so                [.] LxrWorkScheduler::Impl::TakeLocalLocked                                                                                            -      -            
+     0.10%  libclrlxrgc.so                [.] SideMetadataManager::ComputeLastWordCoverageForByteOrder                                                                           -      -            
+     0.10%  libclrlxrgc.so                [.] SideMetadataManager::IsDataAddressOwned                                                                                            -      -            
+     0.08%  libc.so.6                     [.] unlink_chunk.constprop.0                                                                                                           -      -            
+     0.08%  libclrlxrgc.so                [.] ImmixBlockManager::TryReleaseIfRcDead                                                                                              -      -            
+     0.08%  libclrlxrgc.so                [.] LxrGcHeap::RetireAllocationSpan                                                                                                    -      -            
+     0.08%  libclrlxrgc.so                [.] LxrReferenceCounting::ReserveCopyRecord                                                                                            -      -            
+     0.08%  libclrlxrgc.so                [.] LxrWorkScheduler::Impl::PollLocked                                                                                                 -      -            
+     0.08%  libcoreclr.so                 [.] 0x0000000000221460                                                                                                                 -      -            
+     0.08%  libcoreclr.so                 [.] 0x00000000003091c9                                                                                                                 -      -            
+     0.08%  libcoreclr.so                 [.] 0x00000000003b24d9                                                                                                                 -      -            
+     0.08%  libcoreclr.so                 [.] 0x00000000003b25ed                                                                                                                 -      -            
+     0.08%  libcoreclr.so                 [.] 0x00000000003b2618                                                                                                                 -      -            
+     0.08%  memfd:doublemapper (deleted)  [.] 0x0000000000000040                                                                                                                 -      -            
+     0.08%  memfd:doublemapper (deleted)  [.] 0x0000000000000067                                                                                                                 -      -            
+     0.08%  memfd:doublemapper (deleted)  [.] 0x000000000014d930                                                                                                                 -      -            
+     0.08%  memfd:doublemapper (deleted)  [.] 0x000000000014d93a                                                                                                                 -      -            
+     0.08%  memfd:doublemapper (deleted)  [.] 0x0000000000150340                                                                                                                 -      -            
+     0.06%  libc.so.6                     [.] __GI___futex_abstimed_wait_cancelable64                                                                                            -      -            
+     0.06%  libclrlxrgc.so                [.] ImmixBumpAllocator::TryRefill                                                                                                      -      -            
+     0.06%  libclrlxrgc.so                [.] LxrGcHeap::QueueFinalizer                                                                                                          -      -            
+     0.06%  libclrlxrgc.so                [.] LxrReferenceCounting::GetAllocationSpan                                                                                            -      -            
+     0.06%  libclrlxrgc.so                [.] LxrReferenceCounting::Resume                                                                                                       -      -            
+     0.06%  libclrlxrgc.so                [.] LxrReferenceCounting::RetireCompletedWork                                                                                          -      -            
+     0.06%  libclrlxrgc.so                [.] LxrWorkScheduler::Impl::TakeDeferredActiveLocked                                                                                   -      -            
+     0.06%  libclrlxrgc.so                [.] ReferenceCountTable::ValidateAddress                                                                                               -      -            
+     0.06%  libcoreclr.so                 [.] 0x0000000000220b83                                                                                                                 -      -            
+     0.06%  libcoreclr.so                 [.] 0x00000000003091cd                                                                                                                 -      -            
+     0.06%  libcoreclr.so                 [.] 0x00000000003091d4                                                                                                                 -      -            
+     0.06%  libcoreclr.so                 [.] 0x000000000030dae2                                                                                                                 -      -            
+     0.06%  libcoreclr.so                 [.] 0x000000000030db17                                                                                                                 -      -            
+     0.06%  libcoreclr.so                 [.] 0x000000000030db2f                                                                                                                 -      -            
+     0.06%  libcoreclr.so                 [.] 0x00000000003b2500                                                                                                                 -      -            
+     0.06%  libm.so.6                     [.] __ceil_sse41                                                                                                                       -      -            
+     0.06%  memfd:doublemapper (deleted)  [.] 0x000000000014d8bd                                                                                                                 -      -            
+     0.06%  memfd:doublemapper (deleted)  [.] 0x000000000014d91f                                                                                                                 -      -            
+     0.06%  memfd:doublemapper (deleted)  [.] 0x000000000014d92c                                                                                                                 -      -            
+     0.06%  memfd:doublemapper (deleted)  [.] 0x000000000014d934                                                                                                                 -      -            
+     0.06%  memfd:doublemapper (deleted)  [.] 0x000000000014d98e                                                                                                                 -      -            
+     0.06%  memfd:doublemapper (deleted)  [.] 0x000000000014d998                                                                                                                 -      -            
+     0.06%  memfd:doublemapper (deleted)  [.] 0x000000000015015c                                                                                                                 -      -            
+     0.04%  [vdso]                        [.] 0x0000000000000770                                                                                                                 -      -            
+     0.04%  ld-linux-x86-64.so.2          [.] do_lookup_x                                                                                                                        -      -            
+     0.04%  libc.so.6                     [.] cfree@GLIBC_2.2.5                                                                                                                  -      -            
+     0.04%  libc.so.6                     [.] pthread_cond_broadcast@@GLIBC_2.3.2                                                                                                -      -            
+     0.04%  libclrlxrgc.so                [.] ImmixBlockManager::StoreOwner                                                                                                      -      -            
+     0.04%  libclrlxrgc.so                [.] LxrLargeObjectSpace::GetReservationStart                                                                                           -      -            
+     0.04%  libclrlxrgc.so                [.] LxrReferenceCounting::IsObjectStart                                                                                                -      -            
+     0.04%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessTraceScan                                                                                             -      -            
+     0.04%  libclrlxrgc.so                [.] LxrReferenceCounting::RememberMatureSlot                                                                                           -      -            
+     0.04%  libclrlxrgc.so                [.] SideMetadataManager::IsSpecEnabled                                                                                                 -      -            
+     0.04%  libclrlxrgc.so                [.] std::deque<LxrWorkPacket*, std::allocator<LxrWorkPacket*> >::_M_erase                                                              -      -            
+     0.04%  libcoreclr.so                 [.] 0x0000000000100577                                                                                                                 -      -            
+     0.04%  libcoreclr.so                 [.] 0x000000000030db11                                                                                                                 -      -            
+     0.04%  libcoreclr.so                 [.] 0x00000000003b2525                                                                                                                 -      -            
+     0.04%  libstdc++.so.6.0.30           [.] operator new                                                                                                                       -      -            
+     0.04%  memfd:doublemapper (deleted)  [.] 0x000000000014d8d1                                                                                                                 -      -            
+     0.04%  memfd:doublemapper (deleted)  [.] 0x000000000014d9a1                                                                                                                 -      -            
+     0.04%  memfd:doublemapper (deleted)  [.] 0x000000000014d9a4                                                                                                                 -      -            
+     0.04%  memfd:doublemapper (deleted)  [.] 0x000000000014d9ab                                                                                                                 -      -            
+     0.04%  memfd:doublemapper (deleted)  [.] 0x000000000014dc52                                                                                                                 -      -            
+     0.02%  [vdso]                        [.] 0x00000000000007ad                                                                                                                 -      -            
+     0.02%  libSystem.Native.so           [.] clock_gettime@plt                                                                                                                  -      -            
+     0.02%  libSystem.Native.so           [.] minipal_hires_ticks                                                                                                                -      -            
+     0.02%  libc.so.6                     [.] __GI___pthread_mutex_unlock_usercnt                                                                                                -      -            
+     0.02%  libc.so.6                     [.] __memcmp_evex_movbe                                                                                                                -      -            
+     0.02%  libc.so.6                     [.] __memmove_evex_unaligned_erms                                                                                                      -      -            
+     0.02%  libc.so.6                     [.] __strcmp_evex                                                                                                                      -      -            
+     0.02%  libc.so.6                     [.] __strlen_evex                                                                                                                      -      -            
+     0.02%  libc.so.6                     [.] _dl_catch_error                                                                                                                    -      -            
+     0.02%  libc.so.6                     [.] _pthread_cleanup_push@@GLIBC_2.34                                                                                                  -      -            
+     0.02%  libc.so.6                     [.] pthread_cond_wait@@GLIBC_2.3.2                                                                                                     -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000018780                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000001af6d                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000001cadb                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000024821                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000036951                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000042560                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000043484                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000004e770                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000006bcc5                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000072064                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000080c70                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000008680a                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000008bc90                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000008be97                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000008cd7a                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000008decc                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000008e01c                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000093721                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000097c40                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000009bd34                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000000a0f20                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000000ac4c7                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000000b9790                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000000e1ae1                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000000e9890                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000000fe3d2                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000105070                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001207c7                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000120900                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000012ecc5                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001332c1                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000134272                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000134e68                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000134fb0                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000135c64                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001411f5                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000014389b                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000147c40                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000148840                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000015d58e                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000167c3f                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000016c44d                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000170f30                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001716b4                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000174c21                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000017618e                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000188ee0                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000199241                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001adab6                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001b75bc                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001b75be                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001c08c0                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001c1817                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001c5546                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001c76e5                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001c843e                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001cb5b9                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001cf89d                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001d1493                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001d272b                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001d4366                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001d6aee                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001f0b96                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001f5376                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001f9a25                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001f9a91                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000001fb092                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000200deb                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000208d20                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x0000000000209645                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000022ae6b                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x000000000022b671                                                                                                                 -      -            
+     0.02%  libclrjit.so                  [.] 0x00000000002660ff                                                                                                                 -      -            
+     0.02%  libclrlxrgc.so                [.] ImmixAllocationManager::NotifyBlockReleased                                                                                        -      -            
+     0.02%  libclrlxrgc.so                [.] ImmixBlockGeometry::GetObjectLineRange                                                                                             -      -            
+     0.02%  libclrlxrgc.so                [.] ImmixBlockGeometry::IsLineAligned                                                                                                  -      -            
+     0.02%  libclrlxrgc.so                [.] LxrLargeObjectSpace::GetCommittedBytes                                                                                             -      -            
+     0.02%  libclrlxrgc.so                [.] LxrLargeObjectSpace::ShouldUseLargeObjectSpace                                                                                     -      -            
+     0.02%  libclrlxrgc.so                [.] LxrLazyCompletionGenerationState::Complete                                                                                         -      -            
+     0.02%  libclrlxrgc.so                [.] LxrReferenceCounting::AllocateCopy                                                                                                 -      -            
+     0.02%  libclrlxrgc.so                [.] LxrReferenceCounting::CostScope::~CostScope                                                                                        -      -            
+     0.02%  libclrlxrgc.so                [.] LxrReferenceCounting::DeleteWork                                                                                                   -      -            
+     0.02%  libclrlxrgc.so                [.] LxrReferenceCounting::FlushMutators                                                                                                -      -            
+     0.02%  libclrlxrgc.so                [.] LxrReferenceCounting::GetDefragHeadroomBytes                                                                                       -      -            
+     0.02%  libclrlxrgc.so                [.] LxrReferenceCounting::IsMarked                                                                                                     -      -            
+     0.02%  libclrlxrgc.so                [.] LxrReferenceCounting::RefreshBlock                                                                                                 -      -            
+     0.02%  libclrlxrgc.so                [.] LxrReferenceCounting::RetireAllocationSpan                                                                                         -      -            
+     0.02%  libclrlxrgc.so                [.] LxrReferenceCounting::ScanTraceLocked(LxrReferenceCounting::TraceScan*, bool, LxrReferenceCounting::TraceBatch*)::$_5::operator()  -      -            
+     0.02%  libclrlxrgc.so                [.] LxrVirtualArray<std::atomic<unsigned int> >::Commit                                                                                -      -            
+     0.02%  libclrlxrgc.so                [.] LxrWorkPacket::Execute                                                                                                             -      -            
+     0.02%  libclrlxrgc.so                [.] LxrWorkPacket::GetPreferredWorker                                                                                                  -      -            
+     0.02%  libclrlxrgc.so                [.] LxrWorkPacket::GetReferenceCount                                                                                                   -      -            
+     0.02%  libclrlxrgc.so                [.] LxrWorkPacket::GetState                                                                                                            -      -            
+     0.02%  libclrlxrgc.so                [.] LxrWorkPacket::SetGeneration                                                                                                       -      -            
+     0.02%  libclrlxrgc.so                [.] ReferenceCountTable::DecrementWithDeathFast                                                                                        -      -            
+     0.02%  libclrlxrgc.so                [.] ReferenceCountTable::IsContinuationLine                                                                                            -      -            
+     0.02%  libclrlxrgc.so                [.] ReferenceCountTable::ValidateContinuationLines                                                                                     -      -            
+     0.02%  libclrlxrgc.so                [.] SideMetadataAccessor::CompareExchange                                                                                              -      -            
+     0.02%  libclrlxrgc.so                [.] SideMetadataManager::CompareExchange                                                                                               -      -            
+     0.02%  libclrlxrgc.so                [.] ceil@plt                                                                                                                           -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000000823d5                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000087f80                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000000928b0                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000100530                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000100568                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000100730                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000103553                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000104290                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000001043c2                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000001ee4fb                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000001ee660                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000001f0edb                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000001f125d                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000001f12e4                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000001f552c                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000001ff796                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000021287d                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000002128c8                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000021d828                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000021d88c                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000220b74                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000221465                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000022566f                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000227084                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000227cfe                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000230011                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000234bed                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000249e50                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000258fc8                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000026c433                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000027ecab                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000292310                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000002932ee                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000002938ed                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000002942f8                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000002a2870                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000002ab5c1                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000003091a4                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000003091b6                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000003091d8                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030c8a0                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030c90a                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030c918                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030c953                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030c96c                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030cda4                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030ce22                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030cf11                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030dae7                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030daff                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030db14                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030db1a                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000030e013                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000032ea97                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x000000000033125a                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000003329da                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x0000000000382960                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000003b24d0                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000003b251b                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000003b2531                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000003b25d0                                                                                                                 -      -            
+     0.02%  libcoreclr.so                 [.] 0x00000000003b262a                                                                                                                 -      -            
+     0.02%  libstdc++.so.6.0.30           [.] operator delete                                                                                                                    -      -            
+     0.02%  libstdc++.so.6.0.30           [.] operator new                                                                                                                       -      -            
+     0.02%  libstdc++.so.6.0.30           [.] 0x00000000000a1f80                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x0000000000000043                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x0000000000000065                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000000007a                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x0000000000000093                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014d8db                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014d8e2                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014d941                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014d944                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014d947                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014d968                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014da7a                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014da86                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014dc10                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014dc1d                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014f7c3                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014f989                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x000000000014feab                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x0000000000150317                                                                                                                 -      -            
+     0.02%  memfd:doublemapper (deleted)  [.] 0x0000000000150324                                                                                                                 -      -            

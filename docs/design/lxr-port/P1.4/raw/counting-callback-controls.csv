@@ -1,0 +1,4 @@
+"Name","Expected","Result","Evidence"
+"wks-registered-counting-observability","24 scaled callback deltas","PASS","wks-registered-counting.log"
+"srv-registered-counting-observability","24 scaled callback deltas","PASS","srv-registered-counting.log"
+"registered-counting-missing-callback-control","missing callback rejected","PASS","registered-counting-missing-callback-control.log"

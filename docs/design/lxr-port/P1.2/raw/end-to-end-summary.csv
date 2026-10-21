@@ -1,0 +1,5 @@
+Scenario,GC,StockOpsPerSecond,SlotOpsPerSecond,SlotOverStock,StockAllocatedMbPerSecond,SlotAllocatedMbPerSecond,AllocationRateRatio,Invocations
+allocation-churn,srv,323462.403993,119761.204129,0.370248,6004.301837,2222.660337,0.370178,5
+allocation-churn,wks,142582.638061,79110.379570,0.554839,2678.801750,1498.303887,0.559319,5
+low-allocation-compute,srv,2747980.318151,348068.674214,0.126663,0.384488,0.370779,0.964343,5
+low-allocation-compute,wks,2745244.146669,349803.349272,0.127422,0.385161,0.371720,0.965103,5

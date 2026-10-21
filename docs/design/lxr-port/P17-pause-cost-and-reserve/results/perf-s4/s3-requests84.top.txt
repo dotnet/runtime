@@ -1,0 +1,5 @@
+     9.73%  libclrlxrgc.so                [.] SideMetadataAccessor::IsRangeZero                                                                                                  -      -            
+                          0x7c1ca94dc253
+     9.11%  libclrlxrgc.so                [.] ReferenceCountTable::RegisterObjectInClearedSpan                                                                                   -      -            
+                          0x7c1ca8db24e9
+                                                0x7c1c2ace8592

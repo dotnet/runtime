@@ -1,0 +1,3 @@
+"path","bytes","sha256"
+"src\tools\illink\test\Mono.Linker.Tests.Cases\Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\Dependencies\OverrideOfAbstractIsKeptNonEmptyLibraryWithNonEmpty.cs","589","9d643c1e46daabae92f3b7a5ffa6bae5e260c4c542120d1089c8b14c24e371e5"
+"src\tools\illink\test\Mono.Linker.Tests.Cases\Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1_NotMatchingName.xml","321","63c1d0e88ee63036ebdfeeb0be740e00a9e0b1aa2c86fcf8e816c3e182253e31"

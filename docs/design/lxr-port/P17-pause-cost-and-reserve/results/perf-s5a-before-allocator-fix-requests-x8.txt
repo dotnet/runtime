@@ -1,0 +1,25 @@
+    10.38%  libclrlxrgc.so                [.] 0x000000000000e470                       -      -            
+                          0x7d9a4a4af975
+                          0x7d9a4a4b20a2
+                          0x7d9a4a4b2577
+                                     0x7d9a4a4d106d
+                                     0x7d9a49f0fe19
+                                                0x7d9a49f0c96c
+                                                0x7d9a49fb24a2
+                                                                      0x7d99cbee8592
+                                                                      0x7d9a49dd6f23
+                                                                      0x7d9a49dd54d3
+                                                                      0x7d9a49dd5895
+                                                                      0x7d9a49dfa056
+     9.29%  libclrlxrgc.so                [.] 0x000000000000e47e                       -      -            
+                          0x7d9a4a4b20a2
+                          0x7d9a4a4b2577
+                                     0x7d9a4a4d106d
+                                     0x7d9a49f0fe19
+                                                0x7d9a49f0c96c
+                                                0x7d9a49fb24a2
+                                                           0x7d99cbee8a5a
+                                                           0x7d99cbee8592
+                                                           0x7d9a49dd6f23
+                                                           0x7d9a49dd54d3
+                                                           0x7d9a49dd5895

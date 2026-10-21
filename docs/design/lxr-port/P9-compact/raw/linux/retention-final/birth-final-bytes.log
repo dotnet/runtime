@@ -1,0 +1,6 @@
+{"command": ["/root/lxr-compact-collector/artifacts/P9/birth-final-Release-linux/corerun", "/root/lxr-compact-collector/artifacts/P9/retention-fixtures/runtime-tests.dll", "--retention-bytes", "/root/lxr-compact-collector/artifacts/P9/birth-final-Release-linux/libclrlxrgc.so"], "module_sha256": "8e3f55c900e090d9b04537a3195e3ed9904917223a67b40811be7ddf2c8cc79a", "fixture_sha256": "7799af7c68e9d9c0d449d2c082f824fe6da2ca3fa144caed0a2b1aedfafdabef"}
+retention=live pointer_rich=False working_set_bytes=386625536 private_bytes=1028128768 owned_resident_bytes=81461248 managed_committed_bytes=109215744 admitted_bytes=134217728 native_plane_committed_bytes=774049792 live_bytes=61707048 work_owned_bytes=0 work_high_water_bytes=32208 copied_reference_bytes=63176 scan_owned_bytes=0 scan_high_water_bytes=256
+retention=quiescent pointer_rich=False working_set_bytes=346038272 private_bytes=994586624 owned_resident_bytes=39354368 managed_committed_bytes=67108864 admitted_bytes=134217728 native_plane_committed_bytes=774049792 live_bytes=65592 work_owned_bytes=0 work_high_water_bytes=58304 copied_reference_bytes=74792 scan_owned_bytes=0 scan_high_water_bytes=256
+PASS: 1245 retention checks module=/root/lxr-compact-collector/artifacts/P9/birth-final-Release-linux/libclrlxrgc.so sha256=8E3F55C900E090D9B04537A3195E3ED9904917223A67B40811BE7DDF2C8CC79A
+
+exit=0

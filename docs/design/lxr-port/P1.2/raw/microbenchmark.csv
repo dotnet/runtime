@@ -1,0 +1,9 @@
+Arm,Method,MeanNs,ErrorNs,StdDevNs,MinNs,MaxNs,Launches,Warmups,Iterations
+stock,FieldStores,3.033,0.0021,0.0046,3.025,3.045,3,8,20
+stock,ArrayStores,4.092,0.0034,0.0073,4.079,4.110,3,8,20
+standard-empty,FieldStores,14.39,0.015,0.033,14.34,14.49,3,8,20
+standard-empty,ArrayStores,16.12,0.031,0.065,16.04,16.25,3,8,20
+standard-counting,FieldStores,21.63,0.022,0.047,21.56,21.82,3,8,20
+standard-counting,ArrayStores,23.55,0.061,0.132,23.31,23.75,3,8,20
+slot-fast,FieldStores,2.161,0.0050,0.0109,2.139,2.184,3,8,20
+slot-fast,ArrayStores,3.822,0.0144,0.0323,3.764,3.898,3,8,20

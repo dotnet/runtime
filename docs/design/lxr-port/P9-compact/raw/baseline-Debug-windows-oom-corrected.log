@@ -1,0 +1,5 @@
+{"command": ["C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\baseline-debug-windows\\corerun.exe", "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\fixtures\\runtime-tests.dll", "--oom", "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\baseline-debug-windows\\clrlxrgc.dll"], "module_sha256": "6f621627aadc04cde19971ab70c9c02baa70b9661dde6c8902a60b4206c9f49b"}
+collector=LXR nonmoving prototype; GC interface 5.15; P8 speed and scale engine module=C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-shiny-succotash\artifacts\P9\baseline-debug-windows\clrlxrgc.dll sha256=6F621627AADC04CDE19971AB70C9C02BAA70B9661DDE6C8902A60B4206C9F49B
+PASS: 10 selected-host OOM/recovery checks
+
+exit=0

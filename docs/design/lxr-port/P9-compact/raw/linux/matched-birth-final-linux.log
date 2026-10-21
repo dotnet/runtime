@@ -1,0 +1,16 @@
+allocation P8-baseline: median_ms=195.368 AA_delta_pct=-7.60 sensitivity=detected
+allocation compact: median_ms=126.590 AA_delta_pct=-3.79 sensitivity=detected
+allocation WKS: median_ms=16.087 AA_delta_pct=-7.29 sensitivity=detected
+allocation Server: median_ms=15.014 AA_delta_pct=-4.51 sensitivity=detected
+mutation P8-baseline: median_ms=3.776 AA_delta_pct=6.05 sensitivity=detected
+mutation compact: median_ms=3.620 AA_delta_pct=4.86 sensitivity=detected
+mutation WKS: median_ms=3.462 AA_delta_pct=-0.35 sensitivity=detected
+mutation Server: median_ms=3.500 AA_delta_pct=-10.10 sensitivity=detected
+automatic P8-baseline: median_ms=438.824 AA_delta_pct=-2.89 sensitivity=detected
+automatic compact: median_ms=388.709 AA_delta_pct=1.78 sensitivity=detected
+automatic WKS: median_ms=25.340 AA_delta_pct=1.75 sensitivity=detected
+automatic Server: median_ms=45.984 AA_delta_pct=-31.47 sensitivity=detected
+forced P8-baseline: median_ms=422.573 AA_delta_pct=5.16 sensitivity=detected
+forced compact: median_ms=365.678 AA_delta_pct=-2.57 sensitivity=detected
+forced WKS: median_ms=15.268 AA_delta_pct=1.47 sensitivity=detected
+forced Server: median_ms=19.189 AA_delta_pct=-4.44 sensitivity=detected

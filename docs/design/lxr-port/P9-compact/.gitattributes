@@ -1,0 +1,4 @@
+* -text whitespace=cr-at-eol
+raw/** -text -whitespace
+source-stages/pre-birth/*.patch -whitespace
+source-stages/pre-birth/*.log -whitespace

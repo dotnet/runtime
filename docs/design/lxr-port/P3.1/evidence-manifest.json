@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "validationPlatforms": ["windows-x64", "linux-x64"],
+  "runtimeSmoke": {
+    "platforms": ["windows-x64", "linux-x64"],
+    "linkages": ["linked", "standalone"],
+    "gcModes": ["Workstation", "Server"]
+  },
+  "benchmark": {
+    "workers": [1, 2, 4, 8, 16],
+    "policies": ["direct", "scheduled", "null", "injected", "replicate"],
+    "launches": 3,
+    "referenceCapacity": 1024,
+    "aaLower": 0.9,
+    "aaUpper": 1.1,
+    "injectedCostMinimum": 1.25
+  },
+  "perturbations": [
+    "stage-order",
+    "stage-rename",
+    "premature-open",
+    "drain-executing",
+    "packet-drop",
+    "packet-duplicate",
+    "stealing-disabled",
+    "ownership-duplicate-submit",
+    "increment-placement",
+    "decrement-placement",
+    "source-identity",
+    "evidence-cardinality",
+    "benchmark-aa",
+    "benchmark-injected-cost"
+  ]
+}

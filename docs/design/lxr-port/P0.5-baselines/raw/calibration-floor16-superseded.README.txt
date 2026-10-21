@@ -1,0 +1,12 @@
+Superseded first calibration, retained as evidence rather than deleted.
+
+Run p05.s1.calibrate, 10/10 scenarios, 166 probes, search floor 16 MiB (the runner default).
+
+Why it was superseded: six of the ten scenarios recorded a Workstation minimum of exactly 16 MiB,
+which is the search floor. The probe succeeded there, so the bisection never established a
+minimum - it established that the requirement is at or below the bound it was given. Every
+per-arm achieved heap factor derived from those six is therefore a lower bound on a ratio whose
+denominator was never measured, and deliverable 3 asks for measured minima.
+
+Re-run at a 4 MiB floor supersedes it. This file is kept because it is the evidence that the
+floor was binding, and because the two runs together bound the answer from both sides.

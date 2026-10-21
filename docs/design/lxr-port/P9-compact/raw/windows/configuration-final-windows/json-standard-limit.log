@@ -1,0 +1,8 @@
+{"command": ["C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\json-host-windows\\dotnet.exe", "exec", "--runtimeconfig", "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\configuration-final-windows\\json-standard-limit.runtimeconfig.json", "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\fixtures\\runtime-tests.dll", "--vertical", "mutation", "LXR", "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\birth-final-Release-windows\\clrlxrgc.dll", "normal"], "settings": {}, "properties": {"System.GC.HeapHardLimit": 67108864}}
+GC: GCHeapHardLimit
+GC: LXR configuration must be an unsigned integer in the documented range.
+GC: LXR does not support this setting. Standard GC hard limits include bookkeeping; use LXRManagedHeapHardLimitMB for the explicitly managed-capacity ceiling.
+GC heap initialization failed with error 0x80004001
+Failed to create CoreCLR, HRESULT: 0x80004001
+
+exit=2147516553

@@ -1,0 +1,7 @@
+Method,LayoutBytes,References,Arm,Selection,MeanNsPerReference,ErrorNsPerReference,StdDevNsPerReference,MinNsPerReference,MaxNsPerReference,Q1NsPerReference,Q3NsPerReference,Launches,Warmups,Iterations,ReadyToRun,TieredCompilation,ClaimBits
+VeryLargeMixedStructCopy,49152,4096,Stock,stock-bulk,0.2842,0.0010,0.0021,0.2803,0.2888,0.2828,0.2857,3,8,20,0,0,0
+VeryLargeMixedStructCopy,49152,4096,P1.2,per-slot,5.1801,0.0069,0.0149,5.1487,5.2131,5.1703,5.1912,3,8,20,0,0,1
+VeryLargeMixedStructCopy,49152,4096,P1.3,bounded-helper,7.9092,0.0424,0.0921,7.7709,8.2479,7.8356,7.9514,3,8,20,0,0,1
+VeryLargeMixedStructClear,49152,4096,Stock,stock-bulk,0.4497,0.0016,0.0035,0.4433,0.4577,0.4474,0.4510,3,8,20,0,0,0
+VeryLargeMixedStructClear,49152,4096,P1.2,per-slot,5.0210,0.0073,0.0152,4.9959,5.0681,5.0114,5.0274,3,8,20,0,0,1
+VeryLargeMixedStructClear,49152,4096,P1.3,bounded-helper,8.3154,0.0379,0.0823,8.1635,8.4974,8.2583,8.3658,3,8,20,0,0,1

@@ -1,0 +1,3 @@
+"Name","ProductCommit","Expected","Observed","Result","ExitCode","Evidence"
+"final-nativeaot-shared-gc","46e8c3381f24138962d7f9fef41c821bca5dfd60","compile and 21/21 execution","21/21 NativeAOT reference enumeration checks passed","PASS","0","final\compile.log; final\run.log"
+"pre-fix-nativeaot-compile","04c9b4c959193b8adb29924abd4c1da2336c1014","inaccessible ArrayBase conversion","artifacts\p15-nativeaot-reference-enumeration\pre-fix\gcref-control.h(127): error C2243: 'static_cast': conversion from 'Object *' to 'ArrayBase *' exists, but is inaccessible","PASS","2","pre-fix\compile.log"

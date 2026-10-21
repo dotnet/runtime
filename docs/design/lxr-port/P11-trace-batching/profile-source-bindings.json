@@ -1,0 +1,30 @@
+[
+  {
+    "stage": "before",
+    "compiler_command_file": "/root/lxr-conformance-logs/artifacts/obj/coreclr/linux.x64.Release/compile_commands.json",
+    "compiler_command_file_sha256": "22e15bd836c61d5e9a0ca1dd687bd300edc0f128eb8a7853cb353d5fd65e1022",
+    "frame_pointer_flags": [
+      "-fno-omit-frame-pointer"
+    ],
+    "source_inputs": {
+      "/root/lxr-conformance-logs/src/coreclr/gc/lxr_reference_counting.cpp": "2705533a4895e0d44e5cfaed1632cc28c470ebb7e3e1a73698889f004fcac759",
+      "/root/lxr-conformance-logs/src/coreclr/gc/lxr_reference_counting.h": "2a1995ab4d9ee9127cf25be58518c2d5f1daaf7bf7f4d05b3f704758e1b0a8b8",
+      "/root/lxr-conformance-logs/src/coreclr/gc/lxr_gc.cpp": "e78791117b7e77b83d3b1979907b0e2303a32bbef126babccbe737c22d521c6c",
+      "/root/lxr-conformance-logs/src/coreclr/gc/lxr_gcload.cpp": "e8729f1526219307123ccb42432b2101182b1d05c34e11a39acbe8c7861e3348"
+    }
+  },
+  {
+    "stage": "after",
+    "compiler_command_file": "/root/lxr-batching-d2eccaea/obj-linux-Release/compile_commands.json",
+    "compiler_command_file_sha256": "31cbe34b5ab0850689104efcb00c286c4cfc9deecc1c7b986aa534cb15d5a30b",
+    "frame_pointer_flags": [
+      "-fno-omit-frame-pointer"
+    ],
+    "source_inputs": {
+      "/mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-congenial-happiness/src/coreclr/gc/lxr_reference_counting.cpp": "6bba2e6e3513ba88f4599f6a77d41bb47e8477782b128bf729ee7aacea9f70b2",
+      "/mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-congenial-happiness/src/coreclr/gc/lxr_reference_counting.h": "e60170fd63639f318e66dd9f5ef21dee0fcb2624fff658fea60b90fdca5d14cc",
+      "/mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-congenial-happiness/src/coreclr/gc/lxr_gc.cpp": "44bec9fffbe7dd78574a828cf37bc33da0d7ce45e061b2fa11a1658bcb0b4bac",
+      "/mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-congenial-happiness/src/coreclr/gc/lxr_gcload.cpp": "6283880c81b01978e31daf26b812a07f724d7427e70e3255e6b0f4b7e5685dfd"
+    }
+  }
+]

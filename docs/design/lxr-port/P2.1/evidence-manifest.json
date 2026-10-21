@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "validationPlatforms": [
+    {
+      "platform": "windows-x64",
+      "total": 1096
+    },
+    {
+      "platform": "windows-x86",
+      "total": 1
+    },
+    {
+      "platform": "linux-x64",
+      "total": 1096
+    }
+  ],
+  "runtimeDimensions": {
+    "polarity": [
+      "0",
+      "1"
+    ],
+    "linkage": [
+      "linked",
+      "standalone"
+    ],
+    "gcMode": [
+      "Workstation",
+      "Server"
+    ]
+  },
+  "buildNames": [
+    "long-path-baseline",
+    "authorized-short-baseline",
+    "test-enabled-x64-debug",
+    "default-x64-debug",
+    "x86-release-target",
+    "arm64-release-target",
+    "final-full-build"
+  ],
+  "benchmark": {
+    "launchCount": 3,
+    "warmupCount": 8,
+    "iterationCount": 20,
+    "aaMinimum": 0.9,
+    "aaMaximum": 1.1,
+    "sensitivityMinimum": 1.5,
+    "instrumentCommit": "c832394047d0e477b2ede4a732863ff989d0de2e",
+    "nativeSha256": "6CF7CFD1E97A665F4626F9B3F47F4503E55E5C4C1239E5F67D9C86A15C0CBAA1",
+    "instrumentPaths": [
+      "docs/design/lxr-port/P2.1/side-metadata-benchmark-native.cpp",
+      "docs/design/lxr-port/P2.1/side-metadata-benchmark/Program.cs",
+      "docs/design/lxr-port/P2.1/side-metadata-benchmark/side-metadata-benchmark.csproj",
+      "docs/design/lxr-port/P2.1/side-metadata-test-platform.cpp",
+      "src/coreclr/gc/side_metadata.cpp",
+      "src/coreclr/gc/side_metadata.h"
+    ]
+  },
+  "publicWrapper": {
+    "steps": [
+      "windows-validation",
+      "linux-validation",
+      "runtime-smoke",
+      "benchmark"
+    ],
+    "launchCount": 1,
+    "warmupCount": 8,
+    "iterationCount": 20
+  },
+  "crossCwd": {
+    "benchmarkRows": 45,
+    "controls": 3,
+    "launchCount": 1,
+    "warmupCount": 8,
+    "iterationCount": 20
+  },
+  "coreRootControl": {
+    "missingFile": "System.Runtime.dll",
+    "result": "PASS"
+  },
+  "perturbations": [
+    {
+      "id": "mapping-address-bits",
+      "property": "mapping-formula",
+      "payload": "manifest-address-bits"
+    },
+    {
+      "id": "mapping-source-constant",
+      "property": "mapping-formula",
+      "payload": "source-address-bits"
+    },
+    {
+      "id": "granularity-rc-data",
+      "property": "granularity",
+      "payload": "manifest-rc-log-bytes"
+    },
+    {
+      "id": "granularity-rc-width",
+      "property": "granularity",
+      "payload": "manifest-remove-8-bit"
+    },
+    {
+      "id": "atomicity-cas-source",
+      "property": "atomicity",
+      "payload": "source-cas"
+    },
+    {
+      "id": "atomicity-load-source",
+      "property": "atomicity",
+      "payload": "source-load"
+    },
+    {
+      "id": "neighbor-validation-missing",
+      "property": "neighbor-update-loss",
+      "payload": "delete-validation-row"
+    },
+    {
+      "id": "neighbor-validation-failure",
+      "property": "neighbor-update-loss",
+      "payload": "shrink-total-preserve-pass"
+    },
+    {
+      "id": "validation-pass-mismatch",
+      "property": "neighbor-update-loss",
+      "payload": "decrement-pass-count"
+    },
+    {
+      "id": "bounds-global-anchor",
+      "property": "bounds-page-edge",
+      "payload": "manifest-global-base"
+    },
+    {
+      "id": "bounds-source-anchor",
+      "property": "bounds-page-edge",
+      "payload": "source-global-base"
+    },
+    {
+      "id": "bulk-missing-row",
+      "property": "bulk-partial-word",
+      "payload": "delete-bulk-row"
+    },
+    {
+      "id": "bulk-duplicate-row",
+      "property": "bulk-partial-word",
+      "payload": "duplicate-reset-row"
+    },
+    {
+      "id": "identity-hash",
+      "property": "manifest-source-identity",
+      "payload": "change-design-document"
+    },
+    {
+      "id": "identity-path",
+      "property": "manifest-source-identity",
+      "payload": "delete-identity-row"
+    },
+    {
+      "id": "evidence-missing-file",
+      "property": "missing-duplicate-evidence",
+      "payload": "delete-controls"
+    },
+    {
+      "id": "evidence-duplicate-validation",
+      "property": "missing-duplicate-evidence",
+      "payload": "duplicate-validation"
+    },
+    {
+      "id": "benchmark-sensitivity",
+      "property": "benchmark-sensitivity",
+      "payload": "lower-extra-cas-ratio"
+    },
+    {
+      "id": "benchmark-noise",
+      "property": "benchmark-sensitivity",
+      "payload": "raise-aa-ratio"
+    }
+  ]
+}

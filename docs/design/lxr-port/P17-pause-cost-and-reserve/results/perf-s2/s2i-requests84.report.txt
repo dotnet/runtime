@@ -1,0 +1,58 @@
+     8.88%  libclrlxrgc.so                [.] LxrReferenceCounting::CompleteAllocation                               -      -            
+     8.24%  libclrlxrgc.so                [.] LxrReferenceCounting::ReclaimNursery                                   -      -            
+     7.04%  libclrlxrgc.so                [.] SideMetadataAccessor::IsRangeZero                                      -      -            
+     6.85%  libclrlxrgc.so                [.] ReferenceCountTable::RegisterObjectInClearedSpan                       -      -            
+     6.10%  libclrlxrgc.so                [.] LxrGcHeap::AllocationComplete                                          -      -            
+     4.95%  memfd:doublemapper (deleted)  [.] 0x000000000014d992                                                     -      -            
+     4.79%  libclrlxrgc.so                [.] LxrReferenceCounting::ResolveForwarded                                 -      -            
+     4.56%  libclrlxrgc.so                [.] LxrReferenceCounting::RetireForwardedSources                           -      -            
+     3.84%  libclrlxrgc.so                [.] LxrReferenceCounting::GetObjectExtent                                  -      -            
+     3.32%  libclrlxrgc.so                [.] LxrReferenceCounting::RecordFastAllocation                             -      -            
+     3.22%  libclrlxrgc.so                [.] LxrGcHeap::LeaseFinalizer                                              -      -            
+     2.23%  libclrlxrgc.so                [.] LxrReferenceCounting::WalkObjects                                      -      -            
+     2.02%  libclrlxrgc.so                [.] LxrReferenceCounting::TryCopyNursery                                   -      -            
+     1.98%  libclrlxrgc.so                [.] LxrReferenceCounting::GetHeapStatistics                                -      -            
+     1.91%  libclrlxrgc.so                [.] ImmixAllocationManager::IsLineDead                                     -      -            
+     1.76%  libclrlxrgc.so                [.] ImmixAllocationManager::AcquireBlock                                   -      -            
+     1.65%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessTraceObject                               -      -            
+     1.56%  libc.so.6                     [.] __memset_evex_unaligned_erms                                           -      -            
+     1.34%  libclrlxrgc.so                [.] SideMetadataManager::ResetRangeQuiescentCore                           -      -            
+     0.93%  memfd:doublemapper (deleted)  [.] 0x000000000014d98a                                                     -      -            
+     0.79%  libclrlxrgc.so                [.] ImmixBlockManager::TryAcquire                                          -      -            
+     0.76%  ld-linux-x86-64.so.2          [.] _dl_update_slotinfo                                                    -      -            
+--- side-metadata share (self time, percent of all samples)
+SideMetadata total self: 10.32
+--- inclusive (children) share of the checked functions and of the engine entry points
+    39.21%     0.27%  [.] LxrReferenceCounting::Execute                                          -      -            
+    23.54%     0.00%  [.] LxrReferenceCounting::ReleaseEpoch                                     -      -            
+     9.28%     0.00%  [.] LxrReferenceCounting::Sweep                                            -      -            
+     8.93%     0.18%  [.] LxrReferenceCounting::ProcessIncrementWork                             -      -            
+     8.66%     0.29%  [.] LxrReferenceCounting::ProcessIncrement                                 -      -            
+     8.27%     8.24%  [.] LxrReferenceCounting::ReclaimNursery                                   -      -            
+     7.49%     0.04%  [.] ImmixBlockManager::TryReleaseIfRcDead                                  -      -            
+     7.06%     2.02%  [.] LxrReferenceCounting::TryCopyNursery                                   -      -            
+     6.85%     6.85%  [.] ReferenceCountTable::RegisterObjectInClearedSpan                       -      -            
+     4.08%     0.17%  [.] LxrReferenceCounting::ProcessTraceWork                                 -      -            
+     3.64%     1.65%  [.] LxrReferenceCounting::ProcessTraceObject                               -      -            
+     2.22%     0.79%  [.] ImmixBlockManager::TryAcquire                                          -      -            
+     1.72%     0.47%  [.] ReferenceCountTable::InitializeObjectQuiescent                         -      -            
+     1.43%     0.18%  [.] LxrReferenceCounting::ProcessDecrements                                -      -            
+     1.34%     1.34%  [.] SideMetadataManager::ResetRangeQuiescentCore                           -      -            
+     1.21%     0.17%  [.] ReferenceCountTable::DecrementWithDeathCore<true>                      -      -            
+     1.04%     0.07%  [.] ReferenceCountTable::ValidateUnregisteredObjectRange                   -      -            
+     1.04%     0.01%  [.] LxrReferenceCounting::Death                                            -      -            
+     0.81%     0.63%  [.] SideMetadataManager::Load                                              -      -            
+     0.72%     0.72%  [.] LxrReferenceCounting::Reclaim                                          -      -            
+     0.51%     0.43%  [.] LxrReferenceCounting::SweepCycles                                      -      -            
+     0.50%     0.50%  [.] ImmixBlockManager::TryLock                                             -      -            
+     0.48%     0.06%  [.] ReferenceCountTable::IsContinuationLine                                -      -            
+     0.38%     0.36%  [.] ImmixBlockManager::Unlock                                              -      -            
+     0.36%     0.36%  [.] ImmixBlockManager::GetState                                            -      -            
+SideMetadataManager::Load                        0.63
+SideMetadataManager::Store                       0.13
+SideMetadataManager::GetLocation                 0.32
+SideMetadataManager::Update                      0.00
+SideMetadataManager::IsDataAddressOwned          0.01
+SideMetadataManager::CompareExchange             0.00
+SideMetadataManager::IncrementSaturating         0.00
+SideMetadataManager::DecrementNonZero            0.00

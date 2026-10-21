@@ -1,0 +1,5 @@
+FAIL: each root is copied once for RC, once for its increment trace and once for the batched trace seed
+FAIL: each root is copied once for RC, once for its increment trace and once for the batched trace seed
+FAIL: each root is copied once for RC, once for its increment trace and once for the batched trace seed
+FAIL: each root is copied once for RC, once for its increment trace and once for the batched trace seed
+FAIL: 6166/6170 root batching checks

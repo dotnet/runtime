@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "declaredOracle": {
+    "name": "lxr-head",
+    "binding": "0682434ae725787e38defbc17bd66dc918e4bdb7",
+    "core": "304ce69d43aae87de501111fceb8cbd33173a03a"
+  },
+  "queueSetCount": 2,
+  "lanes": [
+    "prioritized",
+    "normal"
+  ],
+  "initialState": {
+    "activeIndex": 0,
+    "producerIndex": 1,
+    "producerGeneration": 1
+  },
+  "publicationOrder": [
+    "seal-completed-generation",
+    "record-mutators-resumed",
+    "publish-sealed-generation",
+    "wake-workers"
+  ],
+  "publicationStage": "Unconstrained",
+  "lazyPriority": "prioritized",
+  "eagerStage": "STWRCDecsAndSweep",
+  "rcMetadataWidths": [
+    2,
+    4,
+    8
+  ],
+  "defaultRcMaxCount": 3
+}

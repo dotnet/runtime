@@ -1,0 +1,32 @@
+build exit=0
+Debug default exit=0 :: PASS: 30982/30982 integrated P4 checks :: flip_overlaps=0 flip_blocked=0
+Debug --log-storage exit=0 :: PASS: 2121/2121 log storage checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature exit=0 :: PASS: 3324/3324 mature movement checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-remset exit=0 :: PASS: 100/100 mature remset checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-reader exit=0 :: PASS: 47/47 mature reader checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-retained-owner exit=0 :: PASS: 22/22 retained mature owner checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-released-candidate exit=0 :: PASS: 117/117 released candidate incarnation checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-headroom exit=0 :: PASS: 131/131 nursery headroom checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-completed-scan exit=0 :: PASS: 45/45 completed mature descriptor checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-remset-whole exit=0 :: PASS: 532/532 whole-block remset lifetime checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-remset-wrap exit=0 :: PASS: 1375/1375 byte-wrap remset lifetime checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-remset-same-shape exit=0 :: PASS: 1376/1376 same-shape remset checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-remset-boundaries exit=0 :: PASS: 5505/5505 remset current-owner boundary checks :: flip_overlaps=0 flip_blocked=0
+Debug --nursery exit=0 :: PASS: 287/287 moving nursery checks :: flip_overlaps=0 flip_blocked=0
+Debug --nursery-reader exit=0 :: PASS: 48/48 moving reader checks :: flip_overlaps=0 flip_blocked=0
+Debug --root-batching exit=0 :: PASS: 6170/6170 root batching checks :: flip_overlaps=0 flip_blocked=0
+Debug --trace-batching exit=0 :: PASS: 313569/313569 trace batching checks :: flip_overlaps=0 flip_blocked=0
+Debug --aux-retirement exit=0 :: PASS: 12307/12307 auxiliary retirement checks :: flip_overlaps=0 flip_blocked=0
+Debug --object-planes exit=0 :: PASS: 18/18 object plane checks :: flip_overlaps=0 flip_blocked=0
+Debug --storage-diagnostics exit=0 :: PASS: 31/31 storage accounting checks :: flip_overlaps=0 flip_blocked=0
+Debug --lifetime exit=0 :: PASS: 17/17 lifetime probe checks :: flip_overlaps=0 flip_blocked=0
+Debug --p8-policy exit=0 :: PASS: 62/62 policy checks :: flip_overlaps=0 flip_blocked=0
+Debug --p8-storage exit=0 :: PASS: 2132/2132 fast-span and growth checks :: flip_overlaps=0 flip_blocked=0
+Debug --trace exit=0 :: PASS: 8361/8361 trace engine checks :: flip_overlaps=0 flip_blocked=0
+Debug --first-store-churn exit=0 :: PASS: 162/162 first-store engine checks :: flip_overlaps=0 flip_blocked=0
+Debug --inline-metadata exit=0 :: PASS: 465/465 inline metadata accessor checks :: flip_overlaps=0 flip_blocked=0
+Debug --lazy-large-release exit=0 :: PASS: 14/14 lazy large-object release checks :: flip_overlaps=0 flip_blocked=0
+Debug --s3-bookkeeping exit=0 :: PASS: 19954/19954 S3 bookkeeping checks :: flip_overlaps=0 flip_blocked=0
+Debug --s4-sweep exit=0 :: PASS: 46100/46100 S4 sweep checks :: flip_overlaps=0 flip_blocked=0
+Debug --s5b-overshoot exit=0 :: PASS: 9408/9408 S5b overshoot checks :: flip_overlaps=0 flip_blocked=0
+native Debug failed=0

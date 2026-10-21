@@ -1,0 +1,30 @@
+{
+  "windows": {
+    "rows": 288,
+    "groups": 48,
+    "normal_n": 4,
+    "exact_log_commit_groups_passed": 18,
+    "native_plane_128mib_exact_groups_passed": 6,
+    "log_commit_reduction_percent": 20,
+    "native_plane_128mib_before": 774049792,
+    "native_plane_128mib_after": 639832064,
+    "native_plane_reduction_percent": 17.339676256898986,
+    "injected_effect_min_ms": 185.1819499999997,
+    "injected_effect_max_ms": 242.19619999999986,
+    "injected_nonpositive_groups": 0
+  },
+  "linux": {
+    "rows": 288,
+    "groups": 48,
+    "normal_n": 4,
+    "exact_log_commit_groups_passed": 18,
+    "native_plane_128mib_exact_groups_passed": 6,
+    "log_commit_reduction_percent": 20,
+    "native_plane_128mib_before": 774049792,
+    "native_plane_128mib_after": 639832064,
+    "native_plane_reduction_percent": 17.339676256898986,
+    "injected_effect_min_ms": -261.5449499999995,
+    "injected_effect_max_ms": 248.90239999999994,
+    "injected_nonpositive_groups": 1
+  }
+}

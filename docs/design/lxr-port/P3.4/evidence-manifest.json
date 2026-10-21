@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "validationPlatforms": [
+    "windows-x64",
+    "linux-x64"
+  ],
+  "runtimeSmoke": {
+    "platforms": [
+      "windows-x64",
+      "linux-x64"
+    ],
+    "linkages": [
+      "linked",
+      "standalone"
+    ],
+    "gcModes": [
+      "Workstation",
+      "Server"
+    ]
+  },
+  "buildRows": [
+    "windows-x64-enabled",
+    "linux-x64-enabled",
+    "windows-x64-default-off",
+    "linux-x64-default-off",
+    "windows-combined-features"
+  ],
+  "crossTargets": [
+    "windows-x86",
+    "windows-arm64"
+  ],
+  "benchmark": {
+    "workers": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "backlogs": [
+      0,
+      1,
+      4,
+      16,
+      32
+    ],
+    "policies": {
+      "tracked": 1,
+      "same-code": 1,
+      "null": 0,
+      "injected": 65,
+      "aa": 1
+    },
+    "launches": 3,
+    "packetCount": 32,
+    "referenceCapacity": 1024,
+    "warmupCycles": 1,
+    "measuredCycles": 8,
+    "aaBacklog": 32,
+    "aaLower": 0.25,
+    "aaUpper": 4.0,
+    "injectedMinimum": 1.25,
+    "backlogSensitivityMinimum": 1.25
+  },
+  "perturbations": [
+    "overall-balance",
+    "decrement-balance",
+    "underflow",
+    "overflow",
+    "decrement-zero-once",
+    "overall-zero-once",
+    "zero-order",
+    "release-before-drain",
+    "promotion-order",
+    "child-before-parent",
+    "callback-outside-lock",
+    "stale-generation",
+    "premature-state-reuse",
+    "deferred-publication",
+    "shutdown-ownership",
+    "callback-failure",
+    "source-identity",
+    "evidence-cardinality",
+    "benchmark-aa",
+    "benchmark-null",
+    "benchmark-injected-backlog",
+    "benchmark-depth"
+  ]
+}

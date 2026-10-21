@@ -1,0 +1,243 @@
+{
+    "schemaVersion": 1,
+    "metrics": {
+        "operationsPerSecond": {
+            "label": "Throughput",
+            "unit": "ops/s",
+            "better": "higher"
+        },
+        "pauseAverageMs": {
+            "label": "Pause average",
+            "unit": "ms",
+            "better": "lower"
+        },
+        "pauseP99Ms": {
+            "label": "Pause p99",
+            "unit": "ms",
+            "better": "lower"
+        },
+        "pauseMaxMs": {
+            "label": "Pause max",
+            "unit": "ms",
+            "better": "lower"
+        },
+        "workingSetMb": {
+            "label": "Working set",
+            "unit": "MiB",
+            "better": "lower"
+        },
+        "committedMb": {
+            "label": "Committed memory",
+            "unit": "MiB",
+            "better": "lower"
+        }
+    },
+    "checkpoints": [
+        {
+            "id": "working-but-underperf-120s",
+            "date": "2026-08-03",
+            "stepId": "P0.3",
+            "notes": "120-second event-based baseline from results-full.json; LXR is throughput-competitive in light scenarios but loses badly on pause tails and footprint.",
+            "results": [
+                {
+                    "scenario": "console",
+                    "collector": "workstation",
+                    "operationsPerSecond": 15738.46,
+                    "pauseAverageMs": 0.371,
+                    "pauseP99Ms": 1.302,
+                    "pauseMaxMs": 1.302,
+                    "workingSetMb": 55.7,
+                    "committedMb": 24.9,
+                    "notes": ""
+                },
+                {
+                    "scenario": "console",
+                    "collector": "server",
+                    "operationsPerSecond": 15750.78,
+                    "pauseAverageMs": 0.226,
+                    "pauseP99Ms": 0.774,
+                    "pauseMaxMs": 1.214,
+                    "workingSetMb": 35.6,
+                    "committedMb": 3.5,
+                    "notes": ""
+                },
+                {
+                    "scenario": "console",
+                    "collector": "lxr",
+                    "operationsPerSecond": 15794.51,
+                    "pauseAverageMs": 2.142,
+                    "pauseP99Ms": 3.951,
+                    "pauseMaxMs": 3.951,
+                    "workingSetMb": 146.3,
+                    "committedMb": 138.9,
+                    "notes": ""
+                },
+                {
+                    "scenario": "webapi",
+                    "collector": "workstation",
+                    "operationsPerSecond": 252.74,
+                    "pauseAverageMs": 1.837,
+                    "pauseP99Ms": 7.489,
+                    "pauseMaxMs": 7.489,
+                    "workingSetMb": 92.5,
+                    "committedMb": 26.9,
+                    "notes": ""
+                },
+                {
+                    "scenario": "webapi",
+                    "collector": "server",
+                    "operationsPerSecond": 253.07,
+                    "pauseAverageMs": 0.692,
+                    "pauseP99Ms": 0.978,
+                    "pauseMaxMs": 2.26,
+                    "workingSetMb": 72.1,
+                    "committedMb": 5.4,
+                    "notes": ""
+                },
+                {
+                    "scenario": "webapi",
+                    "collector": "lxr",
+                    "operationsPerSecond": 252.52,
+                    "pauseAverageMs": 13.919,
+                    "pauseP99Ms": 22.578,
+                    "pauseMaxMs": 27.771,
+                    "workingSetMb": 304.9,
+                    "committedMb": 298.2,
+                    "notes": ""
+                },
+                {
+                    "scenario": "gcperfsim-cache",
+                    "collector": "workstation",
+                    "operationsPerSecond": 14.83,
+                    "pauseAverageMs": 3.409,
+                    "pauseP99Ms": 9.651,
+                    "pauseMaxMs": 9.651,
+                    "workingSetMb": 491.3,
+                    "committedMb": 504.9,
+                    "notes": ""
+                },
+                {
+                    "scenario": "gcperfsim-cache",
+                    "collector": "server",
+                    "operationsPerSecond": 14.78,
+                    "pauseAverageMs": 4.397,
+                    "pauseP99Ms": 21.154,
+                    "pauseMaxMs": 21.154,
+                    "workingSetMb": 619.7,
+                    "committedMb": 655.9,
+                    "notes": ""
+                },
+                {
+                    "scenario": "gcperfsim-cache",
+                    "collector": "lxr",
+                    "operationsPerSecond": 14.52,
+                    "pauseAverageMs": 29.497,
+                    "pauseP99Ms": 117.989,
+                    "pauseMaxMs": 117.989,
+                    "workingSetMb": 740.2,
+                    "committedMb": 779.8,
+                    "notes": ""
+                },
+                {
+                    "scenario": "gcperfsim-churn",
+                    "collector": "workstation",
+                    "operationsPerSecond": 7.76,
+                    "pauseAverageMs": 2.294,
+                    "pauseP99Ms": 27.049,
+                    "pauseMaxMs": 27.049,
+                    "workingSetMb": 176.1,
+                    "committedMb": 144.9,
+                    "notes": ""
+                },
+                {
+                    "scenario": "gcperfsim-churn",
+                    "collector": "server",
+                    "operationsPerSecond": 7.81,
+                    "pauseAverageMs": 4.272,
+                    "pauseP99Ms": 30.288,
+                    "pauseMaxMs": 30.288,
+                    "workingSetMb": 244.7,
+                    "committedMb": 226.7,
+                    "notes": ""
+                },
+                {
+                    "scenario": "gcperfsim-churn",
+                    "collector": "lxr",
+                    "operationsPerSecond": 7.65,
+                    "pauseAverageMs": 21.679,
+                    "pauseP99Ms": 226.018,
+                    "pauseMaxMs": 226.018,
+                    "workingSetMb": 549.3,
+                    "committedMb": 683.4,
+                    "notes": ""
+                },
+                {
+                    "scenario": "gcperfsim-webserver",
+                    "collector": "workstation",
+                    "operationsPerSecond": 20.08,
+                    "pauseAverageMs": 3.817,
+                    "pauseP99Ms": 17.484,
+                    "pauseMaxMs": 17.484,
+                    "workingSetMb": 690.1,
+                    "committedMb": 686.6,
+                    "notes": ""
+                },
+                {
+                    "scenario": "gcperfsim-webserver",
+                    "collector": "server",
+                    "operationsPerSecond": 20.04,
+                    "pauseAverageMs": 12.5,
+                    "pauseP99Ms": 40.95,
+                    "pauseMaxMs": 40.95,
+                    "workingSetMb": 843.5,
+                    "committedMb": 884.4,
+                    "notes": ""
+                },
+                {
+                    "scenario": "gcperfsim-webserver",
+                    "collector": "lxr",
+                    "operationsPerSecond": 19.28,
+                    "pauseAverageMs": 53.15,
+                    "pauseP99Ms": 246.53,
+                    "pauseMaxMs": 246.53,
+                    "workingSetMb": 1313.7,
+                    "committedMb": 1526.2,
+                    "notes": ""
+                },
+                {
+                    "scenario": "gcperfsim-mt-throughput",
+                    "collector": "workstation",
+                    "operationsPerSecond": 5184.01,
+                    "pauseAverageMs": 1.83,
+                    "pauseP99Ms": 9.15,
+                    "pauseMaxMs": 17.89,
+                    "workingSetMb": 472.5,
+                    "committedMb": 489.7,
+                    "notes": ""
+                },
+                {
+                    "scenario": "gcperfsim-mt-throughput",
+                    "collector": "server",
+                    "operationsPerSecond": 10390.29,
+                    "pauseAverageMs": 3.63,
+                    "pauseP99Ms": 29.68,
+                    "pauseMaxMs": 29.68,
+                    "workingSetMb": null,
+                    "committedMb": null,
+                    "notes": "The source result omitted memory samples for this run."
+                },
+                {
+                    "scenario": "gcperfsim-mt-throughput",
+                    "collector": "lxr",
+                    "operationsPerSecond": 296.3,
+                    "pauseAverageMs": 244.03,
+                    "pauseP99Ms": 1727.79,
+                    "pauseMaxMs": 1727.79,
+                    "workingSetMb": 4119.9,
+                    "committedMb": 6589.9,
+                    "notes": ""
+                }
+            ]
+        }
+    ]
+}

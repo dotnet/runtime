@@ -1,0 +1,66 @@
+{"command": ["/root/lxr-compact-collector/artifacts/P9/diagnostic-baseline-Release-linux/corerun", "/root/lxr-compact-collector/artifacts/P9/storage-fixtures/runtime-tests.dll", "--storage", "forced", "LXR", "/root/lxr-compact-collector/artifacts/P9/diagnostic-baseline-Release-linux/libclrlxrgc.so", "normal"], "module_sha256": "c643932428e60eee8a660d972e5f801c5720724ac11a10dd340e12f62c3b9b9e", "fixture_sha256": "be8b35e1376724559ea3f13c7429d0c6da05e24381d17030467d78d8800bac02", "settings": {"DOTNET_GCPath": "/root/lxr-compact-collector/artifacts/P9/diagnostic-baseline-Release-linux/libclrlxrgc.so", "DOTNET_ReadyToRun": "0", "DOTNET_TieredCompilation": "0", "DOTNET_gcServer": "0", "DOTNET_gcConcurrent": "1", "DOTNET_GCHeapCount": "2", "DOTNET_LXRLegacyCapacity": "1"}}
+vertical=forced collector=LXR control=normal module_sha256=C643932428E60EEE8A660D972E5F801C5720724AC11A10DD340E12F62C3B9B9E operations=32 checksum=49152 exhausted=False elapsed_ms=588.894 post_full_ms=24.689 pause_ms=442.859 allocated_bytes=6456384 collections=8 working_set_bytes=212926464 private_bytes=418201600 owned_resident_bytes=4788224 non_owned_resident_bytes=208138240 heap_bytes=1482144 fragmentation_bytes=840112 managed_committed_bytes=8425472 reserved_bytes=25165824 admitted_bytes=25165824 native_plane_committed_bytes=213254144 live_bytes=690856 reclaimed_bytes=5834440 fast_hits=200477 refills=358 growth_count=0 hard_limit_bytes=25165824 checks=5
+storage_phase=forced wall_ms=588.894 cpu_ms=794.925 stw_ms=442.859 initial=0 final=0 full=8 trace_phase_at_window_end=0
+storage_metric=48 value=643697
+storage_metric=49 value=6417088
+storage_metric=50 value=14399560
+storage_metric=51 value=5836104
+storage_metric=52 value=253997
+storage_metric=53 value=2226000
+storage_metric=54 value=3823560
+storage_metric=55 value=25165824
+storage_metric=56 value=3145728
+storage_metric=57 value=25165824
+storage_metric=58 value=393216
+storage_metric=59 value=25165824
+storage_metric=60 value=6291456
+storage_metric=61 value=25165824
+storage_metric=62 value=6291456
+storage_metric=63 value=8388608
+storage_metric=64 value=2097152
+storage_metric=65 value=25165824
+storage_metric=66 value=6291456
+storage_metric=67 value=25165824
+storage_metric=68 value=6291456
+storage_metric=69 value=8388608
+storage_metric=70 value=2097152
+storage_metric=71 value=12582912
+storage_metric=72 value=110
+storage_metric=73 value=1
+storage_metric=74 value=2097152
+storage_metric=75 value=16932864
+storage_component=0 start=78532A800000 reserved_coverage_bytes=25165824 resident_bytes=25165824
+storage_component=1 start=7853314F4000 reserved_coverage_bytes=3145728 resident_bytes=3145728
+storage_component=2 start=7852B8C00000 reserved_coverage_bytes=25165824 resident_bytes=25165824
+storage_component=3 start=78533829C000 reserved_coverage_bytes=393216 resident_bytes=393216
+storage_component=4 start=7852AA800000 reserved_coverage_bytes=25165824 resident_bytes=36864
+storage_component=5 start=785330E00000 reserved_coverage_bytes=6291456 resident_bytes=6291456
+storage_component=6 start=7852A9000000 reserved_coverage_bytes=25165824 resident_bytes=36864
+storage_component=7 start=785330800000 reserved_coverage_bytes=6291456 resident_bytes=6291456
+storage_component=8 start=78532A000000 reserved_coverage_bytes=8388608 resident_bytes=200704
+storage_component=9 start=785330600000 reserved_coverage_bytes=2097152 resident_bytes=2097152
+storage_component=10 start=7852A7800000 reserved_coverage_bytes=25165824 resident_bytes=36864
+storage_component=11 start=785329A00000 reserved_coverage_bytes=6291456 resident_bytes=6291456
+storage_component=12 start=7852A6000000 reserved_coverage_bytes=25165824 resident_bytes=36864
+storage_component=13 start=7852B8600000 reserved_coverage_bytes=6291456 resident_bytes=6291456
+storage_component=14 start=7852A5800000 reserved_coverage_bytes=8388608 resident_bytes=233472
+storage_component=15 start=785330400000 reserved_coverage_bytes=2097152 resident_bytes=2097152
+storage_component=16 start=7852A1200000 reserved_coverage_bytes=12582912 resident_bytes=12582912
+storage_component=17 start=DE14A900000 reserved_coverage_bytes=393216 resident_bytes=81920
+storage_component=18 start=1D0A54800000 reserved_coverage_bytes=3145728 resident_bytes=1056768
+storage_component=19 start=1FE14A900000 reserved_coverage_bytes=393216 resident_bytes=81920
+storage_component=20 start=2000F0A54000 reserved_coverage_bytes=4096 resident_bytes=4096
+storage_component=21 start=4DE14A900000 reserved_coverage_bytes=393216 resident_bytes=393216
+storage_component=22 start=4E7852A40000 reserved_coverage_bytes=98304 resident_bytes=20480
+storage_component=23 start=4E80F0A54000 reserved_coverage_bytes=4096 resident_bytes=4096
+storage_component=24 start=4E811E14A000 reserved_coverage_bytes=4096 resident_bytes=0
+storage_component=25 start=4E8210A54000 reserved_coverage_bytes=4096 resident_bytes=4096
+storage_component=26 start=4E8310A54000 reserved_coverage_bytes=4096 resident_bytes=4096
+storage_component=27 start=4EFB72A40000 reserved_coverage_bytes=98304 resident_bytes=0
+storage_component=28 start=52C5B5200000 reserved_coverage_bytes=786432 resident_bytes=4096
+storage_component=29 start=530AA52A4000 reserved_coverage_bytes=8192 resident_bytes=0
+storage_component=30 start=5312A52A4000 reserved_coverage_bytes=8192 resident_bytes=4096
+storage_component=31 start=531410A54000 reserved_coverage_bytes=4096 resident_bytes=4096
+storage_resident_bytes=98058240
+
+exit=0

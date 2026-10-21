@@ -1,0 +1,115 @@
+######## control LXR_S6_UNSAFE_APPEND_CONTROL (Release)
+      1 FAIL: concurrent registrations are counted exactly once
+      1 FAIL: concurrent appends from many threads are all kept exactly once across many chunks
+      1 FAIL: 291/293 S6 registry checks
+      1 == --s6-registry
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S6_TOUCHED_DROP_CONTROL (Release)
+      2 FAIL: the root capture retained exactly the two new entries
+      2 FAIL: registering an old object adds one count at the next pause
+      2 FAIL: registered objects stay alive, and no reference-counting pause moves one to the ready list
+      2 FAIL: a registered young object that nothing else references is promoted and survives a reference-counting pause
+      1 FAIL: two entries of one object give one ready entry and give one count back
+      1 FAIL: the suppressed (new and counted) and the eager entries are dropped
+      1 FAIL: the queued object is traced with its children, so the children survive (f-reachability)
+      1 FAIL: the pause clears the pin and copy flags of exactly the objects on the touched list and no other flag
+      1 FAIL: the new ready entries are handed out for tracing
+      1 FAIL: the merged entry keeps the critical bit of its entries
+      1 FAIL: the first pause counts four entries, drops the suppressed one and queues nothing
+      1 FAIL: the finalizer thread takes the queued object
+      1 FAIL: the finalizer thread lets go of the count of each entry it takes or skips
+      1 FAIL: the entries that the full pause queues name valid, marked objects
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S6_NO_SUPPRESS_CONTROL (Release)
+      1 FAIL: the first pause counts four entries, drops the suppressed one and queues nothing
+      1 FAIL: a suppressed new entry is dropped without a count; every other entry gets one
+      1 FAIL: a dropped entry gives its count back
+      1 FAIL: a decision moves unmarked entries to the ready list, keeps marked entries, drops suppressed and eager ones
+      1 FAIL: 289/293 S6 registry checks
+      1 == --s6-registry
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S6_MARKED_READY_CONTROL (Release)
+      1 FAIL: the new ready entries are handed out for tracing
+      1 FAIL: the finalizer thread takes the queued object
+      1 FAIL: the finalizer thread lets go of the count of each entry it takes or skips
+      1 FAIL: the decision merges the counted entries of a live object and gives the extra count back
+      1 FAIL: a ready entry whose finalization was suppressed after the decision is skipped; the critical one comes last
+      1 FAIL: a marked registered object stays in the registry, and no other entry stays
+      1 FAIL: a full pause queues exactly the unmarked registered object
+      1 FAIL: a decision moves unmarked entries to the ready list, keeps marked entries, drops suppressed and eager ones
+      1 FAIL: 285/293 S6 registry checks
+      1 == --s6-registry
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S6_NO_DEDUPE_CONTROL (Release)
+      1 FAIL: two entries of one object give one ready entry and give one count back
+      1 FAIL: the merged entry keeps the critical bit of its entries
+      1 FAIL: the decision merges the counted entries of a live object and gives the extra count back
+      1 FAIL: new entries of one re-registered object give one counted entry
+      1 FAIL: a re-registration after a pause adds a counted entry until the next decision
+      1 FAIL: 288/293 S6 registry checks
+      1 == --s6-registry
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S6_NO_RELEASE_CONTROL (Release)
+      1 FAIL: the next pause takes the counts away, and the objects and their children die by reference counting
+      1 FAIL: the finalizer thread lets go of the count of each entry it takes or skips
+      1 FAIL: 288/290 S6 registry checks
+      1 == --s6-registry
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S6_NO_RETAIN_CONTROL (Release)
+      2 FAIL: registering an old object adds one count at the next pause
+      2 FAIL: registered objects stay alive, and no reference-counting pause moves one to the ready list
+      2 FAIL: a registered young object that nothing else references is promoted and survives a reference-counting pause
+      1 FAIL: the queued object is traced with its children, so the children survive (f-reachability)
+      1 FAIL: the entries that the full pause queues name valid, marked objects
+      1 FAIL: a nursery copy moves registered objects, and each entry follows its object with its payload
+      1 FAIL: a dropped entry is traced, so the cycle sweep cannot free its object before the count is taken away
+      1 FAIL: 211/221 S6 registry checks
+      1 == --s6-registry
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S6_RC_DECIDE_CONTROL (Release)
+      2 FAIL: registered objects stay alive, and no reference-counting pause moves one to the ready list
+      2 FAIL: a registered young object that nothing else references is promoted and survives a reference-counting pause
+      1 FAIL: the suppressed (new and counted) and the eager entries are dropped
+      1 FAIL: the next pause takes the counts away, and the objects and their children die by reference counting
+      1 FAIL: the first pause counts four entries, drops the suppressed one and queues nothing
+      1 FAIL: the finalizer thread takes the queued object
+      1 FAIL: a nursery copy moves registered objects, and each entry follows its object with its payload
+      1 FAIL: a marked registered object stays in the registry, and no other entry stays
+      1 FAIL: a full pause queues exactly the unmarked registered object
+      1 FAIL: S6 pause and its lazy tail complete
+      1 FAIL: 204/216 S6 registry checks
+      1 == --s6-registry
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S6_NO_DECIDE_CONTROL (Release)
+      1 FAIL: the suppressed (new and counted) and the eager entries are dropped
+      1 FAIL: the queued object is traced with its children, so the children survive (f-reachability)
+      1 FAIL: the finalizer thread takes the queued object
+      1 FAIL: the entries that the full pause queues name valid, marked objects
+      1 FAIL: the cycle sweep skips the cycle of a registered object: it is queued and marked
+      1 FAIL: a marked registered object stays in the registry, and no other entry stays
+      1 FAIL: a full pause queues exactly the unmarked registered object
+      1 FAIL: a dropped entry is traced, so the cycle sweep cannot free its object before the count is taken away
+      1 FAIL: 251/259 S6 registry checks
+      1 == --s6-registry
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S6_NO_TRACE_CONTROL (Release)
+      1 FAIL: the queued object is traced with its children, so the children survive (f-reachability)
+      1 FAIL: the entries that the full pause queues name valid, marked objects
+      1 FAIL: the cycle sweep skips the cycle of a registered object: it is queued and marked
+      1 FAIL: a dropped entry is traced, so the cycle sweep cannot free its object before the count is taken away
+      1 FAIL: 255/259 S6 registry checks
+      1 == --s6-registry
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S6_NO_RELOCATE_CONTROL (Release)
+      1 FAIL: the entries that the full pause queues name valid, marked objects
+      1 FAIL: registered objects stay alive, and no reference-counting pause moves one to the ready list
+      1 FAIL: a registered young object that nothing else references is promoted and survives a reference-counting pause
+      1 FAIL: a nursery copy moves registered objects, and each entry follows its object with its payload
+      1 FAIL: 221/225 S6 registry checks
+      1 == --s6-registry
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S6_NO_RELOCATE_HELD_CONTROL (Release)
+      1 FAIL: the count that a decision gives up follows an object that a copy in the same pause moved
+      1 FAIL: 292/293 S6 registry checks
+      1 == --s6-registry
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)

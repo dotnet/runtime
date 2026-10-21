@@ -1,0 +1,6 @@
+# Preserve byte-bound records across Windows/Linux checkout settings.
+.gitattributes -text whitespace=cr-at-eol
+*.csv -text whitespace=cr-at-eol
+*.json -text whitespace=cr-at-eol
+*.txt -text whitespace=cr-at-eol
+*.py -text whitespace=cr-at-eol

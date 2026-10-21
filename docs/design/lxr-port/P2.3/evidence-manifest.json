@@ -1,0 +1,558 @@
+{
+  "schemaVersion": 1,
+  "phase": "P2.3",
+  "verifierExpectedChecks": 631,
+  "sourceManifestPaths": 37,
+  "requiredSourceManifestPaths": [
+    "docs/design/lxr-port/P2.1/side-metadata-test-platform.cpp",
+    "docs/design/lxr-port/P2.3-sticky-reference-counts.md",
+    "docs/design/lxr-port/P2.3/evidence-manifest.json",
+    "docs/design/lxr-port/P2.3/mechanism-spec.json",
+    "docs/design/lxr-port/P2.3/source-manifest.txt",
+    "src/coreclr/dlls/mscoree/mscorwks_referencecounttest_unixexports.src",
+    "src/coreclr/gc/immix_block.cpp",
+    "src/coreclr/gc/immix_block.h",
+    "src/coreclr/gc/reference_count.cpp",
+    "src/coreclr/gc/reference_count.h",
+    "src/coreclr/gc/referencecounttest.cpp",
+    "src/coreclr/gc/side_metadata.cpp",
+    "src/coreclr/gc/side_metadata.h"
+  ],
+  "rawFiles": [
+    "attempt-summary.csv",
+    "benchmark-contention-raw.csv",
+    "benchmark-controls.csv",
+    "benchmark-identity.csv",
+    "benchmark-width-raw.csv",
+    "build-summary.csv",
+    "combined-export-summary.csv",
+    "core-root-control-summary.csv",
+    "cross-cwd-summary.csv",
+    "default-path-summary.csv",
+    "invocation.csv",
+    "platform-summary.csv",
+    "runtime-identities.csv",
+    "runtime-smoke-summary.csv",
+    "source-commit.txt",
+    "source-identities.csv",
+    "topology-summary.csv",
+    "validation-summary.csv"
+  ],
+  "rawSchemas": {
+    "topology-summary.csv": [
+      "source_commit",
+      "evidence_commit",
+      "evidence_parent",
+      "distinct",
+      "result"
+    ],
+    "source-identities.csv": [
+      "path",
+      "sha256"
+    ],
+    "validation-summary.csv": [
+      "platform",
+      "passed",
+      "total",
+      "checks",
+      "result"
+    ],
+    "runtime-smoke-summary.csv": [
+      "platform",
+      "linkage",
+      "gc_mode",
+      "exit_code",
+      "result",
+      "log"
+    ],
+    "runtime-identities.csv": [
+      "role",
+      "path",
+      "sha256"
+    ],
+    "combined-export-summary.csv": [
+      "symbol",
+      "result"
+    ],
+    "default-path-summary.csv": [
+      "property",
+      "observed",
+      "result"
+    ],
+    "benchmark-width-raw.csv": [
+      "Method",
+      "LogReferenceCountBits",
+      "Mean"
+    ],
+    "benchmark-contention-raw.csv": [
+      "Method",
+      "WorkerCount",
+      "Mean"
+    ],
+    "benchmark-controls.csv": [
+      "worker_count",
+      "aa_ratio",
+      "extra_cas_ratio",
+      "delay_ratio",
+      "result"
+    ],
+    "benchmark-identity.csv": [
+      "quick_mode",
+      "launch_count",
+      "warmup_count",
+      "iteration_count",
+      "invocation_count",
+      "unroll_factor",
+      "width_methods",
+      "contention_methods",
+      "rows",
+      "expected_rows",
+      "processor",
+      "logical_processors",
+      "os",
+      "launcher_framework",
+      "benchmark_runtime",
+      "native_sha256",
+      "dotnet_path",
+      "dotnet_version",
+      "dotnet_sha256",
+      "corerun_path",
+      "corerun_sha256",
+      "result"
+    ],
+    "build-summary.csv": [
+      "name",
+      "source_commit",
+      "exit_code",
+      "result",
+      "detail",
+      "log"
+    ],
+    "platform-summary.csv": [
+      "platform",
+      "build",
+      "validation",
+      "runtime",
+      "execution"
+    ],
+    "cross-cwd-summary.csv": [
+      "caller",
+      "repository_root",
+      "benchmark_rows",
+      "controls",
+      "launch_count",
+      "warmup_count",
+      "iteration_count",
+      "result",
+      "log"
+    ],
+    "core-root-control-summary.csv": [
+      "missing_file",
+      "invalid_runtime_root",
+      "exit_code",
+      "result",
+      "log"
+    ],
+    "attempt-summary.csv": [
+      "id",
+      "attempt",
+      "outcome",
+      "detail"
+    ],
+    "invocation.csv": [
+      "repository_root",
+      "windows_runtime_root",
+      "linux_runtime_root",
+      "linux_combined_runtime_root",
+      "linux_default_runtime_root",
+      "invalid_windows_runtime_root",
+      "launch_count",
+      "warmup_count",
+      "iteration_count",
+      "validation_rows",
+      "runtime_rows",
+      "result"
+    ]
+  },
+  "validationPlatforms": [
+    {
+      "platform": "windows-x64",
+      "total": 37
+    },
+    {
+      "platform": "windows-x86",
+      "total": 1
+    },
+    {
+      "platform": "linux-x64",
+      "total": 37
+    }
+  ],
+  "runtimePlatforms": [
+    "windows-x64",
+    "linux-x64"
+  ],
+  "runtimeLinkages": [
+    "linked",
+    "standalone"
+  ],
+  "runtimeGcModes": [
+    "Workstation",
+    "Server"
+  ],
+  "runtimeIdentityRoles": [
+    "windows-enabled-corerun",
+    "windows-enabled-coreclr",
+    "windows-enabled-clrgc",
+    "windows-enabled-clrjit",
+    "windows-enabled-corelib",
+    "linux-enabled-corerun",
+    "linux-enabled-coreclr",
+    "linux-enabled-clrgc",
+    "linux-enabled-clrjit",
+    "linux-enabled-corelib",
+    "linux-combined-coreclr",
+    "linux-default-coreclr",
+    "linux-default-clrgc",
+    "linux-default-coreclr-symbols",
+    "linux-default-clrgc-symbols"
+  ],
+  "combinedExports": [
+    "GC_ReferenceCountTest_Run",
+    "GC_ImmixBlockStateTest_Run",
+    "GC_WriteBarrierTest_Reset",
+    "GC_AllocationNotificationTest_Reset"
+  ],
+  "defaultPathRows": 8,
+  "defaultPathProperties": [
+    "cmake-default",
+    "normal-gc-call-sites",
+    "default-coreclr-build-id",
+    "default-clrgc-build-id",
+    "default-coreclr-export",
+    "default-clrgc-export",
+    "default-coreclr-object",
+    "default-clrgc-object"
+  ],
+  "benchmark": {
+    "widthMethods": [
+      "Load",
+      "IncrementBelowSticky",
+      "DecrementAboveZero",
+      "StickyTransition",
+      "StickyIncrementAttempt",
+      "StickyDecrementAttempt",
+      "StraddleZeroContinuations",
+      "StraddleOneContinuation",
+      "StraddleManyContinuations",
+      "QuiescentReset4KiB",
+      "QuiescentReset64KiB",
+      "QuiescentResetBlock32KiB",
+      "AllocationChurn"
+    ],
+    "contentionMethods": [
+      "SameSlotContention",
+      "SameSlotContentionControl",
+      "AdjacentWordContention",
+      "SeparateLineContention",
+      "ExtraCasContention",
+      "DelayContention"
+    ],
+    "logReferenceCountBits": [
+      1,
+      2,
+      3
+    ],
+    "workerCounts": [
+      1,
+      4,
+      16
+    ],
+    "widthRows": 39,
+    "contentionRows": 18,
+    "rows": 57,
+    "controls": 3,
+    "launchCount": 3,
+    "warmupCount": 8,
+    "iterationCount": 20,
+    "invocationCount": 1,
+    "unrollFactor": 1,
+    "aaMinimum": 0.9,
+    "aaMaximum": 1.1,
+    "extraCasMinimum": 1.5,
+    "delayMinimum": 1.25,
+    "controlDefinitions": [
+      {
+        "id": "aa",
+        "ratio": "SameSlotContentionControl / SameSlotContention",
+        "minimum": 0.9,
+        "maximum": 1.1
+      },
+      {
+        "id": "extra-cas",
+        "ratio": "ExtraCasContention / SameSlotContention",
+        "minimum": 1.5
+      },
+      {
+        "id": "injected-delay",
+        "ratio": "DelayContention / SameSlotContention",
+        "minimum": 1.25
+      }
+    ]
+  },
+  "buildNames": [
+    "long-path-baseline-failure",
+    "authorized-r-drive-baseline",
+    "test-enabled-windows-x64",
+    "default-windows-x64",
+    "windows-x86-product-attempt",
+    "windows-x86-fail-closed-validator",
+    "windows-arm64-product",
+    "test-enabled-linux-x64",
+    "combined-features-linux-x64",
+    "default-linux-x64",
+    "final-windows-x64"
+  ],
+  "expectedFailBuilds": [
+    "long-path-baseline-failure",
+    "windows-x86-product-attempt"
+  ],
+  "requiredAttemptIds": [
+    "windows-baseline",
+    "linux-prerequisites",
+    "linux-coreclr",
+    "windows-x86-runtime",
+    "evidence-wrapper"
+  ],
+  "platforms": [
+    "windows-x64",
+    "linux-x64",
+    "windows-x86",
+    "windows-arm64"
+  ],
+  "gate": {
+    "independentArchiveExtracts": 2,
+    "verifierPassRuns": 2,
+    "perturbationCount": 30,
+    "propertyCount": 15,
+    "perturbationsPerProperty": 2,
+    "summaryRows": 32
+  },
+  "perturbations": [
+    {
+      "id": "topology-source-equals-evidence",
+      "property": "source-topology",
+      "kind": "verifier",
+      "payload": "raw/topology-summary.csv distinct=False",
+      "expected": "Source and evidence commits must be distinct."
+    },
+    {
+      "id": "topology-not-direct-parent",
+      "property": "source-topology",
+      "kind": "verifier",
+      "payload": "raw/topology-summary.csv evidence_parent=<other commit>",
+      "expected": "Evidence commit is not a direct child of the source commit."
+    },
+    {
+      "id": "identity-source-content",
+      "property": "source-identity",
+      "kind": "verifier",
+      "payload": "append a byte to src/coreclr/gc/reference_count.cpp",
+      "expected": "Source identity mismatch: src/coreclr/gc/reference_count.cpp"
+    },
+    {
+      "id": "identity-source-path-set",
+      "property": "source-identity",
+      "kind": "verifier",
+      "payload": "drop a row from raw/source-identities.csv",
+      "expected": "Source identity path set mismatch."
+    },
+    {
+      "id": "evidence-missing-validation-row",
+      "property": "evidence-integrity",
+      "kind": "verifier",
+      "payload": "drop the linux-x64 row from raw/validation-summary.csv",
+      "expected": "Validation platform evidence is incomplete."
+    },
+    {
+      "id": "evidence-duplicate-runtime-row",
+      "property": "evidence-integrity",
+      "kind": "verifier",
+      "payload": "duplicate a row in raw/runtime-smoke-summary.csv",
+      "expected": "Runtime smoke evidence is incomplete."
+    },
+    {
+      "id": "verifier-expected-check-count",
+      "property": "verifier-wrapper",
+      "kind": "verifier",
+      "payload": "evidence-manifest.json verifierExpectedChecks",
+      "expected": "Verifier check count differs"
+    },
+    {
+      "id": "wrapper-evidence-script-missing",
+      "property": "verifier-wrapper",
+      "kind": "verifier",
+      "payload": "delete run-reference-count-evidence.ps1",
+      "expected": "Required product or evidence source is missing"
+    },
+    {
+      "id": "width-active-bits",
+      "property": "width-mapping",
+      "kind": "behavior",
+      "payload": "reference_count.cpp GetActiveBits shifts from 2",
+      "expected": "FAIL: active width"
+    },
+    {
+      "id": "width-maximum-count",
+      "property": "width-mapping",
+      "kind": "behavior",
+      "payload": "reference_count.cpp GetMaximumCount subtracts 2",
+      "expected": "FAIL: derived maximum"
+    },
+    {
+      "id": "sticky-decrement-allowed",
+      "property": "sticky-zero",
+      "kind": "behavior",
+      "payload": "side_metadata.cpp decrement saturation guard never matches",
+      "expected": "FAIL: sticky decrement status"
+    },
+    {
+      "id": "zero-decrement-allowed",
+      "property": "sticky-zero",
+      "kind": "behavior",
+      "payload": "side_metadata.cpp decrement zero guard removed",
+      "expected": "FAIL: zero decrement status"
+    },
+    {
+      "id": "neighbor-increment-mask-drop",
+      "property": "neighbor-atomicity",
+      "kind": "behavior",
+      "payload": "side_metadata.cpp increment drops the neighbour-preserving term",
+      "expected": "FAIL: shared-word count preserved"
+    },
+    {
+      "id": "neighbor-store-full-word",
+      "property": "neighbor-atomicity",
+      "kind": "behavior",
+      "payload": "side_metadata.cpp masked update writes the whole word",
+      "expected": "FAIL: load count succeeds"
+    },
+    {
+      "id": "concurrency-increment-cas-comparand",
+      "property": "concurrency",
+      "kind": "behavior",
+      "payload": "side_metadata.cpp increment compares against the desired word",
+      "expected": "FAIL: same-slot final sticky"
+    },
+    {
+      "id": "concurrency-decrement-cas-comparand",
+      "property": "concurrency",
+      "kind": "behavior",
+      "payload": "side_metadata.cpp decrement compares against the desired word",
+      "expected": "FAIL: decrement result one"
+    },
+    {
+      "id": "object-start-alignment",
+      "property": "object-starts",
+      "kind": "behavior",
+      "payload": "reference_count.cpp drops the 8-byte alignment guard",
+      "expected": "FAIL: misaligned byref rejected"
+    },
+    {
+      "id": "object-start-registration",
+      "property": "object-starts",
+      "kind": "behavior",
+      "payload": "reference_count.cpp accepts an unregistered start",
+      "expected": "FAIL: unregistered exact start rejected"
+    },
+    {
+      "id": "straddle-includes-first-line",
+      "property": "straddle-range",
+      "kind": "behavior",
+      "payload": "reference_count.cpp continuation range starts at the object line",
+      "expected": "FAIL: mark straddle lines"
+    },
+    {
+      "id": "straddle-includes-partial-tail",
+      "property": "straddle-range",
+      "kind": "behavior",
+      "payload": "reference_count.cpp continuation range rounds the end up",
+      "expected": "FAIL: following line is not continuation"
+    },
+    {
+      "id": "sentinel-missing-straddle-bit",
+      "property": "sentinel-pair",
+      "kind": "behavior",
+      "payload": "reference_count.cpp marks only the reference count",
+      "expected": "FAIL: expected continuation"
+    },
+    {
+      "id": "sentinel-missing-reference-count",
+      "property": "sentinel-pair",
+      "kind": "behavior",
+      "payload": "reference_count.cpp marks the straddle bit with a zero count",
+      "expected": "FAIL: continuation query succeeds"
+    },
+    {
+      "id": "copy-drops-source-count",
+      "property": "lifecycle-copy-reset",
+      "kind": "behavior",
+      "payload": "reference_count.cpp copy stores zero instead of the source count",
+      "expected": "FAIL: copied count"
+    },
+    {
+      "id": "reset-retains-validity",
+      "property": "lifecycle-copy-reset",
+      "kind": "behavior",
+      "payload": "reference_count.cpp reset leaves the object registered",
+      "expected": "FAIL: reset object no longer registered"
+    },
+    {
+      "id": "continuation-start-registration-allowed",
+      "property": "reusable-extent",
+      "kind": "behavior",
+      "payload": "reference_count.cpp accepts a start in a marked continuation line",
+      "expected": "FAIL: continuation line start rejected"
+    },
+    {
+      "id": "reset-leaves-continuation-sentinel",
+      "property": "reusable-extent",
+      "kind": "behavior",
+      "payload": "reference_count.cpp ResetObjectQuiescent skips derived sentinel clearing",
+      "expected": "FAIL: former continuation start reusable"
+    },
+    {
+      "id": "platform-x86-total",
+      "property": "platform-default-off",
+      "kind": "verifier",
+      "payload": "raw/validation-summary.csv windows-x86 total",
+      "expected": "Validation total differs for windows-x86."
+    },
+    {
+      "id": "default-off-control",
+      "property": "platform-default-off",
+      "kind": "verifier",
+      "payload": "raw/default-path-summary.csv export-absence result",
+      "expected": "Default-path control did not pass"
+    },
+    {
+      "id": "benchmark-native-identity",
+      "property": "benchmark-identity-sensitivity",
+      "kind": "verifier",
+      "payload": "raw/benchmark-identity.csv native_sha256",
+      "expected": "Benchmark native identity is malformed."
+    },
+    {
+      "id": "benchmark-extra-cas-sensitivity",
+      "property": "benchmark-identity-sensitivity",
+      "kind": "verifier",
+      "payload": "raw/benchmark-controls.csv extra_cas_ratio",
+      "expected": "Benchmark extra-CAS control is below its bound."
+    }
+  ],
+  "perturbationNotes": {
+    "behaviorControls": "Every behavior perturbation mutates a source file in its own archive extract and re-runs run-reference-count-validation.ps1 there, so it must compile and change validator behaviour rather than only text.",
+    "concurrency-increment-cas-comparand": "Deterministic: the compare-exchange can never exchange, so no increment takes effect.",
+    "neighbor-increment-mask-drop": "Deterministic: the three same-word objects cannot all end at the sticky maximum once the neighbour-preserving term is dropped."
+  }
+}

@@ -1,0 +1,4 @@
+"Name","Path","Sha256","Length","SourceCommit"
+"coreclr.dll","artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root\coreclr.dll","9A3EFB985FF03C86D05A6554FFD5CBA41FADEAE9DADF9B1561E5F90E7C337918","5539328","cd45d1cb3f2a6bf3a183840eb59b58e0bc97e068"
+"clrgc.dll","artifacts\bin\coreclr\windows.x64.Release\clrgc.dll","C054B44A49790B20ABF54F6456455CA20F5E2D9FA55C925B3C183A8437370B91","692224","cd45d1cb3f2a6bf3a183840eb59b58e0bc97e068"
+"Lxr.Harness.Worker.dll","artifacts\lxr-harness\build\bin\Lxr.Harness.Worker\release\Lxr.Harness.Worker.dll","7DFE0BD057E602F0F7A92F4FF2B33AD5E9C115335650B3A2798171F963DE231A","5632","ea5c3a02eac5cd2c53af6082e5dd9fbbf74bb331"

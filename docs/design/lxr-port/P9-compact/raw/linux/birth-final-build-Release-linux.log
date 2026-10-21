@@ -1,0 +1,6 @@
+[1/5] Building CXX object gc/CMakeFiles/clrlxrgc.dir/lxr_gcload.cpp.o
+[2/5] Building CXX object gc/CMakeFiles/clrlxrgc.dir/reference_count.cpp.o
+[3/5] Building CXX object gc/CMakeFiles/clrlxrgc.dir/lxr_gc.cpp.o
+[4/5] Building CXX object gc/CMakeFiles/clrlxrgc.dir/lxr_reference_counting.cpp.o
+[5/5] Linking CXX shared library gc/libclrlxrgc.so
+Stripping symbols from libclrlxrgc.so into libclrlxrgc.so.dbg

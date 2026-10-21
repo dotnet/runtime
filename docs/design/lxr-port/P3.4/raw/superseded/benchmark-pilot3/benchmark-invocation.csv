@@ -1,0 +1,2 @@
+"launches","workers","backlogs","policies","packet_count","reference_capacity","warmup_cycles","measured_cycles","aa_lower","aa_upper","injected_minimum","backlog_sensitivity_minimum","result"
+"1","1;2;4;8;16","0;1;4;16;32","tracked;same-code;null;injected;aa","32","1024","0","1","0.5","2","1.25","1.25","FAIL"

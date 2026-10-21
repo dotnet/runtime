@@ -1,0 +1,194 @@
+# Watchpoint catches (catch-fail-site.sh): first write of the engine failure code. Build: S2 (frame s2j) and layer 1 (frame l1).
+== catch-site-1/sa-2.log
+Old value = std::atomic<LxrRcResult> = { LxrRcResult::Success }
+New value = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5a5fcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-
+3561	        if (m_large.SweepNursery(&released) != LxrLargeObjectResult::Success)
+#0  0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5a5fcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkok
+#1  0x00007ffff7a5a3ec in LxrReferenceCounting::Execute (packet=0x7fff34102880, worker=<optimized out>, context=0x7fff34102850) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fo
+#2  0x00007ffff7a49175 in LxrWorkScheduler::Impl::WorkerLoop (this=0x555555612b80, workerIndex=3) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-scaling-fiesta/src/
+#3  0x00007ffff7cdc253 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007ffff7894a83 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#5  0x00007ffff79268e0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+$1 = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+  Id   Target Id                                          Frame 
+  1    Thread 0x7ffff7ea5740 (LWP 3635) "corerun"         0x00007ffff74128d1 in ?? () from /root/p17s2/frames/s2j-Release-linux/libcoreclr.so
+  2    Thread 0x7ffff71ff640 (LWP 3638) "corerun-ust"     syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
+  3    Thread 0x7ffff69fe640 (LWP 3639) ".NET EventPipe"  0x00007ffff7918d1f in __GI___poll (fds=0x7fff74001190, nfds=1, timeout=-1) at ../sysdeps/unix/sysv/linux/poll.c:29
+  4    Thread 0x7ffff61fd640 (LWP 3640) ".NET DebugPipe"  0x00007ffff7914704 in __libc_open64 (file=0x555555601988 "/tmp/clr-debug-pipe-3635-221767-in", oflag=0) at ../sysdeps/unix/sysv/linux/open64.c
+== catch-site-1/sb-34.log
+Old value = std::atomic<LxrRcResult> = { LxrRcResult::Success }
+New value = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5a5fcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-
+3561	        if (m_large.SweepNursery(&released) != LxrLargeObjectResult::Success)
+#0  0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5a5fcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkok
+#1  0x00007ffff7a5a3ec in LxrReferenceCounting::Execute (packet=0x7fff4484f820, worker=<optimized out>, context=0x7fff4484f7f0) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fo
+#2  0x00007ffff7a49175 in LxrWorkScheduler::Impl::WorkerLoop (this=0x555555612b80, workerIndex=3) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-scaling-fiesta/src/
+#3  0x00007ffff7cdc253 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007ffff7894a83 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#5  0x00007ffff79268e0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+$1 = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+  Id   Target Id                                          Frame 
+  1    Thread 0x7ffff7ea5740 (LWP 6091) "corerun"         __futex_abstimed_wait_common64 (private=1545684440, cancel=true, abstime=0x7fffffffd628, op=137, expected=0, futex_word=0x555555612ff8) at ./n
+  2    Thread 0x7ffff71ff640 (LWP 6094) "corerun-ust"     syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
+  3    Thread 0x7ffff69fe640 (LWP 6095) ".NET EventPipe"  0x00007ffff7918d1f in __GI___poll (fds=0x7fff74001190, nfds=1, timeout=-1) at ../sysdeps/unix/sysv/linux/poll.c:29
+  4    Thread 0x7ffff61fd640 (LWP 6096) ".NET DebugPipe"  0x00007ffff7914704 in __libc_open64 (file=0x555555601988 "/tmp/clr-debug-pipe-6091-302991-in", oflag=0) at ../sysdeps/unix/sysv/linux/open64.c
+== catch-site-1/sb-39.log
+Old value = std::atomic<LxrRcResult> = { LxrRcResult::Success }
+New value = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5a5fcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-
+3561	        if (m_large.SweepNursery(&released) != LxrLargeObjectResult::Success)
+#0  0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5a5fcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkok
+#1  0x00007ffff7a5a3ec in LxrReferenceCounting::Execute (packet=0x7fff3cbf1b70, worker=<optimized out>, context=0x7fff3cbf1b40) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fo
+#2  0x00007ffff7a49175 in LxrWorkScheduler::Impl::WorkerLoop (this=0x555555612b80, workerIndex=3) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-scaling-fiesta/src/
+#3  0x00007ffff7cdc253 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007ffff7894a83 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#5  0x00007ffff79268e0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+$1 = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+  Id   Target Id                                          Frame 
+  1    Thread 0x7ffff7ea5740 (LWP 6431) "corerun"         0x00007ffff73f0d80 in ?? () from /root/p17s2/frames/s2j-Release-linux/libcoreclr.so
+  2    Thread 0x7ffff71ff640 (LWP 6434) "corerun-ust"     syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
+  3    Thread 0x7ffff69fe640 (LWP 6435) ".NET EventPipe"  0x00007ffff7918d1f in __GI___poll (fds=0x7fff74001190, nfds=1, timeout=-1) at ../sysdeps/unix/sysv/linux/poll.c:29
+  4    Thread 0x7ffff61fd640 (LWP 6436) ".NET DebugPipe"  0x00007ffff7914704 in __libc_open64 (file=0x555555601988 "/tmp/clr-debug-pipe-6431-317889-in", oflag=0) at ../sysdeps/unix/sysv/linux/open64.c
+== catch-site-1/sb-4.log
+Old value = std::atomic<LxrRcResult> = { LxrRcResult::Success }
+New value = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5b5fed70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-
+3561	        if (m_large.SweepNursery(&released) != LxrLargeObjectResult::Success)
+#0  0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5b5fed70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkok
+#1  0x00007ffff7a5a3ec in LxrReferenceCounting::Execute (packet=0x7fff35311cc0, worker=<optimized out>, context=0x7fff35311c90) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fo
+#2  0x00007ffff7a49175 in LxrWorkScheduler::Impl::WorkerLoop (this=0x555555612b80, workerIndex=1) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-scaling-fiesta/src/
+#3  0x00007ffff7cdc253 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007ffff7894a83 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#5  0x00007ffff79268e0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+$1 = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+  Id   Target Id                                          Frame 
+  1    Thread 0x7ffff7ea5740 (LWP 3709) "corerun"         __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x5555555ca250) at ./nptl/futex-internal.c
+  2    Thread 0x7ffff71ff640 (LWP 3712) "corerun-ust"     syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
+  3    Thread 0x7ffff69fe640 (LWP 3713) ".NET EventPipe"  0x00007ffff7918d1f in __GI___poll (fds=0x7fff74001190, nfds=1, timeout=-1) at ../sysdeps/unix/sysv/linux/poll.c:29
+  4    Thread 0x7ffff61fd640 (LWP 3714) ".NET DebugPipe"  0x00007ffff7914704 in __libc_open64 (file=0x555555601988 "/tmp/clr-debug-pipe-3709-225199-in", oflag=0) at ../sysdeps/unix/sysv/linux/open64.c
+== catch-site-2/sa-35.log
+Old value = std::atomic<LxrRcResult> = { LxrRcResult::Success }
+New value = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5adfdd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-
+3561	        if (m_large.SweepNursery(&released) != LxrLargeObjectResult::Success)
+#0  0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5adfdd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkok
+#1  0x00007ffff7a5a3ec in LxrReferenceCounting::Execute (packet=0x7fff41825630, worker=<optimized out>, context=0x7fff41825600) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fo
+#2  0x00007ffff7a49175 in LxrWorkScheduler::Impl::WorkerLoop (this=0x555555612b80, workerIndex=2) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-scaling-fiesta/src/
+#3  0x00007ffff7cdc253 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007ffff7894a83 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#5  0x00007ffff79268e0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+phase = LxrRcPhase::Mutator
+arena = 140734726406144
+$1 = std::atomic<unsigned long> = { 164 }
+$2 = (void (*)(void)) 0x7ffff7a58145 <LxrReferenceCounting::Sweep(LxrBlockReleaseGuard const*)+965>
+== catch-site-2/sb-25.log
+Old value = std::atomic<LxrRcResult> = { LxrRcResult::Success }
+New value = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5a5fcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-
+3561	        if (m_large.SweepNursery(&released) != LxrLargeObjectResult::Success)
+#0  0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5a5fcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkok
+#1  0x00007ffff7a5a3ec in LxrReferenceCounting::Execute (packet=0x7fff44339f50, worker=<optimized out>, context=0x7fff44339f20) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fo
+#2  0x00007ffff7a49175 in LxrWorkScheduler::Impl::WorkerLoop (this=0x555555612b80, workerIndex=3) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-scaling-fiesta/src/
+#3  0x00007ffff7cdc253 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007ffff7894a83 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#5  0x00007ffff79268e0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+phase = LxrRcPhase::Mutator
+arena = 140734726406144
+$1 = std::atomic<unsigned long> = { 1023 }
+$2 = (void (*)(void)) 0x7ffff7a58145 <LxrReferenceCounting::Sweep(LxrBlockReleaseGuard const*)+965>
+== catch-site-2/sb-32.log
+Old value = std::atomic<LxrRcResult> = { LxrRcResult::Success }
+New value = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5a5fcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-
+3561	        if (m_large.SweepNursery(&released) != LxrLargeObjectResult::Success)
+#0  0x00007ffff7a58145 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e9618, guard=guard@entry=0x7fff5a5fcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkok
+#1  0x00007ffff7a5a3ec in LxrReferenceCounting::Execute (packet=0x7fff44fdb070, worker=<optimized out>, context=0x7fff44fdb040) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fo
+#2  0x00007ffff7a49175 in LxrWorkScheduler::Impl::WorkerLoop (this=0x555555612b80, workerIndex=3) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-scaling-fiesta/src/
+#3  0x00007ffff7cdc253 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007ffff7894a83 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#5  0x00007ffff79268e0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+phase = LxrRcPhase::Mutator
+arena = 140734726406144
+$1 = std::atomic<unsigned long> = { 738 }
+$2 = (void (*)(void)) 0x7ffff7a58145 <LxrReferenceCounting::Sweep(LxrBlockReleaseGuard const*)+965>
+== catch-site/la-15.log
+Old value = std::atomic<LxrRcResult> = { LxrRcResult::Success }
+New value = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+0x00007ffff7a58421 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e90d8, guard=guard@entry=0x7fff5b5fed70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-
+3585	}
+#0  0x00007ffff7a58421 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e90d8, guard=guard@entry=0x7fff5b5fed70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkok
+#1  0x00007ffff7a5a5ac in LxrReferenceCounting::Execute (packet=0x7fff3c45d400, worker=<optimized out>, context=0x7fff3c45d3d0) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fo
+#2  0x00007ffff7a49ae5 in LxrWorkScheduler::Impl::WorkerLoop (this=0x555555612320, workerIndex=1) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-scaling-fiesta/src/
+#3  0x00007ffff7cdc253 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007ffff7894a83 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#5  0x00007ffff79268e0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+phase = LxrRcPhase::Mutator
+arena = 140734726406144
+$1 = std::atomic<unsigned long> = { 185 }
+=> 0x7ffff7a58421 <_ZN20LxrReferenceCounting5SweepEPK20LxrBlockReleaseGuard+945>:	movb   $0x4,0x1038(%r13)
+$2 = (void (*)(void)) 0x7ffff7a58421 <LxrReferenceCounting::Sweep(LxrBlockReleaseGuard const*)+945>
+== catch-site/la-20.log
+Old value = std::atomic<LxrRcResult> = { LxrRcResult::Success }
+New value = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+0x00007ffff7a58421 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e90d8, guard=guard@entry=0x7fff5b5fed70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-
+3585	}
+#0  0x00007ffff7a58421 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e90d8, guard=guard@entry=0x7fff5b5fed70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkok
+#1  0x00007ffff7a5a5ac in LxrReferenceCounting::Execute (packet=0x7fff3c3294f0, worker=<optimized out>, context=0x7fff3c3294c0) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fo
+#2  0x00007ffff7a49ae5 in LxrWorkScheduler::Impl::WorkerLoop (this=0x555555612320, workerIndex=1) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-scaling-fiesta/src/
+#3  0x00007ffff7cdc253 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007ffff7894a83 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#5  0x00007ffff79268e0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+phase = LxrRcPhase::Mutator
+arena = 140734726406144
+$1 = std::atomic<unsigned long> = { 1024 }
+=> 0x7ffff7a58421 <_ZN20LxrReferenceCounting5SweepEPK20LxrBlockReleaseGuard+945>:	movb   $0x4,0x1038(%r13)
+$2 = (void (*)(void)) 0x7ffff7a58421 <LxrReferenceCounting::Sweep(LxrBlockReleaseGuard const*)+945>
+== catch-site/la-35.log
+Old value = std::atomic<LxrRcResult> = { LxrRcResult::Success }
+New value = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+0x00007ffff7a58421 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e90d8, guard=guard@entry=0x7fff5a5fcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-
+3585	}
+#0  0x00007ffff7a58421 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e90d8, guard=guard@entry=0x7fff5a5fcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkok
+#1  0x00007ffff7a5a5ac in LxrReferenceCounting::Execute (packet=0x7fff3ca1cce0, worker=<optimized out>, context=0x7fff3ca1ccb0) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fo
+#2  0x00007ffff7a49ae5 in LxrWorkScheduler::Impl::WorkerLoop (this=0x555555612320, workerIndex=3) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-scaling-fiesta/src/
+#3  0x00007ffff7cdc253 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007ffff7894a83 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#5  0x00007ffff79268e0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+phase = LxrRcPhase::Mutator
+arena = 140734726406144
+$1 = std::atomic<unsigned long> = { 1021 }
+=> 0x7ffff7a58421 <_ZN20LxrReferenceCounting5SweepEPK20LxrBlockReleaseGuard+945>:	movb   $0x4,0x1038(%r13)
+$2 = (void (*)(void)) 0x7ffff7a58421 <LxrReferenceCounting::Sweep(LxrBlockReleaseGuard const*)+945>
+== catch-site/lb-11.log
+Old value = std::atomic<LxrRcResult> = { LxrRcResult::Success }
+New value = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+0x00007ffff7a58421 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e90d8, guard=guard@entry=0x7fffefafcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-
+3585	}
+#0  0x00007ffff7a58421 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e90d8, guard=guard@entry=0x7fffefafcd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkok
+#1  0x00007ffff7a5a5ac in LxrReferenceCounting::Execute (packet=0x7fff416f0600, worker=<optimized out>, context=0x7fff416f05d0) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fo
+#2  0x00007ffff7a49ae5 in LxrWorkScheduler::Impl::WorkerLoop (this=0x555555612320, workerIndex=0) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-scaling-fiesta/src/
+#3  0x00007ffff7cdc253 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007ffff7894a83 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#5  0x00007ffff79268e0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+phase = LxrRcPhase::Mutator
+arena = 140734726406144
+$1 = std::atomic<unsigned long> = { 310 }
+=> 0x7ffff7a58421 <_ZN20LxrReferenceCounting5SweepEPK20LxrBlockReleaseGuard+945>:	movb   $0x4,0x1038(%r13)
+$2 = (void (*)(void)) 0x7ffff7a58421 <LxrReferenceCounting::Sweep(LxrBlockReleaseGuard const*)+945>
+== catch-site/lb-16.log
+Old value = std::atomic<LxrRcResult> = { LxrRcResult::Success }
+New value = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+0x00007ffff7a58421 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e90d8, guard=guard@entry=0x7fff5adfdd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-
+3585	}
+#0  0x00007ffff7a58421 in LxrReferenceCounting::Sweep (this=this@entry=0x5555555e90d8, guard=guard@entry=0x7fff5adfdd70) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkok
+#1  0x00007ffff7a5a5ac in LxrReferenceCounting::Execute (packet=0x7fff404d3b90, worker=<optimized out>, context=0x7fff404d3b60) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fo
+#2  0x00007ffff7a49ae5 in LxrWorkScheduler::Impl::WorkerLoop (this=0x555555612320, workerIndex=2) at /mnt/c/Users/konradkokosa/.copilot/repos/copilot-worktrees/runtime-fork/kkokosa-scaling-fiesta/src/
+#3  0x00007ffff7cdc253 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007ffff7894a83 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#5  0x00007ffff79268e0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+phase = LxrRcPhase::Mutator
+arena = 140734726406144
+$1 = std::atomic<unsigned long> = { 76 }
+=> 0x7ffff7a58421 <_ZN20LxrReferenceCounting5SweepEPK20LxrBlockReleaseGuard+945>:	movb   $0x4,0x1038(%r13)
+$2 = (void (*)(void)) 0x7ffff7a58421 <LxrReferenceCounting::Sweep(LxrBlockReleaseGuard const*)+945>

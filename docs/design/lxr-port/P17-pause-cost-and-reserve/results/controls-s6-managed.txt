@@ -1,0 +1,24 @@
+control NO_RETAIN | nursery | finalizer-churn :: Fatal error.
+control NO_RETAIN | nursery | resurrection :: Fatal error.
+control NO_DECIDE | nursery | prompt-collect :: Unhandled exception. System.InvalidOperationException: An explicit collection did not finalize every object at once (round 0).
+control NO_DECIDE | nursery | finalizer-churn :: Unhandled exception. System.InvalidOperationException: The number of finalizers differs (disposeEvery=0): 0 of 1000000.
+control MARKED_READY | nursery | resurrection :: PASS: 12005 lifecycle checks
+control MARKED_READY | nursery | pooled-reregister :: Unhandled exception. System.InvalidOperationException: A live pooled object was finalized.
+control RC_DECIDE | nursery | pooled-reregister :: PASS: 5 lifecycle checks
+control RC_DECIDE | nursery | resurrection :: PASS: 12005 lifecycle checks
+control NO_DEDUPE | nursery | pooled-reregister :: Unhandled exception. System.InvalidOperationException: The registry kept 200527 entries for 500 live pooled objects.
+control UNSAFE_APPEND | nursery | finalizer-churn-concurrent :: Unhandled exception. System.InvalidOperationException: Concurrent registration lost or duplicated finalizers: 744979 of 750000.
+control NO_RELOCATE | nursery | resurrection :: PASS: 12005 lifecycle checks
+control NO_RELOCATE | nursery | finalizer-churn :: PASS: 11 lifecycle checks
+control NO_RELOCATE | mature | resurrection :: Fatal error.
+control NO_RELOCATE | mature | finalizer-churn :: Fatal error.
+control NO_TRACE | nursery | resurrection :: Fatal error.
+control NO_TRACE | nursery | finalizer-churn :: Fatal error.
+# second run, after the pooled cell got natural collections (controls RC_DECIDE and NO_RELOCATE)
+control RC_DECIDE | nursery | pooled-reregister :: Fatal error.
+control NO_RELOCATE | nursery | pooled-reregister :: timeout: the monitored command dumped core
+control NO_RELOCATE | nursery | resurrection :: PASS: 12005 lifecycle checks
+control NO_RELOCATE | nursery | finalizer-churn :: PASS: 11 lifecycle checks
+control NO_RELOCATE | mature | pooled-reregister :: timeout: the monitored command dumped core
+control NO_RELOCATE | mature | resurrection :: Fatal error.
+control NO_RELOCATE | mature | finalizer-churn :: Fatal error.

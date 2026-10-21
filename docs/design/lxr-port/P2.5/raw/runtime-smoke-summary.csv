@@ -1,0 +1,5 @@
+"linkage","gc_mode","exit_code","result","log"
+"linked","Workstation","0","PASS","linked-Workstation.log"
+"linked","Server","0","PASS","linked-Server.log"
+"standalone","Workstation","0","PASS","standalone-Workstation.log"
+"standalone","Server","0","PASS","standalone-Server.log"

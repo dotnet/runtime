@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "validationPlatforms": [
+    "windows-x64",
+    "linux-x64"
+  ],
+  "runtimeSmoke": {
+    "platforms": [
+      "windows-x64",
+      "linux-x64"
+    ],
+    "linkages": [
+      "linked",
+      "standalone"
+    ],
+    "gcModes": [
+      "Workstation",
+      "Server"
+    ],
+    "pauseKinds": [
+      "Full",
+      "RefCount",
+      "InitialMark",
+      "FinalMark"
+    ]
+  },
+  "buildEvidence": [
+    "windows-x64-enabled",
+    "linux-x64-enabled",
+    "windows-x64-default-off",
+    "windows-x64-combined",
+    "windows-x86-translation",
+    "windows-arm64-translation"
+  ],
+  "benchmark": {
+    "scenarios": [
+      "low-allocation-compute",
+      "allocation-churn",
+      "long-lived-cache",
+      "cyclic-garbage",
+      "pointer-chasing",
+      "multi-thread-throughput",
+      "aspnet-request-load",
+      "pinning-heavy-io",
+      "lifecycle-semantics",
+      "large-object-pressure"
+    ],
+    "gcModes": [
+      "Workstation",
+      "Server"
+    ],
+    "policies": [
+      "scheduled",
+      "same-code",
+      "null",
+      "injected"
+    ],
+    "launches": 3,
+    "heapFactor": 6.0,
+    "countPerKind": 8,
+    "injectedMicroseconds": 5000,
+    "warmupSeconds": 0.5,
+    "durationSeconds": 3.0,
+    "aaLower": 0.9,
+    "aaUpper": 1.1,
+    "injectedMedianDeltaMinimumMilliseconds": 4.0
+  },
+  "perturbations": [
+    "pause-order",
+    "pause-rename",
+    "schedule-full",
+    "schedule-refcount",
+    "refcount-prepare",
+    "refcount-closure",
+    "refcount-decrements",
+    "illegal-transition",
+    "duplicate-completion",
+    "reset-defaults",
+    "drain-accounting",
+    "resumable-during-pause",
+    "resumable-lost",
+    "source-identity",
+    "evidence-cardinality",
+    "benchmark-aa",
+    "benchmark-null",
+    "benchmark-injected-duration"
+  ]
+}

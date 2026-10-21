@@ -1,0 +1,58 @@
+{
+  "unexpected_attempts_retained": [
+    {
+      "stage": "native-Release attempt1",
+      "failure": "The new test preceded the existing Field helper declaration.",
+      "resolution": "Added the exact forward declaration; no test was disabled."
+    },
+    {
+      "stage": "native-Release attempt2",
+      "failure": "The initial forward declaration omitted Field's existing index parameter and caused ambiguity.",
+      "resolution": "Matched the existing signature and put its default argument on the forward declaration."
+    },
+    {
+      "stage": "native-Release attempts3/4 and packet-probe",
+      "failure": "The actual packet-count ceiling detected a final Flush wrongly placed inside the per-object loop. The descriptor branch also needed the common final Flush.",
+      "resolution": "Moved Flush after both object and descriptor paths, before parent completion. Kept the original ceiling. Corrected small-fixture packets fell from1046/1047/1053 to24/24/30 in the recorded nonmoving cases."
+    },
+    {
+      "stage": "Linux configure Release attempt1",
+      "failure": "The new owned tree lacked the accepted generated artifacts/obj/_version.c input.",
+      "resolution": "Copied that accepted generated input, retained the failed log, and configured/built only the owned clrlxrgc target."
+    },
+    {
+      "stage": "diagnostic-fixture-final portable PDB binding",
+      "failure": "The PDB named a generated LibraryImports.g.cs document that the default build did not emit to disk.",
+      "resolution": "Built the separately named bound diagnostic artifact with explicit compiler-generated-file output, then verified every document checksum and PE/PDB identity. Only that frozen bound DLL was used for all diagnostic/pressure observations."
+    }
+  ],
+  "normal_observations": {
+    "forced_full_processes": 144,
+    "automatic_pressure_processes": 32,
+    "failures": 0,
+    "retries": 0,
+    "outliers_removed": 0,
+    "goal_misses": 0,
+    "warning": "All declared goals pass, but individual pointer-free tails/body measurements and Linux automatic nonmoving have regressions that remain in the records."
+  },
+  "review": {
+    "scope": "One integrated product/test review plus one bounded follow-up.",
+    "warning": "Small native fixtures lacked upper storage bounds.",
+    "resolution": "Added512KiB combined packet+active-batch and4KiB descriptor bounds; final native/managed matrices ran after the final relevant edit.",
+    "remaining_product_findings": 0
+  },
+  "profile_limits": [
+    "No special FP collector was built. Both ordinary frozen Linux Release modules already preserve frame pointers. Their compiler command/file hashes and module/debug identities are retained.",
+    "Both fresh Linux profile arms use the same199Hz cpu-clock:u and frame-pointer policy. They cover whole process lifetimes, not exclusive GC CPU or only the eight-call body. Kernel CPU is not sampled.",
+    "The16KiB DWARF policy for a64KiB local batch frame was rejected before a recording was launched. No nonexistent failed/truncated attempt is fabricated. Original P10 DWARF records stay unchanged and their denominator is not pooled with fresh FP samples.",
+    "Native/libc tail/unwind limits, managed frames and mismatched inherited VM/JIT companions remain unresolved rather than reassigned. Only directly matched collector symbols are trusted.",
+    "Windows uses the retained external stack census, not ETW CPU profiling or precise wait-duration profiling. No policy/privilege changes were made. Per-thread read/exit races and symbol-refresh errors remain in each samples.json.",
+    "No normal timing observation was replaced with diagnostic or profile times."
+  ],
+  "scope_limits": [
+    "Batching is Full-only. Concurrent, InitialMark and FinalMark paths are not newly batched.",
+    "1024 ingress/RC/array slices, two legal-capacity log banks, ownership and validation duties, defaults and policy remain unchanged.",
+    "The remaining built-in gap, all27 live parity IDs/C06 redirect, Group A/B history, P1.7 and broader platform/production qualification limits remain open.",
+    "The original P10 Windows185-file and Linux289-file catalogs and report/bundle hashes were reverified unchanged."
+  ]
+}

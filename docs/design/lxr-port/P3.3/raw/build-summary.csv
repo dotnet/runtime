@@ -1,0 +1,5 @@
+"id","platform","configuration","detail","source_commit","log","result"
+"windows-x64-enabled","windows-x64","Debug","P3.3 validation option enabled; linked and standalone exports present","ff4b4ce9145b1408423e88973fa88dc90dc8e421","build-windows-x64-debug-source-final.log","PASS"
+"linux-x64-enabled","linux-x64","Debug","P3.3 validation option enabled on WSL native filesystem","ff4b4ce9145b1408423e88973fa88dc90dc8e421","build-linux-x64-debug-enabled-final.log","PASS"
+"windows-x64-default-off","windows-x64","Debug","default option; coreclr export count=0; clrgc export count=0","ff4b4ce9145b1408423e88973fa88dc90dc8e421","build-windows-x64-debug-default-off-final.log","PASS"
+"linux-combined-features","linux-x64","Debug","write barrier, allocation notification, object header, Immix, P3.1, and P3.3 validation hooks enabled together","ff4b4ce9145b1408423e88973fa88dc90dc8e421","build-linux-x64-debug-combined-final.log","PASS"

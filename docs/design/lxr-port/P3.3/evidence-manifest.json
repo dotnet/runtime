@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "validationPlatforms": [
+    "windows-x64",
+    "linux-x64"
+  ],
+  "runtimeSmoke": {
+    "platforms": [
+      "windows-x64",
+      "linux-x64"
+    ],
+    "linkages": [
+      "linked",
+      "standalone"
+    ],
+    "gcModes": [
+      "Workstation",
+      "Server"
+    ]
+  },
+  "buildRows": [
+    "windows-x64-enabled",
+    "linux-x64-enabled",
+    "windows-x64-default-off",
+    "linux-combined-features"
+  ],
+  "crossTargets": [
+    "windows-x86",
+    "windows-arm64"
+  ],
+  "benchmark": {
+    "workers": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "policies": {
+      "lazy": 1,
+      "eager": 1,
+      "lazy-null": 0,
+      "eager-null": 0,
+      "lazy-injected": 65,
+      "eager-injected": 65,
+      "aa": 1
+    },
+    "launches": 3,
+    "packetCount": 32,
+    "referenceCapacity": 1024,
+    "warmupCycles": 4,
+    "measuredCycles": 64,
+    "aaLower": 0.75,
+    "aaUpper": 1.25,
+    "eagerInjectedMinimum": 1.25,
+    "injectedSeparationMinimum": 2.0
+  },
+  "perturbations": [
+    "queue-direction",
+    "visible-before-flip",
+    "missing-after-flip",
+    "duplicate-flip",
+    "generation-binding",
+    "empty-flip",
+    "lazy-off",
+    "producer-seal-race",
+    "worker-active-only",
+    "repeat-cycle-loss",
+    "repeat-cycle-duplicate",
+    "reset-shutdown",
+    "source-identity",
+    "evidence-cardinality",
+    "benchmark-aa",
+    "benchmark-null",
+    "benchmark-injected-cost"
+  ]
+}

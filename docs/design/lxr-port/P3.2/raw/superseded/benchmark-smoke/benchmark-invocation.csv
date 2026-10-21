@@ -1,0 +1,2 @@
+"scenarios","gc_modes","policies","launch_count","heap_factor","count_per_kind","injected_microseconds","warmup_seconds","duration_seconds","result"
+"low-allocation-compute;allocation-churn;long-lived-cache;cyclic-garbage;pointer-chasing;multi-thread-throughput;aspnet-request-load;pinning-heavy-io;lifecycle-semantics;large-object-pressure","Workstation;Server","scheduled;same-code;null;injected","1","2","1","5000","0.1","0.5","FAIL"

@@ -1,0 +1,19 @@
+{"command": ["/root/lxr-compact-collector/artifacts/P9/probe-linux/corerun", "/root/lxr-compact-collector/artifacts/P9/lifetime-fixtures/runtime-tests.dll", "--syncblock-diagnostic", "/root/lxr-compact-collector/artifacts/P9/probe-linux/libclrlxrgc.so"], "module_sha256": "f58f445c41e71be025ae86af485efe8c9e468622b9f26e17f84cf557b85de017", "fixture_sha256": "95bd9bcec3ea12176897510ba31ed067cbeba5cc7c2f7e7f5c05ba9af21b8abc", "settings": {"DOTNET_GCPath": "/root/lxr-compact-collector/artifacts/P9/probe-linux/libclrlxrgc.so", "DOTNET_ReadyToRun": "0", "DOTNET_TieredCompilation": "0", "DOTNET_gcServer": "0", "DOTNET_gcConcurrent": "1", "DOTNET_GCHeapCount": "2", "DOTNET_LXRLegacyCapacity": "1"}}
+collector=LXR nonmoving prototype; GC interface 5.15; P8 speed and scale engine module=/root/lxr-compact-collector/artifacts/P9/probe-linux/libclrlxrgc.so sha256=F58F445C41E71BE025AE86AF485EFE8C9E468622B9F26E17F84CF557B85DE017
+phase=cycles
+phase=pinned-interior
+phase=finalization
+phase=dependent
+phase=thread-churn
+phase=held-deletion
+phase=satb-overflow
+phase=concurrent-mutation
+phase=collectible
+phase=refcounted-root
+phase=syncblock
+syncblock_diagnostic address=716F04209040 extent=0 births=0 reclaims=1
+phase=managed-range-reuse
+owned_allocations=107545 allocated_bytes=24108712 live_bytes=9744632 reclaimed_bytes=14364080 collections=102 full_traces=74 root_increments=66056 checks=100628
+PASS: 100628 selected-host startup checks
+
+exit=0

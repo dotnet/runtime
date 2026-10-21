@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "phase": "P2.3",
+  "dependencyCommits": {
+    "p21": "8866eee4907667c93752cc4411bcdd838b98fec5",
+    "p22": "17ac93d30d5ebc08aeda0ddf24e562d506d72230"
+  },
+  "oracles": {
+    "pldi": {
+      "binding": "abbdd1dbbe7277e4b0dfd1d37ba613c53f5ca50d",
+      "core": "df8d30a39237a5bf5a8e27ca5a6f46acc6080c94",
+      "role": "specifies",
+      "hasLxrPlanDirectory": false
+    },
+    "head": {
+      "binding": "0682434ae725787e38defbc17bd66dc918e4bdb7",
+      "core": "304ce69d43aae87de501111fceb8cbd33173a03a",
+      "role": "validates"
+    },
+    "namedTagOrBranchIsBasis": false,
+    "resolution": "git show <revision>:<path>"
+  },
+  "referenceCount": {
+    "logSelectors": [
+      1,
+      2,
+      3
+    ],
+    "activeBits": [
+      2,
+      4,
+      8
+    ],
+    "defaultActiveBits": 2,
+    "allActiveWidthsImplemented": true,
+    "maximumFormula": "(1 << bits) - 1",
+    "maximumByActiveBits": {
+      "2": 3,
+      "4": 15,
+      "8": 255
+    },
+    "stickyMaximumRefusesIncrement": true,
+    "stickyMaximumRefusesDecrement": true,
+    "stickyMaximumRefusesCompareExchangeDemotion": true,
+    "zeroRefusesDecrement": true,
+    "operationsReturnPreviousCount": true,
+    "updateStatuses": [
+      "Updated",
+      "Saturated",
+      "Zero"
+    ],
+    "updateMemoryOrder": "relaxed",
+    "updateInstrument": "masked-native-word-compare-exchange",
+    "preservesNeighborFields": true,
+    "registrationMemoryOrder": "sequentially-consistent"
+  },
+  "objectStarts": {
+    "alignmentBytes": 8,
+    "requiresOwnedDataRange": true,
+    "requiresValidObjectRegistration": true,
+    "validObjectPlaneOwner": "P2.1",
+    "interiorRejected": true,
+    "byrefRejected": true,
+    "normalizesInteriorOrByref": false,
+    "interiorResult": "AddressNotOwned",
+    "misalignedResult": "InvalidArgument",
+    "testConsumerRegistersSyntheticStarts": true,
+    "syntheticRegistrationPendingPhase": "P2.4",
+    "minimumObjectBytes": 24,
+    "minimumChangesValidDensityAndAliasing": true,
+    "minimumChangesLatticeOrSemanticsOrOverhead": false
+  },
+  "straddle": {
+    "lineBytes": 256,
+    "blockBytes": 32768,
+    "markedOnlyWhenSizeGreaterThanBytes": 256,
+    "firstMarkedLine": "align_down(start, 256) + 256",
+    "endExclusive": "align_down(end, 256)",
+    "rangeIsHalfOpen": true,
+    "firstLineExcluded": true,
+    "partialTailExcluded": true,
+    "exactBoundaryTailLineIncluded": true,
+    "crossesBlockRejected": true,
+    "partialTailSafetyOwner": "P2.4 oracle skip-first-dead-line",
+    "implementsAllocator": false,
+    "implementsHoleDiscovery": false,
+    "implementsSweep": false
+  },
+  "sentinel": {
+    "requiresPair": true,
+    "referenceCountValueAtLineStart": 1,
+    "straddleValueAtLine": 1,
+    "validObjectValueAtLineStart": 0,
+    "objectHeaderAloneIsSentinel": false,
+    "lineStateAloneIsSentinel": false,
+    "brokenPairResult": "InconsistentState",
+    "clearOrder": [
+      "ReferenceCount",
+      "ReferenceCountStraddle"
+    ],
+    "markRequiresEmptyLines": true
+  },
+  "lifecycle": {
+    "copyTransfersSourceObjectCountOnly": true,
+    "copyRederivesDestinationSentinels": true,
+    "copyCopiesSourceSentinels": false,
+    "copyRejectsOverlap": true,
+    "releaseRetainsMetadata": true,
+    "reuseRetainsMetadata": true,
+    "epochWrapRetainsMetadata": true,
+    "deathAndReclamationOwner": "later phases",
+    "quiescentResetClearsValidObject": true,
+    "quiescentResetClearsReferenceCount": true,
+    "quiescentResetClearsStraddle": true,
+    "quiescentResetRequiresLineAlignedRange": true,
+    "resetObjectQuiescent": {
+      "exactStartRequired": true,
+      "registeredStartRequired": true,
+      "minimumObjectBytes": 24,
+      "singleBlockRequired": true,
+      "quiescent": true,
+      "lineAlignedStartRequired": false,
+      "clearsOwnReferenceCount": true,
+      "derivesContinuationRangeFromObject": true,
+      "clearsContinuationSentinels": true,
+      "clearsValidObject": true
+    },
+    "reusableExtent": {
+      "priorRegistrationCountAndSentinelsMustBeDismantled": true,
+      "ownershipHandoffAloneAllowsOverlap": false,
+      "initializeRejectsMarkedContinuationLine": true,
+      "copyRejectsMarkedContinuationLine": true
+    }
+  },
+  "invariantConsumer": {
+    "mandatoryFromFirstCommit": true,
+    "invariant": "an overwritten old reference must not already have a zero reference count",
+    "pldi": {
+      "commit": "df8d30a39237a5bf5a8e27ca5a6f46acc6080c94",
+      "path": "src/plan/barriers.rs",
+      "lines": "315-319",
+      "conditionLine": 316,
+      "function": "FieldLoggingBarrier::slow",
+      "configuration": "cfg sanity/debug"
+    },
+    "head": {
+      "commit": "304ce69d43aae87de501111fceb8cbd33173a03a",
+      "path": "src/util/sanity/sanity_checker.rs",
+      "lines": "311-316",
+      "conditionLine": 312,
+      "configuration": "non-default sanity",
+      "barrierCheckPresent": false,
+      "validatedByDefaultConfiguration": false
+    }
+  },
+  "scope": {
+    "defaultOff": true,
+    "cmakeOption": "CLR_CMAKE_ENABLE_REFERENCE_COUNT_TEST",
+    "testOptionArchitecture": "AMD64",
+    "export": "GC_ReferenceCountTest_Run",
+    "publicApi": false,
+    "normalWksSvrPath": false,
+    "runtimeEeJitContract": false,
+    "collectorSelection": false,
+    "mono": false,
+    "nativeAotExecution": false,
+    "wasm": false,
+    "p24Allocation": false,
+    "p3Scheduler": false,
+    "p4PacketsOrSweep": false,
+    "p5Satb": false,
+    "p6Evacuation": false,
+    "x86FailsClosed": true,
+    "arm64BuildOnly": true,
+    "linuxExecution": "real WSL Unix execution, not a shim"
+  },
+  "paper": {
+    "title": "Low-Latency, High-Throughput Garbage Collection (Extended Version)",
+    "arxiv": "2210.17175",
+    "version": "extended",
+    "date": "2022-11-01",
+    "local": true,
+    "table7Scope": "lxr-only p50/p95 pause percentiles",
+    "table1": "longer LXR GC pauses than G1 but better application latency",
+    "table5HeapMultiples": [
+      "1.3x",
+      "2x",
+      "6x"
+    ],
+    "table5ThroughputRatiosVersusG1": [
+      0.97,
+      0.96,
+      1.01
+    ],
+    "barrierGeomeanPercent": 1.6,
+    "barrierBaseline": "no-barrier full-heap Immix",
+    "barrierNoiseBandPercent": 3,
+    "disabledFeatures": [
+      "class unloading",
+      "compressed pointers",
+      "weak references"
+    ],
+    "coreclrAcceptanceClaim": false
+  },
+  "benchmark": {
+    "widthMethods": 13,
+    "contentionMethods": 6,
+    "logReferenceCountBits": [
+      1,
+      2,
+      3
+    ],
+    "workerCounts": [
+      1,
+      4,
+      16
+    ],
+    "widthRows": 39,
+    "contentionRows": 18,
+    "rows": 57,
+    "controls": 3,
+    "launchCount": 3,
+    "warmupCount": 8,
+    "iterationCount": 20,
+    "invocationCount": 1,
+    "unrollFactor": 1,
+    "aaMinimum": 0.9,
+    "aaMaximum": 1.1,
+    "extraCasMinimum": 1.5,
+    "delayMinimum": 1.25
+  },
+  "validation": {
+    "windowsX64Total": 37,
+    "linuxX64Total": 37,
+    "windowsX86Total": 1
+  }
+}

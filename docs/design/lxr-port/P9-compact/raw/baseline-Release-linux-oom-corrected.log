@@ -1,0 +1,5 @@
+{"command": ["/root/lxr-compact-collector/artifacts/P9/baseline-linux/corerun", "/root/lxr-compact-collector/artifacts/P9/fixtures/runtime-tests.dll", "--oom", "/root/lxr-compact-collector/artifacts/P9/baseline-linux/libclrlxrgc.so"], "module_sha256": "3b5edce83aec68c4be43633495dae9b79639ff8f67330b729215df2aeb0fe22b"}
+collector=LXR nonmoving prototype; GC interface 5.15; P8 speed and scale engine module=/root/lxr-compact-collector/artifacts/P9/baseline-linux/libclrlxrgc.so sha256=3B5EDCE83AEC68C4BE43633495DAE9B79639FF8F67330B729215DF2AEB0FE22B
+PASS: 10 selected-host OOM/recovery checks
+
+exit=0

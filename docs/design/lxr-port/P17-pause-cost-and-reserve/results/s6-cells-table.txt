@@ -1,0 +1,18 @@
+accepted finalizer-churn :: Fatal error.
+accepted finalizer-churn-concurrent :: Fatal error.
+accepted weak-churn :: Fatal error.
+accepted resurrection :: PASS: 12005 lifecycle checks
+accepted prompt-collect :: PASS: 20202 lifecycle checks
+accepted pooled-reregister :: PASS: 4 lifecycle checks
+s5b finalizer-churn :: Fatal error.
+s5b finalizer-churn-concurrent :: Fatal error.
+s5b weak-churn :: Fatal error.
+s5b resurrection :: PASS: 12005 lifecycle checks
+s5b prompt-collect :: PASS: 20202 lifecycle checks
+s5b pooled-reregister :: PASS: 4 lifecycle checks
+s6 finalizer-churn :: PASS: 11 lifecycle checks
+s6 finalizer-churn-concurrent :: PASS: 4 lifecycle checks
+s6 weak-churn :: PASS: 301503 lifecycle checks
+s6 resurrection :: PASS: 12005 lifecycle checks
+s6 prompt-collect :: PASS: 20202 lifecycle checks
+s6 pooled-reregister :: PASS: 5 lifecycle checks

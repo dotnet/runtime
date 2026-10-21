@@ -1,0 +1,5 @@
+"platform","result","build","validation","runtime","limitation"
+"windows-x64","PASS","enabled and fresh default clr+libs+host","27165/27165","4/4 linked and standalone Workstation/Server","none"
+"windows-x86","PASS","direct product translation units","1/1 fixed-address fail-close","not run","P2.4 enabled runtime export is AMD64-only"
+"windows-arm64","PASS","exact-source product translation units","compile-only","not run","no ARM64 execution hardware"
+"linux-x64","PASS","enabled and combined clr.runtime","27165/27165","4/4 linked and standalone Workstation/Server","aggregate build blocked by unrelated P1.6 NativeAOT code; archive packaging lacks Git identity"

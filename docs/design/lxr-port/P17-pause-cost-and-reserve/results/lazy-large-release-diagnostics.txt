@@ -1,0 +1,17 @@
+Diagnostic output of the lazy large-object release failure (P17 fix). Not part of the collector: the build had temporary fprintf lines in
+LxrLargeObjectSpace::ReleaseAfterDecrements and LxrReferenceCounting::Sweep, and a parallel array with the scheduler generation of each
+dead-large-list insertion.
+
+1. Benchmark: traced listsuffix 4x nursery, layer-1 + S2 collector with the diagnostic lines, 30 runs, 1 run failed
+   DIAG ReleaseAfterDecrements: wrong LOS phase 1 object=0x76862f600000
+   DIAG Sweep: index=0 of count=1 obj=0x76862f600000 got=0 released=13 dupes=1 rc=0 livecount=1 gen=68 packetgen=68 insertgen=68 cycle=0 trace=2 pause=1
+
+   LOS phase 1 = ConcurrentMark. released=13 = InvalidPhase. rc=0 (the count condition is not the cause). dupes=1 (the object is in the list once).
+   gen = packetgen = insertgen (the list was not reset or overwritten by a later pause). trace=2 = Concurrent. pause=1 = RefCount. cycle=0.
+
+2. Native test --lazy-large-release on the same tree (deterministic, Debug and Release):
+   DIAG ReleaseAfterDecrements: wrong LOS phase 1 object=0x720ba8f78000
+   DIAG Sweep: index=0 of count=1 obj=0x720ba8f78000 got=0 released=13 dupes=1 rc=0 livecount=1 gen=3 packetgen=3 insertgen=3 cycle=0 trace=2 pause=1
+   FAIL: a RefCount pause during the concurrent trace kills the large object and the lazy sweep succeeds
+   FAIL: the lazy sweep of a dead large object does not fault the engine
+   FAIL: 8/10 lazy large-object release checks

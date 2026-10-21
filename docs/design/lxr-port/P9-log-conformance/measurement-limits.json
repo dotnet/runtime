@@ -1,0 +1,36 @@
+{
+  "platforms": {
+    "windows": {
+      "intrusive_diagnostic_groups": 36,
+      "drained_work_and_scan_zero_groups": 36,
+      "normal_cpu_scope": "all-thread process CPU during fixed8-call region; not exclusive GC CPU",
+      "memory_scope": "post-region process RSS/private and native-plane counters; metadata/plane residency separately intrusive",
+      "windows_clock_quantized": true,
+      "pure_startup_cpu_ms": null,
+      "pure_os_commit_latency_ms": null,
+      "memory_bus_writeback_bytes": null,
+      "ingress_occupancy_entries": null,
+      "actual_production_latency_ci": null
+    },
+    "linux": {
+      "intrusive_diagnostic_groups": 36,
+      "drained_work_and_scan_zero_groups": 36,
+      "normal_cpu_scope": "all-thread process CPU during fixed8-call region; not exclusive GC CPU",
+      "memory_scope": "post-region process RSS/private and native-plane counters; metadata/plane residency separately intrusive",
+      "windows_clock_quantized": false,
+      "pure_startup_cpu_ms": null,
+      "pure_os_commit_latency_ms": null,
+      "memory_bus_writeback_bytes": null,
+      "ingress_occupancy_entries": null,
+      "actual_production_latency_ci": null
+    }
+  },
+  "reference": "extended arXiv2210.17175,1Nov2022; no .NET/G1 ratio transfer",
+  "remaining_owned_log_payload_bytes_at_128mib": 536870912,
+  "full_ledger_parity_closed": false,
+  "P1_7": "FAILED/INCONCLUSIVE; not reclassified",
+  "earlier_linux_rss_regression_preserved": true,
+  "native_allocator_policy_changed": false,
+  "new_platform_or_public_api": false,
+  "executor_failure_injection_performed": false
+}

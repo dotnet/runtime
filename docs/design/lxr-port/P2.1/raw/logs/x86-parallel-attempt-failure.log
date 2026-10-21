@@ -1,0 +1,36 @@
+
+  Determining projects to restore...
+  Cannot find a manifest file. The list of searched paths:
+  
+  No tools were restored.
+  All projects are up-to-date for restore.
+  Determining projects to restore...
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error : Failed to write to log file "R:\artifacts\log\Debug\Restore-Build.proj.binlog". The process cannot access the file 'R:\artifacts\log\Debug\Restore-Build.proj.binlog' because it is being used by another process. [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.Logging.BinaryLogger.Initialize(IEventSource eventSource) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.BackEnd.Logging.LoggingService.InitializeLogger(ILogger logger, IEventSource sourceForLogger) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.BackEnd.Logging.LoggingService.RegisterLogger(ILogger logger) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.Evaluation.ProjectCollection.RegisterLoggerInternal(ILogger logger) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.Evaluation.ProjectCollection.RegisterLoggers(IEnumerable`1 loggers) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.Evaluation.ProjectCollection..ctor(IDictionary`2 globalProperties, IEnumerable`1 loggers, IEnumerable`1 remoteLoggers, ToolsetDefinitionLocations toolsetDefinitionLocations, Int32 maxNodeCount, Boolean onlyLogCriticalEvents, Boolean loadProjectsReadOnly, Boolean useAsynchronousLogging, Boolean reuseProjectRootElementCache, Boolean enableTargetOutputLogging) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.Evaluation.ProjectCollection..ctor(IDictionary`2 globalProperties, IEnumerable`1 loggers, IEnumerable`1 remoteLoggers, ToolsetDefinitionLocations toolsetDefinitionLocations, Int32 maxNodeCount, Boolean onlyLogCriticalEvents, Boolean loadProjectsReadOnly) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at NuGet.Build.Tasks.Console.MSBuildStaticGraphRestore.LoadProjects[TProject](IEnumerable`1 entryProjects, Boolean interactive, String binaryLoggerParameters, Func`3 createProjectFactory, Func`4 updateProjectFactory, Action`1 projectFinalizeDelegate) [R:\Build.proj]
+  Nothing to do. None of the projects specified contain packages to restore.
+
+Build FAILED.
+
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error : Failed to write to log file "R:\artifacts\log\Debug\Restore-Build.proj.binlog". The process cannot access the file 'R:\artifacts\log\Debug\Restore-Build.proj.binlog' because it is being used by another process. [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.Logging.BinaryLogger.Initialize(IEventSource eventSource) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.BackEnd.Logging.LoggingService.InitializeLogger(ILogger logger, IEventSource sourceForLogger) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.BackEnd.Logging.LoggingService.RegisterLogger(ILogger logger) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.Evaluation.ProjectCollection.RegisterLoggerInternal(ILogger logger) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.Evaluation.ProjectCollection.RegisterLoggers(IEnumerable`1 loggers) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.Evaluation.ProjectCollection..ctor(IDictionary`2 globalProperties, IEnumerable`1 loggers, IEnumerable`1 remoteLoggers, ToolsetDefinitionLocations toolsetDefinitionLocations, Int32 maxNodeCount, Boolean onlyLogCriticalEvents, Boolean loadProjectsReadOnly, Boolean useAsynchronousLogging, Boolean reuseProjectRootElementCache, Boolean enableTargetOutputLogging) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at Microsoft.Build.Evaluation.ProjectCollection..ctor(IDictionary`2 globalProperties, IEnumerable`1 loggers, IEnumerable`1 remoteLoggers, ToolsetDefinitionLocations toolsetDefinitionLocations, Int32 maxNodeCount, Boolean onlyLogCriticalEvents, Boolean loadProjectsReadOnly) [R:\Build.proj]
+C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\sdk\11.0.100-preview.6.26359.118\NuGet.RestoreEx.targets(19,5): error :    at NuGet.Build.Tasks.Console.MSBuildStaticGraphRestore.LoadProjects[TProject](IEnumerable`1 entryProjects, Boolean interactive, String binaryLoggerParameters, Func`3 createProjectFactory, Func`4 updateProjectFactory, Action`1 projectFinalizeDelegate) [R:\Build.proj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:01.70
+Build failed with exit code 1. Check errors above.
+Some builds failed:
+	Configuration: Debug, Architecture: x86

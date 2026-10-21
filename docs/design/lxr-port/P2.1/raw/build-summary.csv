@@ -1,0 +1,8 @@
+"name","command","path","exit_code","result","detail","evidence"
+"long-path-baseline",".\build.cmd clr+libs+host","long worktree","1","EXPECTED_PATH_FAILURE","MSVC C1083 empty compiler-generated file and C1041 PDB access","logs\baseline-long-failure.log"
+"authorized-short-baseline","R:\build.cmd clr+libs+host","authorized R: subst","0","PASS","0 warnings, 0 errors","logs\baseline-short-pass.log"
+"test-enabled-x64-debug","R:\build.cmd clr.runtime -rc Debug -cmakeargs -DCLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST=1","authorized R: subst","0","PASS","0 warnings, 0 errors","logs\test-enabled-build.log"
+"default-x64-debug","R:\build.cmd clr.runtime -rc Debug -cmakeargs -DCLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST=0","authorized R: subst","0","PASS","0 warnings, 0 errors","logs\default-build.log"
+"x86-release-target","R:\build.cmd clr.runtime -a x86 -rc Release","authorized R: subst","0","PASS","0 warnings, 0 errors; rerun after concurrent binlog collision","logs\x86-build.log"
+"arm64-release-target","R:\build.cmd clr.runtime -a arm64 -rc Release","authorized R: subst","0","PASS","0 warnings, 0 errors; target build only","logs\arm64-build.log"
+"final-full-build","R:\build.cmd clr+libs+host","authorized R: subst","0","PASS","0 warnings, 0 errors after final product edits","logs\final-full-build.log"

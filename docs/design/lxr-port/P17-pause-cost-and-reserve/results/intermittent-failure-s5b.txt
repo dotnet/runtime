@@ -1,0 +1,21 @@
+Intermittent failure of the S5b build without a hard limit: binarytrees 2x, nursery and mature, 1024/256 MiB reservations.
+Each line: runs and failed runs per build. The diagnostic build prints the engine failure; failure=9 is UnsupportedLifetime.
+
+before the fix, release build (m-catch-*)
+   acc runs 180 failed 0
+   off runs 180 failed 0
+   s4 runs 180 failed 0
+   s5b runs 180 failed 28
+    message: Error 2147500037 (0x80004005 (E_FAIL)) x 28
+before the fix, diagnostic build (m-diag-*)
+   acc runs 156 failed 0
+   s5b runs 156 failed 26
+    message: LXR_DIAG fatal: LXR allocation-complete metadata publication failed. failure=9 x 6
+    message: LXR_DIAG fatal: LXR could not publish its initialized Immix allocation span. failure=9 x 2
+    message: LXR_DIAG fatal: LXR epoch publication did not precede the runtime barrier reset. failure=9 x 18
+after the fix, diagnostic build (m-fix-1..20)
+   acc runs 240 failed 0
+   s5b runs 240 failed 0
+after the fix, final build s5b4 (m-final-1..20)
+   acc runs 240 failed 0
+   s5b runs 240 failed 0

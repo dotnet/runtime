@@ -1,0 +1,54 @@
+[
+  {
+    "stage": "before",
+    "configuration": "Release",
+    "module": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\before-Release-windows\\clrlxrgc.dll",
+    "module_sha256": "e1917aee80262c4bc89e02d1f18ef2b01c59d7015390955e160009edd858313e",
+    "companion": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\before-Release-windows\\clrlxrgc.pdb",
+    "companion_sha256": "0de010cea4a95a1e79bac6a7fc0d583a9889237a64272b892cff863aafdac941",
+    "matched": true,
+    "guid": "b9e27be9-a335-4802-976c-f954ba7afb28",
+    "age": 4,
+    "pdb_guid": "b9e27be9-a335-4802-976c-f954ba7afb28",
+    "pdb_age": 4
+  },
+  {
+    "stage": "after",
+    "configuration": "Release",
+    "module": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\after-Release-windows\\clrlxrgc.dll",
+    "module_sha256": "a7a4fbd5a959e411861e5b5d12484e7c37856ca4ba90c951801befaed4d307e5",
+    "companion": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\after-Release-windows\\clrlxrgc.pdb",
+    "companion_sha256": "e1a2bc7254991d65a0b19ba7ae1c647276a55ffc1e9b1639de8507a8aca969bf",
+    "matched": true,
+    "guid": "cf1abc03-f888-45d0-8f7a-df39dad660fc",
+    "age": 2,
+    "pdb_guid": "cf1abc03-f888-45d0-8f7a-df39dad660fc",
+    "pdb_age": 2
+  },
+  {
+    "stage": "before",
+    "configuration": "Debug",
+    "module": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\before-Debug-windows\\clrlxrgc.dll",
+    "module_sha256": "fd10b2b0e1c44ce16e6c48a3ad435e40ce00ae5dd3717b6df8cb4c33cca45391",
+    "companion": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\before-Debug-windows\\clrlxrgc.pdb",
+    "companion_sha256": "592a8e6ca2f821c5602420e3c66ca1bb81ba02261a9a61f9ee638e83adb95d54",
+    "matched": true,
+    "guid": "4b92ec10-e885-49ec-9dac-8601e559b41a",
+    "age": 3,
+    "pdb_guid": "4b92ec10-e885-49ec-9dac-8601e559b41a",
+    "pdb_age": 3
+  },
+  {
+    "stage": "after",
+    "configuration": "Debug",
+    "module": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\after-Debug-windows\\clrlxrgc.dll",
+    "module_sha256": "13796b42834122da70ba8c1e8fbe20d5e929722db2482529699eafd13ac8e3c5",
+    "companion": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\after-Debug-windows\\clrlxrgc.pdb",
+    "companion_sha256": "b427b39613719c08c2057191288ee3faa16b60e532ff7b1b186e8a34c583a24f",
+    "matched": true,
+    "guid": "fc9eca79-2c42-44a4-a3f3-8ce8f5a6d3cd",
+    "age": 2,
+    "pdb_guid": "fc9eca79-2c42-44a4-a3f3-8ce8f5a6d3cd",
+    "pdb_age": 2
+  }
+]

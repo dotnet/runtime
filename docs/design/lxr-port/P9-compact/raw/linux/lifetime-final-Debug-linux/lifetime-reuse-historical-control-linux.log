@@ -1,0 +1,8 @@
+{"command": ["/root/lxr-compact-collector/artifacts/P9/probe-debug-linux/corerun", "/root/lxr-compact-collector/artifacts/P9/lifetime-fixtures/runtime-tests.dll", "--lifetime-reuse-historical-control", "/root/lxr-compact-collector/artifacts/P9/probe-debug-linux/libclrlxrgc.so"], "module_sha256": "c77b85f3a15be1c75e9fd5ef2914e91ba967edba0eb4186af92648c392aaf75d", "fixture_sha256": "95bd9bcec3ea12176897510ba31ed067cbeba5cc7c2f7e7f5c05ba9af21b8abc", "settings": {"DOTNET_GCPath": "/root/lxr-compact-collector/artifacts/P9/probe-debug-linux/libclrlxrgc.so", "DOTNET_ReadyToRun": "0", "DOTNET_TieredCompilation": "0", "DOTNET_gcServer": "0", "DOTNET_gcConcurrent": "1", "DOTNET_GCHeapCount": "2", "DOTNET_LXRLegacyCapacity": "1"}}
+lifetime_reuse module=/root/lxr-compact-collector/artifacts/P9/probe-debug-linux/libclrlxrgc.so sha256=C77B85F3A15BE1C75E9FD5EF2914E91BA967EDBA0EB4186AF92648C392AAF75D address=76BA82A00008 extent=65560 births=1 reclaims=1 historical_control=True
+Unhandled exception. System.InvalidOperationException: The historical extent-only retirement assertion confuses a retained replacement with the original referent.
+   at Program.Check(Boolean condition, String message) in C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-shiny-succotash\docs\design\lxr-port\P5\runtime-tests\Program.cs:line 123
+   at Program.RunLifetimeReuse(String path, Boolean historicalControl) in C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-shiny-succotash\docs\design\lxr-port\P5\runtime-tests\Program.cs:line 622
+   at Program.Main(String[] args) in C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-shiny-succotash\docs\design\lxr-port\P5\runtime-tests\Program.cs:line 1113
+
+exit=-6

@@ -1,0 +1,9 @@
+property,observed,result
+default-coreclr-build-id,0baef0614732549cc58eea863c9f409c8cc3a54f,PASS
+default-clrgc-build-id,32e4c2a8039659e65835e2a152e3930ea931aebb,PASS
+cmake-default,OFF,PASS
+normal-gc-call-sites,0,PASS
+default-coreclr-export,0,PASS
+default-clrgc-export,0,PASS
+default-coreclr-object,0,PASS
+default-clrgc-object,0,PASS

@@ -1,0 +1,4 @@
+"Name","Perturbation","Expected","Result","ExitCode","Evidence"
+"profiler-placement-positive","none","success","PASS","100","profiler-placement-positive.log"
+"profiler-placement-drop-control","drop","placement mismatch","PASS","-532462766","profiler-placement-drop-control.log"
+"profiler-placement-swap-control","swap","placement mismatch","PASS","-532462766","profiler-placement-swap-control.log"

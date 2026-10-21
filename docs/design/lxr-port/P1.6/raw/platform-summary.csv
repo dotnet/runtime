@@ -1,0 +1,8 @@
+"platform","scope","result","limitation"
+"Windows x64","Debug/Checked/Release build and execution","PASS",""
+"Linux x64","native layout and atomic execution","PASS","Full CoreCLR build not run from the mixed Windows/WSL worktree."
+"Windows x86","target product build, layout, disabled start, enabled rejection","PASS","Optional x64-hosted cross-debug component fails against installed Windows SDK after target succeeds."
+"Windows ARM64","target product cross-build","PASS","No execution hardware; optional x64-hosted cross-debug component fails after target succeeds."
+"NativeAOT x64","Debug/Checked/Release runtime compilation and ObjHeader atomic execution","PASS",""
+"DAC/cDAC","CoreCLR Debug/Checked/Release compilation","PASS","State is collector-private; existing data contract is unchanged."
+"Mono","source audit","PASS","Mono does not use CoreCLR ObjHeader."

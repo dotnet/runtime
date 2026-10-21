@@ -1,0 +1,19 @@
+{"command": ["/root/lxr-compact-collector/artifacts/P9/baseline-debug-linux/corerun", "/root/lxr-compact-collector/artifacts/P9/diagnostic-fixtures/runtime-tests.dll", "--syncblock-diagnostic", "/root/lxr-compact-collector/artifacts/P9/baseline-debug-linux/libclrlxrgc.so"], "settings": {"DOTNET_GCPath": "/root/lxr-compact-collector/artifacts/P9/baseline-debug-linux/libclrlxrgc.so", "DOTNET_ReadyToRun": "0", "DOTNET_TieredCompilation": "0", "DOTNET_gcServer": "0", "DOTNET_gcConcurrent": "1", "DOTNET_GCHeapCount": "2", "DOTNET_LXRLegacyCapacity": "1"}}
+collector=LXR nonmoving prototype; GC interface 5.15; P8 speed and scale engine module=/root/lxr-compact-collector/artifacts/P9/baseline-debug-linux/libclrlxrgc.so sha256=72C69DFFAC26B5F5E76D9CA6AAB0CD0855A7BEAF6C7FC10631850B55BC0E9B39
+phase=cycles
+phase=pinned-interior
+phase=finalization
+phase=dependent
+phase=thread-churn
+phase=held-deletion
+phase=satb-overflow
+phase=concurrent-mutation
+phase=collectible
+phase=refcounted-root
+phase=syncblock
+syncblock_diagnostic address=7CA23D205108 old_type=7CA254BCF160 current_type=0 extent=0
+phase=managed-range-reuse
+owned_allocations=111720 allocated_bytes=24446024 live_bytes=9740336 reclaimed_bytes=14705808 collections=102 full_traces=74 root_increments=67600 checks=100627
+PASS: 100627 selected-host startup checks
+
+exit=0

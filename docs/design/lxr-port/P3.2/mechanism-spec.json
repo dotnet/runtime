@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "declaredOracle": {
+    "name": "lxr-head",
+    "binding": "0682434ae725787e38defbc17bd66dc918e4bdb7",
+    "core": "304ce69d43aae87de501111fceb8cbd33173a03a"
+  },
+  "secondaryEvidence": {
+    "core": "9625c174",
+    "scope": "ConcurrentResumable interruption and resume only"
+  },
+  "lazyDecrements": true,
+  "pauseKinds": [
+    {
+      "ordinal": 0,
+      "name": "Full",
+      "enabledStages": [
+        "FinishConcurrentWork",
+        "Initial",
+        "Prepare",
+        "Closure",
+        "Release",
+        "STWRCDecsAndSweep",
+        "Final"
+      ]
+    },
+    {
+      "ordinal": 1,
+      "name": "RefCount",
+      "enabledStages": [
+        "FinishConcurrentWork",
+        "Initial",
+        "Release",
+        "Final"
+      ]
+    },
+    {
+      "ordinal": 2,
+      "name": "InitialMark",
+      "enabledStages": [
+        "FinishConcurrentWork",
+        "Initial",
+        "Prepare",
+        "Release",
+        "Final"
+      ]
+    },
+    {
+      "ordinal": 3,
+      "name": "FinalMark",
+      "enabledStages": [
+        "FinishConcurrentWork",
+        "Initial",
+        "Prepare",
+        "Closure",
+        "Release",
+        "Final"
+      ]
+    }
+  ],
+  "stwStages": [
+    "FinishConcurrentWork",
+    "Initial",
+    "Prepare",
+    "Closure",
+    "Release",
+    "STWRCDecsAndSweep",
+    "Final"
+  ],
+  "aliases": {
+    "rcIncrements": "Initial",
+    "rcDecrements": "STWRCDecsAndSweep",
+    "firstStw": "FinishConcurrentWork"
+  }
+}

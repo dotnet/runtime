@@ -1,0 +1,5 @@
+    10.59%  libclrlxrgc.so                [.] ReferenceCountTable::RegisterObjectInClearedSpan                                                                                   -      -            
+                          0x7061f01b24e9
+                                                0x7061720e8592
+                                                0x7061effd6f23
+                                                0x7061effd54d3

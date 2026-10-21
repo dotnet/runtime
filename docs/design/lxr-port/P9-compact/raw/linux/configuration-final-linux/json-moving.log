@@ -1,0 +1,8 @@
+{"command": ["/root/lxr-compact-collector/artifacts/P9/json-host-linux/dotnet", "exec", "--runtimeconfig", "/root/lxr-compact-collector/artifacts/P9/configuration-final-linux/json-moving.runtimeconfig.json", "/root/lxr-compact-collector/artifacts/P9/fixtures/runtime-tests.dll", "--vertical", "mutation", "LXR", "/root/lxr-compact-collector/artifacts/P9/birth-final-Release-linux/libclrlxrgc.so", "normal"], "settings": {}, "properties": {"System.GC.LXREvacuateNursery": true}}
+GC: LXREvacuateNursery
+GC: LXR configuration requests an unsupported feature.
+GC: LXR does not support this setting. Standard GC hard limits include bookkeeping; use LXRManagedHeapHardLimitMB for the explicitly managed-capacity ceiling.
+GC heap initialization failed with error 0x80004001
+Failed to create CoreCLR, HRESULT: 0x80004001
+
+exit=137

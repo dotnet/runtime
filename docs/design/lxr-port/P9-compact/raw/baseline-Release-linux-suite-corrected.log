@@ -1,0 +1,18 @@
+{"command": ["/root/lxr-compact-collector/artifacts/P9/baseline-linux/corerun", "/root/lxr-compact-collector/artifacts/P9/fixtures/runtime-tests.dll", "/root/lxr-compact-collector/artifacts/P9/baseline-linux/libclrlxrgc.so"], "module_sha256": "3b5edce83aec68c4be43633495dae9b79639ff8f67330b729215df2aeb0fe22b"}
+collector=LXR nonmoving prototype; GC interface 5.15; P8 speed and scale engine module=/root/lxr-compact-collector/artifacts/P9/baseline-linux/libclrlxrgc.so sha256=3B5EDCE83AEC68C4BE43633495DAE9B79639FF8F67330B729215DF2AEB0FE22B
+phase=cycles
+phase=pinned-interior
+phase=finalization
+phase=dependent
+phase=thread-churn
+phase=held-deletion
+phase=satb-overflow
+phase=concurrent-mutation
+phase=collectible
+phase=refcounted-root
+phase=syncblock
+phase=managed-range-reuse
+owned_allocations=107536 allocated_bytes=24107688 live_bytes=9744536 reclaimed_bytes=14363152 collections=102 full_traces=74 root_increments=65924 checks=100627
+PASS: 100627 selected-host startup checks
+
+exit=0

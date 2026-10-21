@@ -1,0 +1,108 @@
+; Assembly listing for method Program:FillReferences(System.Object[],System.Object):System.Object (FullOpts)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Windows
+; FullOpts code
+; optimized code
+; rsp based frame
+; partially interruptible
+; No PGO data
+; 0 inlinees with PGO data; 2 single block inlinees; 1 inlinees without PGO data
+
+G_M000_IG01:                ;; offset=0x0000
+       push     rsi
+       push     rbx
+       sub      rsp, 40
+       mov      rbx, rcx
+       mov      r9, rdx
+
+G_M000_IG02:                ;; offset=0x000C
+       test     rbx, rbx
+       je       SHORT G_M000_IG04
+
+G_M000_IG03:                ;; offset=0x0011
+       mov      rax, 0x<RELOC>
+       cmp      qword ptr [rbx], rax
+       jne      SHORT G_M000_IG07
+       lea      rdx, bword ptr [rbx+0x10]
+       mov      esi, dword ptr [rbx+0x08]
+       jmp      SHORT G_M000_IG05
+
+G_M000_IG04:                ;; offset=0x0029
+       xor      rdx, rdx
+       xor      esi, esi
+
+G_M000_IG05:                ;; offset=0x002D
+       mov      r8d, esi
+       mov      rcx, 0x<RELOC>
+       call     [System.SpanHelpers:Fill[System.__Canon](byref,nuint,System.__Canon)]
+       mov      esi, dword ptr [rbx+0x08]
+       lea      eax, [rsi-0x01]
+       cmp      eax, esi
+       jae      SHORT G_M000_IG08
+       mov      rax, gword ptr [rbx+8*rax+0x10]
+
+G_M000_IG06:                ;; offset=0x004F
+       add      rsp, 40
+       pop      rbx
+       pop      rsi
+       ret
+
+G_M000_IG07:                ;; offset=0x0056
+       call     [System.ThrowHelper:ThrowArrayTypeMismatchException()]
+       int3
+
+G_M000_IG08:                ;; offset=0x005D
+       call     CORINFO_HELP_RNGCHKFAIL
+       int3
+
+; Total bytes of code 99
+
+; Assembly listing for method Program:FillMixedReferences(MixedReferences[],MixedReferences):System.Object (FullOpts)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Windows
+; FullOpts code
+; optimized code
+; rsp based frame
+; partially interruptible
+; No PGO data
+; 0 inlinees with PGO data; 2 single block inlinees; 1 inlinees without PGO data
+
+G_M000_IG01:                ;; offset=0x0000
+       push     rsi
+       push     rbx
+       sub      rsp, 40
+       mov      rbx, rcx
+       mov      r8, rdx
+
+G_M000_IG02:                ;; offset=0x000C
+       test     rbx, rbx
+       je       SHORT G_M000_IG04
+
+G_M000_IG03:                ;; offset=0x0011
+       lea      rcx, bword ptr [rbx+0x10]
+       mov      esi, dword ptr [rbx+0x08]
+       jmp      SHORT G_M000_IG05
+
+G_M000_IG04:                ;; offset=0x001A
+       xor      rcx, rcx
+       xor      esi, esi
+
+G_M000_IG05:                ;; offset=0x001E
+       mov      edx, esi
+       call     [System.SpanHelpers:Fill[MixedReferences](byref,nuint,MixedReferences)]
+       mov      esi, dword ptr [rbx+0x08]
+       lea      eax, [rsi-0x01]
+       cmp      eax, esi
+       jae      SHORT G_M000_IG07
+       lea      rax, [rax+2*rax]
+       mov      rax, gword ptr [rbx+8*rax+0x18]
+
+G_M000_IG06:                ;; offset=0x0039
+       add      rsp, 40
+       pop      rbx
+       pop      rsi
+       ret
+
+G_M000_IG07:                ;; offset=0x0040
+       call     CORINFO_HELP_RNGCHKFAIL
+       int3
+
+; Total bytes of code 70

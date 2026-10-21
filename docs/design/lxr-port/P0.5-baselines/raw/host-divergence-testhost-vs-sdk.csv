@@ -1,0 +1,9 @@
+scenario,collector,heapFactor,phase,metric,baselineMean,baselineInvocations,baselineCvPercent,otherMean,otherInvocations,otherCvPercent,ratioOtherOverBaseline,differencePercent,widestWithinSessionCvPercent,baselineArrivalRate,otherArrivalRate,sameOfferedLoad,exceedsBothSpreadAndFloor
+allocation-churn,srv,2.0,throughput,operationsPerSecond,247636.871589,5,1.578,273986.678852,3,0.35,1.106405,10.641,1.578,none,none,true,true
+allocation-churn,wks,2.0,throughput,operationsPerSecond,115337.472771,5,2.044,141743.657184,3,1.284,1.228947,22.895,2.044,none,none,true,true
+large-object-pressure,srv,2.0,throughput,operationsPerSecond,8002.590431,5,3.401,8637.283564,3,2.552,1.079311,7.931,3.401,none,none,true,false
+large-object-pressure,wks,2.0,throughput,operationsPerSecond,152757.115814,5,3.155,168402.889052,3,1.324,1.102423,10.242,3.155,none,none,true,true
+long-lived-cache,srv,2.0,throughput,operationsPerSecond,2194717.020262,5,2.537,2896596.215287,3,0.136,1.319804,31.98,2.537,none,none,true,true
+long-lived-cache,wks,2.0,throughput,operationsPerSecond,854997.258018,5,1.308,1001430.874917,3,4.756,1.171268,17.127,4.756,none,none,true,true
+low-allocation-compute,srv,2.0,throughput,operationsPerSecond,2518655.20618,5,0.55,2615570.453917,3,0.976,1.038479,3.848,0.976,none,none,true,false
+low-allocation-compute,wks,2.0,throughput,operationsPerSecond,2593824.166933,5,2.364,2621255.388346,3,0.974,1.010576,1.058,2.364,none,none,true,false

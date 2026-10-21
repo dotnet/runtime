@@ -1,0 +1,21 @@
+P1.2 interpreter folding evidence
+Method: System.Buffer:Memmove[System.__Canon](byref,byref,nuint)
+Configuration: Windows x64 Debug, DOTNET_InterpMode=3, ReadyToRun=0, TieredCompilation=0
+
+CardTable unoptimized IR:
+IL_002d: ldc.i4         [23 <- nil], 0
+IL_0034: brfalse.i4     [nil <- 24], BB5
+Execution: PASS, callback delta 0
+
+SlotLog unoptimized IR:
+IL_002d: ldc.i4         [23 <- nil], 1
+IL_0034: brfalse.i4     [nil <- 24], BB5
+Execution: PASS, interpreter mixed-reference copy and clear surfaces
+
+The interpreter retains the constant conditional branch in its current IR, but the intrinsic is
+resolved once during compilation. There is no execution-time write-barrier-mode opcode or process
+state read.
+
+Full local logs:
+artifacts/p12-followup-interpreter-default-ir.log
+artifacts/p12-followup-interpreter-selected-buffer-ir.log

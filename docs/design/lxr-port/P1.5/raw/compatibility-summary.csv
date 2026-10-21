@@ -1,0 +1,8 @@
+"Name","Expected","Result","ExitCode","Evidence"
+"old-binary-build","success","PASS","0","old-binary-build.log"
+"old-binary-current-runtime","startup success","PASS","100","old-binary-current-runtime.log"
+"new-disabled-gc-old-runtime","startup success","PASS","100","new-disabled-gc-old-runtime.log"
+"new-enabled-gc-old-runtime","startup rejection","PASS","-1","new-enabled-gc-old-runtime.log"
+"old-source-current-header-build","success","PASS","0","old-source-current-header-build.log"
+"old-source-current-header-current-runtime","startup success","PASS","100","old-source-current-header-current-runtime.log"
+"pure-virtual-control-build","abstract-class failure","PASS","1","pure-virtual-control-build.log"

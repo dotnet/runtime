@@ -1,0 +1,50 @@
+[
+  {
+    "stage": "before",
+    "configuration": "Release",
+    "module": "/root/lxr-batching-d2eccaea/before-Release-linux/libclrlxrgc.so",
+    "module_sha256": "1e8c0da8348cc010617b48b7c1a2981c32f46f4d163192154c5421bd08811445",
+    "companion": "/root/lxr-batching-d2eccaea/before-Release-linux/libclrlxrgc.so.dbg",
+    "companion_sha256": "12eb2f7bed7fd7fc26d8e885ee939cb52eecc43830d5970f686174a72fdc9f64",
+    "matched": true,
+    "debuglink": "libclrlxrgc.so.dbg",
+    "crc32": "51ed07bf",
+    "actual_crc32": "51ed07bf"
+  },
+  {
+    "stage": "after",
+    "configuration": "Release",
+    "module": "/root/lxr-batching-d2eccaea/after-Release-linux/libclrlxrgc.so",
+    "module_sha256": "0909a5b1ce5e6383e944d45ffd17791050acfb62a26b048c4955fb0917b71e14",
+    "companion": "/root/lxr-batching-d2eccaea/after-Release-linux/libclrlxrgc.so.dbg",
+    "companion_sha256": "304a7037ba3c62eb85da8113b12d8bea7755daf54909e349f9657bf5cfa001c2",
+    "matched": true,
+    "debuglink": "libclrlxrgc.so.dbg",
+    "crc32": "a32529ef",
+    "actual_crc32": "a32529ef"
+  },
+  {
+    "stage": "before",
+    "configuration": "Debug",
+    "module": "/root/lxr-batching-d2eccaea/before-Debug-linux/libclrlxrgc.so",
+    "module_sha256": "cf7dfcbc68558c9d34117c29d55020b52aacf5927aea95fdd93c2224d053392c",
+    "companion": "/root/lxr-batching-d2eccaea/before-Debug-linux/libclrlxrgc.so.dbg",
+    "companion_sha256": "72789e281d5148d65a0f5d0f4dac1be1b1947f30ba756f11de34afc336b0eb6c",
+    "matched": true,
+    "debuglink": "libclrlxrgc.so.dbg",
+    "crc32": "8f68c80c",
+    "actual_crc32": "8f68c80c"
+  },
+  {
+    "stage": "after",
+    "configuration": "Debug",
+    "module": "/root/lxr-batching-d2eccaea/after-Debug-linux/libclrlxrgc.so",
+    "module_sha256": "d69c9bc841ca25a5371817bb79a5b4875821a6033de71cc1af6664c7ddbdd853",
+    "companion": "/root/lxr-batching-d2eccaea/after-Debug-linux/libclrlxrgc.so.dbg",
+    "companion_sha256": "de71d380d333383f2480e066aace34f298dbbc4d8cf5df9a7857f7230a07bfe0",
+    "matched": true,
+    "debuglink": "libclrlxrgc.so.dbg",
+    "crc32": "01989407",
+    "actual_crc32": "01989407"
+  }
+]

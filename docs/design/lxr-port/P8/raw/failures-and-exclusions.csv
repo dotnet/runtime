@@ -1,0 +1,21 @@
+record,classification,retained_location,resolution
+Stale base,corrected checkout,authorized fast-forward tool record,Verified local lxr d9d08a7 and preserved unrelated XML bytes
+Windows long filename probe,command failure,initial git diff tool output,Reissued with core.longpaths=true
+Initial Linux replay,invalid shell argument transport,/root/lxr-p8-baseline/baseline-managed-linux.log,Base64 script transport preserved exact paths and environment
+Missing Linux perf,missing tool,/root/lxr-p8-baseline/profiler-availability-corrected.log,Installed linux-tools-generic after the recorded missing-tool failure
+First GDB profile,invalid symbol attribution,/root/lxr-p8-baseline/profile-linux.json,Debug CRC mismatches retained; matching-symbol profile layout created separately
+Symbolized GDB profile,failed sampling run,/root/lxr-p8-baseline/profile-symbolized-linux.json,Thread-exit register failure retained; not used for quantitative attribution
+Release configure command,invalid batch argument quoting,artifacts/P8/configure-windows.log,Quoted cmd.exe configure succeeded
+Windows storage compile,compile failure,artifacts/P8/storage-native-windows/build.log,Correct platform bit-scan index type and rerun
+Linux module load,product load failure,artifacts/P8/integrated-managed-legacy-linux.log,Included existing gcenv.inl page-size definition and reran
+Fixture PInvoke compile,analyzer failure,artifacts/P8/vertical-fixture-build.log,LibraryImport source-generated partial declaration and rerun
+Integrated callback compile,fixture compile failure,artifacts/P8/review-fixes-native-windows/build.log,Forward-declared existing allocation fixture helper and reran both OSes
+Initial standard 64 MiB preflight,invalid contract evidence,artifacts/P8/hard-limit-preflight-windows.log,Standard bookkeeping-inclusive family rejected; scoped managed ceiling rerun
+Empty configuration control,real parse failure,artifacts/P8/configuration-windows/empty.log,Validated raw presence and Windows one-byte empty size query; 31 controls pass
+Linux Debug thread naming,real lifetime failure,artifacts/P8/verified-suite-Debug-linux.log,Scan worker ready handshake closes create/name/exit race; final Debug and Release reruns pass
+Windows OOM invocation,invalid splatting command,artifacts/P8/verified-oom-Release-windows.log,Explicit string-array argument construction and rerun
+Pre-final throughput run,interrupted old-source study,artifacts/P8/throughput-windows.csv,Stopped after follow-up capacity fix; no rows used as final evidence
+First completed Windows matrix,invalid built-in labels,artifacts/P8/throughput-final-windows.csv,All 180 rows rejected; uppercase inherited GCPath exposed case-sensitive sanitizer; whole schedule rerun
+Pre-corrected Linux schedule,interrupted apparatus study,/root/lxr-p8-speed-scale/artifacts/P8/throughput-final-linux.csv,Stopped before final portable fixture and corrected environment schedule
+Original runner with inherited GCPath,expected guard failure,artifacts/P8/fixed-original-windows-r0-A-WKS.log,Cleared inherited collector variables before unchanged original runner
+Injected effect,reported inconclusive arms,matched and growth summary CSVs,No threshold widening or sample retries; slow P5 and noisy Linux growth results remain inconclusive

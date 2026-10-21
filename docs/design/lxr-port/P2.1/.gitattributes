@@ -1,0 +1,2 @@
+run-side-metadata-validation.sh text eol=lf
+raw/** -text -diff

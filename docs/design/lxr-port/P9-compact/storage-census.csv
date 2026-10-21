@@ -1,0 +1,13 @@
+component,instances,bytes_per_instance,total_bytes,basis
+engine_extents,1,134217728,134217728,P8 source-derived commitment at 128 MiB admitted
+engine_trace_locks,1,16777216,16777216,P8 source-derived commitment at 128 MiB admitted
+engine_trace_scan_pointers,1,134217728,134217728,P8 source-derived commitment at 128 MiB admitted
+engine_active_start_bitmap,1,2097152,2097152,P8 source-derived commitment at 128 MiB admitted
+host_flags,1,67108864,67108864,P8 source-derived commitment at 128 MiB admitted
+increment_references,2,134217728,268435456,P8 full once-per-owned-slot bound
+increment_publication,2,33554432,67108864,P8 uint16 publication entries
+decrement_references,2,134217728,268435456,P8 full once-per-owned-slot bound
+decrement_publication,2,33554432,67108864,P8 uint16 publication entries
+birth_references,2,44740608,89481216,P8 minimum complete object size bound and page rounding
+birth_publication,2,11186176,22372352,P8 minimum complete object size bound and page rounding
+total,1,1137360896,1137360896,Exact reconciliation to historical measured P8 native plane counter

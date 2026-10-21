@@ -1,0 +1,44 @@
+######## control LXR_S4_NO_NURSERY_RELEASE_CONTROL (Release)
+      1 FAIL: the pause released the nursery block that no object promoted, and only that block
+      1 FAIL: 46099/46100 S4 sweep checks
+      1 == --s4-sweep
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S4_NO_REFRESH_CONTROL (Release)
+      1 FAIL: when the pause started, the sweep had finished, the promoted block was Reusable and the counters held
+      1 FAIL: the lazy sweep makes a block with a promoted object Reusable with its free-line count
+      1 FAIL: the block counters equal a walk after the lazy sweep
+      1 FAIL: a block that the lazy sweep made Reusable is used for allocation in the same epoch
+      1 FAIL: 44365/44369 S4 sweep checks
+      1 == --s4-sweep
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S4_EARLY_REUSABLE_CONTROL (Release)
+      1 FAIL: no block is handed out before the lazy sweep has looked at it
+      1 FAIL: a block with a promoted object keeps its state; the pause does not count its lines
+      1 FAIL: a block that the lazy sweep made Reusable is used for allocation in the same epoch
+      1 FAIL: 46094/46097 S4 sweep checks
+      1 == --s4-sweep
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S4_COUNTER_CONTROL (Release)
+     90 FAIL: after the lazy sweep the counters equal a walk, and the page count equals the heap size
+      2 FAIL: at the start of every pause the block counters equal a walk over all blocks
+      1 FAIL: when the pause started, the sweep had finished, the promoted block was Reusable and the counters held
+      1 FAIL: the released block is free and the counter holds the two promoted blocks
+      1 FAIL: the next pause keeps the counters and the promoted blocks
+      1 FAIL: the counters hold after the second pause and its lazy sweep
+      1 FAIL: the block counters equal a walk after the lazy sweep
+      1 FAIL: 46003/46100 S4 sweep checks
+      1 == --s4-sweep
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S4_NO_SWEEP_WAIT_CONTROL (Release)
+      1 FAIL: when the pause started, the sweep had finished, the promoted block was Reusable and the counters held
+      1 FAIL: the pause runs after the lazy sweep has finished
+      1 FAIL: the counters hold after the second pause and its lazy sweep
+      1 FAIL: a pause that is requested while the lazy sweep runs does not start
+      1 FAIL: 46095/46099 S4 sweep checks
+      1 == --s4-sweep
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S4_OLD_TOKEN_CONTROL (Release)
+      1 FAIL: a block that the lazy sweep made Reusable is used for allocation in the same epoch
+      1 FAIL: 46099/46100 S4 sweep checks
+      1 == --s4-sweep
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)

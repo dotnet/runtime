@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "dependencyCommit": "17ac93d30d5ebc08aeda0ddf24e562d506d72230",
+  "oracle": {
+    "binding": "0682434ae725787e38defbc17bd66dc918e4bdb7",
+    "core": "304ce69d43aae87de501111fceb8cbd33173a03a"
+  },
+  "threshold": {
+    "bytes": 32768,
+    "predicate": "greater-than-or-equal",
+    "oracleCorrection": true
+  },
+  "geometry": {
+    "addressBits": 47,
+    "pageBytes": 4096,
+    "ranges": "half-open"
+  },
+  "metadata": {
+    "markNurseryBits": 2,
+    "pageReuseBits": 8,
+    "pageReuseWrap": 0,
+    "pageReuseMaximum": 255
+  },
+  "phases": [
+    "Mutator",
+    "ConcurrentMark",
+    "Release",
+    "Shutdown"
+  ],
+  "benchmark": {
+    "methods": [
+      "Geometry",
+      "GeometryControl",
+      "FreshAllocateRelease",
+      "RecycledAllocateRelease",
+      "ReuseCounterAllocation",
+      "ExtraReuseUpdates",
+      "InjectedOwnerDelay"
+    ],
+    "launchCount": 3,
+    "warmupCount": 8,
+    "iterationCount": 20,
+    "operationsPerInvoke": 64,
+    "workerCounts": [
+      1,
+      4,
+      16
+    ],
+    "aaMinimum": 0.9,
+    "aaMaximum": 1.1,
+    "extraUpdateMinimum": 1.5,
+    "injectedCostMinimum": 1.25
+  },
+  "builds": [
+    {
+      "name": "baseline-exact-failure",
+      "result": "EXPECTED-FAIL"
+    },
+    {
+      "name": "baseline-audit-preserving-pdb-failure",
+      "result": "EXPECTED-FAIL"
+    },
+    {
+      "name": "baseline-r-drive-pass",
+      "result": "PASS"
+    },
+    {
+      "name": "default-windows-x64",
+      "result": "PASS"
+    },
+    {
+      "name": "test-enabled-windows-x64",
+      "result": "PASS"
+    },
+    {
+      "name": "windows-x86-runtime",
+      "result": "PASS"
+    },
+    {
+      "name": "windows-arm64-runtime",
+      "result": "PASS"
+    },
+    {
+      "name": "windows-x64-combined-runtime",
+      "result": "PASS"
+    }
+  ]
+}

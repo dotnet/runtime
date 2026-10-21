@@ -1,0 +1,285 @@
+
+  Determining projects to restore...
+  Cannot find a manifest file. The list of searched paths:
+  
+  No tools were restored.
+  All projects are up-to-date for restore.
+  Determining projects to restore...
+  Restored R:\Build.proj (in 275 ms).
+  7 of 8 projects are up-to-date for restore.
+  installer.tasks -> R:\artifacts\bin\installer.tasks\Debug\installer.tasks.dll
+  HelixTestTasks -> R:\artifacts\bin\HelixTestTasks\Debug\net11.0\HelixTestTasks.dll
+  Crossgen2Tasks -> R:\artifacts\bin\Crossgen2Tasks\Debug\Crossgen2Tasks.dll
+  cdac-build-tool -> R:\artifacts\bin\coreclr\windows.x86.Release\cdac-build-tool\cdac-build-tool.dll
+  Executing "R:\src\coreclr\build-runtime.cmd" -x86 -release -os windows -enforcepgo -pgodatapath "C:\Nuget\optimization.windows_nt-x86.pgo.coreclr\1.0.0-prerelease.26318.1" -targetrid win-x86 -cmakeargs "-DCLR_DOTNET_RID=win-x86" -cmakeargs "-DCLR_DOTNET_HOST_PATH='C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\dotnet.exe'" -cmakeargs "-DCDAC_BUILD_TOOL_BINARY_PATH=R:\artifacts\bin\coreclr\windows.x86.Release\cdac-build-tool\cdac-build-tool.dll" -cmakeargs "-DFEATURE_DYNAMIC_CODE_COMPILED=1" -cmakeargs "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" -component runtime 
+  BUILD: Starting Build at 20:28:45.67
+  'vswhere.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  BUILD: Commencing CoreCLR product build
+  BUILD: Checking prerequisites
+  BUILD: Using CMake from C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe
+  BUILD: Commencing build of native components for windows.x86.Release
+  BUILD: Using environment: "C:\Program Files\Microsoft Visual Studio\18\IntPreview\VC\Auxiliary\Build\vcvarsall.bat" amd64_x86 
+  'vswhere.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  **********************************************************************
+  ** Visual Studio 2026 Developer Command Prompt v18.0
+  ** Copyright (c) 2026 Microsoft Corporation
+  **********************************************************************
+  [vcvarsall.bat] Environment initialized for: 'x64_x86'
+  BUILD: Regenerating the Visual Studio solution
+  Calling "R:\\eng\native\gen-buildsys.cmd" "R:\src\coreclr" "R:\\artifacts\obj\coreclr\windows.x86.Release" 18.0 x86 windows "-DCMAKE_BUILD_TYPE=Release" "-DCLR_CMAKE_TARGET_ARCH=x86" "-DCLR_CMAKE_TARGET_OS=windows" "-DCLI_CMAKE_FALLBACK_OS=win10" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=C:\Nuget\optimization.windows_nt-x86.pgo.coreclr\1.0.0-prerelease.26318.1" "-DCLR_CMAKE_PGO_OPTIMIZE=1" "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" "-DFEATURE_DYNAMIC_CODE_COMPILED=1" "-DCDAC_BUILD_TOOL_BINARY_PATH=R:\artifacts\bin\coreclr\windows.x86.Release\cdac-build-tool\cdac-build-tool.dll" "-DCLR_DOTNET_HOST_PATH='C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\dotnet.exe'" "-DCLR_DOTNET_RID=win-x86" 
+  The CMake command line differs from the last run. Running CMake again.
+   "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe "-DCMAKE_INSTALL_PREFIX=R://artifacts/bin/coreclr/windows.x86.Release" "-DCLR_CMAKE_HOST_ARCH=x86"   "-DCMAKE_SYSTEM_VERSION=10.0" "-DCMAKE_BUILD_TYPE=Release" "-DCLR_CMAKE_TARGET_ARCH=x86" "-DCLR_CMAKE_TARGET_OS=windows" "-DCLI_CMAKE_FALLBACK_OS=win10" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=C:\Nuget\optimization.windows_nt-x86.pgo.coreclr\1.0.0-prerelease.26318.1" "-DCLR_CMAKE_PGO_OPTIMIZE=1" "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" "-DFEATURE_DYNAMIC_CODE_COMPILED=1" "-DCDAC_BUILD_TOOL_BINARY_PATH=R:\artifacts\bin\coreclr\windows.x86.Release\cdac-build-tool\cdac-build-tool.dll" "-DCLR_DOTNET_HOST_PATH='C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\dotnet.exe'" "-DCLR_DOTNET_RID=win-x86" --no-warn-unused-cli -G Ninja -B "R:\\artifacts\obj\coreclr\windows.x86.Release" -S "R:\src\coreclr""
+  Not searching for unused variables given on the command line.
+  -- Using CMake version 4.3.1-msvc1
+  -- ZLIB_HEADER_VERSION: 1.3.1
+  -- ZLIBNG_HEADER_VERSION: 2.2.5
+  -- Arch detected: 'i686'
+  -- Basearch of 'i686' has been detected as: 'x86'
+  -- Architecture-specific source files: arch/x86/x86_features.c;arch/x86/chunkset_sse2.c;arch/x86/compare256_sse2.c;arch/x86/slide_hash_sse2.c;arch/x86/adler32_ssse3.c;arch/x86/chunkset_ssse3.c;arch/x86/adler32_sse42.c;arch/x86/crc32_pclmulqdq.c;arch/x86/slide_hash_avx2.c;arch/x86/chunkset_avx2.c;arch/x86/compare256_avx2.c;arch/x86/adler32_avx2.c;arch/x86/adler32_avx512.c;arch/x86/chunkset_avx512.c;arch/x86/adler32_avx512_vnni.c;arch/x86/crc32_vpclmulqdq.c
+  -- The following features have been enabled:
+  
+   * CMAKE_BUILD_TYPE, Build type: Release (selected)
+   * SSE2, Support the SSE2 instruction set, using ""
+   * XSAVE, Support XSAVE intrinsics using ""
+   * SSSE3_ADLER32, Support SSSE3-accelerated adler32, using ""
+   * SSE42_CRC, Support SSE4.2 optimized adler32 hash generation, using ""
+   * PCLMUL_CRC, Support CRC hash generation using PCLMULQDQ, using " "
+   * AVX2_SLIDEHASH, Support AVX2 optimized slide_hash, using "/arch:AVX2"
+   * AVX2_CHUNKSET, Support AVX2 optimized chunkset, using "/arch:AVX2"
+   * AVX2_COMPARE256, Support AVX2 optimized compare256, using "/arch:AVX2"
+   * AVX2_ADLER32, Support AVX2-accelerated adler32, using "/arch:AVX2"
+   * AVX512_ADLER32, Support AVX512-accelerated adler32, using "/arch:AVX512"
+   * AVX512_CHUNKSET, Support AVX512 optimized chunkset, using "/arch:AVX512"
+   * AVX512VNNI_ADLER32, Support AVX512VNNI adler32, using "/arch:AVX512"
+   * VPCLMUL_CRC, Support CRC hash generation using VPCLMULQDQ, using "  /arch:AVX512"
+   * WITH_GZFILEOP, Compile with support for gzFile related functions
+   * ZLIB_COMPAT, Compile with zlib compatible API
+   * WITH_SANITIZER, Enable sanitizer support
+   * WITH_GTEST, Build gtest_zlib
+   * WITH_OPTIM, Build with optimisation
+   * WITH_NEW_STRATEGIES, Use new strategies
+   * WITH_RUNTIME_CPU_DETECTION, Build with runtime CPU detection
+   * WITH_AVX2, Build with AVX2
+   * WITH_AVX512, Build with AVX512
+   * WITH_AVX512VNNI, Build with AVX512 VNNI
+   * WITH_SSE2, Build with SSE2
+   * WITH_SSSE3, Build with SSSE3
+   * WITH_SSE42, Build with SSE42
+   * WITH_PCLMULQDQ, Build with PCLMULQDQ
+   * WITH_VPCLMULQDQ, Build with VPCLMULQDQ
+  
+  -- The following features have been disabled:
+  
+   * FORCE_SSE2, Assume CPU is SSE2 capable
+   * ZLIB_SYMBOL_PREFIX, Publicly exported symbols DO NOT have a custom prefix
+   * ZLIB_ENABLE_TESTS, Build test binaries
+   * ZLIBNG_ENABLE_TESTS, Test zlib-ng specific API
+   * WITH_FUZZERS, Build test/fuzz
+   * WITH_BENCHMARKS, Build test/benchmarks
+   * WITH_BENCHMARK_APPS, Build application benchmarks
+   * WITH_NATIVE_INSTRUCTIONS, Instruct the compiler to use the full instruction set on this host (gcc/clang -march=native)
+   * WITH_MAINTAINER_WARNINGS, Build with project maintainer warnings
+   * WITH_CODE_COVERAGE, Enable code coverage reporting
+   * WITH_INFLATE_STRICT, Build with strict inflate distance checking
+   * WITH_INFLATE_ALLOW_INVALID_DIST, Build with zero fill for inflate invalid distances
+   * INSTALL_UTILS, Copy minigzip and minideflate during install
+  
+  -- Build type is 'Release'
+  -- Compiler is not EMSCRIPTEN
+  -- ZSTD VERSION: 1.5.7
+  -- CMAKE_INSTALL_PREFIX: R:/artifacts/bin/coreclr/windows.x86.Release
+  -- CMAKE_INSTALL_LIBDIR: lib
+  -- ZSTD_LEGACY_SUPPORT not defined!
+  -- ZSTD_MULTITHREAD_SUPPORT is disabled
+  PGO data file NOT found: C:\Nuget\optimization.windows_nt-x86.pgo.coreclr\1.0.0-prerelease.26318.1\data\vm_gc_wks.pgd
+  PGO data file NOT found: C:\Nuget\optimization.windows_nt-x86.pgo.coreclr\1.0.0-prerelease.26318.1\data\vm_gc_svr.pgd
+  Read file version from native version header at 'R://artifacts/obj/_version.h'.
+  -- Configuring done (6.5s)
+  -- Generating done (3.6s)
+  -- Build files have been written to: R:/artifacts/obj/coreclr/windows.x86.Release
+  running "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" --build R:\\artifacts\obj\coreclr\windows.x86.Release --target  runtime --config Release -- 
+  [1/93] Building RC object dlls\mscordbi\CMakeFiles\mscordbi.dir\Native.rc.res
+  [2/93] Building RC object dlls\mscordac\CMakeFiles\mscordaccore.dir\Native.rc.res
+  [3/93] Preprocessing R:/artifacts/obj/coreclr/windows.x86.Release/vm/wks/AsmConstants.tmp. Outputting to R:/artifacts/obj/coreclr/windows.x86.Release/vm/wks/AsmConstants.inc
+  AsmConstants.tmp
+  [4/93] Building RC object tools\aot\jitinterface\CMakeFiles\jitinterface_x86.dir\Native.rc.res
+  [5/93] Building RC object ilasm\CMakeFiles\ilasm.dir\Native.rc.res
+  [6/93] Building RC object jit\CMakeFiles\clrjit.dir\Native.rc.res
+  [7/93] Building RC object dlls\mscordbi_universal\CMakeFiles\mscordbi_universal.dir\__\mscordbi\Native.rc.res
+  [8/93] Building RC object hosts\corerun\CMakeFiles\corerun.dir\native.rc.res
+  [9/93] Building RC object ildasm\exe\CMakeFiles\ildasm.dir\__\dasm.rc.res
+  [10/93] Building RC object gc\CMakeFiles\clrgc.dir\windows\Native.rc.res
+  [11/93] Building RC object debug\createdump\CMakeFiles\createdump.dir\createdump.rc.res
+  [12/93] Building RC object dlls\clretwrc\CMakeFiles\clretwrc.dir\clretwrc.rc.res
+  [13/93] Linking CXX shared library tools\aot\jitinterface\jitinterface_x86.dll
+  [14/93] Building CXX object vm\wks\CMakeFiles\cee_wks_core.dir\__\__\gc\side_metadata.cpp.obj
+  [15/93] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\utils.c.obj
+  [16/93] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\fx_ver.c.obj
+  [17/93] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\trace.c.obj
+  [18/93] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\pal.windows.c.obj
+  [19/93] Building CXX object gc\CMakeFiles\clrgc.dir\side_metadata.cpp.obj
+  [20/93] Building CXX object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\R_\src\native\corehost\fxr\fx_ver.cpp.obj
+  [21/93] Building CXX object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\utils.cpp.obj
+  [22/93] Building CXX object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\longfile.windows.cpp.obj
+  [23/93] Building CXX object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\pal.windows.cpp.obj
+  [24/93] Linking RC shared library dlls\clretwrc\clretwrc.dll
+  [25/93] Linking CXX executable debug\createdump\createdump.exe
+  [26/93] Linking CXX static library Corehost.Static\hostmisc\hostmisc.lib
+  [27/93] Linking CXX executable hosts\corerun\corerun.exe
+  [28/93] Linking CXX shared library dlls\mscordbi\mscordbi.dll
+  [29/93] C:\Windows\system32\cmd.exe /C "cd /D R:\artifacts\obj\coreclr\windows.x86.Release && "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -DCMAKE_INSTALL_COMPONENT=coreclr_misc -DBUILD_TYPE=Release -P R:/artifacts/obj/coreclr/windows.x86.Release/cmake_install.cmake"
+  -- Install configuration: "Release"
+  [30/93] C:\Windows\system32\cmd.exe /C "cd /D R:\artifacts\obj\coreclr\windows.x86.Release && "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -DCMAKE_INSTALL_COMPONENT=hosts -DBUILD_TYPE=Release -P R:/artifacts/obj/coreclr/windows.x86.Release/cmake_install.cmake"
+  -- Install configuration: "Release"
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/./corerun.exe
+  [31/93] Linking CXX shared library gc\clrgc.dll
+  [32/93] Linking CXX executable ilasm\ilasm.exe
+  [33/93] Linking CXX executable ildasm\exe\ildasm.exe
+  [34/93] C:\Windows\system32\cmd.exe /C "cd /D R:\artifacts\obj\coreclr\windows.x86.Release && "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -DCMAKE_INSTALL_COMPONENT=iltools -DBUILD_TYPE=Release -P R:/artifacts/obj/coreclr/windows.x86.Release/cmake_install.cmake"
+  -- Install configuration: "Release"
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/./ilasm.exe
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/PDB/ilasm.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/./ildasm.exe
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/PDB/ildasm.pdb
+  [35/93] Linking CXX shared library dlls\mscordbi_universal\mscordbi_universal.dll
+  [36/93] Linking CXX shared library dlls\mscordac\mscordaccore.dll
+  [37/93] C:\Windows\system32\cmd.exe /C "cd /D R:\artifacts\obj\coreclr\windows.x86.Release\dlls\mscoree\coreclr && powershell -NoProfile -ExecutionPolicy ByPass -File R:/src/coreclr/dlls/mscoree/coreclr/GenClrDebugResource.ps1 -dac R:/artifacts/obj/coreclr/windows.x86.Release/dlls/mscordac/mscordaccore.dll -dbi R:/artifacts/obj/coreclr/windows.x86.Release/dlls/mscordbi/mscordbi.dll -out R:/artifacts/obj/coreclr/windows.x86.Release/dlls/mscoree/coreclr/clr_debug_resource.bin"
+  [38/93] Building RC object dlls\mscoree\coreclr\CMakeFiles\coreclr.dir\__\Native.rc.res
+  [39/93] Building RC object dlls\mscoree\coreclr\CMakeFiles\coreclr_static.dir\__\Native.rc.res
+  [40/93] C:\Windows\system32\cmd.exe /C "cd /D R:\artifacts\obj\coreclr\windows.x86.Release && "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -DCMAKE_INSTALL_COMPONENT=debug -DBUILD_TYPE=Release -P R:/artifacts/obj/coreclr/windows.x86.Release/cmake_install.cmake"
+  -- Install configuration: "Release"
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/./mscordbi.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/PDB/mscordbi.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/mscordbi.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/PDB/mscordbi.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/./mscordbi_universal.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/PDB/mscordbi_universal.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/./mscordaccore.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/PDB/mscordaccore.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/mscordaccore.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/PDB/mscordaccore.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/mscordaccore_x86_x86_42.42.42.42424.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/PDB/mscordaccore_x86_x86_42.42.42.42424.pdb
+  [41/93] Linking CXX shared library jit\clrjit.dll
+  [42/93] C:\Windows\system32\cmd.exe /C "cd /D R:\artifacts\obj\coreclr\windows.x86.Release && "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -DCMAKE_INSTALL_COMPONENT=jit -DBUILD_TYPE=Release -P R:/artifacts/obj/coreclr/windows.x86.Release/cmake_install.cmake"
+  -- Install configuration: "Release"
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/./jitinterface_x86.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/PDB/jitinterface_x86.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/./clrjit.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/PDB/clrjit.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/clrjit.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/PDB/clrjit.pdb
+  [43/93] Linking CXX shared library dlls\mscoree\coreclr\coreclr.dll
+  [44/93] Generating mscordaccore module index file -> R:/artifacts/obj/coreclr/windows.x86.Release/debug/runtimeinfo/dacmoduleindex.h
+  [45/93] Generating coreclr module index file -> R:/artifacts/obj/coreclr/windows.x86.Release/debug/runtimeinfo/runtimemoduleindex.h
+  [46/93] Generating mscordbi module index file -> R:/artifacts/obj/coreclr/windows.x86.Release/debug/runtimeinfo/dbimoduleindex.h
+  [47/93] Building CXX object debug\runtimeinfo\CMakeFiles\runtimeinfo.dir\runtimeinfo.cpp.obj
+  [48/93] Building C object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\apphost\apphost.c.obj
+  [49/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\apphost_hostfxr_resolver.cpp.obj
+  [50/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\static\coreclr_resolver.cpp.obj
+  [51/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\sdk_info.cpp.obj
+  [52/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\command_line.cpp.obj
+  [53/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\framework_info.cpp.obj
+  [54/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\corehost_init.cpp.obj
+  [55/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\hostpolicy_resolver.cpp.obj
+  [56/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\install_info.cpp.obj
+  [57/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\host_context.cpp.obj
+  [58/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\fx_resolver.messages.cpp.obj
+  [59/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\sdk_resolver.cpp.obj
+  [60/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\hostfxr.cpp.obj
+  [61/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\fx_resolver.cpp.obj
+  [62/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\args.cpp.obj
+  [63/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\breadcrumbs.cpp.obj
+  [64/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\fx_muxer.cpp.obj
+  [65/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\deps_entry.cpp.obj
+  [66/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\coreclr.cpp.obj
+  [67/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\shared_store.cpp.obj
+  [68/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\dir_utils.cpp.obj
+  [69/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\file_entry.cpp.obj
+  [70/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\version.cpp.obj
+  [71/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\hostpolicy_init.cpp.obj
+  [72/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\manifest.cpp.obj
+  [73/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\extractor.cpp.obj
+  [74/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\runner.cpp.obj
+  [75/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\deps_format.cpp.obj
+  [76/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\hostpolicy_context.cpp.obj
+  [77/93] Linking CXX static library debug\runtimeinfo\runtimeinfo.lib
+  [78/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\hostpolicy.cpp.obj
+  [79/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\deps_resolver.cpp.obj
+  [80/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\roll_forward_option.cpp.obj
+  [81/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\json_parser.cpp.obj
+  [82/93] Building C object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\apphost\apphost.windows.c.obj
+  [83/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\host_startup_info.cpp.obj
+  [84/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fx_reference.cpp.obj
+  [85/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\version_compatibility_range.cpp.obj
+  [86/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fx_definition.cpp.obj
+  [87/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\reader.cpp.obj
+  [88/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\info.cpp.obj
+  [89/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\header.cpp.obj
+  [90/93] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\runtime_config.cpp.obj
+  [91/93] Linking CXX static library dlls\mscoree\coreclr\coreclr_static.lib
+  [92/93] Linking CXX executable Corehost.Static\singlefilehost.exe
+  [93/93] C:\Windows\system32\cmd.exe /C "cd /D R:\artifacts\obj\coreclr\windows.x86.Release && "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -DCMAKE_INSTALL_COMPONENT=runtime -DBUILD_TYPE=Release -P R:/artifacts/obj/coreclr/windows.x86.Release/cmake_install.cmake"
+  -- Install configuration: "Release"
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/corehost/PDB/singlefilehost.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/corehost/singlefilehost.exe
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/./clrgc.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/PDB/clrgc.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/clrgc.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/PDB/clrgc.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/./createdump.exe
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/PDB/createdump.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/createdump.exe
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/PDB/createdump.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/lib/runtimeinfo.lib
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/./clretwrc.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/PDB/clretwrc.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/clretwrc.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/PDB/clretwrc.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/./coreclr.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/PDB/coreclr.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/coreclr.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x86.Release/sharedFramework/PDB/coreclr.pdb
+  "C:\Users\konradkokosa\AppData\Local\Programs\Python\Python312\python.exe" "R:\src\coreclr\scripts\pgocheck.py" "R:\\artifacts\bin\coreclr\windows.x86.Release\coreclr.dll" "R:\\artifacts\bin\coreclr\windows.x86.Release\clrjit.dll"
+  R:\\artifacts\bin\coreclr\windows.x86.Release\clrjit.dll: compiled with PGO (PGU)
+  R:\\artifacts\bin\coreclr\windows.x86.Release\coreclr.dll: compiled with PGO (PGU)
+  BUILD: Build succeeded.  Finished at 20:30:21.51
+  BUILD: Product binaries are available at R:\\artifacts\bin\coreclr\windows.x86.Release
+  cdac-build-tool -> R:\artifacts\bin\coreclr\windows.x86.Release\cdac-build-tool\cdac-build-tool.dll
+  Executing "R:\src\coreclr\build-runtime.cmd" -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -x86 -release -os windows -hostarch x64 -hostos windows -targetrid win-x86 -cmakeargs "-DCLR_DOTNET_RID=win-x86" -subdir x64 -cmakeargs "-DCLR_DOTNET_HOST_PATH='C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\dotnet.exe'" -cmakeargs "-DCDAC_BUILD_TOOL_BINARY_PATH=R:\artifacts\bin\coreclr\windows.x86.Release\cdac-build-tool\cdac-build-tool.dll" -cmakeargs "-DFEATURE_DYNAMIC_CODE_COMPILED=1" -cmakeargs "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" -component debug 
+  BUILD: Starting Build at 20:30:21.88
+  'vswhere.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  BUILD: Commencing CoreCLR product build
+  BUILD: Checking prerequisites
+  BUILD: Using CMake from C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe
+  BUILD: Commencing build of native components for windows.x86.Release
+  BUILD: Using environment: "C:\Program Files\Microsoft Visual Studio\18\IntPreview\VC\Auxiliary\Build\vcvarsall.bat" amd64
+  'vswhere.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  **********************************************************************
+  ** Visual Studio 2026 Developer Command Prompt v18.0
+  ** Copyright (c) 2026 Microsoft Corporation
+  **********************************************************************
+  [vcvarsall.bat] Environment initialized for: 'x64'
+  BUILD: Regenerating the Visual Studio solution
+  Calling "R:\\eng\native\gen-buildsys.cmd" "R:\src\coreclr" "R:\\artifacts\obj\coreclr\windows.x86.Release\x64" 18.0 x64 windows "-DCMAKE_BUILD_TYPE=Release" "-DCLR_CMAKE_TARGET_ARCH=x86" "-DCLR_CMAKE_TARGET_OS=windows" "-DCLI_CMAKE_FALLBACK_OS=win10" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" "-DFEATURE_DYNAMIC_CODE_COMPILED=1" "-DCDAC_BUILD_TOOL_BINARY_PATH=R:\artifacts\bin\coreclr\windows.x86.Release\cdac-build-tool\cdac-build-tool.dll" "-DCLR_DOTNET_HOST_PATH='C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\dotnet.exe'" "-DCLR_DOTNET_RID=win-x86" "-DCLR_CROSS_COMPONENTS_BUILD=1" 
+  The CMake command line differs from the last run. Running CMake again.
+   "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe "-DCMAKE_INSTALL_PREFIX=R://artifacts/bin/coreclr/windows.x86.Release/x64" "-DCLR_CMAKE_HOST_ARCH=x64"   "-DCMAKE_SYSTEM_VERSION=10.0" "-DCMAKE_BUILD_TYPE=Release" "-DCLR_CMAKE_TARGET_ARCH=x86" "-DCLR_CMAKE_TARGET_OS=windows" "-DCLI_CMAKE_FALLBACK_OS=win10" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" "-DFEATURE_DYNAMIC_CODE_COMPILED=1" "-DCDAC_BUILD_TOOL_BINARY_PATH=R:\artifacts\bin\coreclr\windows.x86.Release\cdac-build-tool\cdac-build-tool.dll" "-DCLR_DOTNET_HOST_PATH='C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\dotnet.exe'" "-DCLR_DOTNET_RID=win-x86" "-DCLR_CROSS_COMPONENTS_BUILD=1" --no-warn-unused-cli -G Ninja -B "R:\\artifacts\obj\coreclr\windows.x86.Release\x64" -S "R:\src\coreclr""
+  Not searching for unused variables given on the command line.
+  -- Configuring done (2.5s)
+  -- Generating done (2.3s)
+  -- Build files have been written to: R:/artifacts/obj/coreclr/windows.x86.Release/x64
+  running "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" --build R:\\artifacts\obj\coreclr\windows.x86.Release\x64 --target  debug --config Release -- 
+  [1/1] C:\Windows\system32\cmd.exe /C "cd /D R:\artifacts\obj\coreclr\windows.x86.Release\x64 && "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -DCMAKE_INSTALL_COMPONENT=debug -DBUILD_TYPE=Release -P R:/artifacts/obj/coreclr/windows.x86.Release/x64/cmake_install.cmake"
+  -- Install configuration: "Release"
+  BUILD: Build succeeded.  Finished at 20:30:35.19
+  BUILD: Product binaries are available at R:\\artifacts\bin\coreclr\windows.x86.Release\x64
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:01:56.38

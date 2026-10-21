@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 2,
+  "stepId": "P0.4",
+  "controls": [
+    {
+      "id": "1",
+      "name": "collector identity",
+      "expectation": "a run whose collector does not match the request is marked invalid and cannot contribute to a ratio",
+      "fired": true,
+      "observed": "invalid, reason=collector-identity-mismatch; ratio refused; clean counterpart still valid",
+      "detail": [
+        "forced run: requested System.GC.Server=true, DOTNET_gcServer=0; observed ServerGC=false",
+        "forced run: valid=false, invalidReason=collector-identity-mismatch, exit=1",
+        "clean run: observed ServerGC=true, valid=true",
+        "ratio containing the forced run: refused - candidate cell c1.low-allocation-compute.srv.testhost.hdefault has 1 invalid invocation(s)"
+      ]
+    },
+    {
+      "id": "2",
+      "name": "coordinated omission",
+      "expectation": "open-loop p99 moves to about 190.0 ms while the service-time view of the same run barely changes",
+      "fired": true,
+      "observed": "open-loop p99 8.582 -\u003E 194.802 ms (predicted 190.0); service-time p99 0.019 -\u003E 0.017 ms",
+      "detail": [
+        "injection: 200 ms every 1 s, arrival rate 1000/s uniform, 10.0 s steady state",
+        "open-loop p50 0.027 -\u003E 0.030 ms",
+        "open-loop p99.9 14.461 -\u003E 206.270 ms",
+        "open-loop max 18.728 -\u003E 211.544 ms",
+        "queue delay p99 8.527 -\u003E 194.799 ms",
+        "achieved rate 999.9 -\u003E 999.0 per second (not overloaded, so this is not a capacity artefact)",
+        "service time is what a closed-loop harness reports; it moved by a factor of 0.90"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "configuration pinning (DATAS specifically)",
+      "expectation": "pinning the heap count forces DATAS off and is observed; DATAS defaults on and is observed; a knob that does not take effect is detected",
+      "fired": true,
+      "observed": "srv (HeapCount=8) observed GCDynamicAdaptationMode=0; srv-datas observed 1; forced-heap-count run observed HeapCount=16, invalidReason=collector-identity-mismatch",
+      "detail": [
+        "srv arm requests System.GC.HeapCount=8; init.cpp:792-796 forces dynamic_adaptation_mode to 0 when GetHeapCount() != 0, and interface.cpp:752 writes the effective value back",
+        "srv arm observed HeapCount=8, ServerGC=true",
+        "srv-datas arm observed HeapCount=16 (initial only; DATAS varies it during the run)",
+        "forced run set DOTNET_GCHeapCount=10, which the environment channel parses as hexadecimal 0x10 = 16 (gcenv.ee.cpp:1338)",
+        "forced run: valid=false, invalidReason=collector-identity-mismatch",
+        "Workstation note: GCDynamicAdaptationMode is only written back under DYNAMIC_HEAP_COUNT (gcpriv.h:158-162), which needs MULTIPLE_HEAPS, so its value under wks is the raw request and is not asserted."
+      ]
+    },
+    {
+      "id": "4",
+      "name": "timeout",
+      "expectation": "the process tree is killed, the run is recorded with status timeout and valid=false, and it appears in the results rather than being absent",
+      "fired": true,
+      "observed": "status=timeout, wall=10.102s against a 10s limit, result status=timeout, valid=False, invalidReason=timeout",
+      "detail": [
+        "marker seen: False (a hung worker never prints one)",
+        "report file written: no",
+        "the run is present in results.json with status=timeout, so a hang cannot be mistaken for a cell that was never scheduled"
+      ]
+    },
+    {
+      "id": "5",
+      "name": "crash capture, bounded",
+      "expectation": "a dump is written inside the run directory, is under budget, invalidates the run; and with the budget spent, no dump is written at all",
+      "fired": true,
+      "observed": "dump=M:\\artifacts\\lxr-harness\\runs\\p05.s1.control7-blindband-firing\\dumps\\c5.low-allocation-compute.wks.testhost.hdefault.0.15656.dmp (1.25 MB), status=crashed, result valid=False; budget-exhausted launch dumpPolicy=suppressed-budget, dump=\u003Cnone\u003E",
+      "detail": [
+        "dump type 1 (normal) requested via DOTNET_DbgMiniDumpType, clrconfigvalues.h:577; the runtime default of 2 (withheap) is what produced the multi-gigabyte files already on this machine",
+        "dump directory: M:\\artifacts\\lxr-harness\\runs\\p05.s1.control7-blindband-firing\\dumps - not the shared temp directory",
+        "budget: 512 MB, used 1 MB",
+        "exit code -2146232797 (0x80131623)"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "success marker",
+      "expectation": "a worker that exits 0 without printing its completion marker is not counted as a success",
+      "fired": true,
+      "observed": "--fake-success exited 0 with no marker; harness marked it valid=False, result invalidReason=marker-missing",
+      "detail": [
+        "marker prefix looked for on stdout: \u0027LXR-HARNESS-COMPLETE \u0027",
+        "honest run marker: allocation-churn:allocated=188743680",
+        "partial run (10% of the steady state) marker: allocation-churn:allocated=57147392",
+        "partial run throughput 107028/s versus honest 113184/s - similar rates, so throughput alone would not reveal the truncation",
+        "recorded steady state: honest 10.00 s versus partial 1.00 s, against 10.00 s requested - the truncation is visible in the run\u0027s own record",
+        "exit code 0 is never sufficient on its own: validity requires the marker, the checksum and the identity assertions"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "measurement resolution",
+      "expectation": "a ~16.7% injected slowdown gives an interval excluding 1.0 on the low side, and an uninjected replicate of the same arm gives an interval including 1.0. The half-width of the ~2.0% barrier-scale arm stays within 10%, so a catastrophic loss of resolution fails rather than being published. Whether that arm\u0027s effect is itself resolved is measured and reported, not asserted",
+      "fired": false,
+      "observed": "coarse ~16.7% injection 0.8254 [0.7497, 0.9099] excludes 1.0: True; null replicate 0.9868 [0.8901, 1.0936] includes 1.0: True; fine ~2.0% injection 0.9554 [0.8554, 1.0646] half-width 10.95% \u003C= 10%: False; that arm\u0027s effect excludes 1.0: False (measured, not asserted)",
+      "detail": [
+        "ASSERTED - coarse injection: every 5th operation is performed twice, a nominal 1/6 = 16.67% of the scenario\u0027s own work. This is a true-positive test of the estimator, set far enough above the host\u0027s single-invocation spread that its verdict does not depend on background load.",
+        "ASSERTED - null replicate: an arm identical to the baseline in every respect. Without it, an interval too narrow to be trusted would look like a success on the injected arm; this is the direction that catches over-confidence.",
+        "MEASURED - fine injection: every 50th operation is performed twice, a nominal 1/51 = 1.96%, chosen to sit at the paper\u0027s 1.6% barrier-cost scale. Whether the effect is resolved is reported, never asserted - see the P0.5 input below for why.",
+        "ASSERTED - blind-band bound: the fine arm\u0027s half-width must stay within 10%. Observed 10.95%. This asserts the estimator\u0027s precision, not the effect\u0027s significance, which is why it can be asserted at all where \u0027the fine effect is resolved\u0027 could not. A resolution regression between roughly 2% and 10% still fails nothing: that blind band is a published limitation of this control, not a closed gap.",
+        "9 baseline, 9 coarse, 9 fine and 9 null-replicate invocations, interleaved A/B/C/D, 10 s steady state each, 0 invocation(s) dropped as invalid",
+        "percentile bootstrap over invocations, B=10000, seed=20040, 95%",
+        "MEASURED RESOLUTION OF THIS HOST - half-width on the fine pair as the invocation count grows:",
+        "    n=3: ratio 0.9659 [0.9571, 0.9748], half-width 0.92% \u003C= 1.6%",
+        "    n=4: ratio 0.9433 [0.8986, 0.9706], half-width 3.82%",
+        "    n=5: ratio 0.9533 [0.9099, 1.0032], half-width 4.90%",
+        "    n=6: ratio 0.9670 [0.8814, 1.0782], half-width 10.18%",
+        "    n=7: ratio 0.9502 [0.8548, 1.0577], half-width 10.68%",
+        "    n=8: ratio 0.9403 [0.8390, 1.0542], half-width 11.44%",
+        "    n=9: ratio 0.9554 [0.8554, 1.0646], half-width 10.95%",
+        "P0.5 INPUT: on this host, 3 interleaved invocations of 10 s bring the half-width to 1.6%. Fewer than that cannot settle a barrier-cost question here.",
+        "P0.5 INPUT: the ~2.0% injected effect was NOT resolved on this run, despite the coarse effect being resolved. The estimator is working; the effect is simply at or below this host\u0027s floor today.",
+        "P0.5 INPUT: three paired 8 s probes of the fine injection, run directly against the worker, returned ratios of 1.0221, 0.9649 and 0.9922 - a 2% signal under a plus or minus 3% single-invocation spread, with the sign flipping. The paper\u0027s own 1.6%-inside-plus-or-minus-3% problem (P0.2 section 7) is therefore reproduced on this VM. Any barrier-cost claim in P0.5 must clear this floor with invocation count, not with a single comparison.",
+        "baseline samples (ops/s): 1685816, 1707363, 1697772, 1700890, 1541462, 1261473, 1450107, 1353571, 1287505",
+        "coarse samples (ops/s): 1374277, 1377844, 1361392, 1355942, 1280603, 1124964, 1098031, 1100290, 1222728",
+        "fine samples (ops/s): 1627004, 1639170, 1651277, 1489280, 1537147, 1334174, 1216499, 1163174, 1417887",
+        "null replicate samples (ops/s): 1712150, 1698691, 1695016, 1495675, 1339169, 1283941, 1394340, 1345691, 1540893"
+      ]
+    }
+  ]
+}

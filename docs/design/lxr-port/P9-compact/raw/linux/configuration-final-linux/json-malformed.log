@@ -1,0 +1,7 @@
+{"command": ["/root/lxr-compact-collector/artifacts/P9/json-host-linux/dotnet", "exec", "--runtimeconfig", "/root/lxr-compact-collector/artifacts/P9/configuration-final-linux/json-malformed.runtimeconfig.json", "/root/lxr-compact-collector/artifacts/P9/fixtures/runtime-tests.dll", "--vertical", "mutation", "LXR", "/root/lxr-compact-collector/artifacts/P9/birth-final-Release-linux/libclrlxrgc.so", "normal"], "settings": {}, "properties": {"System.GC.LXRManagedHeapHardLimitMB": "wrong"}}
+GC: LXRManagedHeapHardLimitMB
+GC: LXR configuration must be an unsigned integer in the documented range.
+GC heap initialization failed with error 0x80004005
+Failed to create CoreCLR, HRESULT: 0x80004005
+
+exit=137

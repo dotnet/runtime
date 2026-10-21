@@ -1,0 +1,4 @@
+growth P8-baseline: median_ms=764.306 AA_delta_pct=20.51 sensitivity=inconclusive
+growth compact: median_ms=479.092 AA_delta_pct=6.00 sensitivity=detected
+growth WKS: median_ms=14.062 AA_delta_pct=-2.44 sensitivity=detected
+growth Server: median_ms=19.985 AA_delta_pct=11.70 sensitivity=detected

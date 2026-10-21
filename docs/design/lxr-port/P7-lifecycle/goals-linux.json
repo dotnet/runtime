@@ -1,0 +1,22 @@
+[
+  {
+    "scenario": "empty",
+    "wall_change_percent": -17.089945058899726,
+    "stw_change_percent": -19.412880214475404,
+    "cpu_change_percent": -20.795438844593995,
+    "wall_goal_pass": true,
+    "stw_goal_pass": true,
+    "linux_cpu_goal_pass": true,
+    "goal_unchanged": true
+  },
+  {
+    "scenario": "lifetimes",
+    "wall_change_percent": -11.872299898421945,
+    "stw_change_percent": -13.899736393083383,
+    "cpu_change_percent": -15.24609344097797,
+    "wall_goal_pass": true,
+    "stw_goal_pass": true,
+    "linux_cpu_goal_pass": true,
+    "goal_unchanged": true
+  }
+]

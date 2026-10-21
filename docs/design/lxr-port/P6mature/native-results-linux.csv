@@ -1,0 +1,45 @@
+path,configuration,result,passed,total,scope,sha256
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-aux-retirement-Debug-linux.log,Debug,PASS,12307,12307,auxiliary retirement checks,e26f42b093fa057b1f0687d093685703bcc7d97ec4ffcad28bfb33431fb55d36
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-aux-retirement-Release-linux.log,Release,PASS,12307,12307,auxiliary retirement checks,e26f42b093fa057b1f0687d093685703bcc7d97ec4ffcad28bfb33431fb55d36
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-lifetime-Debug-linux.log,Debug,PASS,17,17,lifetime probe checks,f225b788d4caea66f9525540bc2d71ce0267094c96855f9b2129408358e3c07e
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-lifetime-Release-linux.log,Release,PASS,17,17,lifetime probe checks,f225b788d4caea66f9525540bc2d71ce0267094c96855f9b2129408358e3c07e
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-Debug-linux.log,Debug,PASS,3324,3324,mature movement checks,70f5759073e8897543e18060121d06e6a4ab35075b2c1a753e70fd1756d674ea
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-Release-linux.log,Release,PASS,3324,3324,mature movement checks,70f5759073e8897543e18060121d06e6a4ab35075b2c1a753e70fd1756d674ea
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-completed-scan-Debug-linux.log,Debug,PASS,45,45,completed mature descriptor checks,a43ee325c4bdab4422c5ec23141fa1a85fa476797a81e75ac2b2609790370cd1
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-completed-scan-Release-linux.log,Release,PASS,45,45,completed mature descriptor checks,a43ee325c4bdab4422c5ec23141fa1a85fa476797a81e75ac2b2609790370cd1
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-headroom-Debug-linux.log,Debug,PASS,131,131,nursery headroom checks,f987205471b2ac1942ae7940adacd1e65e778369e080b8ce11c6abe0acdcd4e5
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-headroom-Release-linux.log,Release,PASS,131,131,nursery headroom checks,f987205471b2ac1942ae7940adacd1e65e778369e080b8ce11c6abe0acdcd4e5
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-reader-Debug-linux.log,Debug,PASS,47,47,mature reader checks,d36321de0691b2f1e55c2457684f5c3958611eb30405b8d5efe1355807584abe
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-reader-Release-linux.log,Release,PASS,47,47,mature reader checks,d36321de0691b2f1e55c2457684f5c3958611eb30405b8d5efe1355807584abe
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-released-candidate-Debug-linux.log,Debug,PASS,117,117,released candidate incarnation checks,9fa004929899d9d532ab4aa75edf6e863bd67a6d057eea3ab6441ebb10c2672f
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-released-candidate-Release-linux.log,Release,PASS,117,117,released candidate incarnation checks,9fa004929899d9d532ab4aa75edf6e863bd67a6d057eea3ab6441ebb10c2672f
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-remset-Debug-linux.log,Debug,PASS,100,100,mature remset checks,5df38582c58100a91208d4217ec48a822fca5e48f3842150fb3bed9cb7ff3d31
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-remset-Release-linux.log,Release,PASS,100,100,mature remset checks,5df38582c58100a91208d4217ec48a822fca5e48f3842150fb3bed9cb7ff3d31
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-remset-boundaries-Debug-linux.log,Debug,PASS,5505,5505,remset current-owner boundary checks,e6dcd30a23fc3e4f1fe82abb2a5ec6ed3a064341872d2c2f5680c7bcd0c362e7
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-remset-boundaries-Release-linux.log,Release,PASS,5505,5505,remset current-owner boundary checks,e6dcd30a23fc3e4f1fe82abb2a5ec6ed3a064341872d2c2f5680c7bcd0c362e7
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-remset-same-shape-Debug-linux.log,Debug,PASS,1376,1376,same-shape remset checks,2cd4ab33674fddf217745b9841987c41d8ef1a05138680b42744b8c00a2949a2
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-remset-same-shape-Release-linux.log,Release,PASS,1376,1376,same-shape remset checks,2cd4ab33674fddf217745b9841987c41d8ef1a05138680b42744b8c00a2949a2
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-remset-whole-Debug-linux.log,Debug,PASS,532,532,whole-block remset lifetime checks,adab1b4230d401bf04b510dbc66095293089cfa803288975ff9bb7a7f9660ad1
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-remset-whole-Release-linux.log,Release,PASS,532,532,whole-block remset lifetime checks,adab1b4230d401bf04b510dbc66095293089cfa803288975ff9bb7a7f9660ad1
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-remset-wrap-Debug-linux.log,Debug,PASS,1375,1375,byte-wrap remset lifetime checks,e8b59f16d27f672dd86cb5847b10fd324922a6473f68dee78125de656c7aa28d
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-remset-wrap-Release-linux.log,Release,PASS,1375,1375,byte-wrap remset lifetime checks,e8b59f16d27f672dd86cb5847b10fd324922a6473f68dee78125de656c7aa28d
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-retained-owner-Debug-linux.log,Debug,PASS,22,22,retained mature owner checks,66b7f03556bf3ab11b0a6278503e9b4e09bc2dd00b9507ebf505de7f82f6b82e
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-mature-retained-owner-Release-linux.log,Release,PASS,22,22,retained mature owner checks,66b7f03556bf3ab11b0a6278503e9b4e09bc2dd00b9507ebf505de7f82f6b82e
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-native-Debug-linux.log,Debug,PASS,30979,30979,integrated P4 checks,982e4e45d148533189cbea3957ad9e3b1b1cbc4bd0bc6c2df78f40477129e7d6
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-native-Release-linux.log,Release,PASS,30979,30979,integrated P4 checks,982e4e45d148533189cbea3957ad9e3b1b1cbc4bd0bc6c2df78f40477129e7d6
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-nursery-Debug-linux.log,Debug,PASS,278,278,moving nursery checks,e25ca9a31b32024f4e899fb4568bb1f4ec26234ca54a19ab66b785b870b49c18
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-nursery-Release-linux.log,Release,PASS,280,280,moving nursery checks,8cb7e2d5fae3c077b9043518d27790482b80201cea80cb4fcb333a4b8e629552
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-nursery-reader-Debug-linux.log,Debug,PASS,48,48,moving reader checks,390457e59c11a16e44452d9b25bbec3518d9cfc9f759cf7194d3357ce6b3c63d
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-nursery-reader-Release-linux.log,Release,PASS,48,48,moving reader checks,390457e59c11a16e44452d9b25bbec3518d9cfc9f759cf7194d3357ce6b3c63d
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-object-planes-Debug-linux.log,Debug,PASS,18,18,object plane checks,978cf14fa8e9157777fef85b7d4766a909d3aacbc6e895efcca40cc9352e7bc8
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-object-planes-Release-linux.log,Release,PASS,18,18,object plane checks,978cf14fa8e9157777fef85b7d4766a909d3aacbc6e895efcca40cc9352e7bc8
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-p8-policy-Debug-linux.log,Debug,PASS,50,50,policy checks,50404f6ffad6537bbfe8f748417a312d8da3b525537ba822caba54293741cdc7
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-p8-policy-Release-linux.log,Release,PASS,50,50,policy checks,50404f6ffad6537bbfe8f748417a312d8da3b525537ba822caba54293741cdc7
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-p8-storage-Debug-linux.log,Debug,PASS,1952,1952,fast-span and growth checks,e46f08e598b37c007cca31d45b2f0202995ae006429128b9ea7280852648733f
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-p8-storage-Release-linux.log,Release,PASS,1952,1952,fast-span and growth checks,e46f08e598b37c007cca31d45b2f0202995ae006429128b9ea7280852648733f
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-root-batching-Debug-linux.log,Debug,PASS,6170,6170,root batching checks,ddda73e89556eac84ccb989d8fc907b5867151a883cd95f89dc40599c8847fa6
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-root-batching-Release-linux.log,Release,PASS,6170,6170,root batching checks,ddda73e89556eac84ccb989d8fc907b5867151a883cd95f89dc40599c8847fa6
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-storage-diagnostics-Debug-linux.log,Debug,PASS,31,31,storage accounting checks,a5525c3daa035fcb09a1a96fa1f9d01dfd311f27d57cbe6c7b3fb7288d509167
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-storage-diagnostics-Release-linux.log,Release,PASS,31,31,storage accounting checks,a5525c3daa035fcb09a1a96fa1f9d01dfd311f27d57cbe6c7b3fb7288d509167
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-trace-Debug-linux.log,Debug,PASS,8358,8358,trace engine checks,70fd18c759ce937a320edb7c31abba7d0ea5a77bae5a5147497e0a1a1d700630
+/root/lxr-mature-evacuation/artifacts/P6mature/candidate15-trace-Release-linux.log,Release,PASS,8358,8358,trace engine checks,70fd18c759ce937a320edb7c31abba7d0ea5a77bae5a5147497e0a1a1d700630

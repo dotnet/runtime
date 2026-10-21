@@ -1,0 +1,30 @@
+{
+  "assembly": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\fixture-diagnostic-bound\\runtime-diagnostics.dll",
+  "assembly_sha256": "b7b4ff8d9dde40ccf52df4118cafed8f79ec053ba7ee98a0b160b47b1bfc576a",
+  "pdb": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\fixture-diagnostic-bound\\runtime-diagnostics.pdb",
+  "pdb_sha256": "51d81956493c1f2949521a9ea7e420c0b92b823bf782390c12693f40932b23b9",
+  "guid": "ee94d49b-a674-40f0-bab9-fb73b1fdd127",
+  "age": 1,
+  "documents": [
+    {
+      "path": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\diagnostic-fixture-source\\Nursery.cs",
+      "sha256": "5cfd27895cc2f5d477dfe2902157046172a6fd603284c93a1a0d584a08c4ddbd"
+    },
+    {
+      "path": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\diagnostic-fixture-source\\Program.cs",
+      "sha256": "87651e04716af1b9ad5c682fae275321d573b37cbf9a02653748ee39d32fa0a9"
+    },
+    {
+      "path": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\diagnostic-bound-obj\\Release\\net11.0\\.NETCoreApp,Version=v11.0.AssemblyAttributes.cs",
+      "sha256": "aa3165220a3bd445b4a4350ea3f88f7e10dd1db384613314bda59e985068f205"
+    },
+    {
+      "path": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\diagnostic-bound-obj\\Release\\net11.0\\diagnostic-fixture.AssemblyInfo.cs",
+      "sha256": "a7bd6cfc8174f9b8375f140e268c061197fcf16f9d861de1d2f27e0d176b415f"
+    },
+    {
+      "path": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-congenial-happiness\\artifacts\\P11-trace-batching\\diagnostic-generated\\Microsoft.Interop.LibraryImportGenerator\\Microsoft.Interop.LibraryImportGenerator\\LibraryImports.g.cs",
+      "sha256": "62d178b653c4cdbf82cb3676ced997fb254bc13e7aa8d4b2976eb72189175cd7"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+"caller","repository_root","runtime_root","benchmark_rows","controls","launch_count","warmup_count","iteration_count","result","log"
+"C:\Users\KONRAD~1\AppData\Local\Temp\p21-final2-public-caller-9790f31225df49c0b7360701677cfc7c","C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle","C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\artifacts\p21-core-root","45","3","1","8","20","PASS","public-full-evidence-wrapper.log"

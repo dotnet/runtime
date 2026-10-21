@@ -1,0 +1,11 @@
+Platform,Level,Result,Evidence
+windows-x64-coreclr,execution,PASS,"Debug and no-PGO Release; Workstation, Server, linked, standalone, 5.12 binary/source compatibility, GC stress, interpreter, tiering/OSR, observable counting, profiler ordering/placement, and stack exclusion"
+linux-x64-coreclr,execution,PASS,"follow-up Debug GAS build and exact hook-export cardinality; Workstation, Server, and interpreter managed matrices from the original P1.4 validation"
+windows-x64-nativeaot,execution,PASS,"follow-up Release NativeAOT runtime built; enabled descriptor previously exited -1 before managed Main"
+windows-x86-coreclr,cross-build,PASS,"follow-up Release production-default CoreCLR runtime cross-build; 5.13 descriptor layout validator previously executed 6/6"
+windows-arm64-coreclr,cross-build,PASS,"follow-up Release production-default CoreCLR runtime cross-build"
+linux-arm64-coreclr,audit,AUDIT,"Common negotiation rejects enabled callback; target was not built or executed"
+macos-x64-arm64,audit,AUDIT,"Common negotiation and System V helper selection audited; targets unavailable"
+windows-arm32-coreclr,audit,AUDIT,"Common negotiation rejects enabled callback; target unavailable"
+loongarch64-riscv64-wasm,audit,AUDIT,"Portable/non-AMD64 helpers remain unchanged and enabled request fails closed"
+nativeaot-nonx64,audit,AUDIT,"Common NativeAOT descriptor handling rejects enabled request before publication"

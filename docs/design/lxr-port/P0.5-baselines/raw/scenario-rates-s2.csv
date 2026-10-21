@@ -1,0 +1,11 @@
+scenario,ratePerSecond
+allocation-churn,49845
+aspnet-request-load,8000
+cyclic-garbage,113509
+large-object-pressure,4001
+lifecycle-semantics,194659
+long-lived-cache,351074
+low-allocation-compute,750000
+multi-thread-throughput,750000
+pinning-heavy-io,21492
+pointer-chasing,82360

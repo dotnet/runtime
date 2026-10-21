@@ -1,0 +1,58 @@
+    15.12%  libclrlxrgc.so                [.] SideMetadataManager::Load                                                                                                                 -      -            
+    10.40%  libclrlxrgc.so                [.] LxrReferenceCounting::GetObjectExtent                                                                                                     -      -            
+     5.82%  libclrlxrgc.so                [.] LxrReferenceCounting::Reclaim                                                                                                             -      -            
+     5.12%  libclrlxrgc.so                [.] LxrReferenceCounting::FixForwardingReaders                                                                                                -      -            
+     5.03%  libclrlxrgc.so                [.] LxrReferenceCounting::NewWork                                                                                                             -      -            
+     4.47%  libclrlxrgc.so                [.] SideMetadataManager::GetLocation                                                                                                          -      -            
+     3.14%  libclrlxrgc.so                [.] LxrReferenceCounting::FinishDyingTraceObject                                                                                              -      -            
+     2.98%  libclrlxrgc.so                [.] SideMetadataManager::Store                                                                                                                -      -            
+     2.69%  libclrlxrgc.so                [.] LxrReferenceCounting::ResolveForwarded                                                                                                    -      -            
+     2.19%  libc.so.6                     [.] malloc                                                                                                                                    -      -            
+     2.13%  libclrlxrgc.so                [.] LxrReferenceCounting::CompleteAllocation                                                                                                  -      -            
+     1.78%  libclrlxrgc.so                [.] SideMetadataManager::ResetRangeQuiescentCore                                                                                              -      -            
+     1.72%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessTraceWork                                                                                                    -      -            
+     1.60%  libclrlxrgc.so                [.] LxrWorkPacket::TryTransition                                                                                                              -      -            
+     1.53%  libclrlxrgc.so                [.] LxrReferenceCounting::Death                                                                                                               -      -            
+     1.50%  libclrlxrgc.so                [.] LxrReferenceCounting::Resume                                                                                                              -      -            
+     1.46%  libclrlxrgc.so                [.] LxrReferenceCounting::RecordFastAllocation                                                                                                -      -            
+     1.45%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessIncrement                                                                                                    -      -            
+     1.37%  memfd:doublemapper (deleted)  [.] 0x000000000014d8b3                                                                                                                        -      -            
+     1.30%  libclrlxrgc.so                [.] LxrWorkPacket::GetStage                                                                                                                   -      -            
+     1.23%  libclrlxrgc.so                [.] LxrReferenceCounting::QueueTrace                                                                                                          -      -            
+     1.17%  libclrlxrgc.so                [.] LxrGcHeap::IsPinned                                                                                                                       -      -            
+--- side-metadata share (self time, percent of all samples)
+SideMetadata total self: 26.88
+--- inclusive (children) share of the checked functions and of the engine entry points
+    67.28%     0.84%  [.] LxrReferenceCounting::Execute                                                                                                             -      -            
+    21.57%     0.49%  [.] LxrReferenceCounting::ProcessIncrementWork                                                                                                -      -            
+    20.90%     1.38%  [.] LxrReferenceCounting::ProcessIncrement                                                                                                    -      -            
+    16.69%    14.17%  [.] SideMetadataManager::Load                                                                                                                 -      -            
+    16.63%     0.20%  [.] LxrReferenceCounting::ProcessDecrements                                                                                                   -      -            
+    15.29%     1.69%  [.] LxrReferenceCounting::ProcessTraceWork                                                                                                    -      -            
+    15.27%     0.15%  [.] ReferenceCountTable::DecrementWithDeath                                                                                                   -      -            
+    13.56%     1.00%  [.] LxrReferenceCounting::ProcessTraceObject                                                                                                  -      -            
+    12.31%     1.49%  [.] LxrReferenceCounting::Death                                                                                                               -      -            
+     5.80%     0.71%  [.] LxrReferenceCounting::TryCopyNursery                                                                                                      -      -            
+     5.48%     5.48%  [.] LxrReferenceCounting::Reclaim                                                                                                             -      -            
+     4.74%     0.01%  [.] LxrReferenceCounting::Execute                                                                                                             -      -            
+     4.71%     1.01%  [.] ReferenceCountTable::ValidateAddress                                                                                                      -      -            
+     3.97%     3.97%  [.] SideMetadataManager::GetLocation                                                                                                          -      -            
+     3.60%     0.44%  [.] ImmixBlockManager::IsNursery                                                                                                              -      -            
+     3.54%     0.00%  [.] LxrReferenceCounting::ReleaseEpoch                                                                                                        -      -            
+     2.73%     2.51%  [.] SideMetadataManager::Store                                                                                                                -      -            
+     2.64%     0.03%  [.] LxrReferenceCounting::ProcessIncrementWork                                                                                                -      -            
+     2.59%     0.07%  [.] LxrReferenceCounting::ProcessIncrement                                                                                                    -      -            
+     2.49%     0.16%  [.] ReferenceCountTable::Load                                                                                                                 -      -            
+     2.29%     0.58%  [.] LxrReferenceCounting::ReclaimNursery                                                                                                      -      -            
+     1.72%     1.72%  [.] SideMetadataManager::ResetRangeQuiescentCore                                                                                              -      -            
+     1.72%     0.38%  [.] LxrReferenceCounting::TryCopyNursery                                                                                                      -      -            
+     1.21%     0.94%  [.] SideMetadataManager::Load                                                                                                                 -      -            
+     0.89%     0.02%  [.] LxrReferenceCounting::ProcessDecrements                                                                                                   -      -            
+SideMetadataManager::Load                        15.12
+SideMetadataManager::Store                       2.98
+SideMetadataManager::GetLocation                 4.68
+SideMetadataManager::Update                      0.00
+SideMetadataManager::IsDataAddressOwned          0.17
+SideMetadataManager::CompareExchange             0.36
+SideMetadataManager::IncrementSaturating         0.28
+SideMetadataManager::DecrementNonZero            0.00

@@ -1,0 +1,3 @@
+Method,PreFixMeanNs,PreFixErrorNs,CorrectedMeanNs,CorrectedErrorNs,CorrectedOverPreFix,Interpretation
+ReferenceArrayCopy,9.0250,0.0267,7.8160,0.0140,0.8660,Exact fa1c9 scalar callbacks versus one required range callback
+ReferenceArrayClear,8.3390,0.0199,7.8730,0.0124,0.9441,Exact fa1c9 scalar callbacks versus one required null-source range callback

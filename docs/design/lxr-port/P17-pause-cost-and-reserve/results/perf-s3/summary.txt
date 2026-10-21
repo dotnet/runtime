@@ -1,0 +1,60 @@
+=== s2 binarytrees40 : samples (2247 samples)  libclrlxrgc total: 83.1%
+ 11.39% libclrlxrgc.so [.] ReferenceCountTable::RegisterObjectInClearedSpan - - 
+ 8.99% libclrlxrgc.so [.] LxrReferenceCounting::ReclaimNursery - - 
+ 7.57% libclrlxrgc.so [.] LxrReferenceCounting::CompleteAllocation - - 
+ 5.47% libclrlxrgc.so [.] LxrReferenceCounting::RecordFastAllocation - - 
+ 4.63% libclrlxrgc.so [.] LxrReferenceCounting::RetireForwardedSources - - 
+ 4.58% libclrlxrgc.so [.] SideMetadataAccessor::IsRangeZero - - 
+ 4.49% libclrlxrgc.so [.] LxrGcHeap::AllocationComplete - - 
+ 4.49% libclrlxrgc.so [.] LxrReferenceCounting::ResolveForwarded - - 
+ 3.78% libclrlxrgc.so [.] LxrReferenceCounting::TryCopyNursery - - 
+=== s3 binarytrees40 : samples (1667 samples)  libclrlxrgc total: 77.8%
+ 16.50% libclrlxrgc.so [.] ReferenceCountTable::RegisterObjectInClearedSpan - - 
+ 7.62% libclrlxrgc.so [.] LxrReferenceCounting::RecordFastAllocation - - 
+ 6.30% libclrlxrgc.so [.] SideMetadataAccessor::IsRangeZero - - 
+ 6.24% libclrlxrgc.so [.] LxrGcHeap::AllocationComplete - - 
+ 5.34% libclrlxrgc.so [.] LxrReferenceCounting::TryCopyNursery - - 
+ 4.56% libclrlxrgc.so [.] LxrGcHeap::LeaseFinalizer - - 
+ 2.28% libclrlxrgc.so [.] LxrReferenceCounting::ResolveForwarded - - 
+ 2.16% libclrlxrgc.so [.] LxrReferenceCounting::ProcessTraceObject - - 
+ 2.10% libclrlxrgc.so [.] LxrReferenceCounting::CompleteAllocation - - 
+=== s2 requests84 : samples (8515 samples)  libclrlxrgc total: 84.6%
+ 9.41% libclrlxrgc.so [.] LxrReferenceCounting::CompleteAllocation - - 
+ 8.03% libclrlxrgc.so [.] LxrReferenceCounting::ReclaimNursery - - 
+ 7.05% libclrlxrgc.so [.] SideMetadataAccessor::IsRangeZero - - 
+ 6.72% libclrlxrgc.so [.] ReferenceCountTable::RegisterObjectInClearedSpan - - 
+ 5.86% libclrlxrgc.so [.] LxrGcHeap::AllocationComplete - - 
+ 4.72% libclrlxrgc.so [.] LxrReferenceCounting::ResolveForwarded - - 
+ 4.35% libclrlxrgc.so [.] LxrReferenceCounting::GetObjectExtent - - 
+ 4.11% libclrlxrgc.so [.] LxrReferenceCounting::RetireForwardedSources - - 
+ 2.95% libclrlxrgc.so [.] LxrReferenceCounting::RecordFastAllocation - - 
+=== s3 requests84 : samples (6135 samples)  libclrlxrgc total: 78.1%
+ 9.68% libclrlxrgc.so [.] SideMetadataAccessor::IsRangeZero - - 
+ 9.27% libclrlxrgc.so [.] ReferenceCountTable::RegisterObjectInClearedSpan - - 
+ 7.82% libclrlxrgc.so [.] LxrGcHeap::AllocationComplete - - 
+ 5.26% libclrlxrgc.so [.] LxrGcHeap::LeaseFinalizer - - 
+ 4.40% libclrlxrgc.so [.] LxrReferenceCounting::ResolveForwarded - - 
+ 3.98% libclrlxrgc.so [.] LxrReferenceCounting::RecordFastAllocation - - 
+ 2.54% libclrlxrgc.so [.] ImmixAllocationManager::IsLineDead - - 
+ 2.49% libclrlxrgc.so [.] LxrReferenceCounting::ProcessTraceObject - - 
+ 2.40% libclrlxrgc.so [.] LxrReferenceCounting::TryCopyNursery - - 
+=== s2 listsuffix40 : samples (30235 samples)  libclrlxrgc total: 87.5%
+ 12.44% libclrlxrgc.so [.] LxrReferenceCounting::GetObjectExtent - - 
+ 9.14% libclrlxrgc.so [.] LxrReferenceCounting::ProcessTraceObject - - 
+ 6.54% libclrlxrgc.so [.] LxrReferenceCounting::NewWork - - 
+ 6.33% libclrlxrgc.so [.] LxrReferenceCounting::FixForwardingReaders - - 
+ 5.22% libclrlxrgc.so [.] LxrReferenceCounting::Reclaim - - 
+ 4.77% libclrlxrgc.so [.] LxrReferenceCounting::FinishDyingTraceObject - - 
+ 3.80% libclrlxrgc.so [.] LxrReferenceCounting::TryCopyNursery - - 
+ 3.24% libclrlxrgc.so [.] LxrReferenceCounting::ResolveForwarded - - 
+ 2.64% libclrlxrgc.so [.] SideMetadataManager::ResetRangeQuiescentCore - - 
+=== s3 listsuffix40 : samples (25454 samples)  libclrlxrgc total: 85.6%
+ 11.13% libclrlxrgc.so [.] LxrReferenceCounting::ProcessTraceObject - - 
+ 8.42% libclrlxrgc.so [.] LxrReferenceCounting::NewWork - - 
+ 8.33% libclrlxrgc.so [.] LxrReferenceCounting::FixForwardingReaders - - 
+ 7.65% libclrlxrgc.so [.] LxrReferenceCounting::ResolveForwarded - - 
+ 5.37% libclrlxrgc.so [.] LxrReferenceCounting::FinishDyingTraceObject - - 
+ 4.09% libclrlxrgc.so [.] LxrReferenceCounting::TryCopyNursery - - 
+ 2.73% libclrlxrgc.so [.] SideMetadataManager::ResetRangeQuiescentCore - - 
+ 2.37% libclrlxrgc.so [.] LxrWorkPacket::TryTransition - - 
+ 2.31% libclrlxrgc.so [.] LxrReferenceCounting::QueueTrace - - 

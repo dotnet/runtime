@@ -1,0 +1,3 @@
+{"runtime":"dotnet","workload":"binarytrees","size":16,"ops":0,"checksum":14985972,"elapsed_ms":3724.124,"cpu_ms":5108.892,"gc_count":20,"gc_ms":1900,"lxr_pauses":20,"lxr_initial_mark":1,"lxr_final_mark":1,"lxr_full":0,"hiccup_p50_us":1179.6,"hiccup_p99_us":75497.5,"hiccup_p999_us":184549.4,"hiccup_max_us":256441.7,"req_p50_us":0.0,"req_p99_us":0.0,"req_p999_us":0.0,"peak_rss_kb":219076}
+[ perf record: Woken up 2 times to write data ]
+[ perf record: Captured and wrote 0.419 MB /root/p17s2/results/perf/s2i-binarytrees40.data (2280 samples) ]

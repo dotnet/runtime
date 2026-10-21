@@ -1,0 +1,8 @@
+"Platform","Level","Result","Evidence","Limitation"
+"Windows x64 CoreCLR","execution","PASS","p15-nativeaot-fix-profiler-run.log; p15-enabled-build.log",""
+"Windows x86","execution","PASS","p15-nativeaot-fix-validation-x86.log","Full target build is blocked by unrelated generated thunk offsets in the installed preview toolchain."
+"Linux x64","execution","PASS","p15-nativeaot-fix-validation-linux-x64.log","Header/native validator; full CoreCLR Linux build not run in this Windows worktree."
+"Windows ARM64 CoreCLR","cross-build","PASS","p15-arm64-target-build.log","No ARM64 execution hardware. Optional x64 debugger cross-component stage fails in the installed preview assembler."
+"Windows x64 NativeAOT","execution","PASS","nativeaot-validation-summary.csv; nativeaot-identities.csv","Shared-GC compile and 21/21 marked-MT execution; NativeAOT has no collectible MethodTables."
+"DAC","build","PASS","p15-nativeaot-fix-coreclr-build.log","Raw iterator is excluded from DACCESS_COMPILE."
+"Mono","audit","AUDIT","source audit","Mono does not consume CoreCLR GCDesc or this GC/EE interface."

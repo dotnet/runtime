@@ -1,0 +1,4 @@
+'vswhere.exe' is not recognized as an internal or external command,
+operable program or batch file.
+[1/2] Building CXX object gc\CMakeFiles\clrlxrgc.dir\lxr_reference_counting.cpp.obj
+[2/2] Linking CXX shared library gc\clrlxrgc.dll

@@ -1,0 +1,17 @@
+scenario,collector,heapFactor,phase,metric,baselineMean,baselineInvocations,baselineCvPercent,otherMean,otherInvocations,otherCvPercent,ratioOtherOverBaseline,differencePercent,widestWithinSessionCvPercent,baselineArrivalRate,otherArrivalRate,sameOfferedLoad,exceedsBothSpreadAndFloor
+allocation-churn,srv,2.0,latency,latencyP99Ms,2.23724,5,4.096,1.91736,5,2.529,0.85702,14.298,4.096,49845,67883,false,true
+allocation-churn,srv,2.0,throughput,operationsPerSecond,247636.871589,5,1.578,271466.595831,5,1.516,1.096228,9.623,1.578,none,none,true,true
+allocation-churn,wks,2.0,latency,latencyP99Ms,4.52384,5,7.085,3.60042,5,4.086,0.795877,20.412,7.085,49845,67883,false,true
+allocation-churn,wks,2.0,throughput,operationsPerSecond,115337.472771,5,2.044,135765.666699,5,3.077,1.177117,17.712,3.077,none,none,true,true
+large-object-pressure,srv,2.0,latency,latencyP99Ms,27.33834,5,6.775,30.09822,5,9.369,1.100953,10.095,9.369,4001,4291,false,true
+large-object-pressure,srv,2.0,throughput,operationsPerSecond,8002.590431,5,3.401,8582.230939,5,2.933,1.072432,7.243,3.401,none,none,true,false
+large-object-pressure,wks,2.0,latency,latencyP99Ms,0.34832,5,22.007,0.22556,5,1.565,0.647565,35.243,22.007,4001,4291,false,true
+large-object-pressure,wks,2.0,throughput,operationsPerSecond,152757.115814,5,3.155,175163.690166,5,2.622,1.146681,14.668,3.155,none,none,true,true
+long-lived-cache,srv,2.0,latency,latencyP99Ms,5.3006,5,6.519,5.09622,5,11.17,0.961442,3.856,11.17,351074,505139,false,false
+long-lived-cache,srv,2.0,throughput,operationsPerSecond,2194717.020262,5,2.537,2820083.016506,5,5.165,1.284942,28.494,5.165,none,none,true,true
+long-lived-cache,wks,2.0,latency,latencyP99Ms,41.52766,5,11.221,47.25092,5,2.63,1.137818,13.782,11.221,351074,505139,false,true
+long-lived-cache,wks,2.0,throughput,operationsPerSecond,854997.258018,5,1.308,1010278.883441,5,4.197,1.181617,18.162,4.197,none,none,true,true
+low-allocation-compute,srv,2.0,latency,latencyP99Ms,0.56536,5,25.167,0.05864,5,26.126,0.103722,89.628,26.126,750000,750000,true,true
+low-allocation-compute,srv,2.0,throughput,operationsPerSecond,2518655.20618,5,0.55,2552522.033003,5,1.452,1.013446,1.345,1.452,none,none,true,false
+low-allocation-compute,wks,2.0,latency,latencyP99Ms,0.44522,5,28.938,0.04612,5,12.562,0.103589,89.641,28.938,750000,750000,true,true
+low-allocation-compute,wks,2.0,throughput,operationsPerSecond,2593824.166933,5,2.364,2663317.530862,5,2.119,1.026792,2.679,2.364,none,none,true,false

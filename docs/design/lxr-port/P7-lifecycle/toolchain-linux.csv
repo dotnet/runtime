@@ -1,0 +1,5 @@
+component,path,sha256,used
+retained-sdk-host,/root/lxr-compact-collector/.dotnet/dotnet,30da77f96cb6c595c9e6e2ac4eab1a71fc018e8edf362274858fed9e57c87438,False
+C compiler,/usr/bin/clang-14,31925065812631303cf9af9a30b2f56427d2102667a87a9fb4ba03a306104589,True
+C++ compiler,/usr/bin/clang++-14,31925065812631303cf9af9a30b2f56427d2102667a87a9fb4ba03a306104589,True
+CMake,/usr/local/bin/cmake,871dbae75e8e3793e919594ee4617b2ccd9470392c39c718dcdfbda27cbf1158,True

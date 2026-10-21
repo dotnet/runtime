@@ -1,0 +1,1943 @@
+{
+  "schemaVersion": 1,
+  "runId": "p05.s1.calibrate",
+  "host": "testhost",
+  "viabilityRule": "2 consecutive invocations at 3.0 s warmup and 10.0 s steady state - the measurement\u0027s own durations - each producing a valid record (success marker, operation floor, checksum, confirmed collector, no OOM). Bisection over [4, 4096] MiB, stopping when the bracket is within 8 MiB.",
+  "warmupSeconds": 3,
+  "steadyStateSeconds": 10,
+  "coreclrSha256": null,
+  "baselines": [
+    {
+      "scenario": "low-allocation-compute",
+      "workstationMinimumMb": 4,
+      "serverMinimumMb": 35,
+      "sharedMinimumMb": 35,
+      "provisional": false,
+      "source": "calibrated by run p05.s1.calibrate on host testhost",
+      "note": "wks: minimum is at or below the 4 MiB floor (all invocations valid); srv: bisected to 35 MiB with the largest observed failure at 27 MiB"
+    },
+    {
+      "scenario": "allocation-churn",
+      "workstationMinimumMb": 11,
+      "serverMinimumMb": 35,
+      "sharedMinimumMb": 35,
+      "provisional": false,
+      "source": "calibrated by run p05.s1.calibrate on host testhost",
+      "note": "wks: bisected to 11 MiB with the largest observed failure at 4 MiB; srv: bisected to 35 MiB with the largest observed failure at 27 MiB"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "workstationMinimumMb": 99,
+      "serverMinimumMb": 139,
+      "sharedMinimumMb": 139,
+      "provisional": false,
+      "source": "calibrated by run p05.s1.calibrate on host testhost",
+      "note": "wks: bisected to 99 MiB with the largest observed failure at 91 MiB; srv: bisected to 139 MiB with the largest observed failure at 131 MiB"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "workstationMinimumMb": 4,
+      "serverMinimumMb": 35,
+      "sharedMinimumMb": 35,
+      "provisional": false,
+      "source": "calibrated by run p05.s1.calibrate on host testhost",
+      "note": "wks: minimum is at or below the 4 MiB floor (all invocations valid); srv: bisected to 35 MiB with the largest observed failure at 27 MiB"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "workstationMinimumMb": 19,
+      "serverMinimumMb": 35,
+      "sharedMinimumMb": 35,
+      "provisional": false,
+      "source": "calibrated by run p05.s1.calibrate on host testhost",
+      "note": "wks: bisected to 19 MiB with the largest observed failure at 11 MiB; srv: bisected to 35 MiB with the largest observed failure at 27 MiB"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "workstationMinimumMb": 4,
+      "serverMinimumMb": 35,
+      "sharedMinimumMb": 35,
+      "provisional": false,
+      "source": "calibrated by run p05.s1.calibrate on host testhost",
+      "note": "wks: minimum is at or below the 4 MiB floor (all invocations valid); srv: bisected to 35 MiB with the largest observed failure at 27 MiB"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "workstationMinimumMb": 11,
+      "serverMinimumMb": 35,
+      "sharedMinimumMb": 35,
+      "provisional": false,
+      "source": "calibrated by run p05.s1.calibrate on host testhost",
+      "note": "wks: bisected to 11 MiB with the largest observed failure at 4 MiB; srv: bisected to 35 MiB with the largest observed failure at 27 MiB"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "workstationMinimumMb": 11,
+      "serverMinimumMb": 35,
+      "sharedMinimumMb": 35,
+      "provisional": false,
+      "source": "calibrated by run p05.s1.calibrate on host testhost",
+      "note": "wks: bisected to 11 MiB with the largest observed failure at 4 MiB; srv: bisected to 35 MiB with the largest observed failure at 27 MiB"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "workstationMinimumMb": 4,
+      "serverMinimumMb": 43,
+      "sharedMinimumMb": 43,
+      "provisional": false,
+      "source": "calibrated by run p05.s1.calibrate on host testhost",
+      "note": "wks: minimum is at or below the 4 MiB floor (all invocations valid); srv: bisected to 43 MiB with the largest observed failure at 35 MiB"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "workstationMinimumMb": 35,
+      "serverMinimumMb": 67,
+      "sharedMinimumMb": 67,
+      "provisional": false,
+      "source": "calibrated by run p05.s1.calibrate on host testhost",
+      "note": "wks: bisected to 35 MiB with the largest observed failure at 27 MiB; srv: bisected to 67 MiB with the largest observed failure at 59 MiB"
+    }
+  ],
+  "probes": [
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "wks",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.475,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "wks",
+      "limitMb": 4,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.452,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "srv",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.451,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "srv",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.063,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "srv",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.455,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "srv",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.458,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "srv",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.478,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "srv",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.459,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "srv",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.466,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "srv",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.448,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "srv",
+      "limitMb": 35,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.452,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "srv",
+      "limitMb": 19,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.063,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "low-allocation-compute",
+      "arm": "srv",
+      "limitMb": 27,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.049,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "wks",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.472,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "wks",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 2.388,
+      "detail": "invocation 0 crashed, no success marker"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "wks",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.469,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "wks",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.474,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "wks",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.486,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "wks",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.473,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "wks",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.474,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "wks",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.476,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "wks",
+      "limitMb": 35,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.475,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "wks",
+      "limitMb": 19,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.479,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "wks",
+      "limitMb": 11,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.477,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "srv",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.514,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "srv",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.062,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "srv",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.485,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "srv",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.504,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "srv",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.502,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "srv",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.491,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "srv",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.464,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "srv",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.466,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "srv",
+      "limitMb": 35,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.484,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "srv",
+      "limitMb": 19,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.063,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "allocation-churn",
+      "arm": "srv",
+      "limitMb": 27,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.048,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "wks",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.542,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "wks",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 2.437,
+      "detail": "invocation 0 crashed, no success marker"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "wks",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.521,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "wks",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.555,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "wks",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.525,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "wks",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.532,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "wks",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.522,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "wks",
+      "limitMb": 67,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 3.115,
+      "detail": "invocation 0 crashed, no success marker"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "wks",
+      "limitMb": 99,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.547,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "wks",
+      "limitMb": 83,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 2.56,
+      "detail": "invocation 0 crashed, no success marker, managed OutOfMemoryException - the heap limit was reached by the scenario"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "wks",
+      "limitMb": 91,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 1,
+      "wallSeconds": 17.016,
+      "detail": "invocation 1 crashed, no success marker, managed OutOfMemoryException - the heap limit was reached by the scenario"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "srv",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.693,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "srv",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.061,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "srv",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.7,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "srv",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.611,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "srv",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.561,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "srv",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.533,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "srv",
+      "limitMb": 131,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 3.763,
+      "detail": "invocation 0 crashed, no success marker, managed OutOfMemoryException - the heap limit was reached by the scenario"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "srv",
+      "limitMb": 195,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.51,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "srv",
+      "limitMb": 163,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.529,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "srv",
+      "limitMb": 147,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.558,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "long-lived-cache",
+      "arm": "srv",
+      "limitMb": 139,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.53,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "wks",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.463,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "wks",
+      "limitMb": 4,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.508,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "srv",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.525,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "srv",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.066,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "srv",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.507,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "srv",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.524,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "srv",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.476,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "srv",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.474,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "srv",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.463,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "srv",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.463,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "srv",
+      "limitMb": 35,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.455,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "srv",
+      "limitMb": 19,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.065,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "cyclic-garbage",
+      "arm": "srv",
+      "limitMb": 27,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.048,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "wks",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.545,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "wks",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 2.578,
+      "detail": "invocation 0 crashed, no success marker"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "wks",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.53,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "wks",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.543,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "wks",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.535,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "wks",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.539,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "wks",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.533,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "wks",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.545,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "wks",
+      "limitMb": 35,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.566,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "wks",
+      "limitMb": 19,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.55,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "wks",
+      "limitMb": 11,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.233,
+      "detail": "invocation 0 failed, no success marker, managed OutOfMemoryException - the heap limit was reached by the scenario"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "srv",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.531,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "srv",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.062,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "srv",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.527,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "srv",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.555,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "srv",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.545,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "srv",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.549,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "srv",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.54,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "srv",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.555,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "srv",
+      "limitMb": 35,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.555,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "srv",
+      "limitMb": 19,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.063,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "pointer-chasing",
+      "arm": "srv",
+      "limitMb": 27,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.049,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "wks",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.429,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "wks",
+      "limitMb": 4,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.451,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "srv",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.49,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "srv",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.061,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "srv",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.476,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "srv",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.474,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "srv",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.455,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "srv",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.457,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "srv",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.445,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "srv",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.444,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "srv",
+      "limitMb": 35,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.437,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "srv",
+      "limitMb": 19,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.063,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "multi-thread-throughput",
+      "arm": "srv",
+      "limitMb": 27,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.048,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "wks",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 30.547,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "wks",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 50.145,
+      "detail": "invocation 0 crashed, no success marker"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "wks",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.982,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "wks",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.965,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "wks",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.956,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "wks",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.981,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "wks",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.985,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "wks",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.979,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "wks",
+      "limitMb": 35,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.961,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "wks",
+      "limitMb": 19,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.968,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "wks",
+      "limitMb": 11,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.955,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "srv",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 28.689,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "srv",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.074,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "srv",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.97,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "srv",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.994,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "srv",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.97,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "srv",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.971,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "srv",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.998,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "srv",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.986,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "srv",
+      "limitMb": 35,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.982,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "srv",
+      "limitMb": 19,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.071,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "aspnet-request-load",
+      "arm": "srv",
+      "limitMb": 27,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.055,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "wks",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.502,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "wks",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.222,
+      "detail": "invocation 0 failed, no success marker, managed OutOfMemoryException - the heap limit was reached by the scenario"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "wks",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.48,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "wks",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.66,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "wks",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.572,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "wks",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.636,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "wks",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.592,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "wks",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.506,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "wks",
+      "limitMb": 35,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.518,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "wks",
+      "limitMb": 19,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.541,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "wks",
+      "limitMb": 11,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.496,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "srv",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.601,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "srv",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.063,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "srv",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.585,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "srv",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.563,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "srv",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.616,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "srv",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.627,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "srv",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.571,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "srv",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.534,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "srv",
+      "limitMb": 35,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.699,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "srv",
+      "limitMb": 19,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.062,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "pinning-heavy-io",
+      "arm": "srv",
+      "limitMb": 27,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.046,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "wks",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.873,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "wks",
+      "limitMb": 4,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.499,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "srv",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 28.953,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "srv",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.064,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "srv",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 28.802,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "srv",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 28.673,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "srv",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 28.405,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "srv",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.244,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "srv",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.775,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "srv",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.687,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "srv",
+      "limitMb": 35,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 1,
+      "wallSeconds": 16.984,
+      "detail": "invocation 1 crashed, no success marker, managed OutOfMemoryException - the heap limit was reached by the scenario"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "srv",
+      "limitMb": 51,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.595,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "lifecycle-semantics",
+      "arm": "srv",
+      "limitMb": 43,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.594,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "wks",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.469,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "wks",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 2.414,
+      "detail": "invocation 0 crashed, no success marker, managed OutOfMemoryException - the heap limit was reached by the scenario"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "wks",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.453,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "wks",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.489,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "wks",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.486,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "wks",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.471,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "wks",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.504,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "wks",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.655,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "wks",
+      "limitMb": 35,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.966,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "wks",
+      "limitMb": 19,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 2.492,
+      "detail": "invocation 0 crashed, no success marker, managed OutOfMemoryException - the heap limit was reached by the scenario"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "wks",
+      "limitMb": 27,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 2.357,
+      "detail": "invocation 0 crashed, no success marker, managed OutOfMemoryException - the heap limit was reached by the scenario"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "srv",
+      "limitMb": 4096,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.554,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "srv",
+      "limitMb": 4,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 0.062,
+      "detail": "invocation 0 failed, no success marker, the runtime refused to start at this limit - a different failure from the scenario running out of room"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "srv",
+      "limitMb": 2050,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.543,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "srv",
+      "limitMb": 1027,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.499,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "srv",
+      "limitMb": 515,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.48,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "srv",
+      "limitMb": 259,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.699,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "srv",
+      "limitMb": 131,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 27.141,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "srv",
+      "limitMb": 67,
+      "viable": true,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 2,
+      "wallSeconds": 26.902,
+      "detail": "all invocations valid"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "srv",
+      "limitMb": 35,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 0,
+      "wallSeconds": 2.571,
+      "detail": "invocation 0 crashed, no success marker, managed OutOfMemoryException - the heap limit was reached by the scenario"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "srv",
+      "limitMb": 51,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 1,
+      "wallSeconds": 15.895,
+      "detail": "invocation 1 crashed, no success marker, managed OutOfMemoryException - the heap limit was reached by the scenario"
+    },
+    {
+      "scenario": "large-object-pressure",
+      "arm": "srv",
+      "limitMb": 59,
+      "viable": false,
+      "attemptsRequired": 2,
+      "attemptsSucceeded": 1,
+      "wallSeconds": 16.69,
+      "detail": "invocation 1 crashed, no success marker, managed OutOfMemoryException - the heap limit was reached by the scenario"
+    }
+  ]
+}

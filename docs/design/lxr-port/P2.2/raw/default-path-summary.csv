@@ -1,0 +1,5 @@
+"property","observed","result"
+"cmake-default","OFF","PASS"
+"ninja-product-objects","0","PASS"
+"coreclr-test-export","0","PASS"
+"normal-gc-call-sites","0","PASS"

@@ -1,0 +1,2 @@
+"launch_count","worker_counts","policies","packet_count","reference_capacity","warmup_cycles","measured_cycles","aa_lower","aa_upper","eager_injected_minimum","injected_separation_minimum","result"
+"3","1;2;4;8;16","lazy;eager;lazy-null;eager-null;lazy-injected;eager-injected;aa","32","1024","4","64","0.75","1.25","1.25","2","PASS"

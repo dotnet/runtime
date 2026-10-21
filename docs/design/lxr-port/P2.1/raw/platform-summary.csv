@@ -1,0 +1,8 @@
+"platform","scope","result","limitation"
+"Windows x64","product build, fixed reservation, atomic validation, linked/standalone WKS/SVR execution, benchmarks","PASS","Hyper-V benchmark host"
+"Linux x64","side_metadata.cpp execution with harness OS shim","PASS","Product src/coreclr/gc/unix/gcenv.unix.cpp exact-reservation logic not compiled or executed."
+"Windows x86","target product build and explicit fixed-shadow rejection","PASS","47-bit layout intentionally unsupported"
+"Windows ARM64","target product cross-build","PASS","No execution hardware"
+"NativeAOT","side_metadata.cpp included in common NativeAOT runtime source and x64 Debug product build","PASS","No metadata activation"
+"WebAssembly","compile-time fail-closed exact-reservation stub","SOURCE_ONLY","No fixed virtual address support"
+"Mono","not reached","NOT_APPLICABLE","Mono does not use this CoreCLR GC component"

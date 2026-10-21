@@ -1,0 +1,33 @@
+Name,Configuration,Result
+Exact-main baseline,Windows x64 Debug clr+libs+host,PASS
+Product build,Windows x64 Debug,PASS
+Validation build,Windows x64 Debug,PASS
+Descriptor layout,Windows x64 17/17,PASS
+Descriptor layout,Windows x86 17/17,PASS
+Built-in family,Workstation clear-bit,PASS
+Built-in family,Workstation set-bit,PASS
+Built-in family,Server clear-bit,PASS
+Built-in family,Server set-bit,PASS
+Standalone family,Workstation clear-bit,PASS
+Standalone family,Server set-bit,PASS
+Endpoint masks,clear-bit and set-bit,PASS
+Layout JIT helpers,optimized/minopts/cold/volatile copy and clear disassembly,PASS
+Very-large mixed layouts,48 KB and 4096 references across JIT copy/clear and Span copy/fill/clear with overlap,PASS
+Malformed bulk bounds,null start and unaligned size,PASS
+ReadyToRun rejection,Windows x64,PASS
+Pre-5.12 family rejection,Windows x64,PASS
+Interpreter mixed stores,Windows x64,PASS
+Runtime async captured objects,Windows x64 1/1,PASS
+Runtime async custom GC slice,49160-byte value and offset-aware 119387-to-689-byte clear path 1/1,PASS
+Runtime async custom GC slice stress,Windows x64 standalone GCStress=0xC 1/1,PASS
+Stack reference-class execution,128 references Release 1128-byte frame no allocation/layout helper and correct execution,PASS
+Shared MemberwiseClone regression,48KB reference class Linux Debug and Windows Checked 1KB plus Windows Release 16KB chunks pass,PASS
+JIT register stress,Workstation and Server,PASS
+GC stress 0xC,standalone scalar/copy/clear/fill/layout and 48 KB tracked-byref surfaces,PASS
+NativeAOT fail closed,side family rejected and CardTable returned 100,PASS
+Stock codegen identity,preserved P1.2 main versus P1.3 including dedicated reference and mixed Fill methods,PASS
+Microbenchmarks,three runtimes and six P1.3 methods,PASS
+Multi-thread throughput,20 paired runs with committed per-invocation rows,PASS
+Throughput configuration evidence,Observed ServerGC concurrent GC collector confirmation and requested-unverified claim/R2R/tiering fields,PASS
+Exact product archive,Linux x64 build 0 warnings/errors and five execution arms,PASS
+Exact shared-descriptor archive,Linux x64 7fd9523ea45 build 0 warnings/errors large both polarities stack reference-class MemberwiseClone async 1/1 and standalone GCStress,PASS

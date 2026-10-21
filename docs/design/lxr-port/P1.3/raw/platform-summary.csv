@@ -1,0 +1,12 @@
+Target,Level,Result,Scope
+Windows x64,execution,PASS,Built-in and standalone Workstation/Server both polarities
+Windows x86,cross-build,PASS,CoreCLR Debug product and cross components; family rejected
+Windows ARM64,cross-build,PASS,CoreCLR Debug product and cross components; family rejected
+Windows x64 NativeAOT,execution,PASS,Nondefault shape rejected before managed execution; CardTable returned 100
+ReadyToRun,execution,PASS,Nondefault family rejected before managed execution
+Linux x64,execution,PASS,Exact f2315e8929e base evidence plus exact 7fd9523ea45 shared-descriptor build; both large-layout polarities stack reference-class and 48KB MemberwiseClone runtime-async custom slice 1/1 and standalone GCStress
+ARM32,audit,PASS,Specialized helper ABI retained; family rejected
+LoongArch64,audit,PASS,Specialized helper ABI retained; family rejected
+RISC-V64,audit,PASS,Specialized helper ABI retained; family rejected
+WebAssembly,audit,PASS,Structured-stack helper contract retained; family rejected
+PPC64LE and s390x NativeAOT,audit,PASS,Fixed image contract remains CardTable

@@ -1,0 +1,9 @@
+Method,GC,Unit,StockMean,P12Mean,P13Mean,P13OverStock,P13OverStockStatistic,P13OverP12,PairedMin,PairedMax,RatioOfMeans,PairCount
+ReferenceArrayCopy,Workstation,ns/reference,0.7092,7.8105,1.3286,1.8734,ratio-of-means,0.1701,,,1.8734,
+ReferenceArrayClear,Workstation,ns/reference,0.3963,7.8350,1.1858,2.9922,ratio-of-means,0.1513,,,2.9922,
+ReferenceSpanFill,Workstation,ns/reference,3.5765,3.0142,1.8989,0.5309,ratio-of-means,0.6300,,,0.5309,
+MixedStructCopy,Workstation,ns/reference,0.3798,2.1536,2.1522,5.6667,ratio-of-means,0.9993,,,5.6667,
+VeryLargeMixedStructCopy,Workstation,ns/reference,0.2842,5.1801,7.9092,27.8297,ratio-of-means,1.5268,,,27.8297,
+VeryLargeMixedStructClear,Workstation,ns/reference,0.4497,5.0210,8.3154,18.4910,ratio-of-means,1.6561,,,18.4910,
+MultiThreadThroughput,Workstation,operations/second,2705385.31,,2502324.55,0.9250,mean-of-pair-ratios,,0.9190,0.9353,0.9249,5
+MultiThreadThroughput,Server,operations/second,2678289.34,,2526395.46,0.9436,mean-of-pair-ratios,,0.9097,0.9757,0.9433,5

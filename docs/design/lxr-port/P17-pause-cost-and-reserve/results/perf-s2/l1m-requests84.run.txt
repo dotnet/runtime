@@ -1,0 +1,3 @@
+{"runtime":"dotnet","workload":"requests","size":32768,"ops":600000,"checksum":317308156512,"elapsed_ms":16178.754,"cpu_ms":20083.835,"gc_count":67,"gc_ms":9070,"lxr_pauses":67,"lxr_initial_mark":3,"lxr_final_mark":3,"lxr_full":0,"hiccup_p50_us":1179.6,"hiccup_p99_us":117440.5,"hiccup_p999_us":201326.6,"hiccup_max_us":478540.8,"req_p50_us":9.2,"req_p99_us":49.2,"req_p999_us":90.1,"peak_rss_kb":387160}
+[ perf record: Woken up 2 times to write data ]
+[ perf record: Captured and wrote 1.298 MB /root/p17s2/results/perf/l1m-requests84.data (9695 samples) ]

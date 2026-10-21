@@ -1,0 +1,3 @@
+{"runtime":"dotnet","workload":"listsuffix","size":4096,"ops":800000,"checksum":301262627042,"elapsed_ms":36183.697,"cpu_ms":95447.181,"gc_count":61,"gc_ms":29069,"lxr_pauses":61,"lxr_initial_mark":1,"lxr_final_mark":1,"lxr_full":0,"hiccup_p50_us":1179.6,"hiccup_p99_us":1441.8,"hiccup_p999_us":536870.9,"hiccup_max_us":563978.3,"req_p50_us":0.0,"req_p99_us":0.0,"req_p999_us":0.0,"peak_rss_kb":291556}
+[ perf record: Woken up 10 times to write data ]
+[ perf record: Captured and wrote 4.050 MB /root/p17s2/results/perf/l1-listsuffix40.data (36352 samples) ]

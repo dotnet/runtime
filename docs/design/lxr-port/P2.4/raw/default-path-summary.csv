@@ -1,0 +1,6 @@
+"property","result","evidence"
+"cmake-default","PASS","CLR_CMAKE_ENABLE_IMMIX_ALLOCATION_TEST is OFF and a fresh default build was used."
+"default-product-objects","PASS","The fresh default CoreCLR object tree contains zero immix allocation objects."
+"default-export","PASS","Fresh default coreclr.dll and clrgc.dll export no GC_ImmixAllocationTest_Run symbol."
+"normal-gc-call-sites","PASS","Normal Workstation and Server source/build paths contain no P2.4 call or per-allocation branch; all product sources are option-gated."
+"managed-allocation-ab","PASS","Fixed-policy Workstation and Server baseline-copy and changed-runtime ratios are all within [0.90,1.10]; exact corerun CoreCLR and CoreLib hashes are committed separately."

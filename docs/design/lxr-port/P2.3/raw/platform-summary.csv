@@ -1,0 +1,5 @@
+"platform","build","validation","runtime","execution"
+"windows-x64","PASS","37/37","linked/standalone Workstation/Server","full"
+"linux-x64","PASS","37/37","linked/standalone Workstation/Server","real WSL Unix"
+"windows-x86","PASS","1/1 fail-closed","N/A","exact-source validator; broad runtime has unrelated expected failure"
+"windows-arm64","PASS","N/A","N/A","exact-source build-only"

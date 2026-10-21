@@ -1,0 +1,4 @@
+"platform","passed","total","checks","result"
+"windows-x64","37","37","1882","PASS"
+"windows-x86","1","1","1","PASS"
+"linux-x64","37","37","1882","PASS"

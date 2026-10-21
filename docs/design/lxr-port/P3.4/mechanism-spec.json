@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "declaredOracle": {
+    "name": "lxr-head",
+    "binding": "0682434ae725787e38defbc17bd66dc918e4bdb7",
+    "core": "304ce69d43aae87de501111fceb8cbd33173a03a"
+  },
+  "queueSetCount": 2,
+  "stateStorage": "embedded",
+  "memoryOrder": "sequentially-consistent",
+  "registrationKinds": [
+    "overall",
+    "decrement",
+    "mature-sweep"
+  ],
+  "zeroOrder": [
+    "decrement-zero",
+    "register-mature-sweep-continuation",
+    "mature-sweep-and-release",
+    "overall-zero",
+    "next-gc-result"
+  ],
+  "rcMetadataWidths": [
+    2,
+    4,
+    8
+  ],
+  "defaultRcMaxCount": 3
+}

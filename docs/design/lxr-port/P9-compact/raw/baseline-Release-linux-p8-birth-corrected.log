@@ -1,0 +1,4 @@
+{"command": ["/root/lxr-compact-collector/artifacts/P9/baseline-linux/corerun", "/root/lxr-compact-collector/artifacts/P9/fixtures/runtime-tests.dll", "--p8-birth", "/root/lxr-compact-collector/artifacts/P9/baseline-linux/libclrlxrgc.so"], "module_sha256": "3b5edce83aec68c4be43633495dae9b79639ff8f67330b729215df2aeb0fe22b"}
+PASS: 32 P8 managed birth/fast-helper checks fast_hits=4400 refills=76
+
+exit=0

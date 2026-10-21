@@ -1,0 +1,5 @@
+    11.81%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessTraceObject                                                                                                                        -      -            
+                          0x743a36edc253
+     8.27%  libclrlxrgc.so                [.] LxrReferenceCounting::FixForwardingReaders                                                                                                                      -      -            
+               0x743a36edc253
+     8.14%  libclrlxrgc.so                [.] LxrReferenceCounting::NewWork                                                                                                                                   -      -            

@@ -1,0 +1,5 @@
+"architecture","passed","total","result","evidence"
+"x64","28","28","PASS","p1.6-seqcst-native-x64-2.log"
+"x86","6","6","PASS","p1.6-seqcst-native-x86.log"
+"linux-x64","28","28","PASS","p1.6-seqcst-native-linux.log"
+"nativeaot-x64","7","7","PASS","p1.6-nativeaot-validation-driver-2.log"

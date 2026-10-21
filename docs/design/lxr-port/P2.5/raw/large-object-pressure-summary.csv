@@ -1,0 +1,5 @@
+"run","collector","invocations","operations_per_second","pause_p99_ms","source_sha256","result"
+"p25.preedit.large-object-pressure.sdk.a","wks","5","119098.516724","0.2575","DE624904E9C2C0000BD91B2654E5F748AB5C95DDD8ACBDB9AEA60E36F2578E1A","PASS"
+"p25.preedit.large-object-pressure.sdk.a","srv","5","7933.568472","23.6283","DE624904E9C2C0000BD91B2654E5F748AB5C95DDD8ACBDB9AEA60E36F2578E1A","PASS"
+"p25.preedit.large-object-pressure.sdk.b","wks","5","161240.277614","0.1779","4508F25AB8E0F567A588A6EE67DE87B72B5D2D5E59E9769C457ADFECE7C3851D","PASS"
+"p25.preedit.large-object-pressure.sdk.b","srv","5","7926.800121","23.31","4508F25AB8E0F567A588A6EE67DE87B72B5D2D5E59E9769C457ADFECE7C3851D","PASS"

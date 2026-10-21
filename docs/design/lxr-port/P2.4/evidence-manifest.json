@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "validationPlatforms": [
+    {
+      "platform": "windows-x64",
+      "total": 27165
+    },
+    {
+      "platform": "windows-x86",
+      "total": 1
+    },
+    {
+      "platform": "linux-x64",
+      "total": 27165
+    }
+  ],
+  "runtimePlatforms": [
+    "windows-x64",
+    "linux-x64"
+  ],
+  "runtimeLinkages": [
+    "linked",
+    "standalone"
+  ],
+  "runtimeGcModes": [
+    "Workstation",
+    "Server"
+  ],
+  "benchmark": {
+    "methods": [
+      "Fresh",
+      "FreshControl",
+      "Recycled",
+      "RecycledControl",
+      "ConcurrentRecycled",
+      "HoleScan",
+      "LongLivedCache",
+      "ExtraScanSensitivity",
+      "InjectedOwnerDelay"
+    ],
+    "workerCounts": [
+      1,
+      4,
+      16
+    ],
+    "rows": 27,
+    "controls": 3,
+    "launchCount": 3,
+    "warmupCount": 8,
+    "iterationCount": 20,
+    "aaMinimum": 0.9,
+    "aaMaximum": 1.1,
+    "extraScanMinimum": 1.5,
+    "ownerDelayMinimum": 1.25
+  },
+  "defaultAllocation": {
+    "gcModes": [
+      "Workstation",
+      "Server"
+    ],
+    "launchCount": 3,
+    "warmupCount": 8,
+    "iterationCount": 20,
+    "ratioMinimum": 0.9,
+    "ratioMaximum": 1.1
+  },
+  "reviewModels": 3,
+  "defaultPathProperties": [
+    "cmake-default",
+    "default-product-objects",
+    "default-export",
+    "normal-gc-call-sites",
+    "managed-allocation-ab"
+  ],
+  "rawFiles": [
+    "attempt-summary.csv",
+    "benchmark-controls.csv",
+    "benchmark-identity.csv",
+    "benchmark-raw.csv",
+    "build-summary.csv",
+    "combined-export-summary.csv",
+    "default-allocation-controls.csv",
+    "default-path-summary.csv",
+    "platform-summary.csv",
+    "review-summary.csv",
+    "runtime-smoke-summary.csv",
+    "source-commit.txt",
+    "source-identities.csv",
+    "validation-summary.csv"
+  ],
+  "perturbations": [
+    {
+      "id": "hole-line-zero",
+      "property": "rc-hole-selection"
+    },
+    {
+      "id": "hole-zeroing",
+      "property": "publication-zeroing"
+    },
+    {
+      "id": "object-mark-publication",
+      "property": "conservative-allocation-liveness"
+    },
+    {
+      "id": "reuse-wrap-plane",
+      "property": "reuse-generation"
+    },
+    {
+      "id": "source-identity",
+      "property": "source-binding"
+    },
+    {
+      "id": "validation-row",
+      "property": "evidence-cardinality"
+    },
+    {
+      "id": "benchmark-aa",
+      "property": "benchmark-control"
+    },
+    {
+      "id": "default-allocation-aa",
+      "property": "default-off-performance"
+    },
+    {
+      "id": "default-path-row",
+      "property": "default-off"
+    }
+  ]
+}

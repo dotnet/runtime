@@ -1,0 +1,1343 @@
+
+  Determining projects to restore...
+  Cannot find a manifest file. The list of searched paths:
+  
+  No tools were restored.
+  All projects are up-to-date for restore.
+  Determining projects to restore...
+  Restored R:\Build.proj (in 218 ms).
+  610 of 611 projects are up-to-date for restore.
+  Crossgen2Tasks -> R:\artifacts\bin\Crossgen2Tasks\Debug\Crossgen2Tasks.dll
+  installer.tasks -> R:\artifacts\bin\installer.tasks\Debug\installer.tasks.dll
+  HelixTestTasks -> R:\artifacts\bin\HelixTestTasks\Debug\net11.0\HelixTestTasks.dll
+  ILLink.RoslynAnalyzer -> R:\artifacts\bin\ILLink.RoslynAnalyzer\Debug\netstandard2.0\ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> R:\artifacts\bin\ILLink.CodeFixProvider\Debug\netstandard2.0\ILLink.CodeFixProvider.dll
+  Mono.Linker -> R:\artifacts\bin\Mono.Linker\ref\Debug\net11.0\illink.dll
+  Mono.Linker -> R:\artifacts\bin\Mono.Linker\Debug\net11.0\illink.dll
+  ILLink.Tasks -> R:\artifacts\bin\ILLink.Tasks\Debug\net\ILLink.Tasks.dll
+  System.Private.CoreLib.Generators -> R:\artifacts\bin\System.Private.CoreLib.Generators\Debug\netstandard2.0\System.Private.CoreLib.Generators.dll
+  System.Private.CoreLib -> R:\artifacts\bin\System.Private.CoreLib\ref\Debug\net11.0\System.Private.CoreLib.dll
+  EventSourceGenerator -> R:\artifacts\bin\EventSourceGenerator\Debug\netstandard2.0\EventSourceGenerator.dll
+  Microsoft.Interop.SourceGeneration -> R:\artifacts\bin\Microsoft.Interop.SourceGeneration\Debug\netstandard2.0\Microsoft.Interop.SourceGeneration.dll
+  LibraryImportGenerator -> R:\artifacts\bin\LibraryImportGenerator\Debug\netstandard2.0\Microsoft.Interop.LibraryImportGenerator.dll
+  System.Private.CoreLib -> R:\artifacts\bin\coreclr\windows.x64.Debug\IL\System.Private.CoreLib.dll
+  cdac-build-tool -> R:\artifacts\bin\coreclr\windows.x64.Debug\cdac-build-tool\cdac-build-tool.dll
+  Executing "R:\src\coreclr\build-runtime.cmd" -x64 -debug -os windows -targetrid win-x64 -cmakeargs "-DCLR_DOTNET_RID=win-x64" -cmakeargs "-DCLR_DOTNET_HOST_PATH='C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\dotnet.exe'" -cmakeargs "-DCDAC_BUILD_TOOL_BINARY_PATH=R:\artifacts\bin\coreclr\windows.x64.Debug\cdac-build-tool\cdac-build-tool.dll" -cmakeargs "-DFEATURE_DYNAMIC_CODE_COMPILED=1" -cmakeargs "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" 
+  BUILD: Starting Build at 20:36:03.51
+  'vswhere.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  BUILD: Commencing CoreCLR product build
+  BUILD: Checking prerequisites
+  BUILD: Using CMake from C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe
+  BUILD: Commencing build of native components for windows.x64.Debug
+  BUILD: Using environment: "C:\Program Files\Microsoft Visual Studio\18\IntPreview\VC\Auxiliary\Build\vcvarsall.bat" amd64
+  'vswhere.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  **********************************************************************
+  ** Visual Studio 2026 Developer Command Prompt v18.0
+  ** Copyright (c) 2026 Microsoft Corporation
+  **********************************************************************
+  [vcvarsall.bat] Environment initialized for: 'x64'
+  BUILD: Regenerating the Visual Studio solution
+  Calling "R:\\eng\native\gen-buildsys.cmd" "R:\src\coreclr" "R:\\artifacts\obj\coreclr\windows.x64.Debug" 18.0 x64 windows "-DCMAKE_BUILD_TYPE=Debug" "-DCLR_CMAKE_TARGET_ARCH=x64" "-DCLR_CMAKE_TARGET_OS=windows" "-DCLI_CMAKE_FALLBACK_OS=win10" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" "-DFEATURE_DYNAMIC_CODE_COMPILED=1" "-DCDAC_BUILD_TOOL_BINARY_PATH=R:\artifacts\bin\coreclr\windows.x64.Debug\cdac-build-tool\cdac-build-tool.dll" "-DCLR_DOTNET_HOST_PATH='C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\dotnet.exe'" "-DCLR_DOTNET_RID=win-x64" 
+  The CMake command line differs from the last run. Running CMake again.
+   "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe "-DCMAKE_INSTALL_PREFIX=R://artifacts/bin/coreclr/windows.x64.Debug" "-DCLR_CMAKE_HOST_ARCH=x64"   "-DCMAKE_SYSTEM_VERSION=10.0" "-DCMAKE_BUILD_TYPE=Debug" "-DCLR_CMAKE_TARGET_ARCH=x64" "-DCLR_CMAKE_TARGET_OS=windows" "-DCLI_CMAKE_FALLBACK_OS=win10" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" "-DFEATURE_DYNAMIC_CODE_COMPILED=1" "-DCDAC_BUILD_TOOL_BINARY_PATH=R:\artifacts\bin\coreclr\windows.x64.Debug\cdac-build-tool\cdac-build-tool.dll" "-DCLR_DOTNET_HOST_PATH='C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-ideal-sniffle\.dotnet\dotnet.exe'" "-DCLR_DOTNET_RID=win-x64" --no-warn-unused-cli -G Ninja -B "R:\\artifacts\obj\coreclr\windows.x64.Debug" -S "R:\src\coreclr""
+  Not searching for unused variables given on the command line.
+  -- Using CMake version 4.3.1-msvc1
+  -- ZLIB_HEADER_VERSION: 1.3.1
+  -- ZLIBNG_HEADER_VERSION: 2.2.5
+  -- Arch detected: 'x86_64'
+  -- Basearch of 'x86_64' has been detected as: 'x86'
+  -- Architecture-specific source files: arch/x86/x86_features.c;arch/x86/chunkset_sse2.c;arch/x86/compare256_sse2.c;arch/x86/slide_hash_sse2.c;arch/x86/adler32_ssse3.c;arch/x86/chunkset_ssse3.c;arch/x86/adler32_sse42.c;arch/x86/crc32_pclmulqdq.c;arch/x86/slide_hash_avx2.c;arch/x86/chunkset_avx2.c;arch/x86/compare256_avx2.c;arch/x86/adler32_avx2.c;arch/x86/adler32_avx512.c;arch/x86/chunkset_avx512.c;arch/x86/adler32_avx512_vnni.c;arch/x86/crc32_vpclmulqdq.c
+  -- The following features have been enabled:
+  
+   * CMAKE_BUILD_TYPE, Build type: Debug (selected)
+   * XSAVE, Support XSAVE intrinsics using ""
+   * SSSE3_ADLER32, Support SSSE3-accelerated adler32, using ""
+   * SSE42_CRC, Support SSE4.2 optimized adler32 hash generation, using ""
+   * PCLMUL_CRC, Support CRC hash generation using PCLMULQDQ, using " "
+   * AVX2_SLIDEHASH, Support AVX2 optimized slide_hash, using "/arch:AVX2"
+   * AVX2_CHUNKSET, Support AVX2 optimized chunkset, using "/arch:AVX2"
+   * AVX2_COMPARE256, Support AVX2 optimized compare256, using "/arch:AVX2"
+   * AVX2_ADLER32, Support AVX2-accelerated adler32, using "/arch:AVX2"
+   * AVX512_ADLER32, Support AVX512-accelerated adler32, using "/arch:AVX512"
+   * AVX512_CHUNKSET, Support AVX512 optimized chunkset, using "/arch:AVX512"
+   * AVX512VNNI_ADLER32, Support AVX512VNNI adler32, using "/arch:AVX512"
+   * VPCLMUL_CRC, Support CRC hash generation using VPCLMULQDQ, using "  /arch:AVX512"
+   * WITH_GZFILEOP, Compile with support for gzFile related functions
+   * ZLIB_COMPAT, Compile with zlib compatible API
+   * WITH_SANITIZER, Enable sanitizer support
+   * WITH_GTEST, Build gtest_zlib
+   * WITH_OPTIM, Build with optimisation
+   * WITH_NEW_STRATEGIES, Use new strategies
+   * WITH_RUNTIME_CPU_DETECTION, Build with runtime CPU detection
+   * WITH_AVX2, Build with AVX2
+   * WITH_AVX512, Build with AVX512
+   * WITH_AVX512VNNI, Build with AVX512 VNNI
+   * WITH_SSE2, Build with SSE2
+   * WITH_SSSE3, Build with SSSE3
+   * WITH_SSE42, Build with SSE42
+   * WITH_PCLMULQDQ, Build with PCLMULQDQ
+   * WITH_VPCLMULQDQ, Build with VPCLMULQDQ
+  
+  -- The following features have been disabled:
+  
+   * ZLIB_SYMBOL_PREFIX, Publicly exported symbols DO NOT have a custom prefix
+   * ZLIB_ENABLE_TESTS, Build test binaries
+   * ZLIBNG_ENABLE_TESTS, Test zlib-ng specific API
+   * WITH_FUZZERS, Build test/fuzz
+   * WITH_BENCHMARKS, Build test/benchmarks
+   * WITH_BENCHMARK_APPS, Build application benchmarks
+   * WITH_NATIVE_INSTRUCTIONS, Instruct the compiler to use the full instruction set on this host (gcc/clang -march=native)
+   * WITH_MAINTAINER_WARNINGS, Build with project maintainer warnings
+   * WITH_CODE_COVERAGE, Enable code coverage reporting
+   * WITH_INFLATE_STRICT, Build with strict inflate distance checking
+   * WITH_INFLATE_ALLOW_INVALID_DIST, Build with zero fill for inflate invalid distances
+   * INSTALL_UTILS, Copy minigzip and minideflate during install
+  
+  -- Build type is 'Debug'
+  -- Compiler is not EMSCRIPTEN
+  -- ZSTD VERSION: 1.5.7
+  -- CMAKE_INSTALL_PREFIX: R:/artifacts/bin/coreclr/windows.x64.Debug
+  -- CMAKE_INSTALL_LIBDIR: lib
+  -- ZSTD_LEGACY_SUPPORT not defined!
+  -- ZSTD_MULTITHREAD_SUPPORT is disabled
+  Read file version from native version header at 'R://artifacts/obj/_version.h'.
+  -- Configuring done (5.0s)
+  -- Generating done (4.1s)
+  -- Build files have been written to: R:/artifacts/obj/coreclr/windows.x64.Debug
+  running "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" --build R:\\artifacts\obj\coreclr\windows.x64.Debug --target install --config Debug -- 
+  [1/224] Building RC object dlls\mscordbi\CMakeFiles\mscordbi.dir\Native.rc.res
+  [2/224] Building RC object dlls\mscordac\CMakeFiles\mscordaccore.dir\Native.rc.res
+  [3/224] Preprocessing R:/artifacts/obj/coreclr/windows.x64.Debug/vm/wks/AsmConstants.tmp. Outputting to R:/artifacts/obj/coreclr/windows.x64.Debug/vm/wks/AsmConstants.inc
+  AsmConstants.tmp
+  [4/224] Building RC object tools\aot\jitinterface\CMakeFiles\jitinterface_x64.dir\Native.rc.res
+  [5/224] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\trace.c.obj
+  [6/224] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\fx_ver.c.obj
+  [7/224] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\utils.c.obj
+  [8/224] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\pal.windows.c.obj
+  [9/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\rhassert.cpp.obj
+  [10/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\MethodTable.cpp.obj
+  [11/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\Crst.cpp.obj
+  [12/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\runtime\MiscNativeHelpers.cpp.obj
+  [13/224] Linking CXX shared library dlls\mscordac\mscordaccore.dll
+  [14/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\EHHelpers.cpp.obj
+  [15/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\event.cpp.obj
+  [16/224] Linking CXX shared library dlls\mscordbi\mscordbi.dll
+  [17/224] Building CXX object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\R_\src\native\corehost\fxr\fx_ver.cpp.obj
+  [18/224] Building CXX object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\longfile.windows.cpp.obj
+  [19/224] Building CXX object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\pal.windows.cpp.obj
+  [20/224] Building CXX object Corehost.Static\hostmisc\CMakeFiles\hostmisc.dir\utils.cpp.obj
+  [21/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\FinalizerHelpers.cpp.obj
+  [22/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\GcEnum.cpp.obj
+  [23/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.GC.Workstation.dir\Unity\unity_0_cxx.cxx.obj
+  [24/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.GC.Server.dir\Unity\unity_0_cxx.cxx.obj
+  [25/224] Linking CXX static library Corehost.Static\hostmisc\hostmisc.lib
+  [26/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\gctoclreventsink.cpp.obj
+  [27/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\GCHelpers.cpp.obj
+  [28/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\gcheaputilities.cpp.obj
+  [29/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\GcStressControl.cpp.obj
+  [30/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\HandleTableHelpers.cpp.obj
+  [31/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\GCMemoryHelpers.cpp.obj
+  [32/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\gcenv.ee.cpp.obj
+  [33/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\MathHelpers.cpp.obj
+  [34/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\interoplibinterface_java.cpp.obj
+  [35/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\MiscHelpers.cpp.obj
+  [36/224] C:\Windows\system32\cmd.exe /C "cd /D R:\artifacts\obj\coreclr\windows.x64.Debug\dlls\mscoree\coreclr && powershell -NoProfile -ExecutionPolicy ByPass -File R:/src/coreclr/dlls/mscoree/coreclr/GenClrDebugResource.ps1 -dac R:/artifacts/obj/coreclr/windows.x64.Debug/dlls/mscordac/mscordaccore.dll -dbi R:/artifacts/obj/coreclr/windows.x64.Debug/dlls/mscordbi/mscordbi.dll -out R:/artifacts/obj/coreclr/windows.x64.Debug/dlls/mscoree/coreclr/clr_debug_resource.bin"
+  [37/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\TypeManager.cpp.obj
+  [38/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\portable.cpp.obj
+  [39/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\RestrictedCallouts.cpp.obj
+  [40/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\ObjectLayout.cpp.obj
+  [41/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\RhConfig.cpp.obj
+  [42/224] Building RC object dlls\mscoree\coreclr\CMakeFiles\coreclr.dir\__\Native.rc.res
+  [43/224] Building RC object dlls\mscoree\coreclr\CMakeFiles\coreclr_static.dir\__\Native.rc.res
+  [44/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\SyncClean.cpp.obj
+  [45/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\startup.cpp.obj
+  [46/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\StackFrameIterator.cpp.obj
+  [47/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\RuntimeInstance.cpp.obj
+  [48/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\stressLog.cpp.obj
+  [49/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\thread.cpp.obj
+  [50/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\UniversalTransitionHelpers.cpp.obj
+  [51/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\yieldprocessornormalized.cpp.obj
+  [52/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\gceventstatus.cpp.obj
+  [53/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\threadstore.cpp.obj
+  [54/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\gcbridge.cpp.obj
+  [55/224] Building C object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\R_\src\native\minipal\xoshiro128pp.c.obj
+  [56/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\gchandletable.cpp.obj
+  [57/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\gcload.cpp.obj
+  [58/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\gcconfig.cpp.obj
+  [59/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\gcscan.cpp.obj
+  [60/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\gccommon.cpp.obj
+  [61/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\handletablecore.cpp.obj
+  [62/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\handletablecache.cpp.obj
+  [63/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\handletable.cpp.obj
+  [64/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\objecthandle.cpp.obj
+  [65/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\windows\PalCommon.cpp.obj
+  [66/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\side_metadata.cpp.obj
+  [67/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\softwarewritewatch.cpp.obj
+  [68/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\handletablescan.cpp.obj
+  [69/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\windows\PalMinWin.cpp.obj
+  [70/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\AsmOffsetsVerify.cpp.obj
+  [71/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\ThunksMapping.cpp.obj
+  [72/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\__\__\gc\windows\gcenv.windows.cpp.obj
+  [73/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.WorkstationGC.dir\__\windows\CoffNativeCodeManager.cpp.obj
+  [74/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\rhassert.cpp.obj
+  [75/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\runtime\MiscNativeHelpers.cpp.obj
+  [76/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\Crst.cpp.obj
+  [77/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\MethodTable.cpp.obj
+  [78/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\event.cpp.obj
+  [79/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\EHHelpers.cpp.obj
+  [80/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\GcEnum.cpp.obj
+  [81/224] Linking CXX shared library dlls\mscoree\coreclr\coreclr.dll
+  [82/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\FinalizerHelpers.cpp.obj
+  [83/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\GCHelpers.cpp.obj
+  [84/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\GCMemoryHelpers.cpp.obj
+  [85/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\gctoclreventsink.cpp.obj
+  [86/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\gcheaputilities.cpp.obj
+  [87/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\gcenv.ee.cpp.obj
+  [88/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\MathHelpers.cpp.obj
+  [89/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\GcStressControl.cpp.obj
+  [90/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\interoplibinterface_java.cpp.obj
+  [91/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\HandleTableHelpers.cpp.obj
+  [92/224] Generating coreclr module index file -> R:/artifacts/obj/coreclr/windows.x64.Debug/debug/runtimeinfo/runtimemoduleindex.h
+  [93/224] Generating mscordaccore module index file -> R:/artifacts/obj/coreclr/windows.x64.Debug/debug/runtimeinfo/dacmoduleindex.h
+  [94/224] Generating mscordbi module index file -> R:/artifacts/obj/coreclr/windows.x64.Debug/debug/runtimeinfo/dbimoduleindex.h
+  [95/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\ObjectLayout.cpp.obj
+  [96/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\TypeManager.cpp.obj
+  [97/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\MiscHelpers.cpp.obj
+  [98/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\RestrictedCallouts.cpp.obj
+  [99/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\RhConfig.cpp.obj
+  [100/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\portable.cpp.obj
+  [101/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\RuntimeInstance.cpp.obj
+  [102/224] Building CXX object debug\runtimeinfo\CMakeFiles\runtimeinfo.dir\runtimeinfo.cpp.obj
+  [103/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\startup.cpp.obj
+  [104/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\stressLog.cpp.obj
+  [105/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\UniversalTransitionHelpers.cpp.obj
+  [106/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\StackFrameIterator.cpp.obj
+  [107/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\SyncClean.cpp.obj
+  [108/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\thread.cpp.obj
+  [109/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\threadstore.cpp.obj
+  [110/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\yieldprocessornormalized.cpp.obj
+  [111/224] Building C object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\apphost\apphost.c.obj
+  [112/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\gceventstatus.cpp.obj
+  [113/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\gcbridge.cpp.obj
+  [114/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\hostpolicy_resolver.cpp.obj
+  [115/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\apphost_hostfxr_resolver.cpp.obj
+  [116/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\static\coreclr_resolver.cpp.obj
+  [117/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\command_line.cpp.obj
+  [118/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\fx_resolver.messages.cpp.obj
+  [119/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\hostfxr.cpp.obj
+  [120/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\sdk_info.cpp.obj
+  [121/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\install_info.cpp.obj
+  [122/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\corehost_init.cpp.obj
+  [123/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\host_context.cpp.obj
+  [124/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\framework_info.cpp.obj
+  [125/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\sdk_resolver.cpp.obj
+  [126/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\fx_resolver.cpp.obj
+  [127/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fxr\fx_muxer.cpp.obj
+  [128/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\args.cpp.obj
+  [129/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\deps_entry.cpp.obj
+  [130/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\coreclr.cpp.obj
+  [131/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\breadcrumbs.cpp.obj
+  [132/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\dir_utils.cpp.obj
+  [133/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\deps_format.cpp.obj
+  [134/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\version.cpp.obj
+  [135/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\file_entry.cpp.obj
+  [136/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\shared_store.cpp.obj
+  [137/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\hostpolicy_init.cpp.obj
+  [138/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\hostpolicy_context.cpp.obj
+  [139/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\extractor.cpp.obj
+  [140/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\deps_resolver.cpp.obj
+  [141/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\runner.cpp.obj
+  [142/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\manifest.cpp.obj
+  [143/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\hostpolicy\hostpolicy.cpp.obj
+  [144/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\host_startup_info.cpp.obj
+  [145/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\json_parser.cpp.obj
+  [146/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\roll_forward_option.cpp.obj
+  [147/224] Building C object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\apphost\apphost.windows.c.obj
+  [148/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\version_compatibility_range.cpp.obj
+  [149/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\gcload.cpp.obj
+  [150/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\gcscan.cpp.obj
+  [151/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\gchandletable.cpp.obj
+  [152/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\info.cpp.obj
+  [153/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\header.cpp.obj
+  [154/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\gccommon.cpp.obj
+  [155/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\gcconfig.cpp.obj
+  [156/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fx_reference.cpp.obj
+  [157/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\fx_definition.cpp.obj
+  [158/224] Building C object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\R_\src\native\minipal\xoshiro128pp.c.obj
+  [159/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\handletable.cpp.obj
+  [160/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\bundle\reader.cpp.obj
+  [161/224] Building RC object gc\CMakeFiles\clrgc.dir\windows\Native.rc.res
+  [162/224] Building CXX object Corehost.Static\CMakeFiles\singlefilehost.dir\R_\src\native\corehost\runtime_config.cpp.obj
+  [163/224] Building RC object gc\CMakeFiles\clrgcexp.dir\windows\Native.rc.res
+  [164/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\handletablecore.cpp.obj
+  [165/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\handletablescan.cpp.obj
+  [166/224] Building RC object ilasm\CMakeFiles\ilasm.dir\Native.rc.res
+  [167/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\handletablecache.cpp.obj
+  [168/224] Building RC object interpreter\CMakeFiles\clrinterpreter.dir\Native.rc.res
+  [169/224] Building RC object jit\CMakeFiles\clrjit.dir\Native.rc.res
+  [170/224] Building RC object jit\CMakeFiles\clrjit_universal_arm64_x64.dir\Native.rc.res
+  [171/224] Building RC object jit\CMakeFiles\clrjit_universal_wasm_x64.dir\Native.rc.res
+  [172/224] Building RC object ildasm\exe\CMakeFiles\ildasm.dir\__\dasm.rc.res
+  [173/224] Building RC object jit\CMakeFiles\clrjit_unix_x64_x64.dir\Native.rc.res
+  [174/224] Building RC object jit\CMakeFiles\clrjit_win_x64_x64.dir\Native.rc.res
+  [175/224] Linking CXX static library debug\runtimeinfo\runtimeinfo.lib
+  [176/224] Building RC object jit\CMakeFiles\clrjit_universal_arm_x64.dir\Native.rc.res
+  [177/224] Building RC object jit\CMakeFiles\clrjit_win_x86_x64.dir\Native.rc.res
+  [178/224] Building RC object debug\createdump\CMakeFiles\createdump.dir\createdump.rc.res
+  [179/224] Building RC object dlls\clretwrc\CMakeFiles\clretwrc.dir\clretwrc.rc.res
+  [180/224] Building RC object dlls\mscordbi_universal\CMakeFiles\mscordbi_universal.dir\__\mscordbi\Native.rc.res
+  [181/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\windows\PalCommon.cpp.obj
+  [182/224] Building RC object hosts\corerun\CMakeFiles\corerun.dir\native.rc.res
+  [183/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\softwarewritewatch.cpp.obj
+  [184/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\side_metadata.cpp.obj
+  [185/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\windows\PalMinWin.cpp.obj
+  [186/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\objecthandle.cpp.obj
+  [187/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\__\__\gc\windows\gcenv.windows.cpp.obj
+  [188/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\AsmOffsetsVerify.cpp.obj
+  [189/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\ThunksMapping.cpp.obj
+  [190/224] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc_public.dir\fx_ver.c.obj
+  [191/224] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc_public.dir\utils.c.obj
+  [192/224] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc_public.dir\trace.c.obj
+  [193/224] Building CXX object nativeaot\Runtime\Full\CMakeFiles\Runtime.ServerGC.dir\__\windows\CoffNativeCodeManager.cpp.obj
+  [194/224] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc_public.dir\pal.windows.c.obj
+  [195/224] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc_c.dir\fx_ver.c.obj
+  [196/224] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc_c.dir\trace.c.obj
+  [197/224] Linking CXX static library nativeaot\Runtime\Full\Runtime.WorkstationGC.lib
+  AsmOffsets.cspp
+  [198/224] Linking CXX shared library tools\aot\jitinterface\jitinterface_x64.dll
+  [199/224] Linking CXX static library nativeaot\Runtime\Full\Runtime.ServerGC.lib
+  [200/224] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc_c.dir\utils.c.obj
+  [201/224] Building C object Corehost.Static\hostmisc\CMakeFiles\hostmisc_c.dir\pal.windows.c.obj
+  [202/224] Linking CXX shared library gc\clrgc.dll
+  [203/224] Linking CXX shared library interpreter\clrinterpreter.dll
+  [204/224] Linking CXX shared library gc\clrgcexp.dll
+  [205/224] Linking CXX executable ildasm\exe\ildasm.exe
+  [206/224] Building CXX object Corehost.Static\hostmisc\CMakeFiles\hostmisc_public.dir\R_\src\native\corehost\fxr\fx_ver.cpp.obj
+  [207/224] Building CXX object Corehost.Static\hostmisc\CMakeFiles\hostmisc_public.dir\utils.cpp.obj
+  [208/224] Building CXX object Corehost.Static\hostmisc\CMakeFiles\hostmisc_public.dir\longfile.windows.cpp.obj
+  [209/224] Linking RC shared library dlls\clretwrc\clretwrc.dll
+  [210/224] Linking CXX static library dlls\mscoree\coreclr\coreclr_static.lib
+  [211/224] Linking CXX executable ilasm\ilasm.exe
+  [212/224] Building CXX object Corehost.Static\hostmisc\CMakeFiles\hostmisc_public.dir\pal.windows.cpp.obj
+  [213/224] Linking CXX executable debug\createdump\createdump.exe
+  [214/224] Linking CXX executable hosts\corerun\corerun.exe
+  [215/224] Linking CXX shared library dlls\mscordbi_universal\mscordbi_universal.dll
+  [216/224] Linking CXX shared library jit\clrjit_universal_arm64_x64.dll
+  [217/224] Linking CXX shared library jit\clrjit_universal_arm_x64.dll
+  [218/224] Linking CXX shared library jit\clrjit_unix_x64_x64.dll
+  [219/224] Linking CXX shared library jit\clrjit.dll
+  [220/224] Linking CXX shared library jit\clrjit_universal_wasm_x64.dll
+  [221/224] Linking CXX shared library jit\clrjit_win_x64_x64.dll
+  [222/224] Linking CXX shared library jit\clrjit_win_x86_x64.dll
+  [223/224] Linking CXX executable Corehost.Static\singlefilehost.exe
+  [223/224] Install the project...
+  -- Install configuration: "Debug"
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/corehost/PDB/singlefilehost.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/corehost/singlefilehost.exe
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./jitinterface_x64.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/jitinterface_x64.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/aotsdk/Runtime.WorkstationGC.lib
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/aotsdk/Runtime.WorkstationGC.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/aotsdk/Runtime.ServerGC.lib
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/aotsdk/Runtime.ServerGC.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./clrgcexp.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/clrgcexp.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./clrgc.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/clrgc.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/clrgc.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/PDB/clrgc.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/clrgcexp.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/PDB/clrgcexp.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./clrinterpreter.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/clrinterpreter.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/clrinterpreter.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/PDB/clrinterpreter.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./ilasm.exe
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/ilasm.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./ildasm.exe
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/ildasm.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./clrjit.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/clrjit.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/clrjit.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/PDB/clrjit.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./clrjit_universal_arm64_x64.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/clrjit_universal_arm64_x64.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./clrjit_universal_wasm_x64.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/clrjit_universal_wasm_x64.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./clrjit_unix_x64_x64.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/clrjit_unix_x64_x64.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./clrjit_win_x64_x64.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/clrjit_win_x64_x64.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./clrjit_universal_arm_x64.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/clrjit_universal_arm_x64.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./clrjit_win_x86_x64.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/clrjit_win_x86_x64.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./createdump.exe
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/createdump.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/createdump.exe
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/PDB/createdump.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/lib/runtimeinfo.lib
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./clretwrc.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/clretwrc.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/clretwrc.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/PDB/clretwrc.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./mscordbi.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/mscordbi.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/mscordbi.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/PDB/mscordbi.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./mscordbi_universal.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/mscordbi_universal.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./mscordaccore.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/mscordaccore.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/mscordaccore.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/PDB/mscordaccore.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/mscordaccore_amd64_amd64_42.42.42.42424.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/PDB/mscordaccore_amd64_amd64_42.42.42.42424.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./coreclr.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/PDB/coreclr.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/coreclr.dll
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/sharedFramework/PDB/coreclr.pdb
+  -- Installing: R:/artifacts/bin/coreclr/windows.x64.Debug/./corerun.exe
+  BUILD: Build succeeded.  Finished at 20:37:21.00
+  BUILD: Product binaries are available at R:\\artifacts\bin\coreclr\windows.x64.Debug
+  runincontext -> R:\artifacts\bin\coreclr\windows.x64.Debug\runincontext.dll
+  tieringtest -> R:\artifacts\bin\coreclr\windows.x64.Debug\tieringtest.dll
+  ILCompiler.Reflection.ReadyToRun -> R:\artifacts\bin\coreclr\windows.x64.Debug\ILCompiler.Reflection.ReadyToRun.dll
+  ILCompiler.TypeSystem -> R:\artifacts\bin\ILCompiler.TypeSystem\x64\Debug\ILCompiler.TypeSystem.dll
+  ILCompiler.Diagnostics -> R:\artifacts\bin\ILCompiler.Diagnostics\x64\Debug\ILCompiler.Diagnostics.dll
+  R2RDump -> R:\artifacts\bin\coreclr\windows.x64.Debug\R2RDump\R2RDump.dll
+  dotnet-pgo -> R:\artifacts\bin\coreclr\windows.x64.Debug\dotnet-pgo\dotnet-pgo.dll
+  repro -> R:\artifacts\bin\repro\x64\Debug\repro.dll
+  R2RTest -> R:\artifacts\bin\coreclr\windows.x64.Debug\R2RTest\R2RTest.dll
+  PdbChecker -> R:\artifacts\bin\coreclr\windows.x64.Debug\PdbChecker\PdbChecker.dll
+  AssemblyChecker -> R:\artifacts\bin\coreclr\windows.x64.Debug\AssemblyChecker\AssemblyChecker.dll
+  ILVerify -> R:\artifacts\bin\ILVerify\x64\Debug\ILVerify.dll
+  ILVerification -> R:\artifacts\bin\ILVerification\x64\Debug\ILVerification.dll
+  ILCompiler.DependencyAnalysisFramework -> R:\artifacts\bin\ILCompiler.DependencyAnalysisFramework\x64\Debug\ILCompiler.DependencyAnalysisFramework.dll
+  ILTrim.Core -> R:\artifacts\bin\ILTrim.Core\x64\Debug\ILTrim.Core.dll
+  ILTrim -> R:\artifacts\bin\ILTrim\x64\Debug\ILTrim.dll
+  Microsoft.Diagnostics.DataContractReader.DataGenerator -> R:\artifacts\bin\Microsoft.Diagnostics.DataContractReader.DataGenerator\Debug\Microsoft.Diagnostics.DataContractReader.DataGenerator.dll
+  Microsoft.Diagnostics.DataContractReader.Abstractions -> R:\artifacts\bin\Microsoft.Diagnostics.DataContractReader.Abstractions\Debug\Microsoft.Diagnostics.DataContractReader.Abstractions.dll
+  Microsoft.Diagnostics.DataContractReader.Contracts -> R:\artifacts\bin\Microsoft.Diagnostics.DataContractReader.Contracts\Debug\Microsoft.Diagnostics.DataContractReader.Contracts.dll
+  Microsoft.Diagnostics.DataContractReader -> R:\artifacts\bin\Microsoft.Diagnostics.DataContractReader\Debug\Microsoft.Diagnostics.DataContractReader.dll
+  StressLogAnalyzer -> R:\artifacts\bin\StressLogAnalyzer\Debug\net11.0\StressLogAnalyzer.dll
+  ILCompiler.MetadataTransform -> R:\artifacts\bin\ILCompiler.MetadataTransform\x64\Debug\ILCompiler.MetadataTransform.dll
+  ILCompiler.Compiler -> R:\artifacts\bin\ILCompiler.Compiler\x64\Debug\ILCompiler.Compiler.dll
+  ILCompiler.RyuJit -> R:\artifacts\bin\ILCompiler.RyuJit\x64\Debug\ILCompiler.RyuJit.dll
+  ILCompiler_inbuild -> R:\artifacts\bin\ILCompiler_inbuild\x64\Debug\ilc.dll
+  Optimizing assemblies for size. This process might take a while.
+  ILCompiler_inbuild -> R:\artifacts\bin\coreclr\windows.x64.Debug\x64\ilc\
+  ILCompiler.ReadyToRun -> R:\artifacts\bin\ILCompiler.ReadyToRun\x64\Debug\ILCompiler.ReadyToRun.dll
+  crossgen2_inbuild -> R:\artifacts\bin\crossgen2_inbuild\x64\Debug\crossgen2.dll
+  Optimizing assemblies for size. This process might take a while.
+  crossgen2_inbuild -> R:\artifacts\bin\coreclr\windows.x64.Debug\x64\crossgen2\
+  DownlevelLibraryImportGenerator -> R:\artifacts\bin\DownlevelLibraryImportGenerator\Debug\netstandard2.0\Microsoft.Interop.LibraryImportGenerator.Downlevel.dll
+  ILCompiler.Build.Tasks -> R:\artifacts\bin\coreclr\windows.x64.Debug\ilc-published\netstandard\ILCompiler.Build.Tasks.dll
+  ILCompiler_publish -> R:\artifacts\bin\ILCompiler_publish\x64\Debug\ilc.dll
+  Generating native code
+  ILCompiler_publish -> R:\artifacts\bin\coreclr\windows.x64.Debug\ilc-published\
+  crossgen2_publish -> R:\artifacts\bin\crossgen2_publish\x64\Debug\crossgen2.dll
+  Generating native code
+  crossgen2_publish -> R:\artifacts\bin\coreclr\windows.x64.Debug\crossgen2-published\
+  ILAssembler -> R:\artifacts\bin\ILAssembler\Debug\net11.0\ILAssembler.dll
+  ilasm -> R:\artifacts\bin\ilasm\Debug\ilasm.dll
+  Generating native code
+  ilasm -> R:\artifacts\bin\coreclr\windows.x64.Debug\managed-ilasm\
+  ILCompiler -> R:\artifacts\bin\coreclr\windows.x64.Debug\ilc\ilc.dll
+  crossgen2 -> R:\artifacts\bin\coreclr\windows.x64.Debug\crossgen2\crossgen2.dll
+  SuperFileCheck -> R:\artifacts\bin\coreclr\windows.x64.Debug\SuperFileCheck\SuperFileCheck.dll
+  R:\dotnet.cmd R:\artifacts\bin\coreclr\windows.x64.Debug\dotnet-pgo\dotnet-pgo.dll merge -o:R:\artifacts\bin\coreclr\windows.x64.Debug\StandardOptimizationData.mibc -i:R:\artifacts\mibc\windows\x64\data\DotNet_Adhoc.mibc -i:R:\artifacts\mibc\windows\x64\data\DotNet_FirstTimeXP.mibc -i:R:\artifacts\mibc\windows\x64\data\DotNet_FSharp.mibc -i:R:\artifacts\mibc\windows\x64\data\DotNet_HelloWorld.mibc -i:R:\artifacts\mibc\windows\x64\data\DotNet_OrchardCore.mibc -i:R:\artifacts\mibc\windows\x64\data\DotNet_TechEmpower.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_Adhoc\IBCTrace4612.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_FirstTimeXP\IBCTrace9408.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_FSharp\IBCTrace10224.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_FSharp\IBCTrace5812.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace1992.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace5976.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace7888.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace8464.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace8580.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace8612.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace972.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_OrchardCore\IBCTrace9568.mibc -i:R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_TechEmpower\IBCTrace5332.mibc --compressed false
+  R:\.dotnet
+  Opening R:\artifacts\mibc\windows\x64\data\DotNet_Adhoc.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\DotNet_FirstTimeXP.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\DotNet_FSharp.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\DotNet_HelloWorld.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\DotNet_OrchardCore.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\DotNet_TechEmpower.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_Adhoc\IBCTrace4612.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_FirstTimeXP\IBCTrace9408.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_FSharp\IBCTrace10224.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_FSharp\IBCTrace5812.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace1992.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace5976.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace7888.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace8464.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace8580.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace8612.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_HelloWorld\IBCTrace972.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_OrchardCore\IBCTrace9568.mibc
+  Opening R:\artifacts\mibc\windows\x64\data\per-pid\DotNet_TechEmpower\IBCTrace5332.mibc
+  Generated R:\artifacts\bin\coreclr\windows.x64.Debug\StandardOptimizationData.mibc
+  Validated R:\artifacts\bin\coreclr\windows.x64.Debug\StandardOptimizationData.mibc
+  Generating native image of System.Private.CoreLib for windows.x64.Debug. Logging to 
+  R:\artifacts\bin\coreclr\windows.x64.Debug\x64/crossgen2/crossgen2.exe -o:R:\artifacts\bin\coreclr\windows.x64.Debug\System.Private.CoreLib.dll -r:R:\artifacts\bin\coreclr\windows.x64.Debug\IL\*.dll --targetarch:x64 --obj-format:pe --targetos:windows -O --verify-type-and-field-layout --enable-cached-interface-dispatch-support R:\artifacts\bin\coreclr\windows.x64.Debug\IL\System.Private.CoreLib.dll --pdb --pdb-path:R:\artifacts\bin\coreclr\windows.x64.Debug\PDB
+  Emitting R2R PE file: R:\artifacts\bin\coreclr\windows.x64.Debug\System.Private.CoreLib.dll
+  Emitting PDB file: R:\artifacts\bin\coreclr\windows.x64.Debug\PDB\System.Private.CoreLib.ni.pdb
+  Crossgenning of System.Private.CoreLib succeeded.
+  Product binaries are available at R:\artifacts\bin\coreclr\windows.x64.Debug\
+  Microsoft.NETCore.TestHost -> R:\artifacts\packages\Debug\NonShipping\runtime.win-x64.Microsoft.NETCore.TestHost.11.0.0-dev.nupkg
+  Microsoft.NETCore.ILDAsm -> R:\artifacts\packages\Debug\Shipping\runtime.win-x64.Microsoft.NETCore.ILDAsm.11.0.0-dev.nupkg
+  Microsoft.NETCore.ILAsm -> R:\artifacts\packages\Debug\Shipping\runtime.win-x64.Microsoft.NETCore.ILAsm.11.0.0-dev.nupkg
+  Microsoft.NETCore.ILDAsm -> R:\artifacts\packages\Debug\Shipping\Microsoft.NETCore.ILDAsm.11.0.0-dev.nupkg
+  Microsoft.NETCore.ILAsm -> R:\artifacts\packages\Debug\Shipping\Microsoft.NETCore.ILAsm.11.0.0-dev.nupkg
+  Microsoft.NETCore.TestHost -> R:\artifacts\packages\Debug\NonShipping\Microsoft.NETCore.TestHost.11.0.0-dev.nupkg
+  System.Private.CoreLib -> R:\artifacts\bin\coreclr\windows.x64.Debug\aotsdk\System.Private.CoreLib.dll
+  System.Private.TypeLoader -> R:\artifacts\bin\coreclr\windows.x64.Debug\aotsdk\System.Private.TypeLoader.dll
+  System.Private.Reflection.Execution -> R:\artifacts\bin\coreclr\windows.x64.Debug\aotsdk\System.Private.Reflection.Execution.dll
+  System.Private.StackTraceMetadata -> R:\artifacts\bin\coreclr\windows.x64.Debug\aotsdk\System.Private.StackTraceMetadata.dll
+  Test.CoreLib -> R:\artifacts\bin\Test.CoreLib\x64\Debug\Test.CoreLib.dll
+  "R:\src\native\libs\build-native.cmd" x64 Debug outconfig net11.0-windows-Debug-x64 -os windows 
+  'vswhere.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  'vswhere.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  **********************************************************************
+  ** Visual Studio 2026 Developer Command Prompt v18.0
+  ** Copyright (c) 2026 Microsoft Corporation
+  **********************************************************************
+  [vcvarsall.bat] Environment initialized for: 'x64'
+  Commencing build of native components
+  
+  The CMake command line is the same as the last run. Skipping running CMake.
+  [1/5] Building RC object System.Globalization.Native\CMakeFiles\System.Globalization.Native.dir\R_\artifacts\obj\NativeVersion.rc.res
+  [2/5] Building RC object System.IO.Compression.Native\CMakeFiles\System.IO.Compression.Native.dir\R_\artifacts\obj\NativeVersion.rc.res
+  [3/5] Linking C shared library System.Globalization.Native\System.Globalization.Native.dll
+  [4/5] Linking C shared library System.IO.Compression.Native\System.IO.Compression.Native.dll
+  [4/5] Install the project...
+  -- Install configuration: "Debug"
+  -- Up-to-date: R:/artifacts/bin/native/net11.0-windows-Debug-x64/./System.Globalization.Native.lib
+  -- Installing: R:/artifacts/bin/native/net11.0-windows-Debug-x64/./System.Globalization.Native.dll
+  -- Installing: R:/artifacts/bin/native/net11.0-windows-Debug-x64/./System.Globalization.Native.pdb
+  -- Up-to-date: R:/artifacts/bin/native/net11.0-windows-Debug-x64/./System.Globalization.Native-Static.lib
+  -- Up-to-date: R:/artifacts/bin/native/net11.0-windows-Debug-x64/./System.IO.Compression.Native.lib
+  -- Installing: R:/artifacts/bin/native/net11.0-windows-Debug-x64/./System.IO.Compression.Native.dll
+  -- Installing: R:/artifacts/bin/native/net11.0-windows-Debug-x64/./System.IO.Compression.Native.pdb
+  -- Up-to-date: R:/artifacts/bin/native/net11.0-windows-Debug-x64/./System.IO.Compression.Native-Static.lib
+  Done building Native components
+  JSImportGenerator -> R:\artifacts\bin\JSImportGenerator\Debug\netstandard2.0\Microsoft.Interop.JavaScript.JSImportGenerator.dll
+  Microsoft.Extensions.Logging.Generators.Roslyn4.4 -> R:\artifacts\bin\Microsoft.Extensions.Logging.Generators.Roslyn4.4\Debug\netstandard2.0\Microsoft.Extensions.Logging.Generators.dll
+  ComInterfaceGenerator -> R:\artifacts\bin\ComInterfaceGenerator\Debug\netstandard2.0\Microsoft.Interop.ComInterfaceGenerator.dll
+  System.Runtime -> R:\artifacts\bin\System.Runtime\ref\Debug\net11.0\System.Runtime.dll
+  System.Numerics.Vectors -> R:\artifacts\bin\System.Numerics.Vectors\ref\Debug\net11.0\System.Numerics.Vectors.dll
+  System.Memory -> R:\artifacts\bin\System.Memory\ref\Debug\net11.0\System.Memory.dll
+  System.Collections -> R:\artifacts\bin\System.Collections\ref\Debug\net11.0\System.Collections.dll
+  Microsoft.Extensions.Options.SourceGeneration -> R:\artifacts\bin\Microsoft.Extensions.Options.SourceGeneration\Debug\netstandard2.0\Microsoft.Extensions.Options.SourceGeneration.dll
+  System.Text.RegularExpressions.Generator -> R:\artifacts\bin\System.Text.RegularExpressions.Generator\Debug\netstandard2.0\System.Text.RegularExpressions.Generator.dll
+  System.Text.Json.SourceGeneration.Roslyn4.4 -> R:\artifacts\bin\System.Text.Json.SourceGeneration.Roslyn4.4\Debug\netstandard2.0\System.Text.Json.SourceGeneration.dll
+  PlatformDocAnalyzer -> R:\artifacts\bin\PlatformDocAnalyzer\Debug\netstandard2.0\PlatformDocAnalyzer.dll
+  System.Memory -> R:\artifacts\bin\System.Memory\Debug\net11.0\System.Memory.dll
+  System.Collections -> R:\artifacts\bin\System.Collections\Debug\net11.0\System.Collections.dll
+  System.Numerics.Vectors -> R:\artifacts\bin\System.Numerics.Vectors\Debug\net11.0\System.Numerics.Vectors.dll
+  System.Reflection.Primitives -> R:\artifacts\bin\System.Reflection.Primitives\ref\Debug\net11.0\System.Reflection.Primitives.dll
+  System.Threading.Overlapped -> R:\artifacts\bin\System.Threading.Overlapped\ref\Debug\net11.0\System.Threading.Overlapped.dll
+  System.Threading -> R:\artifacts\bin\System.Threading\ref\Debug\net11.0\System.Threading.dll
+  System.Diagnostics.StackTrace -> R:\artifacts\bin\System.Diagnostics.StackTrace\ref\Debug\net11.0\System.Diagnostics.StackTrace.dll
+  Microsoft.Win32.Primitives -> R:\artifacts\bin\Microsoft.Win32.Primitives\ref\Debug\net11.0\Microsoft.Win32.Primitives.dll
+  System.Diagnostics.Tracing -> R:\artifacts\bin\System.Diagnostics.Tracing\ref\Debug\net11.0\System.Diagnostics.Tracing.dll
+  System.Runtime.Intrinsics -> R:\artifacts\bin\System.Runtime.Intrinsics\ref\Debug\net11.0\System.Runtime.Intrinsics.dll
+  System.Threading.ThreadPool -> R:\artifacts\bin\System.Threading.ThreadPool\ref\Debug\net11.0\System.Threading.ThreadPool.dll
+  System.Text.Encoding.Extensions -> R:\artifacts\bin\System.Text.Encoding.Extensions\ref\Debug\net11.0\System.Text.Encoding.Extensions.dll
+  System.Threading.Thread -> R:\artifacts\bin\System.Threading.Thread\ref\Debug\net11.0\System.Threading.Thread.dll
+  System.Runtime.Loader -> R:\artifacts\bin\System.Runtime.Loader\ref\Debug\net11.0\System.Runtime.Loader.dll
+  System.Runtime.InteropServices -> R:\artifacts\bin\System.Runtime.InteropServices\ref\Debug\net11.0\System.Runtime.InteropServices.dll
+  System.Reflection.Emit.ILGeneration -> R:\artifacts\bin\System.Reflection.Emit.ILGeneration\ref\Debug\net11.0\System.Reflection.Emit.ILGeneration.dll
+  System.Reflection.Emit.Lightweight -> R:\artifacts\bin\System.Reflection.Emit.Lightweight\ref\Debug\net11.0\System.Reflection.Emit.Lightweight.dll
+  System.Reflection.Primitives -> R:\artifacts\bin\System.Reflection.Primitives\Debug\net11.0\System.Reflection.Primitives.dll
+  System.Threading.Overlapped -> R:\artifacts\bin\System.Threading.Overlapped\Debug\net11.0\System.Threading.Overlapped.dll
+  System.Private.Uri -> R:\artifacts\bin\System.Private.Uri\Debug\net11.0\System.Private.Uri.dll
+  System.Runtime.Loader -> R:\artifacts\bin\System.Runtime.Loader\Debug\net11.0\System.Runtime.Loader.dll
+  Microsoft.Win32.Primitives -> R:\artifacts\bin\Microsoft.Win32.Primitives\Debug\net11.0\Microsoft.Win32.Primitives.dll
+  System.Reflection.Emit.ILGeneration -> R:\artifacts\bin\System.Reflection.Emit.ILGeneration\Debug\net11.0\System.Reflection.Emit.ILGeneration.dll
+  System.Threading -> R:\artifacts\bin\System.Threading\Debug\net11.0\System.Threading.dll
+  System.Reflection.Emit.Lightweight -> R:\artifacts\bin\System.Reflection.Emit.Lightweight\Debug\net11.0\System.Reflection.Emit.Lightweight.dll
+  System.Runtime.Intrinsics -> R:\artifacts\bin\System.Runtime.Intrinsics\Debug\net11.0\System.Runtime.Intrinsics.dll
+  System.Threading.ThreadPool -> R:\artifacts\bin\System.Threading.ThreadPool\Debug\net11.0\System.Threading.ThreadPool.dll
+  System.Text.Encoding.Extensions -> R:\artifacts\bin\System.Text.Encoding.Extensions\Debug\net11.0\System.Text.Encoding.Extensions.dll
+  System.Diagnostics.Tracing -> R:\artifacts\bin\System.Diagnostics.Tracing\Debug\net11.0\System.Diagnostics.Tracing.dll
+  System.Threading.Thread -> R:\artifacts\bin\System.Threading.Thread\Debug\net11.0\System.Threading.Thread.dll
+  System.Runtime -> R:\artifacts\bin\System.Runtime\Debug\net11.0\System.Runtime.dll
+  System.Runtime.Numerics -> R:\artifacts\bin\System.Runtime.Numerics\ref\Debug\net11.0\System.Runtime.Numerics.dll
+  System.ComponentModel -> R:\artifacts\bin\System.ComponentModel\ref\Debug\net11.0\System.ComponentModel.dll
+  System.Collections.Concurrent -> R:\artifacts\bin\System.Collections.Concurrent\ref\Debug\net11.0\System.Collections.Concurrent.dll
+  System.Collections.NonGeneric -> R:\artifacts\bin\System.Collections.NonGeneric\ref\Debug\net11.0\System.Collections.NonGeneric.dll
+  System.Security.Claims -> R:\artifacts\bin\System.Security.Claims\ref\Debug\net11.0\System.Security.Claims.dll
+  System.ObjectModel -> R:\artifacts\bin\System.ObjectModel\ref\Debug\net11.0\System.ObjectModel.dll
+  System.Collections.NonGeneric -> R:\artifacts\bin\System.Collections.NonGeneric\Debug\net11.0\System.Collections.NonGeneric.dll
+  System.Security.Claims -> R:\artifacts\bin\System.Security.Claims\Debug\net11.0\System.Security.Claims.dll
+  System.Runtime.Numerics -> R:\artifacts\bin\System.Runtime.Numerics\Debug\net11.0\System.Runtime.Numerics.dll
+  System.Collections.Concurrent -> R:\artifacts\bin\System.Collections.Concurrent\Debug\net11.0\System.Collections.Concurrent.dll
+  System.ComponentModel -> R:\artifacts\bin\System.ComponentModel\Debug\net11.0\System.ComponentModel.dll
+  System.ObjectModel -> R:\artifacts\bin\System.ObjectModel\Debug\net11.0\System.ObjectModel.dll
+  System.Runtime.InteropServices -> R:\artifacts\bin\System.Runtime.InteropServices\Debug\net11.0\System.Runtime.InteropServices.dll
+  System.IO.MemoryMappedFiles -> R:\artifacts\bin\System.IO.MemoryMappedFiles\ref\Debug\net11.0\System.IO.MemoryMappedFiles.dll
+  System.Diagnostics.FileVersionInfo -> R:\artifacts\bin\System.Diagnostics.FileVersionInfo\ref\Debug\net11.0\System.Diagnostics.FileVersionInfo.dll
+  System.Formats.Tar -> R:\artifacts\bin\System.Formats.Tar\ref\Debug\net11.0\System.Formats.Tar.dll
+  System.IO.FileSystem.DriveInfo -> R:\artifacts\bin\System.IO.FileSystem.DriveInfo\ref\Debug\net11.0\System.IO.FileSystem.DriveInfo.dll
+  System.Console -> R:\artifacts\bin\System.Console\ref\Debug\net11.0\System.Console.dll
+  System.Security.Principal.Windows -> R:\artifacts\bin\System.Security.Principal.Windows\ref\Debug\net11.0\System.Security.Principal.Windows.dll
+  System.Text.Encoding.CodePages -> R:\artifacts\bin\System.Text.Encoding.CodePages\ref\Debug\net11.0\System.Text.Encoding.CodePages.dll
+  System.ComponentModel.Primitives -> R:\artifacts\bin\System.ComponentModel.Primitives\ref\Debug\net11.0\System.ComponentModel.Primitives.dll
+  System.IO.MemoryMappedFiles -> R:\artifacts\bin\System.IO.MemoryMappedFiles\Debug\net11.0\System.IO.MemoryMappedFiles.dll
+  System.Diagnostics.FileVersionInfo -> R:\artifacts\bin\System.Diagnostics.FileVersionInfo\Debug\net11.0-windows\System.Diagnostics.FileVersionInfo.dll
+  System.IO.MemoryMappedFiles -> R:\artifacts\bin\System.IO.MemoryMappedFiles\Debug\net11.0-windows\System.IO.MemoryMappedFiles.dll
+  System.Net.Primitives -> R:\artifacts\bin\System.Net.Primitives\ref\Debug\net11.0\System.Net.Primitives.dll
+  System.Formats.Asn1 -> R:\artifacts\bin\System.Formats.Asn1\ref\Debug\net11.0\System.Formats.Asn1.dll
+  System.Linq -> R:\artifacts\bin\System.Linq\ref\Debug\net11.0\System.Linq.dll
+  System.ComponentModel.Primitives -> R:\artifacts\bin\System.ComponentModel.Primitives\Debug\net11.0\System.ComponentModel.Primitives.dll
+  System.Formats.Tar -> R:\artifacts\bin\System.Formats.Tar\Debug\net11.0-windows\System.Formats.Tar.dll
+  System.Text.Encoding.CodePages -> R:\artifacts\bin\System.Text.Encoding.CodePages\Debug\net11.0-windows\System.Text.Encoding.CodePages.dll
+  System.IO.FileSystem.Watcher -> R:\artifacts\bin\System.IO.FileSystem.Watcher\ref\Debug\net11.0\System.IO.FileSystem.Watcher.dll
+  System.ComponentModel.EventBasedAsync -> R:\artifacts\bin\System.ComponentModel.EventBasedAsync\ref\Debug\net11.0\System.ComponentModel.EventBasedAsync.dll
+  System.Collections.Specialized -> R:\artifacts\bin\System.Collections.Specialized\ref\Debug\net11.0\System.Collections.Specialized.dll
+  System.Drawing.Primitives -> R:\artifacts\bin\System.Drawing.Primitives\ref\Debug\net11.0\System.Drawing.Primitives.dll
+  System.IO.FileSystem.DriveInfo -> R:\artifacts\bin\System.IO.FileSystem.DriveInfo\Debug\net11.0-windows\System.IO.FileSystem.DriveInfo.dll
+  System.Net.Primitives -> R:\artifacts\bin\System.Net.Primitives\Debug\net11.0-windows\System.Net.Primitives.dll
+  System.Console -> R:\artifacts\bin\System.Console\Debug\net11.0-windows\System.Console.dll
+  System.Linq -> R:\artifacts\bin\System.Linq\Debug\net11.0\System.Linq.dll
+  System.ComponentModel.EventBasedAsync -> R:\artifacts\bin\System.ComponentModel.EventBasedAsync\Debug\net11.0\System.ComponentModel.EventBasedAsync.dll
+  System.Collections.Specialized -> R:\artifacts\bin\System.Collections.Specialized\Debug\net11.0\System.Collections.Specialized.dll
+  System.IO.FileSystem.Watcher -> R:\artifacts\bin\System.IO.FileSystem.Watcher\Debug\net11.0-windows\System.IO.FileSystem.Watcher.dll
+  System.Security.Principal.Windows -> R:\artifacts\bin\System.Security.Principal.Windows\Debug\net11.0-windows\System.Security.Principal.Windows.dll
+  System.Formats.Asn1 -> R:\artifacts\bin\System.Formats.Asn1\Debug\net11.0\System.Formats.Asn1.dll
+  System.Drawing.Primitives -> R:\artifacts\bin\System.Drawing.Primitives\Debug\net11.0-windows\System.Drawing.Primitives.dll
+  System.Net.WebHeaderCollection -> R:\artifacts\bin\System.Net.WebHeaderCollection\ref\Debug\net11.0\System.Net.WebHeaderCollection.dll
+  System.Diagnostics.TraceSource -> R:\artifacts\bin\System.Diagnostics.TraceSource\ref\Debug\net11.0\System.Diagnostics.TraceSource.dll
+  System.Net.Primitives -> R:\artifacts\bin\System.Net.Primitives\Debug\net11.0\System.Net.Primitives.dll
+  System.Security.AccessControl -> R:\artifacts\bin\System.Security.AccessControl\ref\Debug\net11.0\System.Security.AccessControl.dll
+  System.Diagnostics.DiagnosticSource -> R:\artifacts\bin\System.Diagnostics.DiagnosticSource\ref\Debug\net11.0\System.Diagnostics.DiagnosticSource.dll
+  System.Net.WebHeaderCollection -> R:\artifacts\bin\System.Net.WebHeaderCollection\Debug\net11.0\System.Net.WebHeaderCollection.dll
+  System.Collections.Immutable -> R:\artifacts\bin\System.Collections.Immutable\ref\Debug\net11.0\System.Collections.Immutable.dll
+  System.Security.Cryptography -> R:\artifacts\bin\System.Security.Cryptography\ref\Debug\net11.0\System.Security.Cryptography.dll
+  System.Diagnostics.TraceSource -> R:\artifacts\bin\System.Diagnostics.TraceSource\Debug\net11.0\System.Diagnostics.TraceSource.dll
+  System.Security.AccessControl -> R:\artifacts\bin\System.Security.AccessControl\Debug\net11.0-windows\System.Security.AccessControl.dll
+  System.Diagnostics.DiagnosticSource -> R:\artifacts\bin\System.Diagnostics.DiagnosticSource\Debug\net11.0\System.Diagnostics.DiagnosticSource.dll
+  System.Collections.Immutable -> R:\artifacts\bin\System.Collections.Immutable\Debug\net11.0\System.Collections.Immutable.dll
+  System.IO.Pipes -> R:\artifacts\bin\System.IO.Pipes\ref\Debug\net11.0\System.IO.Pipes.dll
+  System.Net.NameResolution -> R:\artifacts\bin\System.Net.NameResolution\ref\Debug\net11.0\System.Net.NameResolution.dll
+  System.IO.FileSystem.AccessControl -> R:\artifacts\bin\System.IO.FileSystem.AccessControl\ref\Debug\net11.0\System.IO.FileSystem.AccessControl.dll
+  System.Security.Cryptography -> R:\artifacts\bin\System.Security.Cryptography\Debug\net11.0\System.Security.Cryptography.dll
+  Microsoft.Win32.Registry -> R:\artifacts\bin\Microsoft.Win32.Registry\ref\Debug\net11.0\Microsoft.Win32.Registry.dll
+  System.IO.Compression -> R:\artifacts\bin\System.IO.Compression\ref\Debug\net11.0\System.IO.Compression.dll
+  System.IO.FileSystem.AccessControl -> R:\artifacts\bin\System.IO.FileSystem.AccessControl\Debug\net11.0-windows\System.IO.FileSystem.AccessControl.dll
+  Microsoft.Win32.Registry -> R:\artifacts\bin\Microsoft.Win32.Registry\Debug\net11.0-windows\Microsoft.Win32.Registry.dll
+  System.Security.Cryptography -> R:\artifacts\bin\System.Security.Cryptography\Debug\net11.0-windows\System.Security.Cryptography.dll
+  System.Threading.AccessControl -> R:\artifacts\bin\System.Threading.AccessControl\ref\Debug\net11.0\System.Threading.AccessControl.dll
+  System.IO.IsolatedStorage -> R:\artifacts\bin\System.IO.IsolatedStorage\ref\Debug\net11.0\System.IO.IsolatedStorage.dll
+  System.IO.Compression -> R:\artifacts\bin\System.IO.Compression\Debug\net11.0\System.IO.Compression.dll
+  System.IO.Pipes -> R:\artifacts\bin\System.IO.Pipes\Debug\net11.0-windows\System.IO.Pipes.dll
+  System.Net.NameResolution -> R:\artifacts\bin\System.Net.NameResolution\Debug\net11.0-windows\System.Net.NameResolution.dll
+  System.Net.Sockets -> R:\artifacts\bin\System.Net.Sockets\ref\Debug\net11.0\System.Net.Sockets.dll
+  System.Threading.Channels -> R:\artifacts\bin\System.Threading.Channels\ref\Debug\net11.0\System.Threading.Channels.dll
+  System.IO.Compression -> R:\artifacts\bin\System.IO.Compression\Debug\net11.0-windows\System.IO.Compression.dll
+  System.Threading.Channels -> R:\artifacts\bin\System.Threading.Channels\Debug\net11.0\System.Threading.Channels.dll
+  System.IO.IsolatedStorage -> R:\artifacts\bin\System.IO.IsolatedStorage\Debug\net11.0-windows\System.IO.IsolatedStorage.dll
+  System.Threading.AccessControl -> R:\artifacts\bin\System.Threading.AccessControl\Debug\net11.0-windows\System.Threading.AccessControl.dll
+  System.Net.Sockets -> R:\artifacts\bin\System.Net.Sockets\Debug\net11.0-windows\System.Net.Sockets.dll
+  System.Net.WebSockets -> R:\artifacts\bin\System.Net.WebSockets\ref\Debug\net11.0\System.Net.WebSockets.dll
+  System.IO.Compression.Brotli -> R:\artifacts\bin\System.IO.Compression.Brotli\ref\Debug\net11.0\System.IO.Compression.Brotli.dll
+  System.IO.Pipes.AccessControl -> R:\artifacts\bin\System.IO.Pipes.AccessControl\ref\Debug\net11.0\System.IO.Pipes.AccessControl.dll
+  System.Reflection.Metadata -> R:\artifacts\bin\System.Reflection.Metadata\ref\Debug\net11.0\System.Reflection.Metadata.dll
+  System.IO.Compression.Brotli -> R:\artifacts\bin\System.IO.Compression.Brotli\Debug\net11.0-windows\System.IO.Compression.Brotli.dll
+  System.IO.Compression.ZipFile -> R:\artifacts\bin\System.IO.Compression.ZipFile\ref\Debug\net11.0\System.IO.Compression.ZipFile.dll
+  System.Net.Ping -> R:\artifacts\bin\System.Net.Ping\ref\Debug\net11.0\System.Net.Ping.dll
+  System.Net.NetworkInformation -> R:\artifacts\bin\System.Net.NetworkInformation\ref\Debug\net11.0\System.Net.NetworkInformation.dll
+  System.Diagnostics.Process -> R:\artifacts\bin\System.Diagnostics.Process\ref\Debug\net11.0\System.Diagnostics.Process.dll
+  System.IO.Pipes.AccessControl -> R:\artifacts\bin\System.IO.Pipes.AccessControl\Debug\net11.0-windows\System.IO.Pipes.AccessControl.dll
+  System.Net.WebSockets -> R:\artifacts\bin\System.Net.WebSockets\Debug\net11.0-windows\System.Net.WebSockets.dll
+  System.Net.Security -> R:\artifacts\bin\System.Net.Security\ref\Debug\net11.0\System.Net.Security.dll
+  System.Reflection.Metadata -> R:\artifacts\bin\System.Reflection.Metadata\Debug\net11.0\System.Reflection.Metadata.dll
+  System.IO.Compression.ZipFile -> R:\artifacts\bin\System.IO.Compression.ZipFile\Debug\net11.0-windows\System.IO.Compression.ZipFile.dll
+  System.Net.Ping -> R:\artifacts\bin\System.Net.Ping\Debug\net11.0-windows\System.Net.Ping.dll
+  System.Net.NetworkInformation -> R:\artifacts\bin\System.Net.NetworkInformation\Debug\net11.0-windows\System.Net.NetworkInformation.dll
+  System.Reflection.Emit -> R:\artifacts\bin\System.Reflection.Emit\ref\Debug\net11.0\System.Reflection.Emit.dll
+  System.Net.Security -> R:\artifacts\bin\System.Net.Security\Debug\net11.0-windows\System.Net.Security.dll
+  System.Diagnostics.Process -> R:\artifacts\bin\System.Diagnostics.Process\Debug\net11.0-windows\System.Diagnostics.Process.dll
+  System.Net.Quic -> R:\artifacts\bin\System.Net.Quic\ref\Debug\net11.0\System.Net.Quic.dll
+  System.Reflection.Emit -> R:\artifacts\bin\System.Reflection.Emit\Debug\net11.0\System.Reflection.Emit.dll
+  System.Net.Quic -> R:\artifacts\bin\System.Net.Quic\Debug\net11.0-windows\System.Net.Quic.dll
+  System.Text.RegularExpressions -> R:\artifacts\bin\System.Text.RegularExpressions\ref\Debug\net11.0\System.Text.RegularExpressions.dll
+  System.Linq.Expressions -> R:\artifacts\bin\System.Linq.Expressions\ref\Debug\net11.0\System.Linq.Expressions.dll
+  System.Net.Http -> R:\artifacts\bin\System.Net.Http\ref\Debug\net11.0\System.Net.Http.dll
+  System.Text.RegularExpressions -> R:\artifacts\bin\System.Text.RegularExpressions\Debug\net11.0\System.Text.RegularExpressions.dll
+  System.Linq.Expressions -> R:\artifacts\bin\System.Linq.Expressions\Debug\net11.0\System.Linq.Expressions.dll
+  System.Net.Http -> R:\artifacts\bin\System.Net.Http\Debug\net11.0-windows\System.Net.Http.dll
+  Microsoft.CSharp -> R:\artifacts\bin\Microsoft.CSharp\ref\Debug\net11.0\Microsoft.CSharp.dll
+  Microsoft.VisualBasic.Core -> R:\artifacts\bin\Microsoft.VisualBasic.Core\ref\Debug\net11.0\Microsoft.VisualBasic.Core.dll
+  System.Net.Requests -> R:\artifacts\bin\System.Net.Requests\ref\Debug\net11.0\System.Net.Requests.dll
+  Microsoft.VisualBasic.Core -> R:\artifacts\bin\Microsoft.VisualBasic.Core\Debug\net11.0-windows\Microsoft.VisualBasic.Core.dll
+  System.IO.Compression.Brotli -> R:\artifacts\bin\System.IO.Compression.Brotli\Debug\net11.0\System.IO.Compression.Brotli.dll
+  System.Console -> R:\artifacts\bin\System.Console\Debug\net11.0\System.Console.dll
+  System.Security.Principal.Windows -> R:\artifacts\bin\System.Security.Principal.Windows\Debug\net11.0\System.Security.Principal.Windows.dll
+  System.Net.Requests -> R:\artifacts\bin\System.Net.Requests\Debug\net11.0-windows\System.Net.Requests.dll
+  Microsoft.CSharp -> R:\artifacts\bin\Microsoft.CSharp\Debug\net11.0-windows\Microsoft.CSharp.dll
+  System.Net.Mail -> R:\artifacts\bin\System.Net.Mail\ref\Debug\net11.0\System.Net.Mail.dll
+  System.Net.WebSockets -> R:\artifacts\bin\System.Net.WebSockets\Debug\net11.0\System.Net.WebSockets.dll
+  System.Net.Mail -> R:\artifacts\bin\System.Net.Mail\Debug\net11.0-windows\System.Net.Mail.dll
+  System.Private.Xml -> R:\artifacts\bin\System.Private.Xml\Debug\net11.0-windows\System.Private.Xml.dll
+  System.Net.NameResolution -> R:\artifacts\bin\System.Net.NameResolution\Debug\net11.0\System.Net.NameResolution.dll
+  System.Net.Sockets -> R:\artifacts\bin\System.Net.Sockets\Debug\net11.0\System.Net.Sockets.dll
+  System.Net.NetworkInformation -> R:\artifacts\bin\System.Net.NetworkInformation\Debug\net11.0\System.Net.NetworkInformation.dll
+  System.Net.Security -> R:\artifacts\bin\System.Net.Security\Debug\net11.0\System.Net.Security.dll
+  System.Net.Quic -> R:\artifacts\bin\System.Net.Quic\Debug\net11.0\System.Net.Quic.dll
+  System.Net.Http -> R:\artifacts\bin\System.Net.Http\Debug\net11.0\System.Net.Http.dll
+  System.Private.Xml -> R:\artifacts\bin\System.Private.Xml\Debug\net11.0\System.Private.Xml.dll
+  System.Net.WebSockets.Client -> R:\artifacts\bin\System.Net.WebSockets.Client\ref\Debug\net11.0\System.Net.WebSockets.Client.dll
+  System.Xml.ReaderWriter -> R:\artifacts\bin\System.Xml.ReaderWriter\ref\Debug\net11.0\System.Xml.ReaderWriter.dll
+  System.Net.WebSockets.Client -> R:\artifacts\bin\System.Net.WebSockets.Client\Debug\net11.0\System.Net.WebSockets.Client.dll
+  System.Xml.ReaderWriter -> R:\artifacts\bin\System.Xml.ReaderWriter\Debug\net11.0\System.Xml.ReaderWriter.dll
+  System.Net.HttpListener -> R:\artifacts\bin\System.Net.HttpListener\ref\Debug\net11.0\System.Net.HttpListener.dll
+  System.Transactions.Local -> R:\artifacts\bin\System.Transactions.Local\ref\Debug\net11.0\System.Transactions.Local.dll
+  System.Net.HttpListener -> R:\artifacts\bin\System.Net.HttpListener\Debug\net11.0-windows\System.Net.HttpListener.dll
+  System.Transactions.Local -> R:\artifacts\bin\System.Transactions.Local\Debug\net11.0-windows\System.Transactions.Local.dll
+  System.Threading.Tasks.Dataflow -> R:\artifacts\bin\System.Threading.Tasks.Dataflow\ref\Debug\net11.0\System.Threading.Tasks.Dataflow.dll
+  System.IO.Pipelines -> R:\artifacts\bin\System.IO.Pipelines\ref\Debug\net11.0\System.IO.Pipelines.dll
+  System.Text.Encodings.Web -> R:\artifacts\bin\System.Text.Encodings.Web\ref\Debug\net11.0\System.Text.Encodings.Web.dll
+  System.Net.WebProxy -> R:\artifacts\bin\System.Net.WebProxy\ref\Debug\net11.0\System.Net.WebProxy.dll
+  Microsoft.Extensions.Primitives -> R:\artifacts\bin\Microsoft.Extensions.Primitives\ref\Debug\net11.0\Microsoft.Extensions.Primitives.dll
+  System.Net.ServerSentEvents -> R:\artifacts\bin\System.Net.ServerSentEvents\ref\Debug\net11.0\System.Net.ServerSentEvents.dll
+  System.Runtime.InteropServices.JavaScript -> R:\artifacts\bin\System.Runtime.InteropServices.JavaScript\ref\Debug\net11.0\System.Runtime.InteropServices.JavaScript.dll
+  System.Threading.Tasks.Dataflow -> R:\artifacts\bin\System.Threading.Tasks.Dataflow\Debug\net11.0\System.Threading.Tasks.Dataflow.dll
+  System.Linq.AsyncEnumerable -> R:\artifacts\bin\System.Linq.AsyncEnumerable\ref\Debug\net11.0\System.Linq.AsyncEnumerable.dll
+  System.Runtime.Serialization.Formatters -> R:\artifacts\bin\System.Runtime.Serialization.Formatters\ref\Debug\net11.0\System.Runtime.Serialization.Formatters.dll
+  System.Text.Encodings.Web -> R:\artifacts\bin\System.Text.Encodings.Web\Debug\net11.0\System.Text.Encodings.Web.dll
+  System.IO.Pipelines -> R:\artifacts\bin\System.IO.Pipelines\Debug\net11.0\System.IO.Pipelines.dll
+  System.Runtime.InteropServices.JavaScript -> R:\artifacts\bin\System.Runtime.InteropServices.JavaScript\Debug\net11.0\System.Runtime.InteropServices.JavaScript.dll
+  System.Net.WebProxy -> R:\artifacts\bin\System.Net.WebProxy\Debug\net11.0\System.Net.WebProxy.dll
+  Microsoft.Extensions.Primitives -> R:\artifacts\bin\Microsoft.Extensions.Primitives\Debug\net11.0\Microsoft.Extensions.Primitives.dll
+  System.Diagnostics.StackTrace -> R:\artifacts\bin\System.Diagnostics.StackTrace\Debug\net11.0\System.Diagnostics.StackTrace.dll
+  System.Net.ServerSentEvents -> R:\artifacts\bin\System.Net.ServerSentEvents\Debug\net11.0\System.Net.ServerSentEvents.dll
+  System.Web.HttpUtility -> R:\artifacts\bin\System.Web.HttpUtility\ref\Debug\net11.0\System.Web.HttpUtility.dll
+  Microsoft.Extensions.DependencyInjection.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.DependencyInjection.Abstractions\ref\Debug\net11.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+  Microsoft.Extensions.FileProviders.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.FileProviders.Abstractions\ref\Debug\net11.0\Microsoft.Extensions.FileProviders.Abstractions.dll
+  Microsoft.Extensions.Configuration.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.Configuration.Abstractions\ref\Debug\net11.0\Microsoft.Extensions.Configuration.Abstractions.dll
+  System.Text.Json.SourceGeneration.Roslyn4.0 -> R:\artifacts\bin\System.Text.Json.SourceGeneration.Roslyn4.0\Debug\netstandard2.0\System.Text.Json.SourceGeneration.dll
+  System.Text.Json.SourceGeneration.Roslyn3.11 -> R:\artifacts\bin\System.Text.Json.SourceGeneration.Roslyn3.11\Debug\netstandard2.0\System.Text.Json.SourceGeneration.dll
+  Microsoft.Extensions.Caching.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.Caching.Abstractions\ref\Debug\net11.0\Microsoft.Extensions.Caching.Abstractions.dll
+  Microsoft.Extensions.FileProviders.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.FileProviders.Abstractions\Debug\net11.0\Microsoft.Extensions.FileProviders.Abstractions.dll
+  Microsoft.Extensions.Configuration.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.Configuration.Abstractions\Debug\net11.0\Microsoft.Extensions.Configuration.Abstractions.dll
+  System.Linq.AsyncEnumerable -> R:\artifacts\bin\System.Linq.AsyncEnumerable\Debug\net11.0\System.Linq.AsyncEnumerable.dll
+  System.Text.Json.SourceGeneration.Roslyn4.4 -> R:\artifacts\bin\System.Text.Json.SourceGeneration.Roslyn4.4\Debug\net11.0\System.Text.Json.SourceGeneration.dll
+  Microsoft.Extensions.Caching.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.Caching.Abstractions\Debug\net11.0\Microsoft.Extensions.Caching.Abstractions.dll
+  Microsoft.Extensions.DependencyInjection.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.DependencyInjection.Abstractions\Debug\net11.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+  System.Runtime.Serialization.Formatters -> R:\artifacts\bin\System.Runtime.Serialization.Formatters\Debug\net11.0\System.Runtime.Serialization.Formatters.dll
+  Microsoft.Extensions.Logging.Generators.Roslyn4.0 -> R:\artifacts\bin\Microsoft.Extensions.Logging.Generators.Roslyn4.0\Debug\netstandard2.0\Microsoft.Extensions.Logging.Generators.dll
+  Microsoft.Extensions.Logging.Generators.Roslyn3.11 -> R:\artifacts\bin\Microsoft.Extensions.Logging.Generators.Roslyn3.11\Debug\netstandard2.0\Microsoft.Extensions.Logging.Generators.dll
+  System.Text.Json -> R:\artifacts\bin\System.Text.Json\ref\Debug\net11.0\System.Text.Json.dll
+  System.Web.HttpUtility -> R:\artifacts\bin\System.Web.HttpUtility\Debug\net11.0\System.Web.HttpUtility.dll
+  System.Text.Json -> R:\artifacts\bin\System.Text.Json\Debug\net11.0\System.Text.Json.dll
+  Microsoft.Extensions.Logging.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.Logging.Abstractions\ref\Debug\net11.0\Microsoft.Extensions.Logging.Abstractions.dll
+  System.Resources.Writer -> R:\artifacts\bin\System.Resources.Writer\ref\Debug\net11.0\System.Resources.Writer.dll
+  System.Net.Http.Json -> R:\artifacts\bin\System.Net.Http.Json\ref\Debug\net11.0\System.Net.Http.Json.dll
+  System.Net.Requests -> R:\artifacts\bin\System.Net.Requests\Debug\net11.0\System.Net.Requests.dll
+  System.Private.Xml.Linq -> R:\artifacts\bin\System.Private.Xml.Linq\Debug\net11.0\System.Private.Xml.Linq.dll
+  Microsoft.Extensions.Logging.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.Logging.Abstractions\Debug\net11.0\Microsoft.Extensions.Logging.Abstractions.dll
+  System.Net.WebClient -> R:\artifacts\bin\System.Net.WebClient\ref\Debug\net11.0\System.Net.WebClient.dll
+  System.Resources.Writer -> R:\artifacts\bin\System.Resources.Writer\Debug\net11.0\System.Resources.Writer.dll
+  System.Net.Http.Json -> R:\artifacts\bin\System.Net.Http.Json\Debug\net11.0\System.Net.Http.Json.dll
+  System.Net.WebClient -> R:\artifacts\bin\System.Net.WebClient\Debug\net11.0\System.Net.WebClient.dll
+  System.Xml.XDocument -> R:\artifacts\bin\System.Xml.XDocument\ref\Debug\net11.0\System.Xml.XDocument.dll
+  System.Xml.XDocument -> R:\artifacts\bin\System.Xml.XDocument\Debug\net11.0\System.Xml.XDocument.dll
+  System.Drawing.Primitives -> R:\artifacts\bin\System.Drawing.Primitives\Debug\net11.0\System.Drawing.Primitives.dll
+  System.ComponentModel.TypeConverter -> R:\artifacts\bin\System.ComponentModel.TypeConverter\ref\Debug\net11.0\System.ComponentModel.TypeConverter.dll
+  System.ComponentModel.TypeConverter -> R:\artifacts\bin\System.ComponentModel.TypeConverter\Debug\net11.0\System.ComponentModel.TypeConverter.dll
+  System.ComponentModel.Annotations -> R:\artifacts\bin\System.ComponentModel.Annotations\ref\Debug\net11.0\System.ComponentModel.Annotations.dll
+  System.ComponentModel.Annotations -> R:\artifacts\bin\System.ComponentModel.Annotations\Debug\net11.0\System.ComponentModel.Annotations.dll
+  Microsoft.Extensions.Options -> R:\artifacts\bin\Microsoft.Extensions.Options\ref\Debug\net11.0\Microsoft.Extensions.Options.dll
+  Microsoft.Extensions.Options -> R:\artifacts\bin\Microsoft.Extensions.Options\Debug\net11.0\Microsoft.Extensions.Options.dll
+  Microsoft.Extensions.Diagnostics.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.Diagnostics.Abstractions\ref\Debug\net11.0\Microsoft.Extensions.Diagnostics.Abstractions.dll
+  Microsoft.Extensions.Diagnostics.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.Diagnostics.Abstractions\Debug\net11.0\Microsoft.Extensions.Diagnostics.Abstractions.dll
+  Microsoft.Extensions.Hosting.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.Hosting.Abstractions\ref\Debug\net11.0\Microsoft.Extensions.Hosting.Abstractions.dll
+  Microsoft.Extensions.Hosting.Abstractions -> R:\artifacts\bin\Microsoft.Extensions.Hosting.Abstractions\Debug\net11.0\Microsoft.Extensions.Hosting.Abstractions.dll
+  System.IO.FileSystem.Primitives -> R:\artifacts\bin\System.IO.FileSystem.Primitives\Debug\net11.0-windows\System.IO.FileSystem.Primitives.dll
+  System.Globalization -> R:\artifacts\bin\System.Globalization\Debug\net11.0-windows\System.Globalization.dll
+  System.Reflection.Extensions -> R:\artifacts\bin\System.Reflection.Extensions\Debug\net11.0-windows\System.Reflection.Extensions.dll
+  System.Reflection.TypeExtensions -> R:\artifacts\bin\System.Reflection.TypeExtensions\ref\Debug\net11.0\System.Reflection.TypeExtensions.dll
+  System.Diagnostics.Tools -> R:\artifacts\bin\System.Diagnostics.Tools\Debug\net11.0-windows\System.Diagnostics.Tools.dll
+  System.Runtime.InteropServices.RuntimeInformation -> R:\artifacts\bin\System.Runtime.InteropServices.RuntimeInformation\Debug\net11.0-windows\System.Runtime.InteropServices.RuntimeInformation.dll
+  System.IO -> R:\artifacts\bin\System.IO\Debug\net11.0-windows\System.IO.dll
+  System.Security.Principal -> R:\artifacts\bin\System.Security.Principal\Debug\net11.0-windows\System.Security.Principal.dll
+  System.Resources.ResourceManager -> R:\artifacts\bin\System.Resources.ResourceManager\Debug\net11.0-windows\System.Resources.ResourceManager.dll
+  System.Runtime.Extensions -> R:\artifacts\bin\System.Runtime.Extensions\Debug\net11.0-windows\System.Runtime.Extensions.dll
+  System.Security.Cryptography.OpenSsl -> R:\artifacts\bin\System.Security.Cryptography.OpenSsl\Debug\net11.0-windows\System.Security.Cryptography.OpenSsl.dll
+  System.Security.Cryptography.Cng -> R:\artifacts\bin\System.Security.Cryptography.Cng\Debug\net11.0-windows\System.Security.Cryptography.Cng.dll
+  System.Xml.XmlDocument -> R:\artifacts\bin\System.Xml.XmlDocument\Debug\net11.0-windows\System.Xml.XmlDocument.dll
+  System.Globalization.Calendars -> R:\artifacts\bin\System.Globalization.Calendars\Debug\net11.0-windows\System.Globalization.Calendars.dll
+  System.Diagnostics.Contracts -> R:\artifacts\bin\System.Diagnostics.Contracts\ref\Debug\net11.0\System.Diagnostics.Contracts.dll
+  System.Runtime.Serialization.Primitives -> R:\artifacts\bin\System.Runtime.Serialization.Primitives\ref\Debug\net11.0\System.Runtime.Serialization.Primitives.dll
+  System.AppContext -> R:\artifacts\bin\System.AppContext\Debug\net11.0-windows\System.AppContext.dll
+  System.Threading.Tasks -> R:\artifacts\bin\System.Threading.Tasks\Debug\net11.0-windows\System.Threading.Tasks.dll
+  System.Resources.Reader -> R:\artifacts\bin\System.Resources.Reader\Debug\net11.0-windows\System.Resources.Reader.dll
+  System.Reflection -> R:\artifacts\bin\System.Reflection\Debug\net11.0-windows\System.Reflection.dll
+  System.Diagnostics.EventLog -> R:\artifacts\bin\System.Diagnostics.EventLog\stub\Debug\net11.0\System.Diagnostics.EventLog.dll
+  System.Diagnostics.Debug -> R:\artifacts\bin\System.Diagnostics.Debug\Debug\net11.0-windows\System.Diagnostics.Debug.dll
+  System.Runtime.CompilerServices.Unsafe -> R:\artifacts\bin\System.Runtime.CompilerServices.Unsafe\Debug\net11.0-windows\System.Runtime.CompilerServices.Unsafe.dll
+  System.Diagnostics.PerformanceCounter -> R:\artifacts\bin\System.Diagnostics.PerformanceCounter\stub\Debug\net11.0\System.Diagnostics.PerformanceCounter.dll
+  System.ValueTuple -> R:\artifacts\bin\System.ValueTuple\Debug\net11.0-windows\System.ValueTuple.dll
+  System.Configuration.ConfigurationManager -> R:\artifacts\bin\System.Configuration.ConfigurationManager\stub\Debug\net11.0\System.Configuration.ConfigurationManager.dll
+  Microsoft.VisualBasic -> R:\artifacts\bin\Microsoft.VisualBasic\Debug\net11.0-windows\Microsoft.VisualBasic.dll
+  System.Linq.Queryable -> R:\artifacts\bin\System.Linq.Queryable\ref\Debug\net11.0\System.Linq.Queryable.dll
+  System.Globalization.Extensions -> R:\artifacts\bin\System.Globalization.Extensions\Debug\net11.0-windows\System.Globalization.Extensions.dll
+  System.Data.SqlClient -> R:\artifacts\bin\System.Data.SqlClient\stub\Debug\net11.0\System.Data.SqlClient.dll
+  System.Data.Odbc -> R:\artifacts\bin\System.Data.Odbc\stub\Debug\net11.0\System.Data.Odbc.dll
+  System.Security.Permissions -> R:\artifacts\bin\System.Security.Permissions\stub\Debug\net11.0\System.Security.Permissions.dll
+  System.Buffers -> R:\artifacts\bin\System.Buffers\Debug\net11.0-windows\System.Buffers.dll
+  System.ServiceProcess.ServiceController -> R:\artifacts\bin\System.ServiceProcess.ServiceController\stub\Debug\net11.0\System.ServiceProcess.ServiceController.dll
+  System.Threading.Tasks.Extensions -> R:\artifacts\bin\System.Threading.Tasks.Extensions\Debug\net11.0-windows\System.Threading.Tasks.Extensions.dll
+  System.Dynamic.Runtime -> R:\artifacts\bin\System.Dynamic.Runtime\Debug\net11.0-windows\System.Dynamic.Runtime.dll
+  System.Xml.XmlSerializer -> R:\artifacts\bin\System.Xml.XmlSerializer\ref\Debug\net11.0\System.Xml.XmlSerializer.dll
+  System.Security.Cryptography.ProtectedData -> R:\artifacts\bin\System.Security.Cryptography.ProtectedData\stub\Debug\net11.0\System.Security.Cryptography.ProtectedData.dll
+  System.Security.Cryptography.Xml -> R:\artifacts\bin\System.Security.Cryptography.Xml\stub\Debug\net11.0\System.Security.Cryptography.Xml.dll
+  System.Runtime.Serialization.Schema -> R:\artifacts\bin\System.Runtime.Serialization.Schema\stub\Debug\net11.0\System.Runtime.Serialization.Schema.dll
+  System.Net.ServicePoint -> R:\artifacts\bin\System.Net.ServicePoint\Debug\net11.0-windows\System.Net.ServicePoint.dll
+  System.Security.Cryptography.Csp -> R:\artifacts\bin\System.Security.Cryptography.Csp\Debug\net11.0-windows\System.Security.Cryptography.Csp.dll
+  System.Threading.Timer -> R:\artifacts\bin\System.Threading.Timer\Debug\net11.0-windows\System.Threading.Timer.dll
+  System.IO.FileSystem -> R:\artifacts\bin\System.IO.FileSystem\Debug\net11.0-windows\System.IO.FileSystem.dll
+  System.Security.Cryptography.Primitives -> R:\artifacts\bin\System.Security.Cryptography.Primitives\Debug\net11.0-windows\System.Security.Cryptography.Primitives.dll
+  System.ServiceModel.Syndication -> R:\artifacts\bin\System.ServiceModel.Syndication\stub\Debug\net11.0\System.ServiceModel.Syndication.dll
+  System.IO.UnmanagedMemoryStream -> R:\artifacts\bin\System.IO.UnmanagedMemoryStream\Debug\net11.0-windows\System.IO.UnmanagedMemoryStream.dll
+  System.Windows.Extensions -> R:\artifacts\bin\System.Windows.Extensions\stub\Debug\net11.0\System.Windows.Extensions.dll
+  System.Security.SecureString -> R:\artifacts\bin\System.Security.SecureString\Debug\net11.0-windows\System.Security.SecureString.dll
+  System.Numerics -> R:\artifacts\bin\System.Numerics\Debug\net11.0-windows\System.Numerics.dll
+  System.Security.Cryptography.Encoding -> R:\artifacts\bin\System.Security.Cryptography.Encoding\Debug\net11.0-windows\System.Security.Cryptography.Encoding.dll
+  System.Text.Encoding -> R:\artifacts\bin\System.Text.Encoding\Debug\net11.0-windows\System.Text.Encoding.dll
+  System.Web -> R:\artifacts\bin\System.Web\Debug\net11.0-windows\System.Web.dll
+  System.IO.Packaging -> R:\artifacts\bin\System.IO.Packaging\stub\Debug\net11.0\System.IO.Packaging.dll
+  Microsoft.Win32.SystemEvents -> R:\artifacts\bin\Microsoft.Win32.SystemEvents\stub\Debug\net11.0\Microsoft.Win32.SystemEvents.dll
+  System.Configuration -> R:\artifacts\bin\System.Configuration\Debug\net11.0-windows\System.Configuration.dll
+  System.Runtime.Handles -> R:\artifacts\bin\System.Runtime.Handles\Debug\net11.0-windows\System.Runtime.Handles.dll
+  System.IO.Compression.FileSystem -> R:\artifacts\bin\System.IO.Compression.FileSystem\Debug\net11.0-windows\System.IO.Compression.FileSystem.dll
+  System.Security.Cryptography.Algorithms -> R:\artifacts\bin\System.Security.Cryptography.Algorithms\Debug\net11.0-windows\System.Security.Cryptography.Algorithms.dll
+  System.Security.Cryptography.Pkcs -> R:\artifacts\bin\System.Security.Cryptography.Pkcs\stub\Debug\net11.0\System.Security.Cryptography.Pkcs.dll
+  System.Transactions -> R:\artifacts\bin\System.Transactions\Debug\net11.0-windows\System.Transactions.dll
+  System.ServiceProcess -> R:\artifacts\bin\System.ServiceProcess\Debug\net11.0-windows\System.ServiceProcess.dll
+  System.CodeDom -> R:\artifacts\bin\System.CodeDom\stub\Debug\net11.0\System.CodeDom.dll
+  WindowsBase -> R:\artifacts\bin\WindowsBase\Debug\net11.0-windows\WindowsBase.dll
+  System.Drawing.Common -> R:\artifacts\bin\System.Drawing.Common\stub\Debug\net11.0\System.Drawing.Common.dll
+  System.Runtime.Serialization.Primitives -> R:\artifacts\bin\System.Runtime.Serialization.Primitives\Debug\net11.0\System.Runtime.Serialization.Primitives.dll
+  System.Security -> R:\artifacts\bin\System.Security\Debug\net11.0-windows\System.Security.dll
+  System.IO.Ports -> R:\artifacts\bin\System.IO.Ports\stub\Debug\net11.0\System.IO.Ports.dll
+  System.Reflection.TypeExtensions -> R:\artifacts\bin\System.Reflection.TypeExtensions\Debug\net11.0\System.Reflection.TypeExtensions.dll
+  System.Windows -> R:\artifacts\bin\System.Windows\Debug\net11.0-windows\System.Windows.dll
+  System.Net -> R:\artifacts\bin\System.Net\Debug\net11.0-windows\System.Net.dll
+  System.ComponentModel.DataAnnotations -> R:\artifacts\bin\System.ComponentModel.DataAnnotations\Debug\net11.0-windows\System.ComponentModel.DataAnnotations.dll
+  System.Data.OleDb -> R:\artifacts\bin\System.Data.OleDb\stub\Debug\net11.0\System.Data.OleDb.dll
+  System.Security.Cryptography.X509Certificates -> R:\artifacts\bin\System.Security.Cryptography.X509Certificates\Debug\net11.0-windows\System.Security.Cryptography.X509Certificates.dll
+  System.Diagnostics.Contracts -> R:\artifacts\bin\System.Diagnostics.Contracts\Debug\net11.0\System.Diagnostics.Contracts.dll
+  System.Drawing -> R:\artifacts\bin\System.Drawing\Debug\net11.0-windows\System.Drawing.dll
+  System.Xml.XmlSerializer -> R:\artifacts\bin\System.Xml.XmlSerializer\Debug\net11.0\System.Xml.XmlSerializer.dll
+  System.Reflection.DispatchProxy -> R:\artifacts\bin\System.Reflection.DispatchProxy\ref\Debug\net11.0\System.Reflection.DispatchProxy.dll
+  System.Runtime.CompilerServices.VisualC -> R:\artifacts\bin\System.Runtime.CompilerServices.VisualC\ref\Debug\net11.0\System.Runtime.CompilerServices.VisualC.dll
+  System.Xml.XPath -> R:\artifacts\bin\System.Xml.XPath\ref\Debug\net11.0\System.Xml.XPath.dll
+  System.Linq.Parallel -> R:\artifacts\bin\System.Linq.Parallel\ref\Debug\net11.0\System.Linq.Parallel.dll
+  System.Threading.Tasks.Parallel -> R:\artifacts\bin\System.Threading.Tasks.Parallel\ref\Debug\net11.0\System.Threading.Tasks.Parallel.dll
+  System.Xml.XPath.XDocument -> R:\artifacts\bin\System.Xml.XPath.XDocument\ref\Debug\net11.0\System.Xml.XPath.XDocument.dll
+  System.Xml.XPath -> R:\artifacts\bin\System.Xml.XPath\Debug\net11.0\System.Xml.XPath.dll
+  System.Runtime.CompilerServices.VisualC -> R:\artifacts\bin\System.Runtime.CompilerServices.VisualC\Debug\net11.0\System.Runtime.CompilerServices.VisualC.dll
+  System.Linq.Queryable -> R:\artifacts\bin\System.Linq.Queryable\Debug\net11.0\System.Linq.Queryable.dll
+  System.Linq.Parallel -> R:\artifacts\bin\System.Linq.Parallel\Debug\net11.0\System.Linq.Parallel.dll
+  System.Xml.Serialization -> R:\artifacts\bin\System.Xml.Serialization\Debug\net11.0-windows\System.Xml.Serialization.dll
+  System.Private.DataContractSerialization -> R:\artifacts\bin\System.Private.DataContractSerialization\Debug\net11.0\System.Private.DataContractSerialization.dll
+  System.IO.FileSystem.DriveInfo -> R:\artifacts\bin\System.IO.FileSystem.DriveInfo\Debug\net11.0\System.IO.FileSystem.DriveInfo.dll
+  System.Xml.XPath.XDocument -> R:\artifacts\bin\System.Xml.XPath.XDocument\Debug\net11.0\System.Xml.XPath.XDocument.dll
+  System.Reflection.DispatchProxy -> R:\artifacts\bin\System.Reflection.DispatchProxy\Debug\net11.0\System.Reflection.DispatchProxy.dll
+  System.Runtime.Serialization.Xml -> R:\artifacts\bin\System.Runtime.Serialization.Xml\ref\Debug\net11.0\System.Runtime.Serialization.Xml.dll
+  System.Threading.Tasks.Parallel -> R:\artifacts\bin\System.Threading.Tasks.Parallel\Debug\net11.0\System.Threading.Tasks.Parallel.dll
+  System.Xml -> R:\artifacts\bin\System.Xml\Debug\net11.0-windows\System.Xml.dll
+  System.Runtime.Serialization.Json -> R:\artifacts\bin\System.Runtime.Serialization.Json\ref\Debug\net11.0\System.Runtime.Serialization.Json.dll
+  System.Xml.Linq -> R:\artifacts\bin\System.Xml.Linq\Debug\net11.0-windows\System.Xml.Linq.dll
+  System.Diagnostics.FileVersionInfo -> R:\artifacts\bin\System.Diagnostics.FileVersionInfo\Debug\net11.0\System.Diagnostics.FileVersionInfo.dll
+  System.Runtime.Serialization.Json -> R:\artifacts\bin\System.Runtime.Serialization.Json\Debug\net11.0\System.Runtime.Serialization.Json.dll
+  System.Runtime.Serialization.Xml -> R:\artifacts\bin\System.Runtime.Serialization.Xml\Debug\net11.0\System.Runtime.Serialization.Xml.dll
+  System.ServiceModel.Web -> R:\artifacts\bin\System.ServiceModel.Web\Debug\net11.0-windows\System.ServiceModel.Web.dll
+  System.Runtime.Serialization -> R:\artifacts\bin\System.Runtime.Serialization\Debug\net11.0-windows\System.Runtime.Serialization.dll
+  System.Security.AccessControl -> R:\artifacts\bin\System.Security.AccessControl\Debug\net11.0\System.Security.AccessControl.dll
+  System.Core -> R:\artifacts\bin\System.Core\Debug\net11.0-windows\System.Core.dll
+  Microsoft.Win32.Registry -> R:\artifacts\bin\Microsoft.Win32.Registry\Debug\net11.0\Microsoft.Win32.Registry.dll
+  System.IO.Pipes -> R:\artifacts\bin\System.IO.Pipes\Debug\net11.0\System.IO.Pipes.dll
+  mscorlib -> R:\artifacts\bin\mscorlib\ref\Debug\net11.0-windows\mscorlib.dll
+  mscorlib -> R:\artifacts\bin\mscorlib\Debug\net11.0-windows\mscorlib.dll
+  System.Diagnostics.Process -> R:\artifacts\bin\System.Diagnostics.Process\Debug\net11.0\System.Diagnostics.Process.dll
+  System.Diagnostics.TextWriterTraceListener -> R:\artifacts\bin\System.Diagnostics.TextWriterTraceListener\ref\Debug\net11.0\System.Diagnostics.TextWriterTraceListener.dll
+  System.Transactions.Local -> R:\artifacts\bin\System.Transactions.Local\Debug\net11.0\System.Transactions.Local.dll
+  System.Data.Common -> R:\artifacts\bin\System.Data.Common\ref\Debug\net11.0\System.Data.Common.dll
+  System.Diagnostics.TextWriterTraceListener -> R:\artifacts\bin\System.Diagnostics.TextWriterTraceListener\Debug\net11.0\System.Diagnostics.TextWriterTraceListener.dll
+  System.Data.Common -> R:\artifacts\bin\System.Data.Common\Debug\net11.0\System.Data.Common.dll
+  System.Data -> R:\artifacts\bin\System.Data\ref\Debug\net11.0-windows\System.Data.dll
+  System.Data.DataSetExtensions -> R:\artifacts\bin\System.Data.DataSetExtensions\Debug\net11.0-windows\System.Data.DataSetExtensions.dll
+  System.Data -> R:\artifacts\bin\System.Data\Debug\net11.0-windows\System.Data.dll
+  System -> R:\artifacts\bin\System\ref\Debug\net11.0-windows\System.dll
+  netstandard -> R:\artifacts\bin\netstandard\Debug\net11.0-windows\netstandard.dll
+  System -> R:\artifacts\bin\System\Debug\net11.0-windows\System.dll
+  sfx-finish -> Trimming win-x64 shared framework assemblies with ILLinker...
+  Microsoft.Bcl.AsyncInterfaces -> R:\artifacts\bin\Microsoft.Bcl.AsyncInterfaces\Debug\netstandard2.1\Microsoft.Bcl.AsyncInterfaces.dll
+  Microsoft.Bcl.Numerics -> R:\artifacts\bin\Microsoft.Bcl.Numerics\Debug\netstandard2.1\Microsoft.Bcl.Numerics.dll
+  Microsoft.Extensions.Configuration.Binder.SourceGeneration -> R:\artifacts\bin\Microsoft.Extensions.Configuration.Binder.SourceGeneration\Debug\netstandard2.0\Microsoft.Extensions.Configuration.Binder.SourceGeneration.dll
+  System.CodeDom -> R:\artifacts\bin\System.CodeDom\ref\Debug\net11.0\System.CodeDom.dll
+  Microsoft.Extensions.Caching.Memory -> R:\artifacts\bin\Microsoft.Extensions.Caching.Memory\ref\Debug\net11.0\Microsoft.Extensions.Caching.Memory.dll
+  Microsoft.Extensions.Configuration -> R:\artifacts\bin\Microsoft.Extensions.Configuration\ref\Debug\net11.0\Microsoft.Extensions.Configuration.dll
+  System.IO.Hashing -> R:\artifacts\bin\System.IO.Hashing\ref\Debug\net11.0\System.IO.Hashing.dll
+  System.ServiceModel.Syndication -> R:\artifacts\bin\System.ServiceModel.Syndication\ref\Debug\net11.0\System.ServiceModel.Syndication.dll
+  Microsoft.Extensions.DependencyInjection -> R:\artifacts\bin\Microsoft.Extensions.DependencyInjection\ref\Debug\net11.0\Microsoft.Extensions.DependencyInjection.dll
+  System.Security.Cryptography.ProtectedData -> R:\artifacts\bin\System.Security.Cryptography.ProtectedData\ref\Debug\net11.0\System.Security.Cryptography.ProtectedData.dll
+  Microsoft.Extensions.FileProviders.Composite -> R:\artifacts\bin\Microsoft.Extensions.FileProviders.Composite\ref\Debug\net11.0\Microsoft.Extensions.FileProviders.Composite.dll
+  Microsoft.Bcl.Cryptography -> R:\artifacts\bin\Microsoft.Bcl.Cryptography\Debug\net11.0\Microsoft.Bcl.Cryptography.dll
+  Microsoft.Bcl.Memory -> R:\artifacts\bin\Microsoft.Bcl.Memory\Debug\net11.0\Microsoft.Bcl.Memory.dll
+  System.Composition.AttributedModel -> R:\artifacts\bin\System.Composition.AttributedModel\Debug\net11.0\System.Composition.AttributedModel.dll
+  Microsoft.Extensions.FileProviders.Composite -> R:\artifacts\bin\Microsoft.Extensions.FileProviders.Composite\Debug\net11.0\Microsoft.Extensions.FileProviders.Composite.dll
+  System.Composition.Runtime -> R:\artifacts\bin\System.Composition.Runtime\Debug\net11.0\System.Composition.Runtime.dll
+  System.Reflection.Context -> R:\artifacts\bin\System.Reflection.Context\ref\Debug\net11.0\System.Reflection.Context.dll
+  System.Formats.Cbor -> R:\artifacts\bin\System.Formats.Cbor\ref\Debug\net11.0\System.Formats.Cbor.dll
+  Microsoft.Extensions.Caching.Memory -> R:\artifacts\bin\Microsoft.Extensions.Caching.Memory\Debug\net11.0\Microsoft.Extensions.Caching.Memory.dll
+  System.Memory.Data -> R:\artifacts\bin\System.Memory.Data\ref\Debug\net11.0\System.Memory.Data.dll
+  System.Security.Cryptography.ProtectedData -> R:\artifacts\bin\System.Security.Cryptography.ProtectedData\Debug\net11.0\System.Security.Cryptography.ProtectedData.dll
+  System.Numerics.Tensors -> R:\artifacts\bin\System.Numerics.Tensors\ref\Debug\net11.0\System.Numerics.Tensors.dll
+  System.ServiceModel.Syndication -> R:\artifacts\bin\System.ServiceModel.Syndication\Debug\net11.0\System.ServiceModel.Syndication.dll
+  Microsoft.Extensions.DependencyInjection.Specification.Tests -> R:\artifacts\bin\Microsoft.Extensions.DependencyInjection.Specification.Tests\Debug\net11.0\Microsoft.Extensions.DependencyInjection.Specification.Tests.dll
+  System.IO.Packaging -> R:\artifacts\bin\System.IO.Packaging\ref\Debug\net11.0\System.IO.Packaging.dll
+  System.ComponentModel.Composition -> R:\artifacts\bin\System.ComponentModel.Composition\ref\Debug\net11.0\System.ComponentModel.Composition.dll
+  System.Security.Cryptography.Pkcs -> R:\artifacts\bin\System.Security.Cryptography.Pkcs\ref\Debug\net11.0\System.Security.Cryptography.Pkcs.dll
+  Microsoft.Extensions.Options.DataAnnotations -> R:\artifacts\bin\Microsoft.Extensions.Options.DataAnnotations\ref\Debug\net11.0\Microsoft.Extensions.Options.DataAnnotations.dll
+  System.IO.Hashing -> R:\artifacts\bin\System.IO.Hashing\Debug\net11.0\System.IO.Hashing.dll
+  System.Threading.RateLimiting -> R:\artifacts\bin\System.Threading.RateLimiting\ref\Debug\net11.0\System.Threading.RateLimiting.dll
+  System.Formats.Cbor -> R:\artifacts\bin\System.Formats.Cbor\Debug\net11.0\System.Formats.Cbor.dll
+  Microsoft.Extensions.DependencyInjection -> R:\artifacts\bin\Microsoft.Extensions.DependencyInjection\Debug\net11.0\Microsoft.Extensions.DependencyInjection.dll
+  Microsoft.Extensions.FileSystemGlobbing -> R:\artifacts\bin\Microsoft.Extensions.FileSystemGlobbing\ref\Debug\net11.0\Microsoft.Extensions.FileSystemGlobbing.dll
+  System.CodeDom -> R:\artifacts\bin\System.CodeDom\Debug\net11.0\System.CodeDom.dll
+  System.Composition.Convention -> R:\artifacts\bin\System.Composition.Convention\Debug\net11.0\System.Composition.Convention.dll
+  System.Formats.Nrbf -> R:\artifacts\bin\System.Formats.Nrbf\ref\Debug\net11.0\System.Formats.Nrbf.dll
+  Microsoft.Extensions.DependencyModel -> R:\artifacts\bin\Microsoft.Extensions.DependencyModel\ref\Debug\net11.0\Microsoft.Extensions.DependencyModel.dll
+  Microsoft.Extensions.Configuration -> R:\artifacts\bin\Microsoft.Extensions.Configuration\Debug\net11.0\Microsoft.Extensions.Configuration.dll
+  Microsoft.Extensions.Logging -> R:\artifacts\bin\Microsoft.Extensions.Logging\ref\Debug\net11.0\Microsoft.Extensions.Logging.dll
+  System.Memory.Data -> R:\artifacts\bin\System.Memory.Data\Debug\net11.0\System.Memory.Data.dll
+  System.Composition.Hosting -> R:\artifacts\bin\System.Composition.Hosting\Debug\net11.0\System.Composition.Hosting.dll
+  Microsoft.Extensions.FileSystemGlobbing -> R:\artifacts\bin\Microsoft.Extensions.FileSystemGlobbing\Debug\net11.0\Microsoft.Extensions.FileSystemGlobbing.dll
+  System.IO.Packaging -> R:\artifacts\bin\System.IO.Packaging\Debug\net11.0\System.IO.Packaging.dll
+  Microsoft.Extensions.Options.DataAnnotations -> R:\artifacts\bin\Microsoft.Extensions.Options.DataAnnotations\Debug\net11.0\Microsoft.Extensions.Options.DataAnnotations.dll
+  System.ComponentModel.Composition -> R:\artifacts\bin\System.ComponentModel.Composition\Debug\net11.0\System.ComponentModel.Composition.dll
+  System.Numerics.Tensors -> R:\artifacts\bin\System.Numerics.Tensors\Debug\net11.0\System.Numerics.Tensors.dll
+  System.Threading.RateLimiting -> R:\artifacts\bin\System.Threading.RateLimiting\Debug\net11.0\System.Threading.RateLimiting.dll
+  System.Reflection.Context -> R:\artifacts\bin\System.Reflection.Context\Debug\net11.0\System.Reflection.Context.dll
+  Microsoft.Extensions.DependencyModel -> R:\artifacts\bin\Microsoft.Extensions.DependencyModel\Debug\net11.0\Microsoft.Extensions.DependencyModel.dll
+  System.Reflection.MetadataLoadContext -> R:\artifacts\bin\System.Reflection.MetadataLoadContext\ref\Debug\net11.0\System.Reflection.MetadataLoadContext.dll
+  System.Diagnostics.EventLog -> R:\artifacts\bin\System.Diagnostics.EventLog\ref\Debug\net11.0\System.Diagnostics.EventLog.dll
+  System.Security.Cryptography.Cose -> R:\artifacts\bin\System.Security.Cryptography.Cose\ref\Debug\net11.0\System.Security.Cryptography.Cose.dll
+  System.Formats.Nrbf -> R:\artifacts\bin\System.Formats.Nrbf\Debug\net11.0\System.Formats.Nrbf.dll
+  Microsoft.Extensions.FileProviders.Physical -> R:\artifacts\bin\Microsoft.Extensions.FileProviders.Physical\ref\Debug\net11.0\Microsoft.Extensions.FileProviders.Physical.dll
+  Microsoft.Extensions.Logging -> R:\artifacts\bin\Microsoft.Extensions.Logging\Debug\net11.0\Microsoft.Extensions.Logging.dll
+  System.ComponentModel.Composition.Registration -> R:\artifacts\bin\System.ComponentModel.Composition.Registration\ref\Debug\net11.0\System.ComponentModel.Composition.Registration.dll
+  System.Security.Cryptography.Pkcs -> R:\artifacts\bin\System.Security.Cryptography.Pkcs\Debug\net11.0\System.Security.Cryptography.Pkcs.dll
+  Microsoft.Extensions.Configuration.CommandLine -> R:\artifacts\bin\Microsoft.Extensions.Configuration.CommandLine\ref\Debug\net11.0\Microsoft.Extensions.Configuration.CommandLine.dll
+  Microsoft.Extensions.Configuration.EnvironmentVariables -> R:\artifacts\bin\Microsoft.Extensions.Configuration.EnvironmentVariables\ref\Debug\net11.0\Microsoft.Extensions.Configuration.EnvironmentVariables.dll
+  System.Resources.Extensions -> R:\artifacts\bin\System.Resources.Extensions\ref\Debug\net11.0\System.Resources.Extensions.dll
+  System.Diagnostics.EventLog -> R:\artifacts\bin\System.Diagnostics.EventLog\Debug\net11.0\System.Diagnostics.EventLog.dll
+  System.Composition.TypedParts -> R:\artifacts\bin\System.Composition.TypedParts\Debug\net11.0\System.Composition.TypedParts.dll
+  System.Security.Cryptography.Cose -> R:\artifacts\bin\System.Security.Cryptography.Cose\Debug\net11.0\System.Security.Cryptography.Cose.dll
+  Microsoft.Extensions.Logging.EventSource -> R:\artifacts\bin\Microsoft.Extensions.Logging.EventSource\ref\Debug\net11.0\Microsoft.Extensions.Logging.EventSource.dll
+  Microsoft.Extensions.Configuration.Binder -> R:\artifacts\bin\Microsoft.Extensions.Configuration.Binder\ref\Debug\net11.0\Microsoft.Extensions.Configuration.Binder.dll
+  System.Security.Cryptography.Xml -> R:\artifacts\bin\System.Security.Cryptography.Xml\ref\Debug\net11.0\System.Security.Cryptography.Xml.dll
+  Microsoft.Extensions.Logging.Debug -> R:\artifacts\bin\Microsoft.Extensions.Logging.Debug\ref\Debug\net11.0\Microsoft.Extensions.Logging.Debug.dll
+  System.Configuration.ConfigurationManager -> R:\artifacts\bin\System.Configuration.ConfigurationManager\ref\Debug\net11.0\System.Configuration.ConfigurationManager.dll
+  Microsoft.Extensions.FileProviders.Physical -> R:\artifacts\bin\Microsoft.Extensions.FileProviders.Physical\Debug\net11.0\Microsoft.Extensions.FileProviders.Physical.dll
+  Microsoft.Extensions.Configuration.EnvironmentVariables -> R:\artifacts\bin\Microsoft.Extensions.Configuration.EnvironmentVariables\Debug\net11.0\Microsoft.Extensions.Configuration.EnvironmentVariables.dll
+  System.ComponentModel.Composition.Registration -> R:\artifacts\bin\System.ComponentModel.Composition.Registration\Debug\net11.0\System.ComponentModel.Composition.Registration.dll
+  System.Reflection.MetadataLoadContext -> R:\artifacts\bin\System.Reflection.MetadataLoadContext\Debug\net11.0\System.Reflection.MetadataLoadContext.dll
+  Microsoft.Extensions.Configuration.CommandLine -> R:\artifacts\bin\Microsoft.Extensions.Configuration.CommandLine\Debug\net11.0\Microsoft.Extensions.Configuration.CommandLine.dll
+  System.Windows.Extensions -> R:\artifacts\bin\System.Windows.Extensions\ref\Debug\net11.0\System.Windows.Extensions.dll
+  Microsoft.Extensions.Logging.EventSource -> R:\artifacts\bin\Microsoft.Extensions.Logging.EventSource\Debug\net11.0\Microsoft.Extensions.Logging.EventSource.dll
+  Microsoft.Extensions.Logging.Debug -> R:\artifacts\bin\Microsoft.Extensions.Logging.Debug\Debug\net11.0\Microsoft.Extensions.Logging.Debug.dll
+  System.Resources.Extensions -> R:\artifacts\bin\System.Resources.Extensions\Debug\net11.0\System.Resources.Extensions.dll
+  System.Security.Cryptography.Xml -> R:\artifacts\bin\System.Security.Cryptography.Xml\Debug\net11.0\System.Security.Cryptography.Xml.dll
+  System.Runtime.Serialization.Schema -> R:\artifacts\bin\System.Runtime.Serialization.Schema\ref\Debug\net11.0\System.Runtime.Serialization.Schema.dll
+  Microsoft.Extensions.Configuration.Binder -> R:\artifacts\bin\Microsoft.Extensions.Configuration.Binder\Debug\net11.0\Microsoft.Extensions.Configuration.Binder.dll
+  Microsoft.Extensions.Configuration.FileExtensions -> R:\artifacts\bin\Microsoft.Extensions.Configuration.FileExtensions\ref\Debug\net11.0\Microsoft.Extensions.Configuration.FileExtensions.dll
+  System.Windows.Extensions -> R:\artifacts\bin\System.Windows.Extensions\Debug\net11.0\System.Windows.Extensions.dll
+  Microsoft.Extensions.Options.ConfigurationExtensions -> R:\artifacts\bin\Microsoft.Extensions.Options.ConfigurationExtensions\ref\Debug\net11.0\Microsoft.Extensions.Options.ConfigurationExtensions.dll
+  System.Configuration.ConfigurationManager -> R:\artifacts\bin\System.Configuration.ConfigurationManager\Debug\net11.0\System.Configuration.ConfigurationManager.dll
+  Microsoft.Extensions.Configuration.FileExtensions -> R:\artifacts\bin\Microsoft.Extensions.Configuration.FileExtensions\Debug\net11.0\Microsoft.Extensions.Configuration.FileExtensions.dll
+  System.Runtime.Serialization.Schema -> R:\artifacts\bin\System.Runtime.Serialization.Schema\Debug\net11.0\System.Runtime.Serialization.Schema.dll
+  Microsoft.Extensions.Logging.TraceSource -> R:\artifacts\bin\Microsoft.Extensions.Logging.TraceSource\ref\Debug\net11.0\Microsoft.Extensions.Logging.TraceSource.dll
+  System.ServiceProcess.ServiceController -> R:\artifacts\bin\System.ServiceProcess.ServiceController\ref\Debug\net11.0\System.ServiceProcess.ServiceController.dll
+  System.Security.Permissions -> R:\artifacts\bin\System.Security.Permissions\ref\Debug\net11.0\System.Security.Permissions.dll
+  Microsoft.Extensions.Configuration.Xml -> R:\artifacts\bin\Microsoft.Extensions.Configuration.Xml\ref\Debug\net11.0\Microsoft.Extensions.Configuration.Xml.dll
+  Microsoft.Extensions.Configuration.Ini -> R:\artifacts\bin\Microsoft.Extensions.Configuration.Ini\ref\Debug\net11.0\Microsoft.Extensions.Configuration.Ini.dll
+  Microsoft.Extensions.Configuration.Json -> R:\artifacts\bin\Microsoft.Extensions.Configuration.Json\ref\Debug\net11.0\Microsoft.Extensions.Configuration.Json.dll
+  Microsoft.Extensions.Options.ConfigurationExtensions -> R:\artifacts\bin\Microsoft.Extensions.Options.ConfigurationExtensions\Debug\net11.0\Microsoft.Extensions.Options.ConfigurationExtensions.dll
+  Microsoft.Extensions.Logging.TraceSource -> R:\artifacts\bin\Microsoft.Extensions.Logging.TraceSource\Debug\net11.0\Microsoft.Extensions.Logging.TraceSource.dll
+  Microsoft.Extensions.Diagnostics -> R:\artifacts\bin\Microsoft.Extensions.Diagnostics\ref\Debug\net11.0\Microsoft.Extensions.Diagnostics.dll
+  System.ServiceProcess.ServiceController -> R:\artifacts\bin\System.ServiceProcess.ServiceController\Debug\net11.0\System.ServiceProcess.ServiceController.dll
+  Microsoft.Extensions.Configuration.Json -> R:\artifacts\bin\Microsoft.Extensions.Configuration.Json\Debug\net11.0\Microsoft.Extensions.Configuration.Json.dll
+  Microsoft.Extensions.Configuration.Ini -> R:\artifacts\bin\Microsoft.Extensions.Configuration.Ini\Debug\net11.0\Microsoft.Extensions.Configuration.Ini.dll
+  Microsoft.Extensions.Configuration.Xml -> R:\artifacts\bin\Microsoft.Extensions.Configuration.Xml\Debug\net11.0\Microsoft.Extensions.Configuration.Xml.dll
+  Microsoft.Extensions.Logging.Configuration -> R:\artifacts\bin\Microsoft.Extensions.Logging.Configuration\ref\Debug\net11.0\Microsoft.Extensions.Logging.Configuration.dll
+  Microsoft.Extensions.Diagnostics -> R:\artifacts\bin\Microsoft.Extensions.Diagnostics\Debug\net11.0\Microsoft.Extensions.Diagnostics.dll
+  Microsoft.Extensions.Configuration.UserSecrets -> R:\artifacts\bin\Microsoft.Extensions.Configuration.UserSecrets\ref\Debug\net11.0\Microsoft.Extensions.Configuration.UserSecrets.dll
+  Microsoft.Extensions.Http -> R:\artifacts\bin\Microsoft.Extensions.Http\ref\Debug\net11.0\Microsoft.Extensions.Http.dll
+  Microsoft.Extensions.Configuration.UserSecrets -> R:\artifacts\bin\Microsoft.Extensions.Configuration.UserSecrets\Debug\net11.0\Microsoft.Extensions.Configuration.UserSecrets.dll
+  Microsoft.Extensions.Http -> R:\artifacts\bin\Microsoft.Extensions.Http\Debug\net11.0\Microsoft.Extensions.Http.dll
+  System.Security.Permissions -> R:\artifacts\bin\System.Security.Permissions\Debug\net11.0\System.Security.Permissions.dll
+  Microsoft.Extensions.Logging.Configuration -> R:\artifacts\bin\Microsoft.Extensions.Logging.Configuration\Debug\net11.0\Microsoft.Extensions.Logging.Configuration.dll
+  Microsoft.Extensions.Logging.EventLog -> R:\artifacts\bin\Microsoft.Extensions.Logging.EventLog\ref\Debug\net11.0\Microsoft.Extensions.Logging.EventLog.dll
+  Microsoft.Extensions.Logging.Console -> R:\artifacts\bin\Microsoft.Extensions.Logging.Console\ref\Debug\net11.0\Microsoft.Extensions.Logging.Console.dll
+  Microsoft.Extensions.Logging.EventLog -> R:\artifacts\bin\Microsoft.Extensions.Logging.EventLog\Debug\net11.0\Microsoft.Extensions.Logging.EventLog.dll
+  Microsoft.Extensions.Logging.Console -> R:\artifacts\bin\Microsoft.Extensions.Logging.Console\Debug\net11.0\Microsoft.Extensions.Logging.Console.dll
+  Microsoft.Extensions.Hosting -> R:\artifacts\bin\Microsoft.Extensions.Hosting\ref\Debug\net11.0\Microsoft.Extensions.Hosting.dll
+  Microsoft.Extensions.Hosting -> R:\artifacts\bin\Microsoft.Extensions.Hosting\Debug\net11.0\Microsoft.Extensions.Hosting.dll
+  Microsoft.Extensions.Hosting.Systemd -> R:\artifacts\bin\Microsoft.Extensions.Hosting.Systemd\ref\Debug\net11.0\Microsoft.Extensions.Hosting.Systemd.dll
+  Microsoft.Extensions.Hosting.WindowsServices -> R:\artifacts\bin\Microsoft.Extensions.Hosting.WindowsServices\ref\Debug\net11.0\Microsoft.Extensions.Hosting.WindowsServices.dll
+  Microsoft.Extensions.Hosting.Systemd -> R:\artifacts\bin\Microsoft.Extensions.Hosting.Systemd\Debug\net11.0\Microsoft.Extensions.Hosting.Systemd.dll
+  Microsoft.Extensions.Hosting.WindowsServices -> R:\artifacts\bin\Microsoft.Extensions.Hosting.WindowsServices\Debug\net11.0\Microsoft.Extensions.Hosting.WindowsServices.dll
+  Microsoft.Bcl.TimeProvider -> R:\artifacts\bin\Microsoft.Bcl.TimeProvider\Debug\net10.0\Microsoft.Bcl.TimeProvider.dll
+  System.Threading.ThreadPool.WebAssembly.Threading -> R:\artifacts\bin\System.Threading.ThreadPool.WebAssembly.Threading\ref\Debug\net11.0\System.Threading.ThreadPool.dll
+  System.Threading.Thread.WebAssembly.Threading -> R:\artifacts\bin\System.Threading.Thread.WebAssembly.Threading\ref\Debug\net11.0\System.Threading.Thread.dll
+  System.Threading.WebAssembly.Threading -> R:\artifacts\bin\System.Threading.WebAssembly.Threading\ref\Debug\net11.0\System.Threading.dll
+  Microsoft.NETCore.Platforms -> R:\artifacts\bin\Microsoft.NETCore.Platforms\Debug\net11.0\Microsoft.NETCore.Platforms.dll
+  System.Runtime.Caching -> R:\artifacts\bin\System.Runtime.Caching\ref\Debug\net11.0\System.Runtime.Caching.dll
+  System.Management -> R:\artifacts\bin\System.Management\ref\Debug\net11.0\System.Management.dll
+  System.Speech -> R:\artifacts\bin\System.Speech\ref\Debug\net11.0\System.Speech.dll
+  Microsoft.Win32.SystemEvents -> R:\artifacts\bin\Microsoft.Win32.SystemEvents\ref\Debug\net11.0\Microsoft.Win32.SystemEvents.dll
+  System.Data.Odbc -> R:\artifacts\bin\System.Data.Odbc\ref\Debug\net11.0\System.Data.Odbc.dll
+  System.DirectoryServices.Protocols -> R:\artifacts\bin\System.DirectoryServices.Protocols\ref\Debug\net11.0\System.DirectoryServices.Protocols.dll
+  Microsoft.Win32.Registry.AccessControl -> R:\artifacts\bin\Microsoft.Win32.Registry.AccessControl\ref\Debug\net11.0\Microsoft.Win32.Registry.AccessControl.dll
+  System.DirectoryServices -> R:\artifacts\bin\System.DirectoryServices\ref\Debug\net11.0\System.DirectoryServices.dll
+  System.IO.Ports -> R:\artifacts\bin\System.IO.Ports\ref\Debug\net11.0\System.IO.Ports.dll
+  System.Diagnostics.PerformanceCounter -> R:\artifacts\bin\System.Diagnostics.PerformanceCounter\ref\Debug\net11.0\System.Diagnostics.PerformanceCounter.dll
+  System.Diagnostics.EventLog.Messages -> R:\artifacts\bin\System.Diagnostics.EventLog.Messages\Debug\netstandard2.0\System.Diagnostics.EventLog.Messages.dll
+  System.Windows.Extensions -> R:\artifacts\bin\System.Windows.Extensions\Debug\net11.0-windows\System.Windows.Extensions.dll
+  System.DirectoryServices.Protocols -> R:\artifacts\bin\System.DirectoryServices.Protocols\Debug\net11.0-windows\System.DirectoryServices.Protocols.dll
+  System.Net.Http.WinHttpHandler -> R:\artifacts\bin\System.Net.Http.WinHttpHandler\ref\Debug\net11.0\System.Net.Http.WinHttpHandler.dll
+  Microsoft.Win32.Registry.AccessControl -> R:\artifacts\bin\Microsoft.Win32.Registry.AccessControl\Debug\net11.0-windows\Microsoft.Win32.Registry.AccessControl.dll
+  System.Speech -> R:\artifacts\bin\System.Speech\Debug\net11.0-windows\System.Speech.dll
+  System.IO.Ports -> R:\artifacts\bin\System.IO.Ports\Debug\net11.0-windows\System.IO.Ports.dll
+  System.Data.Odbc -> R:\artifacts\bin\System.Data.Odbc\Debug\net11.0-windows\System.Data.Odbc.dll
+  Microsoft.Win32.SystemEvents -> R:\artifacts\bin\Microsoft.Win32.SystemEvents\Debug\net11.0-windows\Microsoft.Win32.SystemEvents.dll
+  System.Security.Cryptography.Pkcs -> R:\artifacts\bin\System.Security.Cryptography.Pkcs\Debug\net11.0-windows\System.Security.Cryptography.Pkcs.dll
+  System.Management -> R:\artifacts\bin\System.Management\Debug\net11.0-windows\System.Management.dll
+  System.Net.Http.WinHttpHandler -> R:\artifacts\bin\System.Net.Http.WinHttpHandler\Debug\net11.0-windows\System.Net.Http.WinHttpHandler.dll
+  System.Diagnostics.EventLog -> R:\artifacts\bin\System.Diagnostics.EventLog\Debug\net11.0-windows\System.Diagnostics.EventLog.dll
+  System.DirectoryServices -> R:\artifacts\bin\System.DirectoryServices\Debug\net11.0-windows\System.DirectoryServices.dll
+  System.DirectoryServices.AccountManagement -> R:\artifacts\bin\System.DirectoryServices.AccountManagement\ref\Debug\net11.0\System.DirectoryServices.AccountManagement.dll
+  System.ServiceProcess.ServiceController -> R:\artifacts\bin\System.ServiceProcess.ServiceController\Debug\net11.0-windows\System.ServiceProcess.ServiceController.dll
+  System.Runtime.Caching -> R:\artifacts\bin\System.Runtime.Caching\Debug\net11.0-windows\System.Runtime.Caching.dll
+  System.Diagnostics.PerformanceCounter -> R:\artifacts\bin\System.Diagnostics.PerformanceCounter\Debug\net11.0-windows\System.Diagnostics.PerformanceCounter.dll
+  System.Data.OleDb -> R:\artifacts\bin\System.Data.OleDb\ref\Debug\net11.0\System.Data.OleDb.dll
+  System.DirectoryServices.AccountManagement -> R:\artifacts\bin\System.DirectoryServices.AccountManagement\Debug\net11.0-windows\System.DirectoryServices.AccountManagement.dll
+  System.Data.OleDb -> R:\artifacts\bin\System.Data.OleDb\Debug\net11.0-windows\System.Data.OleDb.dll
+  oob-trim -> Trimming win-x64 out-of-band assemblies with ILLinker...
+  ApiCompat -> Comparing net11.0 reference assemblies against .NETStandard 2.x and .NETCoreApp 10.0.0...
+  "R:\src\native\corehost\build.cmd" Debug x64 -os windows commit 13d686af0f8f62a1e7660eb307086c4b618b9b30 targetrid win-x64 portable incremental-native-build rootdir R:\ runtimeflavor CoreCLR runtimeconfiguration Debug -cmakeargs "-DCLR_CMAKE_BUILD_HOST_TESTS=FALSE" -cmakeargs "-DCLR_CMAKE_BUILD_HOST_PRODUCT=TRUE" 
+  'vswhere.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  'vswhere.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  **********************************************************************
+  ** Visual Studio 2026 Developer Command Prompt v18.0
+  ** Copyright (c) 2026 Microsoft Corporation
+  **********************************************************************
+  [vcvarsall.bat] Environment initialized for: 'x64'
+  Configuring corehost native components
+  
+  Calling "R:\\eng\native\gen-buildsys.cmd "R:\src\native\corehost" "R://artifacts/obj/win-x64.Debug/corehost" 18.0 x64 windows  "-DCLR_CMAKE_BUILD_HOST_TESTS=FALSE" "-DCLR_CMAKE_BUILD_HOST_PRODUCT=TRUE" "-DCLI_CMAKE_FALLBACK_OS=win10" "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" "-DCLR_CMAKE_TARGET_ARCH=x64" "-DCLR_CMAKE_TARGET_OS=windows" "-DCLI_CMAKE_RESOURCE_DIR=R:\\artifacts\obj\win-x64.Debug\hostResourceFiles" "-DCMAKE_BUILD_TYPE=Debug""
+  The CMake command line differs from the last run. Running CMake again.
+   "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe "-DCMAKE_INSTALL_PREFIX=R://artifacts/bin/win-x64.Debug" "-DCLR_CMAKE_HOST_ARCH=x64"   "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_CMAKE_BUILD_HOST_TESTS=FALSE" "-DCLR_CMAKE_BUILD_HOST_PRODUCT=TRUE" "-DCLI_CMAKE_FALLBACK_OS=win10" "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" "-DCLR_CMAKE_TARGET_ARCH=x64" "-DCLR_CMAKE_TARGET_OS=windows" "-DCLI_CMAKE_RESOURCE_DIR=R:\\artifacts\obj\win-x64.Debug\hostResourceFiles" "-DCMAKE_BUILD_TYPE=Debug" --no-warn-unused-cli -G Ninja -B "R://artifacts/obj/win-x64.Debug/corehost" -S "R:\src\native\corehost""
+  Not searching for unused variables given on the command line.
+  -- Configuring done (0.4s)
+  -- Generating done (0.3s)
+  -- Build files have been written to: R:/artifacts/obj/win-x64.Debug/corehost
+  Commencing build of corehost native components
+  [1/114] Building C object hostmisc\CMakeFiles\hostmisc.dir\pal.windows.c.obj
+  [2/114] Building C object hostmisc\CMakeFiles\hostmisc.dir\fx_ver.c.obj
+  [3/114] Building C object hostmisc\CMakeFiles\hostmisc.dir\utils.c.obj
+  [4/114] Building C object hostmisc\CMakeFiles\hostmisc.dir\trace.c.obj
+  [5/114] Building CXX object hostcommon\CMakeFiles\libhostcommon.dir\__\roll_forward_option.cpp.obj
+  [6/114] Building CXX object hostcommon\CMakeFiles\libhostcommon.dir\__\bundle\reader.cpp.obj
+  [7/114] Building CXX object hostcommon\CMakeFiles\libhostcommon.dir\__\bundle\header.cpp.obj
+  [8/114] Building CXX object hostcommon\CMakeFiles\libhostcommon.dir\__\bundle\info.cpp.obj
+  [9/114] Building C object hostmisc\CMakeFiles\hostmisc_public.dir\utils.c.obj
+  [10/114] Building CXX object hostmisc\CMakeFiles\hostmisc.dir\utils.cpp.obj
+  [11/114] Building CXX object hostcommon\CMakeFiles\libhostcommon.dir\__\fx_definition.cpp.obj
+  [12/114] Building CXX object hostmisc\CMakeFiles\hostmisc.dir\longfile.windows.cpp.obj
+  [13/114] Building CXX object hostcommon\CMakeFiles\libhostcommon.dir\__\fx_reference.cpp.obj
+  [14/114] Building CXX object hostcommon\CMakeFiles\libhostcommon.dir\__\json_parser.cpp.obj
+  [15/114] Building CXX object hostcommon\CMakeFiles\libhostcommon.dir\__\version_compatibility_range.cpp.obj
+  [16/114] Building CXX object hostcommon\CMakeFiles\libhostcommon.dir\__\runtime_config.cpp.obj
+  [17/114] Building CXX object hostmisc\CMakeFiles\hostmisc.dir\pal.windows.cpp.obj
+  [18/114] Building C object hostmisc\CMakeFiles\hostmisc_public.dir\trace.c.obj
+  [19/114] Building C object hostmisc\CMakeFiles\hostmisc_public.dir\fx_ver.c.obj
+  [20/114] Building CXX object hostcommon\CMakeFiles\libhostcommon.dir\__\host_startup_info.cpp.obj
+  [21/114] Building CXX object hostmisc\CMakeFiles\hostmisc.dir\__\fxr\fx_ver.cpp.obj
+  [22/114] Building C object hostmisc\CMakeFiles\hostmisc_public.dir\pal.windows.c.obj
+  [23/114] Building C object hostmisc\CMakeFiles\hostmisc_c.dir\trace.c.obj
+  [24/114] Building C object hostmisc\CMakeFiles\hostmisc_c.dir\fx_ver.c.obj
+  [25/114] Building C object hostmisc\CMakeFiles\hostmisc_c.dir\utils.c.obj
+  [26/114] Linking CXX static library hostmisc\hostmisc.lib
+  [27/114] Building C object hostmisc\CMakeFiles\hostmisc_c.dir\pal.windows.c.obj
+  [28/114] Building C object nethost\CMakeFiles\libnethost.dir\__\fxr_resolver.c.obj
+  [29/114] Building C object nethost\CMakeFiles\nethost.dir\nethost.c.obj
+  [30/114] Building C object nethost\CMakeFiles\nethost.dir\__\fxr_resolver.c.obj
+  [31/114] Building C object nethost\CMakeFiles\libnethost.dir\nethost.c.obj
+  [32/114] Linking CXX static library hostcommon\libhostcommon.lib
+  [33/114] Building CXX object hostmisc\CMakeFiles\hostmisc_public.dir\longfile.windows.cpp.obj
+  [34/114] Building CXX object hostmisc\CMakeFiles\hostmisc_public.dir\__\fxr\fx_ver.cpp.obj
+  [35/114] Building CXX object hostmisc\CMakeFiles\hostmisc_public.dir\utils.cpp.obj
+  [36/114] Building CXX object fxr\standalone\CMakeFiles\hostfxr.dir\hostpolicy_resolver.cpp.obj
+  [37/114] Building CXX object hostmisc\CMakeFiles\hostmisc_public.dir\pal.windows.cpp.obj
+  [38/114] Building CXX object fxr\standalone\CMakeFiles\hostfxr.dir\__\command_line.cpp.obj
+  [39/114] Building CXX object fxr\standalone\CMakeFiles\hostfxr.dir\__\hostfxr.cpp.obj
+  [40/114] Building CXX object fxr\standalone\CMakeFiles\hostfxr.dir\__\fx_resolver.messages.cpp.obj
+  [41/114] Building CXX object fxr\standalone\CMakeFiles\hostfxr.dir\__\framework_info.cpp.obj
+  [42/114] Building CXX object fxr\standalone\CMakeFiles\hostfxr.dir\__\host_context.cpp.obj
+  [43/114] Building CXX object fxr\standalone\CMakeFiles\hostfxr.dir\__\corehost_init.cpp.obj
+  [44/114] Building CXX object fxr\standalone\CMakeFiles\hostfxr.dir\__\fx_resolver.cpp.obj
+  [45/114] Building CXX object fxr\standalone\CMakeFiles\hostfxr.dir\__\sdk_info.cpp.obj
+  [46/114] Building CXX object fxr\standalone\CMakeFiles\hostfxr.dir\__\fx_muxer.cpp.obj
+  [47/114] Building CXX object fxr\standalone\CMakeFiles\hostfxr.dir\__\install_info.cpp.obj
+  [48/114] Building CXX object fxr\standalone\CMakeFiles\hostfxr.dir\__\sdk_resolver.cpp.obj
+  [49/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\__\roll_forward_option.cpp.obj
+  [50/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\__\host_startup_info.cpp.obj
+  [51/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\standalone\hostpolicy_resolver.cpp.obj
+  [52/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\__\json_parser.cpp.obj
+  [53/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\__\fx_definition.cpp.obj
+  [54/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\__\version_compatibility_range.cpp.obj
+  [55/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\__\fx_reference.cpp.obj
+  [56/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\__\bundle\header.cpp.obj
+  [57/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\__\bundle\info.cpp.obj
+  [58/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\__\bundle\reader.cpp.obj
+  [59/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\command_line.cpp.obj
+  [60/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\__\runtime_config.cpp.obj
+  [61/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\corehost_init.cpp.obj
+  [62/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\fx_resolver.cpp.obj
+  [63/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\fx_muxer.cpp.obj
+  [64/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\hostfxr.cpp.obj
+  [65/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\framework_info.cpp.obj
+  [66/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\fx_resolver.messages.cpp.obj
+  [67/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\install_info.cpp.obj
+  [68/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\sdk_info.cpp.obj
+  [69/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\sdk_resolver.cpp.obj
+  [70/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\coreclr_resolver.cpp.obj
+  [71/114] Building CXX object fxr\staticlib\CMakeFiles\libhostfxr.dir\__\host_context.cpp.obj
+  [72/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\breadcrumbs.cpp.obj
+  [73/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\deps_entry.cpp.obj
+  [74/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\args.cpp.obj
+  [75/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\coreclr.cpp.obj
+  [76/114] Building C object apphost\standalone\CMakeFiles\apphost.dir\__\apphost.c.obj
+  [77/114] Building C object apphost\standalone\CMakeFiles\apphost.dir\apphost_hostfxr_resolver.c.obj
+  [78/114] Building C object apphost\standalone\CMakeFiles\apphost.dir\__\apphost.windows.c.obj
+  [79/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\shared_store.cpp.obj
+  [80/114] Building C object apphost\standalone\CMakeFiles\apphost.dir\__\__\fxr_resolver.c.obj
+  [81/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\version.cpp.obj
+  [82/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\hostpolicy_init.cpp.obj
+  [83/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\__\bundle\dir_utils.cpp.obj
+  [84/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\hostpolicy_context.cpp.obj
+  [85/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\__\bundle\file_entry.cpp.obj
+  [86/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\deps_format.cpp.obj
+  [87/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\__\bundle\extractor.cpp.obj
+  [88/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\deps_resolver.cpp.obj
+  [89/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\__\bundle\manifest.cpp.obj
+  [90/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\__\bundle\runner.cpp.obj
+  [91/114] Building CXX object hostpolicy\standalone\CMakeFiles\hostpolicy.dir\__\hostpolicy.cpp.obj
+  [92/114] Building C object ijwhost\CMakeFiles\ijwhost.dir\__\fxr_resolver.c.obj
+  [93/114] Building C object dotnet\CMakeFiles\dotnet.dir\__\fxr_resolver.c.obj
+  [94/114] Linking C static library nethost\libnethost.lib
+  [95/114] Linking C shared library nethost\nethost.dll
+  [96/114] Building C object comhost\CMakeFiles\comhost.dir\__\fxr_resolver.c.obj
+  [97/114] Linking CXX static library fxr\staticlib\libhostfxr.lib
+  [98/114] Linking C executable apphost\standalone\apphost.exe
+  [99/114] Linking CXX shared library fxr\standalone\hostfxr.dll
+  [100/114] Linking CXX shared library hostpolicy\standalone\hostpolicy.dll
+  [101/114] Building CXX object dotnet\CMakeFiles\dotnet.dir\hostfxr_resolver.cpp.obj
+  [102/114] Building CXX object dotnet\CMakeFiles\dotnet.dir\dotnet.cpp.obj
+  [103/114] Building CXX object ijwhost\CMakeFiles\ijwhost.dir\bootstrap_thunk_chunk.cpp.obj
+  [104/114] Building CXX object ijwhost\CMakeFiles\ijwhost.dir\pedecoder.cpp.obj
+  [105/114] Building CXX object ijwhost\CMakeFiles\ijwhost.dir\ijwhost.cpp.obj
+  [106/114] Building CXX object ijwhost\CMakeFiles\ijwhost.dir\amd64\bootstrap_thunk.cpp.obj
+  [107/114] Building CXX object ijwhost\CMakeFiles\ijwhost.dir\ijwthunk.cpp.obj
+  [108/114] Building CXX object comhost\CMakeFiles\comhost.dir\comhost.cpp.obj
+  [109/114] Building CXX object comhost\CMakeFiles\comhost.dir\__\redirected_error_writer.cpp.obj
+  [110/114] Building CXX object comhost\CMakeFiles\comhost.dir\clsidmap.cpp.obj
+  [111/114] Linking CXX shared library ijwhost\ijwhost.dll
+  [112/114] Linking CXX executable dotnet\dotnet.exe
+  [113/114] Linking CXX shared library comhost\comhost.dll
+  [113/114] Install the project...
+  -- Install configuration: "Debug"
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/coreclr_delegates.h
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/hostfxr.h
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/host_error_codes.h
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/nethost.h
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/PDB/nethost.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/nethost.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/nethost.dll
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/PDB/libnethost.pdb
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/libnethost.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/PDB/hostfxr.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/hostfxr.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/hostfxr.dll
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/PDB/libhostfxr.pdb
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/libhostfxr.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/PDB/hostpolicy.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/hostpolicy.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/hostpolicy.dll
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/PDB/apphost.pdb
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/apphost.exe
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/PDB/dotnet.pdb
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/dotnet.exe
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/PDB/ijwhost.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/ijwhost.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/ijwhost.dll
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/PDB/comhost.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/comhost.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/comhost.dll
+  Done building Native components
+  Microsoft.NETCore.DotNetAppHost -> R:\artifacts\packages\Debug\Shipping\Microsoft.NETCore.DotNetAppHost.11.0.0-dev.nupkg
+  Microsoft.NETCore.DotNetAppHost -> R:\artifacts\packages\Debug\Shipping\runtime.win-x64.Microsoft.NETCore.DotNetAppHost.11.0.0-dev.nupkg
+  installer.tasks -> R:\artifacts\bin\installer.tasks\Debug\installer.tasks.dll
+  Microsoft.DotNet.HotReload.Utils.Generator.Data -> R:\artifacts\bin\Microsoft.DotNet.HotReload.Utils.Generator.Data\Debug\net11.0\Microsoft.DotNet.HotReload.Utils.Generator.Data.dll
+  Microsoft.DotNet.HotReload.Utils.Generator.Tasks -> R:\artifacts\bin\Microsoft.DotNet.HotReload.Utils.Generator.Tasks\Debug\net11.0\Microsoft.DotNet.HotReload.Utils.Generator.Tasks.dll
+  Microsoft.DotNet.HotReload.Utils.Generator -> R:\artifacts\bin\Microsoft.DotNet.HotReload.Utils.Generator\Debug\net11.0\Microsoft.DotNet.HotReload.Utils.Generator.dll
+  Microsoft.DotNet.HotReload.Utils.Generator.Frontend -> R:\artifacts\bin\Microsoft.DotNet.HotReload.Utils.Generator.Frontend\Debug\net11.0\Microsoft.DotNet.HotReload.Utils.Generator.Frontend.dll
+  Microsoft.DotNet.HotReload.Utils.Generator.BuildTool -> R:\artifacts\bin\Microsoft.DotNet.HotReload.Utils.Generator.BuildTool\Debug\net11.0\Microsoft.DotNet.HotReload.Utils.Generator.BuildTool.dll
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  ServicedLibrary -> R:\artifacts\tests\host\windows.x64.Debug\ServicedLibrary\SharedLibrary.dll
+  HostApiInvokerApp -> R:\artifacts\tests\host\windows.x64.Debug\HostApiInvokerApp\HostApiInvokerApp.dll
+  ComLibraryConflictingGuid -> R:\artifacts\tests\host\windows.x64.Debug\ComLibraryConflictingGuid\ComLibraryConflictingGuid.dll
+  AppWithCustomEntryPoints -> R:\artifacts\tests\host\windows.x64.Debug\AppWithCustomEntryPoints\AppWithCustomEntryPoints.dll
+  ManagedHost -> R:\artifacts\tests\host\windows.x64.Debug\ManagedHost\ManagedHost.dll
+  RegFreeCom -> R:\artifacts\tests\host\windows.x64.Debug\RegFreeCom\RegFreeCom.dll
+  HelloWorld_中文 -> R:\artifacts\tests\host\windows.x64.Debug\HelloWorld_中文\HelloWorld_中文.dll
+  ComLibrary -> R:\artifacts\tests\host\windows.x64.Debug\ComLibrary\ComLibrary.dll
+  Component -> R:\artifacts\tests\host\windows.x64.Debug\Component\Component.dll
+  AppWithSubDirs -> R:\artifacts\tests\host\windows.x64.Debug\AppWithSubDirs\AppWithSubDirs.dll
+  AppWithUnknownLanguageResource -> R:\artifacts\tests\host\windows.x64.Debug\AppWithUnknownLanguageResource\AppWithUnknownLanguageResource.dll
+  HelloWorld -> R:\artifacts\tests\host\windows.x64.Debug\HelloWorld\HelloWorld.dll
+  ComLibraryMissingGuid -> R:\artifacts\tests\host\windows.x64.Debug\ComLibraryMissingGuid\ComLibraryMissingGuid.dll
+  SelfContained -> R:\artifacts\tests\host\windows.x64.Debug\SelfContained\net6.0\HelloWorld.dll
+  SharedLibrary -> R:\artifacts\tests\host\windows.x64.Debug\SharedLibrary\SharedLibrary.dll
+  WindowsSpecific -> R:\artifacts\tests\host\windows.x64.Debug\WindowsSpecific\WindowsSpecific.dll
+  SingleFileApiTests -> R:\artifacts\tests\host\windows.x64.Debug\SingleFileApiTests\SingleFileApiTests.dll
+  StartupHook -> R:\artifacts\tests\host\windows.x64.Debug\StartupHook\StartupHook.dll
+  LocalizedApp -> R:\artifacts\tests\host\windows.x64.Debug\LocalizedApp\LocalizedApp.dll
+  HammerServicing -> R:\artifacts\tests\host\windows.x64.Debug\HammerServicing\HammerServicing.dll
+  StartupHookWithAssemblyResolver -> R:\artifacts\tests\host\windows.x64.Debug\StartupHookWithAssemblyResolver\StartupHookWithAssemblyResolver.dll
+  "R:\src\native\corehost\build.cmd" Debug x64 -os windows commit 13d686af0f8f62a1e7660eb307086c4b618b9b30 targetrid win-x64 portable incremental-native-build rootdir R:\ runtimeflavor CoreCLR runtimeconfiguration Debug -cmakeargs "-DCLR_CMAKE_BUILD_HOST_TESTS=TRUE" -cmakeargs "-DCLR_CMAKE_BUILD_HOST_PRODUCT=FALSE" 
+  'vswhere.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  'vswhere.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  **********************************************************************
+  ** Visual Studio 2026 Developer Command Prompt v18.0
+  ** Copyright (c) 2026 Microsoft Corporation
+  **********************************************************************
+  [vcvarsall.bat] Environment initialized for: 'x64'
+  Configuring corehost native components
+  
+  Calling "R:\\eng\native\gen-buildsys.cmd "R:\src\native\corehost" "R://artifacts/obj/win-x64.Debug/corehost" 18.0 x64 windows  "-DCLR_CMAKE_BUILD_HOST_TESTS=TRUE" "-DCLR_CMAKE_BUILD_HOST_PRODUCT=FALSE" "-DCLI_CMAKE_FALLBACK_OS=win10" "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" "-DCLR_CMAKE_TARGET_ARCH=x64" "-DCLR_CMAKE_TARGET_OS=windows" "-DCLI_CMAKE_RESOURCE_DIR=R:\\artifacts\obj\win-x64.Debug\hostResourceFiles" "-DCMAKE_BUILD_TYPE=Debug""
+  The CMake command line differs from the last run. Running CMake again.
+   "C:\Program Files\Microsoft Visual Studio\18\IntPreview\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe "-DCMAKE_INSTALL_PREFIX=R://artifacts/bin/win-x64.Debug" "-DCLR_CMAKE_HOST_ARCH=x64"   "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_CMAKE_BUILD_HOST_TESTS=TRUE" "-DCLR_CMAKE_BUILD_HOST_PRODUCT=FALSE" "-DCLI_CMAKE_FALLBACK_OS=win10" "-DCLI_CMAKE_COMMIT_HASH=13d686af0f8f62a1e7660eb307086c4b618b9b30" "-DCLR_CMAKE_TARGET_ARCH=x64" "-DCLR_CMAKE_TARGET_OS=windows" "-DCLI_CMAKE_RESOURCE_DIR=R:\\artifacts\obj\win-x64.Debug\hostResourceFiles" "-DCMAKE_BUILD_TYPE=Debug" --no-warn-unused-cli -G Ninja -B "R://artifacts/obj/win-x64.Debug/corehost" -S "R:\src\native\corehost""
+  Not searching for unused variables given on the command line.
+  -- Configuring done (0.8s)
+  -- Generating done (0.3s)
+  -- Build files have been written to: R:/artifacts/obj/win-x64.Debug/corehost
+  Commencing build of corehost native components
+  [1/38] Building CXX object test\mockhostfxr\CMakeFiles\mockhostfxr_2_2.dir\mockhostfxr.cpp.obj
+  [2/38] Building CXX object test\nativehost\CMakeFiles\nativehost.dir\hostpolicy_exports.cpp.obj
+  [3/38] Building CXX object test\fx_ver\CMakeFiles\test_fx_ver.dir\test_fx_ver.cpp.obj
+  [4/38] Building CXX object test\mockhostfxr\CMakeFiles\mockhostfxr_5_0.dir\mockhostfxr.cpp.obj
+  [5/38] Building CXX object test\nativehost\CMakeFiles\nativehost.dir\error_writer_redirector.cpp.obj
+  [6/38] Building CXX object test\mockhostpolicy\CMakeFiles\mockhostpolicy.dir\mockhostpolicy.cpp.obj
+  [7/38] Building CXX object test\nativehost\CMakeFiles\nativehost.dir\get_native_search_directories_test.cpp.obj
+  [8/38] Building CXX object test\nativehost\CMakeFiles\nativehost.dir\hostfxr_exports.cpp.obj
+  [9/38] Building CXX object hostmisc\CMakeFiles\hostmisc.dir\utils.cpp.obj
+  [10/38] Building CXX object test\nativehost\CMakeFiles\nativehost.dir\nativehost.cpp.obj
+  [11/38] Building CXX object test\nativehost\CMakeFiles\nativehost_static.dir\get_native_search_directories_test.cpp.obj
+  [12/38] Building CXX object test\mockcoreclr\CMakeFiles\mockcoreclr.dir\mockcoreclr.cpp.obj
+  [13/38] Linking CXX static library hostmisc\hostmisc.lib
+  [14/38] Building CXX object hostmisc\CMakeFiles\hostmisc_public.dir\utils.cpp.obj
+  [15/38] Building CXX object test\nativehost\CMakeFiles\nativehost.dir\resolve_component_dependencies_test.cpp.obj
+  [16/38] Building CXX object test\nativehost\CMakeFiles\nativehost.dir\host_context_test.cpp.obj
+  [17/38] Building CXX object test\nativehost\CMakeFiles\nativehost.dir\comhost_test.cpp.obj
+  [18/38] Building CXX object test\mockaotsdk\CMakeFiles\mockaotsdk.dir\mockaotsdk.cpp.obj
+  [19/38] Building CXX object test\nativehost\CMakeFiles\nativehost_static.dir\error_writer_redirector.cpp.obj
+  [20/38] Linking CXX shared library ijwhost\ijwhost.dll
+  [21/37] Linking CXX shared library test\mockhostpolicy\mockhostpolicy.dll
+  [22/37] Linking CXX shared library test\mockcoreclr\mockcoreclr.dll
+  [23/37] Linking CXX shared library test\mockhostfxr\mockhostfxr_2_2.dll
+  [24/37] Linking CXX executable test\fx_ver\test_fx_ver.exe
+  [25/37] Linking CXX shared library test\mockhostfxr\mockhostfxr_5_0.dll
+  [26/37] Linking CXX shared library test\mockaotsdk\mockaotsdk.dll
+  [27/37] Linking CXX executable test\nativehost\nativehost.exe
+  [28/37] Building CXX object test\nativehost\CMakeFiles\nativehost_static.dir\hostfxr_exports.cpp.obj
+  [29/37] Building CXX object test\nativehost\CMakeFiles\nativehost_static.dir\hostpolicy_exports.cpp.obj
+  [30/37] Building CXX object test\comsxs\CMakeFiles\comsxs.dir\comsxs.cpp.obj
+  [31/37] Building CXX object test\nativehost\CMakeFiles\nativehost_static.dir\nativehost.cpp.obj
+  [32/37] Building CXX object test\nativehost\CMakeFiles\nativehost_static.dir\host_context_test.cpp.obj
+  [33/37] Linking CXX executable test\comsxs\comsxs.exe
+  [34/37] Building CXX object test\nativehost\CMakeFiles\nativehost_static.dir\resolve_component_dependencies_test.cpp.obj
+  [35/37] Building CXX object test\nativehost\CMakeFiles\nativehost_static.dir\comhost_test.cpp.obj
+  [36/37] Linking CXX executable test\nativehost\nativehost_static.exe
+  [36/37] Install the project...
+  -- Install configuration: "Debug"
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/coreclr_delegates.h
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/hostfxr.h
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/host_error_codes.h
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/nethost.h
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/PDB/nethost.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/nethost.lib
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/nethost.dll
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/PDB/libnethost.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/libnethost.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/PDB/test_fx_ver.pdb
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/test_fx_ver.exe
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/PDB/mockaotsdk.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/mockaotsdk.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/mockaotsdk.dll
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/PDB/mockcoreclr.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/mockcoreclr.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/mockcoreclr.dll
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/PDB/mockhostfxr_2_2.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/mockhostfxr_2_2.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/mockhostfxr_2_2.dll
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/PDB/mockhostfxr_5_0.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/mockhostfxr_5_0.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/mockhostfxr_5_0.dll
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/PDB/mockhostpolicy.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/mockhostpolicy.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/mockhostpolicy.dll
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/PDB/nativehost.pdb
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/nativehost.exe
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/PDB/nativehost_static.pdb
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/nativehost_static.exe
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/PDB/comsxs.pdb
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost_test/comsxs.exe
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/PDB/ijw.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/ijw.lib
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/ijw.dll
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/ijw-deps/ucrtbased.dll
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/ijw-deps/msvcp140_1d.dll
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/ijw-deps/msvcp140_2d.dll
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/ijw-deps/msvcp140d.dll
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/ijw-deps/vcruntime140_1d.dll
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/ijw-deps/vcruntime140_threadsd.dll
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/ijw-deps/vcruntime140d.dll
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/Server.tlb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost_test/Nested.tlb
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/PDB/ijwhost.pdb
+  -- Up-to-date: R:/artifacts/bin/win-x64.Debug/corehost/ijwhost.lib
+  -- Installing: R:/artifacts/bin/win-x64.Debug/corehost/ijwhost.dll
+  Done building Native components
+  Microsoft.NET.HostModel -> R:\artifacts\bin\Microsoft.NET.HostModel\Debug\net472\Microsoft.NET.HostModel.dll
+  Microsoft.NET.HostModel -> R:\artifacts\bin\Microsoft.NET.HostModel\Debug\net11.0\Microsoft.NET.HostModel.dll
+  TestUtils -> R:\artifacts\bin\TestUtils\Debug\net11.0\TestUtils.dll
+  The package Microsoft.NET.HostModel.11.0.0-dev is missing a readme. Go to https://aka.ms/nuget/authoring-best-practices/readme to learn why package readmes are important.
+  Successfully created package 'R:\artifacts\packages\Debug\NonShipping\Microsoft.NET.HostModel.11.0.0-dev.nupkg'.
+  Successfully created package 'R:\artifacts\packages\Debug\NonShipping\Microsoft.NET.HostModel.11.0.0-dev.symbols.nupkg'.
+  AppHost.Bundle.Tests -> R:\artifacts\bin\AppHost.Bundle.Tests\Debug\net11.0\win-x64\AppHost.Bundle.Tests.dll
+  Microsoft.NET.HostModel.Tests -> R:\artifacts\bin\Microsoft.NET.HostModel.Tests\Debug\net11.0\win-x64\Microsoft.NET.HostModel.Tests.dll
+  HostActivation.Tests -> R:\artifacts\bin\HostActivation.Tests\Debug\net11.0\win-x64\HostActivation.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:16:52.07

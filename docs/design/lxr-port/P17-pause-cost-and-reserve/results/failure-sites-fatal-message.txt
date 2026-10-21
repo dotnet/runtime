@@ -1,0 +1,35 @@
+# Breakpoint catches (catch-fatal-s2.sh): message of the first fatal error and the engine state.
+== catch-fatal/l1b-30.log
+0x7ffff7a6ca87:	"LXR space-pressure collection failed before growth admission."
+$1 = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+$2 = std::atomic<LxrRcPhase> = { LxrRcPhase::Faulted }
+$3 = std::atomic<bool> = { false }
+$4 = std::atomic<LxrTracePhase> = { LxrTracePhase::Concurrent }
+== catch-fatal-s2/s2a-18.log
+0x7ffff7a6ca67:	"LXR space-pressure collection failed before growth admission."
+$1 = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+$2 = std::atomic<LxrRcPhase> = { LxrRcPhase::Faulted }
+$3 = std::atomic<bool> = { false }
+$4 = std::atomic<LxrTracePhase> = { LxrTracePhase::Concurrent }
+== catch-fatal-s2/s2a-3.log
+0x7ffff7a6cc3d:	"LXR allocation-complete metadata publication failed."
+== catch-fatal-s2/s2b-12.log
+0x7ffff7a6ca67:	"LXR space-pressure collection failed before growth admission."
+$1 = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+$2 = std::atomic<LxrRcPhase> = { LxrRcPhase::Faulted }
+$3 = std::atomic<bool> = { false }
+$4 = std::atomic<LxrTracePhase> = { LxrTracePhase::Concurrent }
+== catch-fatal-s2/s2b-14.log
+0x7ffff7a6cafc:	"LXR owned allocator failed an allocation invariant."
+$1 = std::atomic<LxrRcResult> = { LxrRcResult::MetadataFailure }
+$2 = std::atomic<LxrRcPhase> = { LxrRcPhase::Faulted }
+$3 = std::atomic<bool> = { false }
+$4 = std::atomic<LxrTracePhase> = { LxrTracePhase::Concurrent }
+== catch-fatal-s2/s2b-18.log
+0x7ffff7a6cc72:	"LXR pre-store logging failed before the managed field was overwritten."
+== catch-fatal-s2/s2b-2.log
+0x7ffff7a6cc3d:	"LXR allocation-complete metadata publication failed."
+== catch-fatal-s2/s2b-25.log
+0x7ffff7a6cc3d:	"LXR allocation-complete metadata publication failed."
+== catch-fatal-s2/s2b-8.log
+0x7ffff7a6cc72:	"LXR pre-store logging failed before the managed field was overwritten."

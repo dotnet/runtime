@@ -1,0 +1,240 @@
+diff --git a/src/coreclr/gc/immix_allocation.cpp b/src/coreclr/gc/immix_allocation.cpp
+index 93edd63e247..c42f700b886 100644
+--- a/src/coreclr/gc/immix_allocation.cpp
++++ b/src/coreclr/gc/immix_allocation.cpp
+@@ -169,7 +169,7 @@ SideMetadataResult ImmixAllocationManager::TryFindNextHole(
+             {
+                 return result;
+             }
+-            if (dead && ((line == 0) || previousDead))
++            if (dead && ((line == 0) || previousDead || getenv("LXR_PRECISE") != nullptr))
+             {
+                 firstReusableLine = line;
+                 break;
+@@ -237,6 +237,55 @@ size_t ImmixAllocationManager::GetBlocksInUse() const
+     return m_blocks_in_use.load(std::memory_order_acquire);
+ }
+ 
++void ImmixAllocationManager::DiagScan(size_t* out) const
++{
++    for (size_t i = 0; i < m_block_count; i++)
++    {
++        ImmixBlockState state;
++        uint8_t unavailable;
++        if (m_blocks->GetState(m_arena_start + i * ImmixBlockGeometry::BlockBytes, &state, &unavailable) !=
++            SideMetadataResult::Success)
++        {
++            continue;
++        }
++        out[static_cast<size_t>(state)]++;
++        if (state == ImmixBlockState::Reusable)
++        {
++            size_t search = 0;
++            for (;;)
++            {
++                ImmixHole hole;
++                size_t next = 0;
++                ImmixAllocationStatus status;
++                if (TryFindNextHole(m_arena_start + i * ImmixBlockGeometry::BlockBytes, search, &hole, &next, &status) !=
++                    SideMetadataResult::Success || status != ImmixAllocationStatus::Ready)
++                {
++                    break;
++                }
++                size_t n = hole.line_count;
++                size_t bucket = n <= 1 ? 0 : n <= 2 ? 1 : n <= 4 ? 2 : n <= 8 ? 3 : n <= 16 ? 4 : 5;
++                out[8 + bucket]++;
++                out[14] += n;
++                search = next;
++            }
++        }
++        if (state == ImmixBlockState::Reusable && unavailable <= ImmixBlockGeometry::LinesPerBlock)
++        {
++            size_t available = ImmixBlockGeometry::LinesPerBlock - unavailable;
++            size_t b = available == 0 ? 0 : available <= 8 ? 1 : available <= 32 ? 2 : available <= 64 ? 3 : available < 128 ? 4 : 5;
++            out[16 + b]++;
++            out[4] += available;
++            if (available >= m_minimum_reuse_lines)
++            {
++                out[5]++;
++                out[6] += available;
++            }
++        }
++    }
++    out[7] = m_minimum_reuse_lines;
++    out[15] = ImmixBlockGeometry::LineBytes;
++}
++
+ SideMetadataResult ImmixAllocationManager::NotifyBlockReleased()
+ {
+     size_t current = m_blocks_in_use.load(std::memory_order_relaxed);
+@@ -347,7 +396,7 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
+     }
+ 
+     uint64_t token = m_blocks->GetStateToken();
+-    if (!fresh && mutator && m_recycled_exhausted_token.load(std::memory_order_acquire) == token)
++    if (false && !fresh && mutator && m_recycled_exhausted_token.load(std::memory_order_acquire) == token)
+     {
+         return SideMetadataResult::Success;
+     }
+diff --git a/src/coreclr/gc/immix_allocation.h b/src/coreclr/gc/immix_allocation.h
+index e8d356d18e5..246cb9f6eaa 100644
+--- a/src/coreclr/gc/immix_allocation.h
++++ b/src/coreclr/gc/immix_allocation.h
+@@ -75,6 +75,7 @@ public:
+     size_t GetRecycledBlocksAcquired() const;
+     size_t GetRecycledLinesConsumed() const;
+     size_t GetBlocksInUse() const;
++    void DiagScan(size_t* out) const;
+     SideMetadataResult NotifyBlockReleased();
+ 
+ private:
+diff --git a/src/coreclr/gc/lxr_collection_policy.h b/src/coreclr/gc/lxr_collection_policy.h
+index a64ef95026a..baaf6b1a3a5 100644
+--- a/src/coreclr/gc/lxr_collection_policy.h
++++ b/src/coreclr/gc/lxr_collection_policy.h
+@@ -49,7 +49,11 @@ struct LxrPolicyPressure
+ class LxrCollectionPolicy final
+ {
+ public:
+-    void Configure(const LxrPolicyConfiguration& configuration) { m_configuration = configuration; }
++    void Configure(const LxrPolicyConfiguration& configuration)
++    {
++        m_configuration = configuration;
++        if (getenv("LXR_PRIOR") != nullptr) { m_reserve_survival.store(atof(getenv("LXR_PRIOR"))); }
++    }
+ 
+     bool BeginPause(size_t allocated)
+     {
+@@ -252,7 +256,7 @@ public:
+     size_t CollectionReservedBytes(size_t youngBytes) const
+     {
+         double bytes = static_cast<double>(youngBytes) * ReserveSurvivalRatio() *
+-            static_cast<double>(ReserveSafetyFactor);
++            static_cast<double>(getenv("LXR_FACTOR") != nullptr ? atoi(getenv("LXR_FACTOR")) : ReserveSafetyFactor);
+         return bytes >= static_cast<double>(SIZE_MAX / 2) ? SIZE_MAX / 2 : static_cast<size_t>(std::ceil(bytes));
+     }
+     size_t CollectionReservedPagesForCopy(size_t youngBytes, size_t pageBytes) const
+diff --git a/src/coreclr/gc/lxr_gc.cpp b/src/coreclr/gc/lxr_gc.cpp
+index c0bf932fe71..7485b246bfa 100644
+--- a/src/coreclr/gc/lxr_gc.cpp
++++ b/src/coreclr/gc/lxr_gc.cpp
+@@ -12,6 +12,10 @@
+ #include <new>
+ #ifndef TARGET_WINDOWS
+ #include <time.h>
++#include <stdio.h>
++#include <stdlib.h>
++static size_t g_diag_clean_blocks;
++static size_t g_diag_start_free;
+ #endif // !TARGET_WINDOWS
+ 
+ namespace
+@@ -392,7 +396,7 @@ HRESULT LxrGcHeap::Initialize()
+     configuration.hardLimitBytes = m_hard_limit;
+     m_native_plane_limit = nativePlaneLimitMB << 20;
+     configuration.lineRecycling = !noRecycling && !noMutatorRecycling;
+-    configuration.copyLineRecycling = !noRecycling;
++    configuration.copyLineRecycling = !noRecycling && getenv("LXR_NOCOPYREC") == nullptr;
+     m_policy_configuration.youngLimitBytes = youngMB == (SIZE_MAX >> 20) ? SIZE_MAX : youngMB << 20;
+     if (nurseryRatio != SIZE_MAX)
+     {
+@@ -947,7 +951,7 @@ LxrCollectionCause LxrGcHeap::GetCollectionCause(bool heapFull) const
+     };
+     if (m_heap_configuration.evacuateNursery)
+     {
+-        pressure.copyReservePages = GetCollectionReservedPages(headroom);
++        pressure.copyReservePages = getenv("LXR_NORESERVE") != nullptr ? 0 : GetCollectionReservedPages(headroom);
+         pressure.immixFreePages = m_engine.GetImmixFreePages();
+     }
+     return m_policy.Trigger(pressure);
+@@ -993,6 +997,13 @@ LxrRcResult LxrGcHeap::FinishLazy(LxrReferenceCounting* engine, void* context)
+ 
+ LxrRcResult LxrGcHeap::CollectForPressure(bool emergency, bool user, bool heapFull)
+ {
++    if (const char* fullAt = getenv("LXR_FULL_AT"))
++    {
++        if (m_collections.load() + 1 == static_cast<uint64_t>(atoi(fullAt)))
++        {
++            emergency = true;
++        }
++    }
+     bool cooperative = EnterCollectionLock();
+     LxrRcResult result = UpdatePolicyHints();
+     LxrCollectionCause cause = GetCollectionCause(heapFull || emergency);
+@@ -1021,6 +1032,8 @@ void LxrGcHeap::Suspend(void* context)
+     }
+     GCToEEInterface::GcEnumAllocContexts(RetireAllocationContext, heap);
+     heap->m_pause_young_bytes.store(heap->m_engine.GetYoungAllocationBytes(), std::memory_order_release);
++    g_diag_clean_blocks = heap->m_engine.GetCleanNurseryBlocks();
++    g_diag_start_free = heap->m_engine.GetImmixFreePages();
+     {
+         size_t headroom = 0;
+         if (heap->m_engine.GetDefragHeadroomBytes(&headroom) == LxrRcResult::Success)
+@@ -1045,6 +1058,8 @@ void LxrGcHeap::Resume(bool finished, void* context)
+ {
+     LxrGcHeap* heap = static_cast<LxrGcHeap*>(context);
+     LxrPauseTimers& timers = heap->m_engine.GetPauseTimers();
++    size_t diagBlocks[24] = {0};
++    heap->m_engine.DiagBlocks(diagBlocks);
+     {
+         LxrPhaseScope resume(timers, LxrPauseTimers::ResumeRuntime);
+         GCToEEInterface::EnableFinalization(heap->m_pending_finalizers.load() != 0);
+@@ -1052,6 +1067,25 @@ void LxrGcHeap::Resume(bool finished, void* context)
+         GCToEEInterface::RestartEE(finished);
+     }
+     heap->m_in_gc.store(false, std::memory_order_release);
++    if (getenv("LXR_DIAG") != nullptr)
++    {
++        size_t mature = 0;
++        heap->m_engine.GetMaturePages(&mature);
++        double ms = static_cast<double>(GCToOSInterface::QueryPerformanceCounter() - heap->m_pause_start) * 1000.0 /
++            static_cast<double>(GCToOSInterface::QueryPerformanceFrequency());
++        fprintf(stderr, "DIAG c=%llu t=%.0f kind=%d cause=%d pausems=%.1f young=%zu clean=%zu startfree=%zu resv=%zu "
++            "endfree=%zu mature=%zu surv=%zu copied=%zu fails=%zu ratio=%.4f unalloc=%zu unmarked=%zu marked=%zu reusable=%zu "
++            "avail=%zu okblocks=%zu oklines=%zu minl=%zu h1=%zu h2=%zu h4=%zu h8=%zu h16=%zu hbig=%zu holelines=%zu linebytes=%zu b0=%zu b8=%zu b32=%zu b64=%zu b127=%zu b128=%zu\n",
++            (unsigned long long)heap->m_collections.load(), (double)(GCToOSInterface::QueryPerformanceCounter() / (GCToOSInterface::QueryPerformanceFrequency() / 1000)),
++            (int)heap->m_current_pause_kind, (int)heap->m_collection_cause.load(), ms,
++            heap->m_pause_young_bytes.load(), g_diag_clean_blocks * 32768, g_diag_start_free, heap->m_pause_reserve_pages.load(),
++            heap->m_engine.GetImmixFreePages(), mature, heap->m_engine.GetPauseSurvivorBytes(),
++            heap->m_engine.GetNurseryMetrics().pauseCopiedBytes, (size_t)heap->m_engine.GetNurseryMetrics().copyFailures,
++            heap->m_policy.MeasuredSurvivalRatio(), diagBlocks[0], diagBlocks[1], diagBlocks[2], diagBlocks[3],
++            diagBlocks[4], diagBlocks[5], diagBlocks[6], diagBlocks[7], diagBlocks[8], diagBlocks[9], diagBlocks[10],
++            diagBlocks[11], diagBlocks[12], diagBlocks[13], diagBlocks[14], diagBlocks[15], diagBlocks[16], diagBlocks[17],
++            diagBlocks[18], diagBlocks[19], diagBlocks[20], diagBlocks[21]);
++    }
+     int64_t elapsed = GCToOSInterface::QueryPerformanceCounter() - heap->m_pause_start;
+     timers.Add(LxrPauseTimers::StwPause, elapsed);
+     int64_t frequency = GCToOSInterface::QueryPerformanceFrequency();
+diff --git a/src/coreclr/gc/lxr_reference_counting.cpp b/src/coreclr/gc/lxr_reference_counting.cpp
+index f6c4654992b..387986eda25 100644
+--- a/src/coreclr/gc/lxr_reference_counting.cpp
++++ b/src/coreclr/gc/lxr_reference_counting.cpp
+@@ -2059,7 +2059,15 @@ void LxrReferenceCounting::Suspend(void* context)
+     engine->m_runtime.suspend(engine->m_runtime.context);
+     int64_t prepareStart = engine->m_pause_timers.Enabled() ? engine->m_pause_timers.Stamp() : 0;
+     engine->m_phase.store(LxrRcPhase::Suspended, std::memory_order_release);
+-    engine->m_copy_exhausted.store(false, std::memory_order_relaxed);
++    {
++        static int pauseNumber = 0;
++        pauseNumber++;
++        const char* after = getenv("LXR_NOCOPY_AFTER");
++        const char* before = getenv("LXR_NOCOPY_BEFORE");
++        bool nocopy = getenv("LXR_NOCOPY") != nullptr || (after != nullptr && pauseNumber > atoi(after)) ||
++            (before != nullptr && pauseNumber <= atoi(before));
++        engine->m_copy_exhausted.store(nocopy, std::memory_order_relaxed);
++    }
+     engine->m_mature_copy_exhausted.store(false, std::memory_order_relaxed);
+     engine->m_pause_copied_bytes.store(0, std::memory_order_relaxed);
+     engine->m_pause_mature_copied_bytes.store(0, std::memory_order_relaxed);
+diff --git a/src/coreclr/gc/lxr_reference_counting.h b/src/coreclr/gc/lxr_reference_counting.h
+index 84100ee3760..a0c296410c3 100644
+--- a/src/coreclr/gc/lxr_reference_counting.h
++++ b/src/coreclr/gc/lxr_reference_counting.h
+@@ -384,6 +384,7 @@ public:
+     size_t GetCleanNurseryBlocks() const;
+     size_t GetPendingIncrementEntries() const;
+     size_t GetImmixFreePages() const;
++    void DiagBlocks(size_t* out) const { m_allocation.DiagScan(out); }
+     size_t GetPauseSurvivorBytes() const;
+     LxrRcResult GetMaturePages(size_t* pages) const;
+     LxrRcResult DrainLazySweep(uint32_t timeout);

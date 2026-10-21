@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "declaredOracle": {
+    "name": "lxr-head",
+    "binding": "0682434ae725787e38defbc17bd66dc918e4bdb7",
+    "core": "304ce69d43aae87de501111fceb8cbd33173a03a"
+  },
+  "secondaryEvidence": {
+    "core": "9625c174",
+    "scope": "ConcurrentResumable only"
+  },
+  "stages": [
+    { "ordinal": 0, "name": "Unconstrained", "kind": "concurrent", "alwaysOpen": true },
+    { "ordinal": 1, "name": "Concurrent", "kind": "concurrent", "alwaysOpen": false },
+    { "ordinal": 2, "name": "ConcurrentResumable", "kind": "concurrent", "alwaysOpen": false },
+    { "ordinal": 3, "name": "FinishConcurrentWork", "kind": "stw", "alwaysOpen": false },
+    { "ordinal": 4, "name": "Initial", "kind": "stw", "alwaysOpen": false },
+    { "ordinal": 5, "name": "Prepare", "kind": "stw", "alwaysOpen": false },
+    { "ordinal": 6, "name": "Closure", "kind": "stw", "alwaysOpen": false },
+    { "ordinal": 7, "name": "Release", "kind": "stw", "alwaysOpen": false },
+    { "ordinal": 8, "name": "STWRCDecsAndSweep", "kind": "stw", "alwaysOpen": false },
+    { "ordinal": 9, "name": "Final", "kind": "stw", "alwaysOpen": false }
+  ],
+  "aliases": {
+    "firstStw": "FinishConcurrentWork",
+    "rcIncrements": "Initial",
+    "rcDecrements": "STWRCDecsAndSweep"
+  },
+  "referencePacketCapacities": [256, 512, 1024, 2048, 4096],
+  "defaultRcReferenceCapacity": 1024,
+  "genericEdgeReferenceCapacity": 4096,
+  "localPacketCacheCapacity": 16
+}

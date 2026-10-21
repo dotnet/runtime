@@ -1,0 +1,10 @@
+
+  Determining projects to restore...
+  Restored C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-shiny-succotash\docs\design\lxr-port\P5\runtime-tests\runtime-tests.csproj (in 1.7 sec).
+  runtime-tests -> C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-shiny-succotash\artifacts\bin\runtime-tests\Release\net11.0\runtime-tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:13.91

@@ -1,0 +1,4 @@
+"platform","passed","total","result","log"
+"windows-x64","27165","27165","PASS","run.log"
+"windows-x86","1","1","PASS","run.log"
+"linux-x64","27165","27165","PASS",

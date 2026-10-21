@@ -1,0 +1,4 @@
+"id","exit_code","sha256","result","detail","log"
+"clean-baseline","1","e05376a341e48fce2af959071fb6414227a68202b627a8ed36d535ee7a7d0569","EXPECTED-FAIL","15 NU1903 and 1 NU1904 advisories treated as errors","logs/baseline.log"
+"audit-preserving-deep-path","1","e1b13d095c9d5a4f2f0dd049eb482659fdac587f1ba91a72fa5832a1b3b49170","EXPECTED-FAIL","audit warnings retained; MSVC C1083 deep-path shared-PDB output failure","logs/baseline-audit-preserving-deep.log"
+"audit-preserving-short-path","0","92841b7104afa3ceb781b6de0c174b535ef72db8d71c61259e990174a73b4183","PASS","verified W: mapping; only NU1903;NU1904 demoted","logs/baseline-audit-preserving-short.log"

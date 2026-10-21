@@ -1,0 +1,3 @@
+GC,StockOpsPerSecond,SlotFastOpsPerSecond,SlotFastOverStock,StockAllocatedMbPerSecond,SlotFastAllocatedMbPerSecond,AllocationRateRatio,PairedMin,PairedMax,Invocations,SlotGen0,SlotGen1,SlotGen2
+srv,325768.710845,33741.588487,0.103575,6032.467024,655.725916,0.108699,0.101935,0.106965,5,72,67,5
+wks,145047.435806,7685.822153,0.052988,2730.015744,166.721073,0.061070,0.052659,0.053189,5,170,165,5

@@ -1,0 +1,31 @@
+P0.5 background load, measured on an otherwise idle machine after the control suite finished
+and the blind-band load generators were stopped.
+
+  Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 2 -MaxSamples 5
+  idle CPU samples: 21.38, 18.27, 29.37, 36.81, 26.05 %
+  mean: 26.38 %
+  processes: 316
+
+Attribution, by CPU-seconds consumed over a 10 s wall interval (Get-Process CPU delta):
+
+  copilot          14.47 s  = 1.45 cores
+  msedgewebview2    4.34 s  = 0.43 cores
+  msedgewebview2    3.20 s  = 0.32 cores
+  WindowsTerminal   1.05 s  = 0.11 cores
+  Taskmgr           0.17 s  = 0.02 cores
+                   -------
+                   23.23 s  = 2.32 cores of 16 logical = 14.5 %
+
+FINDING. The dominant background consumer is the agent host driving the measurement. This host
+is therefore never quiet while it is being instructed, and 'idle' is not a state this machine
+reaches during an agent-run session. The practical consequence is that issuing tool calls during
+a measured run perturbs that run: the quiet control-suite run's invocation 8 was contaminated
+(baseline 2049814 ops/s against a 2.55M mean, coarse 1385517, fine 1325752, null 2054799 - all
+four arms depressed together, which is a machine-wide disturbance rather than an arm effect),
+and file authoring was in progress during it. That single invocation moved the fine-arm
+half-width from 2.22% at n=7 to 10.60% at n=8, and it never recovered by n=15.
+
+METHOD CHANGE ADOPTED. Long measurement phases are launched and then left strictly alone: no
+polling, no authoring, no tool calls until the completion notification arrives. This is recorded
+because it changes how the numbers in this step were produced, and because 'pure authoring is
+free' was an assumption that measurably was not.

@@ -1,0 +1,5 @@
+scenario,heapFactor,phase,metric,ratio_s2,ratio_s4sdk,ratioDriftPercent,largestAbsoluteDriftPercent,ratioMoreStableThanAbsolute
+allocation-churn,2.0,throughput,operationsPerSecond,2.147063,1.932973,9.971,22.895,true
+large-object-pressure,2.0,throughput,operationsPerSecond,0.052388,0.051289,2.096,10.242,true
+long-lived-cache,2.0,throughput,operationsPerSecond,2.566929,2.892457,12.682,31.98,true
+low-allocation-compute,2.0,throughput,operationsPerSecond,0.97102,0.997831,2.761,3.848,true

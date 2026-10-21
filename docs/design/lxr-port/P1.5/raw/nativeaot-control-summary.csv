@@ -1,0 +1,3 @@
+"Name","ProductCommit","PerturbationCount","Expected","Observed","Result","ExitCode","Evidence"
+"nativeaot-static-cast","46e8c3381f24138962d7f9fef41c821bca5dfd60","1","NativeAOT compile failure","artifacts\p15-nativeaot-reference-enumeration\static-cast-control\gcref-control.h(30): error C2243: 'static_cast': conversion from 'Object *' to 'ArrayBase *' exists, but is inaccessible","PASS","2","static-cast-control\compile.log"
+"nativeaot-unmasked-object-size","46e8c3381f24138962d7f9fef41c821bca5dfd60","1","marked-MT executable validation failure","FAIL: NativeAOT positive marked scan avoids Object::GetSize","PASS","1","unmasked-size-control\compile.log; unmasked-size-control\run.log"

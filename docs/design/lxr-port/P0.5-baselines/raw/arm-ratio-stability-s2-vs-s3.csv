@@ -1,0 +1,9 @@
+scenario,heapFactor,phase,metric,ratio_s2,ratio_s3,ratioDriftPercent,largestAbsoluteDriftPercent,ratioMoreStableThanAbsolute
+allocation-churn,2.0,latency,latencyP99Ms,0.494544,0.532538,7.683,20.412,true
+allocation-churn,2.0,throughput,operationsPerSecond,2.147063,1.999523,6.872,17.712,true
+large-object-pressure,2.0,latency,latencyP99Ms,78.486277,133.437755,70.014,35.243,false
+large-object-pressure,2.0,throughput,operationsPerSecond,0.052388,0.048995,6.475,14.668,true
+long-lived-cache,2.0,latency,latencyP99Ms,0.12764,0.107854,15.501,13.782,false
+long-lived-cache,2.0,throughput,operationsPerSecond,2.566929,2.791391,8.744,28.494,true
+low-allocation-compute,2.0,latency,latencyP99Ms,1.269844,1.271466,0.128,89.641,true
+low-allocation-compute,2.0,throughput,operationsPerSecond,0.97102,0.958399,1.3,2.679,true

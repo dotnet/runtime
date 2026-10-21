@@ -1,0 +1,3 @@
+"id","source","result","resolution"
+"baseline-long-path","8866eee4907667c93752cc4411bcdd838b98fec5","EXPECTED-FAIL","Authorized R: baseline retry passed before implementation"
+"public-wrapper","4c99e4d89e4d3d2b9783b997d4f1c1fce37970c5","PASS","Windows/Linux validation, 8 runtime scenarios, 3 combined exports, 36 benchmark rows"

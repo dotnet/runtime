@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "addressBits": 47,
+  "globalBase": "0x00000c0000000000",
+  "localBase": "0x00004c0000000000",
+  "oracles": {
+    "pldi": {
+      "binding": "abbdd1dbbe7277e4b0dfd1d37ba613c53f5ca50d",
+      "core": "df8d30a39237a5bf5a8e27ca5a6f46acc6080c94"
+    },
+    "head": {
+      "binding": "0682434ae725787e38defbc17bd66dc918e4bdb7",
+      "core": "304ce69d43aae87de501111fceb8cbd33173a03a"
+    }
+  },
+  "specs": [
+    {
+      "id": "ValidObject",
+      "scope": "Global",
+      "logBitsPerValue": 0,
+      "reservedLogBitsPerValue": 0,
+      "logBytesPerValue": 3,
+      "initialValue": 0,
+      "ordering": "SequentiallyConsistent",
+      "consumer": "allocation-validity",
+      "oracle": "head"
+    },
+    {
+      "id": "ReferenceCount",
+      "scope": "Global",
+      "logBitsPerValue": "1|2|3",
+      "defaultLogBitsPerValue": 1,
+      "reservedLogBitsPerValue": 3,
+      "logBytesPerValue": 3,
+      "initialValue": 0,
+      "ordering": "Relaxed",
+      "consumer": "reference-counting",
+      "oracle": "pldi-validated-head"
+    },
+    {
+      "id": "FieldUnlogged",
+      "scope": "Global",
+      "logBitsPerValue": 0,
+      "reservedLogBitsPerValue": 0,
+      "logBytesPerValue": 3,
+      "initialValue": 0,
+      "ordering": "SequentiallyConsistent",
+      "consumer": "field-barrier",
+      "oracle": "pldi-validated-head"
+    },
+    {
+      "id": "BlockDefrag",
+      "scope": "Global",
+      "logBitsPerValue": 3,
+      "reservedLogBitsPerValue": 3,
+      "logBytesPerValue": 15,
+      "initialValue": 0,
+      "ordering": "SequentiallyConsistent",
+      "consumer": "immix-defrag",
+      "oracle": "head"
+    },
+    {
+      "id": "ObjectMark",
+      "scope": "Local",
+      "logBitsPerValue": 0,
+      "reservedLogBitsPerValue": 0,
+      "logBytesPerValue": 3,
+      "initialValue": 0,
+      "ordering": "Relaxed",
+      "consumer": "satb-marking",
+      "oracle": "pldi-validated-head"
+    },
+    {
+      "id": "ReferenceCountStraddle",
+      "scope": "Local",
+      "logBitsPerValue": 3,
+      "reservedLogBitsPerValue": 3,
+      "logBytesPerValue": 8,
+      "initialValue": 0,
+      "ordering": "Relaxed",
+      "consumer": "reference-counting",
+      "oracle": "pldi-validated-head"
+    },
+    {
+      "id": "BlockMark",
+      "scope": "Local",
+      "logBitsPerValue": 3,
+      "reservedLogBitsPerValue": 3,
+      "logBytesPerValue": 15,
+      "initialValue": 0,
+      "ordering": "SequentiallyConsistent",
+      "consumer": "immix-block-state",
+      "oracle": "pldi-validated-head"
+    },
+    {
+      "id": "BlockLog",
+      "scope": "Local",
+      "logBitsPerValue": 0,
+      "reservedLogBitsPerValue": 0,
+      "logBytesPerValue": 15,
+      "initialValue": 0,
+      "ordering": "SequentiallyConsistent",
+      "consumer": "immix-block-state",
+      "oracle": "pldi-validated-head"
+    },
+    {
+      "id": "NurseryPromotion",
+      "scope": "Local",
+      "logBitsPerValue": 3,
+      "reservedLogBitsPerValue": 3,
+      "logBytesPerValue": 15,
+      "initialValue": 0,
+      "ordering": "SequentiallyConsistent",
+      "consumer": "immix-nursery",
+      "oracle": "head"
+    },
+    {
+      "id": "PhaseEpoch",
+      "scope": "Local",
+      "logBitsPerValue": 3,
+      "reservedLogBitsPerValue": 3,
+      "logBytesPerValue": 15,
+      "initialValue": 0,
+      "ordering": "SequentiallyConsistent",
+      "consumer": "immix-phase-state",
+      "oracle": "head"
+    },
+    {
+      "id": "LineReuse",
+      "scope": "Local",
+      "logBitsPerValue": 3,
+      "reservedLogBitsPerValue": 3,
+      "logBytesPerValue": 8,
+      "initialValue": 0,
+      "ordering": "SequentiallyConsistent",
+      "consumer": "mature-evacuation-remset",
+      "oracle": "head"
+    },
+    {
+      "id": "LargeObjectPageReuse",
+      "scope": "Local",
+      "logBitsPerValue": 3,
+      "reservedLogBitsPerValue": 3,
+      "logBytesPerValue": 12,
+      "initialValue": 0,
+      "ordering": "SequentiallyConsistent",
+      "consumer": "large-object-remset",
+      "oracle": "head"
+    },
+    {
+      "id": "BlockOwner",
+      "scope": "Local",
+      "logBitsPerValue": 6,
+      "reservedLogBitsPerValue": 6,
+      "logBytesPerValue": 15,
+      "initialValue": 0,
+      "ordering": "SequentiallyConsistent",
+      "consumer": "block-page-resource",
+      "oracle": "head"
+    },
+    {
+      "id": "BlockInUse",
+      "scope": "Local",
+      "logBitsPerValue": 3,
+      "reservedLogBitsPerValue": 3,
+      "logBytesPerValue": 15,
+      "initialValue": 0,
+      "ordering": "SequentiallyConsistent",
+      "consumer": "block-page-resource",
+      "oracle": "head"
+    }
+  ],
+  "nonPlanes": [
+    {
+      "id": "ForwardingStatus",
+      "disposition": "P1.6 object-header state on supported 64-bit CoreCLR"
+    },
+    {
+      "id": "ForwardingPointer",
+      "disposition": "Deferred to P6"
+    },
+    {
+      "id": "SatbBuffer",
+      "disposition": "Shared old-reference/decrement buffer, not side metadata"
+    },
+    {
+      "id": "CyclicLineMark",
+      "disposition": "Not selected by LXR"
+    }
+  ]
+}

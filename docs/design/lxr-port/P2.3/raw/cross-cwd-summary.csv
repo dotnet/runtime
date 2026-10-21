@@ -1,0 +1,2 @@
+"caller","repository_root","benchmark_rows","controls","launch_count","warmup_count","iteration_count","result","log"
+"C:\Users\konradkokosa\AppData\Local\Temp\p23-unrelated-caller-8411b194e1ef4eb38c3641a61d1e9348","C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-miniature-system\","57","3","1","8","20","PASS","cross-cwd-benchmark.log"

@@ -1,0 +1,5 @@
+    20.91%  libclrlxrgc.so                [.] ReferenceCountTable::RegisterObjectInClearedSpan      -      -            
+                          0x786a339b24e9
+    10.85%  libclrlxrgc.so                [.] LxrReferenceCounting::RecordFastAllocation            -      -            
+                          0x786a339b24e9
+     9.27%  libclrlxrgc.so                [.] LxrGcHeap::AllocationComplete                         -      -            

@@ -1,0 +1,4 @@
+# Preserve byte-bound records across Windows/Linux checkout settings.
+*.csv -text whitespace=cr-at-eol
+goals-*.json -text whitespace=cr-at-eol
+measurement-limits.json -text whitespace=cr-at-eol

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "dependencyCommit": "17ac93d30d5ebc08aeda0ddf24e562d506d72230",
+  "oracle": {
+    "binding": "0682434ae725787e38defbc17bd66dc918e4bdb7",
+    "core": "304ce69d43aae87de501111fceb8cbd33173a03a",
+    "rcEnabled": true,
+    "excludedPath": "normal_get_next_available_lines"
+  },
+  "geometry": {
+    "blockBytes": 32768,
+    "lineBytes": 256,
+    "linesPerBlock": 128,
+    "ranges": "half-open",
+    "defaultMinimumReuseLines": 1
+  },
+  "referenceCountBits": [
+    2,
+    4,
+    8
+  ],
+  "objectMark": {
+    "bits": 1,
+    "dataCoverageBytes": 8,
+    "freshInactive": 0,
+    "freshConcurrentOrFinalMark": 1,
+    "recycledInactive": "preserve",
+    "recycledConcurrentOrFinalMark": 1
+  },
+  "lineReuse": {
+    "bits": 8,
+    "initial": 0,
+    "wrap": "255->0",
+    "increment": "once-per-selected-line-during-concurrent-or-final-mark"
+  },
+  "holeRules": {
+    "lineZeroDead": "reusable",
+    "afterLive": "start-at-second-consecutive-dead-line",
+    "blockTail": "included",
+    "minimumRun": "configurable"
+  },
+  "zeroing": {
+    "mutatorFresh": "zero",
+    "mutatorRecycled": "zero-selected-hole",
+    "gcCopyFresh": "preserve",
+    "gcCopyRecycled": "preserve"
+  },
+  "candidateRejection": {
+    "phaseMismatch": "reject-refill",
+    "defragOrRacedState": "skip-candidate"
+  },
+  "benchmark": {
+    "operationsPerInvoke": 32,
+    "workerCounts": [
+      1,
+      4,
+      16
+    ],
+    "launchCount": 3,
+    "warmupCount": 8,
+    "iterationCount": 20,
+    "cacheRecycledPercent": 90,
+    "aaMinimum": 0.9,
+    "aaMaximum": 1.1,
+    "extraScanMinimum": 1.5,
+    "ownerDelayMinimum": 1.25
+  }
+}

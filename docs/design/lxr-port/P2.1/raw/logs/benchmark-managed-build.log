@@ -1,0 +1,10 @@
+
+  Determining projects to restore...
+  Restored R:\docs\design\lxr-port\P2.1\side-metadata-benchmark\side-metadata-benchmark.csproj (in 244 ms).
+  side-metadata-benchmark -> R:\artifacts\bin\side-metadata-benchmark\Release\net11.0\side-metadata-benchmark.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:07.74

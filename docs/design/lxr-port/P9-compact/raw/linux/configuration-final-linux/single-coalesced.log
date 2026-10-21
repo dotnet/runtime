@@ -1,0 +1,4 @@
+{"command": ["/root/lxr-compact-collector/artifacts/P9/birth-final-Release-linux/corerun", "/root/lxr-compact-collector/artifacts/P9/fixtures/runtime-tests.dll", "--p8-single-growth", "/root/lxr-compact-collector/artifacts/P9/birth-final-Release-linux/libclrlxrgc.so"], "settings": {"DOTNET_LXRImmixInitialMB": "1", "DOTNET_LXRImmixReserveMB": "1", "DOTNET_LXRLOSInitialMB": "1", "DOTNET_LXRLOSReserveMB": "2", "DOTNET_LXRManagedHeapHardLimitMB": "3"}, "properties": {}}
+PASS: 1 P8 single-object LOS growth checks
+
+exit=0

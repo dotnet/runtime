@@ -1,0 +1,12 @@
+{
+  "runtimeOptions": {
+    "tfm": "net11.0",
+    "framework": {
+      "name": "Microsoft.NETCore.App",
+      "version": "11.0.0"
+    },
+    "configProperties": {
+      "System.GC.HeapHardLimit": 67108864
+    }
+  }
+}

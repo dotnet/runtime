@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "dependencyCommit": "8866eee4907667c93752cc4411bcdd838b98fec5",
+  "oracles": {
+    "pldi": {
+      "binding": "abbdd1dbbe7277e4b0dfd1d37ba613c53f5ca50d",
+      "core": "df8d30a39237a5bf5a8e27ca5a6f46acc6080c94"
+    },
+    "head": {
+      "binding": "0682434ae725787e38defbc17bd66dc918e4bdb7",
+      "core": "304ce69d43aae87de501111fceb8cbd33173a03a"
+    }
+  },
+  "oracleDecision": {
+    "geometry": "pldi-validated-head",
+    "stateEpochLockOwner": "head",
+    "a05Exception": true,
+    "hybridStateEncoding": false
+  },
+  "geometry": {
+    "addressBits": 47,
+    "blockLogBytes": 15,
+    "blockBytes": 32768,
+    "lineLogBytes": 8,
+    "lineBytes": 256,
+    "linesPerBlock": 128,
+    "ranges": "half-open"
+  },
+  "states": [
+    {
+      "name": "Unallocated",
+      "raw": "0"
+    },
+    {
+      "name": "Reusable",
+      "raw": "1..253",
+      "creatableUnavailableLines": "1..128"
+    },
+    {
+      "name": "Marked",
+      "raw": "254"
+    },
+    {
+      "name": "Unmarked",
+      "raw": "255"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "Unallocated",
+      "to": "Unallocated",
+      "operations": "MutatorFresh|Release"
+    },
+    {
+      "from": "Unallocated",
+      "to": "Unmarked",
+      "operations": "GcCopyFresh|GcMatureEvacuationFresh|PromoteInPlace"
+    },
+    {
+      "from": "Unmarked",
+      "to": "Unallocated",
+      "operations": "Release"
+    },
+    {
+      "from": "Unmarked",
+      "to": "Unmarked",
+      "operations": "PrepareForTrace|GcCopyReusable"
+    },
+    {
+      "from": "Unmarked",
+      "to": "Marked",
+      "operations": "Mark"
+    },
+    {
+      "from": "Unmarked",
+      "to": "Reusable",
+      "operations": "SetReusable"
+    },
+    {
+      "from": "Marked",
+      "to": "Unallocated",
+      "operations": "Release"
+    },
+    {
+      "from": "Marked",
+      "to": "Unmarked",
+      "operations": "PrepareForTrace|GcCopyReusable"
+    },
+    {
+      "from": "Marked",
+      "to": "Marked",
+      "operations": "Mark"
+    },
+    {
+      "from": "Marked",
+      "to": "Reusable",
+      "operations": "SetReusable"
+    },
+    {
+      "from": "Reusable",
+      "to": "Unallocated",
+      "operations": "Release"
+    },
+    {
+      "from": "Reusable",
+      "to": "Unmarked",
+      "operations": "PrepareForTrace|GcCopyReusable"
+    },
+    {
+      "from": "Reusable",
+      "to": "Marked",
+      "operations": "Mark"
+    },
+    {
+      "from": "Reusable",
+      "to": "Reusable",
+      "operations": "SetReusable"
+    }
+  ],
+  "metadata": [
+    {
+      "kind": "BlockMark",
+      "bits": 8,
+      "logBytesPerValue": 15
+    },
+    {
+      "kind": "BlockLog",
+      "bits": 1,
+      "logBytesPerValue": 15
+    },
+    {
+      "kind": "BlockDefrag",
+      "bits": 8,
+      "logBytesPerValue": 15
+    },
+    {
+      "kind": "NurseryPromotion",
+      "bits": 8,
+      "logBytesPerValue": 15
+    },
+    {
+      "kind": "PhaseEpoch",
+      "bits": 8,
+      "logBytesPerValue": 15
+    },
+    {
+      "kind": "BlockOwner",
+      "bits": 64,
+      "logBytesPerValue": 15
+    },
+    {
+      "kind": "BlockInUse",
+      "bits": 8,
+      "logBytesPerValue": 15
+    },
+    {
+      "kind": "LineReuse",
+      "bits": 8,
+      "logBytesPerValue": 8,
+      "usedByP22": false
+    }
+  ],
+  "phaseEpoch": {
+    "bits": 8,
+    "initialGlobal": 1,
+    "initialBlock": 0,
+    "pauseStartBump": true,
+    "releaseBump": true,
+    "mutatorParity": "odd",
+    "gcParity": "even",
+    "wrapFrom": 254,
+    "wrapTo": 1,
+    "wrapResetBlockEpochTo": 0,
+    "predicates": {
+      "nursery": "state == Unallocated && nurseryOrReusing",
+      "reusing": "state != Unallocated && nurseryOrReusing",
+      "gcReusing": "state != Unallocated && globalEpoch is even && blockEpoch == globalEpoch",
+      "gcReusingWrongPhase": "Unallocated returns false before parity validation; allocated rejects an odd global epoch"
+    }
+  },
+  "acquisitionEligibility": {
+    "mutatorReusable": "state != Unallocated && !isReusing && !isDefragSource && owner is none",
+    "gcCopyReusable": "state != Unallocated && !isReusing && !isGcReusing && !isDefragSource && owner is none",
+    "gcCopyFresh": "state == Unallocated && !isNursery",
+    "gcMatureEvacuationFresh": "state == Unallocated"
+  },
+  "benchmark": {
+    "blockCount": 8192,
+    "operationsPerInvoke": 4096,
+    "workerCounts": [
+      1,
+      4,
+      16
+    ],
+    "launchCount": 3,
+    "warmupCount": 8,
+    "iterationCount": 20,
+    "aaMinimum": 0.9,
+    "aaMaximum": 1.1,
+    "extraCasMinimum": 1.5,
+    "ownerDelayMinimum": 1.25
+  }
+}

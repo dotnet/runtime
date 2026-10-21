@@ -1,0 +1,7 @@
+{"command": ["C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\json-host-windows\\dotnet.exe", "exec", "--runtimeconfig", "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\configuration-final-windows\\json-malformed.runtimeconfig.json", "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\fixtures\\runtime-tests.dll", "--vertical", "mutation", "LXR", "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\birth-final-Release-windows\\clrlxrgc.dll", "normal"], "settings": {}, "properties": {"System.GC.LXRManagedHeapHardLimitMB": "wrong"}}
+GC: LXRManagedHeapHardLimitMB
+GC: LXR configuration must be an unsigned integer in the documented range.
+GC heap initialization failed with error 0x80004005
+Failed to create CoreCLR, HRESULT: 0x80004005
+
+exit=2147516553

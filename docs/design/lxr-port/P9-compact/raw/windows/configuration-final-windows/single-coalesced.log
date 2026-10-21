@@ -1,0 +1,4 @@
+{"command": ["C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\birth-final-Release-windows\\corerun.exe", "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\fixtures\\runtime-tests.dll", "--p8-single-growth", "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-shiny-succotash\\artifacts\\P9\\birth-final-Release-windows\\clrlxrgc.dll"], "settings": {"DOTNET_LXRImmixInitialMB": "1", "DOTNET_LXRImmixReserveMB": "1", "DOTNET_LXRLOSInitialMB": "1", "DOTNET_LXRLOSReserveMB": "2", "DOTNET_LXRManagedHeapHardLimitMB": "3"}, "properties": {}}
+PASS: 1 P8 single-object LOS growth checks
+
+exit=0

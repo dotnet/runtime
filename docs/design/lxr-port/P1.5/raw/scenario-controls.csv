@@ -1,0 +1,2 @@
+"Name","PerturbationCount","Expected","Result","ExitCode","Evidence"
+"native-mode-mismatch","1","worker invalidates a native mode mismatch","PASS","1","scenario-control-detail.csv"

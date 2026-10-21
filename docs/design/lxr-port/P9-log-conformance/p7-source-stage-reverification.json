@@ -1,0 +1,322 @@
+[
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "baseline-fixture",
+    "path": "docs/design/lxr-port/P5/runtime-tests/Program.cs",
+    "canonical_git_blob_sha256": "b04c11fbed04bb4d9a2a392690cfbbabb68c12ec2dd83c9c9d660f0f0ddd0141",
+    "compiler_working_sha256_separate": "c389f9272c944c1516f9145268804df7671a7ae373483d5e4f0a416edcf86398"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "baseline-fixture",
+    "path": "docs/design/lxr-port/P5/runtime-tests/Nursery.cs",
+    "canonical_git_blob_sha256": "d452578fa0705793868db0eca4449c81bd846cf5428bd62d0785d4c3a59cfbd1",
+    "compiler_working_sha256_separate": "5cfd27895cc2f5d477dfe2902157046172a6fd603284c93a1a0d584a08c4ddbd"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "baseline-fixture",
+    "path": "docs/design/lxr-port/P5/runtime-tests/runtime-tests.csproj",
+    "canonical_git_blob_sha256": "99121546c8f4611c9b0b8c111650661a44926fab1e1ad05f27040dee68edeff3",
+    "compiler_working_sha256_separate": "18c3a5b3e6575a5e6c721d703b76a0ff832be1e045a5556ecc97dca098ac293d"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "baseline-fixture",
+    "path": "global.json",
+    "canonical_git_blob_sha256": "961daa69c4d3464e69933ab78d3d7ba469ea1170fe737a377e2c095fb3ebc122",
+    "compiler_working_sha256_separate": "5a8bc5d1b31de01b9bb3e2f6ab209a9d9097f482bb063656f9c5afa06d3e0644"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture2",
+    "path": "docs/design/lxr-port/P5/runtime-tests/Program.cs",
+    "canonical_git_blob_sha256": "0e37527542d70f331747e5be3e436736755be2663a7442f200c26427fe11c198",
+    "compiler_working_sha256_separate": "a118158b0f0aa5979f568a80da4578f5b49f64155f5957da79afdeceeadef85c"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture2",
+    "path": "docs/design/lxr-port/P5/runtime-tests/Nursery.cs",
+    "canonical_git_blob_sha256": "d452578fa0705793868db0eca4449c81bd846cf5428bd62d0785d4c3a59cfbd1",
+    "compiler_working_sha256_separate": "5cfd27895cc2f5d477dfe2902157046172a6fd603284c93a1a0d584a08c4ddbd"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture2",
+    "path": "docs/design/lxr-port/P5/runtime-tests/runtime-tests.csproj",
+    "canonical_git_blob_sha256": "99121546c8f4611c9b0b8c111650661a44926fab1e1ad05f27040dee68edeff3",
+    "compiler_working_sha256_separate": "18c3a5b3e6575a5e6c721d703b76a0ff832be1e045a5556ecc97dca098ac293d"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture2",
+    "path": "global.json",
+    "canonical_git_blob_sha256": "961daa69c4d3464e69933ab78d3d7ba469ea1170fe737a377e2c095fb3ebc122",
+    "compiler_working_sha256_separate": "5a8bc5d1b31de01b9bb3e2f6ab209a9d9097f482bb063656f9c5afa06d3e0644"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture3",
+    "path": "docs/design/lxr-port/P5/runtime-tests/Program.cs",
+    "canonical_git_blob_sha256": "7b0b6d7d833f256db7b04a6f71230d815496d2c8a4ec0ee7cebdce6ce3d2cf75",
+    "compiler_working_sha256_separate": "da649c7d66dba86abb1e20906764b0284e6f9a29d99d0a0676479a340868f30c"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture3",
+    "path": "docs/design/lxr-port/P5/runtime-tests/Nursery.cs",
+    "canonical_git_blob_sha256": "d452578fa0705793868db0eca4449c81bd846cf5428bd62d0785d4c3a59cfbd1",
+    "compiler_working_sha256_separate": "5cfd27895cc2f5d477dfe2902157046172a6fd603284c93a1a0d584a08c4ddbd"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture3",
+    "path": "docs/design/lxr-port/P5/runtime-tests/runtime-tests.csproj",
+    "canonical_git_blob_sha256": "99121546c8f4611c9b0b8c111650661a44926fab1e1ad05f27040dee68edeff3",
+    "compiler_working_sha256_separate": "18c3a5b3e6575a5e6c721d703b76a0ff832be1e045a5556ecc97dca098ac293d"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture3",
+    "path": "global.json",
+    "canonical_git_blob_sha256": "961daa69c4d3464e69933ab78d3d7ba469ea1170fe737a377e2c095fb3ebc122",
+    "compiler_working_sha256_separate": "5a8bc5d1b31de01b9bb3e2f6ab209a9d9097f482bb063656f9c5afa06d3e0644"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture6",
+    "path": "docs/design/lxr-port/P5/runtime-tests/Program.cs",
+    "canonical_git_blob_sha256": "365eedec16fd0def7829f8ce32a7fd2997f47b34798f63f602b698ee00f45f51",
+    "compiler_working_sha256_separate": "647f94e85e874578db9bb2ac6601f9be55df61dd8e47adde70be108f0e7f4803"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture6",
+    "path": "docs/design/lxr-port/P5/runtime-tests/Nursery.cs",
+    "canonical_git_blob_sha256": "d452578fa0705793868db0eca4449c81bd846cf5428bd62d0785d4c3a59cfbd1",
+    "compiler_working_sha256_separate": "5cfd27895cc2f5d477dfe2902157046172a6fd603284c93a1a0d584a08c4ddbd"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture6",
+    "path": "docs/design/lxr-port/P5/runtime-tests/runtime-tests.csproj",
+    "canonical_git_blob_sha256": "99121546c8f4611c9b0b8c111650661a44926fab1e1ad05f27040dee68edeff3",
+    "compiler_working_sha256_separate": "18c3a5b3e6575a5e6c721d703b76a0ff832be1e045a5556ecc97dca098ac293d"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture6",
+    "path": "global.json",
+    "canonical_git_blob_sha256": "961daa69c4d3464e69933ab78d3d7ba469ea1170fe737a377e2c095fb3ebc122",
+    "compiler_working_sha256_separate": "5a8bc5d1b31de01b9bb3e2f6ab209a9d9097f482bb063656f9c5afa06d3e0644"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture7-allocator",
+    "path": "docs/design/lxr-port/P5/runtime-tests/Program.cs",
+    "canonical_git_blob_sha256": "26a327f79f960eb33b9f520e62f14df1da742bfcf6dae74c8df4d93166b898e0",
+    "compiler_working_sha256_separate": "deb7c9b9bb00defa3e9b59ff75e561937ba0ef6ab5cbccaf800df5411926a282"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture7-allocator",
+    "path": "docs/design/lxr-port/P5/runtime-tests/Nursery.cs",
+    "canonical_git_blob_sha256": "d452578fa0705793868db0eca4449c81bd846cf5428bd62d0785d4c3a59cfbd1",
+    "compiler_working_sha256_separate": "5cfd27895cc2f5d477dfe2902157046172a6fd603284c93a1a0d584a08c4ddbd"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture7-allocator",
+    "path": "docs/design/lxr-port/P5/runtime-tests/runtime-tests.csproj",
+    "canonical_git_blob_sha256": "99121546c8f4611c9b0b8c111650661a44926fab1e1ad05f27040dee68edeff3",
+    "compiler_working_sha256_separate": "18c3a5b3e6575a5e6c721d703b76a0ff832be1e045a5556ecc97dca098ac293d"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture7-allocator",
+    "path": "global.json",
+    "canonical_git_blob_sha256": "961daa69c4d3464e69933ab78d3d7ba469ea1170fe737a377e2c095fb3ebc122",
+    "compiler_working_sha256_separate": "5a8bc5d1b31de01b9bb3e2f6ab209a9d9097f482bb063656f9c5afa06d3e0644"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture8-cycle",
+    "path": "docs/design/lxr-port/P5/runtime-tests/Program.cs",
+    "canonical_git_blob_sha256": "f32abf2e131a207fb99881a9b6ab32caffbbd09093605c048dc1ceb3598945e2",
+    "compiler_working_sha256_separate": "7b93ef1916bf2b999109a0fdb59354fc51d04676d3b97dafdbe5444979b22405"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture8-cycle",
+    "path": "docs/design/lxr-port/P5/runtime-tests/Nursery.cs",
+    "canonical_git_blob_sha256": "d452578fa0705793868db0eca4449c81bd846cf5428bd62d0785d4c3a59cfbd1",
+    "compiler_working_sha256_separate": "5cfd27895cc2f5d477dfe2902157046172a6fd603284c93a1a0d584a08c4ddbd"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture8-cycle",
+    "path": "docs/design/lxr-port/P5/runtime-tests/runtime-tests.csproj",
+    "canonical_git_blob_sha256": "99121546c8f4611c9b0b8c111650661a44926fab1e1ad05f27040dee68edeff3",
+    "compiler_working_sha256_separate": "18c3a5b3e6575a5e6c721d703b76a0ff832be1e045a5556ecc97dca098ac293d"
+  },
+  {
+    "manifest": "fixture-source-bindings.csv",
+    "stage": "fixture8-cycle",
+    "path": "global.json",
+    "canonical_git_blob_sha256": "961daa69c4d3464e69933ab78d3d7ba469ea1170fe737a377e2c095fb3ebc122",
+    "compiler_working_sha256_separate": "5a8bc5d1b31de01b9bb3e2f6ab209a9d9097f482bb063656f9c5afa06d3e0644"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "accepted",
+    "path": "src/coreclr/gc/lxr_gc.cpp",
+    "canonical_git_blob_sha256": "6c1e8ba1ccdc3eed4cfd0e89b8ff73b785edf84796829f1d4d82cc1cee7bda09",
+    "compiler_working_sha256_separate": "06c3e77a9721b078717c00cc8c4dbc96c06751f1de957508e60df3afddd77b9e"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "accepted",
+    "path": "src/coreclr/gc/lxr_gc.h",
+    "canonical_git_blob_sha256": "edb8a87cce9bf27995428bfc89c66a3ba96bdbdb3737529bd0e7619aa531e103",
+    "compiler_working_sha256_separate": "4e6c9b0fce0a024fc339bc8d733f8b2f8e9086e3c20526be0de6925a75ad35ec"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "accepted",
+    "path": "src/coreclr/gc/lxr_gcload.cpp",
+    "canonical_git_blob_sha256": "311dfe61bc013fb495d3f31b99141b3d01c4acd21ec547e420e57219f4547913",
+    "compiler_working_sha256_separate": "6b0daa69023ea56574c6f69d8c8470cd64ae771c317c0b8422eb136feb987379"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "accepted",
+    "path": "src/coreclr/gc/lxr_reference_counting.cpp",
+    "canonical_git_blob_sha256": "6c6c3cb9e7756d2421a62220c3131eceebdefc94a8e1920eedc31f78ea7072a8",
+    "compiler_working_sha256_separate": "f05c8b8c5d41a5fe419b99d60f0ca9ffdf38597c40b877973555f1279f3aff53"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "correctness1",
+    "path": "src/coreclr/gc/lxr_gc.cpp",
+    "canonical_git_blob_sha256": "add13b9b8682fcdb5a85f07925bad8c420cdf5ad75a6f0d302fab50b685e9c78",
+    "compiler_working_sha256_separate": "04d7ac95aba63c10a9cf33a46e7a0a27f35852c3377d7a490cea04fe03431d4d"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "correctness1",
+    "path": "src/coreclr/gc/lxr_gc.h",
+    "canonical_git_blob_sha256": "fb5f0f4c833e2fec401ac721175c2ffbc42ec9e6567de93db2d6ec96038cb34e",
+    "compiler_working_sha256_separate": "7aa9ed8682e31985c52d28352a523caf719c196db2f6345db5ceb08ee1f8c87a"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "correctness1",
+    "path": "src/coreclr/gc/lxr_gcload.cpp",
+    "canonical_git_blob_sha256": "311dfe61bc013fb495d3f31b99141b3d01c4acd21ec547e420e57219f4547913",
+    "compiler_working_sha256_separate": "6b0daa69023ea56574c6f69d8c8470cd64ae771c317c0b8422eb136feb987379"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "correctness1",
+    "path": "src/coreclr/gc/lxr_reference_counting.cpp",
+    "canonical_git_blob_sha256": "7614f612b6db720dc830f68bd8806e3c36b7f5cb10061b84fe9e8367a5627294",
+    "compiler_working_sha256_separate": "1b00087e894e81573d5415bacf1e20d2f1bd6c6e7194debbda364e12ee8dff68"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "attribution1",
+    "path": "src/coreclr/gc/lxr_gc.cpp",
+    "canonical_git_blob_sha256": "6f6dcfd67e8c65aec872b6912578df9dfad18eaa0b8c6db9598832ddd167bed4",
+    "compiler_working_sha256_separate": "72c17ff2b3bdb7cebad51f04651fb0743ed4c82e38029a25a01545bdeb66f7cf"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "attribution1",
+    "path": "src/coreclr/gc/lxr_gc.h",
+    "canonical_git_blob_sha256": "fb56580105b91d95fbba43758776da3405c9263d14b138b9ec1cbccd235f6ccf",
+    "compiler_working_sha256_separate": "8bef3cb1b01d24bf6ad62e2f40fca2ec118818af87c6fa08ac2120fbc884959f"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "attribution1",
+    "path": "src/coreclr/gc/lxr_gcload.cpp",
+    "canonical_git_blob_sha256": "c06a9958ce1cf951b31bdb2ddaad289537b0da4c61751cd800e0114dc6c184aa",
+    "compiler_working_sha256_separate": "f1bd9b4c9f9e52889d91ba408b4ec509681678873974272cc3819e1196d1fe5b"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "attribution1",
+    "path": "src/coreclr/gc/lxr_reference_counting.cpp",
+    "canonical_git_blob_sha256": "7614f612b6db720dc830f68bd8806e3c36b7f5cb10061b84fe9e8367a5627294",
+    "compiler_working_sha256_separate": "1b00087e894e81573d5415bacf1e20d2f1bd6c6e7194debbda364e12ee8dff68"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "reuse1-exploratory",
+    "path": "src/coreclr/gc/lxr_gc.cpp",
+    "canonical_git_blob_sha256": "8186ca634f42336e9b3b6ee7f63523b2a7223c289749209a95062abf33dc939e",
+    "compiler_working_sha256_separate": "3e585ad6b6ef0e2b7bf0b47735dec047e692ccc485f476c9715b38ff2a484a80"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "reuse1-exploratory",
+    "path": "src/coreclr/gc/lxr_gc.h",
+    "canonical_git_blob_sha256": "449cd19d43d32345c72721d229aa268c8d761456a58816448f424502f61164f0",
+    "compiler_working_sha256_separate": "5d5f1a1ced26ddd306e47d7f3311f2302aee45b740ca99bab6eff18e5e86f601"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "reuse1-exploratory",
+    "path": "src/coreclr/gc/lxr_gcload.cpp",
+    "canonical_git_blob_sha256": "c06a9958ce1cf951b31bdb2ddaad289537b0da4c61751cd800e0114dc6c184aa",
+    "compiler_working_sha256_separate": "f1bd9b4c9f9e52889d91ba408b4ec509681678873974272cc3819e1196d1fe5b"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "reuse1-exploratory",
+    "path": "src/coreclr/gc/lxr_reference_counting.cpp",
+    "canonical_git_blob_sha256": "7614f612b6db720dc830f68bd8806e3c36b7f5cb10061b84fe9e8367a5627294",
+    "compiler_working_sha256_separate": "1b00087e894e81573d5415bacf1e20d2f1bd6c6e7194debbda364e12ee8dff68"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "final2",
+    "path": "src/coreclr/gc/lxr_gc.cpp",
+    "canonical_git_blob_sha256": "c5f37d2dac43e061e0149bd1d47827c95a68f908b5bca1866d4bf89648120282",
+    "compiler_working_sha256_separate": "4798c7827509ca81b108d7aad4c926f03dd78964fa3ed3523930166b7ed32a50"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "final2",
+    "path": "src/coreclr/gc/lxr_gc.h",
+    "canonical_git_blob_sha256": "322532162e6269124eb295ff9e6d09eed5a742a82bced2050f98cc2df22a0eea",
+    "compiler_working_sha256_separate": "57eacda956c0ca949d0b1c4d7babb23545c6a440a45207ed8c27663cbb91e97c"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "final2",
+    "path": "src/coreclr/gc/lxr_gcload.cpp",
+    "canonical_git_blob_sha256": "c06a9958ce1cf951b31bdb2ddaad289537b0da4c61751cd800e0114dc6c184aa",
+    "compiler_working_sha256_separate": "f1bd9b4c9f9e52889d91ba408b4ec509681678873974272cc3819e1196d1fe5b"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "final2",
+    "path": "src/coreclr/gc/lxr_reference_counting.cpp",
+    "canonical_git_blob_sha256": "7614f612b6db720dc830f68bd8806e3c36b7f5cb10061b84fe9e8367a5627294",
+    "compiler_working_sha256_separate": "1b00087e894e81573d5415bacf1e20d2f1bd6c6e7194debbda364e12ee8dff68"
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "corrected2",
+    "path": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-upgraded-train\\artifacts\\P7-lifecycle\\corrected2-source\\lxr_gc.cpp",
+    "physical_source_and_patch_verified": true
+  },
+  {
+    "manifest": "native-source-stages.csv",
+    "stage": "corrected2",
+    "path": "C:\\Users\\konradkokosa\\.copilot\\repos\\copilot-worktrees\\runtime-fork\\kkokosa-upgraded-train\\artifacts\\P7-lifecycle\\corrected2-source\\lxr_gc.h",
+    "physical_source_and_patch_verified": true
+  }
+]

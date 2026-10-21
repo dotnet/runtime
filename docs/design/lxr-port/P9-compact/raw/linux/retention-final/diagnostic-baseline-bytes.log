@@ -1,0 +1,9 @@
+{"command": ["/root/lxr-compact-collector/artifacts/P9/diagnostic-baseline-Release-linux/corerun", "/root/lxr-compact-collector/artifacts/P9/retention-fixtures/runtime-tests.dll", "--retention-bytes", "/root/lxr-compact-collector/artifacts/P9/diagnostic-baseline-Release-linux/libclrlxrgc.so"], "module_sha256": "c643932428e60eee8a660d972e5f801c5720724ac11a10dd340e12f62c3b9b9e", "fixture_sha256": "7799af7c68e9d9c0d449d2c082f824fe6da2ca3fa144caed0a2b1aedfafdabef"}
+retention=live pointer_rich=False working_set_bytes=661520384 private_bytes=1392369664 owned_resident_bytes=81461248 managed_committed_bytes=109215744 admitted_bytes=134217728 native_plane_committed_bytes=1137360896 live_bytes=61707224 work_owned_bytes=260584 work_high_water_bytes=262408 copied_reference_bytes=71056 scan_owned_bytes=162600 scan_high_water_bytes=162600
+retention=quiescent pointer_rich=False working_set_bytes=621043712 private_bytes=1358831616 owned_resident_bytes=39354368 managed_committed_bytes=67108864 admitted_bytes=134217728 native_plane_committed_bytes=1137360896 live_bytes=65784 work_owned_bytes=71064 work_high_water_bytes=262408 copied_reference_bytes=83184 scan_owned_bytes=27960 scan_high_water_bytes=162600
+Unhandled exception. System.InvalidOperationException: Quiescence retained drained Work, TraceScan or trace-plane storage.
+   at Program.Check(Boolean condition, String message) in C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-shiny-succotash\docs\design\lxr-port\P5\runtime-tests\Program.cs:line 130
+   at Program.RunRetention(String path, Boolean pointerRich) in C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-shiny-succotash\docs\design\lxr-port\P5\runtime-tests\Program.cs:line 1015
+   at Program.Main(String[] args) in C:\Users\konradkokosa\.copilot\repos\copilot-worktrees\runtime-fork\kkokosa-shiny-succotash\docs\design\lxr-port\P5\runtime-tests\Program.cs:line 1240
+
+exit=-6

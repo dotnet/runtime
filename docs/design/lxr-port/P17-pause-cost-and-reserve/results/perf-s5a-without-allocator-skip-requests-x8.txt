@@ -1,0 +1,13 @@
+by dso [('libclrlxrgc.so', 93.88000000000095), ('ld-linux-x86-64.so.2', 0.65), ('libc.so.6', 0.6000000000000001), ('libcoreclr.so', 0.35000000000000003), ('[vdso]', 0.08), ('libSystem.Native.so', 0.0)]
+ 34.88%  SideMetadataManager::Load
+  8.95%  SideMetadataManager::Store
+  8.14%  SideMetadataManager::GetLocation
+  7.03%  SideMetadataManager::CompareExchange
+  5.82%  ImmixAllocationManager::AcquireBlock
+  5.78%  ImmixBlockManager::TryAcquire
+  3.37%  ImmixBlockManager::GetState
+  2.69%  LxrReferenceCounting::CompleteAllocation
+  2.33%  LxrReferenceCounting::ReclaimNursery
+  2.24%  SideMetadataManager::VisitWords
+  1.75%  LxrGcHeap::AllocationComplete
+  1.21%  LxrReferenceCounting::ResolveForwarded

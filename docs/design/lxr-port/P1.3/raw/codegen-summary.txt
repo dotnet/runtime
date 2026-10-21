@@ -1,0 +1,39 @@
+Windows x64 Release no-PGO
+
+Family layout copy:
+call CORINFO_HELP_BULK_WRITEBARRIER_WITH_LAYOUT
+
+Family layout clear:
+call CORINFO_HELP_BULK_WRITEBARRIER_CLEAR_WITH_LAYOUT
+
+The preserved P1.2-main CardTable runtime and changed P1.3 CardTable runtime
+produced an empty diff for Program:StoreLargeValue,
+Program:ClearLargeValue, and Program:StoreScalars.
+
+stock disassembly: byte-identical
+
+Dedicated Program:FillReferences and Program:FillMixedReferences methods are
+also identical after normalizing relocation addresses. Their exact method
+bodies, sizes, and SHA-256 hashes are in stock-fill-codegen.txt and
+stock-fill-codegen.csv.
+
+The 48 KB / 4096-reference negative control generated 106418 bytes for copy
+and 75742 bytes for clear before the bound. The offset-aware helper generates
+one helper call and 49/44 bytes; minopts, cold, and volatile forms
+also contain exactly one helper call. Exact identities are in
+layout-helper-codegen.csv.
+
+The runtime-async custom GC slice generated 119387 bytes before descriptor
+offset propagation. The bounded body is 689 bytes and emits one clear helper
+with descriptor offset 8 and slice size 0xBFF8. Exact identities are in
+custom-layout-codegen.csv.
+
+The 128-reference stack-allocated reference-class execution control uses a
+1128-byte frame and produces 414 bytes with zero new-object helpers and zero
+layout helpers. This confirms stack execution, not the structural
+value-class-eligibility gate.
+
+Separate reference-class-codegen.csv rows record the genuine 49152-byte
+MemberwiseClone shared-helper path: 1024-byte exact Linux Debug/Windows
+Checked chunks and 16384-byte Windows Release chunks, all passing with exact
+runtime and CoreLib identities.

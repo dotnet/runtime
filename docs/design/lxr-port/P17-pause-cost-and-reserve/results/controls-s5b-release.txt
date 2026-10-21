@@ -1,0 +1,86 @@
+######## control LXR_S5B_NO_BORROW_CONTROL (Release)
+      2 FAIL: the random run borrowed and gave back many times, across the epoch wrap
+      1 FAIL: the pause has admitted eight blocks beyond the capacity when it captures the roots
+      1 FAIL: the admission is bounded by the reservation
+      1 FAIL: both objects are copied into the borrowed blocks
+      1 FAIL: a refused admission leaves the capacity and the copy as without overshoot
+      1 FAIL: 3504/3511 S5b overshoot checks
+      1 FAIL: 128 blocks are admitted and the tail above the survivors goes back
+      1 == --s5b-overshoot
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S5B_NO_GIVEBACK_CONTROL (Release)
+      2 FAIL: the random run borrowed and gave back many times, across the epoch wrap
+      1 FAIL: the capacity ends after the highest block that holds a survivor
+      1 FAIL: 7073/7077 S5b overshoot checks
+      1 FAIL: 128 blocks are admitted and the tail above the survivors goes back
+      1 == --s5b-overshoot
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S5B_ALWAYS_RETURN_CONTROL (Release)
+      1 FAIL: the capacity ends after the highest block that holds a survivor
+      1 == --s5b-overshoot
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S5B_NO_ALLOC_SHRINK_CONTROL (Release)
+      2 FAIL: the random run borrowed and gave back many times, across the epoch wrap
+      2 FAIL: random pause with borrowing completes
+      2 FAIL: capacity, counters, ownership and payloads hold in every random pause
+      1 FAIL: when the survivors are dead the whole borrowed range goes back to the kept capacity
+      1 FAIL: the returned range is not owned
+      1 FAIL: the returned blocks are no Immix space and no owned metadata range any more
+      1 FAIL: the planes of the re-admitted range are zero
+      1 FAIL: the pause that kills the second survivors completes
+      1 FAIL: the pause that finds a free retained tail completes
+      1 FAIL: the next pause completes
+      1 FAIL: the data and the planes of the returned range are no longer resident (Linux)
+      1 FAIL: the copy fills the free blocks of the retained tail from the lowest block, and the new borrow goes back
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S5B_NO_PLANE_DECOMMIT_CONTROL (Release)
+      2 FAIL: capacity, counters, ownership and payloads hold in every random pause
+      1 FAIL: when the survivors are dead the whole borrowed range goes back to the kept capacity
+      1 FAIL: the returned range is not owned
+      1 FAIL: the returned blocks are no Immix space and no owned metadata range any more
+      1 FAIL: the planes of the re-admitted range are zero
+      1 FAIL: the data and the planes of the returned range are no longer resident (Linux)
+      1 FAIL: 9333/9340 S5b overshoot checks
+      1 == --s5b-overshoot
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S5B_NO_DATA_DECOMMIT_CONTROL (Release)
+      1 FAIL: the data and the planes of the returned range are no longer resident (Linux)
+      1 FAIL: 9230/9231 S5b overshoot checks
+      1 == --s5b-overshoot
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S5B_KEEP_RANGE_OWNED_CONTROL (Release)
+      1 FAIL: when the survivors are dead the whole borrowed range goes back to the kept capacity
+      1 FAIL: the returned range is not owned
+      1 FAIL: the returned blocks are no Immix space and no owned metadata range any more
+      1 == --s5b-overshoot
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S5B_IGNORE_HARD_LIMIT_CONTROL (Release)
+      1 FAIL: the capacity stays and the copy fails as before S5b
+      1 FAIL: a hard limit, a reservation equal to the capacity, or the switch disable overshoot
+      1 FAIL: 9382/9384 S5b overshoot checks
+      1 == --s5b-overshoot
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S5B_IGNORE_PLANE_LIMIT_CONTROL (Release)
+      1 FAIL: a refused admission leaves the capacity and the copy as without overshoot
+      1 FAIL: 9318/9319 S5b overshoot checks
+      1 == --s5b-overshoot
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S5B_RESERVE_TRIGGER_CONTROL (Release)
+      1 FAIL: with overshoot no reserve is kept: 500 free Immix pages do not trigger
+      1 FAIL: with overshoot more than one free block does not trigger
+      1 FAIL: 9423/9425 S5b overshoot checks
+      1 == --s5b-overshoot
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S5B_NO_PLACEMENT_CONTROL (Release)
+      1 FAIL: mutators take fresh blocks only in the kept capacity
+      1 FAIL: 12678/12679 S5b overshoot checks
+      1 == --s5b-overshoot
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)
+######## control LXR_S5B_NO_STALE_TOLERANCE_CONTROL (Release)
+      2 FAIL: product allocator hands out an object
+      1 FAIL: the pause while the survivors are still counted completes
+      1 FAIL: queued trace work that names an object of a returned block finds a dead object and does not fail
+      1 FAIL: allocation fills the capacity and never takes a block of the returned range
+      1 FAIL: 6668/6673 S5b overshoot checks
+      1 == --s5b-overshoot
+exit status of the run is in the PASS/FAIL line above (none printed means abnormal end)

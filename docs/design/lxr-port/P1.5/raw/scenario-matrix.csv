@@ -1,0 +1,5 @@
+"GC","Deployment","Status","HeapCount","RequestedDynamicAdaptationMode","ObservedDynamicAdaptationMode","Reason"
+"wks","linked","MEASURED","1","","","Built-in Workstation GC identity is observable."
+"wks","standalone","MEASURED","1","","","Standalone Workstation GC path and identity are observable."
+"srv","linked","MEASURED","8","0","0","Built-in Server GC accepts and reports eight pinned heaps."
+"srv","standalone","EXCLUDED","8","0","1","Pilot readback reported DynamicAdaptationMode=1; the pinned eight-heap identity requires 0."
