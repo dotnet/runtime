@@ -413,13 +413,13 @@ namespace System.Security.Cryptography.Xml.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void DeepNonRootDecryptedXml_Throws()
         {
-            RemoteExecutor.Invoke(static () => Assert.Throws<CryptographicException>(() => DecryptDeepXml(root: false))).Dispose();
+            RemoteExecutor.Invoke(static () => DecryptDeepXml(root: false)).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void DeepRootDecryptedXml_Throws()
         {
-            RemoteExecutor.Invoke(static () => Assert.Throws<CryptographicException>(() => DecryptDeepXml(root: true))).Dispose();
+            RemoteExecutor.Invoke(static () => DecryptDeepXml(root: true)).Dispose();
         }
 
         private static void DecryptDeepXml(bool root)
@@ -427,17 +427,18 @@ namespace System.Security.Cryptography.Xml.Tests
             const int Depth = 100000;
             XmlDocument doc = new XmlDocument { PreserveWhitespace = true };
             string plaintext = "<target>" + BuildDeepMarkup(Depth, "x") + "</target>";
-            doc.LoadXml(root ? plaintext : "<root><data>" + plaintext + "</data></root>");
+            doc.LoadXml(root ? "<target/>" : "<root><data><target/></data></root>");
             XmlElement target = root ? doc.DocumentElement : (XmlElement)doc.SelectSingleNode("//target");
             using (Aes aes = Aes.Create())
             {
-                EncryptedXml encryptedXml = new EncryptedXml();
-                encryptedXml.AddKeyNameMapping("k", aes);
-                EncryptedXml.ReplaceElement(target, encryptedXml.Encrypt(target, "k"), false);
+                aes.KeySize = 256;
+                // Encrypt the bytes directly to avoid serializing the deeply nested DOM during setup.
+                target.ParentNode.ReplaceChild(BuildEncryptedDataElement(plaintext, aes, doc), target);
 
                 EncryptedXml decryptor = new EncryptedXml(doc);
                 decryptor.AddKeyNameMapping("k", aes);
-                decryptor.DecryptDocument();
+                CryptographicException exception = Assert.Throws<CryptographicException>(() => decryptor.DecryptDocument());
+                Assert.Equal("The XML element has exceeded the maximum nesting depth allowed for decryption.", exception.Message);
             }
         }
 
