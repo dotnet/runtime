@@ -146,203 +146,203 @@ EXTERN_C int64_t F_CALL_CONV RhpLLsh(int64_t i, int32_t j)
 #undef max
 #include <cmath>
 
-FCIMPL1_D(double, RhpAcos, double x)
+FCIMPL1_D(double, Rhp_acos, double x)
     return std::acos(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpAcosf, float x)
+FCIMPL1_F(float, Rhp_acosf, float x)
     return std::acosf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpAcosh, double x)
+FCIMPL1_D(double, Rhp_acosh, double x)
     return std::acosh(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpAcoshf, float x)
+FCIMPL1_F(float, Rhp_acoshf, float x)
     return std::acoshf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpAsin, double x)
+FCIMPL1_D(double, Rhp_asin, double x)
     return std::asin(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpAsinf, float x)
+FCIMPL1_F(float, Rhp_asinf, float x)
     return std::asinf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpAsinh, double x)
+FCIMPL1_D(double, Rhp_asinh, double x)
     return std::asinh(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpAsinhf, float x)
+FCIMPL1_F(float, Rhp_asinhf, float x)
     return std::asinhf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpAtan, double x)
+FCIMPL1_D(double, Rhp_atan, double x)
     return std::atan(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpAtanf, float x)
+FCIMPL1_F(float, Rhp_atanf, float x)
     return std::atanf(x);
 FCIMPLEND
 
-FCIMPL2_DD(double, RhpAtan2, double x, double y)
+FCIMPL2_DD(double, Rhp_atan2, double x, double y)
     return std::atan2(x, y);
 FCIMPLEND
 
-FCIMPL2_FF(float, RhpAtan2f, float x, float y)
+FCIMPL2_FF(float, Rhp_atan2f, float x, float y)
     return std::atan2f(x, y);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpAtanh, double x)
+FCIMPL1_D(double, Rhp_atanh, double x)
     return std::atanh(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpAtanhf, float x)
+FCIMPL1_F(float, Rhp_atanhf, float x)
     return std::atanhf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpCbrt, double x)
+FCIMPL1_D(double, Rhp_cbrt, double x)
     return std::cbrt(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpCbrtf, float x)
+FCIMPL1_F(float, Rhp_cbrtf, float x)
     return std::cbrtf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpCeil, double x)
+FCIMPL1_D(double, Rhp_ceil, double x)
     return std::ceil(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpCeilf, float x)
+FCIMPL1_F(float, Rhp_ceilf, float x)
     return std::ceilf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpCos, double x)
+FCIMPL1_D(double, Rhp_cos, double x)
     return std::cos(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpCosf, float x)
+FCIMPL1_F(float, Rhp_cosf, float x)
     return std::cosf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpCosh, double x)
+FCIMPL1_D(double, Rhp_cosh, double x)
     return std::cosh(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpCoshf, float x)
+FCIMPL1_F(float, Rhp_coshf, float x)
     return std::coshf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpExp, double x)
+FCIMPL1_D(double, Rhp_exp, double x)
     return std::exp(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpExpf, float x)
+FCIMPL1_F(float, Rhp_expf, float x)
     return std::expf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpFloor, double x)
+FCIMPL1_D(double, Rhp_floor, double x)
     return std::floor(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpFloorf, float x)
+FCIMPL1_F(float, Rhp_floorf, float x)
     return std::floorf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpLog, double x)
+FCIMPL1_D(double, Rhp_log, double x)
     return std::log(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpLogf, float x)
+FCIMPL1_F(float, Rhp_logf, float x)
     return std::logf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpLog2, double x)
+FCIMPL1_D(double, Rhp_log2, double x)
     return std::log2(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpLog2f, float x)
+FCIMPL1_F(float, Rhp_log2f, float x)
     return std::log2f(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpLog10, double x)
+FCIMPL1_D(double, Rhp_log10, double x)
     return std::log10(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpLog10f, float x)
+FCIMPL1_F(float, Rhp_log10f, float x)
     return std::log10f(x);
 FCIMPLEND
 
-FCIMPL2_DD(double, RhpPow, double x, double y)
+FCIMPL2_DD(double, Rhp_pow, double x, double y)
     return std::pow(x, y);
 FCIMPLEND
 
-FCIMPL2_FF(float, RhpPowf, float x, float y)
+FCIMPL2_FF(float, Rhp_powf, float x, float y)
     return std::powf(x, y);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpSin, double x)
+FCIMPL1_D(double, Rhp_sin, double x)
     return std::sin(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpSinf, float x)
+FCIMPL1_F(float, Rhp_sinf, float x)
     return std::sinf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpSinh, double x)
+FCIMPL1_D(double, Rhp_sinh, double x)
     return std::sinh(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpSinhf, float x)
+FCIMPL1_F(float, Rhp_sinhf, float x)
     return std::sinhf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpSqrt, double x)
+FCIMPL1_D(double, Rhp_sqrt, double x)
     return std::sqrt(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpSqrtf, float x)
+FCIMPL1_F(float, Rhp_sqrtf, float x)
     return std::sqrtf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpTan, double x)
+FCIMPL1_D(double, Rhp_tan, double x)
     return std::tan(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpTanf, float x)
+FCIMPL1_F(float, Rhp_tanf, float x)
     return std::tanf(x);
 FCIMPLEND
 
-FCIMPL1_D(double, RhpTanh, double x)
+FCIMPL1_D(double, Rhp_tanh, double x)
     return std::tanh(x);
 FCIMPLEND
 
-FCIMPL1_F(float, RhpTanhf, float x)
+FCIMPL1_F(float, Rhp_tanhf, float x)
     return std::tanhf(x);
 FCIMPLEND
 
-FCIMPL2_DD(double, RhpFmod, double x, double y)
+FCIMPL2_DD(double, Rhp_fmod, double x, double y)
     return std::fmod(x, y);
 FCIMPLEND
 
-FCIMPL2_FF(float, RhpFmodf, float x, float y)
+FCIMPL2_FF(float, Rhp_fmodf, float x, float y)
     return std::fmodf(x, y);
 FCIMPLEND
 
-FCIMPL3_DDD(double, RhpFma, double x, double y, double z)
+FCIMPL3_DDD(double, Rhp_fma, double x, double y, double z)
     return std::fma(x, y, z);
 FCIMPLEND
 
-FCIMPL3_FFF(float, RhpFmaf, float x, float y, float z)
+FCIMPL3_FFF(float, Rhp_fmaf, float x, float y, float z)
     return std::fmaf(x, y, z);
 FCIMPLEND
 
-FCIMPL2_DI(double, RhpModf, double x, double* intptr)
+FCIMPL2_DI(double, Rhp_modf, double x, double* intptr)
     return std::modf(x, intptr);
 FCIMPLEND
 
-FCIMPL2_FI(float, RhpModff, float x, float* intptr)
+FCIMPL2_FI(float, Rhp_modff, float x, float* intptr)
     return std::modff(x, intptr);
 FCIMPLEND
 
