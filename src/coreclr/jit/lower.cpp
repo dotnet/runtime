@@ -10025,13 +10025,12 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     assert(blk->OperIs(GT_STORE_BLK));
     assert(blk->GetLayout()->HasGCPtr());
     assert(!blk->OperIsInitBlkOp());
-    assert(!blk->IsVolatile());
-    assert(!blk->Data()->OperIs(GT_IND) || !blk->Data()->AsIndir()->IsVolatile());
 
     // Capture whether the original block store could throw (e.g. NRE from a null address).
 
-    GenTree* dest = blk->Addr();
-    GenTree* data = blk->Data();
+    GenTree*   dest       = blk->Addr();
+    GenTree*   data       = blk->Data();
+    const bool isVolatile = blk->IsVolatile() || (data->OperIs(GT_IND) && data->AsIndir()->IsVolatile());
 
     bool destMayFault = blk->IndirMayFault(m_compiler);
     bool dataMayFault;
@@ -10061,6 +10060,10 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     GenTreeIntCon* size    = m_compiler->gtNewIconNode((ssize_t)blkSize, TYP_I_IMPL);
     BlockRange().InsertBefore(data, size);
 
+    const bool requiresOldValue =
+        m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
+        m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+
     // CORINFO_HELP_BULK_WRITEBARRIER is a managed wrapper that splits the copy into chunks and polls
     // for GC after each of them, so that a huge copy cannot starve the GC. When the size is a small
     // compile-time constant none of that is needed and we can call the raw worker directly, saving a
@@ -10073,8 +10076,22 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     GenTree* dataPlaceholder = m_compiler->gtNewZeroConNode(genActualType(data));
     GenTree* sizePlaceholder = m_compiler->gtNewZeroConNode(genActualType(size));
 
-    GenTreeCall* call =
-        m_compiler->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
+    GenTreeCall* call;
+    if (requiresOldValue)
+    {
+        CORINFO_CLASS_HANDLE classHandle = blk->GetLayout()->GetGcLayoutClassHandle();
+        assert(classHandle != NO_CLASS_HANDLE);
+        call = m_compiler->gtNewHelperCallNode(CORINFO_HELP_BULK_WRITEBARRIER_WITH_LAYOUT, TYP_VOID, destPlaceholder,
+                                               dataPlaceholder, m_compiler->gtNewIconEmbClsHndNode(classHandle),
+                                               m_compiler->gtNewIconNode(static_cast<ssize_t>(
+                                                                             blk->GetLayout()->GetGcLayoutOffset()),
+                                                                         TYP_I_IMPL));
+        call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(sizePlaceholder));
+    }
+    else
+    {
+        call = m_compiler->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
+    }
     m_compiler->fgMorphArgs(call);
 
     LIR::Range range      = LIR::SeqTree(m_compiler, call);
@@ -10104,6 +10121,16 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     BlockRange().Remove(sizePlaceholder);
     BlockRange().Remove(dataPlaceholder);
 
+    if (isVolatile)
+    {
+        GenTree* firstBarrier  = m_compiler->gtNewMemoryBarrier(BARRIER_STORE_ONLY);
+        GenTree* secondBarrier = m_compiler->gtNewMemoryBarrier(BARRIER_LOAD_ONLY);
+        BlockRange().InsertBefore(call, firstBarrier);
+        BlockRange().InsertAfter(call, secondBarrier);
+        LowerNode(firstBarrier);
+        LowerNode(secondBarrier);
+    }
+
     // Add implicit nullchecks after both addresses have been evaluated.
     //
     auto wrapWithNullcheck = [&](GenTree* node) {
@@ -10131,6 +10158,123 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     // Finally move all GT_PUTARG_* nodes
     // Re-use the existing logic for CFG call args here
     MovePutArgNodesUpToCall(call);
+}
+
+//------------------------------------------------------------------------
+// LowerBlockStoreAsGcBulkClearCall: Lower an init block as a
+//   layout-aware bulk clear helper call.
+//
+// Arguments:
+//    blk - The block store node to lower
+//
+void Lowering::LowerBlockStoreAsGcBulkClearCall(GenTreeBlk* blk)
+{
+    assert(blk->OperIs(GT_STORE_BLK));
+    assert(blk->OperIsInitBlkOp());
+    assert(blk->GetLayout()->HasGCPtr());
+    assert(blk->Data()->IsIntegralConst(0));
+
+    GenTree* dest         = blk->Addr();
+    GenTree* data         = blk->Data();
+    bool     isVolatile   = blk->IsVolatile();
+    bool     destMayFault = blk->IndirMayFault(m_compiler);
+    GenTree* size         = m_compiler->gtNewIconNode(static_cast<ssize_t>(blk->GetLayout()->GetSize()), TYP_I_IMPL);
+    BlockRange().InsertBefore(data, size);
+    GenTree*     destPlaceholder = m_compiler->gtNewZeroConNode(dest->TypeGet());
+    GenTree*     sizePlaceholder = m_compiler->gtNewZeroConNode(genActualType(size));
+    GenTreeCall* call =
+        m_compiler->gtNewHelperCallNode(CORINFO_HELP_BULK_WRITEBARRIER_CLEAR_WITH_LAYOUT, TYP_VOID, destPlaceholder,
+                                        m_compiler->gtNewIconEmbClsHndNode(blk->GetLayout()->GetGcLayoutClassHandle()),
+                                        m_compiler->gtNewIconNode(static_cast<ssize_t>(
+                                                                      blk->GetLayout()->GetGcLayoutOffset()),
+                                                                  TYP_I_IMPL),
+                                        sizePlaceholder);
+    m_compiler->fgMorphArgs(call);
+
+    LIR::Range range      = LIR::SeqTree(m_compiler, call);
+    GenTree*   rangeStart = range.FirstNode();
+    GenTree*   rangeEnd   = range.LastNode();
+    BlockRange().InsertBefore(blk, std::move(range));
+    blk->gtBashToNOP();
+
+    LIR::Use destUse;
+    LIR::Use sizeUse;
+    BlockRange().TryGetUse(destPlaceholder, &destUse);
+    BlockRange().TryGetUse(sizePlaceholder, &sizeUse);
+    destUse.ReplaceWith(dest);
+    sizeUse.ReplaceWith(size);
+    destPlaceholder->SetUnusedValue();
+    sizePlaceholder->SetUnusedValue();
+
+    LowerRange(rangeStart, rangeEnd);
+    MovePutArgNodesUpToCall(call);
+
+    BlockRange().Remove(destPlaceholder);
+    BlockRange().Remove(sizePlaceholder);
+    BlockRange().Remove(data);
+
+    if (isVolatile)
+    {
+        GenTree* firstBarrier  = m_compiler->gtNewMemoryBarrier(BARRIER_STORE_ONLY);
+        GenTree* secondBarrier = m_compiler->gtNewMemoryBarrier(BARRIER_LOAD_ONLY);
+        BlockRange().InsertBefore(call, firstBarrier);
+        BlockRange().InsertAfter(call, secondBarrier);
+        LowerNode(firstBarrier);
+        LowerNode(secondBarrier);
+    }
+
+    if (destMayFault && m_compiler->fgAddrCouldBeNull(dest))
+    {
+        LIR::Use destUse;
+        BlockRange().TryGetUse(dest, &destUse);
+        GenTree* destClone = m_compiler->gtNewLclvNode(destUse.ReplaceWithLclVar(m_compiler), genActualType(dest));
+        GenTree* nullcheck = m_compiler->gtNewNullCheck(destClone);
+        BlockRange().InsertAfter(destUse.Def(), destClone, nullcheck);
+        LowerNode(nullcheck);
+    }
+}
+
+//------------------------------------------------------------------------
+// ShouldUseLayoutBulkHelper: Determine whether a GC-containing block store
+//   should use a layout-aware bulk helper.
+//
+// Arguments:
+//    blk - The block store node
+//
+// Return Value:
+//   true if a layout-aware helper should be used.
+//
+bool Lowering::ShouldUseLayoutBulkHelper(GenTreeBlk* blk)
+{
+    assert(blk->OperIs(GT_STORE_BLK));
+    assert(blk->GetLayout()->HasGCPtr());
+
+    ClassLayout*   layout                 = blk->GetLayout();
+    GenTree*       source                 = blk->Data();
+    const unsigned MaxUnrolledLayoutBytes = 16 * 1024;
+    if (!layout->IsValueClass() || (layout->GetGcLayoutClassHandle() == NO_CLASS_HANDLE))
+    {
+        return false;
+    }
+
+    if (layout->GetSize() > MaxUnrolledLayoutBytes)
+    {
+        return true;
+    }
+
+    if (blk->IsVolatile() || (source->OperIs(GT_IND) && source->AsIndir()->IsVolatile()))
+    {
+        return false;
+    }
+
+    const unsigned MinLayoutBulkGcPointers = 128;
+    if (layout->GetGCPtrCount() >= MinLayoutBulkGcPointers)
+    {
+        return true;
+    }
+
+    return (layout->GetGCPtrCount() > 1) &&
+           (!m_compiler->opts.OptimizationEnabled() || ((m_block != nullptr) && m_block->isRunRarely()));
 }
 
 //------------------------------------------------------------------------
@@ -12226,6 +12370,23 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 
     if (blkNode->OperIsInitBlkOp())
     {
+        const bool requiresOldValue =
+            m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
+            m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+        if (requiresOldValue && blkNode->IsOnHeapAndContainsReferences())
+        {
+            if (ShouldUseLayoutBulkHelper(blkNode))
+            {
+                LowerBlockStoreAsGcBulkClearCall(blkNode);
+                return;
+            }
+
+            if (TryDecomposeInitBlockStoreAsIndirs(blkNode))
+            {
+                return;
+            }
+        }
+
         LowerInitBlockStore(blkNode);
     }
     else
@@ -12260,8 +12421,17 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
     assert((layout->GetSize() == (layout->GetSlotCount() * TARGET_POINTER_SIZE)));
     assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
 
+    const bool requiresOldValue =
+        m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
+        m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+
+    if (requiresOldValue && ShouldUseLayoutBulkHelper(blkNode))
+    {
+        return false;
+    }
+
     // Always decompose for volatile blocks as the bulk helper doesn't support those.
-    if (!(blkNode->IsVolatile() || (src->OperIs(GT_IND) && src->AsIndir()->IsVolatile())))
+    if (!requiresOldValue && !(blkNode->IsVolatile() || (src->OperIs(GT_IND) && src->AsIndir()->IsVolatile())))
     {
         // More than 3 GC pointers, use the bulk copy helper.
         // TODO-CQ: find a better heuristic here.
@@ -12396,6 +12566,58 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
         BlockRange().Remove(src->AsIndir()->Addr());
     }
     BlockRange().Remove(src);
+    blkNode->gtBashToNOP();
+    return true;
+}
+
+//------------------------------------------------------------------------
+// TryDecomposeInitBlockStoreAsIndirs: lower a zero-initialization of a
+//   GC-containing heap struct as exact pointer-sized stores.
+//
+// Arguments:
+//   blkNode - the GT_STORE_BLK to decompose.
+//
+// Return value:
+//   true after decomposing the node.
+//
+bool Lowering::TryDecomposeInitBlockStoreAsIndirs(GenTreeBlk* blkNode)
+{
+    assert(blkNode->OperIs(GT_STORE_BLK));
+    assert(blkNode->OperIsInitBlkOp());
+    assert(blkNode->GetLayout()->HasGCPtr());
+    assert(blkNode->Data()->IsIntegralConst(0));
+
+    ClassLayout* layout = blkNode->GetLayout();
+    assert(layout->GetSize() == (layout->GetSlotCount() * TARGET_POINTER_SIZE));
+
+    LIR::Use           dstAddrUse(BlockRange(), &blkNode->Addr(), blkNode);
+    const var_types    dstAddrType   = blkNode->Addr()->TypeGet();
+    const unsigned     dstAddrLclNum = dstAddrUse.ReplaceWithLclVar(m_compiler);
+    const GenTreeFlags dstIndFlags   = blkNode->gtFlags & GTF_IND_FLAGS;
+
+    for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
+    {
+        GenTree* addr = m_compiler->gtNewLclvNode(dstAddrLclNum, dstAddrType);
+        if (slot != 0)
+        {
+            addr = m_compiler->gtNewOperNode(GT_ADD, varTypeIsGC(dstAddrType) ? TYP_BYREF : TYP_I_IMPL, addr,
+                                             m_compiler->gtNewIconNode(static_cast<ssize_t>(slot * TARGET_POINTER_SIZE),
+                                                                       TYP_I_IMPL));
+        }
+
+        const var_types storeType = layout->IsGCPtr(slot) ? layout->GetGCPtrType(slot) : TYP_I_IMPL;
+        GenTree*        zero      = m_compiler->gtNewZeroConNode(storeType);
+        GenTree*        store     = m_compiler->gtNewStoreValueNode(storeType, addr, zero, dstIndFlags);
+
+        LIR::Range range = LIR::SeqTree(m_compiler, store);
+        GenTree*   first = range.FirstNode();
+        GenTree*   last  = range.LastNode();
+        BlockRange().InsertBefore(blkNode, std::move(range));
+        LowerRange(first, last);
+    }
+
+    BlockRange().Remove(blkNode->Addr());
+    BlockRange().Remove(blkNode->Data());
     blkNode->gtBashToNOP();
     return true;
 }
@@ -13178,7 +13400,8 @@ void Lowering::FinalizeOutgoingArgSpace()
     {
         if (m_compiler->opts.compDbgCode || m_compiler->compUsesThrowHelper || m_compiler->compIsProfilerHookNeeded() ||
             (m_compiler->compMethodRequiresPInvokeFrame() && !m_compiler->opts.ShouldUsePInvokeHelpers()) ||
-            m_compiler->getNeedsGSSecurityCookie())
+            m_compiler->getNeedsGSSecurityCookie() ||
+            m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI))
         {
             m_outgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
             JITDUMP("Bumping outgoing arg space size to %u for possible helper or profile hook call",

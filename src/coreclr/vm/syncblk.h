@@ -681,14 +681,10 @@ class ObjHeader
   private:
     // !!! Notice: m_SyncBlockValue *MUST* be the last field in ObjHeader.
 #ifdef HOST_64BIT
-    DWORD    m_alignpad;
+    Volatile<DWORD> m_GCReservedBits;
 #endif // HOST_64BIT
 
     Volatile<DWORD> m_SyncBlockValue;      // the Index and the Bits
-
-#if defined(HOST_64BIT) && defined(_DEBUG)
-    void IllegalAlignPad();
-#endif // HOST_64BIT && _DEBUG
 
   public:
 
@@ -696,12 +692,6 @@ class ObjHeader
     FORCEINLINE DWORD GetHeaderSyncBlockIndex()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#if defined(HOST_64BIT) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
-        // On WIN64 this field is never modified, but was initialized to 0
-        if (m_alignpad != 0)
-            IllegalAlignPad();
-#endif // HOST_64BIT && _DEBUG && !DACCESS_COMPILE
-
         // pull the value out before checking it to avoid race condition
         DWORD value = m_SyncBlockValue.LoadWithoutBarrier();
         if ((value & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) != BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
@@ -792,12 +782,6 @@ class ObjHeader
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-#if defined(HOST_64BIT) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
-        // On WIN64 this field is never modified, but was initialized to 0
-        if (m_alignpad != 0)
-            IllegalAlignPad();
-#endif // HOST_64BIT && _DEBUG && !DACCESS_COMPILE
-
         return m_SyncBlockValue.LoadWithoutBarrier();
     }
 
@@ -817,6 +801,119 @@ class ObjHeader
         _ASSERTE((oldBits & BIT_SBLK_SPIN_LOCK) == 0);
         DWORD result = InterlockedCompareExchange((LONG*)&m_SyncBlockValue, newBits, oldBits);
         return result;
+    }
+
+    DWORD GetGCReservedBits(DWORD mask, DWORD shift)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+#ifdef HOST_64BIT
+        _ASSERTE(mask != 0);
+        _ASSERTE(shift < 32);
+        DWORD value = static_cast<DWORD>(
+            InterlockedCompareExchange((LONG*)&m_GCReservedBits, 0, 0));
+        return (value & mask) >> shift;
+#else
+        UNREFERENCED_PARAMETER(mask);
+        UNREFERENCED_PARAMETER(shift);
+        return 0;
+#endif
+    }
+
+    DWORD CompareExchangeGCReservedBits(DWORD mask, DWORD shift, DWORD value, DWORD comparand)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+#ifdef HOST_64BIT
+        _ASSERTE(mask != 0);
+        _ASSERTE(shift < 32);
+        _ASSERTE((value & ~(mask >> shift)) == 0);
+        _ASSERTE((comparand & ~(mask >> shift)) == 0);
+
+        DWORD oldWord = static_cast<DWORD>(
+            InterlockedCompareExchange((LONG*)&m_GCReservedBits, 0, 0));
+        while (true)
+        {
+            DWORD oldValue = (oldWord & mask) >> shift;
+            if (oldValue != comparand)
+            {
+                return oldValue;
+            }
+
+            DWORD newWord = (oldWord & ~mask) | ((value << shift) & mask);
+            DWORD observed = static_cast<DWORD>(
+                InterlockedCompareExchange((LONG*)&m_GCReservedBits, newWord, oldWord));
+            if (observed == oldWord)
+            {
+                return comparand;
+            }
+            oldWord = observed;
+        }
+#else
+        UNREFERENCED_PARAMETER(mask);
+        UNREFERENCED_PARAMETER(shift);
+        UNREFERENCED_PARAMETER(value);
+        UNREFERENCED_PARAMETER(comparand);
+        return 0;
+#endif
+    }
+
+    DWORD SetGCReservedBits(DWORD mask, DWORD shift, DWORD value)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+#ifdef HOST_64BIT
+        _ASSERTE(mask != 0);
+        _ASSERTE(shift < 32);
+        _ASSERTE((value & ~(mask >> shift)) == 0);
+
+        DWORD oldWord = static_cast<DWORD>(
+            InterlockedCompareExchange((LONG*)&m_GCReservedBits, 0, 0));
+        while (true)
+        {
+            DWORD oldValue = (oldWord & mask) >> shift;
+            DWORD newWord = (oldWord & ~mask) | ((value << shift) & mask);
+            DWORD observed = static_cast<DWORD>(
+                InterlockedCompareExchange((LONG*)&m_GCReservedBits, newWord, oldWord));
+            if (observed == oldWord)
+            {
+                return oldValue;
+            }
+            oldWord = observed;
+        }
+#else
+        UNREFERENCED_PARAMETER(mask);
+        UNREFERENCED_PARAMETER(shift);
+        UNREFERENCED_PARAMETER(value);
+        return 0;
+#endif
+    }
+
+    DWORD WaitWhileGCReservedBits(DWORD mask, DWORD shift, DWORD value)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+#ifdef HOST_64BIT
+        DWORD current;
+        DWORD iteration = 0;
+        while ((current = GetGCReservedBits(mask, shift)) == value)
+        {
+            if (((++iteration % 1024) != 0) && (g_SystemInfo.dwNumberOfProcessors > 1))
+            {
+                YieldProcessorNormalized();
+            }
+            else
+            {
+                SwitchToThread();
+            }
+        }
+        return current;
+#else
+        UNREFERENCED_PARAMETER(mask);
+        UNREFERENCED_PARAMETER(shift);
+        UNREFERENCED_PARAMETER(value);
+        return 0;
+#endif
     }
 
 #ifdef _DEBUG
@@ -868,8 +965,18 @@ class ObjHeader
 template<>
 struct cdac_data<ObjHeader>
 {
+#ifdef HOST_64BIT
+    static constexpr size_t GCReservedBits = offsetof(ObjHeader, m_GCReservedBits);
+#endif
     static constexpr size_t SyncBlockValue = offsetof(ObjHeader, m_SyncBlockValue);
 };
+
+#ifdef HOST_64BIT
+static_assert(cdac_data<ObjHeader>::GCReservedBits == 0);
+static_assert(cdac_data<ObjHeader>::SyncBlockValue == sizeof(DWORD));
+#else
+static_assert(cdac_data<ObjHeader>::SyncBlockValue == 0);
+#endif
 
 typedef DPTR(class ObjHeader) PTR_ObjHeader;
 

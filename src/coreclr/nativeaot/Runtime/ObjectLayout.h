@@ -21,7 +21,7 @@ class ObjHeader
 {
 private:
 #if defined(HOST_64BIT)
-    uint32_t   m_uAlignpad;
+    uint32_t   m_uGCReservedBits;
 #endif // HOST_64BIT
     uint32_t   m_uSyncBlockValue;
 
@@ -32,6 +32,14 @@ public:
     void ClrBit(uint32_t uBit);
     void SetGCBit() { m_uSyncBlockValue |= BIT_SBLK_GC_RESERVE; }
     void ClrGCBit() { m_uSyncBlockValue &= ~BIT_SBLK_GC_RESERVE; }
+    uint32_t GetGCReservedBits(uint32_t mask, uint32_t shift);
+    uint32_t CompareExchangeGCReservedBits(
+        uint32_t mask,
+        uint32_t shift,
+        uint32_t value,
+        uint32_t comparand);
+    uint32_t SetGCReservedBits(uint32_t mask, uint32_t shift, uint32_t value);
+    uint32_t WaitWhileGCReservedBits(uint32_t mask, uint32_t shift, uint32_t value);
 };
 
 //-------------------------------------------------------------------------------------------------

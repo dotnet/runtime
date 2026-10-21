@@ -1779,8 +1779,9 @@ private:
     PER_HEAP_ISOLATED_METHOD gc_heap* make_gc_heap(
 #if defined (MULTIPLE_HEAPS)
                                                    GCHeap* vm_heap,
-                                                   int heap_number
+                                                   int heap_number,
 #endif //MULTIPLE_HEAPS
+                                                   HRESULT* failure_result
         );
 
     PER_HEAP_ISOLATED_METHOD void destroy_gc_heap(gc_heap* heap);
@@ -2416,7 +2417,7 @@ private:
                                      int align_const);
 
     PER_HEAP_ISOLATED_METHOD int init_semi_shared();
-    PER_HEAP_METHOD int init_gc_heap (int heap_number);
+    PER_HEAP_METHOD int init_gc_heap (int heap_number, HRESULT* failure_result);
     PER_HEAP_METHOD void self_destroy();
     PER_HEAP_ISOLATED_METHOD void destroy_semi_shared();
     PER_HEAP_METHOD void repair_allocation_contexts (BOOL repair_p);

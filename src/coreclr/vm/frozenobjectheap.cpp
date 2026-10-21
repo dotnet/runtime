@@ -4,6 +4,8 @@
 #include "common.h"
 #include "frozenobjectheap.h"
 
+extern "C" void RhpAllocationCompleteFrozen(Object* object, size_t alignedObjectSize);
+
 // Default size to reserve for a frozen segment
 #define FOH_SEGMENT_DEFAULT_SIZE (4 * 1024 * 1024)
 // Size to commit on demand in that reserved space
@@ -91,6 +93,11 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
             if (initFunc != nullptr)
             {
                 initFunc(obj, pParam);
+            }
+
+            if (GCHeapUtilities::IsAllocationNotificationEnabled())
+            {
+                RhpAllocationCompleteFrozen(obj, PtrAlign(objectSize));
             }
 
             curSeg = m_CurrentSegment;

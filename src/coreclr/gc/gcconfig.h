@@ -62,6 +62,45 @@ public:
 
 // Each one of these keys produces a method on GCConfig with the name "Get{name}", where {name}
 // is the first parameter of the *_CONFIG macros below.
+#ifdef FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST
+#define WRITE_BARRIER_STANDARD_ABI_TEST_CONFIG \
+    BOOL_CONFIG  (WriteBarrierTestClobber,   "GCWriteBarrierTestClobber",   NULL, true,  "Clobber ABI-volatile state in the write-barrier validation callback") \
+    BOOL_CONFIG  (WriteBarrierTestUncounted, "GCWriteBarrierTestUncounted", NULL, false, "Use an empty write-barrier validation callback for benchmarking") \
+    BOOL_CONFIG  (WriteBarrierTestClaimBits, "GCWriteBarrierTestClaimBits", NULL, false, "Atomically claim side-metadata bits in the write-barrier validation callback") \
+    INT_CONFIG   (WriteBarrierTestShape,     "GCWriteBarrierTestShape",     NULL, 1,     "Override the requested write-barrier shape for validation") \
+    INT_CONFIG   (WriteBarrierTestBitMeaning,"GCWriteBarrierTestBitMeaning",NULL, 0,     "Select the side-metadata work-bit polarity for validation") \
+    INT_CONFIG   (WriteBarrierTestMalformed, "GCWriteBarrierTestMalformed", NULL, 0,     "Request malformed side-metadata parameters for validation")
+
+#else
+#define WRITE_BARRIER_STANDARD_ABI_TEST_CONFIG
+#endif
+
+#ifdef FEATURE_ALLOCATION_NOTIFICATION_TEST
+#define ALLOCATION_NOTIFICATION_TEST_CONFIG \
+    BOOL_CONFIG  (AllocationNotificationTest,          "GCAllocationNotificationTest",          NULL, false, "Enable the allocation-complete validation callback") \
+    BOOL_CONFIG  (AllocationNotificationTestUncounted, "GCAllocationNotificationTestUncounted", NULL, false, "Use an empty allocation-complete validation callback") \
+    BOOL_CONFIG  (AllocationNotificationTestCountOnly, "GCAllocationNotificationTestCountOnly", NULL, false, "Count allocation-complete callbacks without recording arguments") \
+    INT_CONFIG   (AllocationNotificationTestMalformed, "GCAllocationNotificationTestMalformed", NULL, 0,     "Request malformed allocation notification parameters") \
+    BOOL_CONFIG  (ObjectReferenceEnumerationTest,          "GCObjectReferenceEnumerationTest",          NULL, false, "Enable object-reference enumeration validation") \
+    INT_CONFIG   (ObjectReferenceEnumerationTestMalformed, "GCObjectReferenceEnumerationTestMalformed", NULL, 0,     "Request malformed object-reference enumeration parameters")
+#else
+#define ALLOCATION_NOTIFICATION_TEST_CONFIG
+#endif
+
+#ifdef FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST
+#define OBJECT_REFERENCE_ENUMERATION_TEST_CONFIG \
+    INT_CONFIG (ObjectReferenceEnumerationTestMode, "GCObjectReferenceEnumerationTestMode", NULL, 0, "Object-reference enumeration scan mode")
+#else
+#define OBJECT_REFERENCE_ENUMERATION_TEST_CONFIG
+#endif
+
+#ifdef FEATURE_OBJECT_HEADER_BITS_TEST
+#define OBJECT_HEADER_BITS_TEST_CONFIG \
+    BOOL_CONFIG (ObjectHeaderBitsTest,          "GCObjectHeaderBitsTest",          NULL, false, "Enable GC object-header bit validation") \
+    INT_CONFIG  (ObjectHeaderBitsTestMalformed, "GCObjectHeaderBitsTestMalformed", NULL, 0,     "Request malformed GC object-header bit parameters")
+#else
+#define OBJECT_HEADER_BITS_TEST_CONFIG
+#endif
 #ifdef FEATURE_SATORI_GC
 
 #define GC_CONFIGURATION_KEYS \
@@ -89,6 +128,10 @@ public:
 #else
 
 #define GC_CONFIGURATION_KEYS \
+    WRITE_BARRIER_STANDARD_ABI_TEST_CONFIG \
+    ALLOCATION_NOTIFICATION_TEST_CONFIG \
+    OBJECT_REFERENCE_ENUMERATION_TEST_CONFIG \
+    OBJECT_HEADER_BITS_TEST_CONFIG \
     BOOL_CONFIG  (ServerGC,                  "gcServer",                  "System.GC.Server",                  false,              "Whether we should be using Server GC")                                                   \
     BOOL_CONFIG  (ConcurrentGC,              "gcConcurrent",              "System.GC.Concurrent",              true,               "Whether we should be using Concurrent GC")                                                \
     BOOL_CONFIG  (ConservativeGC,            "gcConservative",            NULL,                                false,              "Enables/Disables conservative GC")                                                       \

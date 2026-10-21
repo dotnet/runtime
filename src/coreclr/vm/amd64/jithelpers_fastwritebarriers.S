@@ -28,6 +28,7 @@ PATCH_LABEL JIT_WriteBarrier_PreGrow64_Patch_Label_Lower
 #else
         .byte 0x72, 0x2b
 #endif
+
         // jb      Exit_PreGrow64
 
         nop // padding for alignment of constant
@@ -789,5 +790,89 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_CardBundleTable
 #endif
         ret
 LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Bit_Region64, _TEXT
+
+#endif
+
+        .balign 16
+LEAF_ENTRY JIT_WriteBarrier_SlotLog64, _TEXT
+        mov     r10, [rdi]
+        mov     r11, rdi
+PATCH_LABEL JIT_WriteBarrier_SlotLog64_Patch_Label_MetadataByteShift
+        shr     r11, 0x16
+
+        .balign 8
+        NOP_6_BYTE
+PATCH_LABEL JIT_WriteBarrier_SlotLog64_Patch_Label_MetadataBase
+        movabs  rax, 0xF0F0F0F0F0F0F0F0
+        movzx   eax, byte ptr [rax + r11]
+PATCH_LABEL JIT_WriteBarrier_SlotLog64_Patch_Label_Polarity
+        xor     al, 0xA5
+        jz      LOCAL_LABEL(Store_SlotLog64)
+
+        mov     r11, rdi
+PATCH_LABEL JIT_WriteBarrier_SlotLog64_Patch_Label_MetadataBitShift
+        shr     r11, 0x16
+        and     r11d, 7
+        bt      eax, r11d
+        jnc     LOCAL_LABEL(Store_SlotLog64)
+
+        .balign 8
+        NOP_6_BYTE
+PATCH_LABEL JIT_WriteBarrier_SlotLog64_Patch_Label_SlowPathTarget
+        movabs  r11, 0xF0F0F0F0F0F0F0F0
+        jmp     r11
+
+    LOCAL_LABEL(Store_SlotLog64):
+        mov     [rdi], rsi
+        ret
+LEAF_END_MARKED JIT_WriteBarrier_SlotLog64, _TEXT
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
+        .balign 16
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_SlotLog64, _TEXT
+        mov     r10, [rdi]
+        mov     r11, rdi
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SlotLog64_Patch_Label_MetadataByteShift
+        shr     r11, 0x16
+
+        .balign 8
+        NOP_6_BYTE
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SlotLog64_Patch_Label_MetadataBase
+        movabs  rax, 0xF0F0F0F0F0F0F0F0
+        movzx   eax, byte ptr [rax + r11]
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SlotLog64_Patch_Label_Polarity
+        xor     al, 0xA5
+        jz      LOCAL_LABEL(Store_WriteWatch_SlotLog64)
+
+        mov     r11, rdi
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SlotLog64_Patch_Label_MetadataBitShift
+        shr     r11, 0x16
+        and     r11d, 7
+        bt      eax, r11d
+        jnc     LOCAL_LABEL(Store_WriteWatch_SlotLog64)
+
+        .balign 8
+        NOP_6_BYTE
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SlotLog64_Patch_Label_SlowPathTarget
+        movabs  r11, 0xF0F0F0F0F0F0F0F0
+        jmp     r11
+
+    LOCAL_LABEL(Store_WriteWatch_SlotLog64):
+        mov     [rdi], rsi
+        mov     rax, rdi
+        shr     rax, 0xC
+
+        .balign 8
+        NOP_6_BYTE
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SlotLog64_Patch_Label_WriteWatchTable
+        movabs  r11, 0xF0F0F0F0F0F0F0F0
+        add     rax, r11
+        cmp     byte ptr [rax], 0
+        jne     LOCAL_LABEL(Done_WriteWatch_SlotLog64)
+        mov     byte ptr [rax], 0xFF
+    LOCAL_LABEL(Done_WriteWatch_SlotLog64):
+        ret
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_SlotLog64, _TEXT
 
 #endif

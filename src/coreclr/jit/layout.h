@@ -59,7 +59,8 @@ class ClassLayout
 {
 private:
 
-    // Class handle or NO_CLASS_HANDLE for "block" layouts.
+    // Exact class handle for ordinary layouts. Custom layouts may retain the
+    // class handle whose GC descriptor describes them.
     const CORINFO_CLASS_HANDLE m_classHandle;
 
     // Size of the layout in bytes (as reported by ICorJitInfo::getClassSize/getHeapClassSize
@@ -67,7 +68,8 @@ private:
     // for cpblk/initblk.
     const unsigned m_size;
 
-    const unsigned m_isValueClass : 1;
+    const unsigned m_isValueClass   : 1;
+    const unsigned m_isCustomLayout : 1;
     // The number of GC pointers in this layout. Since the maximum size is 2^32-1 the count
     // can fit in at most 30 bits.
     unsigned m_gcPtrCount : 30;
@@ -86,6 +88,9 @@ private:
     // The normalized type to use in IR for block nodes with this layout.
     const var_types m_type;
 
+    // Offset of a custom layout within the retained runtime GC descriptor.
+    const unsigned m_gcLayoutOffset;
+
     // Name of the layout
     INDEBUG(const char* m_name;)
 
@@ -97,13 +102,18 @@ private:
     friend class ClassLayoutBuilder;
     friend struct CustomLayoutKey;
 
-    ClassLayout(unsigned size)
-        : m_classHandle(NO_CLASS_HANDLE)
+    ClassLayout(unsigned             size,
+                CORINFO_CLASS_HANDLE gcLayoutClassHandle = NO_CLASS_HANDLE,
+                unsigned             gcLayoutOffset      = 0,
+                bool                 isValueClass        = false)
+        : m_classHandle(gcLayoutClassHandle)
         , m_size(size)
-        , m_isValueClass(false)
+        , m_isValueClass(isValueClass)
+        , m_isCustomLayout(true)
         , m_gcPtrCount(0)
         , m_gcPtrs(nullptr)
         , m_type(TYP_STRUCT)
+        , m_gcLayoutOffset(gcLayoutOffset)
 #ifdef DEBUG
         , m_name(size == 0 ? "Empty" : "Custom")
         , m_shortName(size == 0 ? "Empty" : "Custom")
@@ -112,7 +122,11 @@ private:
     }
 
     static ClassLayout* Create(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle);
-    static ClassLayout* Create(Compiler* compiler, const ClassLayoutBuilder& builder);
+    static ClassLayout* Create(Compiler*                 compiler,
+                               const ClassLayoutBuilder& builder,
+                               CORINFO_CLASS_HANDLE      gcLayoutClassHandle,
+                               unsigned                  gcLayoutOffset,
+                               bool                      isValueClass);
 
     ClassLayout(CORINFO_CLASS_HANDLE classHandle,
                 bool                 isValueClass,
@@ -121,9 +135,11 @@ private:
         : m_classHandle(classHandle)
         , m_size(size)
         , m_isValueClass(isValueClass)
+        , m_isCustomLayout(false)
         , m_gcPtrCount(0)
         , m_gcPtrs(nullptr)
         , m_type(type)
+        , m_gcLayoutOffset(0)
 #ifdef DEBUG
         , m_name(className)
         , m_shortName(shortClassName)
@@ -135,12 +151,22 @@ public:
 
     CORINFO_CLASS_HANDLE GetClassHandle() const
     {
+        return IsCustomLayout() ? NO_CLASS_HANDLE : m_classHandle;
+    }
+
+    CORINFO_CLASS_HANDLE GetGcLayoutClassHandle() const
+    {
         return m_classHandle;
+    }
+
+    unsigned GetGcLayoutOffset() const
+    {
+        return m_gcLayoutOffset;
     }
 
     bool IsCustomLayout() const
     {
-        return m_classHandle == NO_CLASS_HANDLE;
+        return m_isCustomLayout;
     }
 
     bool IsBlockLayout() const

@@ -1075,6 +1075,8 @@ DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)
 DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,                 SM_PtrByte_PtrByte_Int_RetVoid)
 DEFINE_METHOD(BUFFER,               MEMCOPYGC,              BulkMoveWithWriteBarrier, SM_RefByte_RefByte_UIntPtr_RetVoid)
+DEFINE_METHOD(BUFFER,               MEMCOPYGC_WITH_LAYOUT,  BulkMoveValueClassWithOldValueWriteBarrier, NoSig)
+DEFINE_METHOD(BUFFER,               MEMCLEARGC_WITH_LAYOUT, ClearValueClassWithOldValueWriteBarrier, NoSig)
 
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
 #ifdef FEATURE_COMINTEROP

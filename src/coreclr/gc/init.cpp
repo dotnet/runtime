@@ -1068,10 +1068,13 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 gc_heap* gc_heap::make_gc_heap (
 #ifdef MULTIPLE_HEAPS
                                 GCHeap* vm_hp,
-                                int heap_number
+                                int heap_number,
 #endif //MULTIPLE_HEAPS
+                                HRESULT* failure_result
                                 )
 {
+    assert(failure_result != nullptr);
+
     gc_heap* res = 0;
 
 #ifdef MULTIPLE_HEAPS
@@ -1101,6 +1104,7 @@ gc_heap* gc_heap::make_gc_heap (
 #else  //MULTIPLE_HEAPS
         0
 #endif //MULTIPLE_HEAPS
+        , failure_result
         )==0)
     {
         return 0;

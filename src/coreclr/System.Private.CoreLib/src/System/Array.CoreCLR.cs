@@ -210,7 +210,16 @@ namespace System
                     if (pElementMethodTable->ContainsGCPointers)
                     {
                         nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytesIfContainsGCPointers();
-                        SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, nint>(ref offsetDataRef), elementSize / (nuint)sizeof(IntPtr));
+                        if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                        {
+                            Buffer.ClearWithOldValueWriteBarrier(
+                                ref offsetDataRef, pElementMethodTable, elementSize, 1);
+                        }
+                        else
+                        {
+                            SpanHelpers.ClearWithReferences(
+                                ref Unsafe.As<byte, nint>(ref offsetDataRef), elementSize / (nuint)sizeof(IntPtr));
+                        }
                     }
                     else
                     {
@@ -247,7 +256,20 @@ namespace System
                         if (pElementMethodTable->ContainsGCPointers)
                         {
                             nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytesIfContainsGCPointers();
-                            Buffer.BulkMoveWithWriteBarrier(ref offsetDataRef, ref value.GetRawData(), elementSize);
+                            if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                            {
+                                Buffer.BulkMoveWithOldValueWriteBarrier(
+                                    ref offsetDataRef,
+                                    ref value.GetRawData(),
+                                    pElementMethodTable,
+                                    elementSize,
+                                    1);
+                            }
+                            else
+                            {
+                                Buffer.BulkMoveWithWriteBarrier(
+                                    ref offsetDataRef, ref value.GetRawData(), elementSize);
+                            }
                         }
                         else
                         {

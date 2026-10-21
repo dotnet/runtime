@@ -54,6 +54,7 @@ struct VirtualReserveFlags
     {
         None = 0,
         WriteWatch = 1,
+        NoReserve = 2,
     };
 };
 
@@ -290,6 +291,9 @@ public:
     static void* VirtualReserve(size_t size, size_t alignment, uint32_t flags, uint16_t node = NUMA_NODE_UNDEFINED);
 
     static void* VirtualReserve(void* location, size_t size, bool useTHP = false);
+    // Reserve a virtual memory range at an exact address without replacing an existing mapping.
+    // Returns the requested address on success and nullptr otherwise.
+    static void* VirtualReserveAt(void* address, size_t size, uint32_t flags, uint16_t node = NUMA_NODE_UNDEFINED);
 
     // Release virtual memory range previously reserved using VirtualReserve
     // Parameters:

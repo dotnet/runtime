@@ -76,6 +76,11 @@ class Buffer
 {
 public:
     FCDECL3(static VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
+    FCDECL5(static VOID, BulkMoveWithOldValueWriteBarrier, void* dst, void* src, MethodTable* type, size_t elementSize, size_t elementCount);
+    FCDECL7(static VOID, BulkMoveValueClassWithOldValueWriteBarrier, void* dst, void* src, MethodTable* type, size_t gcLayoutOffset, size_t elementSize, size_t chunkOffset, size_t chunkSize);
+    FCDECL5(static VOID, BulkFillWithOldValueWriteBarrier, void* dst, void* value, MethodTable* type, size_t elementSize, size_t elementCount);
+    FCDECL4(static VOID, ClearWithOldValueWriteBarrier, void* dst, MethodTable* type, size_t elementSize, size_t elementCount);
+    FCDECL6(static VOID, ClearValueClassWithOldValueWriteBarrier, void* dst, MethodTable* type, size_t gcLayoutOffset, size_t elementSize, size_t chunkOffset, size_t chunkSize);
 };
 
 const UINT MEM_PRESSURE_COUNT = 4;

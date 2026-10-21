@@ -14,6 +14,21 @@ namespace System
         [Intrinsic] // Unrolled for small sizes
         public static unsafe void Fill<T>(ref T refData, nuint numElements, T value)
         {
+#if CORECLR
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>() &&
+                RuntimeHelpers.RequiresOldValueWriteBarrier())
+            {
+                MethodTable* type = TypeHandle.TypeHandleOf<T>().AsMethodTable();
+                Buffer.BulkFillWithOldValueWriteBarrier(
+                    ref Unsafe.As<T, byte>(ref refData),
+                    ref Unsafe.As<T, byte>(ref value),
+                    type->IsValueType ? type : null,
+                    (nuint)sizeof(T),
+                    numElements);
+                return;
+            }
+#endif
+
             // Early checks to see if it's even possible to vectorize - JIT will turn these checks into consts.
             // - T cannot contain references (GC can't track references in vectors)
             // - Vectorization must be hardware-accelerated

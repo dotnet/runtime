@@ -3663,6 +3663,15 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return compIsAsync() ? gtNewTrue() : gtNewFalse();
     }
 
+    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_RequiresOldValueWriteBarrier)
+    {
+        const bool requiresOldValue = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
+                                      opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+        JITDUMP("\nExpanding RuntimeHelpers.RequiresOldValueWriteBarrier to %s early\n",
+                requiresOldValue ? "true" : "false");
+        return requiresOldValue ? gtNewTrue() : gtNewFalse();
+    }
+
     bool betterToExpand = false;
 
     // Allow some lightweight intrinsics in Tier0 which can improve throughput
@@ -4560,7 +4569,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 }
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
-                if ((retType == TYP_REF) &&
+                bool requiresOldValue = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
+                                        opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+                if (!requiresOldValue && (retType == TYP_REF) &&
                     (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
                     // Intrinsify "object" overload in case of null or NonGC assignment
@@ -4602,7 +4613,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 }
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
-                if ((retType == TYP_REF) &&
+                bool requiresOldValue = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
+                                        opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+                if (!requiresOldValue && (retType == TYP_REF) &&
                     (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
                     // Intrinsify "object" overload in case of null or NonGC assignment
@@ -12371,6 +12384,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "IsRuntimeAsync") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync;
+                            }
+                            else if (strcmp(methodName, "RequiresOldValueWriteBarrier") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_RequiresOldValueWriteBarrier;
                             }
                             else if (strcmp(methodName, "WriteBarrier") == 0)
                             {

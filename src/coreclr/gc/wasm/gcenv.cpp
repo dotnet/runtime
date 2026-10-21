@@ -192,6 +192,16 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
     return VirtualReserveInner(size, alignment, flags);
 }
 
+void* GCToOSInterface::VirtualReserveAt(void* address, size_t size, uint32_t flags, uint16_t node)
+{
+    // WebAssembly linear memory cannot provide non-replacing fixed virtual-address reservations.
+    (void)address;
+    (void)size;
+    (void)flags;
+    (void)node;
+    return nullptr;
+}
+
 bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 {
     (void)size;

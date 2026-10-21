@@ -398,9 +398,28 @@ namespace System
                     ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
 
                     if (pMT->ContainsGCPointers)
-                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                    {
+#if CORECLR
+                        if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                        {
+                            MethodTable* elementType = pMT->GetArrayElementTypeHandle().AsMethodTable();
+                            Buffer.BulkMoveWithOldValueWriteBarrier(
+                                ref dst,
+                                ref src,
+                                elementType->IsValueType ? elementType : null,
+                                pMT->ComponentSize,
+                                (uint)length);
+                        }
+                        else
+#endif
+                        {
+                            Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                        }
+                    }
                     else
+                    {
                         SpanHelpers.Memmove(ref dst, ref src, byteCount);
+                    }
 
                     // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
                     return;
@@ -435,9 +454,28 @@ namespace System
                     ref byte dst = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(destinationArray).Data, (uint)destinationIndex * elementSize);
 
                     if (pMT->ContainsGCPointers)
-                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                    {
+#if CORECLR
+                        if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                        {
+                            MethodTable* elementType = pMT->GetArrayElementTypeHandle().AsMethodTable();
+                            Buffer.BulkMoveWithOldValueWriteBarrier(
+                                ref dst,
+                                ref src,
+                                elementType->IsValueType ? elementType : null,
+                                elementSize,
+                                (uint)length);
+                        }
+                        else
+#endif
+                        {
+                            Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                        }
+                    }
                     else
+                    {
                         SpanHelpers.Memmove(ref dst, ref src, byteCount);
+                    }
 
                     // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
                     return;
@@ -486,9 +524,28 @@ namespace System
                 ref byte dst = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (uint)destinationIndex * elementSize);
 
                 if (pMT->ContainsGCPointers)
-                    Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                {
+#if CORECLR
+                    if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                    {
+                        MethodTable* elementType = pMT->GetArrayElementTypeHandle().AsMethodTable();
+                        Buffer.BulkMoveWithOldValueWriteBarrier(
+                            ref dst,
+                            ref src,
+                            elementType->IsValueType ? elementType : null,
+                            elementSize,
+                            (uint)length);
+                    }
+                    else
+#endif
+                    {
+                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                    }
+                }
                 else
+                {
                     SpanHelpers.Memmove(ref dst, ref src, byteCount);
+                }
 
                 // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
                 return;
@@ -581,7 +638,17 @@ namespace System
                 }
                 else if (pDestMT->ContainsGCPointers)
                 {
-                    Buffer.BulkMoveWithWriteBarrier(ref destData, ref obj.GetRawData(), destSize);
+#if CORECLR
+                    if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                    {
+                        Buffer.BulkMoveWithOldValueWriteBarrier(
+                            ref destData, ref obj.GetRawData(), pDestMT, destSize, 1);
+                    }
+                    else
+#endif
+                    {
+                        Buffer.BulkMoveWithWriteBarrier(ref destData, ref obj.GetRawData(), destSize);
+                    }
                 }
                 else
                 {
@@ -693,6 +760,18 @@ namespace System
             }
             else
             {
+#if CORECLR
+                if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                {
+                    MethodTable* elementType = pMT->GetArrayElementTypeHandle().AsMethodTable();
+                    Buffer.ClearWithOldValueWriteBarrier(
+                        ref pStart,
+                        elementType->IsValueType ? elementType : null,
+                        pMT->ComponentSize,
+                        array.NativeLength);
+                    return;
+                }
+#endif
                 Debug.Assert(totalByteLength % (nuint)sizeof(IntPtr) == 0);
                 SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref pStart), totalByteLength / (nuint)sizeof(IntPtr));
             }
@@ -730,9 +809,25 @@ namespace System
             nuint byteLength = (uint)length * elementSize;
 
             if (pMT->ContainsGCPointers)
+            {
+#if CORECLR
+                if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                {
+                    MethodTable* elementType = pMT->GetArrayElementTypeHandle().AsMethodTable();
+                    Buffer.ClearWithOldValueWriteBarrier(
+                        ref ptr,
+                        elementType->IsValueType ? elementType : null,
+                        elementSize,
+                        (uint)length);
+                    return;
+                }
+#endif
                 SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));
+            }
             else
+            {
                 SpanHelpers.ClearWithoutReferences(ref ptr, byteLength);
+            }
 
             // GC.KeepAlive(array) not required. pMT kept alive via `ptr`
         }

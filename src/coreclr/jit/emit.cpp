@@ -10778,6 +10778,15 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
     {
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
+#if defined(TARGET_AMD64)
+            if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI))
+            {
+                result = RBM_INT_CALLEE_TRASH;
+                break;
+            }
+#else
+            assert(!m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI));
+#endif
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
             break;
 

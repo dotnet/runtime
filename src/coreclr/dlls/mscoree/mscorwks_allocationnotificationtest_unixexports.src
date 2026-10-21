@@ -1,0 +1,28 @@
+; Unix hosting API
+coreclr_create_delegate
+coreclr_execute_assembly
+coreclr_initialize
+coreclr_set_error_writer
+coreclr_shutdown
+coreclr_shutdown_2
+
+; Functions exported by the coreclr
+DllMain
+GetCLRRuntimeHost
+; DAC table export
+g_dacTable
+
+; Used by profilers
+MetaDataGetDispenser
+
+; cDAC contract descriptor
+DotNetRuntimeContractDescriptor
+
+; Allocation notification validation hooks
+GC_AllocationNotificationTest_Reset
+GC_AllocationNotificationTest_GetCount
+GC_AllocationNotificationTest_GetCountOnly
+GC_AllocationNotificationTest_GetErrorCount
+GC_AllocationNotificationTest_GetObject
+GC_AllocationNotificationTest_GetSize
+GC_AllocationNotificationTest_GetFlags

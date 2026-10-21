@@ -1,0 +1,2 @@
+; Immix allocation validation hook
+GC_ImmixAllocationTest_Run

@@ -977,8 +977,9 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
             GCHeapUtilities::GetFastGCFunctions().check_escape((Object**)ptr, OBJECTREFToObject(gc.value));
         }
 
+        bool useSlotLog = ErectWriteBarrierPre((Object**)ptr, OBJECTREFToObject(gc.value));
         gc.previous = ObjectToOBJECTREF(InterlockedCompareExchangeT((Object **)ptr, OBJECTREFToObject(gc.value), OBJECTREFToObject(gc.compare)));
-        if (gc.previous == gc.compare)
+        if ((gc.previous == gc.compare) && !useSlotLog)
         {
             ErectWriteBarrier(ptr, gc.value);
         }

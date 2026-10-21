@@ -65,6 +65,12 @@ GC_LOAD_STATUS g_gc_load_status = GC_LOAD_STATUS_BEFORE_START;
 
 // The version of the GC that we have loaded.
 VersionInfo g_gc_version_info;
+bool g_write_barrier_parameters_include_shape;
+bool g_write_barrier_parameters_include_complete_store;
+bool g_write_barrier_parameters_include_epoch_reset;
+bool g_write_barrier_parameters_include_bulk_scan;
+AllocationCompleteCallback g_allocation_complete_callback = nullptr;
+void* g_allocation_complete_context = nullptr;
 
 // The module that contains the GC.
 PTR_VOID g_gc_module_base;
@@ -95,6 +101,385 @@ PTR_VOID GCHeapUtilities::GetGCModuleBase()
 
 namespace
 {
+enum WriteBarrierCodegenMode : LONG
+{
+    WriteBarrierCodegenModeUninitialized,
+    WriteBarrierCodegenModeSpecialized,
+    WriteBarrierCodegenModeStandardInitializing,
+    WriteBarrierCodegenModeStandard,
+    WriteBarrierCodegenModeSpecializedObserved,
+};
+
+LONG g_write_barrier_codegen_mode;
+bool g_write_barrier_tracks_old_value;
+}
+
+bool GCHeapUtilities::TryPrepareWriteBarrierCodegenMode(bool useStandardAbi, bool tracksOldValue)
+{
+    assert(!tracksOldValue || useStandardAbi);
+
+    LONG desiredMode =
+        useStandardAbi ? WriteBarrierCodegenModeStandardInitializing : WriteBarrierCodegenModeSpecialized;
+
+    while (true)
+    {
+        LONG currentMode = VolatileLoad(&g_write_barrier_codegen_mode);
+
+        if (currentMode == WriteBarrierCodegenModeUninitialized)
+        {
+            if (InterlockedCompareExchange(
+                    &g_write_barrier_codegen_mode,
+                    desiredMode,
+                    WriteBarrierCodegenModeUninitialized) == WriteBarrierCodegenModeUninitialized)
+            {
+                if (useStandardAbi)
+                {
+                    VolatileStore(&g_write_barrier_tracks_old_value, tracksOldValue);
+                }
+
+                return true;
+            }
+
+            continue;
+        }
+
+        if (!useStandardAbi && (currentMode == WriteBarrierCodegenModeSpecializedObserved))
+        {
+            if (InterlockedCompareExchange(
+                    &g_write_barrier_codegen_mode,
+                    WriteBarrierCodegenModeSpecialized,
+                    WriteBarrierCodegenModeSpecializedObserved) == WriteBarrierCodegenModeSpecializedObserved)
+            {
+                return true;
+            }
+
+            continue;
+        }
+
+        return false;
+    }
+}
+
+void GCHeapUtilities::CompleteStandardWriteBarrierCodegenMode()
+{
+    if (InterlockedCompareExchange(
+            &g_write_barrier_codegen_mode,
+            WriteBarrierCodegenModeStandard,
+            WriteBarrierCodegenModeStandardInitializing) != WriteBarrierCodegenModeStandardInitializing)
+    {
+        _ASSERTE(!"Unexpected write-barrier codegen mode");
+    }
+}
+
+void GCHeapUtilities::GetWriteBarrierCodegenModeForJit(bool* useStandardAbi, bool* tracksOldValue)
+{
+    assert(useStandardAbi != nullptr);
+    assert(tracksOldValue != nullptr);
+
+    while (true)
+    {
+        LONG currentMode = VolatileLoad(&g_write_barrier_codegen_mode);
+
+        if (currentMode == WriteBarrierCodegenModeStandard)
+        {
+            *useStandardAbi = true;
+            *tracksOldValue = VolatileLoad(&g_write_barrier_tracks_old_value);
+            return;
+        }
+
+        if (currentMode == WriteBarrierCodegenModeStandardInitializing)
+        {
+            YieldProcessor();
+            continue;
+        }
+
+        if (currentMode != WriteBarrierCodegenModeUninitialized)
+        {
+            *useStandardAbi = false;
+            *tracksOldValue = false;
+            return;
+        }
+
+        if (InterlockedCompareExchange(
+                &g_write_barrier_codegen_mode,
+                WriteBarrierCodegenModeSpecializedObserved,
+                WriteBarrierCodegenModeUninitialized) == WriteBarrierCodegenModeUninitialized)
+        {
+            *useStandardAbi = false;
+            *tracksOldValue = false;
+            return;
+        }
+    }
+}
+
+HRESULT GCHeapUtilities::ConfigureAllocationNotification(IGCHeap* gcHeap, const VersionInfo& version)
+{
+    if ((version.MajorVersion != GC_INTERFACE_MAJOR_VERSION) ||
+        (version.MinorVersion < GC_ALLOCATION_NOTIFICATION_INTERFACE_MINOR_VERSION))
+    {
+        return S_OK;
+    }
+
+    AllocationNotificationParameters* parameters = gcHeap->GetAllocationNotificationParameters();
+    if (parameters == nullptr)
+    {
+        LogErrorToHost("GC allocation notification descriptor is null.");
+        return E_FAIL;
+    }
+
+    if (parameters->request_status != AllocationNotificationRequestStatus::NotProcessed)
+    {
+        LogErrorToHost("GC allocation notification descriptor was not initialized to NotProcessed.");
+        parameters->request_status = AllocationNotificationRequestStatus::Unsupported;
+        return E_FAIL;
+    }
+
+    if (parameters->callback == nullptr)
+    {
+        if (parameters->context != nullptr)
+        {
+            LogErrorToHost("GC allocation notification context requires a callback.");
+            parameters->request_status = AllocationNotificationRequestStatus::Unsupported;
+            return E_INVALIDARG;
+        }
+
+        parameters->request_status = AllocationNotificationRequestStatus::Accepted;
+        return S_OK;
+    }
+
+#if !defined(TARGET_AMD64)
+    LogErrorToHost("GC allocation notification is supported only on AMD64.");
+    parameters->request_status = AllocationNotificationRequestStatus::Unsupported;
+    return E_NOTIMPL;
+#else
+    if (g_pConfig->ReadyToRun())
+    {
+        LogErrorToHost("GC allocation notification requires ReadyToRun to be disabled.");
+        parameters->request_status = AllocationNotificationRequestStatus::Unsupported;
+        return E_NOTIMPL;
+    }
+
+    g_allocation_complete_callback = parameters->callback;
+    g_allocation_complete_context = parameters->context;
+    parameters->request_status = AllocationNotificationRequestStatus::Accepted;
+    return S_OK;
+#endif
+}
+
+namespace
+{
+Object** LOCALGC_CALLCONV GetLoaderAllocatorObjectSlotForGC(MethodTable* methodTable)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (!methodTable->Collectible())
+    {
+        return nullptr;
+    }
+
+    return reinterpret_cast<Object**>(methodTable->GetLoaderAllocatorObjectHandle());
+}
+}
+
+HRESULT GCHeapUtilities::ConfigureObjectReferenceEnumeration(IGCHeap* gcHeap, const VersionInfo& version)
+{
+    if ((version.MajorVersion != GC_INTERFACE_MAJOR_VERSION) ||
+        (version.MinorVersion < GC_OBJECT_REFERENCE_ENUMERATION_INTERFACE_MINOR_VERSION))
+    {
+        return S_OK;
+    }
+
+    ObjectReferenceEnumerationParameters* parameters =
+        gcHeap->GetObjectReferenceEnumerationParameters();
+    if (parameters == nullptr)
+    {
+        LogErrorToHost("GC object-reference enumeration descriptor is null.");
+        return E_FAIL;
+    }
+
+    if (parameters->request_status != ObjectReferenceEnumerationRequestStatus::NotProcessed)
+    {
+        LogErrorToHost(
+            "GC object-reference enumeration descriptor was not initialized to NotProcessed.");
+        parameters->request_status = ObjectReferenceEnumerationRequestStatus::Unsupported;
+        return E_FAIL;
+    }
+
+    if (parameters->get_loader_allocator_object_slot != nullptr)
+    {
+        LogErrorToHost(
+            "GC object-reference enumeration resolver must be initialized to null.");
+        parameters->request_status = ObjectReferenceEnumerationRequestStatus::Unsupported;
+        return E_INVALIDARG;
+    }
+
+    switch (parameters->request)
+    {
+        case ObjectReferenceEnumerationRequest::Disabled:
+            parameters->request_status = ObjectReferenceEnumerationRequestStatus::Accepted;
+            return S_OK;
+
+        case ObjectReferenceEnumerationRequest::Enabled:
+            parameters->get_loader_allocator_object_slot =
+                GetLoaderAllocatorObjectSlotForGC;
+            parameters->request_status = ObjectReferenceEnumerationRequestStatus::Accepted;
+            return S_OK;
+
+        default:
+            LogErrorToHost("GC object-reference enumeration request is invalid.");
+            parameters->request_status = ObjectReferenceEnumerationRequestStatus::Unsupported;
+            return E_INVALIDARG;
+    }
+}
+
+namespace
+{
+constexpr uint32_t ObjectHeaderBitsSupportedAtomicOperations =
+    static_cast<uint32_t>(ObjectHeaderBitsAtomicOperation::Load) |
+    static_cast<uint32_t>(ObjectHeaderBitsAtomicOperation::CompareExchange) |
+    static_cast<uint32_t>(ObjectHeaderBitsAtomicOperation::Store) |
+    static_cast<uint32_t>(ObjectHeaderBitsAtomicOperation::Wait);
+
+void ClearObjectHeaderBitsRuntimeOutputs(ObjectHeaderBitsParameters* parameters)
+{
+    parameters->object_byte_offset = 0;
+    parameters->storage_word_size = 0;
+    parameters->bit_mask = 0;
+    parameters->bit_shift = 0;
+    parameters->granted_protocol = ObjectHeaderBitsProtocol::None;
+    parameters->granted_atomic_operations = 0;
+    parameters->granted_memory_order = ObjectHeaderBitsMemoryOrder::None;
+    parameters->clear_state = 0;
+    parameters->invalid_state = 0;
+    parameters->transition_state = 0;
+    parameters->published_state = 0;
+}
+
+bool ObjectHeaderBitsRuntimeOutputsAreZero(const ObjectHeaderBitsParameters* parameters)
+{
+    return
+        (parameters->object_byte_offset == 0) &&
+        (parameters->storage_word_size == 0) &&
+        (parameters->bit_mask == 0) &&
+        (parameters->bit_shift == 0) &&
+        (parameters->granted_protocol == ObjectHeaderBitsProtocol::None) &&
+        (parameters->granted_atomic_operations == 0) &&
+        (parameters->granted_memory_order == ObjectHeaderBitsMemoryOrder::None) &&
+        (parameters->clear_state == 0) &&
+        (parameters->invalid_state == 0) &&
+        (parameters->transition_state == 0) &&
+        (parameters->published_state == 0);
+}
+}
+
+HRESULT GCHeapUtilities::ConfigureObjectHeaderBits(IGCHeap* gcHeap, const VersionInfo& version)
+{
+    if ((version.MajorVersion != GC_INTERFACE_MAJOR_VERSION) ||
+        (version.MinorVersion < GC_OBJECT_HEADER_BITS_INTERFACE_MINOR_VERSION))
+    {
+        return S_OK;
+    }
+
+    ObjectHeaderBitsParameters* parameters = gcHeap->GetObjectHeaderBitsParameters();
+    if (parameters == nullptr)
+    {
+        LogErrorToHost("GC object-header bit descriptor is null.");
+        return E_FAIL;
+    }
+
+    if (parameters->request_status != ObjectHeaderBitsRequestStatus::NotProcessed)
+    {
+        LogErrorToHost("GC object-header bit descriptor was not initialized to NotProcessed.");
+        parameters->request_status = ObjectHeaderBitsRequestStatus::Unsupported;
+        ClearObjectHeaderBitsRuntimeOutputs(parameters);
+        return E_FAIL;
+    }
+
+    if (!ObjectHeaderBitsRuntimeOutputsAreZero(parameters))
+    {
+        LogErrorToHost("GC object-header bit descriptor outputs must be initialized to zero.");
+        parameters->request_status = ObjectHeaderBitsRequestStatus::Unsupported;
+        ClearObjectHeaderBitsRuntimeOutputs(parameters);
+        return E_INVALIDARG;
+    }
+
+    switch (parameters->request)
+    {
+        case ObjectHeaderBitsRequest::Disabled:
+            if ((parameters->version != 0) ||
+                (parameters->size != 0) ||
+                (parameters->requested_bit_count != 0) ||
+                (parameters->requested_state_count != 0) ||
+                (parameters->requested_protocol != ObjectHeaderBitsProtocol::None) ||
+                (parameters->required_atomic_operations != 0) ||
+                (parameters->required_memory_order != ObjectHeaderBitsMemoryOrder::None))
+            {
+                LogErrorToHost("Disabled GC object-header bit request has nonzero requirements.");
+                parameters->request_status = ObjectHeaderBitsRequestStatus::Unsupported;
+                return E_INVALIDARG;
+            }
+
+            parameters->request_status = ObjectHeaderBitsRequestStatus::Accepted;
+            return S_OK;
+
+        case ObjectHeaderBitsRequest::Enabled:
+            break;
+
+        default:
+            LogErrorToHost("GC object-header bit request is invalid.");
+            parameters->request_status = ObjectHeaderBitsRequestStatus::Unsupported;
+            return E_INVALIDARG;
+    }
+
+    if ((parameters->version != GC_OBJECT_HEADER_BITS_PARAMETERS_VERSION) ||
+        (parameters->size != sizeof(ObjectHeaderBitsParameters)) ||
+        (parameters->requested_bit_count == 0) ||
+        (parameters->requested_state_count == 0) ||
+        (parameters->requested_protocol == ObjectHeaderBitsProtocol::None) ||
+        ((parameters->required_atomic_operations & ~ObjectHeaderBitsSupportedAtomicOperations) != 0) ||
+        (parameters->required_memory_order != ObjectHeaderBitsMemoryOrder::SequentiallyConsistent))
+    {
+        LogErrorToHost("GC object-header bit requirements are malformed.");
+        parameters->request_status = ObjectHeaderBitsRequestStatus::Unsupported;
+        return E_INVALIDARG;
+    }
+
+    if ((parameters->requested_bit_count != 2) ||
+        (parameters->requested_state_count != 3) ||
+        (parameters->requested_protocol != ObjectHeaderBitsProtocol::ClaimAndPublish) ||
+        (parameters->required_atomic_operations != ObjectHeaderBitsSupportedAtomicOperations) ||
+        (parameters->required_memory_order != ObjectHeaderBitsMemoryOrder::SequentiallyConsistent))
+    {
+        LogErrorToHost("GC object-header bit requirements are unsupported.");
+        parameters->request_status = ObjectHeaderBitsRequestStatus::Unsupported;
+        return E_NOTIMPL;
+    }
+
+#ifndef TARGET_64BIT
+    LogErrorToHost("GC object-header bits require a 64-bit object header.");
+    parameters->request_status = ObjectHeaderBitsRequestStatus::Unsupported;
+    return E_NOTIMPL;
+#else
+    static_assert(sizeof(ObjHeader) == sizeof(void*));
+    parameters->object_byte_offset = -static_cast<int32_t>(sizeof(ObjHeader));
+    parameters->storage_word_size = sizeof(uint32_t);
+    parameters->bit_mask = 0x00000003;
+    parameters->bit_shift = 0;
+    parameters->granted_protocol = ObjectHeaderBitsProtocol::ClaimAndPublish;
+    parameters->granted_atomic_operations = ObjectHeaderBitsSupportedAtomicOperations;
+    parameters->granted_memory_order = ObjectHeaderBitsMemoryOrder::SequentiallyConsistent;
+    parameters->clear_state = 0b00;
+    parameters->invalid_state = 0b01;
+    parameters->transition_state = 0b10;
+    parameters->published_state = 0b11;
+    parameters->request_status = ObjectHeaderBitsRequestStatus::Accepted;
+    return S_OK;
+#endif
+}
+
+namespace
+{
+
 // This block of code contains all of the state necessary to handle incoming
 // EtwCallbacks before the GC has been initialized. This is a tricky problem
 // because EtwCallbacks can appear at any time, even when we are just about
@@ -117,12 +502,36 @@ BOOL g_gcEventTracingInitialized = FALSE;
 // to "publish" it by assigning it to g_pGCHeap.
 //
 // This function can proceed concurrently with StashKeywordAndLevel below.
-void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModuleBase)
+HRESULT FinalizeLoad(
+    IGCHeap* gcHeap,
+    IGCHandleManager* handleMgr,
+    PTR_VOID pGcModuleBase,
+    const VersionInfo& version)
 {
+    HRESULT notificationResult = GCHeapUtilities::ConfigureAllocationNotification(gcHeap, version);
+    if (FAILED(notificationResult))
+    {
+        return notificationResult;
+    }
+
+    HRESULT enumerationResult =
+        GCHeapUtilities::ConfigureObjectReferenceEnumeration(gcHeap, version);
+    if (FAILED(enumerationResult))
+    {
+        return enumerationResult;
+    }
+
+    HRESULT objectHeaderBitsResult =
+        GCHeapUtilities::ConfigureObjectHeaderBits(gcHeap, version);
+    if (FAILED(objectHeaderBitsResult))
+    {
+        return objectHeaderBitsResult;
+    }
+
     g_pGCHeap = gcHeap;
+    // Heap type and fast functions exist since interface 6.0. The loader has already rejected lower major versions.
     bool supportsFastGCFunctionsAndHeapType =
-        (g_gc_version_info.MajorVersion > GC_INTERFACE_MAJOR_VERSION) ||
-        (g_gc_version_info.MinorVersion >= GC_INTERFACE_MINOR_VERSION);
+        g_gc_version_info.MajorVersion >= GC_INTERFACE_MAJOR_VERSION;
     if (supportsFastGCFunctionsAndHeapType)
     {
         g_heap_type = gcHeap->GetGCHeapType();
@@ -151,6 +560,7 @@ void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModu
     LOG((LF_GC, LL_INFO100, "GC load successful\n"));
 
     StressLog::AddModule((uint8_t*)pGcModuleBase);
+    return S_OK;
 }
 
 void StashKeywordAndLevel(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
@@ -301,8 +711,7 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGCName, LPCWSTR standaloneGCPath)
         return E_FAIL;
     }
 
-    if ((g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
-        (g_gc_version_info.MinorVersion < GC_INTERFACE_MINOR_VERSION))
+    if (g_gc_version_info.MinorVersion < GC_INTERFACE_MINOR_VERSION)
     {
         LOG((LF_GC, LL_INFO100, "Loaded GC has lower minor version number (%d) than EE was compiled against (%d)\n",
             g_gc_version_info.MinorVersion, GC_INTERFACE_MINOR_VERSION));
@@ -321,6 +730,18 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGCName, LPCWSTR standaloneGCPath)
     g_gc_load_status = GC_LOAD_STATUS_GET_INITIALIZE;
     IGCHeap* heap;
     IGCHandleManager* manager;
+    g_write_barrier_parameters_include_shape =
+        (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+        (g_gc_version_info.MinorVersion >= GC_WRITE_BARRIER_SHAPE_INTERFACE_MINOR_VERSION);
+    g_write_barrier_parameters_include_complete_store =
+        (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+        (g_gc_version_info.MinorVersion >= GC_WRITE_BARRIER_COMPLETE_STORE_INTERFACE_MINOR_VERSION);
+    g_write_barrier_parameters_include_epoch_reset =
+        (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+        (g_gc_version_info.MinorVersion >= GC_WRITE_BARRIER_EPOCH_RESET_INTERFACE_MINOR_VERSION);
+    g_write_barrier_parameters_include_bulk_scan =
+        (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+        (g_gc_version_info.MinorVersion >= GC_WRITE_BARRIER_BULK_SCAN_INTERFACE_MINOR_VERSION);
     HRESULT initResult = initFunc(gcToClr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {
@@ -332,7 +753,7 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGCName, LPCWSTR standaloneGCPath)
         pGcModuleBase = (PTR_VOID)PAL_GetSymbolModuleBase((PVOID)initFunc);
 #endif
 
-        FinalizeLoad(heap, manager, pGcModuleBase);
+        initResult = FinalizeLoad(heap, manager, pGcModuleBase, g_gc_version_info);
     }
     else
     {
@@ -368,10 +789,14 @@ HRESULT InitializeDefaultGC()
 
     IGCHeap* heap;
     IGCHandleManager* manager;
+    g_write_barrier_parameters_include_shape = true;
+    g_write_barrier_parameters_include_complete_store = true;
+    g_write_barrier_parameters_include_epoch_reset = true;
+    g_write_barrier_parameters_include_bulk_scan = true;
     HRESULT initResult = GC_Initialize(nullptr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {
-        FinalizeLoad(heap, manager, GetClrModuleBase());
+        initResult = FinalizeLoad(heap, manager, GetClrModuleBase(), g_gc_version_info);
     }
     else
     {
@@ -383,6 +808,20 @@ HRESULT InitializeDefaultGC()
 }
 
 } // anonymous namespace
+
+void GCHeapUtilities::InvokeAllocationCompleteCallback(
+    Object* object,
+    size_t alignedObjectSize,
+    AllocationCompleteFlags flags)
+{
+    LIMITED_METHOD_CONTRACT;
+    assert(g_allocation_complete_callback != nullptr);
+    g_allocation_complete_callback(
+        object,
+        alignedObjectSize,
+        flags,
+        g_allocation_complete_context);
+}
 
 // Loads (if necessary) and initializes the GC. If using a standalone GC,
 // it loads the library containing it and dynamically loads the GC entry point.

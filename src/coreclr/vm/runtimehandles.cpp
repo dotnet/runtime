@@ -23,6 +23,8 @@
 #include "comdelegate.h"
 #include "typedesc.h"
 #include "virtualcallstub.h"
+
+extern "C" void RhpAllocationComplete(Object* object, size_t alignedObjectSize);
 #include "contractimpl.h"
 #include "dynamicmethod.h"
 #include "peimagelayout.inl"
@@ -1188,9 +1190,18 @@ FCIMPL1(Object*, RuntimeTypeHandle::InternalAllocNoChecks_FastPath, MethodTable*
         return NULL; // Fall back to slow path in managed
     }
 
-    allocContext->m_GCAllocContext.alloc_ptr = allocPtr + size;
     Object* obj = reinterpret_cast<Object*>(allocPtr);
-    obj->SetMethodTable(pMT);
+    if (GCHeapUtilities::IsAllocationNotificationEnabled())
+    {
+        obj->SetMethodTable(pMT);
+        allocContext->m_GCAllocContext.alloc_ptr = allocPtr + size;
+        RhpAllocationComplete(obj, size);
+    }
+    else
+    {
+        allocContext->m_GCAllocContext.alloc_ptr = allocPtr + size;
+        obj->SetMethodTable(pMT);
+    }
     _ASSERTE(obj->HasEmptySyncBlockInfo());
 
     return obj;

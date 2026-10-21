@@ -11,15 +11,33 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 0
+#define GC_INTERFACE_MINOR_VERSION 7
+
+// Minor versions above the 6.0 base (custom GC support) that the LXR port adds.
+#define GC_WRITE_BARRIER_SHAPE_INTERFACE_MINOR_VERSION 1
+#define GC_WRITE_BARRIER_COMPLETE_STORE_INTERFACE_MINOR_VERSION 2
+#define GC_WRITE_BARRIER_EPOCH_RESET_INTERFACE_MINOR_VERSION 3
+#define GC_WRITE_BARRIER_BULK_SCAN_INTERFACE_MINOR_VERSION 4
+#define GC_ALLOCATION_NOTIFICATION_INTERFACE_MINOR_VERSION 5
+#define GC_OBJECT_REFERENCE_ENUMERATION_INTERFACE_MINOR_VERSION 6
+#define GC_OBJECT_HEADER_BITS_INTERFACE_MINOR_VERSION 7
+#define GC_OBJECT_HEADER_BITS_PARAMETERS_VERSION 1
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
 #define EE_INTERFACE_MAJOR_VERSION 6
 
+#ifdef TARGET_X86
+#define LOCALGC_CALLCONV __cdecl
+#else
+#define LOCALGC_CALLCONV
+#endif
+
 struct ScanContext;
 struct gc_alloc_context;
 class CrawlFrame;
+class MethodTable;
+class Object;
 
 // Callback passed to GcScanRoots.
 typedef void promote_func(PTR_PTR_Object, ScanContext*, uint32_t);
@@ -72,6 +90,226 @@ enum class WriteBarrierParametersMask
     RegionShr = 1 << 10,
     RegionUseBitwiseWriteBarrier = 1 << 11,
     WriteWatchTable = 1 << 12,
+};
+
+enum class WriteBarrierShape : uint32_t
+{
+    CardTable = 0,
+    SideMetadataFieldLog = 1,
+};
+
+enum class WriteBarrierRequestStatus : uint32_t
+{
+    NotProcessed = 0,
+    Accepted = 1,
+    Unsupported = 2,
+};
+
+enum class WriteBarrierMetadataBitMeaning : uint8_t
+{
+    WorkWhenBitIsClear = 0,
+    WorkWhenBitIsSet = 1,
+};
+
+// Called before the field is overwritten. For conditional atomic writes,
+// new_reference is the proposed value and is not guaranteed to be committed.
+// The helper must not trigger a garbage collection, block, switch GC mode, or
+// throw across the callback.
+typedef void (LOCALGC_CALLCONV *WriteBarrierSlowPath)(
+    Object** destination,
+    Object* old_reference,
+    Object* new_reference);
+
+// Called before a contiguous range of reference fields is overwritten. The
+// helper must observe the complete source and destination ranges before any
+// destination field is changed. A null source means every proposed new
+// reference in the range is null.
+typedef void (LOCALGC_CALLCONV *WriteBarrierRangeSlowPath)(
+    Object** destination,
+    Object** source,
+    size_t reference_count);
+
+// Called before a native slot changes a logical managed-object edge.
+typedef void (LOCALGC_CALLCONV *WriteBarrierDependentEdgeSlowPath)(
+    void* destination,
+    Object* old_reference,
+    Object* new_reference);
+
+// Called while mutators are suspended before they resume after a finished GC.
+typedef void (LOCALGC_CALLCONV *WriteBarrierEpochReset)();
+
+struct WriteBarrierSideMetadataParameters
+{
+    // A biased base address. For destination address D, the metadata byte is
+    // metadata_base + (D >> (granularity_shift + 3)). The bit within that byte
+    // is (D >> granularity_shift) & 7.
+    uint8_t* metadata_base;
+
+    WriteBarrierSlowPath slow_path;
+
+    // The base-2 logarithm of destination bytes represented by one metadata bit.
+    uint8_t granularity_shift;
+
+    WriteBarrierMetadataBitMeaning bit_meaning;
+};
+
+struct WriteBarrierBulkScanParameters
+{
+    // The native-word-aligned storage that backs metadata_base for the entire
+    // managed heap. Claims must transition atomically from work to claimed,
+    // and resets must occur only while mutators are suspended.
+    uint8_t* metadata_start;
+    size_t metadata_size;
+};
+
+enum class AllocationNotificationRequestStatus : uint32_t
+{
+    NotProcessed = 0,
+    Accepted = 1,
+    Unsupported = 2,
+};
+
+enum class AllocationCompleteFlags : uint32_t
+{
+    None = 0,
+    ContainsReferences = 1 << 0,
+    Finalizable = 1 << 1,
+    LargeObjectHeap = 1 << 2,
+    PinnedObjectHeap = 1 << 3,
+    Array = 1 << 4,
+    String = 1 << 5,
+    BoxedValueType = 1 << 6,
+    Collectible = 1 << 7,
+    PayloadMayBeUninitialized = 1 << 8,
+    FrozenObjectHeap = 1 << 9,
+};
+
+// Called after the runtime object shape is initialized and before the object
+// escapes to managed code. aligned_object_size includes the object header,
+// payload, and trailing alignment, but excludes preceding alignment filler.
+// The callback runs in cooperative mode for GC-heap objects. Frozen-object-heap
+// births are the sole exception: they run in preemptive mode while serialized,
+// before their segment is registered with the GC. The callback must not trigger
+// a collection, throw, block, allocate, switch GC mode, enter managed code, take
+// a GC-dependent lock, or recursively allocate. The raw object pointer is stable
+// only for the duration of the call.
+typedef void (LOCALGC_CALLCONV *AllocationCompleteCallback)(
+    Object* object,
+    size_t aligned_object_size,
+    AllocationCompleteFlags flags,
+    void* context);
+
+struct AllocationNotificationParameters
+{
+    // The collector initializes this to NotProcessed. The EE writes Accepted
+    // or Unsupported before IGCHeap::Initialize.
+    AllocationNotificationRequestStatus request_status;
+
+    // A null callback is the backwards-compatible disabled request.
+    alignas(void*) AllocationCompleteCallback callback;
+
+    // Immutable process-lifetime state passed to every callback.
+    void* context;
+};
+
+enum class ObjectReferenceEnumerationRequestStatus : uint32_t
+{
+    NotProcessed = 0,
+    Accepted = 1,
+    Unsupported = 2,
+};
+
+enum class ObjectReferenceEnumerationRequest : uint32_t
+{
+    Disabled = 0,
+    Enabled = 1,
+};
+
+// Returns the handle-table slot containing the LoaderAllocator object for a
+// collectible MethodTable. The returned slot is read-only to the caller.
+typedef Object** (LOCALGC_CALLCONV *GetLoaderAllocatorObjectSlot)(
+    MethodTable* method_table);
+
+struct ObjectReferenceEnumerationParameters
+{
+    // The collector initializes this to NotProcessed. The EE writes Accepted
+    // or Unsupported before IGCHeap::Initialize.
+    ObjectReferenceEnumerationRequestStatus request_status;
+
+    // Disabled is the backwards-compatible request.
+    ObjectReferenceEnumerationRequest request;
+
+    // Written by the EE for an accepted Enabled request.
+    alignas(void*) GetLoaderAllocatorObjectSlot get_loader_allocator_object_slot;
+};
+
+enum class ObjectHeaderBitsRequestStatus : uint32_t
+{
+    NotProcessed = 0,
+    Accepted = 1,
+    Unsupported = 2,
+};
+
+enum class ObjectHeaderBitsRequest : uint32_t
+{
+    Disabled = 0,
+    Enabled = 1,
+};
+
+enum class ObjectHeaderBitsProtocol : uint32_t
+{
+    None = 0,
+    ClaimAndPublish = 1,
+};
+
+enum class ObjectHeaderBitsAtomicOperation : uint32_t
+{
+    None = 0,
+    Load = 1 << 0,
+    CompareExchange = 1 << 1,
+    Store = 1 << 2,
+    Wait = 1 << 3,
+};
+
+enum class ObjectHeaderBitsMemoryOrder : uint32_t
+{
+    None = 0,
+    SequentiallyConsistent = 1,
+};
+
+struct ObjectHeaderBitsParameters
+{
+    // The collector initializes this to NotProcessed. The EE writes Accepted
+    // or Unsupported before IGCHeap::Initialize.
+    ObjectHeaderBitsRequestStatus request_status;
+
+    // Disabled is the backwards-compatible request.
+    ObjectHeaderBitsRequest request;
+
+    // Enabled requests identify the descriptor shape they were built against.
+    uint32_t version;
+    uint32_t size;
+
+    // Collector requirements.
+    uint32_t requested_bit_count;
+    uint32_t requested_state_count;
+    ObjectHeaderBitsProtocol requested_protocol;
+    uint32_t required_atomic_operations;
+    ObjectHeaderBitsMemoryOrder required_memory_order;
+
+    // Runtime-selected placement and protocol. The collector initializes all
+    // output fields to zero.
+    int32_t object_byte_offset;
+    uint32_t storage_word_size;
+    uint32_t bit_mask;
+    uint32_t bit_shift;
+    ObjectHeaderBitsProtocol granted_protocol;
+    uint32_t granted_atomic_operations;
+    ObjectHeaderBitsMemoryOrder granted_memory_order;
+    uint32_t clear_state;
+    uint32_t invalid_state;
+    uint32_t transition_state;
+    uint32_t published_state;
 };
 
 // Arguments to GCToEEInterface::StompWriteBarrier
@@ -138,6 +376,31 @@ struct WriteBarrierParameters
 
     // bitmask indicating which parameters are valid in this structure. Used for custom GCs
     WriteBarrierParametersMask parameters_mask;
+
+    // The write-barrier mechanics requested by the collector. Used only for
+    // WriteBarrierOp::Initialize. CardTable is the compatibility default. The
+    // explicit pointer alignment keeps the tail beyond the complete 5.8
+    // parameter block, including its trailing padding.
+    alignas(void*) WriteBarrierShape write_barrier_shape;
+
+    // Set to NotProcessed by the collector before the Initialize request. A
+    // runtime that understands this tail replaces it with Accepted or Unsupported.
+    WriteBarrierRequestStatus write_barrier_request_status;
+
+    // Used only when write_barrier_shape is SideMetadataFieldLog.
+    WriteBarrierSideMetadataParameters write_barrier_side_metadata;
+
+    // Used only when write_barrier_shape is SideMetadataFieldLog. This tail is
+    // present when the collector reports interface version 5.10 or later.
+    alignas(void*) WriteBarrierRangeSlowPath write_barrier_range_slow_path;
+    WriteBarrierDependentEdgeSlowPath write_barrier_dependent_edge_slow_path;
+
+    // Present when the collector reports interface version 5.11 or later.
+    WriteBarrierEpochReset write_barrier_epoch_reset;
+
+    // Used only when write_barrier_shape is SideMetadataFieldLog. This tail is
+    // present when the collector reports interface version 5.12 or later.
+    alignas(void*) WriteBarrierBulkScanParameters write_barrier_bulk_scan;
 };
 
 using WriteBarrierFunction = void (*)(void* context, Object** dst, Object* ref);
@@ -312,7 +575,6 @@ struct segment_info
 // Software Write Watch table.
 #define SOFTWARE_WRITE_WATCH_AddressToTableByteIndexShift 0xc
 
-class Object;
 class IGCHeap;
 class IGCHandleManager;
 
@@ -1153,6 +1415,32 @@ public:
     // listed in patchableValues (and read from the patched slot) so the helper remains correct no
     // matter where the EE copies it to.
     virtual void GetAssignRefFunctions(void** assignRef, size_t* assignRefSize, void** assignRefChecked, size_t* assignRefCheckedSize, uintptr_t** avLocationsList, GCWriteBarrierPatchableValue** patchableValues) PURE_VIRTUAL
+    // Returns the immutable allocation-complete notification request. The EE
+    // calls this only for GC interface version 5.13 or later. Collectors built
+    // from older source inherit a process-lifetime disabled request.
+    virtual AllocationNotificationParameters* GetAllocationNotificationParameters()
+    {
+        static AllocationNotificationParameters parameters = {};
+        return &parameters;
+    }
+
+    // Returns the object-reference enumeration request. The EE calls this only
+    // for GC interface version 5.14 or later. Collectors built from older
+    // source inherit a process-lifetime disabled request.
+    virtual ObjectReferenceEnumerationParameters* GetObjectReferenceEnumerationParameters()
+    {
+        static ObjectReferenceEnumerationParameters parameters = {};
+        return &parameters;
+    }
+
+    // Returns the object-header bit request. The EE calls this only for GC
+    // interface version 5.15 or later. Collectors built from older source
+    // inherit a process-lifetime disabled request.
+    virtual ObjectHeaderBitsParameters* GetObjectHeaderBitsParameters()
+    {
+        static ObjectHeaderBitsParameters parameters = {};
+        return &parameters;
+    }
 };
 
 #ifdef WRITE_BARRIER_CHECK
@@ -1245,12 +1533,6 @@ struct VersionInfo {
     uint32_t BuildVersion;
     const char* Name;
 };
-
-#ifdef TARGET_X86
-#define LOCALGC_CALLCONV __cdecl
-#else
-#define LOCALGC_CALLCONV
-#endif
 
 typedef void (LOCALGC_CALLCONV *GC_VersionInfoFunction)(
     /* InOut */ VersionInfo*

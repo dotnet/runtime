@@ -1,0 +1,5 @@
+GC_LxrRcVerticalObserver_Begin
+GC_LxrRcVerticalObserver_Register
+GC_LxrRcVerticalObserver_Attach
+GC_LxrRcVerticalObserver_End
+GC_LxrRcVerticalObserver_GetMetric

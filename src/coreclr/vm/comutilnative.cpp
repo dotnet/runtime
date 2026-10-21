@@ -470,6 +470,211 @@ FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byt
 }
 FCIMPLEND
 
+static void BulkMoveWithOldValueWriteBarrierCore(
+    void* dst,
+    void* src,
+    MethodTable* type,
+    size_t elementSize,
+    size_t elementCount)
+{
+    if ((dst == src) || (elementCount == 0))
+    {
+        return;
+    }
+
+    _ASSERTE(elementSize != 0);
+    _ASSERTE(elementCount <= (SIZE_T_MAX / elementSize));
+    size_t byteCount = elementSize * elementCount;
+
+    if (ErectWriteBarrierLayoutRangePre(dst, src, type, elementSize, elementCount))
+    {
+        if (reinterpret_cast<size_t>(dst) - reinterpret_cast<size_t>(src) >= byteCount)
+        {
+            InlinedForwardGCSafeCopyHelper(dst, src, byteCount);
+        }
+        else
+        {
+            InlinedBackwardGCSafeCopyHelper(dst, src, byteCount);
+        }
+    }
+    else
+    {
+        InlinedMemmoveGCRefsHelper(dst, src, byteCount);
+    }
+}
+
+FCIMPL5(
+    VOID,
+    Buffer::BulkMoveWithOldValueWriteBarrier,
+    void* dst,
+    void* src,
+    MethodTable* type,
+    size_t elementSize,
+    size_t elementCount)
+{
+    FCALL_CONTRACT;
+
+    BulkMoveWithOldValueWriteBarrierCore(
+        dst, src, type, elementSize, elementCount);
+}
+FCIMPLEND
+
+FCIMPL7(
+    VOID,
+    Buffer::BulkMoveValueClassWithOldValueWriteBarrier,
+    void* dst,
+    void* src,
+    MethodTable* type,
+    size_t gcLayoutOffset,
+    size_t elementSize,
+    size_t chunkOffset,
+    size_t chunkSize)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(dst != nullptr);
+    _ASSERTE(src != nullptr);
+    _ASSERTE(dst != src);
+    _ASSERTE(IS_ALIGNED(gcLayoutOffset, sizeof(size_t)));
+    _ASSERTE(chunkSize != 0);
+    _ASSERTE(chunkOffset <= elementSize);
+    _ASSERTE(chunkSize <= (elementSize - chunkOffset));
+    _ASSERTE(IS_ALIGNED(dst, sizeof(size_t)));
+    _ASSERTE(IS_ALIGNED(src, sizeof(size_t)));
+    _ASSERTE(IS_ALIGNED(chunkOffset, sizeof(size_t)));
+    _ASSERTE(IS_ALIGNED(chunkSize, sizeof(size_t)));
+
+    if (ErectWriteBarrierLayoutChunkPre(
+            dst, src, type, gcLayoutOffset, elementSize, chunkOffset, chunkSize))
+    {
+        if (reinterpret_cast<size_t>(dst) - reinterpret_cast<size_t>(src) >= chunkSize)
+        {
+            InlinedForwardGCSafeCopyHelper(dst, src, chunkSize);
+        }
+        else
+        {
+            InlinedBackwardGCSafeCopyHelper(dst, src, chunkSize);
+        }
+    }
+    else
+    {
+        InlinedMemmoveGCRefsHelper(dst, src, chunkSize);
+    }
+}
+FCIMPLEND
+
+FCIMPL5(
+    VOID,
+    Buffer::BulkFillWithOldValueWriteBarrier,
+    void* dst,
+    void* value,
+    MethodTable* type,
+    size_t elementSize,
+    size_t elementCount)
+{
+    FCALL_CONTRACT;
+
+    if (elementCount == 0)
+    {
+        return;
+    }
+
+    _ASSERTE(value != nullptr);
+    _ASSERTE(elementSize != 0);
+    _ASSERTE(elementCount <= (SIZE_T_MAX / elementSize));
+    _ASSERTE(IS_ALIGNED(dst, sizeof(size_t)));
+    _ASSERTE(IS_ALIGNED(value, sizeof(size_t)));
+    _ASSERTE(IS_ALIGNED(elementSize, sizeof(size_t)));
+
+    bool useSlotLog =
+        ErectWriteBarrierLayoutFillPre(dst, value, type, elementSize, elementCount);
+    for (size_t element = 0; element < elementCount; element++)
+    {
+        void* destination =
+            reinterpret_cast<uint8_t*>(dst) + (element * elementSize);
+        if (useSlotLog)
+        {
+            InlinedForwardGCSafeCopyHelper(destination, value, elementSize);
+        }
+        else
+        {
+            InlinedMemmoveGCRefsHelper(destination, value, elementSize);
+        }
+    }
+}
+FCIMPLEND
+
+static void ClearWithOldValueWriteBarrierCore(
+    void* dst,
+    MethodTable* type,
+    size_t elementSize,
+    size_t elementCount)
+{
+    if (elementCount == 0)
+    {
+        return;
+    }
+
+    _ASSERTE(elementSize != 0);
+    _ASSERTE(elementCount <= (SIZE_T_MAX / elementSize));
+    size_t byteCount = elementSize * elementCount;
+    ErectWriteBarrierLayoutRangePre(dst, nullptr, type, elementSize, elementCount);
+
+    _ASSERTE(IS_ALIGNED(dst, sizeof(size_t)));
+    _ASSERTE(IS_ALIGNED(byteCount, sizeof(size_t)));
+    for (size_t offset = 0; offset < byteCount; offset += sizeof(size_t))
+    {
+        VolatileStore(reinterpret_cast<size_t*>(reinterpret_cast<uint8_t*>(dst) + offset), static_cast<size_t>(0));
+    }
+}
+
+FCIMPL4(
+    VOID,
+    Buffer::ClearWithOldValueWriteBarrier,
+    void* dst,
+    MethodTable* type,
+    size_t elementSize,
+    size_t elementCount)
+{
+    FCALL_CONTRACT;
+
+    ClearWithOldValueWriteBarrierCore(
+        dst, type, elementSize, elementCount);
+}
+FCIMPLEND
+
+FCIMPL6(
+    VOID,
+    Buffer::ClearValueClassWithOldValueWriteBarrier,
+    void* dst,
+    MethodTable* type,
+    size_t gcLayoutOffset,
+    size_t elementSize,
+    size_t chunkOffset,
+    size_t chunkSize)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(dst != nullptr);
+    _ASSERTE(IS_ALIGNED(gcLayoutOffset, sizeof(size_t)));
+    _ASSERTE(chunkSize != 0);
+    _ASSERTE(chunkOffset <= elementSize);
+    _ASSERTE(chunkSize <= (elementSize - chunkOffset));
+    _ASSERTE(IS_ALIGNED(dst, sizeof(size_t)));
+    _ASSERTE(IS_ALIGNED(chunkOffset, sizeof(size_t)));
+    _ASSERTE(IS_ALIGNED(chunkSize, sizeof(size_t)));
+
+    ErectWriteBarrierLayoutChunkPre(
+        dst, nullptr, type, gcLayoutOffset, elementSize, chunkOffset, chunkSize);
+    for (size_t offset = 0; offset < chunkSize; offset += sizeof(size_t))
+    {
+        VolatileStore(
+            reinterpret_cast<size_t*>(reinterpret_cast<uint8_t*>(dst) + offset),
+            static_cast<size_t>(0));
+    }
+}
+FCIMPLEND
+
 //
 // GCInterface
 //
@@ -982,6 +1187,11 @@ extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void* pSection, SIZ
     _ASSERTE(sizeSection > 0);
 
     GCX_COOP();
+
+    if (GCHeapUtilities::IsAllocationNotificationEnabled())
+    {
+        COMPlusThrow(kNotSupportedException);
+    }
 
     segment_info seginfo;
     seginfo.pvMem           = pSection;
@@ -1671,11 +1881,16 @@ FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
         GCHeapUtilities::GetFastGCFunctions().check_escape((Object**)location, (Object*)value);
     }
 
+    bool useSlotLog =
+        ErectWriteBarrierPre(reinterpret_cast<Object**>(location), reinterpret_cast<Object*>(value));
     LPVOID ret = InterlockedExchangeT(location, value);
 #ifdef _DEBUG
     Thread::ObjectRefAssign((OBJECTREF *)location);
 #endif
-    ErectWriteBarrier((OBJECTREF*) location, ObjectToOBJECTREF((Object*) value));
+    if (!useSlotLog)
+    {
+        ErectWriteBarrier((OBJECTREF*) location, ObjectToOBJECTREF((Object*) value));
+    }
     return ret;
 }
 FCIMPLEND
@@ -1690,13 +1905,18 @@ FCIMPL3(LPVOID,COMInterlocked::CompareExchangeObject, LPVOID *location, LPVOID v
         GCHeapUtilities::GetFastGCFunctions().check_escape((Object**)location, (Object*)value);
     }
 
+    bool useSlotLog =
+        ErectWriteBarrierPre(reinterpret_cast<Object**>(location), reinterpret_cast<Object*>(value));
     // <TODO>@todo: only set ref if is updated</TODO>
     LPVOID ret = InterlockedCompareExchangeT(location, value, comparand);
     if (ret == comparand) {
 #ifdef _DEBUG
         Thread::ObjectRefAssign((OBJECTREF *)location);
 #endif
-        ErectWriteBarrier((OBJECTREF*) location, ObjectToOBJECTREF((Object*) value));
+        if (!useSlotLog)
+        {
+            ErectWriteBarrier((OBJECTREF*) location, ObjectToOBJECTREF((Object*) value));
+        }
     }
     return ret;
 }

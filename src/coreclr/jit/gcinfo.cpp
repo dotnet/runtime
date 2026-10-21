@@ -232,9 +232,12 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
         return WBF_NoBarrier;
     }
 
-    // Ignore any assignments of NULL or nongc object
-    GenTree* const value = store->Data()->gtSkipReloadOrCopy();
-    if (value->IsIntegralConst(0) || value->IsIconHandle(GTF_ICON_OBJ_HDL))
+    // Card-table barriers can ignore assignments of NULL or nongc objects.
+    // Old-value barriers must still observe the reference being overwritten.
+    GenTree* const value  = store->Data()->gtSkipReloadOrCopy();
+    bool requiresOldValue = m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
+                            m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+    if (!requiresOldValue && (value->IsIntegralConst(0) || value->IsIconHandle(GTF_ICON_OBJ_HDL)))
     {
         return WBF_NoBarrier;
     }

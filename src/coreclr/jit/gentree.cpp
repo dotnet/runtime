@@ -1969,8 +1969,10 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
         {
             // A few special cases exist that can't be found by signature alone, so we handle
             // those explicitly here instead.
-            needsVzeroupper =
-                IsHelperCall(CORINFO_HELP_BULK_WRITEBARRIER) || IsHelperCall(CORINFO_HELP_BULK_WRITEBARRIER_SMALL);
+            needsVzeroupper = IsHelperCall(CORINFO_HELP_BULK_WRITEBARRIER) ||
+                              IsHelperCall(CORINFO_HELP_BULK_WRITEBARRIER_SMALL) ||
+                              IsHelperCall(CORINFO_HELP_BULK_WRITEBARRIER_WITH_LAYOUT) ||
+                              IsHelperCall(CORINFO_HELP_BULK_WRITEBARRIER_CLEAR_WITH_LAYOUT);
 
             // Most other helpers are well known to not use any floating-point or SIMD logic internally, but
             // a few do exist so we need to ensure they are handled. They are identified by taking or

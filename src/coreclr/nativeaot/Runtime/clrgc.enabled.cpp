@@ -215,7 +215,44 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
     g_gc_load_status = GC_LOAD_STATUS_GET_INITIALIZE;
     IGCHeap* heap;
     IGCHandleManager* manager;
+    g_write_barrier_parameters_include_shape =
+        (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+        (g_gc_version_info.MinorVersion >= GC_WRITE_BARRIER_SHAPE_INTERFACE_MINOR_VERSION);
+    g_write_barrier_parameters_include_complete_store =
+        (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+        (g_gc_version_info.MinorVersion >= GC_WRITE_BARRIER_COMPLETE_STORE_INTERFACE_MINOR_VERSION);
+    g_write_barrier_parameters_include_epoch_reset =
+        (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+        (g_gc_version_info.MinorVersion >= GC_WRITE_BARRIER_EPOCH_RESET_INTERFACE_MINOR_VERSION);
+    g_write_barrier_parameters_include_bulk_scan =
+        (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+        (g_gc_version_info.MinorVersion >= GC_WRITE_BARRIER_BULK_SCAN_INTERFACE_MINOR_VERSION);
     HRESULT initResult = initFunc(gcToClr, &heap, &manager, &g_gc_dac_vars);
+
+    if (initResult == S_OK)
+    {
+        if ((g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+            (g_gc_version_info.MinorVersion >= GC_ALLOCATION_NOTIFICATION_INTERFACE_MINOR_VERSION))
+        {
+            initResult = GCHeapUtilities::ConfigureAllocationNotification(heap);
+        }
+
+        if ((initResult == S_OK) &&
+            (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+            (g_gc_version_info.MinorVersion >= GC_OBJECT_REFERENCE_ENUMERATION_INTERFACE_MINOR_VERSION))
+        {
+            initResult = GCHeapUtilities::ConfigureObjectReferenceEnumeration(heap);
+        }
+
+        if ((initResult == S_OK) &&
+            (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+            (g_gc_version_info.MinorVersion >= GC_OBJECT_HEADER_BITS_INTERFACE_MINOR_VERSION))
+        {
+            initResult = GCHeapUtilities::ConfigureObjectHeaderBits(heap);
+        }
+
+    }
+
     if (initResult == S_OK)
     {
         g_pGCHeap = heap;

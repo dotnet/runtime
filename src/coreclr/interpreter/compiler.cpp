@@ -4124,6 +4124,23 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             return true;
         }
 
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_RequiresOldValueWriteBarrier:
+        {
+            int32_t result =
+                (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
+                 m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI))
+                    ? 1
+                    : 0;
+
+            AddIns(INTOP_LDC_I4);
+            m_pLastNewIns->data[0] = result;
+
+            PushInterpType(InterpTypeI4, nullptr);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+            return true;
+        }
+
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
         {
             CORINFO_CLASS_HANDLE clsHnd = sig.sigInst.methInst[0];
@@ -5232,6 +5249,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync ||
+                    ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_RequiresOldValueWriteBarrier ||
                     ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation ||
                     ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend ||
                     ni == NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait);

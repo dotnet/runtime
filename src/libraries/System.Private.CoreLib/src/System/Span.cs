@@ -296,6 +296,18 @@ namespace System
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
+#if CORECLR
+                if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                {
+                    MethodTable* type = TypeHandle.TypeHandleOf<T>().AsMethodTable();
+                    Buffer.ClearWithOldValueWriteBarrier(
+                        ref Unsafe.As<T, byte>(ref _reference),
+                        type->IsValueType ? type : null,
+                        (nuint)sizeof(T),
+                        (uint)_length);
+                    return;
+                }
+#endif
                 SpanHelpers.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _reference), (uint)_length * (nuint)(sizeof(T) / sizeof(nuint)));
             }
             else

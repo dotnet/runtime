@@ -183,6 +183,11 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool IsRuntimeAsync() => false;
 
+        // Returns true when write barriers must observe overwritten references.
+        // This is folded to a compile-time constant by the CoreCLR JIT.
+        [Intrinsic]
+        internal static bool RequiresOldValueWriteBarrier() => false;
+
         /// <returns>true if the given type is a reference type or a value type that contains references or by-refs; otherwise, false.</returns>
         [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>() where T : allows ref struct => IsReferenceOrContainsReferences<T>();

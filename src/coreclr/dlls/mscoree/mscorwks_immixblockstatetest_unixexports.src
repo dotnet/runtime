@@ -1,0 +1,2 @@
+; Immix block-state validation hook
+GC_ImmixBlockStateTest_Run

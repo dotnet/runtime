@@ -427,8 +427,11 @@ private:
     void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
+    void     LowerBlockStoreAsGcBulkClearCall(GenTreeBlk* blkNode);
     void     LowerInitBlockStore(GenTreeBlk* blkNode);
     void     LowerCopyBlockStore(GenTreeBlk* blkNode);
+    bool     ShouldUseLayoutBulkHelper(GenTreeBlk* blkNode);
+    bool     TryDecomposeInitBlockStoreAsIndirs(GenTreeBlk* blkNode);
     bool     TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode);
     void     LowerLclHeap(GenTree* node);
     void     ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);

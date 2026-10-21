@@ -47,6 +47,118 @@ if (NOT CLR_CMAKE_HOST_ARCH_WASM)
         ${CLR_SOURCES}
     )
 
+    if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST AND CLR_CMAKE_TARGET_WIN32)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_WriteBarrierTest_GetCallCount"
+            "/EXPORT:GC_WriteBarrierTest_GetClobberMask"
+            "/EXPORT:GC_WriteBarrierTest_GetRangeCallCount"
+            "/EXPORT:GC_WriteBarrierTest_GetClearRangeCallCount"
+            "/EXPORT:GC_WriteBarrierTest_GetDependentEdgeCallCount"
+            "/EXPORT:GC_WriteBarrierTest_Reset"
+            "/EXPORT:GC_WriteBarrierTest_ResetRange"
+            "/EXPORT:GC_WriteBarrierTest_SetRequiresWork"
+            "/EXPORT:GC_WriteBarrierTest_GetAttemptCount"
+            "/EXPORT:GC_WriteBarrierTest_GetWinCount"
+            "/EXPORT:GC_WriteBarrierTest_GetArgumentErrorCount"
+            "/EXPORT:GC_WriteBarrierTest_GetLastDestination"
+            "/EXPORT:GC_WriteBarrierTest_GetSyntheticDestination"
+            "/EXPORT:GC_WriteBarrierTest_ClaimSynthetic"
+            "/EXPORT:GC_WriteBarrierTest_InvokeEmptyRange"
+        )
+    endif()
+
+    if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST AND CLR_CMAKE_TARGET_WIN32)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_AllocationNotificationTest_Reset"
+            "/EXPORT:GC_AllocationNotificationTest_GetCount"
+            "/EXPORT:GC_AllocationNotificationTest_GetCountOnly"
+            "/EXPORT:GC_AllocationNotificationTest_GetErrorCount"
+            "/EXPORT:GC_AllocationNotificationTest_GetObject"
+            "/EXPORT:GC_AllocationNotificationTest_GetSize"
+            "/EXPORT:GC_AllocationNotificationTest_GetFlags"
+        )
+    endif()
+
+    if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST AND CLR_CMAKE_TARGET_WIN32)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_ObjectReferenceEnumerationTest_Reset"
+            "/EXPORT:GC_ObjectReferenceEnumerationTest_Stop"
+            "/EXPORT:GC_ObjectReferenceEnumerationTest_GetSnapshot"
+        )
+    endif()
+
+    if(CLR_CMAKE_ENABLE_OBJECT_HEADER_BITS_TEST AND CLR_CMAKE_TARGET_WIN32)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_ObjectHeaderBitsTest_GetParameters"
+            "/EXPORT:GC_ObjectHeaderBitsTest_Load"
+            "/EXPORT:GC_ObjectHeaderBitsTest_CompareExchange"
+            "/EXPORT:GC_ObjectHeaderBitsTest_Set"
+            "/EXPORT:GC_ObjectHeaderBitsTest_SetSynthetic"
+            "/EXPORT:GC_ObjectHeaderBitsTest_WaitSynthetic"
+            "/EXPORT:GC_ObjectHeaderBitsTest_LoadRaw"
+            "/EXPORT:GC_ObjectHeaderBitsTest_SetRaw"
+            "/EXPORT:GC_ObjectHeaderBitsTest_GetSyncBlockValue"
+            "/EXPORT:GC_ObjectHeaderBitsTest_GetObjectAddress"
+        )
+    endif()
+
+    if(CLR_CMAKE_ENABLE_IMMIX_BLOCK_STATE_TEST AND CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_ImmixBlockStateTest_Run"
+        )
+    endif()
+
+    if(CLR_CMAKE_ENABLE_LARGE_OBJECT_SPACE_TEST AND CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_LargeObjectSpaceTest_Run"
+        )
+    endif()
+
+    if(CLR_CMAKE_ENABLE_IMMIX_ALLOCATION_TEST AND CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_ImmixAllocationTest_Run"
+        )
+    endif()
+
+    if(CLR_CMAKE_ENABLE_REFERENCE_COUNT_TEST AND CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_ReferenceCountTest_Run"
+        )
+    endif()
+
+    if(CLR_CMAKE_ENABLE_LXR_WORK_PACKET_SCHEDULER_TEST AND CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_LxrWorkPacketSchedulerTest_Run"
+        )
+    endif()
+
+    if(CLR_CMAKE_ENABLE_LXR_PAUSE_COORDINATOR_TEST AND CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_LxrPauseCoordinatorTest_Run"
+        )
+    endif()
+
+    if(CLR_CMAKE_ENABLE_LXR_DEFERRED_BUCKET_TEST AND CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_LxrDeferredBucketTest_Run"
+        )
+    endif()
+
+    if(CLR_CMAKE_ENABLE_LXR_LAZY_COMPLETION_COUNTER_TEST AND CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_LxrCompletionCounterTest_Run"
+        )
+    endif()
+
+    if(CLR_CMAKE_ENABLE_LXR_RC_VERTICAL AND CLR_CMAKE_TARGET_WIN32)
+        target_link_options(coreclr PRIVATE
+            "/EXPORT:GC_LxrRcVerticalObserver_Begin"
+            "/EXPORT:GC_LxrRcVerticalObserver_Register"
+            "/EXPORT:GC_LxrRcVerticalObserver_Attach"
+            "/EXPORT:GC_LxrRcVerticalObserver_End"
+            "/EXPORT:GC_LxrRcVerticalObserver_GetMetric")
+    endif()
+
     add_custom_target(coreclr_exports DEPENDS ${EXPORTS_FILE})
     add_custom_target(coreclr_def DEPENDS ${DEF_FILE})
 

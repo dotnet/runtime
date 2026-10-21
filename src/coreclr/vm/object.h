@@ -82,7 +82,7 @@ class ArgDestination;
 struct RCW;
 
 #ifdef TARGET_64BIT
-#define OBJHEADER_SIZE      (sizeof(DWORD) /* m_alignpad */ + sizeof(DWORD) /* m_SyncBlockValue */)
+#define OBJHEADER_SIZE      (sizeof(DWORD) /* m_GCReservedBits */ + sizeof(DWORD) /* m_SyncBlockValue */)
 #else
 #define OBJHEADER_SIZE      sizeof(DWORD) /* m_SyncBlockValue */
 #endif

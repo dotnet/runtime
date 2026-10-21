@@ -5157,6 +5157,14 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
 }
 
 typedef uint8_t CODE_LOCATION;
+#if defined(TARGET_AMD64)
+EXTERN_C void JIT_WriteBarrier_SlotLog_Slow();
+EXTERN_C void JIT_WriteBarrier_SlotLog_Slow_End();
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+EXTERN_C void JIT_WriteBarrier_WriteWatch_SlotLog_Slow();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_SlotLog_Slow_End();
+#endif
+#endif
 EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
 #if defined(HOST_X86)
 EXTERN_C CODE_LOCATION RhpAssignRefEAXAVLocation;
@@ -5245,6 +5253,12 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
     CHECK_RANGE(JIT_WriteBarrier_Debug)
+#endif
+#if defined(TARGET_AMD64)
+    CHECK_RANGE(JIT_WriteBarrier_SlotLog_Slow)
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    CHECK_RANGE(JIT_WriteBarrier_WriteWatch_SlotLog_Slow)
+#endif
 #endif
 #endif // !FEATURE_PORTABLE_HELPERS
 

@@ -16,6 +16,7 @@
 #include "eetwain.h"
 #include "eeconfig.h"
 #include "gcheaputilities.h"
+#include "writebarriermanager.h"
 #include "corhost.h"
 #include "threads.h"
 #include "fieldmarshaler.h"
@@ -270,7 +271,18 @@ void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBud
 #endif //FEATURE_EVENT_TRACE
 }
 
-inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FLAGS flags)
+struct AllocationSampledInfo
+{
+    bool isSampled;
+    size_t alignedSize;
+    size_t samplingBudget;
+};
+
+inline Object* Alloc(
+    ee_alloc_context* pEEAllocContext,
+    size_t size,
+    GC_ALLOC_FLAGS flags,
+    AllocationSampledInfo* sampledInfo)
 {
     CONTRACTL {
         THROWS;
@@ -331,11 +343,19 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
 
     if (isSampled)
     {
-        // At this point the object methodtable isn't initialized yet but it doesn't matter when we are
-        // just emitting an ETW/EventPipe event. If we want this event to be more useful from ICorProfiler
-        // in the future we probably want to pass the isSampled flag back to callers so that the event
-        // can be raised after the MethodTable is initialized.
-        FireAllocationSampled(flags, aligned_size, samplingBudget, retVal);
+        if (GCHeapUtilities::IsAllocationNotificationEnabled())
+        {
+            _ASSERTE(sampledInfo != nullptr);
+            sampledInfo->isSampled = true;
+            sampledInfo->alignedSize = aligned_size;
+            sampledInfo->samplingBudget = samplingBudget;
+        }
+        else
+        {
+            // The historical unregistered path emits the sampling event before
+            // the MethodTable is initialized.
+            FireAllocationSampled(flags, aligned_size, samplingBudget, retVal);
+        }
     }
 
     // There are a variety of conditions that may have invalidated the previous combined_limit value
@@ -363,7 +383,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
 //
 // You can get an exhaustive list of code sites that allocate GC objects by finding all calls to
 // code:ProfilerObjectAllocatedCallback (since the profiler has to hook them all).
-inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
+inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags, AllocationSampledInfo* sampledInfo)
 {
     CONTRACTL {
         THROWS;
@@ -380,7 +400,7 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
     ee_alloc_context *threadContext = GetThreadEEAllocContext();
     CdacStress<cdac_on_alloc>::MaybeVerify();
     GCStress<gc_on_alloc>::MaybeTrigger(&threadContext->m_GCAllocContext);
-    retVal = Alloc(threadContext, size, flags);
+    retVal = Alloc(threadContext, size, flags, sampledInfo);
 
 
     if (!retVal)
@@ -454,8 +474,84 @@ inline void LogAlloc(Object* object)
 #endif
 
 // signals completion of the object to GC and sends events if necessary
+static AllocationCompleteFlags GetAllocationCompleteFlags(
+    Object* object,
+    GC_ALLOC_FLAGS gcFlags,
+    AllocationCompleteFlags additionalFlags = AllocationCompleteFlags::None)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    MethodTable* methodTable = object->GetMethodTable();
+    uint32_t flags = static_cast<uint32_t>(additionalFlags);
+
+    if (methodTable->ContainsGCPointers())
+        flags |= static_cast<uint32_t>(AllocationCompleteFlags::ContainsReferences);
+    if (methodTable->HasFinalizer())
+        flags |= static_cast<uint32_t>(AllocationCompleteFlags::Finalizable);
+    if ((gcFlags & GC_ALLOC_LARGE_OBJECT_HEAP) != 0)
+        flags |= static_cast<uint32_t>(AllocationCompleteFlags::LargeObjectHeap);
+    if ((gcFlags & GC_ALLOC_PINNED_OBJECT_HEAP) != 0)
+        flags |= static_cast<uint32_t>(AllocationCompleteFlags::PinnedObjectHeap);
+    if (methodTable->IsArray())
+        flags |= static_cast<uint32_t>(AllocationCompleteFlags::Array);
+    if (methodTable == g_pStringClass)
+        flags |= static_cast<uint32_t>(AllocationCompleteFlags::String);
+    if (methodTable->IsValueType())
+        flags |= static_cast<uint32_t>(AllocationCompleteFlags::BoxedValueType);
+    if (methodTable->Collectible())
+        flags |= static_cast<uint32_t>(AllocationCompleteFlags::Collectible);
+    if (((gcFlags & GC_ALLOC_ZEROING_OPTIONAL) != 0) &&
+        ((gcFlags & GC_ALLOC_CONTAINS_REF) == 0))
+    {
+        flags |= static_cast<uint32_t>(AllocationCompleteFlags::PayloadMayBeUninitialized);
+    }
+
+    return static_cast<AllocationCompleteFlags>(flags);
+}
+
+extern "C" void RhpAllocationComplete(Object* object, size_t alignedObjectSize)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    GCHeapUtilities::InvokeAllocationCompleteCallback(
+        object,
+        alignedObjectSize,
+        GetAllocationCompleteFlags(object, GC_ALLOC_NO_FLAGS));
+}
+
+extern "C" void RhpAllocationCompleteFrozen(Object* object, size_t alignedObjectSize)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    GCHeapUtilities::InvokeAllocationCompleteCallback(
+        object,
+        alignedObjectSize,
+        GetAllocationCompleteFlags(
+            object,
+            GC_ALLOC_NO_FLAGS,
+            AllocationCompleteFlags::FrozenObjectHeap));
+}
+
 template <class TObj>
-void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
+void PublishObjectAndNotify(
+    TObj*& orObject,
+    GC_ALLOC_FLAGS flags,
+    size_t alignedObjectSize,
+    const AllocationSampledInfo& sampledInfo,
+    AllocationCompleteFlags additionalFlags = AllocationCompleteFlags::None,
+    bool notifyAllocationComplete = true)
 {
 	if (g_heap_type != GC_HEAP_CUSTOM)
 	{
@@ -466,9 +562,26 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
 		_ASSERTE(orObject->HasEmptySyncBlockInfo() || (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP)));
 	}
 
+    if (notifyAllocationComplete && GCHeapUtilities::IsAllocationNotificationEnabled())
+    {
+        GCHeapUtilities::InvokeAllocationCompleteCallback(
+            orObject,
+            alignedObjectSize,
+            GetAllocationCompleteFlags(orObject, flags, additionalFlags));
+    }
+
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
+    }
+
+    if (sampledInfo.isSampled)
+    {
+        FireAllocationSampled(
+            flags,
+            sampledInfo.alignedSize,
+            sampledInfo.samplingBudget,
+            orObject);
     }
 
 #ifdef  _LOGALLOC
@@ -499,7 +612,14 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
 
 void PublishFrozenObject(Object*& orObject)
 {
-    PublishObjectAndNotify(orObject, GC_ALLOC_NO_FLAGS);
+    AllocationSampledInfo sampledInfo = {};
+    PublishObjectAndNotify(
+        orObject,
+        GC_ALLOC_NO_FLAGS,
+        0,
+        sampledInfo,
+        AllocationCompleteFlags::FrozenObjectHeap,
+        false);
 }
 
 inline SIZE_T MaxArrayLength()
@@ -562,10 +682,11 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     if (pArrayMT->ContainsGCPointers())
         flags |= GC_ALLOC_CONTAINS_REF;
 
+    AllocationSampledInfo sampledInfo = {};
     ArrayBase* orArray = NULL;
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
-        orArray = (ArrayBase*)Alloc(totalSize, flags);
+        orArray = (ArrayBase*)Alloc(totalSize, flags, &sampledInfo);
         orArray->SetMethodTableForUOHObject(pArrayMT);
     }
     else
@@ -583,14 +704,14 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
             flags |= GC_ALLOC_ALIGN8;
         }
 #endif
-        orArray = (ArrayBase*)Alloc(totalSize, flags);
+        orArray = (ArrayBase*)Alloc(totalSize, flags, &sampledInfo);
         orArray->SetMethodTable(pArrayMT);
     }
 
     // Initialize Object
     orArray->SetNumComponents(cElements);
 
-    PublishObjectAndNotify(orArray, flags);
+    PublishObjectAndNotify(orArray, flags, PtrAlign(totalSize), sampledInfo);
     return ObjectToOBJECTREF((Object*)orArray);
 }
 
@@ -806,10 +927,11 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     if (pArrayMT->ContainsGCPointers())
         flags |= GC_ALLOC_CONTAINS_REF;
 
+    AllocationSampledInfo sampledInfo = {};
     ArrayBase* orArray = NULL;
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
-        orArray = (ArrayBase*)Alloc(totalSize, flags);
+        orArray = (ArrayBase*)Alloc(totalSize, flags, &sampledInfo);
         orArray->SetMethodTableForUOHObject(pArrayMT);
     }
     else
@@ -827,7 +949,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
             flags |= GC_ALLOC_ALIGN8;
         }
 #endif
-        orArray = (ArrayBase*)Alloc(totalSize, flags);
+        orArray = (ArrayBase*)Alloc(totalSize, flags, &sampledInfo);
         orArray->SetMethodTable(pArrayMT);
     }
 
@@ -845,7 +967,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         }
     }
 
-    PublishObjectAndNotify(orArray, flags);
+    PublishObjectAndNotify(orArray, flags, PtrAlign(totalSize), sampledInfo);
 
     if (kind != ELEMENT_TYPE_ARRAY)
     {
@@ -1001,13 +1123,14 @@ STRINGREF AllocateString( DWORD cchStringLength )
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-    StringObject* orString = (StringObject*)Alloc(totalSize, flags);
+    AllocationSampledInfo sampledInfo = {};
+    StringObject* orString = (StringObject*)Alloc(totalSize, flags, &sampledInfo);
 
     // Initialize Object
     orString->SetMethodTable(g_pStringClass);
     orString->SetStringLength(cchStringLength);
 
-    PublishObjectAndNotify(orString, flags);
+    PublishObjectAndNotify(orString, flags, totalSize, sampledInfo);
     return ObjectToSTRINGREF(orString);
 
 }
@@ -1167,7 +1290,8 @@ OBJECTREF AllocateObject(MethodTable *pMT
         }
 #endif // FEATURE_64BIT_ALIGNMENT
 
-        Object* orObject = (Object*)Alloc(totalSize, flags);
+        AllocationSampledInfo sampledInfo = {};
+        Object* orObject = (Object*)Alloc(totalSize, flags, &sampledInfo);
 
         if (flags & GC_ALLOC_USER_OLD_HEAP)
         {
@@ -1178,7 +1302,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
             orObject->SetMethodTable(pMT);
         }
 
-        PublishObjectAndNotify(orObject, flags);
+        PublishObjectAndNotify(orObject, flags, PtrAlign(totalSize), sampledInfo);
         oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(orObject);
     }
 
@@ -1345,6 +1469,419 @@ HCIMPLEND_RAW
 //    that could occur if multiple threads were trying to set different bits in the same card.
 
 #include <optsmallperfcritical.h>
+
+WriteBarrierBulkAction ClassifyWriteBarrierBulk(void* destination, size_t byteCount)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef TARGET_AMD64
+    if (g_SlotLogWriteBarrierSlowPath == nullptr)
+    {
+        return WriteBarrierBulkAction::CardTable;
+    }
+
+    if (byteCount == 0)
+    {
+        return WriteBarrierBulkAction::AllClaimed;
+    }
+
+    uintptr_t start = reinterpret_cast<uintptr_t>(destination);
+    uintptr_t heapStart = reinterpret_cast<uintptr_t>(g_lowest_address);
+    uintptr_t heapEnd = reinterpret_cast<uintptr_t>(g_highest_address);
+    if ((start < heapStart) || (start >= heapEnd))
+    {
+        return WriteBarrierBulkAction::CardTable;
+    }
+
+    _ASSERTE(byteCount <= (heapEnd - start));
+    if (byteCount > (heapEnd - start))
+    {
+        return WriteBarrierBulkAction::NeedsSlowPath;
+    }
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    if (GCHeapUtilities::SoftwareWriteWatchIsEnabled())
+    {
+        GCHeapUtilities::SoftwareWriteWatchSetDirtyRegion(destination, byteCount);
+    }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
+    const WriteBarrierSideMetadataParameters& metadata = g_SlotLogWriteBarrierMetadata;
+    const WriteBarrierBulkScanParameters& bulkScan = g_SlotLogWriteBarrierBulkScan;
+    const uintptr_t WordBytes = sizeof(uintptr_t);
+    const uintptr_t WordBits = WordBytes * 8;
+    const uintptr_t WordMask = WordBytes - 1;
+    uintptr_t end = start + byteCount - 1;
+    uint8_t metadataByteShift = static_cast<uint8_t>(metadata.granularity_shift + 3);
+    uintptr_t metadataBase = reinterpret_cast<uintptr_t>(metadata.metadata_base);
+    uintptr_t firstMetadataByte = metadataBase + (start >> metadataByteShift);
+    uintptr_t lastMetadataByte = metadataBase + (end >> metadataByteShift);
+    uintptr_t firstMetadataWord = firstMetadataByte & ~WordMask;
+    uintptr_t lastMetadataWord = lastMetadataByte & ~WordMask;
+    uintptr_t metadataStorageStart = reinterpret_cast<uintptr_t>(bulkScan.metadata_start);
+    uintptr_t metadataStorageEnd = metadataStorageStart + bulkScan.metadata_size;
+
+    _ASSERTE((firstMetadataWord >= metadataStorageStart) &&
+             (lastMetadataWord < metadataStorageEnd));
+    if ((firstMetadataWord < metadataStorageStart) ||
+        (lastMetadataWord >= metadataStorageEnd))
+    {
+        return WriteBarrierBulkAction::NeedsSlowPath;
+    }
+
+    uintptr_t firstBit =
+        ((firstMetadataByte & WordMask) * 8) +
+        ((start >> metadata.granularity_shift) & 7);
+    uintptr_t lastBit =
+        ((lastMetadataByte & WordMask) * 8) +
+        ((end >> metadata.granularity_shift) & 7);
+
+    for (uintptr_t metadataWord = firstMetadataWord;
+         metadataWord <= lastMetadataWord;
+         metadataWord += WordBytes)
+    {
+        uintptr_t activeMask = UINTPTR_MAX;
+        if (metadataWord == firstMetadataWord)
+        {
+            activeMask <<= firstBit;
+        }
+        if ((metadataWord == lastMetadataWord) && (lastBit != (WordBits - 1)))
+        {
+            activeMask &= (static_cast<uintptr_t>(1) << (lastBit + 1)) - 1;
+        }
+
+        uintptr_t workBits =
+            VolatileLoad(reinterpret_cast<uintptr_t const volatile*>(metadataWord));
+        if (metadata.bit_meaning == WriteBarrierMetadataBitMeaning::WorkWhenBitIsClear)
+        {
+            workBits = ~workBits;
+        }
+
+        if ((workBits & activeMask) != 0)
+        {
+            return WriteBarrierBulkAction::NeedsSlowPath;
+        }
+
+        firstBit = 0;
+    }
+
+    return WriteBarrierBulkAction::AllClaimed;
+#else
+    UNREFERENCED_PARAMETER(destination);
+    UNREFERENCED_PARAMETER(byteCount);
+    return WriteBarrierBulkAction::CardTable;
+#endif // TARGET_AMD64
+}
+
+bool ErectWriteBarrierPre(Object** dst, Object* ref)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef TARGET_AMD64
+    WriteBarrierBulkAction action = ClassifyWriteBarrierBulk(dst, sizeof(*dst));
+    if (action != WriteBarrierBulkAction::CardTable)
+    {
+        if (action == WriteBarrierBulkAction::NeedsSlowPath)
+        {
+            g_SlotLogWriteBarrierSlowPath(dst, VolatileLoad(dst), ref);
+        }
+        return true;
+    }
+    return false;
+#else
+    UNREFERENCED_PARAMETER(dst);
+    UNREFERENCED_PARAMETER(ref);
+    return false;
+#endif // TARGET_AMD64
+}
+
+bool ErectWriteBarrierRangePre(Object** dst, Object** src, size_t referenceCount)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef TARGET_AMD64
+    _ASSERTE(referenceCount <= (SIZE_T_MAX / sizeof(Object*)));
+    WriteBarrierBulkAction action =
+        ClassifyWriteBarrierBulk(dst, referenceCount * sizeof(Object*));
+    if (action != WriteBarrierBulkAction::CardTable)
+    {
+        if (action == WriteBarrierBulkAction::NeedsSlowPath)
+        {
+            g_SlotLogWriteBarrierRangeSlowPath(dst, src, referenceCount);
+        }
+        return true;
+    }
+    return false;
+#else
+    UNREFERENCED_PARAMETER(dst);
+    UNREFERENCED_PARAMETER(src);
+    UNREFERENCED_PARAMETER(referenceCount);
+    return false;
+#endif // TARGET_AMD64
+}
+
+#ifdef FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST
+extern "C" DLLEXPORT bool GC_WriteBarrierTest_InvokeEmptyRange(uintptr_t destination)
+{
+    return ErectWriteBarrierRangePre(reinterpret_cast<Object**>(destination), nullptr, 0);
+}
+#endif
+
+static bool ErectWriteBarrierLayoutRangePreCore(
+    void* dst,
+    const void* src,
+    MethodTable* type,
+    size_t elementSize,
+    size_t elementCount,
+    bool repeatSource)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef TARGET_AMD64
+    _ASSERTE(elementSize != 0);
+    _ASSERTE(elementCount <= (SIZE_T_MAX / elementSize));
+
+    if (type == nullptr)
+    {
+        _ASSERTE(elementSize == sizeof(Object*));
+        if (repeatSource)
+        {
+            WriteBarrierBulkAction action =
+                ClassifyWriteBarrierBulk(dst, elementSize * elementCount);
+            if (action == WriteBarrierBulkAction::CardTable)
+            {
+                return false;
+            }
+            if (action == WriteBarrierBulkAction::NeedsSlowPath)
+            {
+                Object* newReference =
+                    VolatileLoad(reinterpret_cast<Object* const*>(src));
+                Object** destination = reinterpret_cast<Object**>(dst);
+                for (size_t element = 0; element < elementCount; element++)
+                {
+                    ErectWriteBarrierPre(destination + element, newReference);
+                }
+            }
+            return true;
+        }
+
+        return ErectWriteBarrierRangePre(
+            reinterpret_cast<Object**>(dst),
+            reinterpret_cast<Object**>(const_cast<void*>(src)),
+            elementCount);
+    }
+
+    WriteBarrierBulkAction action =
+        ClassifyWriteBarrierBulk(dst, elementSize * elementCount);
+    if (action == WriteBarrierBulkAction::CardTable)
+    {
+        return false;
+    }
+    if (action == WriteBarrierBulkAction::AllClaimed)
+    {
+        return true;
+    }
+
+    _ASSERTE(type->ContainsGCPointers());
+    _ASSERTE(IS_ALIGNED(elementSize, sizeof(Object*)));
+
+    CGCDesc* map = CGCDesc::GetCGCDescFromMT(type);
+    const ptrdiff_t seriesCount = static_cast<ptrdiff_t>(map->GetNumSeries());
+    _ASSERTE(seriesCount > 0);
+
+    for (size_t element = 0; element < elementCount; element++)
+    {
+        uint8_t* destinationElement =
+            reinterpret_cast<uint8_t*>(dst) + (element * elementSize);
+        const uint8_t* sourceElement =
+            (src == nullptr)
+                ? nullptr
+                : reinterpret_cast<const uint8_t*>(src) + (repeatSource ? 0 : (element * elementSize));
+        CGCDescSeries* series = map->GetLowestSeries();
+
+        for (ptrdiff_t seriesIndex = 0; seriesIndex < seriesCount; seriesIndex++, series++)
+        {
+            const size_t seriesOffset = series->GetSeriesOffset() - OBJECT_SIZE;
+            const size_t seriesSize = series->GetSeriesSize() + type->GetBaseSize();
+            _ASSERTE(IS_ALIGNED(seriesOffset, sizeof(Object*)));
+            _ASSERTE(IS_ALIGNED(seriesSize, sizeof(Object*)));
+            _ASSERTE((seriesOffset + seriesSize) <= elementSize);
+
+            for (size_t offset = 0; offset < seriesSize; offset += sizeof(Object*))
+            {
+                Object** destinationSlot =
+                    reinterpret_cast<Object**>(destinationElement + seriesOffset + offset);
+                Object* newReference = (sourceElement == nullptr)
+                    ? nullptr
+                    : VolatileLoad(reinterpret_cast<Object* const*>(sourceElement + seriesOffset + offset));
+                ErectWriteBarrierPre(destinationSlot, newReference);
+            }
+        }
+    }
+
+    return true;
+#else
+    UNREFERENCED_PARAMETER(dst);
+    UNREFERENCED_PARAMETER(src);
+    UNREFERENCED_PARAMETER(type);
+    UNREFERENCED_PARAMETER(elementSize);
+    UNREFERENCED_PARAMETER(elementCount);
+    UNREFERENCED_PARAMETER(repeatSource);
+    return false;
+#endif // TARGET_AMD64
+}
+
+bool ErectWriteBarrierLayoutRangePre(
+    void* dst, const void* src, MethodTable* type, size_t elementSize, size_t elementCount)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return ErectWriteBarrierLayoutRangePreCore(
+        dst, src, type, elementSize, elementCount, false);
+}
+
+bool ErectWriteBarrierLayoutFillPre(
+    void* dst, const void* value, MethodTable* type, size_t elementSize, size_t elementCount)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(value != nullptr);
+    return ErectWriteBarrierLayoutRangePreCore(
+        dst, value, type, elementSize, elementCount, true);
+}
+
+bool ErectWriteBarrierLayoutChunkPre(
+    void* dst,
+    const void* src,
+    MethodTable* type,
+    size_t gcLayoutOffset,
+    size_t elementSize,
+    size_t chunkOffset,
+    size_t chunkSize)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef TARGET_AMD64
+    _ASSERTE(type != nullptr);
+    _ASSERTE(!type->IsArray());
+    _ASSERTE(type->ContainsGCPointers());
+    _ASSERTE(gcLayoutOffset <= type->GetNumInstanceFieldBytesIfContainsGCPointers());
+    _ASSERTE(elementSize <=
+        (type->GetNumInstanceFieldBytesIfContainsGCPointers() - gcLayoutOffset));
+    _ASSERTE(chunkSize != 0);
+    _ASSERTE(chunkOffset <= elementSize);
+    _ASSERTE(chunkSize <= (elementSize - chunkOffset));
+    _ASSERTE(IS_ALIGNED(elementSize, sizeof(Object*)));
+    _ASSERTE(IS_ALIGNED(chunkOffset, sizeof(Object*)));
+    _ASSERTE(IS_ALIGNED(chunkSize, sizeof(Object*)));
+
+    WriteBarrierBulkAction action = ClassifyWriteBarrierBulk(dst, chunkSize);
+    if (action == WriteBarrierBulkAction::CardTable)
+    {
+        return false;
+    }
+    if (action == WriteBarrierBulkAction::AllClaimed)
+    {
+        return true;
+    }
+
+    size_t chunkLayoutOffset = gcLayoutOffset + chunkOffset;
+    size_t chunkEnd = chunkLayoutOffset + chunkSize;
+    CGCDesc* map = CGCDesc::GetCGCDescFromMT(type);
+    const ptrdiff_t seriesCount = static_cast<ptrdiff_t>(map->GetNumSeries());
+    _ASSERTE(seriesCount > 0);
+    CGCDescSeries* lowestOffsetSeries = map->GetHighestSeries();
+
+    // GC series are sorted by descending offset in memory. Search through them
+    // in ascending-offset order so one native chunk never scans the full layout.
+    ptrdiff_t low = 0;
+    ptrdiff_t high = seriesCount;
+    while (low < high)
+    {
+        ptrdiff_t middle = low + ((high - low) / 2);
+        size_t middleOffset = lowestOffsetSeries[-middle].GetSeriesOffset() - OBJECT_SIZE;
+        if (middleOffset < chunkLayoutOffset)
+        {
+            low = middle + 1;
+        }
+        else
+        {
+            high = middle;
+        }
+    }
+
+    ptrdiff_t seriesIndex = low;
+    if (seriesIndex > 0)
+    {
+        CGCDescSeries* previous = lowestOffsetSeries - (seriesIndex - 1);
+        size_t previousOffset = previous->GetSeriesOffset() - OBJECT_SIZE;
+        size_t previousSize = previous->GetSeriesSize() + type->GetBaseSize();
+        if ((previousOffset + previousSize) > chunkLayoutOffset)
+        {
+            seriesIndex--;
+        }
+    }
+
+    for (; seriesIndex < seriesCount; seriesIndex++)
+    {
+        CGCDescSeries* series = lowestOffsetSeries - seriesIndex;
+        const size_t seriesOffset = series->GetSeriesOffset() - OBJECT_SIZE;
+        const size_t seriesSize = series->GetSeriesSize() + type->GetBaseSize();
+        _ASSERTE(IS_ALIGNED(seriesOffset, sizeof(Object*)));
+        _ASSERTE(IS_ALIGNED(seriesSize, sizeof(Object*)));
+        _ASSERTE((seriesOffset + seriesSize) <=
+            type->GetNumInstanceFieldBytesIfContainsGCPointers());
+        if (seriesOffset >= chunkEnd)
+        {
+            break;
+        }
+
+        size_t start = (seriesOffset > chunkLayoutOffset) ? seriesOffset : chunkLayoutOffset;
+        size_t seriesEnd = seriesOffset + seriesSize;
+        size_t end = (seriesEnd < chunkEnd) ? seriesEnd : chunkEnd;
+        for (size_t offset = start; offset < end; offset += sizeof(Object*))
+        {
+            size_t chunkRelativeOffset = offset - chunkLayoutOffset;
+            Object** destinationSlot =
+                reinterpret_cast<Object**>(reinterpret_cast<uint8_t*>(dst) + chunkRelativeOffset);
+            Object* newReference = (src == nullptr)
+                ? nullptr
+                : VolatileLoad(reinterpret_cast<Object* const*>(
+                      reinterpret_cast<const uint8_t*>(src) + chunkRelativeOffset));
+            ErectWriteBarrierPre(destinationSlot, newReference);
+        }
+    }
+
+    return true;
+#else
+    UNREFERENCED_PARAMETER(dst);
+    UNREFERENCED_PARAMETER(src);
+    UNREFERENCED_PARAMETER(type);
+    UNREFERENCED_PARAMETER(gcLayoutOffset);
+    UNREFERENCED_PARAMETER(elementSize);
+    UNREFERENCED_PARAMETER(chunkOffset);
+    UNREFERENCED_PARAMETER(chunkSize);
+    return false;
+#endif // TARGET_AMD64
+}
+
+void ErectWriteBarrierDependentEdgePre(void* dst, Object* oldRef, Object* newRef)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef TARGET_AMD64
+    WriteBarrierDependentEdgeSlowPath slowPath = g_SlotLogWriteBarrierDependentEdgeSlowPath;
+    if (slowPath != nullptr)
+    {
+        slowPath(dst, oldRef, newRef);
+    }
+#else
+    UNREFERENCED_PARAMETER(dst);
+    UNREFERENCED_PARAMETER(oldRef);
+    UNREFERENCED_PARAMETER(newRef);
+#endif // TARGET_AMD64
+}
+
 void ErectWriteBarrier(OBJECTREF *dst, OBJECTREF ref)
 {
     STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -1397,8 +1934,16 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-	if (g_heap_type != GC_HEAP_CUSTOM)
+    if (g_heap_type != GC_HEAP_CUSTOM)
     {
+        if (ref->Collectible())
+        {
+            Object* newLoaderAllocator = reinterpret_cast<Object*>(ref->GetLoaderAllocatorObjectForGC());
+
+            // This is the first MethodTable store into a newly allocated UOH object.
+            // GC_ALLOC_ZEROING_OPTIONAL permits the slot to contain stale bytes.
+            ErectWriteBarrierDependentEdgePre(dst, nullptr, newLoaderAllocator);
+        }
     *dst = ref;
 
 #ifdef WRITE_BARRIER_CHECK

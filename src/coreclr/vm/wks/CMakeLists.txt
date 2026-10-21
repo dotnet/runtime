@@ -67,6 +67,22 @@ target_compile_definitions(cee_wks_mergeable PUBLIC CORECLR_EMBEDDED)
 
 target_compile_definitions(cee_wks_core PRIVATE GC_DESCRIPTOR)
 
+if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
+  target_compile_definitions(cee_wks_core PRIVATE FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST)
+endif()
+
+if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
+  target_compile_definitions(cee_wks_core PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
+endif()
+
+if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST)
+  target_compile_definitions(cee_wks_core PRIVATE FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST)
+endif()
+
+if(CLR_CMAKE_ENABLE_OBJECT_HEADER_BITS_TEST)
+  target_compile_definitions(cee_wks_core PRIVATE FEATURE_OBJECT_HEADER_BITS_TEST)
+endif()
+
 if (FEATURE_PERFTRACING AND FEATURE_PERFTRACING_DISABLE_THREADS)
   target_compile_definitions(cee_wks_core PRIVATE PERFTRACING_DISABLE_THREADS)
 endif()

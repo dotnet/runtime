@@ -299,6 +299,7 @@ void* GetClrModuleBase();
 
 // use this when you want to memcpy something that contains GC refs
 void memmoveGCRefs(void *dest, const void *src, size_t len);
+void memmoveGCRefsWithLayout(void* dest, const void* src, size_t len, MethodTable* type);
 
 // Struct often used as a parameter to callbacks.
 typedef struct

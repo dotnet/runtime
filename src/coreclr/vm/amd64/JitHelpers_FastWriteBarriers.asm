@@ -718,5 +718,92 @@ LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Bit_Region64, _TEXT
 
 endif
 
+LEAF_ENTRY JIT_WriteBarrier_SlotLog64, _TEXT
+        mov     r10, [rcx]
+        mov     r11, rcx
+PATCH_LABEL JIT_WriteBarrier_SlotLog64_Patch_Label_MetadataByteShift
+        shr     r11, 16h
+
+        align 8
+        NOP_3_BYTE
+        NOP_3_BYTE
+PATCH_LABEL JIT_WriteBarrier_SlotLog64_Patch_Label_MetadataBase
+        mov     rax, 0F0F0F0F0F0F0F0F0h
+        movzx   eax, byte ptr [rax + r11]
+PATCH_LABEL JIT_WriteBarrier_SlotLog64_Patch_Label_Polarity
+        xor     al, 0A5h
+        jz      Store
+
+        mov     r11, rcx
+PATCH_LABEL JIT_WriteBarrier_SlotLog64_Patch_Label_MetadataBitShift
+        shr     r11, 16h
+        and     r11d, 7
+        bt      eax, r11d
+        jnc     Store
+
+        align 8
+        NOP_3_BYTE
+        NOP_3_BYTE
+PATCH_LABEL JIT_WriteBarrier_SlotLog64_Patch_Label_SlowPathTarget
+        mov     r11, 0F0F0F0F0F0F0F0F0h
+        jmp     r11
+
+    Store:
+        mov     [rcx], rdx
+        ret
+LEAF_END_MARKED JIT_WriteBarrier_SlotLog64, _TEXT
+
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_SlotLog64, _TEXT
+        mov     r10, [rcx]
+        mov     r11, rcx
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SlotLog64_Patch_Label_MetadataByteShift
+        shr     r11, 16h
+
+        align 8
+        NOP_3_BYTE
+        NOP_3_BYTE
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SlotLog64_Patch_Label_MetadataBase
+        mov     rax, 0F0F0F0F0F0F0F0F0h
+        movzx   eax, byte ptr [rax + r11]
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SlotLog64_Patch_Label_Polarity
+        xor     al, 0A5h
+        jz      Store
+
+        mov     r11, rcx
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SlotLog64_Patch_Label_MetadataBitShift
+        shr     r11, 16h
+        and     r11d, 7
+        bt      eax, r11d
+        jnc     Store
+
+        align 8
+        NOP_3_BYTE
+        NOP_3_BYTE
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SlotLog64_Patch_Label_SlowPathTarget
+        mov     r11, 0F0F0F0F0F0F0F0F0h
+        jmp     r11
+
+    Store:
+        mov     [rcx], rdx
+        mov     rax, rcx
+        shr     rax, 0Ch
+
+        align 8
+        NOP_3_BYTE
+        NOP_3_BYTE
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_SlotLog64_Patch_Label_WriteWatchTable
+        mov     r11, 0F0F0F0F0F0F0F0F0h
+        add     rax, r11
+        cmp     byte ptr [rax], 0
+        jne     Done
+        mov     byte ptr [rax], 0FFh
+    Done:
+        ret
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_SlotLog64, _TEXT
+
+endif
+
 
         end

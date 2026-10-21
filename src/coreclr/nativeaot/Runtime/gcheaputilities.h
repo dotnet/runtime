@@ -10,6 +10,18 @@
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
 
+// Whether the loaded collector's WriteBarrierParameters contains the 5.9 tail.
+extern bool g_write_barrier_parameters_include_shape;
+
+// Whether the loaded collector's WriteBarrierParameters contains the 5.10 tail.
+extern bool g_write_barrier_parameters_include_complete_store;
+
+// Whether the loaded collector's WriteBarrierParameters contains the 5.11 tail.
+extern bool g_write_barrier_parameters_include_epoch_reset;
+
+// Whether the loaded collector's WriteBarrierParameters contains the 5.12 tail.
+extern bool g_write_barrier_parameters_include_bulk_scan;
+
 #ifndef DACCESS_COMPILE
 extern "C" {
 #endif // !DACCESS_COMPILE
@@ -97,6 +109,16 @@ public:
 
     // Initializes a standalone GC.
     static HRESULT InitializeStandaloneGC();
+
+    // Accepts the disabled descriptor and rejects enabled allocation
+    // notification for precompiled NativeAOT images.
+    static HRESULT ConfigureAllocationNotification(IGCHeap* gcHeap);
+
+    // Accepts object-reference enumeration. NativeAOT MethodTables are not collectible.
+    static HRESULT ConfigureObjectReferenceEnumeration(IGCHeap* gcHeap);
+
+    // Validates and completes the collector's object-header bit request.
+    static HRESULT ConfigureObjectHeaderBits(IGCHeap* gcHeap);
 
     // Records a change in eventing state. This ultimately will inform the GC that it needs to be aware
     // of new events being enabled.

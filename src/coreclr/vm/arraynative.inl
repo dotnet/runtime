@@ -304,9 +304,14 @@ FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t 
     {
     const bool notInHeap = ((BYTE*)dest < g_lowest_address || (BYTE*)dest >= g_highest_address);
 
+    bool useSlotLog = false;
     if (!notInHeap)
     {
         GCHeapMemoryBarrier();
+        useSlotLog = ErectWriteBarrierRangePre(
+            reinterpret_cast<Object**>(dest),
+            reinterpret_cast<Object**>(const_cast<void*>(src)),
+            len / sizeof(Object*));
     }
 
     // To be able to copy forwards, the destination buffer cannot start inside the source buffer
@@ -319,7 +324,7 @@ FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t 
         InlinedBackwardGCSafeCopyHelper(dest, src, len);
     }
 
-    if (!notInHeap)
+    if (!notInHeap && !useSlotLog)
     {
         InlinedSetCardsAfterBulkCopyHelper((Object**)dest, len);
         }

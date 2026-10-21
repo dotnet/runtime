@@ -545,6 +545,10 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER_WITH_LAYOUT:
+                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER_CLEAR_WITH_LAYOUT:
+                    throw new PlatformNotSupportedException(
+                        "Layout-aware bulk write barriers require runtime-selected CoreCLR helpers.");
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:
                     id = ReadyToRunHelper.WriteBarrier_EAX;
                     break;

@@ -91,7 +91,17 @@ namespace System
 
                 if (_pMT->ContainsGCPointers)
                 {
-                    Buffer.BulkMoveWithWriteBarrier(ref result.GetRawData(), ref source, _valueTypeSize);
+                    if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                    {
+                        MethodTable* valueType = (_nullableValueOffset == 0) ? _pMT : _pMT->NullableType.AsMethodTable();
+                        Buffer.BulkMoveWithOldValueWriteBarrier(
+                            ref result.GetRawData(), ref source, valueType, _valueTypeSize, 1);
+                    }
+                    else
+                    {
+                        Buffer.BulkMoveWithWriteBarrier(
+                            ref result.GetRawData(), ref source, _valueTypeSize);
+                    }
                 }
                 else
                 {

@@ -4,6 +4,8 @@
 #ifndef __GCENV_OBJECT_H__
 #define __GCENV_OBJECT_H__
 
+#include "volatile.h"
+
 #ifdef BUILD_AS_STANDALONE
 extern bool g_oldMethodTableFlags;
 #endif
@@ -33,7 +35,7 @@ class ObjHeader
 {
 private:
 #if defined(HOST_64BIT)
-    uint32_t m_uAlignpad;
+    uint32_t m_uGCReservedBits;
 #endif // HOST_64BIT
     uint32_t m_uSyncBlockValue;
 
@@ -43,6 +45,113 @@ public:
     void ClrBit(uint32_t uBit) { Interlocked::And(&m_uSyncBlockValue, ~uBit); }
     void SetGCBit() { m_uSyncBlockValue |= BIT_SBLK_GC_RESERVE; }
     void ClrGCBit() { m_uSyncBlockValue &= ~BIT_SBLK_GC_RESERVE; }
+
+    uint32_t GetGCReservedBits(uint32_t mask, uint32_t shift)
+    {
+#ifdef HOST_64BIT
+        assert(mask != 0);
+        assert(shift < 32);
+        uint32_t value = Interlocked::CompareExchange(&m_uGCReservedBits, 0u, 0u);
+        return (value & mask) >> shift;
+#else
+        UNREFERENCED_PARAMETER(mask);
+        UNREFERENCED_PARAMETER(shift);
+        return 0;
+#endif
+    }
+
+    uint32_t CompareExchangeGCReservedBits(
+        uint32_t mask,
+        uint32_t shift,
+        uint32_t value,
+        uint32_t comparand)
+    {
+#ifdef HOST_64BIT
+        assert(mask != 0);
+        assert(shift < 32);
+        assert((value & ~(mask >> shift)) == 0);
+        assert((comparand & ~(mask >> shift)) == 0);
+
+        uint32_t oldWord = Interlocked::CompareExchange(&m_uGCReservedBits, 0u, 0u);
+        while (true)
+        {
+            uint32_t oldValue = (oldWord & mask) >> shift;
+            if (oldValue != comparand)
+            {
+                return oldValue;
+            }
+
+            uint32_t newWord = (oldWord & ~mask) | ((value << shift) & mask);
+            uint32_t observed =
+                Interlocked::CompareExchange(&m_uGCReservedBits, newWord, oldWord);
+            if (observed == oldWord)
+            {
+                return comparand;
+            }
+            oldWord = observed;
+        }
+#else
+        UNREFERENCED_PARAMETER(mask);
+        UNREFERENCED_PARAMETER(shift);
+        UNREFERENCED_PARAMETER(value);
+        UNREFERENCED_PARAMETER(comparand);
+        return 0;
+#endif
+    }
+
+    uint32_t SetGCReservedBits(uint32_t mask, uint32_t shift, uint32_t value)
+    {
+#ifdef HOST_64BIT
+        assert(mask != 0);
+        assert(shift < 32);
+        assert((value & ~(mask >> shift)) == 0);
+
+        uint32_t oldWord = Interlocked::CompareExchange(&m_uGCReservedBits, 0u, 0u);
+        while (true)
+        {
+            uint32_t oldValue = (oldWord & mask) >> shift;
+            uint32_t newWord = (oldWord & ~mask) | ((value << shift) & mask);
+            uint32_t observed =
+                Interlocked::CompareExchange(&m_uGCReservedBits, newWord, oldWord);
+            if (observed == oldWord)
+            {
+                return oldValue;
+            }
+            oldWord = observed;
+        }
+#else
+        UNREFERENCED_PARAMETER(mask);
+        UNREFERENCED_PARAMETER(shift);
+        UNREFERENCED_PARAMETER(value);
+        return 0;
+#endif
+    }
+
+    uint32_t WaitWhileGCReservedBits(uint32_t mask, uint32_t shift, uint32_t value)
+    {
+#ifdef HOST_64BIT
+        uint32_t switchCount = 0;
+        uint32_t iteration = 0;
+        uint32_t current;
+        while ((current = GetGCReservedBits(mask, shift)) == value)
+        {
+            if ((++iteration % 1024) != 0)
+            {
+                YieldProcessor();
+            }
+            else
+            {
+                GCToOSInterface::YieldThread(++switchCount);
+            }
+        }
+        return current;
+#else
+        UNREFERENCED_PARAMETER(mask);
+        UNREFERENCED_PARAMETER(shift);
+        UNREFERENCED_PARAMETER(value);
+        return 0;
+#endif
+    }
 };
 
 static_assert(sizeof(ObjHeader) == sizeof(uintptr_t), "this assumption is made by the VM!");
@@ -181,6 +290,8 @@ public:
 #endif //HOST_64BIT
     }
 
+    size_t GetSize() const;
+
     void RawSetMethodTable(MethodTable * pMT)
     {
         m_pMethTab = pMT;
@@ -193,7 +304,7 @@ class ArrayBase : public Object
     uint32_t m_dwLength;
 
 public:
-    uint32_t GetNumComponents()
+    uint32_t GetNumComponents() const
     {
         return m_dwLength;
     }
@@ -203,5 +314,19 @@ public:
         return offsetof(ArrayBase, m_dwLength);
     }
 };
+
+inline size_t Object::GetSize() const
+{
+    MethodTable* methodTable = GetGCSafeMethodTable();
+    size_t objectSize = methodTable->GetBaseSize();
+    if (methodTable->HasComponentSize())
+    {
+        objectSize +=
+            static_cast<size_t>(static_cast<const ArrayBase*>(this)->GetNumComponents()) *
+            methodTable->RawGetComponentSize();
+    }
+
+    return objectSize;
+}
 
 #endif // __GCENV_OBJECT_H__

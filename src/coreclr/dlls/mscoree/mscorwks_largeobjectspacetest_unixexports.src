@@ -1,0 +1,2 @@
+; LXR large-object-space validation hook
+GC_LargeObjectSpaceTest_Run

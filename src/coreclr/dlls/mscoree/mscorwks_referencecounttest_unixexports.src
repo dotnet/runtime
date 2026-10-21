@@ -1,0 +1,2 @@
+; Reference-count validation hook
+GC_ReferenceCountTest_Run

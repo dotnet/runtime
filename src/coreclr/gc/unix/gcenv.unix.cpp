@@ -473,6 +473,50 @@ void* GCToOSInterface::VirtualReserve(void* location, size_t size, bool useTHP)
     return pRetVal;
 }
 
+void* GCToOSInterface::VirtualReserveAt(void* address, size_t size, uint32_t flags, uint16_t node)
+{
+    assert(address != nullptr);
+    assert(!(flags & VirtualReserveFlags::WriteWatch) && "WriteWatch not supported on Unix");
+    assert((flags & ~(VirtualReserveFlags::WriteWatch | VirtualReserveFlags::NoReserve)) == 0);
+    UNREFERENCED_PARAMETER(node);
+
+    int mmapFlags = MAP_ANON | MAP_PRIVATE;
+#ifdef MAP_NORESERVE
+    if ((flags & VirtualReserveFlags::NoReserve) != 0)
+    {
+        mmapFlags |= MAP_NORESERVE;
+    }
+#endif
+
+    void* result;
+#ifdef MAP_FIXED_NOREPLACE
+    result = mmap(address, size, PROT_NONE, mmapFlags | MAP_FIXED_NOREPLACE, -1, 0);
+    if ((result == MAP_FAILED) && (errno == EINVAL))
+    {
+        result = mmap(address, size, PROT_NONE, mmapFlags, -1, 0);
+    }
+#else
+    result = mmap(address, size, PROT_NONE, mmapFlags, -1, 0);
+#endif
+
+    if (result == MAP_FAILED)
+    {
+        return nullptr;
+    }
+
+    if (result != address)
+    {
+        munmap(result, size);
+        return nullptr;
+    }
+
+#if defined(MADV_DONTDUMP)
+    madvise(result, size, MADV_DONTDUMP);
+#endif
+
+    return result;
+}
+
 // Release virtual memory range previously reserved using VirtualReserve
 // Parameters:
 //  address - starting virtual address

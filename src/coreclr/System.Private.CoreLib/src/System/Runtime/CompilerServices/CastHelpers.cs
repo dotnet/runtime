@@ -553,7 +553,16 @@ namespace System.Runtime.CompilerServices
             object boxed = RuntimeTypeHandle.InternalAllocNoChecks(typeMT);
             if (typeMT->ContainsGCPointers)
             {
-                Buffer.BulkMoveWithWriteBarrier(ref boxed.GetRawData(), ref unboxedData, typeMT->GetNumInstanceFieldBytesIfContainsGCPointers());
+                nuint elementSize = typeMT->GetNumInstanceFieldBytesIfContainsGCPointers();
+                if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                {
+                    Buffer.BulkMoveWithOldValueWriteBarrier(
+                        ref boxed.GetRawData(), ref unboxedData, typeMT, elementSize, 1);
+                }
+                else
+                {
+                    Buffer.BulkMoveWithWriteBarrier(ref boxed.GetRawData(), ref unboxedData, elementSize);
+                }
             }
             else
             {
@@ -617,7 +626,24 @@ namespace System.Runtime.CompilerServices
             {
                 CastHelpers.ThrowInvalidCastException(obj, typeMT);
             }
-            Buffer.BulkMoveWithWriteBarrier(ref destPtr, ref RuntimeHelpers.GetRawData(obj), typeMT->GetNullableNumInstanceFieldBytes());
+            nuint elementSize = typeMT->GetNullableNumInstanceFieldBytes();
+            if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+            {
+                if (typeMT->ContainsGCPointers)
+                {
+                    Buffer.BulkMoveWithOldValueWriteBarrier(
+                        ref destPtr, ref RuntimeHelpers.GetRawData(obj), typeMT, elementSize, 1);
+                }
+                else
+                {
+                    SpanHelpers.Memmove(ref destPtr, ref RuntimeHelpers.GetRawData(obj), elementSize);
+                }
+            }
+            else
+            {
+                Buffer.BulkMoveWithWriteBarrier(
+                    ref destPtr, ref RuntimeHelpers.GetRawData(obj), elementSize);
+            }
         }
 
         [DebuggerHidden]
@@ -631,7 +657,17 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref destPtr), typeMT->GetNumInstanceFieldBytesIfContainsGCPointers() / (nuint)sizeof(IntPtr));
+                    nuint elementSize = typeMT->GetNumInstanceFieldBytesIfContainsGCPointers();
+                    if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                    {
+                        Buffer.ClearWithOldValueWriteBarrier(ref destPtr, typeMT, elementSize, 1);
+                    }
+                    else
+                    {
+                        SpanHelpers.ClearWithReferences(
+                            ref Unsafe.As<byte, IntPtr>(ref destPtr),
+                            elementSize / (nuint)sizeof(IntPtr));
+                    }
                 }
             }
             else
@@ -647,9 +683,22 @@ namespace System.Runtime.CompilerServices
                     uint valueSize = typeMT->NullableValueSize;
                     ref byte src = ref RuntimeHelpers.GetRawData(obj);
                     if (typeMT->ContainsGCPointers)
-                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, valueSize);
+                    {
+                        MethodTable* valueType = RuntimeHelpers.GetMethodTable(obj);
+                        if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                        {
+                            Buffer.BulkMoveWithOldValueWriteBarrier(
+                                ref dst, ref src, valueType, valueSize, 1);
+                        }
+                        else
+                        {
+                            Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, valueSize);
+                        }
+                    }
                     else
+                    {
                         SpanHelpers.Memmove(ref dst, ref src, valueSize);
+                    }
                 }
             }
         }

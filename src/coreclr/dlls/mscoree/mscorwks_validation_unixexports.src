@@ -1,0 +1,45 @@
+; Unix hosting API
+coreclr_create_delegate
+coreclr_execute_assembly
+coreclr_initialize
+coreclr_set_error_writer
+coreclr_shutdown
+coreclr_shutdown_2
+
+; Functions exported by the coreclr
+DllMain
+GetCLRRuntimeHost
+; DAC table export
+g_dacTable
+
+; Used by profilers
+MetaDataGetDispenser
+
+; cDAC contract descriptor
+DotNetRuntimeContractDescriptor
+
+; Write-barrier validation hooks
+GC_WriteBarrierTest_GetCallCount
+GC_WriteBarrierTest_GetClobberMask
+GC_WriteBarrierTest_GetRangeCallCount
+GC_WriteBarrierTest_GetClearRangeCallCount
+GC_WriteBarrierTest_GetDependentEdgeCallCount
+GC_WriteBarrierTest_Reset
+GC_WriteBarrierTest_ResetRange
+GC_WriteBarrierTest_SetRequiresWork
+GC_WriteBarrierTest_GetAttemptCount
+GC_WriteBarrierTest_GetWinCount
+GC_WriteBarrierTest_GetArgumentErrorCount
+GC_WriteBarrierTest_GetLastDestination
+GC_WriteBarrierTest_GetSyntheticDestination
+GC_WriteBarrierTest_ClaimSynthetic
+GC_WriteBarrierTest_InvokeEmptyRange
+
+; Allocation notification validation hooks
+GC_AllocationNotificationTest_Reset
+GC_AllocationNotificationTest_GetCount
+GC_AllocationNotificationTest_GetCountOnly
+GC_AllocationNotificationTest_GetErrorCount
+GC_AllocationNotificationTest_GetObject
+GC_AllocationNotificationTest_GetSize
+GC_AllocationNotificationTest_GetFlags

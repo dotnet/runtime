@@ -12,6 +12,21 @@
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
 
+// Whether the loaded collector's WriteBarrierParameters contains the 5.9 tail.
+extern bool g_write_barrier_parameters_include_shape;
+
+// Whether the loaded collector's WriteBarrierParameters contains the 5.10 tail.
+extern bool g_write_barrier_parameters_include_complete_store;
+
+// Whether the loaded collector's WriteBarrierParameters contains the 5.11 tail.
+extern bool g_write_barrier_parameters_include_epoch_reset;
+
+// Whether the loaded collector's WriteBarrierParameters contains the 5.12 tail.
+extern bool g_write_barrier_parameters_include_bulk_scan;
+
+// Immutable after GC startup.
+extern AllocationCompleteCallback g_allocation_complete_callback;
+
 #ifndef DACCESS_COMPILE
 extern "C" {
 #endif // !DACCESS_COMPILE
@@ -342,6 +357,42 @@ public:
     // Loads (if using a standalone GC) and initializes the GC.
     static HRESULT LoadAndInitialize();
 
+    // Validates and freezes the collector's allocation notification request.
+    static HRESULT ConfigureAllocationNotification(IGCHeap* gcHeap, const VersionInfo& version);
+
+    // Validates and completes the collector's object-reference enumeration request.
+    static HRESULT ConfigureObjectReferenceEnumeration(IGCHeap* gcHeap, const VersionInfo& version);
+
+    // Validates and completes the collector's object-header bit request.
+    static HRESULT ConfigureObjectHeaderBits(IGCHeap* gcHeap, const VersionInfo& version);
+
+    // Returns whether the collector requested exact allocation-complete
+    // notifications during startup.
+    inline static bool IsAllocationNotificationEnabled()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return g_allocation_complete_callback != nullptr;
+    }
+
+    // Invokes the immutable collector callback. The caller must provide a
+    // fully initialized object and must not permit a GC during the call.
+    static void InvokeAllocationCompleteCallback(
+        Object* object,
+        size_t alignedObjectSize,
+        AllocationCompleteFlags flags);
+
+    // Reserves the process-wide write-barrier calling convention. The standard
+    // ABI cannot be selected after any compilation observed the specialized ABI.
+    static bool TryPrepareWriteBarrierCodegenMode(bool useStandardAbi, bool tracksOldValue);
+
+    // Publishes the standard ABI after its helper targets have been installed.
+    static void CompleteStandardWriteBarrierCodegenMode();
+
+    // Returns the immutable write-barrier settings for a JIT compilation.
+    // Observing an uninitialized mode commits that compilation to the
+    // specialized convention.
+    static void GetWriteBarrierCodegenModeForJit(bool* useStandardAbi, bool* tracksOldValue);
+
     // Records a change in eventing state. This ultimately will inform the GC that it needs to be aware
     // of new events being enabled.
     static void RecordEventStateChange(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level);
@@ -360,4 +411,3 @@ private:
 };
 
 #endif // _GCHEAPUTILITIES_H_
-

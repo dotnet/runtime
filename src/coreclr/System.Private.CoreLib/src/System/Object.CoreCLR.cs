@@ -36,10 +36,38 @@ namespace System
             ref byte src = ref this.GetRawData();
             ref byte dst = ref clone.GetRawData();
 
-            if (RuntimeHelpers.GetMethodTable(clone)->ContainsGCPointers)
-                Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(clone);
+            if (pMT->ContainsGCPointers)
+            {
+                if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                {
+                    if (pMT->IsArray)
+                    {
+                        Array array = Unsafe.As<Array>(clone);
+                        MethodTable* elementType = pMT->GetArrayElementTypeHandle().AsMethodTable();
+                        nuint dataOffset = pMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
+                        SpanHelpers.Memmove(ref dst, ref src, dataOffset);
+                        Buffer.BulkMoveWithOldValueWriteBarrier(
+                            ref Unsafe.AddByteOffset(ref dst, dataOffset),
+                            ref Unsafe.AddByteOffset(ref src, dataOffset),
+                            elementType->IsValueType ? elementType : null,
+                            pMT->ComponentSize,
+                            array.NativeLength);
+                    }
+                    else
+                    {
+                        Buffer.BulkMoveWithOldValueWriteBarrier(ref dst, ref src, pMT, byteCount, 1);
+                    }
+                }
+                else
+                {
+                    Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                }
+            }
             else
+            {
                 SpanHelpers.Memmove(ref dst, ref src, byteCount);
+            }
 
             return clone;
         }

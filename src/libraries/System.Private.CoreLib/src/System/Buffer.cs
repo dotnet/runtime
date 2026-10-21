@@ -141,6 +141,19 @@ namespace System
             }
             else
             {
+#if CORECLR
+                if (RuntimeHelpers.RequiresOldValueWriteBarrier())
+                {
+                    MethodTable* type = TypeHandle.TypeHandleOf<T>().AsMethodTable();
+                    BulkMoveWithOldValueWriteBarrier(
+                        ref Unsafe.As<T, byte>(ref destination),
+                        ref Unsafe.As<T, byte>(ref source),
+                        type->IsValueType ? type : null,
+                        (nuint)sizeof(T),
+                        elementCount);
+                    return;
+                }
+#endif
                 // Non-blittable memmove
                 BulkMoveWithWriteBarrier(
                     ref Unsafe.As<T, byte>(ref destination),
