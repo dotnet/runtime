@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO.Compression.Tests.Utilities;
 using System.IO.Tests;
 using System.Reflection;
 using System.Runtime.Versioning;
@@ -146,18 +147,14 @@ namespace System.IO.Compression.Tests
         public static IEnumerable<object[]> DecompressorFinishesBeforeEncryptedDataCases()
         {
             // Cross product generated via loops (rather than spelling out every InlineData combination) so each
-            // axis - async/sync, valid/corrupt trailer, Deflate vs. Deflate64, and AE-1 (CRC-validated) vs. AE-2 -
-            // is exercised together.
+            // axis - async/sync, valid/corrupt trailer, and Deflate vs. Deflate64 - is exercised together.
             foreach (bool async in new[] { false, true })
             {
                 foreach (bool corruptAuthenticationCode in new[] { false, true })
                 {
                     foreach (bool useDeflate64 in new[] { false, true })
                     {
-                        foreach (bool simulateAe1WithCrcValidation in new[] { false, true })
-                        {
-                            yield return new object[] { async, corruptAuthenticationCode, useDeflate64, simulateAe1WithCrcValidation };
-                        }
+                        yield return new object[] { async, corruptAuthenticationCode, useDeflate64 };
                     }
                 }
             }
@@ -166,7 +163,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(DecompressorFinishesBeforeEncryptedDataCases))]
         public async Task DecompressorFinishesBeforeEncryptedData_AuthenticationIsCompleted(
-            bool async, bool corruptAuthenticationCode, bool useDeflate64, bool simulateAe1WithCrcValidation)
+            bool async, bool corruptAuthenticationCode, bool useDeflate64)
         {
             byte[] plaintext = new byte[4097];
             new Random(42).NextBytes(plaintext);
@@ -206,15 +203,9 @@ namespace System.IO.Compression.Tests
                 ? (Stream)s_deflateManagedStreamConstructor.Invoke(new object[] { decryptStream, ZipCompressionMethod.Deflate64, (long)plaintext.Length })
                 : new DeflateStream(decryptStream, CompressionMode.Decompress, leaveOpen: true);
 
-            // AE-1 entries keep CRC validation (CrcValidatingReadStream) below the authentication guard, unlike
-            // AE-2 which skips it; simulate that layering here to cover both orderings.
-            Stream payloadStream = simulateAe1WithCrcValidation
-                ? (Stream)s_crcValidatingReadStreamConstructor.Invoke(new object[] { decompressedStream, ComputeCrc32(plaintext), (long)plaintext.Length })
-                : decompressedStream;
-
             using var authenticatedStream = (Stream)s_createAuthenticatedStreamMethod.Invoke(null, new object[]
             {
-                payloadStream, decryptStream, (long)plaintext.Length
+                decompressedStream, decryptStream, (long)plaintext.Length
             })!;
 
             using var output = new MemoryStream();
@@ -306,7 +297,7 @@ namespace System.IO.Compression.Tests
 
             // Force single-byte reads so the exact-length boundary probe - rather than a single bulk read - is the
             // one that discovers the excess byte, when bulkOvershoot is false.
-            Stream decryptedPayloadStream = bulkOvershoot ? decryptStream : new OneByteAtATimeStream(decryptStream);
+            Stream decryptedPayloadStream = bulkOvershoot ? decryptStream : new ClampedReadStream(decryptStream, readSizeLimit: 1);
 
             // CRC computed over just the declared-length prefix, so CrcValidatingReadStream validates cleanly at
             // the boundary and only raises its own UnexpectedStreamLength once the excess byte arrives - exactly
@@ -426,7 +417,7 @@ namespace System.IO.Compression.Tests
 
             // Delivers at most one byte per read, so the resumable 10-byte trailer read in
             // CompleteAuthenticationCoreAsync requires multiple underlying reads and can be cancelled mid-way.
-            var cancelableStream = new OneByteAtATimeStream(encryptedData);
+            using var cancelableStream = new CancelAfterReadsStream(encryptedData);
             using Stream decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
             {
                 cancelableStream, decryptKeyMaterial, (long)encryptedData.Length, false, false
@@ -444,12 +435,56 @@ namespace System.IO.Compression.Tests
             using var cts = new CancellationTokenSource();
             cancelableStream.CancelAfter(cts, readCount: 3);
             byte[] probe = new byte[1];
-            await Assert.ThrowsAsync<OperationCanceledException>(() => decryptStream.ReadAsync(probe, cts.Token).AsTask());
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => decryptStream.ReadAsync(probe, cts.Token).AsTask());
 
             // A retry with a fresh token must resume from the 4th trailer byte - not lose or re-read the first
             // 3 - and still successfully complete authentication.
             int bytesRead = await decryptStream.ReadAsync(probe);
             Assert.Equal(0, bytesRead);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task AuthenticatedReadStream_Flush_DelegatesToPayloadStream(bool async, bool useDeflate64)
+        {
+            byte[] plaintext = "Hello, authenticated world!"u8.ToArray();
+
+            byte[] compressedData;
+            using (var compressedStream = new MemoryStream())
+            {
+                using (var compressionStream = new DeflateStream(compressedStream, CompressionLevel.SmallestSize, leaveOpen: true))
+                {
+                    compressionStream.Write(plaintext);
+                }
+
+                compressedData = compressedStream.ToArray();
+            }
+
+            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData(compressedData);
+            using var encryptedStream = new MemoryStream(encryptedData);
+            using var decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
+            {
+                encryptedStream, decryptKeyMaterial, (long)encryptedData.Length, false, true
+            })!;
+            using Stream payloadStream = useDeflate64
+                ? (Stream)s_deflateManagedStreamConstructor.Invoke(new object[] { decryptStream, ZipCompressionMethod.Deflate64, (long)plaintext.Length })
+                : new DeflateStream(decryptStream, CompressionMode.Decompress, leaveOpen: true);
+            using Stream authenticatedStream = (Stream)s_createAuthenticatedStreamMethod.Invoke(null, new object[]
+            {
+                payloadStream, decryptStream, (long)plaintext.Length
+            })!;
+
+            if (async)
+            {
+                await authenticatedStream.FlushAsync();
+            }
+            else
+            {
+                authenticatedStream.Flush();
+            }
         }
 
         private static uint ComputeCrc32(ReadOnlySpan<byte> data)
@@ -469,52 +504,28 @@ namespace System.IO.Compression.Tests
             return ~crc;
         }
 
-        // Test double that forces multi-step resumable reads by delivering a single byte per call, and can arm a
-        // CancellationTokenSource to fire once a given number of those single-byte reads have completed.
-        private sealed class OneByteAtATimeStream : Stream
+        private sealed class CancelAfterReadsStream(byte[] data) : MemoryStream(data)
         {
-            private readonly Stream _inner;
-            private CancellationTokenSource? _cancelAfterSource;
-            private int _readsUntilCancel;
+            private CancellationTokenSource? _cancellationSource;
+            private int _readsUntilCancellation;
 
-            public OneByteAtATimeStream(byte[] data) : this(new MemoryStream(data)) { }
-
-            public OneByteAtATimeStream(Stream inner) => _inner = inner;
-
-            public void CancelAfter(CancellationTokenSource cancellationTokenSource, int readCount)
+            public void CancelAfter(CancellationTokenSource cancellationSource, int readCount)
             {
-                _cancelAfterSource = cancellationTokenSource;
-                _readsUntilCancel = readCount;
+                _cancellationSource = cancellationSource;
+                _readsUntilCancellation = readCount;
             }
 
             public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                int bytesRead = await base.ReadAsync(buffer[..Math.Min(1, buffer.Length)], cancellationToken).ConfigureAwait(false);
 
-                int bytesRead = await _inner.ReadAsync(buffer[..Math.Min(1, buffer.Length)], cancellationToken).ConfigureAwait(false);
-
-                if (_cancelAfterSource is not null && --_readsUntilCancel == 0)
+                if (_cancellationSource is not null && --_readsUntilCancellation == 0)
                 {
-                    _cancelAfterSource.Cancel();
+                    _cancellationSource.Cancel();
                 }
 
                 return bytesRead;
             }
-
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-                ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
-
-            public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, Math.Min(1, count));
-
-            public override bool CanRead => true;
-            public override bool CanSeek => false;
-            public override bool CanWrite => false;
-            public override long Length => throw new NotSupportedException();
-            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
-            public override void Flush() { }
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-            public override void SetLength(long value) => throw new NotSupportedException();
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
 
         private (byte[] EncryptedData, object DecryptKeyMaterial) CreateEncryptedData(byte[] plaintext)

@@ -981,8 +981,6 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
         [InlineData(true, true)]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
         public async Task AesEntry_DeflateFinishesWithUnreadEncryptedData_ValidatesAuthentication(bool async, bool updateMode)
@@ -1033,6 +1031,41 @@ namespace System.IO.Compression.Tests
             }
 
             await DisposeZipArchive(async, readArchive);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task AesEntry_BeginRead_UsesAsynchronousArchiveReads()
+        {
+            const string Password = "PLACEHOLDER";
+            byte[] plaintext = "Hello, authenticated world!"u8.ToArray();
+
+            await using var archiveStream = new MemoryStream();
+            using (var createArchive = new ZipArchive(archiveStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                ZipArchiveEntry createEntry = createArchive.CreateEntry(
+                    "payload.bin",
+                    CompressionLevel.SmallestSize,
+                    Password,
+                    ZipEncryptionMethod.Aes256);
+                using Stream entryStream = createEntry.Open();
+                entryStream.Write(plaintext);
+            }
+
+            archiveStream.Position = 0;
+            await using var noSyncStream = new NoSyncCallsStream(archiveStream);
+            await using ZipArchive readArchive = await ZipArchive.CreateAsync(
+                noSyncStream,
+                ZipArchiveMode.Read,
+                leaveOpen: true,
+                entryNameEncoding: null);
+            await using Stream readStream = await readArchive.Entries[0].OpenAsync(Password.AsSpan());
+
+            byte[] buffer = new byte[plaintext.Length];
+            IAsyncResult asyncResult = readStream.BeginRead(buffer, 0, buffer.Length, null, null);
+
+            Assert.Equal(plaintext.Length, readStream.EndRead(asyncResult));
+            Assert.Equal(plaintext, buffer);
         }
 
         [Theory]

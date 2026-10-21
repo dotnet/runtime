@@ -753,6 +753,11 @@ namespace System.IO.Compression
                 return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
             }
 
+            public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+                TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+
+            public override int EndRead(IAsyncResult asyncResult) => TaskToAsyncResult.End<int>(asyncResult);
+
             public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 ThrowIfDisposed();
@@ -902,8 +907,18 @@ namespace System.IO.Compression
                 set => throw new NotSupportedException();
             }
 
-            public override void Flush() => throw new NotSupportedException(SR.WritingNotSupported);
-            public override Task FlushAsync(CancellationToken cancellationToken) => Task.FromException(new NotSupportedException(SR.WritingNotSupported));
+            public override void Flush()
+            {
+                ThrowIfDisposed();
+                _payloadStream.Flush();
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                ThrowIfDisposed();
+                return _payloadStream.FlushAsync(cancellationToken);
+            }
+
             public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException(SR.SeekingNotSupported);
             public override void SetLength(long value) => throw new NotSupportedException(SR.SetLengthRequiresSeekingAndWriting);
             public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.WritingNotSupported);
