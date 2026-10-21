@@ -19,6 +19,7 @@ struct CDacPlatformMetadata
 {
     PrecodeMachineDescriptor precode;
     CDacCodePointerFlags codePointerFlags;
+    uint64_t pointerAuthenticationMask;
     CDacPlatformMetadata() = default;
     CDacPlatformMetadata(const CDacPlatformMetadata&) = delete;
     CDacPlatformMetadata& operator=(const CDacPlatformMetadata&) = delete;
