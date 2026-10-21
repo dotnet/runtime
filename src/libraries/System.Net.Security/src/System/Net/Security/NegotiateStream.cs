@@ -21,6 +21,7 @@ namespace System.Net.Security
     /// <summary>
     /// Provides a stream that uses the Negotiate security protocol to authenticate the client, and optionally the server, in client-server communication.
     /// </summary>
+    [UnsupportedOSPlatform("wasi")]
     public partial class NegotiateStream : AuthenticatedStream
     {
         /// <summary>Set as the _exception when the instance is disposed.</summary>

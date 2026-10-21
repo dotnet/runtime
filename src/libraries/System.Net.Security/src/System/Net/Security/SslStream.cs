@@ -39,6 +39,7 @@ namespace System.Net.Security
 
     public delegate ValueTask<SslServerAuthenticationOptions> ServerOptionsSelectionCallback(SslStream stream, SslClientHelloInfo clientHelloInfo, object? state, CancellationToken cancellationToken);
 
+    [UnsupportedOSPlatform("wasi")]
     public partial class SslStream : AuthenticatedStream
     {
         /// <summary>Set as the _exception when the instance is disposed.</summary>

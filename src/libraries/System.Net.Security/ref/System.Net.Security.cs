@@ -21,6 +21,7 @@ namespace System.Net.Security
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class CipherSuitesPolicy
     {
         [System.CLSCompliantAttribute(false)]
@@ -100,6 +101,7 @@ namespace System.Net.Security
         TargetUnknown = 14,
         ImpersonationValidationFailed = 15,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public partial class NegotiateStream : System.Net.Security.AuthenticatedStream
     {
         public NegotiateStream(System.IO.Stream innerStream) : base (default(System.IO.Stream), default(bool)) { }
@@ -243,6 +245,7 @@ namespace System.Net.Security
         public System.Net.Security.SslStreamCertificateContext? ServerCertificateContext { get { throw null; } set { } }
         public System.Net.Security.ServerCertificateSelectionCallback? ServerCertificateSelectionCallback { get { throw null; } set { } }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public partial class SslStream : System.Net.Security.AuthenticatedStream
     {
         public SslStream(System.IO.Stream innerStream) : base (default(System.IO.Stream), default(bool)) { }
