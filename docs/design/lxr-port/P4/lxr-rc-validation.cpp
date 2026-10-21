@@ -3288,6 +3288,52 @@ namespace
         Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "black-newborn owner detaches");
     }
 
+    // A large object that dies in a RefCount pause while a concurrent trace is active is released by the lazy
+    // sweep after the pause. The large-object space is in its ConcurrentMark phase then, and the release must
+    // be accepted (P17 fix). Before the fix the lazy sweep failed with MetadataFailure and the engine faulted.
+    void ValidateLazyLargeReleaseDuringTrace()
+    {
+        Type equal(32768, 0);
+        LxrReferenceCounting engine;
+        int identity;
+        LxrRcMutator* mutator;
+        if (!Initialize(engine, 8, &mutator, &identity))
+        {
+            return;
+        }
+        Object* large = Allocate(engine, mutator, equal);
+        if (large == nullptr)
+        {
+            return;
+        }
+        std::vector<Object*> held{large};
+        std::vector<Object*> none;
+        Roots holdRoots{&held};
+        Roots noRoots{&none};
+        if (!Check(Epoch(engine, held) &&
+                engine.HoldTrace(true) == LxrRcResult::Success &&
+                engine.BeginTrace(Capture, &holdRoots, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success,
+                "a promoted large object is live when the concurrent trace starts"))
+        {
+            return;
+        }
+        Check(engine.GetObjectExtent(large) == equal.table->m_baseSize, "the large object has an extent before it dies");
+        bool died = Check(engine.Collect(Capture, &noRoots, Timeout) == LxrRcResult::Success &&
+            engine.Drain(Timeout) == LxrRcResult::Success,
+            "a RefCount pause during the concurrent trace kills the large object and the lazy sweep succeeds");
+        Check(engine.GetFailure() == LxrRcResult::Success, "the lazy sweep of a dead large object does not fault the engine");
+        if (died)
+        {
+            Check(engine.GetMetrics().largeObjectBytesReleased >= 32768, "the dead large object is released during the concurrent trace");
+            Check(engine.GetObjectExtent(large) == 0, "the released large object has no extent");
+            Check(engine.HoldTrace(false) == LxrRcResult::Success &&
+                engine.FinishTrace(Capture, &noRoots, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success, "the trace finishes after the lazy release");
+            Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "lazy-release owner detaches");
+        }
+    }
+
     // The inline accessors of the side-metadata fast path (P17 S2) must give the same location and value as
     // the checked SideMetadataManager functions, for every kind, every memory order and every operation
     // that the pause loops use. The test counts the mismatches of each operation and checks that the count is zero.
@@ -3538,6 +3584,13 @@ namespace
 
 int main(int argc, char** argv)
 {
+    if (argc == 2 && strcmp(argv[1], "--lazy-large-release") == 0)
+    {
+        ValidateLazyLargeReleaseDuringTrace();
+        std::printf("%s: %d/%d lazy large-object release checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
     if (argc == 2 && strcmp(argv[1], "--inline-metadata") == 0)
     {
         ValidateInlineMetadataAccessors();

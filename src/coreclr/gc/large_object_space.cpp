@@ -856,7 +856,10 @@ LxrLargeObjectResult LxrLargeObjectSpace::ReleaseAfterDecrements(
     }
     LockScope lock(this);
     LxrLargeObjectPhase phase = m_phase.load(std::memory_order_relaxed);
-    if (phase != LxrLargeObjectPhase::Mutator && phase != LxrLargeObjectPhase::Release)
+    // The lazy release runs after the pause that killed the object. While a concurrent trace is active the space
+    // is in ConcurrentMark between pauses, so that phase must be accepted too. The dying object was marked and
+    // scanned before its count reached zero (FinishDyingTraceObject), so the trace holds no reference to it.
+    if (phase == LxrLargeObjectPhase::Shutdown)
     {
         return LxrLargeObjectResult::InvalidPhase;
     }
