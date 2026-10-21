@@ -345,10 +345,7 @@ namespace Internal.TypeSystem.Ecma
             // TypeSpec. C# encodes the 'unmanaged' constraint this way:
             // modreq(System.Runtime.InteropServices.UnmanagedType) class System.ValueType.
             bool hasCustomModifiers = typeCode is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier;
-            if (hasCustomModifiers)
-            {
-                typeCode = ParseTypeCodeImpl(typeCode, skipPinned: false);
-            }
+            typeCode = ParseTypeCodeImpl(typeCode);
 
             switch (typeCode)
             {
@@ -361,10 +358,10 @@ namespace Internal.TypeSystem.Ecma
                 case SignatureTypeCode.GenericMethodParameter:
                 // A class or value type with custom modifiers cannot be encoded as a TypeDefOrRef token.
                 case SignatureTypeCode.TypeHandle when hasCustomModifiers:
-                    return ParseType(ParseTypeCodeImpl(typeCode));
+                    return ParseType(typeCode);
             }
             ReportInvalidTypeSpecEncoding(typeSpecHandle);
-            return ParseType(ParseTypeCodeImpl(typeCode));
+            return ParseType(typeCode);
         }
 
         public bool IsFieldSignature
