@@ -17,13 +17,6 @@ internal static class ArrayPolyfills
                 throw new ArgumentNullException(nameof(array));
             }
 
-            if (index < 0 || length < 0 || array.Length - index < length)
-            {
-                // Preserve the existing overload's argument validation.
-                Array.Reverse(array, index, length);
-                return;
-            }
-
             array.AsSpan(index, length).Reverse();
         }
 
