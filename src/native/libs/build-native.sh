@@ -2,6 +2,7 @@
 
 usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net8.0-linux-Release-x64', used to name output directory.")
 usage_list+=("-staticLibLink: Optional argument to statically link any native library.")
+usage_list+=("-linkstaticopenssl: OpenHarmony only. Link the OpenSSL libraries found by find_package(OpenSSL) (they must be built with -fPIC) instead of building the dlopen-based OpenSSL shim.")
 
 __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
 __nativeroot="$__scriptpath"
@@ -20,6 +21,10 @@ handle_arguments() {
             __StaticLibLink=1
             ;;
 
+        linkstaticopenssl|-linkstaticopenssl)
+            __LinkStaticOpenSsl=1
+            ;;
+
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
     esac
@@ -36,6 +41,7 @@ __PortableBuild=1
 __RootBinDir="$__RepoRootDir/artifacts"
 __SkipConfigure=0
 __StaticLibLink=0
+__LinkStaticOpenSsl=0
 __UnprocessedBuildArgs=
 __VerboseBuild=false
 
@@ -55,7 +61,21 @@ elif [[ "$__TargetOS" == android && -z "$ROOTFS_DIR" ]]; then
     # nothing to do here
     true
 else
-    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
+    # OpenHarmony defaults to the distro-agnostic OpenSSL shim (absolute path,
+    # fail closed). -linkstaticopenssl links the OpenSSL libraries found by
+    # find_package(OpenSSL) instead; the archives must be built with -fPIC.
+    # The static archive keeps the dlopen shim for NativeAOT, so the
+    # FEATURE_DISTRO_AGNOSTIC_SSL_STATIC object set stays enabled.
+    __FeatureDistroAgnosticSsl=$__PortableBuild
+    __FeatureDistroAgnosticSslStatic=$__FeatureDistroAgnosticSsl
+    if [[ "$__TargetOS" == openharmony && "$__LinkStaticOpenSsl" == 1 ]]; then
+        __FeatureDistroAgnosticSsl=0
+        __FeatureDistroAgnosticSslStatic=1
+        __StaticLibLink=1
+    fi
+
+    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__FeatureDistroAgnosticSsl $__CMakeArgs"
+    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL_STATIC=$__FeatureDistroAgnosticSslStatic $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
 
     if [[ "$__TargetOS" != linux-bionic && "$__TargetOS" != openharmony && "$__TargetArch" != x86 && "$__TargetArch" != x64 && "$__TargetArch" != "$__HostArch" ]]; then

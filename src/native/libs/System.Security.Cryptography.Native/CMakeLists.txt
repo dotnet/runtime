@@ -106,7 +106,28 @@ if (FEATURE_DISTRO_AGNOSTIC_SSL)
     add_linker_flag(-pthread)
 endif()
 
+# The static archive is linked directly into NativeAOT apps by ilc, which does not link
+# libcrypto/libssl, so the archive always needs the dlopen shim. When the shared library
+# links OpenSSL statically (OpenHarmony -linkstaticopenssl) the archive gets its own
+# shim-enabled object set, selected by FEATURE_DISTRO_AGNOSTIC_SSL_STATIC.
+if (NOT DEFINED FEATURE_DISTRO_AGNOSTIC_SSL_STATIC)
+    set(FEATURE_DISTRO_AGNOSTIC_SSL_STATIC ${FEATURE_DISTRO_AGNOSTIC_SSL})
+endif()
+
 add_library(objlib OBJECT ${NATIVECRYPTO_SOURCES} ${VERSION_FILE_PATH})
+
+if (FEATURE_DISTRO_AGNOSTIC_SSL_STATIC AND NOT FEATURE_DISTRO_AGNOSTIC_SSL)
+    add_library(objlib_static OBJECT
+        ${NATIVECRYPTO_SOURCES}
+        opensslshim.c
+        ${VERSION_FILE_PATH}
+    )
+    target_compile_definitions(objlib_static PRIVATE FEATURE_DISTRO_AGNOSTIC_SSL)
+    target_compile_options(objlib_static PRIVATE -pthread)
+    set(NATIVECRYPTO_STATIC_OBJECTS $<TARGET_OBJECTS:objlib_static>)
+else()
+    set(NATIVECRYPTO_STATIC_OBJECTS $<TARGET_OBJECTS:objlib>)
+endif()
 
 if (GEN_SHARED_LIB)
     add_library(System.Security.Cryptography.Native.OpenSsl
@@ -117,7 +138,7 @@ endif()
 
 add_library(System.Security.Cryptography.Native.OpenSsl-Static
     STATIC
-    $<TARGET_OBJECTS:objlib>
+    ${NATIVECRYPTO_STATIC_OBJECTS}
     entrypoints.c
 )
 

@@ -47,6 +47,7 @@
       -->
       <_ProcessorCountArg> -numproc $(MSBuildNodeCount)</_ProcessorCountArg>
       <_PortableBuildArg Condition="'$(PortableBuild)' != 'true'"> -portablebuild=false</_PortableBuildArg>
+      <_LinkStaticOpenSslArg Condition="'$(LinkStaticOpenSsl)' == 'true' and '$(TargetOS)' == 'openharmony'"> -linkstaticopenssl</_LinkStaticOpenSslArg>
       <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
       <_KeepNativeSymbolsBuildArg Condition="'$(KeepNativeSymbols)' != 'false'"> -keepnativesymbols</_KeepNativeSymbolsBuildArg>
 
@@ -55,7 +56,7 @@
         used to force a specific compiler toolset.
       -->
       <_BuildNativeCompilerArg Condition="'$(BuildNativeCompiler)' != ''"> $(BuildNativeCompiler)</_BuildNativeCompilerArg>
-      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg) $(CppCompilerAndLinker)</_BuildNativeUnixArgs>
+      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_LinkStaticOpenSslArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg) $(CppCompilerAndLinker)</_BuildNativeUnixArgs>
       <_BuildNativeBuildCommand>&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)</_BuildNativeBuildCommand>
     </PropertyGroup>
 

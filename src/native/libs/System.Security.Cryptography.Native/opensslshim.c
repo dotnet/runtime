@@ -2,6 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+// dladdr() needs _GNU_SOURCE before the first system header; the native-libs build
+// already passes -D_GNU_SOURCE, and this keeps the shim buildable stand-alone.
+#if defined(TARGET_OPENHARMONY) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
 #include <assert.h>
 #include <dlfcn.h>
 #include <pthread.h>
@@ -10,8 +16,11 @@
 
 #if defined(__OpenBSD__)
 #include <dirent.h>
-#include <limits.h>
 #include <stdlib.h>
+#endif
+
+#if defined(__OpenBSD__) || defined(TARGET_OPENHARMONY)
+#include <limits.h>
 #endif
 
 #include "opensslshim.h"
@@ -59,6 +68,68 @@ static void DlOpen(const char* libraryName)
         dlclose(libsslNew);
     }
 }
+
+#if defined(TARGET_OPENHARMONY)
+// OpenHarmony allows more than one OpenSSL in a process, and a bare soname could pick up
+// one from the loader search path (silently changing the process-wide TLS trust anchors).
+// Open only the sibling libssl/libcrypto next to this shim, by absolute path; fail closed.
+static int GetSiblingLibraryPath(const char* libraryName, char* libraryPath, size_t libraryPathSize)
+{
+    Dl_info info;
+    if ((dladdr((const void*)&GetSiblingLibraryPath, &info) == 0) || (info.dli_fname == NULL))
+    {
+        return -1;
+    }
+
+    // The sibling is only opened when this shim's own path is absolute: a relative
+    // path (or a bare soname) would resolve against the current working directory,
+    // which may not be the directory this shim was loaded from.
+    if (info.dli_fname[0] != '/')
+    {
+        return -1;
+    }
+
+    const char* lastSlash = strrchr(info.dli_fname, '/');
+    if (lastSlash == NULL)
+    {
+        // The shim itself was loaded by a name without a directory, so its
+        // location cannot be trusted to build an absolute path from.
+        return -1;
+    }
+
+    size_t directoryLength = (size_t)(lastSlash - info.dli_fname);
+    size_t libraryNameLength = strlen(libraryName);
+
+    // <directory>/<libraryName> plus the terminating NUL
+    if ((directoryLength + 1 + libraryNameLength + 1) > libraryPathSize)
+    {
+        return -1;
+    }
+
+    memcpy(libraryPath, info.dli_fname, directoryLength);
+    libraryPath[directoryLength] = '/';
+    memcpy(libraryPath + directoryLength + 1, libraryName, libraryNameLength + 1);
+    return 0;
+}
+
+static void DlOpenSibling(const char* libraryName)
+{
+    char libraryPath[PATH_MAX];
+    if (GetSiblingLibraryPath(libraryName, libraryPath, sizeof(libraryPath)) != 0)
+    {
+        fprintf(stderr, "OpenSSL shim: cannot determine an absolute path of this library; refusing to open '%s' by name\n", libraryName);
+        return;
+    }
+
+    DlOpen(libraryPath);
+}
+
+// Resolve every candidate next to this shim on OpenHarmony; other platforms
+// keep the historical soname-based lookup.
+#define DlOpenCandidate(name) DlOpenSibling(name)
+#else
+#define DlOpenCandidate(name) DlOpen(name)
+#endif
 
 #if defined(__OpenBSD__)
 // OpenBSD's base system ships LibreSSL, which does not implement the full
@@ -157,7 +228,7 @@ static void OpenLibraryOnce(void)
 #else
         char soName[sizeof(SONAME_BASE) + MaxVersionStringLength] = SONAME_BASE;
         strcat(soName, versionOverride);
-        DlOpen(soName);
+        DlOpenCandidate(soName);
 #endif
     }
 
@@ -234,18 +305,18 @@ static void OpenLibraryOnce(void)
     if (libssl == NULL)
     {
         // Prefer OpenSSL 3.x
-        DlOpen(MAKELIB("3"));
+        DlOpenCandidate(MAKELIB("3"));
     }
 
     if (libssl == NULL)
     {
-        DlOpen(MAKELIB("1.1"));
+        DlOpenCandidate(MAKELIB("1.1"));
     }
 
     // While it's still in alpha, OpenSSL 4 is probed, but not preferred.
     if (libssl == NULL)
     {
-        DlOpen(MAKELIB("4"));
+        DlOpenCandidate(MAKELIB("4"));
     }
 }
 
@@ -270,6 +341,9 @@ void InitializeOpenSSLShim(void)
     if (!OpenLibrary())
     {
         fprintf(stderr, "No usable version of libssl was found\n");
+#if defined(TARGET_OPENHARMONY)
+        fprintf(stderr, "OpenHarmony resolves libssl/libcrypto by absolute path from this library's directory; deploy libssl.so.3 and libcrypto.so.3 next to it\n");
+#endif
         abort();
     }
 

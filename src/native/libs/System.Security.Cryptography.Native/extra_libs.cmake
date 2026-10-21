@@ -36,5 +36,11 @@ macro(append_extra_cryptography_libs NativeLibsExtra)
         list(APPEND ${NativeLibsExtra} ${CMAKE_DL_LIBS})
     else()
         list(APPEND ${NativeLibsExtra} ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+        if (CMAKE_STATIC_LIB_LINK AND CLR_CMAKE_TARGET_OPENHARMONY)
+            # Static OpenSSL archives re-export every symbol they contribute.
+            # Localize them (LLVM/GNU linkers) so the shim exports only its own
+            # entry points, which verify-entrypoints.sh enforces.
+            list(APPEND ${NativeLibsExtra} -Wl,--exclude-libs,ALL)
+        endif()
     endif()
 endmacro()
