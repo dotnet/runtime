@@ -154,7 +154,7 @@ HRESULT CordbClass::GetStaticFieldValue(mdFieldDef fieldDef,
 
 
         // Lookup the field given its metadata token.
-        FieldData *pFieldData;
+        const FieldData *pFieldData;
 
         hr = GetFieldInfo(fieldDef, &pFieldData);
 
@@ -220,7 +220,7 @@ HRESULT CordbClass::GetStaticFieldValue(mdFieldDef fieldDef,
 //   Else some other failure.
 /* static */
 HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
-                                         FieldData * pFieldData,
+                                         const FieldData * pFieldData,
                                          BOOL fEnCHangingField,
                                          const Instantiation * pInst,
                                          ICorDebugFrame * pFrame,
@@ -847,7 +847,7 @@ BOOL CordbClass::GotUnallocatedStatic(DacDbiArrayList<FieldData> * pFieldList)
  *
  */
 HRESULT FieldData::GetFieldSignature(CordbModule *pModule,
-                                                  SigParser *pSigParser)
+                                                  SigParser *pSigParser) const
 {
     CONTRACTL
     {
@@ -989,14 +989,14 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
 //            fieldToken    - token for the EnC field
 //     output: pointer to an initialized instance of FieldData that has been added to the appropriate table
 //     in our cache
-FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
+const FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
                                            CordbObjectValue * pObject,
                                            mdFieldDef         fieldToken)
 {
     EnCHangingFieldInfo encField;
     mdTypeDef           metadataToken;
-    FieldData           fieldData,
-                      * pInfo = NULL;
+    FieldData           fieldData;
+    const FieldData *   pInfo = NULL;
     CordbProcess *      pProcess = GetModule()->GetProcess();
 
     _ASSERTE(pProcess != NULL);
@@ -1046,7 +1046,7 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
 //   S_OK on success, failure code otherwise.
 //-----------------------------------------------------------------------------
 HRESULT CordbClass::GetEnCHangingField(mdFieldDef fldToken,
-                                      FieldData **ppFieldData,
+                                       const FieldData **ppFieldData,
                                        CordbObjectValue * pObject)
 {
     FAIL_IF_NEUTERED(this);
@@ -1065,7 +1065,7 @@ HRESULT CordbClass::GetEnCHangingField(mdFieldDef fldToken,
     BOOL fStatic = (pObject == NULL);
 
     // Look for cached field information
-    FieldData *pInfo = NULL;
+    const FieldData *pInfo = NULL;
     if (fStatic)
     {
         // Static fields should _NOT_ be cleared, since they stick around.  Thus
@@ -1114,7 +1114,7 @@ HRESULT CordbClass::GetEnCHangingField(mdFieldDef fldToken,
 // Returns:
 //   S_OK on success. else failure.
 //-----------------------------------------------------------------------------
-HRESULT CordbClass::GetFieldInfo(mdFieldDef fldToken, FieldData **ppFieldData)
+HRESULT CordbClass::GetFieldInfo(mdFieldDef fldToken, const FieldData **ppFieldData)
 {
     INTERNAL_SYNC_API_ENTRY(GetProcess());
 
@@ -1150,7 +1150,7 @@ HRESULT CordbClass::SearchFieldInfo(
     DacDbiArrayList<FieldData> * pFieldList,
     mdTypeDef classToken,
     mdFieldDef fldToken,
-    FieldData **ppFieldData
+    const FieldData **ppFieldData
 )
 {
     unsigned int i;

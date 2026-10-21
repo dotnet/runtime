@@ -4425,7 +4425,7 @@ class CordbHangingFieldTable
         m_table.RemoveAll();
     }
 
-    FieldData * AddFieldInfo(FieldData * pInfo)
+    const FieldData * AddFieldInfo(const FieldData * pInfo)
     {
         _ASSERTE(pInfo != NULL);
 
@@ -4440,9 +4440,9 @@ class CordbHangingFieldTable
 
 #endif // #ifndef DACCESS_COMPILE
 
-    FieldData * GetFieldInfo(mdFieldDef fldToken)
+    const FieldData * GetFieldInfo(mdFieldDef fldToken) const
     {
-        return const_cast<FieldData *>(m_table.LookupPtr(fldToken));
+        return m_table.LookupPtr(fldToken);
     }
 };
 
@@ -4712,7 +4712,7 @@ public:
 
     // These are available after Init() has been called....
     HRESULT GetUnboxedObjectSize(ULONG32 *res);
-    HRESULT GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData);
+    HRESULT GetFieldInfo(mdFieldDef fldToken, const FieldData ** ppFieldData);
 
     CordbAppDomain *GetAppDomain() { return m_appdomain; }
 
@@ -4942,10 +4942,10 @@ public:
                                    DacDbiArrayList<FieldData> * pFieldList,
                                    mdTypeDef                    classToken,
                                    mdFieldDef                   fldToken,
-                                   FieldData **                 ppFieldData);
+                                   const FieldData **           ppFieldData);
 
     static HRESULT GetStaticFieldValue2(CordbModule *         pModule,
-                                        FieldData *           pFieldData,
+                                        const FieldData *     pFieldData,
                                         BOOL                  fEnCHangingField,
                                         const Instantiation * pInst,
                                         ICorDebugFrame *      pFrame,
@@ -4957,12 +4957,12 @@ public:
 
     // Get information about a field that was added by EnC
     HRESULT GetEnCHangingField(mdFieldDef         fldToken,
-                               FieldData **       ppFieldData,
+                               const FieldData ** ppFieldData,
                                CordbObjectValue * pObject);
 
 private:
     // Get information via the DAC about a field added with Edit and Continue.
-    FieldData * GetEnCFieldFromDac(BOOL               fStatic,
+    const FieldData * GetEnCFieldFromDac(BOOL               fStatic,
                                    CordbObjectValue * pObject,
                                    mdFieldDef         fieldToken);
 
@@ -4976,7 +4976,7 @@ private:
 
 public:
 
-    HRESULT GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData);
+    HRESULT GetFieldInfo(mdFieldDef fldToken, const FieldData ** ppFieldData);
 
     // If you want to force the init to happen even if we think the class
     // is up to date, set fForceInit to TRUE

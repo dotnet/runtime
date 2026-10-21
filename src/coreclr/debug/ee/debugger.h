@@ -3013,18 +3013,18 @@ template <typename TRAITS>
 class DebuggerSHash : public SHash<TRAITS>
 {
 public:
-    typename TRAITS::element_t *FindFirstEntry(HASHFIND *find)
+    const typename TRAITS::element_t *FindFirstEntry(HASHFIND *find) const
     {
         find->iNext = 0;
         return FindNextEntry(find);
     }
 
-    typename TRAITS::element_t *FindNextEntry(HASHFIND *find)
+    const typename TRAITS::element_t *FindNextEntry(HASHFIND *find) const
     {
         typename TRAITS::count_t index = find->iNext;
         const typename TRAITS::element_t *entry = this->GetNext(index);
         find->iNext = index;
-        return const_cast<typename TRAITS::element_t *>(entry);
+        return entry;
     }
 };
 
@@ -3055,11 +3055,11 @@ public:
     void RemovePendingEval(Thread *pThread);
 #endif // #ifndef DACCESS_COMPILE
 
-    DebuggerPendingFuncEval *GetPendingEval(Thread* pThread)
+    const DebuggerPendingFuncEval *GetPendingEval(Thread* pThread) const
     {
         WRAPPER_NO_CONTRACT;
 
-        return const_cast<DebuggerPendingFuncEval *>(m_table.LookupPtr(dac_cast<PTR_Thread>(pThread)));
+        return m_table.LookupPtr(dac_cast<PTR_Thread>(pThread));
     }
 };
 
@@ -3140,7 +3140,7 @@ struct DebuggerMethodInfoEntry : DebuggerHeapHashEntry
     PTR_DebuggerMethodInfo   mi;
 
 #ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) const;
 #endif
 };
 
@@ -3218,7 +3218,7 @@ public:
     //      {Module*,mdMethodDef}
     // (b) Perf: don't waste the memory!
     void ClearMethodsOfModule(Module *pModule);
-    void DeleteEntryDMI(DebuggerMethodInfoEntry *entry);
+    void DeleteEntryDMI(const DebuggerMethodInfoEntry *entry);
 
 #endif // #ifndef DACCESS_COMPILE
 

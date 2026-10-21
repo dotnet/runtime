@@ -59,7 +59,7 @@ void DebuggerModuleTable::Clear()
     _ASSERTE(ThreadHoldsLock());
 
     HASHFIND hf;
-    DebuggerModuleEntry *pDME;
+    const DebuggerModuleEntry *pDME;
 
     pDME = m_table.FindFirstEntry(&hf);
 
@@ -164,7 +164,7 @@ DebuggerModule *DebuggerModuleTable::GetFirstModule(HASHFIND *info)
 
     _ASSERTE(ThreadHoldsLock());
 
-    DebuggerModuleEntry *entry = m_table.FindFirstEntry(info);
+    const DebuggerModuleEntry *entry = m_table.FindFirstEntry(info);
     if (entry == NULL)
         return NULL;
     else
@@ -182,7 +182,7 @@ DebuggerModule *DebuggerModuleTable::GetNextModule(HASHFIND *info)
 
     _ASSERTE(ThreadHoldsLock());
 
-    DebuggerModuleEntry *entry = m_table.FindNextEntry(info);
+    const DebuggerModuleEntry *entry = m_table.FindNextEntry(info);
     if (entry == NULL)
         return NULL;
     else

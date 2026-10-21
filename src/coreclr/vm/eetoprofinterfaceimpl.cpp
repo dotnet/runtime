@@ -1427,16 +1427,10 @@ HRESULT EEToProfInterfaceImpl::AllocByClass(ObjectID objId, ClassID clsId, void 
 
     _ASSERTE(dwProcId == GetCurrentProcessId());
 
-    // Lookup to see if this class already has an entry
-    AllocByClassEntry *pEntry =
-        const_cast<AllocByClassEntry *>(pData->hashTable.LookupPtr(clsId));
-
-    // If this class has already been encountered, just increment the counter.
-    if (pEntry)
-        pEntry->m_count++;
-
-    // Otherwise, need to add this one as a new entry in the hash table
-    else
+    if (!pData->hashTable.Update(clsId, [](AllocByClassEntry &entry)
+    {
+        entry.m_count++;
+    }))
     {
         AllocByClassEntry entry = { clsId, 1 };
         if (!pData->hashTable.AddNoThrow(entry))

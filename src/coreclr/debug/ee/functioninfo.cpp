@@ -2159,22 +2159,21 @@ HRESULT DebuggerMethodInfoTable::OverwriteMethodInfo(Module *pModule,
     dmik.pModule = pModule;
     dmik.token = token;
 
-    DebuggerMethodInfoEntry *entry
-      = const_cast<DebuggerMethodInfoEntry *>(m_table.LookupPtr(dmik));
-    if (entry != NULL)
+    HRESULT hr = E_FAIL;
+    m_table.Update(dmik, [&](DebuggerMethodInfoEntry &entry)
     {
-        if ( (fOnlyIfNull && entry->mi == NULL)
+        if ( (fOnlyIfNull && entry.mi == NULL)
             || !fOnlyIfNull)
         {
-            entry->mi = mi;
+            entry.mi = mi;
 
             LOG((LF_CORDB, LL_INFO1000, "DMIT::OMI: mod:%p tok:0x%08x remap nVer:0x%zx\n",
-                pModule, token, entry->nVersionLastRemapped));
-            return S_OK;
+                pModule, token, entry.nVersionLastRemapped));
+            hr = S_OK;
         }
-    }
+    });
 
-    return E_FAIL;
+    return hr;
 }
 
 // pModule is being destroyed - remove any entries that belong to it.  Why?
@@ -2193,7 +2192,7 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
 
     HASHFIND info;
 
-    DebuggerMethodInfoEntry *entry
+    const DebuggerMethodInfoEntry *entry
       = m_table.FindFirstEntry(&info);
     while(entry != NULL)
     {
@@ -2236,7 +2235,7 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
     }
 }
 
-void DebuggerMethodInfoTable::DeleteEntryDMI(DebuggerMethodInfoEntry *entry)
+void DebuggerMethodInfoTable::DeleteEntryDMI(const DebuggerMethodInfoEntry *entry)
 {
     CONTRACTL
     {
@@ -2248,12 +2247,16 @@ void DebuggerMethodInfoTable::DeleteEntryDMI(DebuggerMethodInfoEntry *entry)
     }
     CONTRACTL_END;
 
-    DebuggerMethodInfo *dmiPrev = entry->mi->m_prevMethodInfo;
-    TRACE_FREE(entry->mi);
-    DeleteInteropSafe(entry->mi);
-    entry->mi = dmiPrev;
-    if ( dmiPrev != NULL )
-        dmiPrev->m_nextMethodInfo = NULL;
+    bool updated = m_table.Update(entry->key, [](DebuggerMethodInfoEntry &element)
+    {
+        DebuggerMethodInfo *dmiPrev = element.mi->m_prevMethodInfo;
+        TRACE_FREE(element.mi);
+        DeleteInteropSafe(element.mi);
+        element.mi = dmiPrev;
+        if ( dmiPrev != NULL )
+            dmiPrev->m_nextMethodInfo = NULL;
+    });
+    _ASSERTE(updated);
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -2322,13 +2325,11 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetFirstMethodInfo(HASHFIND *info)
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
-    DebuggerMethodInfoEntry *entry = m_table.FindFirstEntry(info);
+    const DebuggerMethodInfoEntry *entry = m_table.FindFirstEntry(info);
     if (entry == NULL)
         return NULL;
-    else
-        {
-            return entry->mi;
-        }
+
+    return entry->mi;
 }
 
 DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
@@ -2344,7 +2345,7 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
-    DebuggerMethodInfoEntry *entry = m_table.FindNextEntry(info);
+    const DebuggerMethodInfoEntry *entry = m_table.FindNextEntry(info);
 
     // We may have incremented the version number
     // for methods that never got JITted, so we should
@@ -2357,17 +2358,15 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
 
     if (entry == NULL)
         return NULL;
-    else
-        {
-            return entry->mi;
-        }
+
+    return entry->mi;
 }
 
 
 
 #ifdef DACCESS_COMPILE
 void
-DebuggerMethodInfoEntry::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+DebuggerMethodInfoEntry::EnumMemoryRegions(CLRDataEnumMemoryFlags flags) const
 {
     SUPPORTS_DAC;
 
@@ -2424,7 +2423,7 @@ void DebuggerMethodInfoTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     m_table.EnumMemoryRegions();
 
     HASHFIND find;
-    for (DebuggerMethodInfoEntry *entry = m_table.FindFirstEntry(&find);
+    for (const DebuggerMethodInfoEntry *entry = m_table.FindFirstEntry(&find);
          entry != nullptr;
          entry = m_table.FindNextEntry(&find))
     {

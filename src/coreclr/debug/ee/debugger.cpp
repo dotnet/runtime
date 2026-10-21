@@ -1100,12 +1100,13 @@ HRESULT DebuggerPendingFuncEvalTable::AddPendingEval(Thread *pThread, DebuggerEv
     _ASSERTE(pThread != nullptr && pDE != nullptr);
     _ASSERTE(pDE->m_nextPendingEval == nullptr);
 
-    DebuggerPendingFuncEval *entry = GetPendingEval(pThread);
-    if (entry != nullptr)
+    if (m_table.Update(pThread, [pDE](DebuggerPendingFuncEval &entry)
     {
         // Keep newest-first order independently of SHash rehashing.
-        pDE->m_nextPendingEval = entry->pDE;
-        entry->pDE = pDE;
+        pDE->m_nextPendingEval = entry.pDE;
+        entry.pDE = pDE;
+    }))
+    {
         return S_OK;
     }
 
@@ -1126,20 +1127,22 @@ void DebuggerPendingFuncEvalTable::RemovePendingEval(Thread *pThread)
 
     _ASSERTE(pThread != nullptr);
 
-    DebuggerPendingFuncEval *entry = GetPendingEval(pThread);
-    if (entry != nullptr)
+    DebuggerEval *pDE = nullptr;
+    if (!m_table.Update(pThread, [&pDE](DebuggerPendingFuncEval &entry)
     {
-        DebuggerEval *pDE = entry->pDE;
+        pDE = entry.pDE;
         if (pDE->m_nextPendingEval != nullptr)
         {
-            entry->pDE = pDE->m_nextPendingEval;
+            entry.pDE = pDE->m_nextPendingEval;
         }
-        else
-        {
-            m_table.RemovePtr(entry);
-        }
-        pDE->m_nextPendingEval = nullptr;
+    }))
+    {
+        return;
     }
+
+    if (pDE->m_nextPendingEval == nullptr)
+        m_table.Remove(pThread);
+    pDE->m_nextPendingEval = nullptr;
 }
 #endif // DACCESS_COMPILE
 
@@ -1185,7 +1188,7 @@ ULONG DebuggerMethodInfoTable::CheckDmiTable(void)
 
     HASHFIND find;
     ULONG count = 0;
-    for (DebuggerMethodInfoEntry *entry = m_table.FindFirstEntry(&find);
+    for (const DebuggerMethodInfoEntry *entry = m_table.FindFirstEntry(&find);
          entry != nullptr;
          entry = m_table.FindNextEntry(&find))
     {
@@ -7576,7 +7579,7 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
     // FuncEvalComplete event, so if the user asks for another func eval then there will be a new pending eval when we
     // loop and check again.
     //
-    DebuggerPendingFuncEval *pfe;
+    const DebuggerPendingFuncEval *pfe;
 
     while (GetPendingEvals() != NULL && (pfe = GetPendingEvals()->GetPendingEval(pThread)) != NULL)
     {

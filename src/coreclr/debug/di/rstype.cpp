@@ -78,7 +78,7 @@ HRESULT CordbType::GetStaticFieldValue(mdFieldDef fieldDef,
             IfFailThrow(hr);
 
             // Lookup the field given its metadata token.
-            FieldData * pFieldData;
+            const FieldData * pFieldData;
 
             hr = GetFieldInfo(fieldDef, &pFieldData);
 
@@ -2488,7 +2488,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
 //   S_OK on success. CORDBG_E_ENC_HANGING_FIELD for EnC fields (common case)
 //   Other errors on failure case.
 //-----------------------------------------------------------------------------
-HRESULT CordbType::GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData)
+HRESULT CordbType::GetFieldInfo(mdFieldDef fldToken, const FieldData ** ppFieldData)
 {
     INTERNAL_SYNC_API_ENTRY(GetProcess()); //
     HRESULT hr = S_OK;
