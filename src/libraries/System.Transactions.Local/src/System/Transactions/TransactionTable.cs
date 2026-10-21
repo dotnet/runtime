@@ -8,7 +8,7 @@ namespace System.Transactions
 {
     internal sealed class CheapUnfairReaderWriterLock
     {
-        private readonly ManualResetEventSlim _writerFinishedEvent = new ManualResetEventSlim(true);
+        private ManualResetEvent? _writerFinishedEvent;
 
         private int _readersIn;
         private int _readersOut;
@@ -27,6 +27,18 @@ namespace System.Transactions
         // Acquire on _readersOut: once a reader's exit is seen, its writes inside the lock must be too.
         private bool ReadersPresent => _readersIn != Volatile.Read(ref _readersOut);
 
+        private ManualResetEvent WriterFinishedEvent
+        {
+            get
+            {
+                if (_writerFinishedEvent == null)
+                {
+                    Interlocked.CompareExchange(ref _writerFinishedEvent, new ManualResetEvent(true), null);
+                }
+                return _writerFinishedEvent;
+            }
+        }
+
         public int EnterReadLock()
         {
             int readerIndex;
@@ -34,7 +46,7 @@ namespace System.Transactions
             {
                 if (Volatile.Read(ref _writerPresent))
                 {
-                    _writerFinishedEvent.Wait();
+                    WriterFinishedEvent.WaitOne();
                 }
 
                 readerIndex = Interlocked.Increment(ref _readersIn);
@@ -58,7 +70,7 @@ namespace System.Transactions
             _writerPresent = true;
             // Pairs with EnterReadLock: publish _writerPresent before reading the reader counts.
             Interlocked.MemoryBarrier();
-            _writerFinishedEvent.Reset();
+            WriterFinishedEvent.Reset();
 
             do
             {
@@ -87,7 +99,7 @@ namespace System.Transactions
             try
             {
                 Volatile.Write(ref _writerPresent, false);
-                _writerFinishedEvent.Set();
+                WriterFinishedEvent.Set();
             }
             finally
             {
