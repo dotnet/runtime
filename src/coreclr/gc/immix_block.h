@@ -129,6 +129,13 @@ public:
     SideMetadataResult StartGcPause(ImmixBlockOperationStatus* status);
     SideMetadataResult ReleaseGcPause(ImmixBlockOperationStatus* status);
 
+    // Process-wide counts of block operations that met an epoch flip: operations in flight when the
+    // flip began, and operations that started during it and had to wait. Both are zero when the flip
+    // is quiescent, which is what the epoch protocol assumes. Debug builds assert on either. Read-only
+    // queries (IsNursery, IsReusing, IsGcReusing) take no gate; Debug builds still count them here.
+    static uint64_t GetFlipOverlaps();
+    static uint64_t GetFlipBlockedOperations();
+
     SideMetadataResult GetState(
         uintptr_t block,
         ImmixBlockState* state,
@@ -185,6 +192,30 @@ private:
         const ImmixBlockManager* m_manager;
     };
 
+#ifdef _DEBUG
+    // Read-only queries do not use the epoch gate. In Debug builds they are counted so that the
+    // flip assertion can prove that none of them runs during a flip.
+    class ReaderScope final
+    {
+    public:
+        explicit ReaderScope(const ImmixBlockManager* manager) : m_manager(manager)
+        {
+            m_manager->m_active_readers.fetch_add(1, std::memory_order_seq_cst);
+        }
+
+        ~ReaderScope()
+        {
+            m_manager->m_active_readers.fetch_sub(1, std::memory_order_seq_cst);
+        }
+
+        ReaderScope(const ReaderScope&) = delete;
+        ReaderScope& operator=(const ReaderScope&) = delete;
+
+    private:
+        const ImmixBlockManager* m_manager;
+    };
+#endif // _DEBUG
+
     static constexpr uint8_t RawUnallocated = 0;
     static constexpr uint8_t RawMarked = UINT8_MAX - 1;
     static constexpr uint8_t RawUnmarked = UINT8_MAX;
@@ -235,6 +266,9 @@ private:
     std::atomic<uint8_t> m_global_phase_epoch;
     mutable std::atomic<uint32_t> m_active_operations;
     std::atomic<uint64_t> m_flip_serial{0};
+#ifdef _DEBUG
+    mutable std::atomic<uint32_t> m_active_readers;
+#endif // _DEBUG
     mutable std::atomic<bool> m_phase_transition;
 };
 

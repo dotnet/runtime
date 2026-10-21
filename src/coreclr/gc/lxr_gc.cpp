@@ -2557,6 +2557,8 @@ uint64_t LxrGcHeap::GetPrototypeMetric(uint32_t metric) const
                 case 246: return m_engine.GetPauseSurvivorBytes();
                 case 247: return m_pause_reserve_pages.load(std::memory_order_acquire);
                 case 248: return m_pause_free_pages.load(std::memory_order_acquire);
+                case 249: return ImmixBlockManager::GetFlipOverlaps();
+                case 250: return ImmixBlockManager::GetFlipBlockedOperations();
                 default: break;
             }
             if (metric >= 256 && metric < 256 + LxrPauseTimers::PublishedCount)

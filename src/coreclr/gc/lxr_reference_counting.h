@@ -477,9 +477,9 @@ private:
     void DeleteRememberedChunks();
     LxrRcResult FixForwardingReaders();
     LxrRcResult RetireForwardedSources();
-    LxrRcResult ScanIncrements(Object* object, bool trace, ReferenceBatch* children);
-    LxrRcResult ProcessDecrements(Work* work, LxrWorkPacket* packet);
-    LxrRcResult ScanDecrements(Object* object, ReferenceBatch* children);
+    LxrRcResult ScanIncrements(Object* object, bool trace, ReferenceBatch* children, size_t worker);
+    LxrRcResult ProcessDecrements(Work* work, LxrWorkPacket* packet, size_t worker);
+    LxrRcResult ScanDecrements(Object* object, ReferenceBatch* children, size_t worker);
     LxrRcResult Sweep(const LxrBlockReleaseGuard* guard);
     LxrRcResult ReleaseEpoch();
     LxrRcResult Reclaim(uintptr_t start);
@@ -504,7 +504,7 @@ private:
     LxrRcResult SweepCycles();
     void EnterTraceLock(size_t index);
     void ExitTraceLock(size_t index);
-    LxrRcResult GetObjectSize(Object* object, size_t* size);
+    LxrRcResult GetObjectSize(Object* object, size_t* size, size_t worker = SIZE_MAX);
     bool IsImmix(uintptr_t start) const;
     bool IsLarge(uintptr_t start) const;
     static uintptr_t Start(Object* object);

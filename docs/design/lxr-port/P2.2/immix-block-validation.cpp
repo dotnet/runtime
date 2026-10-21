@@ -1354,6 +1354,51 @@ namespace
         Expect("post-wrap epoch is one", epoch == 1);
     }
 
+    void TestFlipOverlapDetection()
+    {
+        Fixture fixture;
+        Expect("flip overlap fixture initialized", fixture.initialized);
+        if (!fixture.initialized)
+        {
+            return;
+        }
+
+        // Positive control for the epoch-flip diagnostics. Block operations that meet an epoch flip are
+        // counted, and the flip waits for them. In the collector both counts stay zero.
+        uint64_t before = ImmixBlockManager::GetFlipOverlaps() + ImmixBlockManager::GetFlipBlockedOperations();
+        std::atomic<bool> stop{false};
+        std::atomic<bool> running{false};
+        std::thread worker([&]()
+        {
+            constexpr uintptr_t Owner = 0x5000;
+            running.store(true, std::memory_order_release);
+            while (!stop.load(std::memory_order_relaxed))
+            {
+                ImmixBlockOperationStatus status;
+                if ((fixture.blocks.TryAcquire(DataStart, Owner, ImmixBlockAcquireKind::MutatorFresh, &status) ==
+                     SideMetadataResult::Success) &&
+                    (status == ImmixBlockOperationStatus::Updated))
+                {
+                    fixture.blocks.TryRelease(DataStart, Owner, &status);
+                }
+            }
+        });
+        while (!running.load(std::memory_order_acquire))
+        {
+            std::this_thread::yield();
+        }
+        for (int index = 0; index < 20000; index++)
+        {
+            ImmixBlockOperationStatus status;
+            fixture.blocks.StartGcPause(&status);
+            fixture.blocks.ReleaseGcPause(&status);
+        }
+        stop.store(true, std::memory_order_relaxed);
+        worker.join();
+        Expect("block operations that meet an epoch flip are counted",
+            ImmixBlockManager::GetFlipOverlaps() + ImmixBlockManager::GetFlipBlockedOperations() > before);
+    }
+
     void TestFailuresAndManagerLifetime()
     {
         LxrSideMetadataLayout layout;
@@ -1472,6 +1517,7 @@ int main()
     TestTransitionMatrix();
     TestLogAndContention();
     TestEpochWrap();
+    TestFlipOverlapDetection();
     TestFailuresAndManagerLifetime();
 #else
     LxrSideMetadataLayout layout;

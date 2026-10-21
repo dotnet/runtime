@@ -25,6 +25,16 @@ namespace
     int Checks = 0;
     int Failures = 0;
 
+    // Evidence for the epoch gate: both counts must stay zero in every selector.
+    struct FlipReport final
+    {
+        ~FlipReport()
+        {
+            std::printf("flip_overlaps=%llu flip_blocked=%llu\n",
+                static_cast<unsigned long long>(ImmixBlockManager::GetFlipOverlaps()),
+                static_cast<unsigned long long>(ImmixBlockManager::GetFlipBlockedOperations()));
+        }
+    } FlipReportAtExit;
     bool Check(bool condition, const char* message)
     {
         Checks++;

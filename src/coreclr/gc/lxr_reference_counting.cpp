@@ -555,21 +555,22 @@ struct LxrReferenceCounting::DeathContext
 {
     LxrReferenceCounting* engine;
     ReferenceBatch* children;
+    size_t worker;
 };
 
-// One cache line per worker, written only by that worker. The last entry is shared by callers that
-// are not workers and is updated with atomic additions.
+// One cache line group per worker, written only by that worker with plain relaxed stores, and summed when
+// read. The last entry is shared by callers that are not workers and is updated with atomic additions.
+// The hot pause counters (IncrementEntries, DecrementEntries, Promotions, ObjectScans, ObjectSizeQueries,
+// Deaths, RootIncrements, RootDecrements) use the slot of their Metric index.
 struct alignas(64) LxrReferenceCounting::WorkerCounters
 {
-    std::atomic<uint64_t> values[8]{};
+    std::atomic<uint64_t> values[24]{};
 };
 
 namespace
 {
-    enum WorkerCounter : size_t
-    {
-        PromotedBytes,
-    };
+    constexpr size_t PromotedBytes = Epochs + 1;
+    static_assert(PromotedBytes < 24);
 }
 
 LxrRcMutator::LxrRcMutator()
@@ -654,11 +655,6 @@ LxrRcResult LxrReferenceCounting::Initialize(
         return LxrRcResult::InvalidArgument;
     }
     size_t slots = GetReservationBytes() / sizeof(uintptr_t);
-    m_worker_counters = new (std::nothrow) WorkerCounters[configuration.workers + 1];
-    if (m_worker_counters == nullptr)
-    {
-        return Fail(LxrRcResult::OutOfMemory);
-    }
     m_immix_capacity.store(m_initial_immix, std::memory_order_relaxed);
     m_object_model = objectModel == nullptr ? LxrRcObjectModel{} : *objectModel;
     m_runtime = runtime;
@@ -756,6 +752,11 @@ LxrRcResult LxrReferenceCounting::InitializeBuffers(size_t slots)
         !TryMultiply(m_configuration.maximumRoots, sizeof(uintptr_t), &bytes))
     {
         return LxrRcResult::CapacityExceeded;
+    }
+    m_worker_counters = new (std::nothrow) WorkerCounters[m_configuration.workers + 1];
+    if (m_worker_counters == nullptr)
+    {
+        return LxrRcResult::OutOfMemory;
     }
     m_mutators = new (std::nothrow) LxrRcMutator[m_configuration.maximumMutators];
     m_mutator_chunks = new (std::nothrow) LogChunk[2 * m_configuration.maximumMutators];
@@ -968,11 +969,11 @@ LxrRcResult LxrReferenceCounting::DrainObservedLogs(
                     Object** slot = reinterpret_cast<Object**>(stream.references[index]);
                     current = *slot;
                     unlog(slot, context);
-                    m_metrics[IncrementEntries].fetch_add(1, std::memory_order_relaxed);
+                    CountWorker(SIZE_MAX, IncrementEntries, 1);
                 }
                 else
                 {
-                    m_metrics[DecrementEntries].fetch_add(1, std::memory_order_relaxed);
+                    CountWorker(SIZE_MAX, DecrementEntries, 1);
                 }
                 observe(increment, stream.references[index], current, context);
             }
@@ -2345,13 +2346,13 @@ LxrRcResult LxrReferenceCounting::AddRoot(Object* object, bool interior, bool tr
     return LxrRcResult::Success;
 }
 
-LxrRcResult LxrReferenceCounting::GetObjectSize(Object* object, size_t* size)
+LxrRcResult LxrReferenceCounting::GetObjectSize(Object* object, size_t* size, size_t worker)
 {
     if (GetPhase() == LxrRcPhase::Sweeping)
     {
         return Fail(LxrRcResult::InvariantViolation);
     }
-    m_metrics[ObjectSizeQueries].fetch_add(1, std::memory_order_relaxed);
+    CountWorker(worker, ObjectSizeQueries, 1);
     size_t value = object->GetSize();
     if (value > SIZE_MAX - (sizeof(uintptr_t) - 1))
     {
@@ -3213,7 +3214,7 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
         return result;
     }
     size_t size;
-    result = GetObjectSize(object, &size);
+    result = GetObjectSize(object, &size, worker);
     if (result != LxrRcResult::Success)
     {
         return result;
@@ -3271,21 +3272,21 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
     {
         return result;
     }
-    m_metrics[Promotions].fetch_add(1, std::memory_order_relaxed);
+    CountWorker(worker, Promotions, 1);
     if (!copied && m_configuration.evacuateNursery &&
         ((object->GetHeader()->GetBits() & BIT_SBLK_GC_RESERVE) != 0 ||
          (m_object_model.isPinned != nullptr && m_object_model.isPinned(object, m_object_model.context))))
     {
         m_nursery_metrics[2].fetch_add(size, std::memory_order_relaxed);
     }
-    return ScanIncrements(object, trace || IsMarked(object), children);
+    return ScanIncrements(object, trace || IsMarked(object), children, worker);
 }
 
 LxrRcResult LxrReferenceCounting::ScanIncrements(
-    Object* object, bool trace, ReferenceBatch* children)
+    Object* object, bool trace, ReferenceBatch* children, size_t worker)
 {
     LxrRcResult result = LxrRcResult::Success;
-    m_metrics[ObjectScans].fetch_add(1, std::memory_order_relaxed);
+    CountWorker(worker, ObjectScans, 1);
     GCReferenceRanges::Enumerate(object, [&](Object** first, size_t length)
     {
         for (size_t index = 0; index < length; index++)
@@ -3317,10 +3318,10 @@ LxrRcResult LxrReferenceCounting::ScanIncrements(
     return result;
 }
 
-LxrRcResult LxrReferenceCounting::ScanDecrements(Object* object, ReferenceBatch* children)
+LxrRcResult LxrReferenceCounting::ScanDecrements(Object* object, ReferenceBatch* children, size_t worker)
 {
     LxrRcResult result = LxrRcResult::Success;
-    m_metrics[ObjectScans].fetch_add(1, std::memory_order_relaxed);
+    CountWorker(worker, ObjectScans, 1);
     GCReferenceRanges::Enumerate(object, [&](Object** first, size_t length)
     {
         for (size_t index = 0; index < length; index++)
@@ -3373,14 +3374,14 @@ SideMetadataResult LxrReferenceCounting::Death(uintptr_t start, void* context)
     {
         return SideMetadataResult::InconsistentState;
     }
-    if (engine->ScanDecrements(object, death->children) != LxrRcResult::Success)
+    if (engine->ScanDecrements(object, death->children, death->worker) != LxrRcResult::Success)
     {
         return SideMetadataResult::InconsistentState;
     }
     if (engine->IsImmix(start))
     {
         size_t size;
-        if (engine->GetObjectSize(object, &size) != LxrRcResult::Success)
+        if (engine->GetObjectSize(object, &size, death->worker) != LxrRcResult::Success)
         {
             return SideMetadataResult::InconsistentState;
         }
@@ -3411,7 +3412,7 @@ SideMetadataResult LxrReferenceCounting::Death(uintptr_t start, void* context)
     return SideMetadataResult::Success;
 }
 
-LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* packet)
+LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* packet, size_t worker)
 {
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     if (work->ownedReferences == nullptr && m_log_reader_hold.load(std::memory_order_acquire))
@@ -3431,7 +3432,7 @@ LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* p
 #endif // LXR_LOG_DROP_CONTROL
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
     ReferenceBatch children{this, WorkKind::Decrements, packet, {}};
-    DeathContext death{this, &children};
+    DeathContext death{this, &children, worker};
     for (size_t index = 0; index < packet->GetReferenceCount(); index++)
     {
         uintptr_t reference = work->GetReference(index);
@@ -3465,10 +3466,10 @@ LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* p
         {
             return result;
         }
-        m_metrics[DecrementEntries].fetch_add(1, std::memory_order_relaxed);
+        CountWorker(worker, DecrementEntries, 1);
         if (work->kind == WorkKind::PreviousRoots)
         {
-            m_metrics[RootDecrements].fetch_add(1, std::memory_order_relaxed);
+            CountWorker(worker, RootDecrements, 1);
         }
         if (count == 0 || count == m_counts.GetMaximumCount())
         {
@@ -3484,7 +3485,7 @@ LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* p
         }
         if (status == SideMetadataUpdateStatus::Updated && previous == 1)
         {
-            m_metrics[Deaths].fetch_add(1, std::memory_order_relaxed);
+            CountWorker(worker, Deaths, 1);
         }
     }
     return children.Flush();
@@ -3995,7 +3996,7 @@ void LxrReferenceCounting::Execute(LxrWorkPacket* packet, size_t worker, void* c
         }
         case WorkKind::Decrements:
         case WorkKind::PreviousRoots:
-            engine->ProcessDecrements(work, packet);
+            engine->ProcessDecrements(work, packet, worker);
             break;
         case WorkKind::NurserySweep:
             engine->ReleaseEpoch();
@@ -4034,7 +4035,7 @@ LxrRcResult LxrReferenceCounting::ProcessIncrementWork(Work* work, size_t worker
             object = reinterpret_cast<Object*>(reference);
             if (work->kind == WorkKind::Roots)
             {
-                m_metrics[RootIncrements].fetch_add(1, std::memory_order_relaxed);
+                CountWorker(worker, RootIncrements, 1);
             }
         }
         else
@@ -4049,7 +4050,7 @@ LxrRcResult LxrReferenceCounting::ProcessIncrementWork(Work* work, size_t worker
             {
                 return GetFailure();
             }
-            m_metrics[IncrementEntries].fetch_add(1, std::memory_order_relaxed);
+            CountWorker(worker, IncrementEntries, 1);
         }
         LxrRcResult result = ProcessIncrement(&object, trace, &children, worker, targets);
         if (result != LxrRcResult::Success)
@@ -4197,12 +4198,12 @@ LxrRcMetrics LxrReferenceCounting::GetMetrics() const
 {
     return {
         m_metrics[Allocations].load(), m_metrics[AllocatedBytes].load(),
-        m_metrics[LoggedSlots].load(), m_metrics[IncrementEntries].load(),
-        m_metrics[DecrementEntries].load(), m_metrics[BufferFlushes].load(),
-        m_metrics[ThreadFlushes].load(), m_metrics[Promotions].load(),
-        m_metrics[Deaths].load(), m_metrics[RootIncrements].load(),
-        m_metrics[RootDecrements].load(), m_metrics[ObjectScans].load(),
-        m_metrics[ObjectSizeQueries].load(), m_metrics[OldTargetChecks].load(),
+        m_metrics[LoggedSlots].load(), SumWorker(IncrementEntries),
+        SumWorker(DecrementEntries), m_metrics[BufferFlushes].load(),
+        m_metrics[ThreadFlushes].load(), SumWorker(Promotions),
+        SumWorker(Deaths), SumWorker(RootIncrements),
+        SumWorker(RootDecrements), SumWorker(ObjectScans),
+        SumWorker(ObjectSizeQueries), m_metrics[OldTargetChecks].load(),
         m_metrics[ChildRegistrations].load(), m_metrics[BlocksReleased].load(),
         m_metrics[LargeObjectBytesReleased].load(), m_metrics[Epochs].load(),
     };

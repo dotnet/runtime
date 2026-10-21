@@ -23,6 +23,19 @@ namespace
         *end = start + size;
         return true;
     }
+
+    std::atomic<uint64_t> s_flip_overlaps{0};
+    std::atomic<uint64_t> s_flip_blocked_operations{0};
+}
+
+uint64_t ImmixBlockManager::GetFlipOverlaps()
+{
+    return s_flip_overlaps.load(std::memory_order_relaxed);
+}
+
+uint64_t ImmixBlockManager::GetFlipBlockedOperations()
+{
+    return s_flip_blocked_operations.load(std::memory_order_relaxed);
 }
 
 bool ImmixBlockGeometry::IsBlockAligned(uintptr_t address)
@@ -253,6 +266,9 @@ ImmixBlockManager::ImmixBlockManager()
     : m_metadata(nullptr)
     , m_global_phase_epoch(InitialPhaseEpoch)
     , m_active_operations(0)
+#ifdef _DEBUG
+    , m_active_readers(0)
+#endif // _DEBUG
     , m_phase_transition(false)
 {
     static_assert(std::atomic<uint8_t>::is_always_lock_free);
@@ -444,7 +460,9 @@ SideMetadataResult ImmixBlockManager::IsNursery(uintptr_t block, bool* result) c
     }
 
     *result = false;
-    BlockOperationScope operation(this);
+#ifdef _DEBUG
+    ReaderScope reader(this);
+#endif // _DEBUG
     ImmixBlockState state = ImmixBlockState::Unallocated;
     uint8_t unavailableLines = 0;
     SideMetadataResult metadataResult = GetState(block, &state, &unavailableLines);
@@ -470,7 +488,9 @@ SideMetadataResult ImmixBlockManager::IsReusing(uintptr_t block, bool* result) c
     }
 
     *result = false;
-    BlockOperationScope operation(this);
+#ifdef _DEBUG
+    ReaderScope reader(this);
+#endif // _DEBUG
     ImmixBlockState state = ImmixBlockState::Unallocated;
     uint8_t unavailableLines = 0;
     SideMetadataResult metadataResult = GetState(block, &state, &unavailableLines);
@@ -496,7 +516,9 @@ SideMetadataResult ImmixBlockManager::IsGcReusing(uintptr_t block, bool* result)
     }
 
     *result = false;
-    BlockOperationScope operation(this);
+#ifdef _DEBUG
+    ReaderScope reader(this);
+#endif // _DEBUG
     ImmixBlockState state = ImmixBlockState::Unallocated;
     uint8_t unavailableLines = 0;
     SideMetadataResult metadataResult = GetState(block, &state, &unavailableLines);
@@ -1415,6 +1437,8 @@ void ImmixBlockManager::BeginBlockOperation() const
     {
         while (m_phase_transition.load(std::memory_order_seq_cst))
         {
+            s_flip_blocked_operations.fetch_add(1, std::memory_order_relaxed);
+            _ASSERTE(!"A block operation started during an epoch flip.");
             YieldProcessor();
         }
 
@@ -1424,6 +1448,8 @@ void ImmixBlockManager::BeginBlockOperation() const
             return;
         }
 
+        s_flip_blocked_operations.fetch_add(1, std::memory_order_relaxed);
+        _ASSERTE(!"A block operation started during an epoch flip.");
         m_active_operations.fetch_sub(1, std::memory_order_seq_cst);
     }
 }
@@ -1435,6 +1461,21 @@ void ImmixBlockManager::EndBlockOperation() const
 
 bool ImmixBlockManager::BeginPhaseTransition()
 {
+    // Operations in flight before the flip flag is set. The gate would wait for them; the assertion
+    // checks that a pause or worker protocol never needs it to.
+    if (m_active_operations.load(std::memory_order_seq_cst) != 0)
+    {
+        s_flip_overlaps.fetch_add(1, std::memory_order_relaxed);
+        _ASSERTE(!"A block operation was in flight at an epoch flip.");
+    }
+#ifdef _DEBUG
+    if (m_active_readers.load(std::memory_order_seq_cst) != 0)
+    {
+        s_flip_overlaps.fetch_add(1, std::memory_order_relaxed);
+        _ASSERTE(!"A block query was in flight at an epoch flip.");
+    }
+#endif // _DEBUG
+
     bool expected = false;
     if (!m_phase_transition.compare_exchange_strong(
             expected,
