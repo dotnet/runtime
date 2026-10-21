@@ -310,12 +310,12 @@ namespace System.Threading
                 goto Locked;
             }
 
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-
             // Lock was not acquired and a waiter was registered. All following paths need to unregister the waiter, including
             // exceptional paths.
             try
             {
+                RuntimeFeature.ThrowIfBlockingIsNotSupported();
+
                 Interlocked.Increment(ref s_contentionCount);
 
                 long waitStartTimeTicks = 0;

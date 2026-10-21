@@ -253,7 +253,7 @@ namespace System.Threading
                     return false;
                 }
 
-                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+                RuntimeFeature.ThrowIfBlockingIsNotSupported();
 
                 // We spin briefly before falling back to allocating and/or waiting on a true event.
                 long startTime = 0;

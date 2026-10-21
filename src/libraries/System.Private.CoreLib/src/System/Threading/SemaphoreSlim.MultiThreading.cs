@@ -140,7 +140,7 @@ namespace System.Threading
                 // then block on (once we've released the lock).
                 if (m_asyncHead is not null)
                 {
-                    RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+                    RuntimeFeature.ThrowIfBlockingIsNotSupported();
 
                     Debug.Assert(m_asyncTail is not null, "tail should not be null if head isn't");
                     asyncWaitTask = WaitAsyncCore(millisecondsTimeout, cancellationToken);
@@ -226,7 +226,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         private bool WaitUntilCountOrTimeout(long millisecondsTimeout, long startTime, CancellationToken cancellationToken)
         {
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+            RuntimeFeature.ThrowIfBlockingIsNotSupported();
 
             int monitorWaitMilliseconds = Timeout.Infinite;
 

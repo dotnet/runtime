@@ -90,8 +90,11 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+#if !FEATURE_MULTITHREADING
+            throw new PlatformNotSupportedException();
+#else
             return PortableThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
+#endif
         }
 
         [CLSCompliant(false)]

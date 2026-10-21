@@ -139,7 +139,7 @@ namespace System.Threading
                 throw new SynchronizationLockException();
 
             if (millisecondsTimeout != 0)
-                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+                RuntimeFeature.ThrowIfBlockingIsNotSupported();
 
             using ThreadBlockingInfo.Scope threadBlockingScope = new(this, millisecondsTimeout);
 

@@ -125,8 +125,13 @@ namespace System.Threading
             if (!ObjectHeader.HasOwner(obj))
                 throw new SynchronizationLockException();
 
+#if !FEATURE_MULTITHREADING
             if (millisecondsTimeout != 0)
-                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+                throw new PlatformNotSupportedException();
+#elif FEATURE_WASM_MANAGED_THREADS
+            if (millisecondsTimeout != 0)
+                RuntimeFeature.ThrowIfBlockingIsNotSupported();
+#endif
 
             bool sendWaitEvents =
                 millisecondsTimeout != 0 &&

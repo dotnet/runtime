@@ -111,7 +111,7 @@ namespace System.Threading
 
             m_maxCount = maxCount;
             m_currentCount = initialCount;
-#if FEATURE_MULTITHREADING || MONO
+#if FEATURE_MULTITHREADING
             m_lockObjAndDisposed = new StrongBox<bool>();
 #endif
         }
