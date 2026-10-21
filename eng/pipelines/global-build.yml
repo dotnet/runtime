@@ -93,11 +93,18 @@ extends:
           - osx_arm64
           jobParameters:
             nameSuffix: CoreLib_Libraries_AnalyzersLinker
-            buildArgs: -subset clr.corelib+libs -restore -build -pack -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
+            buildArgs: -subset clr.corelib+libs+tools.illink -restore -build -pack -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
             timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
+                parameters:
+                  enableILLinkCache: true
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #

@@ -296,7 +296,7 @@ namespace System.Text.Json.Nodes
             // however the order of read/write operations guarantees that that's only
             // possible if the value of _dictionary is non-null.
             jsonElement = _jsonElement;
-            Interlocked.MemoryBarrier();
+            Volatile.ReadBarrier();
             dictionary = _dictionary;
         }
     }
