@@ -649,15 +649,15 @@ public unsafe partial class EnumMemoryTests
             runtimeImageBase: scenario == "no-base" ? TargetPointer.Null : new(ImageBase));
 
         Assert.Equal(0, reads);
-        PEImageCollector imageCollector = new(target);
         using RecordingCallback callback = new(supportsUpdates: false);
         MemoryRegionEmitter emitter = new(callback.Address, 8);
+        PEImageCollector imageCollector = new(new(target, DumpType.Mini, emitter));
         if (scenario == "no-base")
             Assert.Equal(HResults.S_OK, MemoryEnumerator.Enumerate(target, emitter, DumpType.Mini));
         else if (scenario is "unreadable-dos" or "unreadable-pe")
-            Assert.Throws<VirtualReadException>(() => imageCollector.EnumerateMemoryRegions(ImageBase, (uint)image.Length, isMapped: true, emitter, DumpType.Mini));
+            Assert.Throws<VirtualReadException>(() => imageCollector.EnumerateMemoryRegions(ImageBase, (uint)image.Length, isMapped: true));
         else
-            imageCollector.EnumerateMemoryRegions(ImageBase, (uint)image.Length, isMapped: true, emitter, DumpType.Mini);
+            imageCollector.EnumerateMemoryRegions(ImageBase, (uint)image.Length, isMapped: true);
         Assert.Equal(expectedReads, reads);
         if (scenario == "no-base")
             Assert.DoesNotContain(callback.Ranges, range => range.Address >= ImageBase && range.Address < ImageBase + (uint)image.Length);
@@ -1650,6 +1650,355 @@ public unsafe partial class EnumMemoryTests
     }
 
     [Theory]
+    [InlineData(nameof(DumpType.Mini))]
+    [InlineData(nameof(DumpType.Heap))]
+    [InlineData(nameof(DumpType.Triage))]
+    public void ModuleCollection_UsesTriagePathPolicy(string dumpType)
+    {
+        DumpType mode = Enum.Parse<DumpType>(dumpType);
+        const ulong ImageBase = 0x10000;
+        const int PathOffset = 0x1800;
+        const int FileNameOffset = 0x1900;
+        byte[] image = CreateManagedDebugImage(true, true, "module.pdb");
+        byte[] path = Encoding.Unicode.GetBytes("C:\\private\\module.dll\0");
+        byte[] fileName = Encoding.Unicode.GetBytes("module.dll\0");
+        path.CopyTo(image, PathOffset);
+        fileName.CopyTo(image, FileNameOffset);
+        ContractDescriptorTarget target = CreateManagedImageTarget(image, true, true);
+        Mock<ILoader> loader = Mock.Get(target.Contracts.Loader);
+        loader.Setup(l => l.GetPath(It.IsAny<Contracts.ModuleHandle>())).Returns(() => target.ReadUtf16String(ImageBase + PathOffset));
+        loader.Setup(l => l.GetFileName(It.IsAny<Contracts.ModuleHandle>())).Returns(() => target.ReadUtf16String(ImageBase + FileNameOffset));
+        using RecordingCallback callback = new(supportsUpdates: false);
+        MemoryRegionEmitter emitter = new(callback.Address, 8, mode);
+
+        Assert.Equal(HResults.S_OK, MemoryEnumerator.Enumerate(target, emitter, mode));
+
+        loader.Verify(l => l.GetPath(It.IsAny<Contracts.ModuleHandle>()), mode == DumpType.Triage ? Times.Never() : Times.AtLeastOnce());
+        loader.Verify(l => l.GetFileName(It.IsAny<Contracts.ModuleHandle>()), Times.AtLeastOnce());
+        AssertFullyReported(callback, ImageBase + FileNameOffset, (uint)fileName.Length);
+        if (mode == DumpType.Triage)
+            Assert.DoesNotContain(callback.Ranges, range => range.Address < ImageBase + PathOffset + (ulong)path.Length && range.Address + range.Size > ImageBase + PathOffset);
+        else
+            AssertFullyReported(callback, ImageBase + PathOffset, (uint)path.Length);
+    }
+
+    [Theory]
+    [InlineData(nameof(DumpType.Mini))]
+    [InlineData(nameof(DumpType.Heap))]
+    [InlineData(nameof(DumpType.Triage))]
+    public void MethodCollection_UsesTriagePathPolicy(string dumpType)
+    {
+        DumpType mode = Enum.Parse<DumpType>(dumpType);
+        Mock<IRuntimeTypeSystem> types = new();
+        types.Setup(t => t.GetMethodDescHandle(It.IsAny<TargetPointer>())).Returns(new MethodDescHandle(new(0x1000)));
+        types.Setup(t => t.GetTypeHandle(It.IsAny<TargetPointer>())).Returns(new TestTypeHandle(new(0x2000)));
+        Mock<ILoader> loader = new();
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(new() { IsLittleEndian = true, Is64Bit = true })
+            .AddMockContract(types.Object)
+            .AddMockContract(loader.Object)
+            .AddMockContract(new Mock<ICodeVersions>().Object)
+            .Build();
+        using RecordingCallback callback = new(supportsUpdates: false);
+        MemoryRegionEmitter emitter = new(callback.Address, 8, mode);
+        new MethodCollector(new(target, mode, emitter)).CaptureMethod(new(0x1000), TargetCodePointer.Null);
+
+        loader.Verify(l => l.GetPath(It.IsAny<Contracts.ModuleHandle>()), mode == DumpType.Triage ? Times.Never() : Times.Once());
+    }
+
+    [Theory]
+    [InlineData(nameof(DumpType.Mini), "ILStubClass.Test()")]
+    [InlineData(nameof(DumpType.Triage), "ILStubClass.Test()")]
+    [InlineData(nameof(DumpType.Heap), "ILStubClass.Test(Int32)")]
+    public void MethodCollection_CachesSmallDumpNamesWithoutArguments(string dumpType, string expected)
+    {
+        DumpType mode = Enum.Parse<DumpType>(dumpType);
+        Target memory = CreateMiniMetadataTarget(new() { IsLittleEndian = true, Is64Bit = true }, new byte[64]);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(new() { IsLittleEndian = true, Is64Bit = true })
+            .AddMockContract<IRuntimeTypeSystem>(new NamedMethodTypeSystem())
+            .AddMockContract(new Mock<ILoader>().Object)
+            .AddMockContract(new Mock<ICodeVersions>().Object)
+            .AddGlobals(
+            [
+                (Constants.Globals.MiniMetaDataBuffAddress, 0x1000),
+                (Constants.Globals.MiniMetaDataBuffMaxSize, 0x2000),
+            ])
+            .UseReader((ulong address, Span<byte> buffer) =>
+            {
+                memory.ReadBuffer(address, buffer);
+                return HResults.S_OK;
+            })
+            .Build();
+        using RecordingCallback callback = new(supportsUpdates: true);
+        MemoryRegionEmitter emitter = new(callback.Address, 8, mode);
+        CollectorTarget collectorTarget = new(target, mode, emitter);
+        Assert.False(collectorTarget.MiniMetadata.Contains(new(0x1000)));
+        new MethodCollector(collectorTarget).CaptureMethod(new(0x1000), TargetCodePointer.Null);
+
+        Assert.True(collectorTarget.MiniMetadata.Contains(new(0x1000)));
+        collectorTarget.MiniMetadata.Write();
+        byte[] stream = Assert.Single(callback.Updates).Value;
+        Target written = CreateMiniMetadataTarget(new() { IsLittleEndian = true, Is64Bit = true }, stream);
+        Assert.Equal(expected, written.Contracts.DacStreams.StringFromEEAddress(0x1000));
+    }
+
+    private sealed class NamedMethodTypeSystem : IRuntimeTypeSystem
+    {
+        public MethodDescHandle GetMethodDescHandle(TargetPointer address) => new(address);
+
+        public bool IsNoMetadataMethod(MethodDescHandle method, out string name)
+        {
+            name = "Test(Int32)";
+            return true;
+        }
+
+        public bool IsILStub(MethodDescHandle method) => true;
+        public bool IsDynamicMethod(MethodDescHandle method) => false;
+        public ushort GetSlotNumber(MethodDescHandle method) => 0;
+        public bool HasNativeCodeSlot(MethodDescHandle method) => false;
+        public ReadOnlySpan<ITypeHandle> GetGenericMethodInstantiation(MethodDescHandle method) => [];
+
+        public bool TryGetMethodSignature(MethodDescHandle method, out ReadOnlySpan<byte> signature)
+        {
+            signature = default;
+            return false;
+        }
+    }
+
+    [Theory]
+    [InlineData(nameof(DumpType.Mini), 0x3ffffcu, 0x3ffffcu)]
+    [InlineData(nameof(DumpType.Mini), 0x3ffffdu, 0x3ffffdu)]
+    [InlineData(nameof(DumpType.Mini), 0x400000u, 0x3ffffdu)]
+    [InlineData(nameof(DumpType.Triage), 0x3ffffdu, 0x3ffffdu)]
+    [InlineData(nameof(DumpType.Triage), 0x400000u, 0x3ffffdu)]
+    [InlineData(nameof(DumpType.Heap), 0x400000u, 0x400000u)]
+    public void MemoryRegions_ApplySmallDumpSizeLimit(string dumpType, uint size, uint expectedSize)
+    {
+        using RecordingCallback callback = new(supportsUpdates: false);
+        MemoryRegionEmitter emitter = new(callback.Address, 8, Enum.Parse<DumpType>(dumpType));
+
+        emitter.Add(0x1000, size);
+
+        Assert.Equal((0x1000ul, expectedSize), Assert.Single(callback.Ranges));
+    }
+
+    public static IEnumerable<object[]> ExistingMiniMetadataCases()
+    {
+        foreach (object[] architecture in new MockTarget.StdArch())
+        foreach (bool collectNames in new[] { false, true })
+            yield return [architecture[0], collectNames];
+    }
+
+    [Theory]
+    [MemberData(nameof(ExistingMiniMetadataCases))]
+    public void MiniMetadata_PreservesExistingStream(MockTarget.Architecture arch, bool collectNames)
+    {
+        TargetTestHelpers helpers = new(arch);
+        byte[] existing = new byte[40];
+        helpers.Write(existing, 0x6d727473u);
+        helpers.Write(existing.AsSpan(4), (uint)existing.Length);
+        helpers.Write(existing.AsSpan(8), 1u);
+        helpers.Write(existing.AsSpan(12), 0x614e4545u);
+        helpers.Write(existing.AsSpan(16), 1u);
+        helpers.WritePointer(existing.AsSpan(20), 0x1234);
+        Encoding.UTF8.GetBytes("Original()", existing.AsSpan(20 + helpers.PointerSize));
+        TestPlaceholderTarget target = CreateMiniMetadataTarget(arch, existing);
+        using RecordingCallback callback = new(supportsUpdates: true);
+        MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
+
+        MiniMetadataWriter writer = new(target, emitter);
+        if (collectNames)
+            writer.Add(new(0x5678), "Replacement()");
+        writer.Write();
+
+        Assert.Equal(existing, Assert.Single(callback.Updates).Value);
+        Assert.Contains((0x3000ul, (uint)existing.Length), callback.Ranges);
+    }
+
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(19u)]
+    [InlineData(65u)]
+    [InlineData(uint.MaxValue)]
+    public void MiniMetadata_RejectsInvalidExistingStreamSize(uint size)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        TargetTestHelpers helpers = new(arch);
+        byte[] existing = new byte[64];
+        helpers.Write(existing, 0x6d727473u);
+        helpers.Write(existing.AsSpan(4), size);
+        TestPlaceholderTarget target = CreateMiniMetadataTarget(arch, existing);
+        using RecordingCallback callback = new(supportsUpdates: true);
+        MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
+        MiniMetadataWriter writer = new(target, emitter);
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(writer.Write);
+
+        Assert.Contains(size.ToString(), error.Message);
+        Assert.Empty(callback.Updates);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void MiniMetadata_ContinuesAfterNameDoesNotFit(MockTarget.Architecture arch)
+    {
+        TestPlaceholderTarget target = CreateMiniMetadataTarget(arch, new byte[64]);
+        using RecordingCallback callback = new(supportsUpdates: true);
+        MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
+        MiniMetadataWriter writer = new(target, emitter);
+        writer.Add(new(0x1234), new string('x', 80));
+        writer.Add(new(0x5678), "Fits()");
+
+        writer.Write();
+
+        byte[] stream = Assert.Single(callback.Updates).Value;
+        Assert.Equal(1u, ReadUInt32(stream.AsSpan(16), target.IsLittleEndian));
+        Assert.Equal(new TargetPointer(0x5678), target.ReadPointerFromSpan(stream.AsSpan(20, target.PointerSize)));
+        Assert.Equal("Fits()", Encoding.UTF8.GetString(stream.AsSpan(20 + target.PointerSize, 6)));
+        Assert.Equal(arch.Is64Bit ? 40 : 32, stream.Length);
+        Assert.Equal((uint)stream.Length, ReadUInt32(stream.AsSpan(4), target.IsLittleEndian));
+        Assert.Equal("Fits()", CreateMiniMetadataTarget(arch, stream).Contracts.DacStreams.StringFromEEAddress(0x5678));
+    }
+
+    [Theory]
+    [InlineData(nameof(DumpType.Mini))]
+    [InlineData(nameof(DumpType.Triage))]
+    [InlineData(nameof(DumpType.Heap))]
+    public void MiniMetadata_IsOnlyWrittenForSmallDumps(string dumpType)
+    {
+        DumpType mode = Enum.Parse<DumpType>(dumpType);
+        Target memory = CreateMiniMetadataTarget(new() { IsLittleEndian = true, Is64Bit = true }, new byte[64]);
+        ContractDescriptorTarget target = ContractDescriptorTarget.Create(
+            ContractDescriptorParser.ParseCompact("""{"version":2,"globals":{"MiniMetaDataBuffAddress":[0],"MiniMetaDataBuffMaxSize":[1]}}"""u8), [0x1000, 0x2000],
+            (ulong address, Span<byte> buffer) => { memory.ReadBuffer(address, buffer); return HResults.S_OK; },
+            (_, _) => HResults.E_NOTIMPL, (_, _, _) => HResults.E_NOTIMPL, (_, _) => HResults.E_NOTIMPL,
+            (ulong _, out ulong address) => { address = 0; return HResults.E_NOTIMPL; },
+            isLittleEndian: true, pointerSize: 8);
+        using RecordingCallback callback = new(supportsUpdates: true);
+        MemoryRegionEmitter emitter = new(callback.Address, 8, mode);
+
+        Assert.Equal(HResults.S_OK, MemoryEnumerator.Enumerate(target, emitter, mode));
+
+        Assert.Equal(mode != DumpType.Heap, callback.Regions.Contains(0x3000));
+        Assert.Equal(mode != DumpType.Heap, callback.Updates.ContainsKey(0x3000));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void CollectorTarget_PreservesTargetAndCollectionState(MockTarget.Architecture arch)
+    {
+        TestPlaceholderTarget target = CreateMiniMetadataTarget(arch, new byte[64]);
+        using RecordingCallback callback = new(supportsUpdates: true);
+        MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize, DumpType.Triage);
+        CollectorTarget collectorTarget = new(target, DumpType.Triage, emitter);
+
+        Target converted = collectorTarget;
+
+        Assert.Same(target, converted);
+        Assert.Same(target, collectorTarget.Target);
+        Assert.Same(emitter, collectorTarget.Emitter);
+        Assert.Equal(DumpType.Triage, collectorTarget.DumpType);
+        collectorTarget.MiniMetadata.Add(new(0x1234), "Test()");
+        collectorTarget.MiniMetadata.Write();
+        byte[] stream = Assert.Single(callback.Updates).Value;
+        Assert.Equal("Test()", CreateMiniMetadataTarget(arch, stream).Contracts.DacStreams.StringFromEEAddress(0x1234));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void MiniMetadata_PreservesInsertionPriority(MockTarget.Architecture arch)
+    {
+        int entrySize = (arch.Is64Bit ? 8 : 4) + Encoding.UTF8.GetByteCount("First()") + 1;
+        TestPlaceholderTarget target = CreateMiniMetadataTarget(arch, new byte[20 + 2 * entrySize - 1]);
+        using RecordingCallback callback = new(supportsUpdates: true);
+        MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
+        MiniMetadataWriter writer = new(target, emitter);
+        writer.Add(new(0x5678), "First()");
+        writer.Add(new(0x1234), "Later()");
+
+        writer.Write();
+
+        byte[] stream = Assert.Single(callback.Updates).Value;
+        Assert.Equal(1u, ReadUInt32(stream.AsSpan(16), target.IsLittleEndian));
+        Assert.Equal(new TargetPointer(0x5678), target.ReadPointerFromSpan(stream.AsSpan(20, target.PointerSize)));
+        IDacStreams reader = CreateMiniMetadataTarget(arch, stream).Contracts.DacStreams;
+        Assert.Equal("First()", reader.StringFromEEAddress(0x5678));
+        Assert.Null(reader.StringFromEEAddress(0x1234));
+    }
+
+    private static TestPlaceholderTarget CreateMiniMetadataTarget(MockTarget.Architecture arch, byte[] buffer)
+    {
+        TargetTestHelpers helpers = new(arch);
+        TestPlaceholderTarget.Builder builder = new(arch);
+        byte[] pointer = new byte[helpers.PointerSize];
+        helpers.WritePointer(pointer, 0x3000);
+        byte[] capacity = new byte[sizeof(uint)];
+        helpers.Write(capacity, (uint)buffer.Length);
+        builder.MemoryBuilder
+            .AddHeapFragment(new() { Address = 0x1000, Data = pointer, Name = "MiniMetadataAddress" })
+            .AddHeapFragment(new() { Address = 0x2000, Data = capacity, Name = "MiniMetadataCapacity" })
+            .AddHeapFragment(new() { Address = 0x3000, Data = buffer, Name = "MiniMetadata" });
+        return builder.AddContract<IDacStreams>(version: "c1").AddGlobals(
+        [
+            (Constants.Globals.MiniMetaDataBuffAddress, 0x1000),
+            (Constants.Globals.MiniMetaDataBuffMaxSize, 0x2000),
+        ]).Build();
+    }
+
+    private static uint ReadUInt32(ReadOnlySpan<byte> bytes, bool littleEndian) =>
+        littleEndian ? BinaryPrimitives.ReadUInt32LittleEndian(bytes) : BinaryPrimitives.ReadUInt32BigEndian(bytes);
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ThreadCollection_PrioritizesExceptionsAcrossAllThreads(MockTarget.Architecture arch)
+    {
+        List<string> collected = [];
+        Mock<IThread> threads = new();
+        threads.Setup(t => t.GetThreadStoreData()).Returns(new ThreadStoreData(2, new(0x2000), default, default));
+        threads.Setup(t => t.GetThreadData(new TargetPointer(0x2000)))
+            .Returns(new ThreadData { ThreadAddress = new(0x2000), NextThread = new(0x2100), LastThrownObjectHandle = new(0x1000) });
+        threads.Setup(t => t.GetThreadData(new TargetPointer(0x2100)))
+            .Returns(new ThreadData { ThreadAddress = new(0x2100), LastThrownObjectHandle = new(0x1100) });
+        Mock<IStackWalk> stackWalk = new();
+        stackWalk.Setup(s => s.CreateStackWalk(It.IsAny<ThreadData>()))
+            .Callback<ThreadData>(t => collected.Add($"stack:{t.ThreadAddress.Value:x}")).Returns([]);
+        Mock<IObject> objects = new();
+        objects.Setup(o => o.GetSize(It.IsAny<TargetPointer>()))
+            .Returns((TargetPointer address) => { collected.Add($"exception:{address.Value:x}"); return 128; });
+        objects.Setup(o => o.GetMethodTableAddress(It.IsAny<TargetPointer>())).Returns(new TargetPointer(0x5000));
+        Mock<IRuntimeTypeSystem> types = new();
+        types.Setup(t => t.GetTypeHandle(It.IsAny<TargetPointer>())).Returns((TargetPointer p) => new TestTypeHandle(p));
+        types.Setup(t => t.GetWellKnownMethodTable(WellKnownMethodTable.Exception)).Returns(new TargetPointer(0x5000));
+        Mock<IException> exceptions = new();
+        exceptions.Setup(e => e.GetExceptionStackFrames(It.IsAny<TargetPointer>())).Returns([]);
+        TargetTestHelpers helpers = new(arch);
+        ContractDescriptorTarget target = ContractDescriptorTarget.Create(
+            ContractDescriptorParser.ParseCompact("""{"version":2,"contracts":{"Thread":"c1","StackWalk":"c1","Object":"c1","RuntimeTypeSystem":"c1","Exception":"c1","FeatureFlags":"c1"}}"""u8), [],
+            (ulong address, Span<byte> buffer) =>
+            {
+                helpers.WritePointer(buffer, address == 0x1000 ? 0x3000ul : 0x3100ul);
+                return HResults.S_OK;
+            },
+            (_, _) => HResults.E_NOTIMPL, (_, _, _) => HResults.E_NOTIMPL, (_, _) => HResults.E_NOTIMPL,
+            (ulong _, out ulong address) => { address = 0; return HResults.E_NOTIMPL; },
+            isLittleEndian: arch.IsLittleEndian, pointerSize: helpers.PointerSize,
+            contractRegistrations: [registry =>
+            {
+                registry.Register<IThread>("c1", _ => threads.Object);
+                registry.Register<IStackWalk>("c1", _ => stackWalk.Object);
+                registry.Register<IObject>("c1", _ => objects.Object);
+                registry.Register<IRuntimeTypeSystem>("c1", _ => types.Object);
+                registry.Register<IException>("c1", _ => exceptions.Object);
+                registry.Register<IFeatureFlags>("c1", _ => new Mock<IFeatureFlags>().Object);
+            }]);
+        using RecordingCallback callback = new(supportsUpdates: false);
+        MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
+
+        Assert.Equal(HResults.S_OK, MemoryEnumerator.Enumerate(target, emitter, DumpType.Triage));
+
+        Assert.Equal(["exception:3000", "exception:3100", "stack:2000", "stack:2100"], collected);
+    }
+
+    [Theory]
     [InlineData("", "")]
     [InlineData("   at Program.Main()", "   at Program.Main()")]
     [InlineData("   at Program.Main() in C:\\private\\Program.cs:line 42", "   at Program.Main()")]
@@ -1750,7 +2099,9 @@ public unsafe partial class EnumMemoryTests
 
         using RecordingCallback callback = new(supportsUpdates);
         MemoryRegionEmitter emitter = new(callback.Address, 8);
-        new ObjectCollector(target, emitter, new MethodCollector(target, emitter), triage ? DumpType.Triage : DumpType.Mini).EnumerateObject(exception);
+        DumpType mode = triage ? DumpType.Triage : DumpType.Mini;
+        CollectorTarget collectorTarget = new(target, mode, emitter);
+        new ObjectCollector(collectorTarget, new MethodCollector(collectorTarget)).EnumerateObject(exception);
 
         Assert.Contains(exception.Value, callback.Regions);
         Assert.Contains(innerException.Value, callback.Regions);
@@ -1810,7 +2161,9 @@ public unsafe partial class EnumMemoryTests
             .Build();
         using RecordingCallback callback = new(supportsUpdates: false);
         MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
-        new ObjectCollector(target, emitter, new MethodCollector(target, emitter), Enum.Parse<DumpType>(dumpType)).EnumerateObject(exception);
+        DumpType mode = Enum.Parse<DumpType>(dumpType);
+        CollectorTarget collectorTarget = new(target, mode, emitter);
+        new ObjectCollector(collectorTarget, new MethodCollector(collectorTarget)).EnumerateObject(exception);
 
         Assert.Contains((expectedIp, pointerSize), callback.Ranges);
         Assert.Contains((expectedIp + 0x100, pointerSize), callback.Ranges);
@@ -1830,7 +2183,7 @@ public unsafe partial class EnumMemoryTests
             .Build();
         using RecordingCallback callback = new(supportsUpdates: false);
         MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
-        MethodCollector methods = new(target, emitter);
+        MethodCollector methods = new(new(target, DumpType.Mini, emitter));
 
         methods.CaptureMethod(TargetPointer.Null, new TargetCodePointer(0x8000));
         methods.CaptureMethod(TargetPointer.Null, new TargetCodePointer(0x8100));
@@ -1856,7 +2209,7 @@ public unsafe partial class EnumMemoryTests
             .Build();
         using RecordingCallback callback = new(supportsUpdates: false);
         MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
-        new MethodCollector(target, emitter).CaptureMethod(TargetPointer.Null, new TargetCodePointer(instructionPointer));
+        new MethodCollector(new(target, DumpType.Mini, emitter)).CaptureMethod(TargetPointer.Null, new TargetCodePointer(instructionPointer));
 
         ulong expectedAddress = is64Bit ? instructionPointer : unchecked((ulong)(long)(int)instructionPointer);
         Assert.Equal([(expectedAddress, is64Bit ? 8u : 4u)], callback.Ranges);
@@ -1875,7 +2228,7 @@ public unsafe partial class EnumMemoryTests
             .Build();
         using RecordingCallback callback = new(supportsUpdates: false);
         MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
-        new MethodCollector(target, emitter).CaptureMethod(TargetPointer.Null, new TargetCodePointer(instructionPointer));
+        new MethodCollector(new(target, DumpType.Mini, emitter)).CaptureMethod(TargetPointer.Null, new TargetCodePointer(instructionPointer));
 
         Assert.Empty(callback.Ranges);
         Assert.Equal(HResults.S_OK, emitter.Result);
@@ -1891,7 +2244,7 @@ public unsafe partial class EnumMemoryTests
         MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
 
         Assert.Throws<OperationCanceledException>(() =>
-            new MethodCollector(target, emitter).CaptureMethod(TargetPointer.Null, new TargetCodePointer(0x8000)));
+            new MethodCollector(new(target, DumpType.Mini, emitter)).CaptureMethod(TargetPointer.Null, new TargetCodePointer(0x8000)));
     }
 
     private sealed record TestTypeHandle(TargetPointer Address) : ITypeHandle;

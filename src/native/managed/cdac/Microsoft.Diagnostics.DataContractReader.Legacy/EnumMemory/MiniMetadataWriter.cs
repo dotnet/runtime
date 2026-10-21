@@ -9,21 +9,21 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy.EnumMemory;
 
-internal static class MiniMetadataWriter
+internal sealed class MiniMetadataWriter(Target target, MemoryRegionEmitter emitter)
 {
     private const uint MiniMetadataSignature = 0x6d727473;
     private const uint EENameStreamSignature = 0x614e4545;
     private const int StreamsHeaderSize = 12;
     private const int EENameStreamHeaderSize = 8;
 
-    public static void Write(
-        Target target,
-        MemoryRegionEmitter emitter,
-        IReadOnlyDictionary<TargetPointer, string> names)
-    {
-        if (names.Count == 0)
-            return;
+    private readonly OrderedDictionary<TargetPointer, string> _names = [];
 
+    public bool Contains(TargetPointer address) => _names.ContainsKey(address);
+
+    public void Add(TargetPointer address, string name) => _names.Add(address, name);
+
+    public void Write()
+    {
         TargetPointer bufferAddress =
             target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffAddress));
         uint capacity =
@@ -34,16 +34,29 @@ internal static class MiniMetadataWriter
             return;
         }
 
+        if (target.Read<uint>(bufferAddress) == MiniMetadataSignature)
+        {
+            uint size = target.Read<uint>(bufferAddress + sizeof(uint));
+            if (size < StreamsHeaderSize + EENameStreamHeaderSize || size > capacity)
+                throw new InvalidOperationException($"Invalid mini-metadata stream size: {size}.");
+
+            byte[] existing = new byte[size];
+            target.ReadBuffer(bufferAddress, existing);
+            emitter.Add(bufferAddress.Value, size);
+            emitter.Update(bufferAddress.Value, existing);
+            return;
+        }
+
         byte[] buffer = new byte[capacity];
         int offset = StreamsHeaderSize + EENameStreamHeaderSize;
         uint count = 0;
 
-        foreach ((TargetPointer address, string name) in names)
+        foreach ((TargetPointer address, string name) in _names)
         {
             int nameSize = Encoding.UTF8.GetByteCount(name);
             int entrySize = checked(target.PointerSize + nameSize + 1);
             if (offset > buffer.Length - entrySize)
-                break;
+                continue;
 
             WritePointer(buffer.AsSpan(offset, target.PointerSize), address.Value, target);
             offset += target.PointerSize;
@@ -52,14 +65,16 @@ internal static class MiniMetadataWriter
             count++;
         }
 
+        int padding = (target.PointerSize - offset % target.PointerSize) % target.PointerSize;
+        int sizeWritten = offset + Math.Min(padding, buffer.Length - offset);
         WriteUInt32(buffer.AsSpan(0, sizeof(uint)), MiniMetadataSignature, target);
-        WriteUInt32(buffer.AsSpan(4, sizeof(uint)), checked((uint)offset), target);
+        WriteUInt32(buffer.AsSpan(4, sizeof(uint)), checked((uint)sizeWritten), target);
         WriteUInt32(buffer.AsSpan(8, sizeof(uint)), 1, target);
         WriteUInt32(buffer.AsSpan(StreamsHeaderSize, sizeof(uint)), EENameStreamSignature, target);
         WriteUInt32(buffer.AsSpan(StreamsHeaderSize + 4, sizeof(uint)), count, target);
 
-        emitter.Add(bufferAddress.Value, checked((uint)offset));
-        emitter.Update(bufferAddress.Value, buffer.AsSpan(0, offset));
+        emitter.Add(bufferAddress.Value, checked((uint)sizeWritten));
+        emitter.Update(bufferAddress.Value, buffer.AsSpan(0, sizeWritten));
     }
 
     private static void WritePointer(Span<byte> destination, ulong value, Target target)
