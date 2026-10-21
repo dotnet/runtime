@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
-    <!-- No -openharmony TFM: compile in the linux group, the same TFM as the shared-framework
+    <!-- No platform TFM: compile in the unix group, the same TFM as the shared-framework
          traversal (LibrariesOpenHarmonySfxTfm) so sfx-src keeps the shims in the layout. -->
     <TargetFramework Condition="'$(TargetsOpenHarmony)' == 'true'">$(LibrariesOpenHarmonySfxTfm)</TargetFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
