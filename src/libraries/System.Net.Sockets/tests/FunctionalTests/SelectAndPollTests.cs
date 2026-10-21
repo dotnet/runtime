@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 
 using Xunit;
 
@@ -316,6 +317,79 @@ namespace System.Net.Sockets.Tests
 
                 Assert.False(receiver.Poll(SelectTimeout, SelectMode.SelectError));
             }
+        }
+    }
+
+    public class SelectAndPollZeroTimeoutTests
+    {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ZeroTimeout_ReportsReadiness_AndAsyncIOStillWorks(bool useSelect)
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen();
+
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task<Socket> acceptTask = listener.AcceptAsync();
+            await client.ConnectAsync(listener.LocalEndPoint!);
+            using Socket server = await acceptTask;
+
+            Assert.False(IsReady(server, SelectMode.SelectRead, useSelect), "readable before send");
+            Assert.True(IsReady(client, SelectMode.SelectWrite, useSelect), "writable");
+
+            await client.SendAsync(new byte[] { 42 }, SocketFlags.None);
+
+            Stopwatch sw = Stopwatch.StartNew();
+            while (!IsReady(server, SelectMode.SelectRead, useSelect))
+            {
+                Assert.True(sw.Elapsed < TimeSpan.FromSeconds(30), "Socket did not become readable.");
+                await Task.Delay(10);
+            }
+
+            byte[] buffer = new byte[1];
+            Assert.Equal(1, await server.ReceiveAsync(buffer, SocketFlags.None));
+            Assert.Equal(42, buffer[0]);
+            if (!OperatingSystem.IsWasi())
+            {
+                // On WASI, readiness can stay set after the data is drained until a read would block.
+                Assert.False(IsReady(server, SelectMode.SelectRead, useSelect), "readable after drain");
+            }
+
+            Task<int> pendingReceive = server.ReceiveAsync(buffer, SocketFlags.None);
+            Assert.False(IsReady(server, SelectMode.SelectRead, useSelect), "readable with pending receive");
+            await client.SendAsync(new byte[] { 43 }, SocketFlags.None);
+            Assert.Equal(1, await pendingReceive.WaitAsync(TimeSpan.FromSeconds(30)));
+            Assert.Equal(43, buffer[0]);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public void NonZeroTimeout_SingleThreaded_Throws()
+        {
+            using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+
+            Assert.Throws<PlatformNotSupportedException>(() => socket.Poll(1, SelectMode.SelectRead));
+            Assert.Throws<PlatformNotSupportedException>(() => socket.Poll(-1, SelectMode.SelectRead));
+            Assert.Throws<PlatformNotSupportedException>(() => Socket.Select(new List<Socket> { socket }, null, null, 1));
+            Assert.Throws<PlatformNotSupportedException>(() => Socket.Select(new List<Socket> { socket }, null, null, -1));
+        }
+
+        private static bool IsReady(Socket socket, SelectMode mode, bool useSelect)
+        {
+            if (!useSelect)
+            {
+                return socket.Poll(0, mode);
+            }
+
+            var list = new List<Socket> { socket };
+            Socket.Select(
+                mode == SelectMode.SelectRead ? list : null,
+                mode == SelectMode.SelectWrite ? list : null,
+                mode == SelectMode.SelectError ? list : null,
+                0);
+            return list.Count == 1;
         }
     }
 }

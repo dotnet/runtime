@@ -2354,7 +2354,7 @@ namespace System.Net.Sockets
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public bool Poll(int microSeconds, SelectMode mode)
         {
-            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
+            if (microSeconds != 0 && !RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ThrowIfDisposed();
 
@@ -2401,7 +2401,7 @@ namespace System.Net.Sockets
         /// <exception cref="ObjectDisposedException">One or more sockets was disposed.</exception>
         public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, int microSeconds)
         {
-            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
+            if (microSeconds != 0 && !RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             if ((checkRead == null || checkRead.Count == 0) &&
                 (checkWrite == null || checkWrite.Count == 0) &&
