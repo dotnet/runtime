@@ -55,14 +55,13 @@ namespace System.Net.Http.Functional.Tests
 
             HttpClientHandler handler = (PlatformDetection.SupportsAlpn && useVersion != HttpVersion.Version30) ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
 
-            // Browser doesn't support ServerCertificateCustomValidationCallback
-            if (allowAllCertificates && PlatformDetection.IsNotBrowser && PlatformDetection.IsNotWasi)
+            if (allowAllCertificates && PlatformDetection.IsTlsSupported)
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }
 
             // Native mobile handlers do not use SslStream or expose its resumption setting.
-            if (!allowTlsResume && PlatformDetection.IsNotBrowser && PlatformDetection.IsNotWasi &&
+            if (!allowTlsResume && PlatformDetection.IsTlsSupported &&
                 GetUnderlyingSocketsHttpHandler(handler) is SocketsHttpHandler socketsHandler)
             {
                 socketsHandler.SslOptions.AllowTlsResume = false;
