@@ -396,6 +396,12 @@ public:
         return fIsWriteBarrierCopyEnabled;
     }
 
+    void SetWriteBarrierCopyEnabled(bool newVal)
+    {
+        LIMITED_METHOD_CONTRACT;
+        fIsWriteBarrierCopyEnabled = newVal;
+    }
+
 #ifdef _DEBUG
     inline DWORD FastGCStressLevel() const
     {LIMITED_METHOD_CONTRACT;  return iFastGCStress;}
