@@ -956,6 +956,55 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
+        [InlineData("equal-directory")]
+        [InlineData("cache-in-output")]
+        [InlineData("output-in-cache")]
+        public void TaskRejectsOverlappingCacheBeforePreparingOutputs(string overlap)
+        {
+            RemoteExecutor.Invoke(static value =>
+            {
+                using var test = new OutputDirectoryTest();
+                string input = Path.Combine(test.Root, "Input.dll");
+                WriteTestAssembly(input);
+                var task = test.Task;
+                task.AssemblyPaths = new ITaskItem[] { new TaskItem(input, new Dictionary<string, string> { { "TrimMode", "copy" } }) };
+                task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") };
+                task.ExtraArgs = null;
+                string cacheDirectory = value switch
+                {
+                    "equal-directory" => test.Output,
+                    "cache-in-output" => Path.Combine(test.Output, "cache"),
+                    "output-in-cache" => Path.Combine(test.Root, "cache"),
+                    _ => throw new InvalidOperationException()
+                };
+                string outputDirectory = value == "output-in-cache"
+                    ? Path.Combine(cacheDirectory, "linked output") : test.Output;
+                task.OutputDirectory = new TaskItem(outputDirectory);
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "true");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
+                string source = Path.Combine(test.Root, "cached outputs");
+                Directory.CreateDirectory(source);
+                File.Copy(input, Path.Combine(source, "Input.dll"));
+                var cache = new InvocationCache(cacheDirectory, task.Log, "ILLink");
+                string key = new string('a', 64);
+                cache.Store(key, InvocationOutputs.FromDirectory(source));
+                string cachedImage = Path.Combine(cacheDirectory, InvocationCacheEntry.VersionDirectory, key, "outputs", "Input.dll");
+                Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(cachedImage));
+                Directory.CreateDirectory(outputDirectory);
+                string stale = Path.Combine(outputDirectory, "stale.dll");
+                File.WriteAllText(stale, "untouched");
+
+                Assert.False(task.Execute());
+
+                Assert.Equal("untouched", File.ReadAllText(stale));
+                Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(cachedImage));
+                Assert.Contains(test.BuildEngine.Errors, error =>
+                    error.Code == "MSB6001" && error.Message.Contains("The cache and output directories must not contain each other."));
+                Assert.Empty(task.Messages);
+            }, overlap).Dispose();
+        }
+
+        [Theory]
         [InlineData(null)]
         [InlineData("-o")]
         [InlineData("-out")]

@@ -53,6 +53,9 @@ The cache helper resolves an unset or empty directory override to `$XDG_CACHE_HO
 `$HOME/.cache/illink`) on Linux/other XDG Unix, `$HOME/Library/Caches/illink` on macOS,
 and `LocalApplicationData/illink` on Windows. Relative `XDG_CACHE_HOME` values are ignored;
 explicit relative cache directories are resolved against the working directory.
+Keep the cache and output directories separate: neither may equal or contain the other.
+For eligible cache-enabled invocations, overlap fails the task before output cleanup;
+it does not fall back to uncached linking.
 
 Eligible invocations use a key covering arguments, input-file and sidecar contents, the task
 assembly, the selected dotnet host executable, and the entire ILLink assembly.

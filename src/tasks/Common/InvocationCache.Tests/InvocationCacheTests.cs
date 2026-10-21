@@ -672,9 +672,55 @@ public class InvocationCacheTests
     }).Dispose();
 
     [Theory]
-    [InlineData("invalid-output")]
-    [InlineData("unreadable-input")]
-    public void SharedTaskAdapterBypassesWithoutCacheCleanup(string reason) => RemoteExecutor.Invoke(static value =>
+    [InlineData("equal-directory")]
+    [InlineData("cache-in-directory")]
+    [InlineData("directory-in-cache")]
+    [InlineData("duplicate-files")]
+    [InlineData("nested-files")]
+    [InlineData("file-in-cache")]
+    [InlineData("cache-in-file")]
+    public void SharedTaskAdapterRejectsInvalidOutputsWithoutExecuting(string shape) => RemoteExecutor.Invoke(static value =>
+    {
+        using var test = new CacheTestDirectory();
+        Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
+        Environment.SetEnvironmentVariable(PathEnvironmentVariable, test.Cache.CacheDirectory);
+        test.WriteSource("image.dll", "cached");
+        test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs);
+        Directory.CreateDirectory(test.Output);
+        string stale = Path.Combine(test.Output, "stale.dll");
+        File.WriteAllText(stale, "untouched");
+        string image = Path.Combine(test.Output, "image.dll");
+        InvocationOutputs outputs = value switch
+        {
+            "equal-directory" => InvocationOutputs.FromDirectory(test.Cache.CacheDirectory),
+            "cache-in-directory" => InvocationOutputs.FromDirectory(test.Root),
+            "directory-in-cache" => InvocationOutputs.FromDirectory(Path.Combine(test.Cache.CacheDirectory, "output")),
+            "duplicate-files" => InvocationOutputs.FromFiles(image, image),
+            "nested-files" => InvocationOutputs.FromFiles(image, Path.Combine(image, "child")),
+            "file-in-cache" => InvocationOutputs.FromFiles(Path.Combine(test.Cache.CacheDirectory, "image.dll")),
+            "cache-in-file" => InvocationOutputs.FromFiles(test.Root),
+            _ => throw new InvalidOperationException()
+        };
+        var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), outputs);
+        int executions = 0;
+
+        ArgumentException exception = Assert.Throws<ArgumentException>(() =>
+            InvocationCache.ExecuteCached(test.Log, s_cacheConfiguration,
+                describeInvocation: () => invocation,
+                executeNormally: () =>
+                {
+                    executions++;
+                    return 42;
+                }));
+
+        Assert.Equal(nameof(outputs), exception.ParamName);
+        Assert.Equal(0, executions);
+        Assert.Equal("untouched", File.ReadAllText(stale));
+        Assert.Equal("cached", File.ReadAllText(Path.Combine(test.Entry, "outputs", "image.dll")));
+    }, shape).Dispose();
+
+    [Fact]
+    public void SharedTaskAdapterBypassesUnreadableInputWithoutCacheCleanup() => RemoteExecutor.Invoke(static () =>
     {
         using var test = new CacheTestDirectory();
         Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
@@ -682,9 +728,7 @@ public class InvocationCacheTests
         Directory.CreateDirectory(test.Output);
         string stale = Path.Combine(test.Output, "stale.dll");
         File.WriteAllText(stale, "untouched");
-        var invocation = value == "invalid-output"
-            ? new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), InvocationOutputs.FromDirectory(test.Root))
-            : new InvocationDescription(InvocationInputs.FromFiles(test.Source), Array.Empty<string>(), test.OutputOutputs);
+        var invocation = new InvocationDescription(InvocationInputs.FromFiles(test.Source), Array.Empty<string>(), test.OutputOutputs);
         int executions = 0;
 
         int result = InvocationCache.ExecuteCached(test.Log, s_cacheConfiguration,
@@ -699,9 +743,8 @@ public class InvocationCacheTests
         Assert.Equal(42, result);
         Assert.Equal(1, executions);
         Assert.False(Directory.Exists(test.Cache.CacheDirectory));
-        Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains(value == "invalid-output"
-            ? "invalid output declaration" : "input identity could not be computed") is true);
-    }, reason).Dispose();
+        Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("input identity could not be computed") is true);
+    }).Dispose();
 
     [Theory]
     [InlineData(false, false)]
