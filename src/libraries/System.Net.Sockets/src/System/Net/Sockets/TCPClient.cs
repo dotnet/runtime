@@ -236,8 +236,6 @@ namespace System.Net.Sockets
 
         public void EndConnect(IAsyncResult asyncResult)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             _clientSocket.EndConnect(asyncResult);
             _active = true;
 

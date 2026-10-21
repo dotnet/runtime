@@ -289,8 +289,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSend(byte[] datagram, int bytes, IPEndPoint? endPoint, AsyncCallback? requestCallback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ValidateDatagram(datagram, bytes, endPoint);
 
             if (endPoint is null)
@@ -306,8 +304,6 @@ namespace System.Net.Sockets
 
         public int EndSend(IAsyncResult asyncResult)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
 
             return _active ?
@@ -363,8 +359,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginReceive(AsyncCallback? requestCallback, object? state)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
 
             // Due to the nature of the ReceiveFrom() call and the ref parameter convention,
@@ -379,8 +373,6 @@ namespace System.Net.Sockets
 
         public byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint? remoteEP)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             ThrowIfDisposed();
 
             EndPoint tempRemoteEP = _family == AddressFamily.InterNetwork ?
