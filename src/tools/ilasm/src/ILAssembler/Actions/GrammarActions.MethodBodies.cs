@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection.Metadata.Ecma335;
 using Antlr4.Runtime;
+using LabelHandle = ILAssembler.MethodBodyWriter.Label;
 
 namespace ILAssembler;
 
@@ -23,7 +23,10 @@ internal sealed partial class GrammarActions
                 DiagnosticIds.LabelNotFound,
                 string.Format(DiagnosticMessageTemplates.LabelNotFound, undefinedLabel.Key),
                 undefinedLabel.Value);
+            // The diagnosed unresolved reference retains a zero target in error-tolerant output.
+            _currentMethod.Definition.MethodBody.MarkLabel(_currentMethod.Labels[undefinedLabel.Key], 0);
         }
+        _diagnostics.AddRange(_currentMethod.Definition.MethodBody.Complete(_currentMethod.Definition.ExceptionRegions));
     }
 
     private static LabelHandle GetOrCreateMethodLabel(

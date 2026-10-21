@@ -150,7 +150,16 @@ namespace System.Security.Cryptography.Xml
             document.PreserveWhitespace = true;
             XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
             XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI!);
-            document.Load(xmlReader);
+            long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+            if (maxDepth > 0)
+            {
+                Utils.LoadXmlDocumentWithMaxDepthCheck(document, xmlReader, maxDepth);
+            }
+            else
+            {
+                document.Load(xmlReader);
+            }
+
             _containingDocument = document;
             _nsm = new XmlNamespaceManager(_containingDocument.NameTable);
             _nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
@@ -180,7 +189,15 @@ namespace System.Security.Cryptography.Xml
                 // However, EncryptedXml.ReplaceData will preserve other top-level elements such as the XML
                 // entity declaration and top level comments.  So, in this case we must do the replacement
                 // ourselves.
-                parent.InnerXml = EncryptedXml.Encoding.GetString(decrypted);
+                string decryptedString = EncryptedXml.Encoding.GetString(decrypted);
+                long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+                bool allowDtdProcessing = LocalAppContextSwitches.CryptoXmlAllowDtdProcessing;
+                if (maxDepth > 0 || !allowDtdProcessing)
+                {
+                    Utils.ValidateInputXmlMaxDepth(parent, decryptedString, maxDepth, allowDtdProcessing);
+                }
+
+                parent.InnerXml = decryptedString;
             }
             else
             {
@@ -217,11 +234,10 @@ namespace System.Security.Cryptography.Xml
             if (encryptedDatas == null || encryptedDatas.Count == 0)
                 return;
             int maxDepth = LocalAppContextSwitches.DangerousMaxRecursionDepth;
-            int maxDecryptedDataElements = LocalAppContextSwitches.MaxDecryptedDataElements;
-            int decryptedElementsCount = 0;
             Queue<ProcessElementWorkItem> encryptedDatasQueue = new();
             foreach (XmlNode value in encryptedDatas)
             {
+                EncryptedXml.IncrementEncryptedDataCandidateCount();
                 encryptedDatasQueue.Enqueue(new(value, depth: 0));
             }
 
@@ -234,12 +250,6 @@ namespace System.Security.Cryptography.Xml
                 if (encryptedDataElement != null && encryptedDataElement.LocalName == "EncryptedData" &&
                     encryptedDataElement.NamespaceURI == EncryptedXml.XmlEncNamespaceUrl)
                 {
-                    decryptedElementsCount++;
-                    if (maxDecryptedDataElements > 0 && decryptedElementsCount > maxDecryptedDataElements)
-                    {
-                        throw new CryptographicException(SR.Cryptography_Xml_MaxDecryptableDataElementsExceeded);
-                    }
-
                     XmlNode sibling = encryptedDataElement.NextSibling!;
                     XmlNode parent = encryptedDataElement.ParentNode!;
                     if (ProcessEncryptedDataItem(encryptedDataElement))
@@ -253,13 +263,14 @@ namespace System.Security.Cryptography.Xml
                             XmlNodeList nodes = child.SelectNodes("//enc:EncryptedData", _nsm!)!;
                             if (nodes.Count > 0)
                             {
-                                if (maxDepth > 0 && depth >= maxDepth)
+                                if (maxDepth > 0 && depth > maxDepth)
                                 {
                                     throw new CryptographicException(SR.Cryptography_Xml_MaxDepthExceeded);
                                 }
 
                                 foreach (XmlNode value in nodes)
                                 {
+                                    EncryptedXml.IncrementEncryptedDataCandidateCount();
                                     encryptedDatasQueue.Enqueue(new(value, depth + 1));
                                 }
                             }
@@ -271,20 +282,36 @@ namespace System.Security.Cryptography.Xml
 
         public override object GetOutput()
         {
-            // decrypt the encrypted sections
-            if (_encryptedDataList != null)
-                ProcessElementRecursively(_encryptedDataList);
-            // propagate namespaces
-            Utils.AddNamespaces(_containingDocument!.DocumentElement!, PropagatedNamespaces);
-            return _containingDocument;
+            EncryptedXml.EnterDecryptionOperation();
+            try
+            {
+                // decrypt the encrypted sections
+                if (_encryptedDataList != null)
+                    ProcessElementRecursively(_encryptedDataList);
+                // propagate namespaces
+                Utils.AddNamespaces(_containingDocument!.DocumentElement!, PropagatedNamespaces);
+                return _containingDocument;
+            }
+            finally
+            {
+                EncryptedXml.ExitDecryptionOperation();
+            }
         }
 
         public override object GetOutput(Type type)
         {
-            if (type == typeof(XmlDocument))
-                return (XmlDocument)GetOutput();
-            else
-                throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
+            EncryptedXml.EnterDecryptionOperation();
+            try
+            {
+                if (type == typeof(XmlDocument))
+                    return (XmlDocument)GetOutput();
+                else
+                    throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
+            }
+            finally
+            {
+                EncryptedXml.ExitDecryptionOperation();
+            }
         }
 
         internal override void ClearState()

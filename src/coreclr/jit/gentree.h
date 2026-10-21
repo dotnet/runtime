@@ -3338,7 +3338,7 @@ struct GenTreeIntConCommon : public GenTree
 #endif
     }
 
-    bool ImmedValNeedsReloc(Compiler* comp);
+    bool ImmedValNeedsReloc(Compiler* comp) const;
     bool ImmedValCanBeFolded(Compiler* comp, genTreeOps op);
 
 #if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
@@ -5424,7 +5424,8 @@ struct GenTreeCall final : public GenTree
     bool IsGenericVirtual(Compiler* compiler) const
     {
         return (gtCallType == CT_INDIRECT && (gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                                              gtControlExpr->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT)
+                                              gtControlExpr->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT) ||
+                                              gtControlExpr->IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT)
 #ifdef FEATURE_READYTORUN
                                               || gtControlExpr->IsHelperCall(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
 #endif

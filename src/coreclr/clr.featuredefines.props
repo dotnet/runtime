@@ -8,9 +8,14 @@
         <FeaturePerfTracing>true</FeaturePerfTracing>
         <FeaturePortableEntryPoints>false</FeaturePortableEntryPoints>
         <FeaturePortableHelpers>false</FeaturePortableHelpers>
-        <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
+        <FeatureCorProfiler>true</FeatureCorProfiler>
         <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
         <FeaturePortableTimer>true</FeaturePortableTimer>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
+        <!--  OR '$(TargetsMobile)' == 'true' OR '$(TargetsLinuxBionic)' == 'true' -->
+        <FeatureCorProfiler>false</FeatureCorProfiler>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">
@@ -25,19 +30,6 @@
         <!-- single thread -->
         <FeaturePortableTimer Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableTimer>
         <FeaturePortableThreadPool Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableThreadPool>
-        <ProfilingSupportedBuild>false</ProfilingSupportedBuild>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
-        <!-- Match the WASI native build (src/coreclr/CMakeLists.txt sets
-             FEATURE_PERFTRACING=0 for CLR_CMAKE_TARGET_WASI). Keeping
-             FEATURE_PERFTRACING on in managed CoreLib while the native
-             side has it off causes EventPipeInternal QCalls (e.g.
-             EventPipeInternal_CreateProvider) to resolve to NULL at
-             runtime; any EventSource activation (e.g. ArrayPoolEventSource
-             via DefaultInterpolatedStringHandler) then traps on a NULL
-             function pointer. -->
-        <FeaturePerfTracing>false</FeaturePerfTracing>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -90,6 +82,6 @@
         <DefineConstants Condition="'$(FeatureCachedInterfaceDispatch)' == 'true'">$(DefineConstants);FEATURE_CACHED_INTERFACE_DISPATCH</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableEntryPoints)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_ENTRYPOINTS</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableHelpers)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_HELPERS</DefineConstants>
-        <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
+        <DefineConstants Condition="'$(FeatureCorProfiler)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
     </PropertyGroup>
 </Project>

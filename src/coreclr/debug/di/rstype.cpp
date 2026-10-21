@@ -48,13 +48,12 @@ HRESULT CordbType::GetStaticFieldValue(mdFieldDef fieldDef,
             ThrowHR(E_INVALIDARG);
         }
 
-        pImport = m_pClass->GetModule()->GetMetaDataImporter(); // throws
-
         if (((m_elementType != ELEMENT_TYPE_CLASS) && (m_elementType != ELEMENT_TYPE_VALUETYPE)) || (m_pClass == NULL))
         {
             ThrowHR(E_INVALIDARG);
         }
 
+        pImport = m_pClass->GetModule()->GetMetaDataImporter(); // throws
 
 
         BOOL fSyncBlockField = FALSE;

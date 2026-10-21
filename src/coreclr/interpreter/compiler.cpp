@@ -3222,9 +3222,12 @@ void InterpCompiler::EmitLeave(int32_t ilOffset, int32_t target)
         NO_WAY("Leave target basic block does not exist");
     }
 
-    // The leave doesn't jump out of any try region with finally, so we can just emit a branch
-    // to the target.
-    EmitBranchToBB(INTOP_BR, pTargetBB);
+    // When the first island is a catch leave island, the leave exits that catch here: INTOP_LEAVE_CATCH ends the
+    // catch funclet and the execution resumes after the catch at the island. The island is outside the catch's own
+    // try region and inside every try region that encloses it, so a thread abort raised again at the resume point
+    // reaches the handlers of the enclosing try regions. Otherwise, emit a plain branch to the island or the target.
+    bool isCatchLeave = pTargetBB->isLeaveChainIsland && !pTargetBB->isFinallyCallIsland;
+    EmitBranchToBB(isCatchLeave ? INTOP_LEAVE_CATCH : INTOP_BR, pTargetBB);
 }
 
 void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
@@ -11971,18 +11974,21 @@ InterpBasicBlock *InterpCompiler::GenerateCodeForLeaveChainIslands(InterpBasicBl
                 m_pLastNewIns->ilOffset = -1;
             }
 
-            InterpOpcode branchOpcode = pLeaveChainIslandBB->isFinallyCallIsland ? INTOP_BR : INTOP_LEAVE_CATCH;
+            // A catch leave island is where the execution resumes after its catch, which ends with the
+            // INTOP_LEAVE_CATCH to the island. So the branch out of an island is a plain INTOP_BR, unless it goes
+            // into the catch leave island of an outer catch that the leave also exits.
 
             // Try to get the next finally call (for an outer try's finally) / catch leave island block (for an outer catch)
             if (pLeaveChainIslandBB->pLeaveChainIslandBB)
             {
-                // Branch to the next finally call island (at an outer try block)
-                EmitBranchToBB(branchOpcode, pLeaveChainIslandBB->pLeaveChainIslandBB);
+                // Branch to the next finally call island (at an outer try block) / catch leave island (for an outer catch)
+                InterpBasicBlock *pNextIslandBB = pLeaveChainIslandBB->pLeaveChainIslandBB;
+                EmitBranchToBB(pNextIslandBB->isFinallyCallIsland ? INTOP_BR : INTOP_LEAVE_CATCH, pNextIslandBB);
             }
             else
             {
                 // This is the last finally call / catch leave island, so we need to emit a branch to the leave target
-                EmitBranchToBB(branchOpcode, pLeaveChainIslandBB->pLeaveTargetBB);
+                EmitBranchToBB(INTOP_BR, pLeaveChainIslandBB->pLeaveTargetBB);
             }
             m_pLastNewIns->ilOffset = -1;
             m_pCBB->emitState = BBStateEmitted;

@@ -10,7 +10,8 @@ namespace System.Net.Http.Functional.Tests
     {
         protected static bool IsWinHttpHandler => true;
 
-        protected static WinHttpClientHandler CreateHttpClientHandler(Version useVersion = null, bool allowAllCertificates = true)
+        // WinHTTP owns TLS and does not expose SslStream's resumption setting.
+        protected static WinHttpClientHandler CreateHttpClientHandler(Version useVersion = null, bool allowAllCertificates = true, bool allowTlsResume = true)
         {
             useVersion ??= HttpVersion.Version11;
 
@@ -26,8 +27,11 @@ namespace System.Net.Http.Functional.Tests
 
         protected WinHttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion);
 
-        protected static WinHttpClientHandler CreateHttpClientHandler(string useVersionString) =>
-            CreateHttpClientHandler(Version.Parse(useVersionString));
+        protected WinHttpClientHandler CreateHttpClientHandler(bool allowTlsResume) =>
+            CreateHttpClientHandler(UseVersion, allowTlsResume: allowTlsResume);
+
+        protected static WinHttpClientHandler CreateHttpClientHandler(string useVersionString, bool allowTlsResume = true) =>
+            CreateHttpClientHandler(Version.Parse(useVersionString), allowTlsResume: allowTlsResume);
 
         protected static HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version, bool exactVersion = false) =>
             new HttpRequestMessage(method, uri)

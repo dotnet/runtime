@@ -1126,9 +1126,8 @@ namespace System.Numerics.Tensors.Tests
         {
             _ = expectedLogical;
             // Set all logical elements to positive values, then put the minimum at the last logical position
-            int[] testData = new int[data.Length];
-            Array.Fill(testData, 50);
-
+            int[] testData = Array.CreateFilled(data.Length, 50);
+            
             nint flatLen = 1;
             foreach (nint s in shape)
             {
@@ -1172,9 +1171,8 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorIndexOfMaxMagnitudeNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
         {
             _ = expectedLogical;
-            int[] testData = new int[data.Length];
-            Array.Fill(testData, 1);
-
+            int[] testData = Array.CreateFilled(data.Length, 1);
+            
             nint flatLen = 1;
             foreach (nint s in shape)
             {
@@ -1218,8 +1216,7 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorIndexOfMinMagnitudeNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
         {
             _ = expectedLogical;
-            int[] testData = new int[data.Length];
-            Array.Fill(testData, 100);
+            int[] testData = Array.CreateFilled(data.Length, 100);
 
             nint flatLen = 1;
             foreach (nint s in shape)

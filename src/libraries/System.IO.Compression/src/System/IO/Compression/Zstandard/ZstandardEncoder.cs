@@ -172,6 +172,16 @@ namespace System.IO.Compression
                 {
                     SetParameter(_context, Interop.Zstd.ZstdCParameter.ZSTD_c_targetCBlockSize, compressionOptions.TargetBlockSize);
                 }
+
+                if (compressionOptions.HashLog2 != 0)
+                {
+                    SetParameter(_context, Interop.Zstd.ZstdCParameter.ZSTD_c_hashLog, compressionOptions.HashLog2);
+                }
+
+                if (compressionOptions.ChainLog2 != 0)
+                {
+                    SetParameter(_context, Interop.Zstd.ZstdCParameter.ZSTD_c_chainLog, compressionOptions.ChainLog2);
+                }
             }
             catch
             {
@@ -403,6 +413,7 @@ namespace System.IO.Compression
         /// The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called.
         /// The prefix replaces any dictionary supplied when the encoder was constructed until <see cref="Reset"/> restores that dictionary.
         /// The referenced data must remain valid and unmodified for the duration of the compression operation.
+        /// When compressing with a prefix larger than ~32 MB at high quality levels, set <see cref="ZstandardCompressionOptions.HashLog2"/> so the entire prefix is indexed.
         /// </remarks>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The encoder is in an invalid state for setting a prefix.</exception>

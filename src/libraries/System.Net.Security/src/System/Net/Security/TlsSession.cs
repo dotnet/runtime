@@ -347,9 +347,17 @@ namespace System.Net.Security
         /// validation logic.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Must be called only after <see cref="TlsBufferSession.Handshake"/> returned
         /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/> and before
         /// <see cref="SetRemoteCertificateValidationResult"/> is called.
+        /// </para>
+        /// <para>
+        /// Any <see cref="SslCertificateTrust"/> associated with the session's certificate
+        /// context is used for chain validation unless a custom chain policy is specified by
+        /// <see cref="SslClientAuthenticationOptions.CertificateChainPolicy"/> or
+        /// <see cref="SslServerAuthenticationOptions.CertificateChainPolicy"/>.
+        /// </para>
         /// </remarks>
         public SslPolicyErrors AcceptWithDefaultValidation()
         {
@@ -384,7 +392,7 @@ namespace System.Net.Security
                     ref _connectionInfo,
                     _externalPendingCert,
                     chain,
-                    trust: null,
+                    trust: SessionCertificateContext?.Trust,
                     ref alertToken,
                     ref sslPolicyErrors,
                     out _,
@@ -489,7 +497,7 @@ namespace System.Net.Security
                 // are drained to the caller first).
                 if (_isHandshakeComplete)
                 {
-                    _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                    _externalValidationFault = new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, errors));
                 }
                 else if (_resumeAfterCertValidation)
                 {
@@ -503,7 +511,7 @@ namespace System.Net.Security
                     // which checks _externalValidationFault. On OpenSSL 3.0+ retry-verify the
                     // fault will instead be set by the natural token-failed branch when
                     // SSL_do_handshake emits the fatal alert.
-                    _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                    _externalValidationFault = new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, errors));
                 }
 
                 // VerifyRemoteCertificateCore assigns _remoteCertificate to the candidate before it

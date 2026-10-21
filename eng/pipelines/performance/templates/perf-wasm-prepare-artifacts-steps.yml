@@ -102,6 +102,19 @@ steps:
           'Microsoft.NETCore.App.Crossgen2.*.nupkg' \
           'Microsoft.NET.ILLink.Tasks.*.nupkg'
       displayName: "Stage CoreCLR toolchain packs"
+    # Wasm-aware ReadyToRun task shim consumed by dotnet/performance's composite R2R lane until
+    # dotnet/sdk#56395 reaches the global.json SDK. TODO: remove with dotnet/runtime#135023.
+    - script: |
+        set -euo pipefail
+
+        src_dir="$(Build.SourcesDirectory)/artifacts/bin/Crossgen2Tasks/${{ parameters.configForBuild }}"
+        dst_dir="$(Build.SourcesDirectory)/artifacts/staging/Crossgen2Tasks"
+        for f in Crossgen2Tasks.dll Microsoft.NET.CrossGen.props Microsoft.NET.CrossGen.targets; do
+          [ -f "$src_dir/$f" ] || { echo "Missing $src_dir/$f" >&2; exit 1; }
+        done
+        mkdir -p "$dst_dir"
+        cp -R "$src_dir/." "$dst_dir/"
+      displayName: "Stage Crossgen2Tasks shim"
 
   # Publish the CoreCLR-only wasm-tools packages so the Mono build job can stage them into its
   # local feed before installing the workload.
