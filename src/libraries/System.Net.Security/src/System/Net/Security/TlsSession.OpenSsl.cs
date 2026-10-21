@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -23,8 +24,8 @@ namespace System.Net.Security
         // then activates fd-mode with the peeked bytes replayed via the socket BIO.
         private SafeSocketHandle? _pendingFdSocket;
 
-        // Socket-replay BIO populated by TryPeekClientHello via BioPeekTlsFrame. Holds
-        // the ClientHello record buffered off the fd; the same BIO becomes the SSL's
+        // Socket-replay BIO populated by TryPeekClientHello via BioReadPrefix. Holds
+        // the ClientHello records buffered off the fd; the same BIO becomes the SSL's
         // read BIO once OnServerContextSet transfers ownership to _options.PreallocatedReadBio.
         // Freed by OnDispose if the session is disposed before that handoff runs.
         private SafeBioHandle? _peekBio;
@@ -111,8 +112,8 @@ namespace System.Net.Security
 
         // Native ClientHello peek for the deferred socket-bound flow AND the always-capture
         // path (server session with options up front + CaptureClientHello switch on).
-        // Creates a socket-replay BIO on the fd, buffers a full TLS record via
-        // BioPeekTlsFrame, parses via TlsFrameHelper, and populates ClientHelloInfo /
+        // Creates a socket-replay BIO on the fd, buffers a complete ClientHello via
+        // BioReadPrefix, parses via TlsFrameHelper, and populates ClientHelloInfo /
         // TargetHostName from the SNI extension. In the deferred flow returns
         // NeedsServerOptions so the caller resolves via SetContext; in the capture
         // flow transfers the peek BIO to the pending SSL* and falls through to fd-mode.
@@ -147,30 +148,62 @@ namespace System.Net.Security
 
             unsafe
             {
-                int rc = Interop.Ssl.BioPeekTlsFrame(_peekBio, out byte* framePtr, out int frameLen);
-                if (rc == 0)
+                int requiredLength = TlsFrameHelper.HeaderSize;
+                while (true)
                 {
-                    // Need more bytes off the socket. Caller polls SelectRead and retries.
-                    result = TlsOperationStatus.NeedMoreData;
-                    return;
-                }
-                if (rc < 0)
-                {
-                    throw new IOException(SR.net_ssl_read_bio_failed_error);
-                }
+                    int rc = Interop.Ssl.BioReadPrefix(_peekBio, requiredLength, out byte* framePtr, out int frameLen);
+                    if (rc == 0)
+                    {
+                        result = TlsOperationStatus.NeedMoreData;
+                        return;
+                    }
+                    if (rc < 0)
+                    {
+                        throw new IOException(SR.net_ssl_read_bio_failed_error);
+                    }
 
-                ReadOnlySpan<byte> frame = new ReadOnlySpan<byte>(framePtr, frameLen);
-                SslClientHelloInfo? parsed = TryParseClientHello(frame, out _);
-                if (parsed is null)
-                {
-                    // TlsFrameHelper couldn't parse the record as a ClientHello.
-                    throw new IOException(SR.net_io_decrypt);
-                }
+                    ReadOnlySpan<byte> frame = new ReadOnlySpan<byte>(framePtr, frameLen);
+                    TlsFrameHeader header = default;
+                    if (!TlsFrameHelper.TryGetFrameHeader(frame, ref header))
+                    {
+                        throw new AuthenticationException(SR.net_ssl_io_frame);
+                    }
 
-                _clientHelloInfo = parsed;
-                if (!string.IsNullOrEmpty(parsed.Value.ServerName))
-                {
-                    _sessionTargetHost = parsed.Value.ServerName;
+#pragma warning disable CS0618 // Ssl2 is obsolete.
+                    if (header.Version == SslProtocols.Ssl2)
+#pragma warning restore CS0618
+                    {
+                        if (frame.Length < header.Length)
+                        {
+                            requiredLength = header.Length;
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        OperationStatus status = _clientHelloFrame.Process(frame, out requiredLength);
+                        if (status == OperationStatus.NeedMoreData)
+                        {
+                            continue;
+                        }
+                        if (status != OperationStatus.Done)
+                        {
+                            throw new AuthenticationException(SR.net_ssl_io_frame);
+                        }
+                    }
+
+                    SslClientHelloInfo? parsed = TryParseClientHello(frame, out _);
+                    if (parsed is null)
+                    {
+                        throw new IOException(SR.net_io_decrypt);
+                    }
+
+                    _clientHelloInfo = parsed;
+                    if (!string.IsNullOrEmpty(parsed.Value.ServerName))
+                    {
+                        _sessionTargetHost = parsed.Value.ServerName;
+                    }
+                    break;
                 }
             }
 
@@ -209,7 +242,7 @@ namespace System.Net.Security
         // GetClientHelloBytes, which does ThrowIfDisposed() first.
         partial void TryGetNativeClientHelloBytes(ref ReadOnlySpan<byte> bytes)
         {
-            if (_peekBio is null || _peekBio.IsInvalid)
+            if (_clientHelloInfo is null || _peekBio is null || _peekBio.IsInvalid)
             {
                 return;
             }
