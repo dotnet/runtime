@@ -124,6 +124,9 @@ extends:
             preBuildSteps:
             - script: eng/pipelines/ohos/setup-ohos-assets.sh
               displayName: Prepare the OpenHarmony SDK and assets
+              env:
+                OHOS_NDK_HOME: $(OHOS_NDK_HOME)
+                OHOS_ASSETS: $(OHOS_ASSETS)
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
