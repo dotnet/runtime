@@ -47,6 +47,8 @@ if(CLR_CMAKE_TARGET_WASI)
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
+OPTION(CLR_CMAKE_ENABLE_SATORI_GC
+  "Build the Satori standalone collector (comparison build; AMD64 and ARM64 only)" OFF)
 
 # WebAssembly targets are single-threaded unless threads are explicitly enabled.
 if(NOT DEFINED FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -261,7 +263,7 @@ if(CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASM)
 endif()
 
 add_subdirectory(gc)
-if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
+if (CLR_CMAKE_ENABLE_SATORI_GC AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64))
   add_subdirectory(gc_satori)
 endif()
 
