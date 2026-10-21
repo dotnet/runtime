@@ -572,7 +572,6 @@ extends:
       #
       - template: /eng/common/templates-official/jobs/source-build.yml
         parameters:
-          enableInternalSources: true
           platforms:
           - name: Linux_x64
             targetRID: linux-x64
