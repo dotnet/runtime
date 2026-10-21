@@ -70,6 +70,24 @@ namespace ILVerification.Tests
             });
         }
 
+        private static (EcmaModule Module, VerificationResult[] Results) VerifyMetadataReferences(string assemblyName)
+        {
+            EcmaModule module = TestDataLoader.GetModuleForTestAssembly(assemblyName);
+            var verifier = new Verifier((ILVerifyTypeSystemContext)module.Context, new VerifierOptions());
+
+            return (module, verifier.VerifyMetadataReferences(module.PEReader).ToArray());
+        }
+
+        private static void AssertResult(
+            VerificationResult[] results,
+            HandleKind kind,
+            string messagePart)
+        {
+            Assert.Single(results, result =>
+                result.MetadataHandle.Kind == kind &&
+                result.Message.Contains(messagePart, StringComparison.Ordinal));
+        }
+
         [Fact]
         public static void AcceptsTypeSpecsWithCustomModifiersOnAClass()
         {
@@ -110,24 +128,6 @@ namespace ILVerification.Tests
             }
 
             return hasCustomModifiers ? $"modifiers {typeCode}" : typeCode.ToString();
-        }
-
-        private static (EcmaModule Module, VerificationResult[] Results) VerifyMetadataReferences(string assemblyName)
-        {
-            EcmaModule module = TestDataLoader.GetModuleForTestAssembly(assemblyName);
-            var verifier = new Verifier((ILVerifyTypeSystemContext)module.Context, new VerifierOptions());
-
-            return (module, verifier.VerifyMetadataReferences(module.PEReader).ToArray());
-        }
-
-        private static void AssertResult(
-            VerificationResult[] results,
-            HandleKind kind,
-            string messagePart)
-        {
-            Assert.Single(results, result =>
-                result.MetadataHandle.Kind == kind &&
-                result.Message.Contains(messagePart, StringComparison.Ordinal));
         }
     }
 }
