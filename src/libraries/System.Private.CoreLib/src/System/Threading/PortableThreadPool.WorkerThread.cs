@@ -191,8 +191,11 @@ namespace System.Threading
                 // imply that another poller is useful. Preserve polling capacity for recent external producers,
                 // which can introduce another burst after the queues drain. For work produced entirely by
                 // workers, park empty dispatches promptly instead of competing with the productive workers.
+                // This worker refreshed dispatch progress before its empty scan, so reuse that clock sample.
+                // An older sample conservatively defers parking; a later external request is still considered recent.
                 return spurious && (numProcessingWork > SpuriousDispatchNoSpinThreshold ||
-                        (Environment.TickCount - Volatile.Read(ref threadPoolInstance._separated.lastExternalWorkItemTimeMs))
+                        (Volatile.Read(ref threadPoolInstance._separated.lastDispatchTime) -
+                         Volatile.Read(ref threadPoolInstance._separated.lastExternalWorkItemTimeMs))
                             > (int)ThreadPoolWorkQueue.DispatchQuantumMs);
             }
 
