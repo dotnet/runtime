@@ -62,44 +62,6 @@ inline static bool IsElementTypeSpecial(CorElementType type)
 }
 
 //
-// Throw on not supported func evals
-//
-static void ValidateFuncEvalReturnType(DebuggerIPCE_FuncEvalType evalType, MethodTable * pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // COMPAT: Debuggers request abstract/static class construction to force class initialization.
-    // Run the class constructor and return null rather than allocating an abstract instance.
-    if ((evalType == DB_IPCE_FET_NEW_OBJECT || evalType == DB_IPCE_FET_NEW_OBJECT_NC) && pMT->IsInterface())
-    {
-        COMPlusThrow(kMemberAccessException, W("Acc_CreateInterface"));
-    }
-
-    if (pMT == g_pStringClass)
-    {
-        if (evalType == DB_IPCE_FET_NEW_OBJECT || evalType == DB_IPCE_FET_NEW_OBJECT_NC)
-        {
-            // Cannot call New object on String constructor.
-            COMPlusThrow(kArgumentException,W("Argument_CannotCreateString"));
-        }
-    }
-    else if (g_pEEInterface->IsTypedReference(pMT))
-    {
-        // Cannot create typed references through funceval.
-        if (evalType == DB_IPCE_FET_NEW_OBJECT || evalType == DB_IPCE_FET_NEW_OBJECT_NC || evalType == DB_IPCE_FET_NORMAL)
-        {
-            COMPlusThrow(kArgumentException, W("Argument_CannotCreateTypedReference"));
-        }
-    }
-}
-
-//
 // Given a register, return the value.
 //
 static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, CORDB_ADDRESS regAddr, ULONG64 regValue)
@@ -595,19 +557,6 @@ static PVOID GetRegisterValueAndReturnAddress(DebuggerEval *pDE,
     return pAddr;
 }
 
-static OBJECTREF GetFuncEvalObjectValue(
-    DebuggerIPCE_FuncEvalArgData* pArgData, OBJECTREF* pObjectRef, INT64* pBuffer)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (pArgData->argIsHandleValue)
-    {
-        return ObjectFromHandle(reinterpret_cast<OBJECTHANDLE>(static_cast<SIZE_T>(*pBuffer)));
-    }
-
-    return *pObjectRef;
-}
-
 static CorDebugRegister GetArgAddrFromReg( DebuggerIPCE_FuncEvalArgData *pFEAD)
 {
     CorDebugRegister retval = REGISTER_INSTRUCTION_POINTER; // good as default as any
@@ -1064,19 +1013,7 @@ static HRESULT ProtectFuncEvalArgumentStorage(
     return S_OK;
 }
 
-/*
- * ResolveFuncEvalGenericArgInfo
- *
- * This function pulls out any generic args and makes sure the method is loaded for it.
- *
- * Parameters:
- *    pDE - pointer to the DebuggerEval object being processed.
- *
- * Returns:
- *    None.
- *
- */
-void ResolveFuncEvalGenericArgInfo(DebuggerEval *pDE)
+bool Debugger::ReadFuncEvalTypeHandles(DebuggerEval* pDE, TypeHandle* pTypes, uint32_t count)
 {
     CONTRACTL
     {
@@ -1086,64 +1023,11 @@ void ResolveFuncEvalGenericArgInfo(DebuggerEval *pDE)
     }
     CONTRACTL_END;
 
-    DebuggerIPCE_TypeArgData *firstdata = pDE->GetTypeArgData();
-    unsigned int nGenericArgs = pDE->m_genericArgsCount;
-    SIZE_T cbAllocSize;
-    if ((!ClrSafeInt<SIZE_T>::multiply(nGenericArgs, sizeof(TypeHandle *), cbAllocSize)) ||
-        (cbAllocSize != (size_t)(cbAllocSize)))
-    {
-        ThrowHR(COR_E_OVERFLOW);
-    }
-    TypeHandle * pGenericArgs = (nGenericArgs == 0) ? NULL : (TypeHandle *) _alloca(cbAllocSize);
-
-    //
-    // Snag the type arguments from the input and get the
-    // method desc that corresponds to the instantiated desc.
-    //
-    Debugger::TypeDataWalk walk(firstdata, pDE->m_genericArgsNodeCount);
-    walk.ReadTypeHandles(nGenericArgs, pGenericArgs);
-
-    // <TODO>better error message</TODO>
-    if (!walk.Finished())
-    {
-        COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
-    }
-
-    // Find the proper MethodDesc that we need to call.
-    pDE->m_md = g_pEEInterface->LoadMethodDef(pDE->m_debuggerModule->GetRuntimeModule(),
-                                              pDE->m_methodToken,
-                                              nGenericArgs,
-                                              pGenericArgs,
-                                              &(pDE->m_ownerTypeHandle));
-
-
-    // We better have a MethodDesc at this point.
-    _ASSERTE(pDE->m_md != NULL);
-
-    ValidateFuncEvalReturnType(pDE->m_evalType , pDE->m_md->GetMethodTable());
-
-    // If this is a new object operation, then we should have a .ctor.
-    if ((pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT) && !pDE->m_md->IsCtor())
-    {
-        COMPlusThrow(kArgumentException, W("Arg_NoDefCTorWithoutTypeName"));
-    }
-
-    pDE->m_md->EnsureActive();
-
-    // Run the Class Init for this class, if necessary.
-    MethodTable * pOwningMT = pDE->m_ownerTypeHandle.GetMethodTable();
-    pOwningMT->EnsureInstanceActive();
-    pOwningMT->CheckRunClassInitThrowing();
-
-    if (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT)
-    {
-        // Work out the exact type of the allocated object
-        pDE->m_resultType = (nGenericArgs == 0)
-                           ? TypeHandle(pDE->m_md->GetMethodTable())
-                           : g_pEEInterface->LoadInstantiation(pDE->m_md->GetModule(), pDE->m_md->GetMethodTable()->GetCl(), nGenericArgs, pGenericArgs);
-    }
+    _ASSERTE(count == pDE->m_genericArgsCount);
+    TypeDataWalk walk(pDE->GetTypeArgData(), pDE->m_genericArgsNodeCount);
+    walk.ReadTypeHandles(count, pTypes);
+    return walk.Finished();
 }
-
 
 static BYTE* AllocateFuncEvalExternalResult(DebuggerEval* pDE)
 {
@@ -1161,104 +1045,46 @@ static BYTE* AllocateFuncEvalExternalResult(DebuggerEval* pDE)
     return pDE->CreateExternalMemory(pMT, size);
 }
 
-extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
-    DebuggerFuncEvalContext* pContext,
-    QCall::ObjectHandleOnStack declaringType, QCall::ObjectHandleOnStack methodOwner,
-    QCallExceptionStatus* qcallError)
+void* Debugger::AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType)
 {
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-
-    DebuggerEval* pDE = pContext->pEval;
-    ResolveFuncEvalGenericArgInfo(pDE);
-
-    MetaSig sig(pDE->m_md);
-    if (!isCallConv(sig.GetCallingConvention(), IMAGE_CEE_CS_CALLCONV_DEFAULT))
+    CONTRACTL
     {
-        COMPlusThrow(kArgumentException, W("Argument_CORDBBadVarArgCallConv"));
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
     }
+    CONTRACTL_END;
 
-    pContext->parameterCount = sig.NumFixedArgs();
-    pContext->flags = (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT ? FuncEvalNewObject : 0) |
-        (pDE->m_md->IsStatic() ? FuncEvalStatic : 0) |
-        (pDE->m_md->IsVtableMethod() ? FuncEvalVirtual : 0) |
-        (pDE->m_md->IsInterface() ? FuncEvalInterface : 0) |
-        (pDE->m_md->IsSharedByGenericInstantiations() ? FuncEvalShared : 0);
-
-    {
-        GCX_COOP();
-        OBJECTREF loaderAllocator = pDE->m_md->GetLoaderAllocator()->GetExposedObject();
-        GCPROTECT_BEGIN(loaderAllocator);
-        methodOwner.Set(pDE->m_md->AllocateStubMethodInfo());
-        declaringType.Set(pDE->m_ownerTypeHandle.GetManagedClassObject());
-        if (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT)
-        {
-            MethodTable* pResultMT = pDE->m_resultType.GetMethodTable();
-            pResultMT->EnsureInstanceActive();
-            ValidateFuncEvalReturnType(pDE->m_evalType, pResultMT);
-            if (pDE->m_resultType.IsByRefLike())
-            {
-                pContext->pResultData = AllocateFuncEvalExternalResult(pDE);
-                pContext->flags |= FuncEvalExternalResult;
-            }
-        }
-        GCPROTECT_END();
-    }
-
-    END_QCALL;
+    _ASSERTE(resultType == pDE->m_resultType);
+    return ::AllocateFuncEvalExternalResult(pDE);
 }
 
-extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
-    DebuggerFuncEvalContext* pContext, QCallExceptionStatus* qcallError)
+void Debugger::ProtectFuncEvalByRefResult(
+    DebuggerEval* pDE, TypeHandle resultType, DebuggerFuncEvalResult** ppResult)
 {
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-
-    DebuggerEval* pDE = pContext->pEval;
-    MetaSig sig(pDE->m_md);
-    pContext->returnElementType = sig.GetReturnType();
-    if (pDE->m_evalType != DB_IPCE_FET_NEW_OBJECT)
+    CONTRACTL
     {
-        pDE->m_resultType = sig.GetRetTypeHandleThrowing();
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
     }
+    CONTRACTL_END;
 
-    {
-        GCX_COOP();
-        if (pDE->m_resultType.IsByRefLike())
-        {
-            if ((pContext->flags & FuncEvalExternalResult) == 0)
-            {
-                pDE->m_resultType.GetMethodTable()->EnsureInstanceActive();
-                pContext->pResultData = AllocateFuncEvalExternalResult(pDE);
-                pContext->flags |= FuncEvalExternalResult;
-            }
-        }
-        else if (pContext->returnElementType == ELEMENT_TYPE_VALUETYPE ||
-                 ((pContext->flags & FuncEvalNewObject) != 0 && pDE->m_resultType.IsValueType()))
-        {
-            MethodTable* pMT = pDE->m_resultType.GetMethodTable();
-            pMT->EnsureInstanceActive();
-            _ASSERTE(*pContext->ppTemporaryResult == nullptr);
-            *pContext->ppTemporaryResult =
-                DebuggerExternalMemoryOwner::Create(pMT, pMT->GetNumInstanceFieldBytes());
-            pContext->pResultData = (*pContext->ppTemporaryResult)->GetMemory();
-            pContext->flags |= FuncEvalValueTypeResult;
-        }
-        if (pContext->returnElementType == ELEMENT_TYPE_BYREF)
-        {
-            _ASSERTE(*pContext->ppResult == nullptr);
-            *pContext->ppResult = new (interopsafe) DebuggerFuncEvalResult(pDE, pDE->m_resultType);
-            pContext->pResultByRefs = reinterpret_cast<void**>(&pDE->m_result[0]);
-        }
-    }
-
-    END_QCALL;
+    _ASSERTE(*ppResult == nullptr);
+    *ppResult = new (interopsafe) DebuggerFuncEvalResult(pDE, resultType);
 }
 
-extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgument(
+void Debugger::GetFuncEvalArgument(
     DebuggerFuncEvalContext* pContext, UINT32 index, DebuggerFuncEvalArgument* pArgument)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     _ASSERTE(index < pContext->argumentCount);
     DebuggerIPCE_FuncEvalArgData* pArg = &pContext->pEval->GetArgData()[index];
     pArgument->pLiteral = pArg->argLiteralData[0].GetNativeAddress();
@@ -1269,92 +1095,68 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgument(
         (pArg->argHome.kind != RAK_NONE ? FuncEvalRegister : 0);
 }
 
-extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
-    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack type, QCallExceptionStatus* qcallError)
+TypeHandle Debugger::GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index)
 {
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
-    _ASSERTE(index < pContext->argumentCount);
-    DebuggerIPCE_FuncEvalArgData* pArg = &pContext->pEval->GetArgData()[index];
+    _ASSERTE(index < pDE->m_argCount);
+    DebuggerIPCE_FuncEvalArgData* pArg = &pDE->GetArgData()[index];
     Debugger::TypeDataWalk walk(
         reinterpret_cast<DebuggerIPCE_TypeArgData*>(CORDB_ADDRESS_TO_PTR(pArg->fullArgType)),
         pArg->fullArgTypeNodeCount);
-    TypeHandle th = walk.ReadTypeHandle();
-    if (th.IsNull())
-    {
-        COMPlusThrow(kArgumentException, W("Argument_BadObjRef"));
-    }
-    {
-        GCX_COOP();
-        type.Set(th.GetManagedClassObject());
-    }
-
-    END_QCALL;
+    return walk.ReadTypeHandle();
 }
 
-extern "C" HRESULT QCALLTYPE DebugDebugger_GetFuncEvalObject(
-    DebuggerFuncEvalContext* pContext, UINT32 index, BOOL interior, QCall::ObjectHandleOnStack value)
+bool Debugger::IsFuncEvalArgumentPassedAsHandleValue(DebuggerEval* pDE, UINT32 index)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
-    _ASSERTE(index < pContext->argumentCount);
-    Object* pObject = interior
-        ? static_cast<Object*>(pContext->pInteriors[index])
-        : OBJECTREFToObject(GetFuncEvalObjectValue(
-            &pContext->pEval->GetArgData()[index], &pContext->pObjects[index], &pContext->pCapturedArguments[index]));
-    HRESULT hr = ValidateObject(pObject);
-    if (SUCCEEDED(hr))
+    CONTRACTL
     {
-        value.Set(ObjectToOBJECTREF(pObject));
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
     }
-    return hr;
+    CONTRACTL_END;
+
+    _ASSERTE(index < pDE->m_argCount);
+    return pDE->GetArgData()[index].argIsHandleValue;
 }
 
-extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
+BOOL Debugger::ReadFuncEvalPrimitiveRegister(
     DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     _ASSERTE(index < pContext->argumentCount);
     DebuggerIPCE_FuncEvalArgData* pArg = &pContext->pEval->GetArgData()[index];
     _ASSERTE(pArg->argElementType != ELEMENT_TYPE_VALUETYPE && !IsElementTypeSpecial(pArg->argElementType));
     return ReadFuncEvalRegisterValue(pContext->pEval, pArg, pValue);
 }
 
-extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
-    DebuggerFuncEvalContext* pContext, UINT32 index, void* pValue, UINT32 size,
-    QCallExceptionStatus* qcallError)
+void Debugger::WriteFuncEvalRegister(
+    DebuggerEval* pDE, UINT32 index, UINT64 value)
 {
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
+    CONTRACTL
     {
-        GCX_COOP();
-        _ASSERTE(index < pContext->argumentCount);
-        _ASSERTE(size <= sizeof(UINT64));
-        DebuggerIPCE_FuncEvalArgData* pArg = &pContext->pEval->GetArgData()[index];
-        _ASSERTE(!IsElementTypeSpecial(pArg->argElementType));
-        UINT64 bits = 0;
-        memcpyNoGCRefs(ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&bits), size), pValue, size);
-        SetFuncEvalRegisterValue(pContext->pEval, pArg, bits);
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
-    END_QCALL;
-}
+    CONTRACTL_END;
 
-extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalObjectRegister(
-    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack value,
-    QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-    {
-        GCX_COOP();
-        _ASSERTE(index < pContext->argumentCount);
-        OBJECTREF object = value.Get();
-        GCPROTECT_BEGIN(object);
-        SetFuncEvalRegisterValue(
-            pContext->pEval, &pContext->pEval->GetArgData()[index], ObjToArgSlot(object));
-        GCPROTECT_END();
-    }
-    END_QCALL;
+    _ASSERTE(index < pDE->m_argCount);
+    SetFuncEvalRegisterValue(pDE, &pDE->GetArgData()[index], value);
 }
 
 /*
@@ -1552,7 +1354,7 @@ static void ValidateFuncEvalArgumentCount(DebuggerEval* pDE)
 
 static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatcherStackAddr,
                                   DebuggerFuncEvalResult** ppResult,
-                                  DebuggerExternalMemoryOwner** ppTemporaryResult, HRESULT captureResult)
+                                  ExternalMemoryHandle** ppTemporaryResult, HRESULT captureResult)
 {
     CONTRACTL
     {
@@ -1629,7 +1431,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
 
 
     DebuggerFuncEvalResultHolder result;
-    DebuggerExternalMemoryOwnerHolder temporaryResult;
+    ExternalMemoryHandle* temporaryResult = nullptr;
 
     //
     // An array to hold object ref args. This array is protected from GC's.
@@ -1694,6 +1496,16 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     // Keep a null terminator so partially registered snapshots are cleaned up on failure.
     memset(pArgumentHandles, 0, cbAllocSize);
 
+    DebuggerFuncEvalData data = {};
+    data.pModule = pDE->m_debuggerModule->GetRuntimeModule();
+    data.ppMethod = &pDE->m_md;
+    data.pOwnerType = &pDE->m_ownerTypeHandle;
+    data.pResultType = &pDE->m_resultType;
+    data.pResult = pDE->m_result;
+    data.methodToken = pDE->m_methodToken;
+    data.genericArgsCount = pDE->m_genericArgsCount;
+    data.isNewObject = pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT;
+
     DebuggerFuncEvalContext context = {};
     context.pEval = pDE;
     context.pObjects = pObjectRefArray;
@@ -1702,8 +1514,11 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     context.pCapturedArguments = pBufferForArgsArray;
     context.pResultData = pDE->m_result;
     context.argumentCount = pDE->m_argCount;
+    context.pData = &data;
     Holder<ExternalMemoryHandle**, DoNothing<ExternalMemoryHandle**>, ReleaseFuncEvalArgumentHandles>
         argumentHandles(pArgumentHandles);
+    Holder<DebuggerFuncEvalContext*, DoNothing<DebuggerFuncEvalContext*>, FreeFuncEvalTemporaryResult>
+        temporaryResultHolder(&context);
 
     // Wrap everything in a EX_TRY so we catch any exceptions that could be thrown.
     // Note that we don't let any thrown exceptions cross the AppDomain boundary because we don't
@@ -1731,7 +1546,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
         // The result slot is registered as an interior root for byref returns. Release
         // that registration before replacing the slot with an exception OBJECTHANDLE.
         result = nullptr;
-        temporaryResult = nullptr;
+        temporaryResultHolder.Release();
 
         // Managed code can create the result handle immediately before an abort reaches
         // the UCO boundary. Destroy it unless the successful path transferred ownership
@@ -1751,7 +1566,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     // the funceval.  If a ThreadAbort occurred other than for a funcEval abort, we'll re-throw it manually.
     EX_END_CATCH
 
-    temporaryResult.Release();
+    temporaryResultHolder.Release();
     argumentHandles.Release();
     GCPROTECT_END();    // pByRefMaybeInteriorPtrArray
     GCPROTECT_END();    // pMaybeInteriorPtrArray
@@ -1825,7 +1640,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
                 if (th.IsNull() || th.ContainsGenericVariables())
                     COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
 
-                ValidateFuncEvalReturnType(DB_IPCE_FET_NEW_OBJECT_NC, th.GetMethodTable());
+                ValidateFuncEvalReturnType(true, th.GetMethodTable());
 
                 // Run the Class Init for this type, if necessary.
                 MethodTable * pOwningMT = th.GetMethodTable();

@@ -35,6 +35,7 @@
 #include "appdomain.hpp"
 #include "eedbginterface.h"
 #include "dbginterface.h"
+#include "debugdebugger.h"
 #include "corhost.h"
 #include "debugwait.h"
 
@@ -369,8 +370,6 @@ inline bool ThisMaybeHelperThread() { return true; }
 
 extern void CopyREGDISPLAY(REGDISPLAY* pDst, REGDISPLAY* pSrc);
 bool HandleIPCEventWrapper(Debugger* pDebugger, DebuggerIPCEvent *e);
-
-HRESULT ValidateObject(Object *objPtr);
 
 //-----------------------------------------------------------------------------
 // Execution control needs several ways to get at the context of a thread
@@ -2525,6 +2524,22 @@ public:
     HRESULT FuncEvalRudeAbort(DebuggerEval *debuggerEvalKey);
     HRESULT FuncEvalCleanup(DebuggerEval *debuggerEvalKey);
 
+#ifndef DACCESS_COMPILE
+    virtual bool ReadFuncEvalTypeHandles(
+        DebuggerEval* pDE, TypeHandle* pTypes, uint32_t count);
+    virtual void* AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType);
+    virtual void ProtectFuncEvalByRefResult(
+        DebuggerEval* pDE, TypeHandle resultType, DebuggerFuncEvalResult** ppResult);
+    virtual void GetFuncEvalArgument(
+        DebuggerFuncEvalContext* pContext, UINT32 index, DebuggerFuncEvalArgument* pArgument);
+    virtual TypeHandle GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index);
+    virtual bool IsFuncEvalArgumentPassedAsHandleValue(DebuggerEval* pDE, UINT32 index);
+    virtual BOOL ReadFuncEvalPrimitiveRegister(
+        DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue);
+    virtual void WriteFuncEvalRegister(
+        DebuggerEval* pDE, UINT32 index, UINT64 value);
+#endif // !DACCESS_COMPILE
+
     HRESULT SetReference(void *objectRefAddress, VMPTR_OBJECTHANDLE vmObjectHandle, void *newReference);
     HRESULT SetValueClass(void *oldData, void *newData, DebuggerIPCE_BasicTypeData *type);
 
@@ -3509,9 +3524,6 @@ private:
 
 typedef Wrapper<DebuggerFuncEvalResult*, DoNothing<DebuggerFuncEvalResult*>,
     DeleteInteropSafe<DebuggerFuncEvalResult>> DebuggerFuncEvalResultHolder;
-
-typedef Wrapper<DebuggerExternalMemoryOwner*, DoNothing<DebuggerExternalMemoryOwner*>,
-    DeleteInteropSafe<DebuggerExternalMemoryOwner>> DebuggerExternalMemoryOwnerHolder;
 
 /* ------------------------------------------------------------------------ *
  * New/delete overrides to use the debugger's private heap
