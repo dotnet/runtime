@@ -117,6 +117,18 @@
     <AutoUnifyAssemblyReferences>true</AutoUnifyAssemblyReferences>
   </PropertyGroup>
 
+  <Target Name="CopyInteropNativeRuntimeDependencies"
+    BeforeTargets="CopyAllNativeProjectReferenceBinaries"
+    Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
+    <Warning Text="Building C++/CLI tests requires a Visual Studio Dev Command Prompt" Condition="'$(VCToolsRedistDir)' == '' or '$(ExtensionSdkDir)' == ''" />
+    <ItemGroup Condition="'$(VCToolsRedistDir)' != '' and '$(ExtensionSdkDir)' != ''">
+      <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" />
+      <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/msvcp*d.dll" />
+      <InteropNativeRuntimeDependencies Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(TargetArchitecture)/ucrtbased.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(InteropNativeRuntimeDependencies)" DestinationFolder="$(OutputPath)" />
+  </Target>
+
   <!-- Project language -->
   <!-- TODO: This might just be the Language property -->
   <PropertyGroup Condition="'$(ProjectLanguage)' == ''">
@@ -563,6 +575,17 @@
   <!-- RunOnly projects have a special build for dependent projects -->
   <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
 
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetOS)' == 'wasi'" />
+
+  <Target Name="SetNativeAotWasiSdkPath"
+          BeforeTargets="SetupOSSpecificProps"
+          DependsOnTargets="AcquireWasiSdk"
+          Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetOS)' == 'wasi'">
+    <PropertyGroup>
+      <WASI_SDK_PATH>$(RuntimeBuildWasiSdkPath)</WASI_SDK_PATH>
+    </PropertyGroup>
+  </Target>
+
   <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <!-- The test infra already sets up the environment for native compilation.
          The ILC targets don't have to do that. The batch script to set up environment
@@ -609,7 +632,7 @@
     <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to set
          rpath so that the test can load its native library dependencies if there's any -->
     <LinkerArg Include="-Wl,-rpath,'@executable_path/..'" Condition="'$(SetIlcRPath)' != 'false' and ('$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true')" />
-    <LinkerArg Include="-Wl,-rpath,'$ORIGIN/..'" Condition="'$(SetIlcRPath)' != 'false' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetsAppleMobile)' != 'true'" />
+    <LinkerArg Include="-Wl,-rpath,'$ORIGIN/..'" Condition="'$(SetIlcRPath)' != 'false' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetsAppleMobile)' != 'true' and '$(TargetArchitecture)' != 'wasm'" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />

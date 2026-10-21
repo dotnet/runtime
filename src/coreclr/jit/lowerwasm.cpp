@@ -580,15 +580,14 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 
     // Contain a relocatable address constant so it folds into the load's memarg offset.
     //
-    // Codegen for such a constant is "global.get $imageBase; i32.const <reloc>; i32.add"; containing it lets
-    // genCodeForIndir emit just the image base and put the relocated address in the memarg instead. Only loads
-    // can do this: the parent emits the base in place of the address, and a store cannot because its value
-    // operand has already been pushed. A multiply-used address is excluded because codegen re-materializes it
-    // from a register that would no longer hold the full address.
+    // The load emits the address base and puts the relocated address in the memarg. A store cannot contain
+    // its address because its value operand has already been pushed. Multiply-used addresses are excluded
+    // because codegen re-materializes them from registers that must still hold the full address.
     //
-    GenTree* addr = indirNode->Addr();
+    GenTree* addr                    = indirNode->Addr();
+    bool     isNativeFunctionAddress = m_compiler->IsNativeAot() && addr->IsIconHandle(GTF_ICON_FTN_ADDR);
     if (indirNode->OperIs(GT_IND) && !indirNode->TypeIs(TYP_SIMD12) && addr->IsIconHandle() &&
-        addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler) &&
+        !isNativeFunctionAddress && addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler) &&
         ((addr->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None))
     {
         MakeSrcContained(indirNode, addr);
