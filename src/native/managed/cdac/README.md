@@ -49,6 +49,19 @@ Both the universal cDAC and the separately built
 The separate NativeAOT project controls its exports, architecture restrictions,
 size settings, and installation without duplicating collection logic.
 
+On Windows x64 and ARM64, this provider also exports
+`OutOfProcessFunctionTableCallback` and `OutOfProcessFunctionTableCallbackEx`.
+These callbacks construct a normal reader with a small built-in descriptor,
+then reuse `ExecutionManager.GetDynamicFunctionTableEntries` to enumerate JIT
+unwind records from the registered JIT-manager context. They do not find or parse
+a descriptor in the target, and need no process-global addresses.
+The HANDLE entrypoint supplies `ReadProcessMemory`; the Ex entrypoint uses the
+caller's reader. Both return process-heap allocations, as the native DAC does.
+The layouts are build-matched and checked against the VM in `fntableaccess.h`.
+Both the callbacks and `IXCLRDataProcess3.GetFunctionTable` share the same traversal.
+On Windows x86, both callbacks return `STATUS_UNSUCCESSFUL` without reading target
+memory or modifying output parameters, matching the native DAC's failure stubs.
+
 With `UseCdacDumpCollectProvider=true`, the native build omits both the legacy
 DAC and legacy DBI, but still builds `mscordbi_universal`. These builds retain
 the Windows `CLRDEBUGINFO` resources with the CoreCLR signature and zero
