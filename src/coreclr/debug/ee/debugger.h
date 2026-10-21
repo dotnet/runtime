@@ -463,6 +463,7 @@ public:
     static void *operator new[](size_t size);
     static void *operator new[](size_t size, const std::nothrow_t &) noexcept;
     static void operator delete[](void *memory);
+    static void operator delete[](void *memory, const std::nothrow_t &) noexcept;
 #endif
 };
 

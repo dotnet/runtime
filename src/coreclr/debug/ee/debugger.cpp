@@ -85,6 +85,11 @@ void DebuggerHeapHashEntry::operator delete[](void *memory)
     CNewZeroData::Free(static_cast<BYTE *>(memory), 0);
 }
 
+void DebuggerHeapHashEntry::operator delete[](void *memory, const std::nothrow_t &) noexcept
+{
+    operator delete[](memory);
+}
+
 DebuggerRCThread        *g_pRCThread = NULL;
 
 // Do some compile time checking on the events in DbgIpcEventTypes.h
