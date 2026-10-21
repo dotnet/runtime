@@ -353,7 +353,9 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(42, buffer[0]);
             if (!OperatingSystem.IsWasi())
             {
-                // On WASI, readiness can stay set after the data is drained until a read would block.
+                // WASI readiness is advisory: it is cleared only when a read returns would-block,
+                // so the socket can still report readable after the data is drained.
+                // See https://github.com/bytecodealliance/wasmtime/issues/9667.
                 Assert.False(IsReady(server, SelectMode.SelectRead, useSelect), "readable after drain");
             }
 
