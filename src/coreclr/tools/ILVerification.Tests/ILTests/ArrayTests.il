@@ -88,4 +88,91 @@
         stloc.1
         ret
     }
+
+    .method public hidebysig instance void LoadElement.RefFromNull_Valid() cil managed
+    {
+        .locals init (
+            [0] string
+        )
+
+        // string s = ((string[])null)[0];
+
+        ldnull
+        ldc.i4.0
+        ldelem.ref
+        stloc.0
+        ret
+    }
+
+    .method public hidebysig instance void LoadElement.Int32FromString_Invalid_ExpectedArray() cil managed
+    {
+        ldstr       "a"
+        ldc.i4.0
+        ldelem.i4
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void LoadElement.RefFromString_Invalid_ExpectedArray() cil managed
+    {
+        ldstr       "a"
+        ldc.i4.0
+        ldelem.ref
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void LoadElement.TokenFromString_Invalid_ExpectedArray() cil managed
+    {
+        ldstr       "a"
+        ldc.i4.0
+        ldelem      [System.Runtime]System.Int32
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void LoadElement.RefFromInt32_Invalid_ExpectedArray() cil managed
+    {
+        ldc.i4.0
+        ldc.i4.0
+        ldelem.ref
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void StoreElement.Int32IntoString_Invalid_ExpectedArray() cil managed
+    {
+        ldstr       "a"
+        ldc.i4.0
+        ldc.i4.0
+        stelem.i4
+        ret
+    }
+
+    .method public hidebysig instance void StoreElement.RefIntoString_Invalid_ExpectedArray() cil managed
+    {
+        ldstr       "a"
+        ldc.i4.0
+        ldnull
+        stelem.ref
+        ret
+    }
+
+    .method public hidebysig instance void StoreElement.TokenIntoString_Invalid_ExpectedArray() cil managed
+    {
+        ldstr       "a"
+        ldc.i4.0
+        ldc.i4.0
+        stelem      [System.Runtime]System.Int32
+        ret
+    }
+
+    .method public hidebysig instance void LoadElementAddress.FromString_Invalid_ExpectedArray() cil managed
+    {
+        ldstr       "a"
+        ldc.i4.0
+        ldelema     [System.Runtime]System.Int32
+        pop
+        ret
+    }
 }

@@ -1522,6 +1522,15 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
             ValueNum op1VN = optConservativeNormalVN(op1);
             ValueNum op2VN = optConservativeNormalVN(op2);
 
+            // CSE may expose a field/array expression instead of a local.
+            // Its conservative VN identifies the tested value, not a later mutable reload.
+            if ((op1VN != ValueNumStore::NoVN) && op1->TypeIs(TYP_REF) && (op2VN == ValueNumStore::VNForNull()))
+            {
+                AssertionDsc assertion =
+                    AssertionDsc::CreateConstLclVarAssertion(this, BAD_VAR_NUM, op1VN, 0, op2VN, equals);
+                return optAddAssertion(assertion);
+            }
+
             // For TP reasons, limited to 32-bit constants on the op2 side.
             if (op1VN != ValueNumStore::NoVN && op2VN != ValueNumStore::NoVN && vnStore->IsVNInt32Constant(op2VN) &&
                 !vnStore->IsVNHandle(op2VN))
@@ -2245,6 +2254,13 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     {
         std::swap(op1, op2);
     }
+    // Leave calls below so isinst helpers can generate the stronger subtype assertion.
+    if (!optLocalAssertionProp && op1->TypeIs(TYP_REF) && !op1->OperIs(GT_CALL) && op2->IsIntegralConst(0) &&
+        op2->TypeIs(TYP_REF))
+    {
+        return optCreateJtrueAssertions(op1, op2, equals);
+    }
+
     // Validate op1 and op2
     if (!op1->OperIs(GT_CALL) || !op1->AsCall()->IsHelperCall() || !op1->TypeIs(TYP_REF) || // op1
         !op2->OperIs(GT_CNS_INT) || (op2->AsIntCon()->IconValue() != 0))                    // op2
@@ -2427,6 +2443,14 @@ void Compiler::optAssertionGen(GenTree* tree)
                 GenTree* thisArg = call->gtArgs.GetThisArg()->GetNode();
                 assert(thisArg != nullptr);
                 assertionInfo = optCreateAssertion(thisArg, nullptr, /*equals*/ false);
+            }
+            else if (optLocalAssertionProp &&
+                     (call->IsHelperCall(CORINFO_HELP_ARRADDR_ST) || call->IsHelperCall(CORINFO_HELP_LDELEMA_REF)))
+            {
+                // Normal helper return proves the source array non-null.
+                // Keep Global AP's single assertion slot for its existing bounds fact.
+                GenTree* arrRef = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+                assertionInfo   = optCreateAssertion(arrRef, nullptr, /*equals*/ false);
             }
             else if (!optLocalAssertionProp)
             {
@@ -5235,8 +5259,6 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
         return false;
     }
 
-    // Inspect the reaching assertions for the vn and vnBase.
-    //
     auto visitor = [this, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
         return optAssertionVNIsNonNull(reachingVN, reachingAssertions, budget - 1) ? AssertVisit::Continue
                                                                                    : AssertVisit::Abort;

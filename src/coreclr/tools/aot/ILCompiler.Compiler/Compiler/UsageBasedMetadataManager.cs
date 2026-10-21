@@ -1045,13 +1045,9 @@ namespace ILCompiler
                 // Generate the forwarder only if we generated the target type.
                 // If the target type is in a different compilation group, assume we generated it there.
                 var targetType = (MetadataType)module.GetObject(exportedTypeHandle, NotFoundBehavior.ReturnNull);
-                if (targetType == null)
-                {
-                    // No harm in generating a forwarder that didn't resolve.
-                    // We'll get matching behavior at runtime.
-                    return true;
-                }
-                return GeneratesMetadata(targetType) || !_factory.CompilationModuleGroup.ContainsType(targetType);
+
+                return targetType is not null &&
+                    (GeneratesMetadata(targetType) || !_factory.CompilationModuleGroup.ContainsType(targetType));
             }
 
             public bool GeneratesInterfaceImpl(MetadataType typeDef, MetadataType interfaceImpl)

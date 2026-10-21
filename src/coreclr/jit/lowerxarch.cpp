@@ -4106,9 +4106,10 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     GenTree* tmp2 = nullptr;
     GenTree* tmp3 = nullptr;
 
-    bool   isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal);
-    bool   isCreateScalar = HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId);
-    size_t argCnt         = node->GetOperandCount();
+    simdmask_t cnsMask        = {};
+    bool       isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal, &cnsMask);
+    bool       isCreateScalar = HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId);
+    size_t     argCnt         = node->GetOperandCount();
 
     if (isConstant)
     {
@@ -4586,6 +4587,17 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     }
 
     assert(simdType == TYP_SIMD16);
+
+    // If two or more of the operands are constants that are not all-bits-zero, we can materialize
+    // them as a vector constant and insert the remaining non-constant operands into it. This is both
+    // fewer nodes and typically cheaper than a chain of inserts starting from CreateScalarUnsafe. We
+    // only consider such constants because all-bits-zero lanes are effectively free to produce (for
+    // example, insertps can zero lanes as part of another insert), so materializing them into a
+    // constant can regress.
+    if (NonZeroConstantElementCount(&simdVal, cnsMask, simdBaseType) >= 2)
+    {
+        return LowerHWIntrinsicCreateWithInserts(node, &simdVal, cnsMask);
+    }
 
     // We will be constructing the following parts:
     //          /--*  op1  T
@@ -7838,12 +7850,14 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     switch (tupleType)
                     {
                         case INS_TT_HALF_MEM:
+                        case INS_TT_HALF:
                         {
                             memSize = simdSize / 2;
                             break;
                         }
 
                         case INS_TT_QUARTER_MEM:
+                        case INS_TT_QUARTER:
                         {
                             memSize = simdSize / 4;
                             break;
@@ -8963,6 +8977,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                             break;
                         }
 
+                        case INS_TT_QUARTER:
                         case INS_TT_QUARTER_MEM:
                         {
                             expectedSize /= 4;
