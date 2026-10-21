@@ -247,6 +247,23 @@ HCIMPLEND
 
 #include <optdefault.h>
 
+#ifdef FEATURE_IJW
+HCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(pField->IsStatic() && pField->IsRVA());
+
+    Module* pModule = pField->GetModule();
+    DWORD fieldRva = pField->GetOffset();
+    _ASSERTE(pModule->IsRvaFieldTls(fieldRva));
+
+    uint8_t** pTlsArray = static_cast<uint8_t**>(NtCurrentTeb()->ThreadLocalStoragePointer);
+    return pTlsArray[pModule->GetTlsIndex()] + pModule->GetFieldTlsOffset(fieldRva);
+}
+HCIMPLEND
+#endif // FEATURE_IJW
+
 // Helper for the managed InitClass implementations
 extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallExceptionStatus* qcallError)
 {
