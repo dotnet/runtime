@@ -53,6 +53,31 @@ SHash<TRAITS>::~SHash()
 }
 
 template <typename TRAITS>
+const typename SHash<TRAITS>::element_t *SHash<TRAITS>::GetNext(count_t &index) const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    Iterator iterator(this, FALSE);
+    iterator.m_index = index;
+    iterator.First();
+    if (iterator.m_index >= m_tableSize)
+        return nullptr;
+
+    index = iterator.m_index + 1;
+    return &*iterator;
+}
+
+#ifdef DACCESS_COMPILE
+template <typename TRAITS>
+void SHash<TRAITS>::EnumMemoryRegions()
+{
+    SUPPORTS_DAC;
+    if (m_table != nullptr)
+        DacEnumMemoryRegion(dac_cast<TADDR>(m_table), m_tableSize * sizeof(element_t));
+}
+#endif
+
+template <typename TRAITS>
 typename SHash<TRAITS>::count_t SHash<TRAITS>::GetCount() const
 {
     LIMITED_METHOD_CONTRACT;
@@ -282,7 +307,7 @@ void SHash<TRAITS>::RemovePtr(element_t * p)
 }
 
 template <typename TRAITS>
-void SHash<TRAITS>::RemoveAll()
+void SHash<TRAITS>::RemoveAll(bool retainCapacity)
 {
     CONTRACTL
     {
@@ -300,13 +325,20 @@ void SHash<TRAITS>::RemoveAll()
         }
     }
 
-    delete [] m_table;
-
-    m_table = NULL;
-    m_tableSize = 0;
+    if (retainCapacity)
+    {
+        for (count_t i = 0; i < m_tableSize; i++)
+            m_table[i] = TRAITS::Null();
+    }
+    else
+    {
+        delete [] m_table;
+        m_table = NULL;
+        m_tableSize = 0;
+        m_tableMax = 0;
+    }
     m_tableCount = 0;
     m_tableOccupied = 0;
-    m_tableMax = 0;
 }
 
 template <typename TRAITS>

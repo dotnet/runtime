@@ -231,14 +231,22 @@ class EMPTY_BASES SHash : public TRAITS
 
     void RemovePtr(element_t * element);
 
-    // Remove all elements in the hashtable
+    // Remove all elements, optionally retaining the backing array for reuse.
 
-    void RemoveAll();
+    void RemoveAll(bool retainCapacity = false);
 
     // Begin and End pointers for iteration over entire table.
 
     Iterator Begin() const;
     Iterator End() const;
+
+    // Index-based traversal does not retain a pointer into reallocatable storage.
+    // The caller must exclude additions while enumerating.
+    const element_t *GetNext(count_t &index) const;
+
+#ifdef DACCESS_COMPILE
+    void EnumMemoryRegions();
+#endif
 
     // Begin and End pointers for iteration over all elements with a given key.
 
