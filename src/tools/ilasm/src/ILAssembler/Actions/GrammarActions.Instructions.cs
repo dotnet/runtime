@@ -65,9 +65,9 @@ internal sealed partial class GrammarActions
         }
         else
         {
-            for (int i = method.LocalsScopes.Count - 1; i >= 0; i--)
+            for (int i = method.OpenScopes.Count - 1; i >= 0; i--)
             {
-                if (method.LocalsScopes[i].TryGetValue(variableName, out int localIndex))
+                if (method.OpenScopes[i].Names.TryGetValue(variableName, out int localIndex))
                 {
                     index = localIndex;
                     break;

@@ -1552,11 +1552,17 @@ void HelperCallProperties::init()
             case CORINFO_HELP_ISINSTANCEOFCLASS:
             case CORINFO_HELP_ISINSTANCEOFANY:
             case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
-            case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
 
                 isPure     = true;
                 exceptions = ExceptionSetFlags::None; // These return null for a failing cast
+                break;
+
+            case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
+                // Public default-handle null handling bypasses this internal, non-null-returning helper.
+                isPure        = true;
+                exceptions    = ExceptionSetFlags::None;
+                nonNullReturn = true;
                 break;
 
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
@@ -1593,7 +1599,9 @@ void HelperCallProperties::init()
                 break;
 
             case CORINFO_HELP_LDELEMA_REF:
-                isPure = true;
+                // The returned slot address cannot be null; the object stored there can be.
+                isPure        = true;
+                nonNullReturn = true;
                 break;
 
             // GETREFANY is pure up to the value of the struct argument. We
