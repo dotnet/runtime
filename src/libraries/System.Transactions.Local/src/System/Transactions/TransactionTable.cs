@@ -8,13 +8,13 @@ namespace System.Transactions
 {
     internal sealed class CheapUnfairReaderWriterLock
     {
-        private object? _writerFinishedEvent;
+        private readonly ManualResetEventSlim _writerFinishedEvent = new ManualResetEventSlim(true);
 
         private int _readersIn;
         private int _readersOut;
         private bool _writerPresent;
 
-        private object? _syncRoot;
+        private readonly Lock _writerLock = new Lock();
 
         // Spin lock params
         private const int MAX_SPIN_COUNT = 100;
@@ -24,45 +24,22 @@ namespace System.Transactions
         {
         }
 
-        private object SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    Interlocked.CompareExchange(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
-        }
-
-        private bool ReadersPresent => _readersIn != _readersOut;
-
-        private ManualResetEvent WriterFinishedEvent
-        {
-            get
-            {
-                if (_writerFinishedEvent == null)
-                {
-                    Interlocked.CompareExchange(ref _writerFinishedEvent, new ManualResetEvent(true), null);
-                }
-                return (ManualResetEvent)_writerFinishedEvent;
-            }
-        }
+        // Acquire on _readersOut: once a reader's exit is seen, its writes inside the lock must be too.
+        private bool ReadersPresent => _readersIn != Volatile.Read(ref _readersOut);
 
         public int EnterReadLock()
         {
             int readerIndex;
             do
             {
-                if (_writerPresent)
+                if (Volatile.Read(ref _writerPresent))
                 {
-                    WriterFinishedEvent.WaitOne();
+                    _writerFinishedEvent.Wait();
                 }
 
                 readerIndex = Interlocked.Increment(ref _readersIn);
 
-                if (!_writerPresent)
+                if (!Volatile.Read(ref _writerPresent))
                 {
                     break;
                 }
@@ -76,10 +53,12 @@ namespace System.Transactions
 
         public void EnterWriteLock()
         {
-            Monitor.Enter(SyncRoot);
+            _writerLock.Enter();
 
             _writerPresent = true;
-            WriterFinishedEvent.Reset();
+            // Pairs with EnterReadLock: publish _writerPresent before reading the reader counts.
+            Interlocked.MemoryBarrier();
+            _writerFinishedEvent.Reset();
 
             do
             {
@@ -107,12 +86,12 @@ namespace System.Transactions
         {
             try
             {
-                _writerPresent = false;
-                WriterFinishedEvent.Set();
+                Volatile.Write(ref _writerPresent, false);
+                _writerFinishedEvent.Set();
             }
             finally
             {
-                Monitor.Exit(SyncRoot);
+                _writerLock.Exit();
             }
         }
     }
