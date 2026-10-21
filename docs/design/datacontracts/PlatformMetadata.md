@@ -27,6 +27,7 @@ This contract exposes properties that describe the target platform
 | Data Descriptor | Field | Type | Meaning |
 | --- | --- | --- | --- |
 | `PlatformMetadata` | `CodePointerFlags` | `uint8` | fields describing the behavior of target code pointers |
+| `PlatformMetadata` | `PointerAuthenticationMask` | `uint64` | Bits to clear from pointer-authenticated return addresses |
 | `PlatformMetadata` | `PrecodeMachineDescriptor` | `pointer` | precode stub-related platform specific properties |
 
 ### Global variables used
