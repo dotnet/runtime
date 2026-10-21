@@ -67,11 +67,11 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\Net8Tests\System.Numerics.Tensors.Net8.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <ProjectExclusions Include="$(MonoProjectRoot)sample/wasm/**/*.csproj" />
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Linux CI; CoreCLR isn't known to hit this. -->
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Mono -->
     <ProjectExclusions Include="$(RepoRoot)src/tests/FunctionalTests/WebAssembly/Browser/HotReload/WebAssembly.Browser.HotReload.Test.csproj"
-                       Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
+                       Condition="'$(RuntimeFlavor)' == 'Mono'" />
   </ItemGroup>
 
   <!-- Samples that require a multi-threaded runtime -->
