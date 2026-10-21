@@ -1318,7 +1318,6 @@ namespace System.Net.Sockets.Tests
         public SendReceive_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendReceive_Apm : SendReceive<SocketHelperApm>
     {
         public SendReceive_Apm(ITestOutputHelper output) : base(output) {}
