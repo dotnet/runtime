@@ -1,0 +1,20 @@
+{
+  "binarytrees": {
+    "size": 16,
+    "ops": 0,
+    "min_java": 7,
+    "min_net": 10
+  },
+  "requests": {
+    "size": 32768,
+    "ops": 600000,
+    "min_java": 13,
+    "min_net": 21
+  },
+  "listsuffix": {
+    "size": 4096,
+    "ops": 800000,
+    "min_java": 7,
+    "min_net": 10
+  }
+}

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta name="description" content="Matched benchmarks of the Java LXR and our .NET port in real use: no explicit collections, same programs written twice, same checksums.">
+    <title>The collectors in real use: the Java LXR and our .NET port, without forced collections</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #08131c;
+            --panel: #102331;
+            --panel-soft: #0c1b27;
+            --line: #355264;
+            --text: #edf3f7;
+            --muted: #b8cad6;
+            --java: #75e2cc;
+            --port: #ffc481;
+            --link: #92d5ff;
+            --warn: #fb7185;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: radial-gradient(ellipse at 10% 0, #16313d 0, transparent 44rem), var(--bg);
+            color: var(--text);
+            font: 1.0625rem/1.75 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        a { color: var(--link); text-underline-offset: 0.2em; }
+        a:hover { color: var(--java); }
+        :focus-visible { outline: 3px solid var(--java); outline-offset: 4px; }
+        h1, h2, h3 { line-height: 1.25; text-wrap: balance; }
+        h1 { margin: 0.5rem 0 1.2rem; font-size: clamp(2.1rem, 5.5vw, 3.6rem); letter-spacing: -0.04em; }
+        h2 { margin: 0 0 1.1rem; font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -0.02em; }
+        h3 { margin: 1.8rem 0 0.6rem; font-size: 1.3rem; }
+        p, li { max-width: 46rem; }
+        p { margin: 0.8rem 0 1.1rem; }
+        li { margin: 0.5rem 0; }
+        code { font: 0.9em/1.5 "Cascadia Code", Consolas, monospace; overflow-wrap: anywhere; }
+        .wrap { width: min(1100px, calc(100% - 2.5rem)); margin-inline: auto; }
+        header { padding: 3.5rem 0 1.5rem; }
+        .eyebrow { margin: 0; color: var(--java); font-size: 0.85rem; font-weight: 750; letter-spacing: 0.12em; text-transform: uppercase; }
+        .lead { font-size: 1.25rem; color: #d6e3ea; }
+        .java { color: var(--java); }
+        .port { color: var(--port); }
+        .src { color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
+        nav { display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; padding: 1rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        nav a { font-weight: 650; }
+        main > section { padding: 2.8rem 0; border-bottom: 1px solid var(--line); }
+        [id] { scroll-margin-top: 1.5rem; }
+        .box { max-width: 52rem; padding: 1.1rem 1.4rem; margin: 1.4rem 0; border: 1px solid var(--line); border-left: 5px solid var(--java); border-radius: 12px; background: var(--panel); }
+        .box.alert { border-left-color: var(--warn); }
+        .box.port-box { border-left-color: var(--port); }
+        .box h3 { margin-top: 0.2rem; }
+        .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+        .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin: 1.2rem 0; }
+        .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.2rem; margin: 1.2rem 0; }
+        .two > div, .three > div { padding: 1.1rem 1.3rem; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+        .two h3, .three h3 { margin-top: 0; }
+        figure { margin: 1.6rem 0; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); overflow: hidden; }
+        .visual { overflow-x: auto; padding: 1rem; }
+        .visual svg { display: block; width: 100%; min-width: 820px; height: auto; }
+        figcaption { padding: 0.8rem 1.2rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.92rem; }
+        svg text { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #edf3f7; font-size: 15px; }
+        svg .b { font-size: 16px; font-weight: 700; }
+        svg .c { font-size: 13px; fill: #b8cad6; }
+        svg .v { font-size: 11.5px; fill: #edf3f7; }
+        svg .rt { fill: #fb7185; }
+        details { max-width: 100%; margin: 1rem 0; padding: 0.9rem 1.2rem; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-soft); }
+        summary { cursor: pointer; font-weight: 700; color: var(--link); }
+        details[open] > summary { margin-bottom: 0.9rem; }
+        .table-wrap { max-width: 100%; overflow-x: auto; margin: 1.2rem 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+        th, td { padding: 0.55rem 0.7rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+        th { color: var(--java); font-size: 0.84rem; }
+        thead th { background: #142c3c; }
+        caption { text-align: left; font-weight: 700; padding: 0 0 0.8rem; }
+        dt { font-weight: 700; color: var(--java); margin-top: 0.8rem; }
+        dd { margin: 0.2rem 0 0.6rem; max-width: 44rem; }
+        footer { padding: 2rem 0 3rem; color: var(--muted); font-size: 0.9rem; }
+        .skip { position: absolute; left: 1rem; top: -10rem; padding: 0.7rem; background: var(--bg); z-index: 1; }
+        .skip:focus { top: 1rem; }
+        @media (max-width: 720px) {
+            .two, .three { grid-template-columns: 1fr; }
+            .wrap { width: calc(100% - 1.5rem); }
+            header { padding-top: 2.2rem; }
+            main > section { padding: 2rem 0; }
+        }
+        @media print {
+            :root { color-scheme: light; --bg: #fff; --panel: #fff; --panel-soft: #f4f6f8; --line: #9daab3; --text: #101820; --muted: #344753; --java: #006355; --port: #804200; --link: #064c81; --warn: #9b1c31; }
+            body { background: #fff; font-size: 10.5pt; }
+            .visual svg { min-width: 0; background: #102331; print-color-adjust: exact; }
+            nav, .skip { display: none; }
+            figure, .box { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <a class="skip" href="#main">Skip to the report</a>
+    <header class="wrap">
+        <p class="eyebrow">Real use / no forced collections / matched programs</p>
+        <h1>What the collectors do when nobody calls the GC</h1>
+        <p class="lead">Our earlier tests called <code>GC.Collect()</code> eight times. Real programs do not do that. This page measures what happens when the collector runs by itself, because the program allocates memory. We wrote the same three programs in C# and in Java. We ran them on the Java LXR, on our .NET port and on the standard collectors of both runtimes.</p>
+        <nav aria-label="Sections">
+            <a href="#answer">Short answer</a>
+            <a href="#what">What we ran</a>
+            <a href="#results">Results</a>
+            <a href="#stalls">Stalls</a>
+            <a href="#kinds">Kinds of collections</a>
+            <a href="#meaning">What it means</a>
+            <a href="#limits">Limits</a>
+            <a href="#all">All numbers</a>
+            <a href="#repeat">Repeat it</a>
+        </nav>
+    </header>
+    <main id="main" class="wrap">
+
+        <section id="answer" aria-labelledby="answer-h">
+            <p class="eyebrow">Short answer</p>
+            <h2 id="answer-h">The gap is real, and it is not only about full collections</h2>
+            <ul>
+                <li><strong>Our port is much slower in real use.</strong> In all 24 cases where it finished, it needed 7.5 to 28 times the wall time and 12 to 43 times the CPU time of the .NET Workstation GC.</li>
+                <li><strong>The Java LXR is close to the standard Java collectors.</strong> At 4 times the minimum heap or more, it is 1.1 to 2.2 times slower than Java G1. So the Java LXR is a real, working target.</li>
+                <li><strong>Our port stops the program for a long time.</strong> Its longest stall is 140 ms to 1.9 s. The Java LXR and the standard collectors stay below 50 ms.</li>
+                <li><strong>Even the cheap collections are slow in our port.</strong> In the binary-trees program, neither LXR runs a full collection. The Java LXR pauses for 2 ms on average. Our port pauses for 109 ms.</li>
+                <li><strong>Our port also chooses full collections too often.</strong> In the requests program at 4 times the minimum heap, 51 of its 57 collections are full collections. The Java LXR runs none in 113.</li>
+                <li><strong>Our port stops with "Out of memory"</strong> in the tightest heap of the list-suffix program, where .NET Workstation and the Java LXR both finish.</li>
+            </ul>
+            <div class="box alert">
+                <h3>This changes our earlier picture</h3>
+                <p>We studied forced full collections first. That was too narrow. In real use, the cost comes from three places: slow normal collections, too many full collections, and slow full collections. All three need work.</p>
+            </div>
+        </section>
+
+        <section id="what" aria-labelledby="what-h">
+            <p class="eyebrow">01</p>
+            <h2 id="what-h">What we ran</h2>
+            <h3>Three programs, written twice</h3>
+            <p>Each program exists in C# and in Java. The two versions do the same steps, use the same random numbers and compute the same checksum. All 234 successful runs of a program gave the same checksum, so every collector did the same work. (36 runs failed: see the limits.) No program asks for a collection while it is measured.</p>
+            <div class="three">
+                <div>
+                    <h3>Binary trees</h3>
+                    <p>A well-known GC test. It builds many short-lived trees of small objects and keeps one large tree alive. It makes many objects and many pointers. It does not change old objects.</p>
+                </div>
+                <div>
+                    <h3>Requests</h3>
+                    <p>Like a server with a cache. 32,768 cache entries stay alive (about 295,000 objects). Each of 600,000 requests builds 24 short-lived objects, reads 8 entries and, one time in 8, replaces an entry.</p>
+                </div>
+                <div>
+                    <h3>List suffix</h3>
+                    <p>4,096 lists of 64 nodes stay alive (262,144 objects). Each of 800,000 steps cuts a list at a random place and builds a new tail. It writes pointers into old objects and makes garbage.</p>
+                </div>
+            </div>
+            <h3>Who competes</h3>
+            <div class="two">
+                <div>
+                    <h3 class="java">In Java</h3>
+                    <p>The Java LXR, and the standard collectors G1, Parallel, Serial and ZGC. All run on the same Java build that contains the Java LXR.</p>
+                </div>
+                <div>
+                    <h3 class="port">In .NET</h3>
+                    <p>Our accepted port in three modes (no moving of objects, moving young objects, moving all objects), the Workstation GC and the Server GC. They run on the same .NET build.</p>
+                </div>
+            </div>
+            <h3>How big is the heap</h3>
+            <p>Java objects and .NET objects have different sizes. So we do not use one heap size for both. For each runtime, we find the smallest heap in which its simple standard collector (Java Serial, .NET Workstation) finishes the work. Then every collector of that runtime gets 2, 4 and 8 times this size. A tight heap makes the collector work more.</p>
+            <div class="table-wrap">{{TABLE_HEAPS}}</div>
+            <h3>What we measure</h3>
+            <ul>
+                <li><strong>Wall time and CPU time</strong> of the measured part. An unmeasured warm-up of one eighth of the work comes first.</li>
+                <li><strong>Collections and pause time.</strong> The runtime reports them. For the Java LXR, we read its own log, because the Java tools report nothing for it. For our port, we also read its own counters.</li>
+                <li><strong>Longest stall.</strong> A helper thread sleeps for 1 ms in a loop and notes how long it really waited. A long wait means that the program stopped. It uses the same method in both runtimes.</li>
+                <li><strong>Peak memory</strong> of the process (RSS).</li>
+            </ul>
+            <p>We ran each case 3 times, with the order of the collectors changed in each round, and we use the median. The machine has 16 logical CPUs (Intel Xeon Platinum 8370C) and runs Linux under WSL2. Both runtimes use their default number of GC threads, except that the .NET Server GC uses 2 heaps, as in our earlier tests.</p>
+        </section>
+
+        <section id="results" aria-labelledby="results-h">
+            <p class="eyebrow">02</p>
+            <h2 id="results-h">How much slower than the standard collector</h2>
+            <p>We compare each collector with the standard collector <em>of its own runtime</em>: the Java LXR with Java G1, and our port with the .NET Workstation GC. We never compare a Java time with a .NET time. A bar of 1 means the same speed. A bar of 10 means ten times slower. The scale is logarithmic.</p>
+            <figure>
+                <div class="visual" tabindex="0" role="region" aria-label="Figure 1, scroll sideways on a small screen">
+                    {{FIG_SLOWDOWN}}
+                </div>
+                <figcaption>Figure 1. Wall time divided by the time of the standard collector of the same runtime. Median of 3 runs. Lower is better.</figcaption>
+            </figure>
+            <p>What the figure shows:</p>
+            <ul>
+                <li>Every bar of our port is above 7. The best case for our port is the list-suffix program at the largest heap (7.5 times slower). The worst is the requests program with moving of young objects at the tightest heap (27.7 times).</li>
+                <li>The Java LXR stays between 1.1 and 2.2 at 4 times the heap or more. At the tightest heap it is 1.1 (binary trees), 1.5 (requests) and 6.9 (list suffix). So the Java LXR also needs some room. It is not perfect.</li>
+                <li>Moving objects makes our port slower in most cases.</li>
+                <li>The .NET Server GC is faster than the Workstation GC in the list-suffix program (0.4 to 0.7 times). The table at the end of this page has the numbers.</li>
+            </ul>
+        </section>
+
+        <section id="stalls" aria-labelledby="stalls-h">
+            <p class="eyebrow">03</p>
+            <h2 id="stalls-h">How long the program stops</h2>
+            <p>Low latency is the purpose of LXR. So the stalls matter as much as the total time.</p>
+            <figure>
+                <div class="visual" tabindex="0" role="region" aria-label="Figure 2, scroll sideways on a small screen">
+                    {{FIG_STALL}}
+                </div>
+                <figcaption>Figure 2. The longest wait of the 1 ms sleeper thread, in ms, at 4 times the minimum heap. Logarithmic scale. Lower is better.</figcaption>
+            </figure>
+            <p>Over all 27 cases, the longest stall of the Java LXR is 7 to 43 ms. For .NET Workstation, it is 8 to 39 ms. For our port, it is 143 ms to 1.9 s.</p>
+        </section>
+
+        <section id="kinds" aria-labelledby="kinds-h">
+            <p class="eyebrow">04</p>
+            <h2 id="kinds-h">What kinds of collections happen</h2>
+            <p>LXR has cheap collections that only use counting (the stage 4 work in our earlier page). It also has full collections that trace the whole heap. A good LXR makes mostly cheap collections.</p>
+            <div class="table-wrap">{{TABLE_KINDS}}</div>
+            <ul>
+                <li><strong>Binary trees.</strong> Neither LXR makes a full collection, but our port needs 109 ms for an average cheap collection. The Java LXR needs 2.2 ms. This is a 50 times difference <em>without any full collection</em>.</li>
+                <li><strong>Requests.</strong> Our port makes 51 full collections in 57 collections, at about 300 ms each. The Java LXR makes 113 cheap collections of 1.7 ms each. Our policy chooses full collections much more often, although the heap is 4 times the minimum.</li>
+                <li><strong>List suffix.</strong> Here the Java LXR also makes many full collections (74 of 153), but they are short (19 ms on average). Our port makes none, but its cheap collections need 339 ms each.</li>
+            </ul>
+        </section>
+
+        <section id="meaning" aria-labelledby="meaning-h">
+            <p class="eyebrow">05</p>
+            <h2 id="meaning-h">What it means</h2>
+            <ol>
+                <li><strong>The comparison is now fair.</strong> The same programs run on the working Java LXR and on our port. The result of the earlier forced tests (a gap of 30 to 100 times) was too large for real use. The real gap is 7 to 28 times. It is still large.</li>
+                <li><strong>The Java LXR proves that the design can be fast.</strong> In the same conditions, it stays within about 2 times of G1.</li>
+                <li><strong>We must fix more than the full collection.</strong> Three problems show up: the cost of the cheap collections, the choice to run full collections, and the cost of a full collection. Our earlier page about the full collection explains the last one. The first two need their own source comparison.</li>
+                <li><strong>Our port is not robust at tight heaps.</strong> It stops with "Out of memory" at 2 times the minimum heap in the list-suffix program, in 9 of 9 runs. .NET Workstation finishes in the same heap size, and the Java LXR finishes in a smaller one.</li>
+                <li><strong>Memory.</strong> Peak RSS of our port is 147 to 658 MiB. The standard collectors use 46 to 146 MiB. The Java LXR uses 869 to 959 MiB in every case, even with a 14 MiB heap. We did not look for the reason. It may come from memory that the Java LXR reserves outside its heap.</li>
+            </ol>
+            <div class="box port-box">
+                <h3>Where to look next (a proposal)</h3>
+                <ul>
+                    <li>Count the causes of our collections. Find why the policy chooses a full collection in the requests program.</li>
+                    <li>Compare one cheap collection step by step with the Java LXR, as we did for the full collection.</li>
+                    <li>Find why the tight heap ends with "Out of memory" in our port.</li>
+                    <li>Then fix the full-collection path (the 16 differences in the earlier page).</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="limits" aria-labelledby="limits-h">
+            <p class="eyebrow">06</p>
+            <h2 id="limits-h">Limits of this measurement</h2>
+            <ul>
+                <li>One machine, Linux under WSL2, 3 runs per case. The table shows the fastest and slowest run of each case. We did not measure on Windows in this test.</li>
+                <li>The programs are small and synthetic. The heaps are small (14 to 168 MiB).</li>
+                <li>A larger live set makes our port slower still. In one single probe with 1 million live objects (file <code>results/probe-large-live-set.jsonl</code>), our port needed 75 to 98 s. .NET Workstation needed 8 s, Java G1 needed 4 s and the Java LXR needed 7 s. Each collection of our port took about 3 s.</li>
+                <li>Java 11 and .NET 11 have different runtimes. The ratios to the standard collector of the same runtime reduce the problem. They do not remove it.</li>
+                <li>The Java LXR writes a log line for each collection. We did not measure the cost of this.</li>
+                <li>Java ZGC finished in none of the 27 runs. ZGC needs more room than the other collectors. We did not use it in the conclusions.</li>
+                <li>Our minimum-heap search used a shortened run (one twentieth of the steps). The real runs are longer, so a heap of 2 times the minimum can be tight.</li>
+                <li>The measured .NET code is the accepted port <code>e8d2d23</code> (Release build). Nothing in the collector changed for this test.</li>
+            </ul>
+        </section>
+
+        <section id="all" aria-labelledby="all-h">
+            <p class="eyebrow">Appendix A</p>
+            <h2 id="all-h">All numbers</h2>
+            <details>
+                <summary>Show the table with all 270 runs, aggregated into 90 cases</summary>
+                <div class="table-wrap">{{TABLE_ALL}}</div>
+            </details>
+        </section>
+
+        <section id="repeat" aria-labelledby="repeat-h">
+            <p class="eyebrow">Appendix B</p>
+            <h2 id="repeat-h">Repeat it</h2>
+            <p>The files are in the same folder as this page.</p>
+            <dl>
+                <dt><code>GcBench.cs</code> and <code>GcBench.java</code></dt><dd>The two versions of the programs. The run mode never calls the GC. An unused calibration mode does, and these results do not use it.</dd>
+                <dt><code>run-matrix.py</code></dt><dd>Finds the minimum heaps, selects each collector, runs the matrix and records one JSON line per run. It runs in WSL.</dd>
+                <dt><code>summarize.py</code> and <code>build-report.py</code></dt><dd>Make the medians and the checks of the checksums, and then this page.</dd>
+                <dt><code>results/</code></dt><dd><code>runs.jsonl</code> has all 270 runs. <code>summary.json</code> has the 90 aggregated cases. <code>sizes.json</code> has the minimum heaps. <code>probe-large-live-set.jsonl</code> has the single probe with a larger live set.</dd>
+            </dl>
+            <p>Measured binaries: our port <code>libclrlxrgc.so</code> SHA-256 <code>0909a5b1ce5e6383e944d45ffd17791050acfb62a26b048c4955fb0917b71e14</code>; Java <code>libjvm.so</code> <code>9c99a8840b492529a38228e7fccbe9eae84f4ee47936948ec946903e00c7a9f9</code> (OpenJDK 11.0.19, source revision <code>7caf8f7d19b1</code>, Java LXR binding <code>0682434</code>).</p>
+        </section>
+    </main>
+    <footer class="wrap">
+        <p>Related: <a href="index.html">this page</a> was built from <code>results/summary.json</code>. The explanation of the full collection is in <a href="../P13-full-reference-first/index.html">the full-collection page</a>. <a href="../README.md">LXR design record</a>.</p>
+    </footer>
+</body>
+</html>

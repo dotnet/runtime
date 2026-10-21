@@ -70,6 +70,14 @@ target is a **99.99th percentile** latency ratio, so `latencyP9999Ms` is not opt
 Records with `valid: false` or a `status` other than `ok` are **listed in the canvas but excluded
 from the charts**, so a failed or unconfirmed run stays visible without contaminating a trend line.
 
+**A valid measurement can belong to a failed performance experiment.** The metadata experiments
+retain `valid: true` and `status: "ok"` for confirmed, successfully completed observations, while
+their checkpoint IDs, notes and `sourceStage` explicitly say failed/unintegrated. The additive
+`experimentDisposition: "FAILED_PERFORMANCE_NOT_INTEGRATED"` records that separate decision.
+These points are experimental observations, not accepted implementation milestones; the newest
+plotted point does not select the integration baseline. Arm-median plots must not be read as the
+indexed paired-median comparison or its confidence interval; consult the retained precision CSV.
+
 ## `archive/`
 
 The canvas reads only the top level of this directory, so anything moved into `archive/` disappears

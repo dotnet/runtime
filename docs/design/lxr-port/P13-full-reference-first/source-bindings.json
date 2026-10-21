@@ -1,0 +1,66 @@
+{
+  "scope": "Read-only Full-path reconstruction; no new collector build or timing",
+  "accepted_port": "e8d2d23ef60e44ba7efd35a7cb3f4a76271adc6a",
+  "rejected_metadata_experiment": "a23d3598b57837f3e858622f83b8ffbc13e0de58",
+  "owned_source_root": "artifacts\\P13-full-reference-sources",
+  "sources": [
+    {
+      "name": "H core",
+      "repository": "wenyuzhao/mmtk-core",
+      "commit": "304ce69d43aae87de501111fceb8cbd33173a03a",
+      "archive": "core-h.tar",
+      "sha256": "aaa654b580783faea9c560e47a3d36e602d913ebc1a3690517f94d35fd28f7a8",
+      "snapshot": "core-h"
+    },
+    {
+      "name": "H binding",
+      "repository": "wenyuzhao/mmtk-openjdk",
+      "commit": "0682434ae725787e38defbc17bd66dc918e4bdb7",
+      "archive": "binding-h.tar",
+      "sha256": "c8452412f0def2cf957227ea69ab828cc230418295fd0f229dd8104fce8a7b18",
+      "snapshot": "binding-h"
+    },
+    {
+      "name": "P core",
+      "repository": "wenyuzhao/mmtk-core",
+      "commit": "df8d30a39237a5bf5a8e27ca5a6f46acc6080c94",
+      "archive": "core-p.tar",
+      "sha256": "eac474315dcbbbe63e85c6dabf31b5a318ad7168f66080bdbc5a773b0c63097a",
+      "snapshot": "core-p"
+    },
+    {
+      "name": "P binding",
+      "repository": "wenyuzhao/mmtk-openjdk",
+      "commit": "abbdd1dbbe7277e4b0dfd1d37ba613c53f5ca50d",
+      "archive": "binding-p.tar",
+      "sha256": "3546b65f9c5523eb5c924bdfc950dae783148a6831ffd5290af8b1407591f1a7",
+      "snapshot": "binding-p"
+    },
+    {
+      "name": "Accepted port GC/VM/interfaces",
+      "repository": "kkokosa/runtime",
+      "commit": "e8d2d23ef60e44ba7efd35a7cb3f4a76271adc6a",
+      "archive": "port-e8d.tar",
+      "sha256": "8a8e0d9cc2f10e51d25088b36d1ba73452347c8340011faf4e6d56194c4ca98c",
+      "snapshot": "port-e8d"
+    },
+    {
+      "name": "H underlying JVM request/safepoint entry files",
+      "repository": "mmtk/openjdk",
+      "commit": "7caf8f7d19b19a9fd53be6f909db805246790807",
+      "archive": "jdk-h-entry.tar",
+      "sha256": "b5e35db435acaeb304a36902cae2270fbe35a9a21f630429e8d917ddf36e17d8",
+      "snapshot": "jdk-h-entry"
+    }
+  ],
+  "accepted_linux_collector": {
+    "sha256": "0909a5b1ce5e6383e944d45ffd17791050acfb62a26b048c4955fb0917b71e14",
+    "symbol_companion_sha256": "304a7037ba3c62eb85da8113b12d8bea7755daf54909e349f9657bf5cfa001c2",
+    "function": "LxrReferenceCounting::ScanTraceLocked",
+    "slot_load_locked_prefix_rva": "0x2c167",
+    "slot_load_cmpxchg_rva": "0x2c168",
+    "reference_counter_locked_prefix_rva": "0x2c177",
+    "reference_counter_add_rva": "0x2c178",
+    "scope": "Existing accepted ordinary module disassembly, not a new timing or complete cost attribution"
+  }
+}

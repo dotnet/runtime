@@ -40,7 +40,7 @@ $extension = Join-Path $work 'extension.mjs'
 # constructed path fails the identity comparison on every case -- including pristine,
 # which is how this was found. The banner is the battery's own answer, so no
 # normalization rule has to be guessed at or kept in sync.
-$selfPath = (@(& $bc -LogDir $logs -HistoryDir $src 2>&1) |
+$selfPath = (@(& $bc -LogDir $logs -HistoryDir $src -SessionId audit 2>&1) |
              ForEach-Object { $m = [regex]::Match($_, '^\s*self\s*:\s*(.+?)\s*$'); if ($m.Success) { $m.Groups[1].Value } } |
              Select-Object -First 1)
 if (-not $selfPath) { throw 'could not read the battery''s self path from its banner' }
@@ -50,10 +50,9 @@ if (-not $selfPath) { throw 'could not read the battery''s self path from its ba
 # logs names the real extension directory -- so without a fabricated log naming $work,
 # the identity check would fail on every case and drown the signal.
 function Write-ExtLog([string]$file, [string]$path, [datetime]$when) {
-    # The name must contain 'lxr-gc-roadmap': the battery selects logs with
-    # -Filter '*lxr-gc-roadmap*.log'. Fabricating 'ext-1.log' produced a directory the
-    # battery read and found empty, which reports as "no extension log" -- a failure
-    # that looks like the check working and is actually the control missing.
+    # Keep the extension name in fabricated logs so decoy paths remain candidates
+    # alongside current process-*.log provider logs. Otherwise an identity perturbation
+    # would be filtered before reaching the subject check.
     $f = Join-Path $logs ('project-lxr-gc-roadmap-' + $file)
     Set-Content -LiteralPath $f -Encoding utf8 -Value @(
         '[extension-bootstrap] starting: pid=0, EXTENSION_PATH=' + $path + '\extension.mjs, SESSION_ID=audit'
@@ -199,8 +198,8 @@ $cases = @(
     @{ n = 'emptySummary-2';  want = 'empty Summary' },
     @{ n = 'statusline-1';    want = 'one Status per step' },
     @{ n = 'statusline-2';    want = 'one Status per step' },
-    @{ n = 'identity-alpha';  want = 'the host loads' },
-    @{ n = 'identity-beta';   want = 'the host loads' },
+    @{ n = 'identity-alpha';  want = 'this session loads' },
+    @{ n = 'identity-beta';   want = 'this session loads' },
     @{ n = 'distinct-gamma';  want = 'distinct board paths' },
     @{ n = 'distinct-delta';  want = 'distinct board paths' },
     @{ n = 'tws-1';           want = 'trailing whitespace' },
@@ -271,7 +270,7 @@ foreach ($c in $cases) {
     # per rule 63 the battery prints it. Letting it fall back would make the check report
     # "history unreadable" on every case, pristine included: a control that fails
     # everywhere looks exactly like a check that works everywhere.
-    $out  = & $bc -LogDir $logs -HistoryDir $src 2>&1
+    $out  = & $bc -LogDir $logs -HistoryDir $src -SessionId audit 2>&1
     $code = $LASTEXITCODE
 
     # Rule 74: confirm the perturbation was CONSUMED, not merely that its directory was
@@ -308,7 +307,7 @@ if ($unreached.Count -gt 0) { Write-Output ("PERTURBATION NEVER REACHED THE CHEC
 # is what makes "every check" a claim about board-check.ps1 rather than about this list.
 $declared = @($cases | Where-Object { $_.want -ne '<none>' } | ForEach-Object { $_.want } | Select-Object -Unique).Count
 $reported = 0
-$pristineOut = & $bc -LogDir $logs -HistoryDir $src 2>&1
+$pristineOut = & $bc -LogDir $logs -HistoryDir $src -SessionId audit 2>&1
 foreach ($ln in $pristineOut) {
     $m = [regex]::Match([string]$ln, 'RESULT: \w+ \((\d+) checks\)')
     if ($m.Success) { $reported = [int]$m.Groups[1].Value }

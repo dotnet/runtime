@@ -1,10 +1,12 @@
 # Standing battery for roadmap.md, the LXR coordination board.
 #
-# Default LogDir is the app's extension log directory. Parameterised only so the
-# subject controls can point at a fabricated log; the banner prints it, per rule 63's
-# practice of disclosing every root the run reads.
-param([string]$LogDir = "$env:USERPROFILE\.copilot\logs\extensions",
-      [string]$HistoryDir = $PSScriptRoot)
+# Default LogDir is the app's log root, covering both the legacy extension-specific
+# names under logs\extensions and current process-*.log provider logs. Parameterised
+# only so the subject controls can point at a fabricated log; the banner prints it,
+# per rule 63's practice of disclosing every root the run reads.
+param([string]$LogDir = "$env:USERPROFILE\.copilot\logs",
+      [string]$HistoryDir = $PSScriptRoot,
+      [string]$SessionId = $env:COPILOT_AGENT_SESSION_ID)
 
 #
 # Exists because the battery was retyped from memory on each use and drifted three
@@ -27,7 +29,7 @@ param([string]$LogDir = "$env:USERPROFILE\.copilot\logs\extensions",
 
 $ErrorActionPreference = 'Stop'
 
-$EXPECTED = @{ Phases = 11; Steps = 54; Fields = 360; Rules = 110 }
+$EXPECTED = @{ Phases = 11; Steps = 54; Fields = 369; Rules = 110 }
 
 $board = Join-Path $PSScriptRoot 'roadmap.md'
 $extension = Join-Path $PSScriptRoot 'extension.mjs'
@@ -45,6 +47,7 @@ Write-Output "  self : $PSScriptRoot"
 Write-Output "  board: $board"
 Write-Output "  logs : $LogDir"
 Write-Output "  hist : $HistoryDir"
+Write-Output "  sess : $SessionId"
 Write-Output ''
 
 if (-not (Test-Path $board)) { Write-Output "  FAIL  no board at $board"; exit 2 }
@@ -142,9 +145,9 @@ Write-Output '== subject =='
 # The old form scanned all of C:\ recursively: 36 seconds, and -- until rule 74 --
 # blind to hidden directories. A battery slow enough to skip is a battery that gets
 # skipped.
-$logs = @(Get-ChildItem $LogDir -Filter '*lxr-gc-roadmap*.log' -File -ErrorAction SilentlyContinue |
+$logs = @(Get-ChildItem $LogDir -Filter '*.log' -File -Recurse -ErrorAction SilentlyContinue |
           Sort-Object LastWriteTime -Descending)
-$paths = @($logs | ForEach-Object {
+$providers = @($logs | ForEach-Object {
     # The newest log is the live one and the extension host holds it open. A default
     # read (File.ReadLines / Get-Content) throws on it, so the check would fail on
     # exactly the log that carries the current answer. Share ReadWrite.
@@ -152,27 +155,47 @@ $paths = @($logs | ForEach-Object {
     try {
         $sr = [IO.StreamReader]::new($fs)
         while ($null -ne ($ln = $sr.ReadLine())) {
-            $m = [regex]::Match($ln, 'EXTENSION_PATH=(.+?\\extension\.mjs)')
-            if ($m.Success) { Split-Path -Parent $m.Groups[1].Value; break }
+            $m = [regex]::Match(
+                $ln,
+                'EXTENSION_PATH=(.+?\\extension\.mjs), SESSION_ID=([0-9A-Za-z-]+)')
+            if ($m.Success) {
+                [pscustomobject]@{
+                    Path = Split-Path -Parent $m.Groups[1].Value
+                    SessionId = $m.Groups[2].Value
+                    LogName = $_.Name
+                    LastWriteTime = $_.LastWriteTime
+                }
+                break
+            }
         }
     } finally { $fs.Dispose() }
+} | Where-Object {
+    $_.Path -eq $PSScriptRoot -or $_.LogName -like '*lxr-gc-roadmap*'
 })
-$distinct = @($paths | Sort-Object -Unique)
+$currentProviders = @(
+    $providers |
+        Where-Object SessionId -eq $SessionId |
+        Sort-Object LastWriteTime -Descending
+)
+$distinct = @($currentProviders.Path | Sort-Object -Unique)
 
 if ($logs.Count -eq 0) {
     bad "no extension log under '$LogDir'; the host's board cannot be identified"
-} elseif ($paths.Count -eq 0) {
+} elseif (-not $SessionId) {
+    bad 'current Copilot session ID is unavailable'
+} elseif ($providers.Count -eq 0) {
     bad "$($logs.Count) log(s) but none records an EXTENSION_PATH"
-} elseif ($paths[0] -eq $PSScriptRoot) {
-    ok "the host loads the board this script audits (newest of $($logs.Count) logs)"
+} elseif ($currentProviders.Count -eq 0) {
+    bad "no extension log belongs to session '$SessionId'"
+} elseif ($currentProviders[0].Path -eq $PSScriptRoot) {
+    ok "this session loads the board this script audits"
 } else {
-    bad "the host loads '$($paths[0])', not '$PSScriptRoot'"
+    bad "this session loads '$($currentProviders[0].Path)', not '$PSScriptRoot'"
 }
 
-# One distinct path across every log means no host has ever loaded another copy.
-# This is the check that keeps working after the merge: two files on disk are fine,
-# two loaded boards are not.
-want 'distinct board paths across all logs' $distinct.Count 1
+# Multiple project sessions legitimately load one extension copy per worktree.
+# One session must still resolve to exactly one path.
+want 'distinct board paths for this session' $distinct.Count 1
 if ($distinct.Count -gt 1) { $distinct | ForEach-Object { Write-Output "          $_" } }
 
 Write-Output ''

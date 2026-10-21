@@ -1,0 +1,96 @@
+pldi	release	antlr	500	1	CRASH	-	-
+pldi	release	antlr	500	2	CRASH	-	-
+pldi	release	antlr	500	3	CRASH	-	-
+pldi	release	fop	500	1	PASSED	368	samples=2345	mean=0.141	p50=0.133	p90=0.166	p99=0.285	p999=1.701	max=3.463
+pldi	release	fop	500	2	PASSED	463	samples=2331	mean=0.137	p50=0.131	p90=0.165	p99=0.256	p999=0.680	max=1.390
+pldi	release	fop	500	3	PASSED	428	samples=2256	mean=0.127	p50=0.118	p90=0.147	p99=0.283	p999=0.997	max=2.391
+pldi	release	luindex	500	1	CRASH	-	-
+pldi	release	luindex	500	2	CRASH	-	-
+pldi	release	luindex	500	3	CRASH	-	-
+pldi	release	lusearch	500	1	CRASH	-	-
+pldi	release	lusearch	500	2	CRASH	-	-
+pldi	release	lusearch	500	3	CRASH	-	-
+pldi	release	pmd	500	1	CRASH	-	-
+pldi	release	pmd	500	2	CRASH	-	-
+pldi	release	pmd	500	3	CRASH	-	-
+pldi	release	hsqldb	500	1	CRASH	-	-
+pldi	release	hsqldb	500	2	CRASH	-	-
+pldi	release	hsqldb	500	3	CRASH	-	-
+pldi	release	eclipse	500	1	CRASH	-	-
+pldi	release	eclipse	500	2	CRASH	-	-
+pldi	release	eclipse	500	3	CRASH	-	-
+pldi	release	xalan	500	1	CRASH	-	-
+pldi	release	xalan	500	2	CRASH	-	-
+pldi	release	xalan	500	3	CRASH	-	-
+head	release	antlr	500	1	PASSED	564	samples=3611	mean=0.139	p50=0.126	p90=0.164	p99=0.319	p999=1.656	max=14.067
+head	release	antlr	500	2	PASSED	552	samples=3499	mean=0.150	p50=0.125	p90=0.165	p99=0.310	p999=2.730	max=27.487
+head	release	antlr	500	3	PASSED	526	samples=3776	mean=0.151	p50=0.131	p90=0.180	p99=0.340	p999=3.277	max=20.019
+head	release	fop	500	1	PASSED	364	samples=2190	mean=0.130	p50=0.121	p90=0.149	p99=0.254	p999=1.294	max=2.486
+head	release	fop	500	2	PASSED	349	samples=2126	mean=0.126	p50=0.119	p90=0.150	p99=0.245	p999=0.606	max=1.122
+head	release	fop	500	3	PASSED	349	samples=2082	mean=0.123	p50=0.116	p90=0.145	p99=0.249	p999=0.683	max=1.024
+head	release	luindex	500	1	PASSED	1856	samples=9228	mean=0.137	p50=0.117	p90=0.145	p99=0.231	p999=0.850	max=49.240
+head	release	luindex	500	2	PASSED	1801	samples=9126	mean=0.141	p50=0.117	p90=0.143	p99=0.271	p999=2.635	max=50.413
+head	release	luindex	500	3	PASSED	1823	samples=9171	mean=0.142	p50=0.117	p90=0.143	p99=0.237	p999=3.482	max=50.812
+head	release	lusearch	500	1	PASSED	330	samples=2121	mean=0.511	p50=0.115	p90=0.325	p99=5.729	p999=57.264	max=78.871
+head	release	lusearch	500	2	PASSED	301	samples=2089	mean=0.519	p50=0.115	p90=0.325	p99=6.837	p999=44.309	max=56.465
+head	release	lusearch	500	3	PASSED	283	samples=2073	mean=0.439	p50=0.112	p90=0.197	p99=7.371	p999=42.933	max=50.844
+head	release	pmd	500	1	PASSED	1292	samples=6965	mean=0.140	p50=0.119	p90=0.148	p99=0.273	p999=4.823	max=29.860
+head	release	pmd	500	2	PASSED	1343	samples=6561	mean=0.136	p50=0.119	p90=0.148	p99=0.282	p999=4.286	max=21.285
+head	release	pmd	500	3	PASSED	1385	samples=7072	mean=0.137	p50=0.119	p90=0.147	p99=0.305	p999=4.146	max=19.963
+head	release	hsqldb	500	1	PASSED	610	samples=2070	mean=0.966	p50=0.119	p90=0.155	p99=55.030	p999=108.410	max=137.057
+head	release	hsqldb	500	2	PASSED	689	samples=2147	mean=0.920	p50=0.119	p90=0.153	p99=53.711	p999=107.863	max=138.543
+head	release	hsqldb	500	3	PASSED	663	samples=2102	mean=0.938	p50=0.119	p90=0.150	p99=54.544	p999=104.643	max=130.285
+head	release	eclipse	500	1	PASSED	9187	samples=55949	mean=0.134	p50=0.118	p90=0.146	p99=0.272	p999=3.669	max=22.582
+head	release	eclipse	500	2	PASSED	9203	samples=54777	mean=0.137	p50=0.119	p90=0.152	p99=0.301	p999=4.146	max=36.872
+head	release	eclipse	500	3	PASSED	9081	samples=55826	mean=0.136	p50=0.120	p90=0.151	p99=0.282	p999=3.245	max=24.797
+head	release	xalan	500	1	PASSED	385	samples=2882	mean=0.263	p50=0.127	p90=0.195	p99=4.320	p999=12.505	max=21.382
+head	release	xalan	500	2	PASSED	440	samples=2970	mean=0.288	p50=0.135	p90=0.210	p99=4.563	p999=18.199	max=21.096
+head	release	xalan	500	3	PASSED	460	samples=3306	mean=0.339	p50=0.137	p90=0.377	p99=4.717	p999=9.280	max=20.016
+pldi	release	antlr	2000	1	CRASH	-	-
+pldi	release	antlr	2000	2	CRASH	-	-
+pldi	release	antlr	2000	3	CRASH	-	-
+pldi	release	fop	2000	1	PASSED	396	samples=2188	mean=0.128	p50=0.119	p90=0.148	p99=0.233	p999=1.281	max=2.446
+pldi	release	fop	2000	2	PASSED	425	samples=2148	mean=0.126	p50=0.117	p90=0.148	p99=0.285	p999=0.638	max=5.514
+pldi	release	fop	2000	3	PASSED	383	samples=2131	mean=0.126	p50=0.118	p90=0.147	p99=0.301	p999=1.142	max=1.642
+pldi	release	luindex	2000	1	CRASH	-	-
+pldi	release	luindex	2000	2	CRASH	-	-
+pldi	release	luindex	2000	3	CRASH	-	-
+pldi	release	lusearch	2000	1	CRASH	-	-
+pldi	release	lusearch	2000	2	CRASH	-	-
+pldi	release	lusearch	2000	3	CRASH	-	-
+pldi	release	pmd	2000	1	CRASH	-	-
+pldi	release	pmd	2000	2	CRASH	-	-
+pldi	release	pmd	2000	3	CRASH	-	-
+pldi	release	hsqldb	2000	1	PASSED	470	samples=2662	mean=0.130	p50=0.120	p90=0.155	p99=0.380	p999=0.861	max=1.104
+pldi	release	hsqldb	2000	2	PASSED	680	samples=3096	mean=0.139	p50=0.124	p90=0.169	p99=0.398	p999=1.398	max=2.322
+pldi	release	hsqldb	2000	3	PASSED	822	samples=2996	mean=0.133	p50=0.121	p90=0.161	p99=0.340	p999=1.454	max=3.217
+pldi	release	eclipse	2000	1	CRASH	-	-
+pldi	release	eclipse	2000	2	CRASH	-	-
+pldi	release	eclipse	2000	3	CRASH	-	-
+pldi	release	xalan	2000	1	CRASH	-	-
+pldi	release	xalan	2000	2	CRASH	-	-
+pldi	release	xalan	2000	3	CRASH	-	-
+head	release	antlr	2000	1	PASSED	906	samples=5625	mean=0.136	p50=0.126	p90=0.174	p99=0.286	p999=0.671	max=3.148
+head	release	antlr	2000	2	PASSED	896	samples=4834	mean=0.136	p50=0.127	p90=0.169	p99=0.288	p999=1.084	max=1.823
+head	release	antlr	2000	3	PASSED	893	samples=4969	mean=0.135	p50=0.128	p90=0.167	p99=0.253	p999=0.462	max=0.731
+head	release	fop	2000	1	PASSED	352	samples=2432	mean=0.132	p50=0.125	p90=0.162	p99=0.246	p999=0.541	max=1.178
+head	release	fop	2000	2	PASSED	368	samples=2242	mean=0.123	p50=0.116	p90=0.144	p99=0.244	p999=0.699	max=2.271
+head	release	fop	2000	3	PASSED	355	samples=2032	mean=0.127	p50=0.121	p90=0.150	p99=0.220	p999=0.665	max=1.204
+head	release	luindex	2000	1	PASSED	3012	samples=10951	mean=0.153	p50=0.117	p90=0.141	p99=0.221	p999=0.830	max=315.393
+head	release	luindex	2000	2	PASSED	2274	samples=10431	mean=0.146	p50=0.117	p90=0.141	p99=0.219	p999=0.934	max=232.726
+head	release	luindex	2000	3	PASSED	2280	samples=10696	mean=0.148	p50=0.118	p90=0.144	p99=0.218	p999=1.036	max=243.033
+head	release	lusearch	2000	1	PASSED	295	samples=3193	mean=0.434	p50=0.125	p90=0.472	p99=5.519	p999=39.874	max=64.395
+head	release	lusearch	2000	2	PASSED	309	samples=2822	mean=0.350	p50=0.122	p90=0.332	p99=5.717	p999=19.921	max=36.499
+head	release	lusearch	2000	3	PASSED	340	samples=2848	mean=0.461	p50=0.124	p90=0.423	p99=5.278	p999=41.697	max=219.940
+head	release	pmd	2000	1	PASSED	1234	samples=8332	mean=0.138	p50=0.122	p90=0.152	p99=0.216	p999=0.872	max=65.478
+head	release	pmd	2000	2	PASSED	1240	samples=8226	mean=0.136	p50=0.121	p90=0.148	p99=0.213	p999=0.455	max=73.449
+head	release	pmd	2000	3	PASSED	1311	samples=9302	mean=0.136	p50=0.119	p90=0.147	p99=0.237	p999=1.250	max=78.522
+head	release	hsqldb	2000	1	PASSED	605	samples=2134	mean=0.980	p50=0.123	p90=0.157	p99=55.292	p999=129.629	max=145.286
+head	release	hsqldb	2000	2	PASSED	645	samples=2133	mean=0.930	p50=0.119	p90=0.157	p99=54.317	p999=112.965	max=125.782
+head	release	hsqldb	2000	3	PASSED	669	samples=1973	mean=1.033	p50=0.120	p90=0.161	p99=56.003	p999=113.637	max=155.066
+head	release	eclipse	2000	1	PASSED	9101	samples=56496	mean=0.132	p50=0.118	p90=0.147	p99=0.244	p999=1.179	max=50.111
+head	release	eclipse	2000	2	PASSED	8949	samples=55385	mean=0.129	p50=0.116	p90=0.142	p99=0.239	p999=0.902	max=48.809
+head	release	eclipse	2000	3	PASSED	9166	samples=56333	mean=0.131	p50=0.117	p90=0.142	p99=0.246	p999=1.079	max=116.793
+head	release	xalan	2000	1	PASSED	405	samples=3238	mean=0.370	p50=0.140	p90=0.259	p99=4.798	p999=13.668	max=95.759
+head	release	xalan	2000	2	PASSED	375	samples=3156	mean=0.279	p50=0.138	p90=0.226	p99=3.663	p999=9.660	max=54.388
+head	release	xalan	2000	3	PASSED	377	samples=3264	mean=0.306	p50=0.139	p90=0.263	p99=3.971	p999=9.614	max=50.937

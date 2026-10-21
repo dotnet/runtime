@@ -46,7 +46,7 @@ consumer rather than the definition.
 1. A step becomes `done` only in a separate verification pass after implementation, and only when the cited reference mechanism is present with the same ordering and transition provenance. Statuses are `planned`, `in_progress`, `done`, and `failed`; `in_progress` is set automatically when the Implement button spawns a child session, and is what prevents a second session being spawned for the same step.
 2. Similar observable behavior is not acceptance evidence. Approximations, heuristics, and GC-side workarounds do not substitute for a reference mechanism; if a mechanism cannot be reproduced, the step fails rather than silently degrading.
 3. Every mechanism declares which oracle it follows (`pldi-2022` = binding `abbdd1d` + core `df8d30a3`, or `lxr-head` = binding `0682434` + core `304ce69d`) and why; coupled mechanisms must share one oracle, because mixing revisions inside a coupled set produces a hybrid that is self-consistent nowhere. Where a claim was read from the core tag `4d4e516c` or branch head `9625c174` instead, the row says so — those builds are behaviorally indistinguishable from the pinned pairs but are not the declared basis.
-4. Sweeping never parses objects. Nursery and mature reclamation read only the RC table, line/straddle metadata, and mark bits, walking at 8-byte granularity; any design that requires object-by-object heap parsing during a sweep is rejected.
+4. Sweeping never parses objects. Nursery and mature reclamation read only the RC table, line/straddle metadata, and mark bits, walking at 8-byte granularity; any design that requires object-by-object heap parsing during a sweep is rejected. **Relaxed on 2026-10-20 (P16 decision D1):** the background dead-cycle sweep may read the size of a dead object from the object itself, as the Java LXR does, provided the type data is guaranteed to be valid at that time (for collectible types, the sweep must finish before the loader allocator can be freed). Nursery reclamation must not visit dead young objects at all.
 5. Runtime changes follow R1-R5: generalize the mechanism not the client; zero measured cost when unused, by init-time selection rather than branching; additive and version-gated; independently defensible without LXR; performance evidence per change.
 6. Every performance checkpoint compares the same binaries, machine state, workload input, duration, warmup, and run count across LXR, Workstation GC, and Server GC; pin DATAS, heap count/limit, concurrency, tiering, PGO, and ReadyToRun, then interleave collectors across invocations.
 7. Report failures and excluded runs. Never select only successful LXR runs when a workload is flaky.
@@ -222,8 +222,8 @@ consumer rather than the definition.
 110. **Keep upstream work and LXR integration on different branches.** In `kkokosa/runtime`, `main` mirrors `upstream/main`; the long-lived `lxr` branch contains the complete LXR roadmap history. Every Implement action creates its child session with `base_branch="lxr"`, every LXR step branch starts from the exact current `lxr` tip, and every LXR pull request targets `lxr` rather than `main`. Never fall back to the project default when `lxr` is absent or stale: stop, show the two hashes, and repair the integration branch first. Push the verified step hash explicitly, then compare the pull request merge base with the recorded `lxr` dependency tip. Unrelated runtime or GC work starts from `main` or `upstream/main` and does not inherit LXR changes.
 
 ## P0 — Parity contract, reference oracle, and measurement baseline
-- **Status:** planned
-- **Summary:** Establish what parity means before writing any collector code: build both candidate oracles, extract the paper's real acceptance targets, enumerate every mechanism to be ported, and capture honest built-in GC baselines.
+- **Status:** failed
+- **Summary:** Five prerequisite steps are complete, including the pinned oracles, paper targets, ledger and built-in baselines; this is not unstarted work. Phase qualification remains failed because P0.6 did not resolve the baseline anomaly or establish the required noise/latency sensitivity, and later prototype measurements do not erase that result.
 
 ### P0.1 — Pin and build both reference revisions
 
@@ -287,8 +287,8 @@ consumer rather than the definition.
 
 ## P1 — Runtime enablement as generic GC-contract capabilities
 
-- **Status:** planned
-- **Summary:** Extend the GC contract with capabilities any collector could use — a parameterized barrier family, exact allocation notification, object reference enumeration, and negotiated header bits — then prove they cost nothing when unused.
+- **Status:** failed
+- **Summary:** All six generic runtime-capability steps are implemented and qualified at their recorded scope, not planned. The phase's zero-regression acceptance remains failed/inconclusive at P1.7; functioning capabilities and later collector improvements do not establish the required unused-cost bound.
 
 ### P1.1 — GC-requested barrier-shape contract
 
@@ -303,7 +303,7 @@ consumer rather than the definition.
 ### P1.2 — Implement the slot-log barrier family on x64
 
 - **Status:** done
-- **Summary:** Implemented the generic descriptor-driven slot-log barrier on Windows and Linux x64, with a leaf metadata-bit fast path and a normal-ABI pre-store slow path. The selected family composes with software write watch, while unsupported targets and precompiled-code combinations fail closed and the stock card-table family remains unchanged.
+- **Summary:** Implemented the generic descriptor-driven slot-log barrier on Windows and Linux x64, with a leaf metadata-bit fast path and a normal-ABI pre-store slow path. The fast path lives in patched assembly helpers, not literal in-method JIT code; software write watch composes, unsupported/precompiled configurations fail closed and stock card-table code remains unchanged.
 - **Correctness:** Final local commits `302a5a26fcc`, `fa1c9cef001`, `57cca577aa7`, `3255d81b626`, and `16914407790` passed selected built-in/standalone Workstation/Server matrices in both polarities on Windows and Linux (8/8 each), interpreter copy/clear execution (2/2 each), x64/x86 contract checks (15/15 plus 5/5 initialization checks), NativeAOT default/rejection (2/2), JIT and GC stress, contention, overlap, clear, atomic, VM, dependent-edge, register, unwind, and epoch-reset checks. The exact committed archive passed 125 checks, rejected four deliberate evidence/code perturbations, and re-passed untouched; final Claude and Gemini reviews found no actionable runtime issue.
 - **Benchmarks:** On the measured Windows x64 host, stock field/array stores cost 3.033/4.092 ns, claimed-bit slot fast paths 2.161/3.822 ns, empty slow callbacks 14.39/16.12 ns, and counting/card callbacks 21.63/23.55 ns. Claimed-bit low-allocation ratios of 0.922x Workstation and 0.933x Server remain unresolved below the historical 8.35% host-resolution floor; every-store slow-path allocation churn measured 0.555x/0.370x and is an upper bound, while whole-table epoch reset measured 0.053x/0.104x and is explicitly rejected as a production policy. The corrected one-callback range path improved 16-reference `Array.Copy` by 13.4% and `Array.Clear` by 5.6% versus the exact pre-fix build.
 - **Runtime changes:** Adds GC interface 5.10 range/dependent-edge callbacks and the 5.11 epoch-reset callback, immutable JIT old-value semantics, MASM/GAS slot-log and write-watch templates patched from generic descriptor parameters, and full scalar, checked, atomic, VM, reference-range, mixed-layout, interpreter, and collectible-edge pre-store coverage. Null range source means clear-to-null; RC width and saturation remain collector-owned; ReadyToRun, NativeAOT runtime selection, non-x64 targets, incomplete descriptors, and incompatible modes reject activation before managed execution.
@@ -322,407 +322,416 @@ consumer rather than the definition.
 
 ### P1.4 — Add an exact allocation-complete notification service
 
-- **Status:** planned
-- **Summary:** Provide an opt-in per-object callback fired after header initialization and before the object escapes to managed code, because neither existing hook establishes exact birth metadata.
-- **Correctness:** Every allocation path — object, array, string, boxed value, fast and slow — delivers exactly one notification, and no object becomes reachable from managed code before its notification completes.
-- **Benchmarks:** Allocation microbenchmarks at several object sizes and the allocation churn scenario, comparing registered and unregistered configurations.
-- **Runtime changes:** Adds an opt-in allocation-complete callback carrying object, size, and flags across the x64 fast helpers and slow paths, generalizing beyond LXR to any RC collector, exact allocation sampling, and heap-birth metadata; the inline allocator keeps its bump-pointer shape and the unregistered path targets byte-identical codegen, with any residual cost measured in P1.7 rather than assumed negligible.
+- **Status:** done
+- **Summary:** Added a generic, opt-in allocation-complete callback that runs after the runtime object shape is valid and before managed/profiler publication. It reports the object, aligned allocation size, stable allocation flags, and collector context; it marks runtime birth rather than constructor, boxing payload, or clone completion.
+- **Correctness:** Final tip `71ce2c92580` passed fast/slow object, array, string, box, finalizable, collectible, LOH, POH, FOH, reflection, clone, interpreter, runtime-async, refill, multi-thread, profiler-ordering, and stack-allocation-exclusion controls on Windows x64 and Linux x64. The source-compatibility matrix passed 14/14, including unchanged 5.12 source rebuilt with the inherited 5.13 disabled implementation; x86/ARM64 cross-builds, NativeAOT and ReadyToRun fail-closed tests, and profiler LOH/POH flag controls passed. The exact archive passed 1,004 checks, rejected 11 exact perturbations, and re-passed untouched; final Claude review was LGTM and Gemini confirmed the compatibility fixes. The broad Checked runner's eight missing native/generated assets remain documented infrastructure failures, not passes.
+- **Benchmarks:** Refreshed small-object costs were 4.55/8.31/12.46 ns for Workstation and 5.33/8.98/13.37 ns for Server (unregistered/empty/counting callback). A 16-byte array measured 5.43/9.93/13.29 ns Workstation and 7.03/10.65/21.50 ns Server; a 1 KiB array measured 57.36/54.26/61.36 ns and 95.88/113.19/130.59 ns. Forty-eight registered-counting observations each delivered the 4,096-object probe plus its root array. Paired registered-empty allocation churn retained 0.8578 Workstation and 0.7557 Server geomean throughput ratios, exposing roughly 14%/24% residual cost for P1.7 rather than claiming negligible overhead.
+- **Runtime changes:** Appends a source-compatible GC interface 5.13 descriptor with immutable callback/context and generic frozen allocation flags. Adds separate Windows/System V AMD64 notifying helpers selected once at startup, plus one slow/runtime publication funnel, interpreter/runtime-async coverage, and FOH notification before segment registration. The callback is no-GC/no-throw/non-blocking/non-reentrant; old collectors inherit a disabled descriptor, while ReadyToRun, NativeAOT, non-AMD64, malformed requests, and incompatible frozen-segment registration fail closed. Existing helper bytes and representative unregistered managed allocation code remain identical.
 - **Dependencies:** P1.1
-- **References:** `src/coreclr/gc/gcinterface.h`; `src/coreclr/vm/gchelpers.cpp`; `src/coreclr/vm/amd64/JitHelpers_Fast.asm`
+- **References:** `docs/design/lxr-port/P1.4-allocation-complete-notification.md`; `src/coreclr/gc/gcinterface.h`; `src/coreclr/vm/gchelpers.cpp`; `src/coreclr/runtime/amd64/AllocFastNotification.asm`; `src/coreclr/runtime/amd64/AllocFastNotification.S`
 
 ### P1.5 — Add GC-side object reference enumeration
 
-- **Status:** planned
-- **Summary:** Let GC code enumerate an object's reference slots without an EE round trip per object, closing a plain gap in the standalone-GC contract that every such collector pays for.
-- **Correctness:** Enumeration matches the EE's own view for every layout — arrays of references, structs with references, generics, and collectible types — verified against the existing scanning path.
-- **Benchmarks:** Scan-rate microbenchmark over representative object graphs, plus pointer chasing and long-lived cache scenarios where scanning dominates.
-- **Runtime changes:** Exposes an inlinable, bulk/streaming reference-slot enumeration API to GC code; confirmed absent from this fork today, and required because RC increment processing and tracing both sit directly on this path.
+- **Status:** done
+- **Summary:** Added an inlinable full-scan visitor and a resumable cursor that stream ordered, contiguous in-object `Object**` ranges—including null slots—without a per-object EE call. A separate negotiated resolver exposes the read-only LoaderAllocator handle slot for collectible MethodTables, keeping that lifetime edge outside writable object ranges.
+- **Correctness:** Final tip `c020143cf6b` matches the existing EE scanner for positive and repeated value-type-array CGCDesc layouts, inheritance, generics, mixed structs, reference/SZ/jagged/MD arrays, boxes, collectible types, LOH/POH, empty arrays, and guard-page boundaries. Windows x64/x86 validators passed 40/40, Linux x64 35/35, real-layout profiler parity covered more than 10,000 objects, compatibility passed 7/7, and linked/standalone enabled requests exercised collectible resolution. NativeAOT marked-MethodTable visitor/iterator execution passed 21/21 after replacing an inaccessible array cast and unmasked size lookup; ARM64 cross-build and NativeAOT smoke passed. The final verifier passed 2,084 checks, six layout plus two NativeAOT perturbations, and two back-to-back unique archive gates; final Claude and Gemini reviews were LGTM.
+- **Benchmarks:** In the 2,048-object native scan microbenchmark, the inlined visitor/callback ratios were 0.90x for sparse three-run objects, 0.52x for dense 256-reference arrays, and 0.76x for repeated mixed layouts; the resumable cursor measured 1.30x/0.62x/0.94x, retaining its sparse-shape cost. The validation consumer then ran 90 paired `pointer-chasing` and `long-lived-cache` invocations across Workstation linked/standalone and Server linked. Visitor ratios ranged from 0.9914 to 1.0023 and cursor ratios from 0.9889 to 1.0062; the roughly 1.1% Workstation-linked cache cursor cost and small configuration-specific gains are retained without a broad application claim. Pointer runs proved at least 131,072 object scans and 262,144 non-null slots through two blocking Gen2 collections; cache runs scanned roughly 0.43–6.91 million objects per invocation.
+- **Runtime changes:** Advances the source-compatible GC interface to 5.14 with an optional MethodTable-to-LoaderAllocator handle-slot resolver. Adds header-only `GCReferenceRanges` and `GCReferenceRangeIterator` over shared GCDesc formats, using one masked-MethodTable layout formula valid for CoreCLR and NativeAOT. NativeAOT supplies a null resolver because it has no collectible MethodTables; DAC excludes the iterator, Mono remains outside the CoreCLR contract, and disabled/older configurations add no object-scan branch or callback.
 - **Dependencies:** P1.1
-- **References:** `src/coreclr/vm/object.h`; `src/coreclr/vm/methodtable.h`; `src/coreclr/gc/gcinterface.h`
+- **References:** `docs/design/lxr-port/P1.5-object-reference-enumeration.md`; `src/coreclr/gc/gcref.h`; `src/coreclr/gc/gcdesc.h`; `src/coreclr/gc/gcinterface.h`; `304ce69d:src/vm/scanning.rs:183-222`
 
 ### P1.6 — Define negotiated GC-reserved object header bits
 
-- **Status:** planned
-- **Summary:** Define how a GC reserves object-header bits and how those bits coexist with the sync block index, thin lock, and hash code, then prove the placement before any copying code exists.
-- **Correctness:** Reserved bits survive every runtime operation that touches the header — thin lock inflation, hash code assignment, sync block creation — under targeted stress, with no observable interference in either direction.
-- **Benchmarks:** Lock and hash-code microbenchmarks proving no regression, since these paths are contended and header-sensitive.
-- **Runtime changes:** Adds a header-bit negotiation mechanism serving any copying or concurrent collector; MMTk keeps two forwarding bits in header available bits and spins on a `BEING_FORWARDED` state, whereas .NET's `ObjHeader` is already contended, making this the highest-risk unknown in the port and the gate on all of P6.
+- **Status:** done
+- **Summary:** Completed locally at clean tip e212db4c95116c8c7e9ad19529b0e48f56de0186. GC interface 5.15 negotiates a fixed-width 80-byte generic descriptor for two GC-owned bits in the existing 64-bit ObjHeader padding word at object offset -8; m_SyncBlockValue stays at -4 with lock, recursion, hash, sync-index, finalizer, and pinning capacities unchanged. States are clear 00, invalid 01, transition 10, and published 11; no copying or forwarding pointer was implemented.
+- **Correctness:** Exact oracle ordering is preserved: shared GC, in-proc CoreCLR, and NativeAOT implement masked sequentially-consistent Load/CAS/Store/Wait, preserve the other 30 bits, and fail enabled negotiation closed on 32-bit targets. Windows native x64 and Linux x64 each pass 28/28, x86 passes 6/6, actual NativeAOT ObjectLayout execution passes 7/7, and linked Workstation, linked Server, Workstation GCStress 0xC, and standalone GC each pass 295 checks covering all states, locks/hash/inflation/wait-pulse/finalization/cloning/relocation and exact LOH/POH recycled-address clearing. Startup/malformed controls pass 12/12, compatibility 7/7, inherited P1.4/P1.5 verifiers pass 1,004/2,084, both behavioral controls fail as intended, and the exact archive passes five independent perturbations with a 45-path identity manifest. ARM64 target build passes without execution hardware; no full Linux CoreCLR build or standalone NativeAOT application run was performed.
+- **Benchmarks:** Registered-clear/off throughput ratios remain neutral: uncontended lock 1.002, recursive lock 1.006, contended lock 0.999, first hash 1.002, cached hash 0.995, lock-then-hash 0.992, and hash-then-lock 1.006. Transition/published states leave uncontended lock within about 1% and cached hash within observed noise. SeqCst helper characterization, including the native hook boundary, measures one load at 20.6-26.8 ns and a two-CAS round trip at 55.0-58.2 ns. Final PGO Release instruction streams are identical for Object::GetHashCodeEx, ObjHeader::GetSyncBlock, and ObjHeader::GetSyncBlockIndex; CoreLib is byte-identical and coreclr.dll grows 1,024 bytes only for cold contract/configuration code.
+- **Runtime changes:** Adds additive, source-compatible GC interface 5.15 slot 91 and a runtime-selected, versioned header-bit descriptor. Converts only the existing zero-only 64-bit ObjHeader padding word into a dedicated atomic GC-state word, adds equivalent masked SeqCst helpers to shared GC, CoreCLR VM, and NativeAOT, leaves normal lock/hash paths branch- and load-free, rejects enabled use on x86/ARM32 with E_NOTIMPL, and adds no LXR-specific name, copying path, or forwarding pointer.
 - **Dependencies:** P1.1
 - **References:** `mmtk-core/src/util/object_forwarding.rs:8-11`; `src/coreclr/vm/syncblk.h`; `src/coreclr/vm/object.h:106`
 
 ### P1.7 — Gate runtime changes on measured zero regression
 
-- **Status:** planned
-- **Summary:** Prove that the contract changes cost nothing measurable on the built-in collectors before any LXR code depends on the new surface.
-- **Correctness:** Codegen diffs are byte-identical wherever that was claimed in P1.1-P1.6; any divergence is investigated as a design defect rather than annotated as acceptable.
-- **Benchmarks:** Workstation and Server GC across the full P0.4 matrix, plus barrier and allocation microbenchmarks, compared against the P0.5 baselines on identical machine state.
-- **Runtime changes:** No new surface; this is the enforcement point for the R2 no-cost-when-unused and R5 evidence-per-change rules, and a regression here is fixed in P1.1-P1.6 rather than accepted.
+- **Status:** failed
+- **Summary:** P1.7 completed locally at clean tip 04efacf48e5b0b3e64ae0ea024899536037d3912 with an INCONCLUSIVE qualification result. The predeclared measurement-resolution gate did not qualify this shared host, so no zero-regression claim is made and the P0.5/current rebuild, P1.1-P1.6 codegen recreation, microbenchmarks, calibration, capacity run, and 360-cell matrix were correctly not started.
+- **Correctness:** The final measurement-bearing qualification used a precommitted 24-order position-balanced schedule: 30/30 blocks and 120/120 workers were valid, with zero invalid or dropped attempts. Two earlier packages remain byte-preserved and explicitly superseded: a fixed-order run unsuitable for inference, and a pre-Main relative-path launcher failure. The generic path bug was fixed and covered by 74/74 harness tests plus three real relative-root launches. The active exact evidence audit passes 9,870 checks; strict admission fails 9,871 checks with exactly one expected error, `qualification did not pass`. The clean archive gate passes two full clean runs, 25 independent perturbations, and one final clean run. No runtime/product source changed; the temporary R: mapping was removed.
+- **Benchmarks:** The active coarse injected slowdown was detected at 0.820953 [0.812602, 0.831479]. The unchanged null A/A arm was 1.001168 [0.990352, 1.014557], but its 1.21% interval half-width exceeded the frozen 0.50% maximum. The fine approximately 2% injected arm was 0.992022 [0.981868, 1.005025], included unity, and had 1.17% half-width, also above 0.50%. Bounds were not widened and the run was not repeated. Therefore no Workstation-versus-Server or baseline-versus-current performance results exist for P1.7.
+- **Runtime changes:** No runtime, EE, JIT, GC, or public surface changed. P1.7 added and hardened measurement-only harness, provenance, authority, raw-evidence, exact-verifier, archive-control, and built-in-only roadmap checkpoint artifacts. Any eventual measured regression still belongs to its owning P1.1-P1.6 mechanism.
 - **Dependencies:** P0.5, P1.2, P1.3, P1.4, P1.5, P1.6
 - **References:** paper §5.1 barrier overhead; P0.5 baselines
 
 ## P2 — Side metadata and Immix substrate
 
-- **Status:** planned
-- **Summary:** Build the address-to-metadata layer and the Immix block/line heap the whole collector sits on, at the reference's exact geometry and granularity.
+- **Status:** done
+- **Summary:** All five substrate steps are implemented and integrated into the owning Windows/Linux x64 prototype: side metadata, blocks/lines, reference counts, allocation and large objects. The recorded CoreCLR geometry, ownership and metadata representations are explicit adaptations, not a claim of identical reference layout or production qualification.
 
 ### P2.1 — Build the side metadata framework
 
-- **Status:** planned
-- **Summary:** Provide address-to-metadata mapping with atomic bit and byte operations plus bulk word reads for every metadata spec the collector needs.
-- **Correctness:** Concurrent updates to neighboring bits within one byte never lose an update, verified by a dedicated contention stress test at every declared granularity.
-- **Benchmarks:** Metadata access microbenchmarks for single-bit, single-byte, and bulk word paths, since RC and sweeping are dominated by them.
+- **Status:** done
+- **Summary:** Completed locally at clean tip a0b947f56d4ad97bcce55441ccf22d7f096e9e1f. The new framework reserves fixed memory areas outside managed objects and maps each managed address to its metadata bits or bytes. It provides the operations needed by later LXR work, including selectable 2-, 4-, or 8-bit reference counts, but does not yet allocate Immix objects, count references, mark, sweep, trace, or copy objects.
+- **Correctness:** Windows x64 and Linux x64 validation each pass 1,096 checks; Linux executes the metadata code through a test OS shim, not the real Unix reservation implementation. Windows x86 correctly rejects the unsupported 47-bit layout. The existing write-barrier test passes all 8 linked/standalone Workstation/Server and bit-polarity combinations. Concurrent threads updating neighboring fields do not lose changes, and a deliberately broken update fails as expected. The exact verifier passes, followed by 2 clean archive runs, 19 evidence perturbations, and 1 executable broken-update control. The public four-step wrapper also passes when launched from an unrelated folder. ARM64 builds but was not executed; full Linux CoreCLR, Mono, and WebAssembly execution were not run.
+- **Benchmarks:** The full run contains 45 benchmark rows and 3 controls. Mapping plus a safe bit load averages 18.45 ns; a precomputed relaxed load 0.59 ns; one-bit store 26.21 ns; 2-, 4-, and 8-bit reference-count updates about 14.78-14.87 ns; byte update 27.13 ns; a 64-KiB sequential metadata scan 1.86 us; and two-thread same-word versus separate-cache-line updates 52.55 ns versus 15.32 ns. Three same-code comparisons are 0.9984, 1.0119, and 1.0002; deliberately adding eight extra atomic retries slows execution by 7.93x-8.43x, proving the benchmark detects a large injected cost. These are metadata-operation measurements, not comparisons with Java/MMTk or complete collector performance.
+- **Runtime changes:** Adds collector-internal `side_metadata` code and a generic exact-address `GCToOSInterface::VirtualReserveAt` helper for Windows, Unix, and unsupported WebAssembly handling. The existing opt-in write-barrier test uses the framework; normal Workstation and Server GC paths do not initialize, access, branch on, or call it. No managed, GC-EE, JIT-EE, or public API was added.
 - **Dependencies:** P1.1
 - **References:** `mmtk-core/src/util/metadata/side_metadata/`; `mmtk-core/src/util/rc.rs:13-26`
 
 ### P2.2 — Implement block and line geometry and the state machine
 
-- **Status:** planned
-- **Summary:** Implement 32 KiB blocks, 256 B lines, 128 lines per block, the block state machine, and the phase epoch that distinguishes mutator from GC phases.
-- **Correctness:** Block state transitions match the reference's allowed set; the phase epoch is bumped at both pause start and release, and drives nursery, reusing, and GC-reusing predicates identically.
-- **Benchmarks:** Block acquisition and release rates under allocation churn.
+- **Status:** done
+- **Summary:** Completed locally with source commit 4c99e4d89e4d3d2b9783b997d4f1c1fce37970c5 and evidence-only tip 6850acbefc9d9fcdcd1036975f046100683e6a67. It defines 32 KiB blocks, 256-byte lines, 128 lines per block, the reference four-state block lifecycle, ownership, and the phase counter used to distinguish normal execution from GC work. It does not yet allocate objects, mark lines, sweep, or map heap pages.
+- **Correctness:** The block states and allowed changes now match the newer reference design, including checks that prevent the same reusable block from being handed out twice in one phase. A released block is no longer incorrectly reported as being reused by GC. The global phase starts at 1, changes to 2 when a GC pause starts, changes to 3 when execution resumes, and safely wraps from 254 to 1 while clearing old block phases. Windows and Linux x64 validation each pass 2,204 checks; x86 correctly fails closed 1/1. Linked and standalone Workstation/Server tests pass 8/8 on Windows and Linux. The combined Linux test build exposes all three requested test hooks. The exact verifier passes 282 checks and the independent archive gate passes all 24 scenarios. ARM64 product files compile but were not executed.
+- **Benchmarks:** The full run has 36 rows: 12 operations at 1, 4, and 16 persistent workers, with 3 launches, 8 warmups, and 20 measured iterations. At one worker, fresh acquire/release averages 569.69 ns, reusable acquire/return 413.24 ns, GC-copy acquire/return 439.24 ns, and contended acquire/release 574.58 ns. At 16 workers those values are 460.30, 393.55, 418.80, and 154.29 ns per batched operation. Same-code controls remain near 1.0; extra atomic operations slow the test by 1.73x-2.60x and injected owner delays by 1.42x-6.45x, showing the benchmark detects added cost. These are substrate measurements, not full collector performance.
+- **Runtime changes:** Adds collector-internal Immix block geometry and state code using the P2.1 metadata framework. Product and test exports are compiled only when the AMD64 test option is enabled; the default runtime contains no P2.2 object, hook, branch, call, or export. Unix test exports are composed additively so enabling P2.2 does not hide existing write-barrier or allocation test exports. No managed, GC-EE, JIT-EE, or public API was added.
 - **Dependencies:** P2.1
 - **References:** `mmtk-core/src/policy/immix/block.rs:76-98,300-374`; `mmtk-core/src/policy/immix/line.rs:20-29`
 
 ### P2.3 — Implement the sticky 2-bit RC table and straddle lines
 
-- **Status:** planned
-- **Summary:** Implement two reference-count bits per 8-byte granule, saturating at 3 and never decremented once sticky, plus straddle-line marking for objects spanning lines.
-- **Correctness:** Neighboring counts in the same byte survive every compare-and-swap; sticky counts are never decremented; straddle lines and the continuation sentinel match the reference for multi-line objects.
-- **Benchmarks:** RC update microbenchmark under contention, and the allocation churn scenario where increment volume dominates.
+- **Status:** done
+- **Summary:** Implemented a default-off CoreCLR sticky reference-count substrate with selectable 2/4/8-bit counters (2-bit default), exact registered object starts, and paired continuation-line sentinels. The accepted source/evidence pair is a9817282f1f / fcac4c90bf0.
+- **Correctness:** Windows and Linux x64 each passed 37/37 cases (1,874 checks); Windows x86 passed its fail-closed case; 8 linked/standalone Workstation/Server smoke rows passed. The committed verifier passed 631 checks, the clean-archive gate passed 32 scenarios, and final GPT/Claude/Gemini reviews found no confirmed blockers.
+- **Benchmarks:** The 57-row synthetic substrate benchmark passed with A/A ratios 1.00058/0.93372/1.00020 at 1/4/16 workers, extra-CAS sensitivity 9.3207x/8.5664x/8.8576x, and delay sensitivity 91.1924x/16.1409x/9.9704x. Qualification used a fixed three-attempt cap and recorded FAIL/PASS/PASS; these are RC-substrate results, not full LXR or real allocator measurements.
+- **Runtime changes:** Added an internal, compile-time default-off CoreCLR RC/straddle test capability using the existing side-metadata and Immix block substrate. No public API, JIT/EE contract, normal Workstation/Server GC path, allocator, sweep, SATB, evacuation, Mono, NativeAOT, or WASM integration was added.
 - **Dependencies:** P2.1, P2.2
 - **References:** `mmtk-core/src/util/rc.rs:13-26`; `mmtk-core/src/util/constants.rs:122-124`; note .NET's `MIN_OBJECT_SIZE` is 24 B versus MMTk's 8 B
 
 ### P2.4 — Implement allocation, holes, and recycled lines
 
-- **Status:** planned
-- **Summary:** Implement bump allocation within holes, hole discovery by bulk RC-table read, fresh versus recycled block acquisition, and mutator block ownership.
-- **Correctness:** Hole discovery finds exactly the free line runs the reference would find, and a line handed out during concurrent marking bumps its reuse counter, which P6.4 depends on.
-- **Benchmarks:** Allocation throughput on fresh versus recycled blocks, and the long-lived cache scenario where recycling dominates.
+- **Status:** done
+- **Summary:** Implemented a default-off CoreCLR Immix allocation substrate using HEAD's live RC-enabled allocation path: tunable-width RC-word hole discovery with the conservative skip-first-dead-line rule, fresh/recycled mutator and GC-copy acquisition, exclusive P2.2 ownership, checked bump cursors, source-specific zeroing/field-log/object-mark publication, and concurrent/final-mark line-reuse generations. Accepted source/evidence: 6a107aedf05 / de150894549. Integrated compact follow-up `a818ad9949c` uses a private one-shot cleared-span witness for genuine notifying-helper births, retains full Debug and unwitnessed validation, and preserves metadata-before-escape; mappings and final checks are in `docs/design/lxr-port/P9-compact/README.md`.
+- **Correctness:** Windows and Linux x64 each passed 27,165/27,165 direct checks; Windows x86 passed its fail-closed case; Windows/Linux linked and standalone Workstation/Server smoke passed 8/8. The committed verifier passed 295 checks, the clean-archive gate passed 10 scenarios, diverse reviews found no remaining errors or warnings, and the evidence-only commit is a direct raw-only child of the source commit.
+- **Benchmarks:** The fixed 27-row allocator benchmark passed all controls. Fresh A/A ratios at 1/4/16 workers were 0.9731/1.0280/1.0201; recycled A/A 1.0305/1.0084/0.9729; 64x scan sensitivity 44.61x/15.65x/11.28x; owner-delay sensitivity 8.04x/6.68x/5.94x. Default-path managed allocation A/B remained within [0.90,1.10] for Workstation and Server. These are allocator-substrate measurements, not full LXR latency or throughput.
+- **Runtime changes:** Added an internal, compile-time default-off CoreCLR Immix allocation validation capability over the existing P2.1/P2.2 substrate. No public API, GC-EE/JIT contract, normal Workstation/Server allocation call, LOS, packet scheduler, coalescing RC, SATB, evacuation, Mono, NativeAOT, or WASM integration was added.
 - **Dependencies:** P2.2
 - **References:** `mmtk-core/src/policy/immix/block_allocation.rs`; `mmtk-core/src/policy/immix/line.rs`
 
 ### P2.5 — Implement the large object space
 
-- **Status:** planned
-- **Summary:** Implement a large object space for allocations at or above 32 KiB, with its own mark and nursery bits and a page reuse counter.
-- **Correctness:** The threshold is the full block size, matching `MAX_IMMIX_OBJECT_SIZE`; large objects are never placed in Immix blocks and are released independently of block sweeping.
-- **Benchmarks:** Large-object pressure scenario against both baselines.
+- **Status:** done
+- **Summary:** Implemented the default-off CoreCLR large-object-space substrate using the head oracle: complete objects at or above 32 KiB receive page-granular allocation, independent mark and nursery metadata, page-reuse counters, promotion, and independent release. The definitive source/evidence pair is 4f4e5827e67 / fed623c898d; the earlier a4145d15446 / 0e55e1924f3 pair remains in history but is superseded. Compact follow-up `a818ad9949c` indexes supplemental extent/scan/lock/.NET-flag state by actual LOS page-aligned starts, not every payload word; per-field RC/log metadata remains unchanged, and 18 supplemental/interior checks pass per OS/configuration.
+- **Correctness:** Windows x64 passed 201/201 direct checks, including allocate/promote/release of the 32,769-byte threshold-plus-one case at all three RC widths; Windows x86 passed its fail-closed case; Linux x64 passed 201/201. Linked and standalone Workstation/Server smoke passed 4/4. The physical verifier passed 243 checks, the canonical clean archive passed 242, and the archive gate passed all 7 controls, including an exact promotion-rounding perturbation. The evidence commit is a direct raw-only child with exactly 10 added evidence files; final reviews found no remaining blocker or warning.
+- **Benchmarks:** The 21-row fixed-policy BenchmarkDotNet run used 3 launches, 8 warmups, 20 iterations, and 64 operations per invocation. A/A ratios at 1/4/16 workers were 1.00251/1.00209/1.00313; extra-update sensitivity was 5.183x/8.431x/3.502x; injected-cost sensitivity was 247.116x/48.189x/7.975x. Two five-invocation Workstation/Server pressure runs are retained as characterization only; these remain LOS-substrate measurements, not full-LXR comparisons.
+- **Runtime changes:** Added an internal, compile-time default-off CoreCLR LOS validation capability over P2.1/P2.2. Default coreclr and clrgc binaries contain neither the P2.5 source nor hook. No public API, GC-EE/JIT contract, normal Workstation/Server allocation routing, packet scheduler, coalescing RC, SATB, evacuation, Mono, NativeAOT, or WASM integration was added.
 - **Dependencies:** P2.2
 - **References:** `mmtk-core/src/plan/lxr/mod.rs:11-19`; `mmtk-core/src/policy/largeobjectspace.rs`
 
 ## P3 — Work-packet scheduler and pause taxonomy
 
-- **Status:** planned
-- **Summary:** Build the ordered bucket scheduler and the four pause kinds before any RC or tracing code depends on them, because bucket ordering is the reference collector's RC correctness proof.
+- **Status:** done
+- **Summary:** All four scheduler/pause steps are implemented and integrated: ordered work, pause transitions, deferred publication and completion guards. Follow-up `e8d2d23ef60` batches Full trace targets across objects with explicit pending leases, reducing the matched diagnostic packet count from about 4.22 million to 16.66 thousand; concurrent scheduling and its 1024-entry budgets are unchanged.
 
 ### P3.1 — Implement work packets and strictly ordered buckets
 
-- **Status:** planned
-- **Summary:** Implement the ordered bucket sequence in which each stage opens only once all prior stages have drained, with work stealing and reference-sized packet granularity.
-- **Correctness:** Bucket opening order is enforced and asserted, since reordering or renaming buckets silently breaks RC correctness with no compile-time signal; increments land in the first STW bucket and decrements in the last.
-- **Benchmarks:** Scheduler overhead and parallel scaling on the multi-thread throughput scenario.
+- **Status:** done
+- **Summary:** Implemented the default-off ordered packet scheduler at source/evidence `1b9082891bc`/`8d73c818bd0`, with compact integration `a818ad9949c` batching roots and retiring completed work after drainage (6170 exact-copy/12307 retirement checks). Lifecycle follow-on `564c76e7020` separately reuses one EE-registered root/lifetime scan executor, not the ordinary scheduler `std::thread` workers or a new pool, with all48 region operations/fresh contexts preserved.
+- **Correctness:** Windows and Linux x64 validators each passed 642/642 checks; linked/standalone Workstation/Server smoke passed 8/8; harness assertions passed 58/58. The committed verifier passed 119 checks and the clean archive gate passed all 15 scenarios, including stage order/rename, premature opening, drain accounting, loss/duplication, stealing/ownership, RC placement, identity/cardinality, and benchmark controls. Windows and Linux test-enabled builds passed, the default Windows build omitted the export, x86/ARM64 product translation units compiled, the evidence child is direct and raw-only, and final review fixes cover shutdown ownership, invalid packet shape/stage, export composition, stealing counters, synchronized drain checks, and isolated perturbations. Full x86 later encountered pre-existing Windows SDK `_CONTEXT` errors; ARM64 execution hardware and runnable WSL TSan were unavailable and are not claimed.
+- **Benchmarks:** All 75 fixed-policy rows and 5 controls passed with persistent workers and 1024-reference packets. Scheduled throughput/scaling versus one worker was 69,843/s (1.00x), 190,449/s (2.73x), 96,556/s (1.38x), 73,305/s (1.05x), and 102,642/s (1.47x) at 1/2/4/8/16 workers. A/A ratios were 0.9981-1.0031, injected-cost sensitivity was 2.05x-12.23x, and multi-worker rows recorded 0.85M-1.35M steals. Scaling is honestly non-monotonic because serialized queue/admission bookkeeping is visible; this is scheduler-substrate evidence, not a complete-LXR or LXR-versus-built-in-collector result.
+- **Runtime changes:** Added internal CoreCLR packet/scheduler sources and a linked/standalone validation export compiled only under the default-off P3.1 test option. No `IGCHeap`, `IGCToCLR`, JIT-EE, managed API, configuration knob, or normal Workstation/Server GC path changed.
 - **Dependencies:** P2.1
-- **References:** `mmtk-core/src/scheduler/work_bucket.rs:456`; stage order Unconstrained, Concurrent, ConcurrentResumable, FinishConcurrentWork, Initial, Prepare, Closure, Release, STWRCDecsAndSweep, Final
+- **References:** `304ce69d:src/scheduler/work_bucket.rs:355-470`; `304ce69d:src/scheduler/scheduler.rs:456-512`; secondary-only `9625c174:src/scheduler/work_bucket.rs:340-458` for task-required `ConcurrentResumable`
 
 ### P3.2 — Implement the pause taxonomy and per-pause schedules
 
-- **Status:** planned
-- **Summary:** Implement the four pause kinds — Full, InitialMark, FinalMark, RefCount — and the schedule each one installs.
-- **Correctness:** Each pause kind schedules exactly the reference's bucket set, including disabling unnecessary buckets for RefCount pauses.
-- **Benchmarks:** Pause count and duration distribution by kind across the scenario matrix.
+- **Status:** done
+- **Summary:** Implemented the exact live `Full`, `RefCount`, `InitialMark`, and `FinalMark` taxonomy and table-driven per-kind schedules on top of P3.1, including stage enable/disable and admission, packet-boundary resumable interruption, exact completion traces, reset/resume, and an initialization-selected real or synthetic pause adapter. The definitive source/evidence pair is 75bc9a0ed04 / 3c892902db0.
+- **Correctness:** Windows and Linux x64 P3.2 validators each passed 355/355 checks; inherited P3.1 validation passed 642/642; harness assertions passed 59/59; linked/standalone Workstation/Server smoke passed 8/8. Enabled Windows/Linux builds, default-off export absence, the combined P1/P2/P3.1/P3.2 build, and x86/ARM64 portable-object compilation passed. The physical verifier passed 1,417 checks and the clean archive gate passed all 20 scenarios, including 18 intended negative perturbations. Review fixes covered scheduler-owned packet lifetime, interruption observability, exact Cartesian evidence keys, failure-path EE resume, interruption/configuration races, and balanced abort after suspension timeout. Full x86/ARM64 cross builds later hit retained unrelated `_CONTEXT`/ARMASM failures and are not claimed.
+- **Benchmarks:** All 960 fixed-matrix rows and 80 controls passed at the uniform calibrated 6x heap. Scheduled synthetic mean p50/p95 durations were Full 1.90/2.41 ms, RefCount 1.10/1.34 ms, InitialMark 1.37/1.53 ms, and FinalMark 1.63/1.92 ms. Paired same-code ratios were 0.9607-1.0332, injected deltas were 4.949-5.041 ms, and every null row reported zero schedules and suspensions. These are scheduler/synthetic durations, not complete-LXR pauses or paper parity; application-observed latency remains the eventual acceptance signal.
+- **Runtime changes:** Added internal default-off pause-schedule/coordinator sources and validation exports, extending P3.1 through existing `SuspendEE`/`RestartEE` adapters selected at initialization. No GC ABI, JIT-EE, managed public API, NativeAOT contract, or normal Workstation/Server path changed.
 - **Dependencies:** P3.1
-- **References:** `mmtk-core/src/plan/concurrent/mod.rs:16-31`; `mmtk-core/src/plan/lxr/global.rs:738-789`
+- **References:** `304ce69d:src/plan/immix/mod.rs:12-17`; `304ce69d:src/plan/lxr/global.rs:696-787`; secondary-only `9625c174:src/scheduler/scheduler.rs:797-809` for inherited resumable-work resume ordering
 
 ### P3.3 — Implement the deferred concurrent bucket
 
-- **Status:** planned
-- **Summary:** Implement the double-buffered bucket queue where deferred work is added to the inactive queue and published by a flip once mutators resume.
-- **Correctness:** Work deferred during a pause becomes visible only after the flip at GC finish; getting the buffering backwards either defeats laziness or drops the work entirely, so both directions are tested explicitly.
-- **Benchmarks:** Pause duration with lazy decrements enabled versus disabled, isolating what deferral actually buys.
+- **Status:** done
+- **Summary:** Implemented a default-off double-buffered deferred-concurrent path on P3.1 with separate normal/prioritized lanes, producer/active/sealed indices, generation sealing at `Final`, active-only worker polling, and exactly-once explicit publication after `ResumeConcurrentWork`. The definitive source/evidence pair is ff4b4ce9145 / d99dfa84090.
+- **Correctness:** Windows and Linux x64 P3.3 validators each passed 357/357 checks; inherited P3.1 regression passed 642/642; linked/standalone Workstation/Server smoke passed 8/8. Controls cover direction, invisible-before/visible-after publication, exactly-once and empty flips, generation binding, producer/seal races, active-only worker/stealer access, eager STW placement, repeated-cycle loss/duplication, reset/busy, and shutdown ownership. Enabled/default-off/combined-feature builds passed, default-off exports were absent, and x86/ARM64 packet/scheduler translation units compiled. The physical verifier passed 132 checks and the clean archive gate passed all 18 scenarios, including 17 isolated negative controls. The evidence child is direct and raw-only, P3.1 raw drift is zero, and final review has no unresolved error or warning.
+- **Benchmarks:** All 105 matched-work synthetic rows and 5 controls passed. Lazy versus eager mean pause times at 1/2/4/8/16 workers were 15,243/70,170 ns (4.604x), 16,194/51,700 ns (3.192x), 36,555/61,166 ns (1.673x), 59,603/177,295 ns (2.975x), and 115,545/285,564 ns (2.471x). A/A ratios were 0.876-1.061 and injected separation was 3.20-35.57. These are scheduler/substrate measurements with identical total work, not complete-LXR or paper-parity claims.
+- **Runtime changes:** Extended only the internal P3.1 scheduler and default-off linked/standalone validation surface. No runtime/EE/JIT/public managed contract, P3.2 pause policy, P3.4 completion counter, or normal Workstation/Server path changed.
 - **Dependencies:** P3.1
-- **References:** `mmtk-core/src/scheduler/`; `mmtk-core/src/plan/lxr/args.rs:109`
+- **References:** `304ce69d:src/scheduler/scheduler.rs:36-37,89-90,142-169,809-821,905-911`; `304ce69d:src/scheduler/work_bucket.rs:143-164`; `304ce69d:src/args.rs:88-112`
 
 ### P3.4 — Implement lazy sweeping completion counters
 
-- **Status:** planned
-- **Summary:** Implement the RAII completion counter with a decrement-specific sub-counter that schedules mature block sweeping at decrement-zero and runs the next-GC decision at overall-zero.
-- **Correctness:** No block is released while lazy work referencing it remains outstanding, and the next pause's kind is decided only after the previous GC's lazy work drains; this is also the mechanism that keeps finalizable promotion ahead of block release.
-- **Benchmarks:** Lazy-decrement backlog depth and its effect on subsequent pause times.
+- **Status:** done
+- **Summary:** Implemented two nonthrowing completion-generation states embedded in P3.3's queue sets, with move-only RAII overall/decrement/mature-sweep registrations, sequentially consistent balance guards, exactly-once zero callbacks, typed sweep/release capability, cancellation/failure lifecycle, and packet/generation ownership integration. The definitive source/evidence pair is 2ee6f0bd3f8 / 9f307a34e68.
+- **Correctness:** Windows and Linux x64 P3.4 validators each passed 57/57 checks; P3.1 regressions passed 642/642 and P3.3 regressions 357/357 on both platforms; linked/standalone Workstation/Server smoke passed 8/8. Enabled/default-off/combined-feature builds passed, default-off exports were absent, and x86/ARM64 counter/packet/scheduler translation units compiled. Review fixed a shutdown diagnostic race and prevented mature-sweep-root forgery outside the decrement-zero continuation. The committed verifier passed 163 checks and the clean archive gate passed all 23 scenarios, including 22 independent negative controls. The evidence child is direct and raw-only, prior P3.1/P3.3 raw drift is zero, and the rejected evidence attempt/revert remain honestly in history.
+- **Benchmarks:** All 375 fixed-matrix rows and 5 worker controls passed with 32 preallocated 1024-reference packets, 1/2/4/8/16 workers, and backlog depths 0/1/4/16/32. At depth 32, injected/base separation was 50.37x/42.04x/15.18x/6.68x/3.24x and injected depth-32/depth-0 sensitivity was 1835.29x/64.62x/35.60x/16.80x/9.40x. These are scheduler/substrate backlog and subsequent synthetic-pause measurements, not collector or paper-parity claims.
+- **Runtime changes:** Added internal default-off completion-counter sources and opt-in linked/standalone validation integration over P3.1/P3.3. No EE, JIT, public managed, GC ABI, dependency, P4 decrement-semantic, P7 finalization-policy, P8 trigger-prediction, or normal Workstation/Server path changed.
 - **Dependencies:** P3.3
-- **References:** `mmtk-core/src/lib.rs:79-143`
+- **References:** `304ce69d:src/lib.rs:79-185`; `304ce69d:src/plan/lxr/rc.rs:669-753`; `304ce69d:src/plan/lxr/global.rs:348-369,570-660,789-808,859-934`; `304ce69d:src/policy/immix/immixspace.rs:1414-1441`; `304ce69d:src/policy/immix/rc_work.rs:128-177`
 
 ## P4 — Coalescing reference counting core
 
-- **Status:** planned
-- **Summary:** Implement the coalescing RC engine — log buffers, increment and decrement packets, delayed root decrements, and metadata-only nursery reclamation.
+- **Status:** done
+- **Summary:** Completed P4.1-P4.5 jointly as one Windows/Linux x64 prototype vertical at integrated source b3148f97f6b and documentation tip fe93f7801da: real RC metadata, allocator/LOS, logs, roots, scheduler and guarded reclamation share one engine. Coordinator reruns passed 22,459/22,459 native checks in Debug and Release on both OSes and verified 41 input hashes; real WKS/Server hooks observe logging only, not LXR ownership of managed memory. One integrated review and focused native Release characterization replace per-step certification; P1.7 remains failed/inconclusive. A genuine selectable host is the immediate next vertical and P5 supplies cycle reclamation; bounded thread admission, rejected owned finalizable/collectible/frozen births, retained cycles/sticky garbage, R2R-off and default-off integration remain explicit prototype limits.
 
 ### P4.1 — Implement mutator log buffers and flush
 
-- **Status:** planned
-- **Summary:** Implement the per-mutator increment and decrement buffers the barrier feeds, with the reference's capacity and flush points.
-- **Correctness:** Increments carry slot addresses and decrements carry old target objects, not the reverse; buffers flush on full, at every pause start, and at thread teardown, with no entries lost at teardown.
-- **Benchmarks:** Barrier take rate and buffer flush frequency under allocation churn and multi-thread throughput.
+- **Status:** done
+- **Summary:** Connected preallocated 1024-entry increment-slot and old-target decrement buffers through nonblocking ingress, immediate chunk recycling and shared immutable RC/SATB bank spans. Source `46c366e0845` now publishes owned range counts in the first payload word's unused high17 bits, retaining every47-bit owned address, all four full-capacity streams and the observer's separate full-width representation.
+- **Correctness:** Current native2121 explicitly checks holes/corrupt counts, all partial widths, full legal capacity, held readers, exactly1024 simultaneous claims/increments/non-root decrements and2048 partial flushes; all five wrong log controls reject in both configurations/OSes. Source/test boundary46/66, complete growth-failure checks, first-store/churn, moving readers, independent descendant copies and drainage before reuse remain intact; no callback allocation, blocking, capacity shrinking or managed-pointer compression was introduced.
+- **Benchmarks:** Current matched storage study proves640 to512 MiB log commitment at128 MiB unchanged admission, not a throughput win; the original P4 native barrier/log characterization remains historical rather than a small-regression certificate.
 - **Dependencies:** P1.7, P2.3, P3.1
-- **References:** `mmtk-core/src/plan/lxr/barrier.rs:61-116`; `mmtk-core/src/plan/lxr/args.rs:86-98`
+- **References:** `304ce69d:src/plan/lxr/barrier.rs`; `304ce69d:src/args.rs`; original integrated `b3148f97f6b`; current `46c366e0845:src/coreclr/gc/lxr_reference_counting.cpp`; `docs/design/lxr-port/P9-log-conformance/README.md`
 
 ### P4.2 — Implement increment packets and first promotion
 
-- **Status:** planned
-- **Summary:** Process increment slots by loading the current target, unlogging that exact slot, and incrementing, treating a zero-to-one transition as first promotion.
-- **Correctness:** First promotion stamps the object start, arms field unlog bits in bulk, marks straddle lines, and recursively enqueues child slots; recursive increments drain synchronously within the packet so they cannot leak past the bucket boundary.
-- **Benchmarks:** Increment rate and promotion rate against the paper's reported figures.
+- **Status:** done
+- **Summary:** Implemented current-target loading before exact slot unlogging, zero-to-one in-place promotion, and descendant increment closure through the real GCReferenceRanges/GCDesc scanner.
+- **Correctness:** Integrated tests exercise nursery survivors, descendant closure, parallel claims, all RC widths and LOS promotion. RC/valid starts use the physical allocation/ObjHeader base while slots and targets use real Object* addresses, preserving the preceding header; promotion arms field/straddle metadata and closure drains before release.
+- **Benchmarks:** Increment and promotion work is included in the shared epoch characterization; no standalone promotion-rate or paper-performance claim is made.
 - **Dependencies:** P4.1
 - **References:** `304ce69d:src/plan/lxr/rc.rs:40` (`ProcessIncs`); paper §3.1
 
 ### P4.3 — Implement decrement packets and recursive death
 
-- **Status:** planned
-- **Summary:** Process decrements so that a one-to-zero transition runs dead-object handling, recursively decrementing children and queueing the containing mature block.
-- **Correctness:** No object memory is zeroed and only metadata is cleared; large objects are released through their own path; sticky counts are never decremented.
-- **Benchmarks:** Decrement processing cost and its share of pause time, plus the cyclic garbage scenario where RC alone cannot reclaim.
+- **Status:** done
+- **Summary:** Implemented sticky-width-aware recursive deaths with child work registered before parent completion, generation-guarded mature/LOS release, and metadata-only death handling.
+- **Correctness:** Acyclic reclamation and guarded reuse pass on both OSes; sticky counts and cycles remain retained pending P5. Death does not clear object payloads; continuation metadata publishes clear before reusable RC zero. Release bad-old-edge controls reject before overwrite, and existing completion-counter tests reject forged release authority.
+- **Benchmarks:** Shared native epoch and allocation/death accounting is recorded; reported runs reclaimed 1536 leaf objects into reusable holes without releasing the live parent's block. These are kernel observations, not managed GC throughput.
 - **Dependencies:** P4.1
 - **References:** `304ce69d:src/plan/lxr/rc.rs:669` (`ProcessDecs`); PLDI `df8d30a3:src/util/rc.rs:747` (`impl ProcessDecs`)
 
 ### P4.4 — Implement one-epoch-delayed root decrements
 
-- **Status:** planned
-- **Summary:** Delay root decrements exactly one epoch by swapping the current and previous root sets at release and draining the previous set in the following pause.
-- **Correctness:** Roots incremented in an epoch are never decremented in that same epoch, because doing so races recursive increments; the swap happens at release and nowhere else.
-- **Benchmarks:** Root set size over time and its effect on pause duration.
+- **Status:** done
+- **Summary:** Implemented copied current/previous root-target batches, the release-time handoff and next-epoch root decrements after increment closure. Compact follow-up `a818ad9949c` batches tracing seeds without repeating root prefixes; the erroneous copy control fails and the corrected exact-copy test passes 6170 checks per OS/configuration, while independent root snapshot ownership and delayed decrements remain intact.
+- **Correctness:** Integrated root-lease tests preserve targets for the correct epoch and the early-decrement failure control fires. Real observer scans visit every Server heap partition while suspended, copy callback-scoped targets and normalize interior roots without invoking built-in mark-dependent lifetime notifications.
+- **Benchmarks:** Root leases are included in integrated epoch validation and characterization; no separate root-set scaling or application-pause claim is made.
 - **Dependencies:** P4.2, P4.3
-- **References:** `mmtk-core/src/plan/lxr/global.rs:314-318,911-931`
+- **References:** `304ce69d:src/plan/lxr/global.rs`; `304ce69d:src/plan/lxr/rc.rs`; integrated `b3148f97f6b:src/coreclr/gc/lxr_reference_counting.cpp`
 
 ### P4.5 — Implement nursery sweeping without object parsing
 
-- **Status:** planned
-- **Summary:** Reclaim young objects purely from block state and bulk RC-table reads, never parsing the heap.
-- **Correctness:** The sweep never calls any size or layout query and walks at 8-byte granularity; reclaimed regions match what the reference would reclaim on identical heaps.
-- **Benchmarks:** Nursery reclamation rate and sweep cost as a share of pause time; this path is where an object-parsing design would show up as cost proportional to live heap.
+- **Status:** done
+- **Summary:** Implemented eight-byte-lattice RC/straddle metadata reclamation, allocator hole reuse and allocation-record-only nursery LOS release in the shared engine. Compact follow-up `a818ad9949c` removes the port-only birth streams in favor of current-epoch allocated-block tracking and suspended RC-zero active-start retirement before existing Immix/LOS sweeps; it is not a general mature RC-zero heuristic and still never parses dead payload.
+- **Correctness:** Repeated reclamation/reuse, poisoned unreachable layouts, LOS boundaries, too-small-hole fallback and concurrent continuation clearing pass. Sweeping performs no size/MethodTable/GCDesc queries and the forbidden-layout-query control fails as intended; live bytes and the physical header remain protected without whole-side-table reset.
+- **Benchmarks:** The shared study records 37392 bytes allocated per row and 36864 dead leaf bytes reused around a 528-byte live parent. Reuse and epoch costs are characterized without claiming complete-LXR reclamation performance.
 - **Dependencies:** P2.4, P4.2
-- **References:** `304ce69d:src/policy/immix/rc_work.rs:128` (`SweepBlocksAfterDecs`); `304ce69d:src/policy/immix/block.rs:634` (`rc_dead`), `:658` (`sweep`)
+- **References:** `304ce69d:src/plan/lxr/global.rs`; `304ce69d:src/policy/immix/immixspace.rs`; `304ce69d:src/policy/immix/rc_work.rs`; `304ce69d:src/policy/largeobjectspace.rs`; integrated `b3148f97f6b:src/coreclr/gc/lxr_reference_counting.cpp`
 
 ## P5 — SATB concurrent trace and cycle reclamation
 
-- **Status:** planned
-- **Summary:** Add the concurrent snapshot-at-the-beginning trace that reclaims the cycles reference counting cannot, including the safety invariant that binds it to the RC path.
+- **Status:** done
+- **Summary:** Completed the genuine GCPath-selectable host and P5.1-P5.5 together at implementation ac1da112dd8 and final record d9d08a7630d. The default-off nonmoving Windows/Linux x64 module owns managed allocation and RC/SATB reclamation without WKS/Server delegation or a new VM entry hook; coordinator reruns passed 100,627 managed checks plus 10 OOM/recovery checks and clean exit on both OSes, with 47 input hashes verified. Child Debug/Release suites and 30,979 native checks passed on both targets, including executing-scan interruption and physical LOS range reuse. This is a working fixed-arena prototype, not a performance win: median workload times were LXR/WKS/Server 766.178/11.095/14.471 ms on Windows and 1209.061/12.631/17.148 ms on Linux. The 24 MiB owned arena, 1024 simultaneous contexts, bounded roots/frozen records, R2R-off, nonmoving policy and explicit unsupported features remain limits; P6/P8, stock DAC, broad-suite qualification and P1.7 zero-regression closure are not claimed.
 
 ### P5.1 — Implement the InitialMark snapshot
 
-- **Status:** planned
-- **Summary:** Turn the incremented root set into the concurrent trace's initial worklist and enable concurrent-marking state as mutators resume.
-- **Correctness:** Concurrent marking state and remembered-set recording turn on at pause end, not pause start, matching the reference's ordering.
-- **Benchmarks:** InitialMark pause duration against the paper's reported pause distribution.
+- **Status:** done
+- **Summary:** Seeded InitialMark with incremented copied tracing roots and enabled concurrent marking at suspended pause release before actual EE resume.
+- **Correctness:** Genuine selected-host tests exercise owned startup allocations, ordinary/interior/pinned roots and reachable graphs; snapshot state is not enabled at pause start. Frozen outgoing edges and collectible LoaderAllocator edges are handled under explicit ownership/lifetime rules, not as fake owned field slots.
+- **Benchmarks:** InitialMark/FinalMark durations are retained in the prototype's memory-info snapshots and shared managed characterization; no synthetic-versus-paper pause claim is made.
 - **Dependencies:** P3.2, P4.2
-- **References:** `304ce69d:src/plan/lxr/cm.rs:328` (`ProcessModBufSATB`); paper §3.2
+- **References:** `304ce69d:src/plan/lxr/cm.rs`; `304ce69d:src/plan/lxr/global.rs`; integrated `ac1da112dd8:src/coreclr/gc/lxr_reference_counting.cpp`; paper §3.2
 
 ### P5.2 — Implement concurrent, preemptible trace packets
 
-- **Status:** planned
-- **Summary:** Implement self-splitting trace packets that drain greedily between pauses and flush their remainder when an STW pause interrupts.
-- **Correctness:** An interrupted packet resumes without losing or double-visiting objects; the packet count reaching zero is the termination signal that makes the next pause a FinalMark.
-- **Benchmarks:** Concurrent marking duration and its mutator overhead, plus pause p99 during marking.
+- **Status:** done
+- **Summary:** Implemented ConcurrentResumable GCDesc scans, 1024-reference slices, continuation accounting and retained interruption ownership, with compact direct-object scanning and reader-drained retirement. Follow-up `e8d2d23ef60` adds 8192-target packet-local batching for Full increments/descendants only; concurrent, InitialMark and FinalMark paths are not newly batched.
+- **Correctness:** Actual interrupted/rebased readers remain load-bearing; Full batches hold completion leases, copy targets before publication and flush before parent return, with stack capacity included in storage accounting. Independent new 313569-check batching tests, existing trace/root/log/movement tests, all 264 managed cases and 12 exact wrong-batching replays pass across both OSes without removing any owner/shape/range/incarnation check.
+- **Benchmarks:** Matched Full-case wall falls 35-48% Windows and 21-29% Linux; this is not a concurrent-speedup or production-latency claim. Pointer-free and automatic-pressure regressions remain in the complete record.
 - **Dependencies:** P5.1
-- **References:** `304ce69d:src/plan/lxr/cm.rs:32` (`LXRConcurrentTraceObjects`), `:286` (its `GCWork` impl)
+- **References:** `304ce69d:src/plan/lxr/cm.rs`; original integrated `ac1da112dd8`; Full-only batching `e8d2d23ef60:src/coreclr/gc/lxr_reference_counting.cpp`; `docs/design/lxr-port/P11-trace-batching/README.md`
 
 ### P5.3 — Implement the mark-and-scan-on-delete invariant
 
-- **Status:** planned
-- **Summary:** Ensure reference counting never deletes an unmarked object while a snapshot trace is underway, by marking the dying object and force-marking its unmarked children into the tracer's worklist.
-- **Correctness:** This is the paper's core safety property; a targeted test constructs the race — an object dying by RC during concurrent marking with unmarked children — and shows the children survive. The barrier's decrement buffer is shared into both the SATB modbuf processing and decrement processing, with modbuf processing ordered before the decrement bucket.
-- **Benchmarks:** Frequency of the mark-on-delete path and its cost, plus the cyclic garbage scenario.
+- **Status:** done
+- **Summary:** Processed independently owned SATB old-target snapshots before decrement work, marking dying unmarked objects and forcing their children into trace before zero/reuse. Compact shared-bank borrowing remains; source `46c366e0845` decodes the packed first entry before descendant copies escape and preserves count bits through moving repair, without deleting distinct RC/SATB ownership or longer-lived copies.
+- **Correctness:** Held unmarked-parent deletion, executing-scan interruption, black-newborn/white-child closure, failed CAS and SATB overflow cases pass. Missing-deletion-mark and missing-SATB controls fail as intended; the SATB control uses a sticky old target so ordinary deletion marking cannot mask lost SATB work. Release/acquire range completion tokens prevent consumers reading reserved but unfilled ingress.
+- **Benchmarks:** Actual stream traffic and copy/reset cost remain separate from whole managed workload time; reference-high traffic/4097 flushes stay, while packed-header reset bytes rise4x rather than becoming free.
 - **Dependencies:** P4.3, P5.2
-- **References:** PLDI `df8d30a3:src/util/rc.rs:747` (`impl ProcessDecs`), `:870-874` (packet dispatch); HEAD `304ce69d:src/plan/lxr/rc.rs:669` (`ProcessDecs`); paper §3.3
+- **References:** PLDI `df8d30a3:src/util/rc.rs:747` (`impl ProcessDecs`), `:870-874` (packet dispatch); HEAD `304ce69d:src/plan/lxr/rc.rs:669` (`ProcessDecs`); paper §3.3; current packed publication `46c366e0845`, `docs/design/lxr-port/P9-log-conformance/README.md`
 
 ### P5.4 — Implement FinalMark
 
-- **Status:** planned
-- **Summary:** Flush mutator barrier buffers, clear concurrent-marking state inside the pause, rescan roots, run the weak reference closures, process the mature evacuation remembered set, and schedule mature sweeping.
-- **Correctness:** An interrupting emergency GC forces the trace to finish inside the STW pause rather than being abandoned; concurrent-marking state is cleared inside the pause, not after it.
-- **Benchmarks:** FinalMark pause duration against the paper's reported figures, which the paper places at a few milliseconds.
+- **Status:** done
+- **Summary:** Implemented suspended buffer flush and marking-state clear, root rescan, dependent fixed points, weak/finalization/SyncBlock lifetime closure, and trace completion for explicit/emergency full collections.
+- **Correctness:** Real selected-host tests cover weak/dependent cycles, suppression/re-registration/resurrection, normal-before-critical finalization, ref-counted leases, collectible metadata and SyncBlock-only roots. GC.Collect performs blocking LXR traces and OOM recovery passes; nonmoving evacuation/remset work is explicitly empty/deferred, not claimed as P6.
+- **Benchmarks:** The fixed same-runtime study includes eight explicit full collections per process and captures their prototype cost; no paper-parity, SLA or small-regression certification is claimed.
 - **Dependencies:** P5.2
-- **References:** `mmtk-core/src/plan/lxr/global.rs`; paper §3.2
+- **References:** `304ce69d:src/plan/lxr/global.rs`; integrated `ac1da112dd8:src/coreclr/gc/lxr_gc.cpp`; paper §3.2
 
 ### P5.5 — Implement dead-cycle and mature sweeping
 
-- **Status:** planned
-- **Summary:** Reclaim objects with a nonzero reference count that the trace did not mark, then release blocks whose contents are entirely dead.
-- **Correctness:** Dead-cycle handling deliberately does not recurse, unlike the RC death path; sweeping parses no objects; whole-block release happens only after the bulk dead check passes.
-- **Benchmarks:** Cycle reclamation share of total reclamation, compared against the paper's Young/Old-RC/SATB split.
+- **Status:** done
+- **Summary:** Reclaimed unmarked nonzero/sticky cycles using extents and metadata without parsing dead layouts or recursively decrementing dead-cycle edges; block/LOS reuse waits for trace and lazy-reader ownership.
+- **Correctness:** Managed self/two-node/sticky cycles are reclaimed while reachable graphs and pinned/interior LOS data survive. Two 9.6 MB cohorts exceed the 16 MiB LOS reservation; exact reclaimed extents become zero and subsequent live extents overlap them with preserved checksums. Stale lease/address-reuse and premature release controls remain load-bearing.
+- **Benchmarks:** The single managed study verifies real allocated/reclaimed bytes and identity, with 27 processes per OS and all injected controls detected. LXR remains roughly 53-96x slower in this workload; the paper's Young/Old-RC/SATB reclamation split is not reproduced or claimed.
 - **Dependencies:** P3.4, P5.4
-- **References:** `304ce69d:src/policy/immix/rc_work.rs:181` (`SweepDeadCycles`); `304ce69d:src/policy/immix/block.rs:658` (`sweep`)
+- **References:** `304ce69d:src/policy/immix/rc_work.rs`; `304ce69d:src/policy/immix/block.rs`; `304ce69d:src/policy/largeobjectspace.rs`; integrated `ac1da112dd8:src/coreclr/gc/lxr_reference_counting.cpp`
 
 ## P6 — Evacuation and defragmentation
 
-- **Status:** planned
-- **Summary:** Add copying — nursery evacuation during increment processing and mature evacuation driven by fragmentation — on top of the header-bit decision made in P1.6.
+- **Status:** done
+- **Summary:** Nursery and mature evacuation mechanisms are complete at Windows/Linux x64 selected-host prototype scope: nursery source `48b33d906e9`, mature source `daa247720d464da9a3fdd48d398fd8b0ae267733`, final mature record `99faa6aec19570bafe192b323e4925aeb55ac7db`. Real mature source blocks are released/reallocated and fragmentation falls, but measured execution regresses and RSS does not improve; two explicit reuse-safety deviations, pin-aware release and the literal reference reservation-unit limitation are documented, not paper/production or P7/P9 qualification.
 
 ### P6.1 — Implement the copy and forwarding protocol
 
-- **Status:** planned
-- **Summary:** Implement the three forwarding states and the claim protocol in which a thread that loses the race spins until forwarding completes.
-- **Correctness:** There is no read barrier, so every reader must resolve forwarding explicitly; an audit confirms every closure and verification site resolves forwarding before testing liveness.
-- **Benchmarks:** Copy throughput and forwarding contention rate under multi-thread allocation.
+- **Status:** done
+- **Summary:** Implemented the pinned HEAD clear/claim/publish forwarding protocol with one winning copy, preserved .NET header/identity state and explicit source-reader repair before release. Real field/root/handle movement, copied aliases/cycles and source reuse execute without a read barrier or new VM/JIT/EE interface.
+- **Correctness:** Native movement checks cover all RC widths, 1025 racing aliases, pinned/interior sources, exact payload/counts and copy exhaustion; actual allocation-dependent reuse totals are retained per run, not fabricated as constant. Independent Debug/Release reader tests pass 48/48 on both OSes, while omitting only the selected packet's rebase fails 47/48 at raw stale dispatch after physical source reuse; real GCDesc publication and completion receipts exclude black-marking/replacement masking. The integrated copy-versus-in-place race is repaired by serializing fallback/source RC establishment under the claim.
+- **Benchmarks:** Real copy bytes, forwarding waits, failure counts and whole-workload CPU/STW/elapsed measurements are retained with on/off arms; correctness of forwarding is not a copy-throughput or built-in-parity win.
 - **Dependencies:** P1.6, P2.2
-- **References:** `mmtk-core/src/util/object_forwarding.rs:8-11`
+- **References:** `304ce69d:src/util/object_forwarding.rs::{attempt_to_forward,spin_and_get_forwarded_object,try_forward_object}`; `docs/design/lxr-port/P6nursery/README.md`, implementation `48b33d906e9`, final record `5eb593a902d`
 
 ### P6.2 — Implement nursery evacuation inside increment processing
 
-- **Status:** planned
-- **Summary:** Copy surviving nursery objects during the promotion edge operation, rewriting stable slots in place, with a pause-budget escape hatch.
-- **Correctness:** Source blocks stay unavailable while forwarding metadata is still observable; exceeding the pause budget during increment processing disables evacuation for the remainder of that pause rather than truncating it mid-object.
-- **Benchmarks:** Nursery survival rate, copy volume, and pause duration with and without nursery evacuation.
+- **Status:** done
+- **Summary:** Nursery copying now occurs inside increment/promotion closure with real slot relocation and copied-promotion feedback; the supported nursery toggle defaults on, with explicit off comparison. Clean RC-zero nursery births are eligible, recycled mature-hole births remain stationary, multiline copy refills are fresh-only, and complete-object to-space failure retains objects in place rather than inventing a timer policy or leaving an unfinished claim.
+- **Correctness:** Source release follows reader repair and real EE callback-scoped root/handle rewriting; pinned/in-place survivors retain their blocks. Independent on/off lifetime suites pass 100628 per Debug/Release configuration on both OSes, fresh/predictor cases 27, default-recycling movement 35, plus OOM 10, notifying births 32 and identity-safe source reuse eight. Wrong fresh-overflow, forwarding, copied-feed and pinned-source-release controls fail; the earlier double metadata initialization and recycled-overflow mismatch are retained as repaired failures.
+- **Benchmarks:** Matched fresh-source study keeps eight primary full requests and fixed inputs; on versus off regresses high-reference timing by 20.37%/21.54%, high-byte by 11.35%/14.64% and pin-pressure by 13.01%/13.67% on Windows/Linux. Low-survival differences are small/noisy; actual copied volume, copy failures and extra automatic collection mix accompany timings, with no performance-win claim.
 - **Dependencies:** P4.2, P6.1
-- **References:** `304ce69d:src/plan/lxr/rc.rs:40` (`ProcessIncs`, nursery evacuation path); paper §3.1
+- **References:** `304ce69d:src/plan/lxr/rc.rs::{process_inc_and_evacuate,promote,process_slot}`, `src/util/alloc/immix_allocator.rs::{alloc,overflow_alloc,acquire_clean_block}`; paper §3.1; `docs/design/lxr-port/P6nursery/README.md`, final record `5eb593a902d`
 
 ### P6.3 — Implement mature evacuation candidate selection
 
-- **Status:** planned
-- **Summary:** Select defragmentation candidates from sparsely populated chunks and from individually fragmented blocks scored by dead bytes, greedily until the copy budget is met.
-- **Correctness:** Thresholds match the reference, including the chunk occupancy threshold, its doubling under emergency, and the half-block admission floor outside a full collection.
-- **Benchmarks:** Fragmentation over time and committed-versus-live ratio against both baselines.
+- **Status:** done
+- **Summary:** Ported sparse 4 MiB chunk/fragmented-block selection, half-live-line copy estimates and Full/InitialMark budget distinctions over actual admitted Immix storage. The 32% chunk threshold doubles for Full and caps at 100%; ordinary blocks need half their lines dead, with pinned/failed content retained rather than treating reserved LOS pages as to-space.
+- **Correctness:** Independent Debug/Release mature3324 and actual-headroom131 checks pass on both OSes, with literal policy50 and wrong-unit controls. HEAD's MiB-derived truncated/doubled survival term is still added to real headroom pages exactly as shipped (64 MiB/ratio0.5 yields 64, not16384, before headroom); this documented unit mismatch is not a paper formula or substitute for actual allocation/admission/copy-failure safety.
+- **Benchmarks:** Default-allocation aged fragmentation drops 829288 to 6688 bytes Windows and 802416 to 6440 Linux versus nursery-only, while fragmented elapsed time regresses 34.95%/6.93% and RSS rises. Selection/copy/failure/pressure counts and nonfragmented costs accompany the result; no throughput/footprint parity claim.
 - **Dependencies:** P5.4, P6.1
-- **References:** `mmtk-core/src/plan/lxr/mature_evac.rs:230-285`
+- **References:** `304ce69d:src/policy/immix/rc_work.rs::{SelectDefragBlocks,MatureEvacuationSet::select_mature_evacuation_candidates}`, `defrag.rs::defrag_headroom_pages`, `global.rs::get_collection_reserved_pages`; `docs/design/lxr-port/P6mature/README.md`, source `daa247720d4`, record `99faa6aec19`
 
 ### P6.4 — Implement the reuse-counter-tagged remembered set
 
-- **Status:** planned
-- **Summary:** Record remembered-set entries tagged with the line reuse counter captured at record time and validate that tag at replay.
-- **Correctness:** An entry whose reuse counter no longer matches is discarded, as are slots inside the collection set and slots in unallocated blocks; a targeted test reuses a line during concurrent marking and confirms the stale entry is rejected.
-- **Benchmarks:** Remembered-set size, stale-entry rate, and replay cost.
+- **Status:** done
+- **Summary:** Implemented GC-side slot/tag packet recording and ordinary STW replay with unchanged mutator barrier and Immix-line/LOS-page byte granularity. Explicit safety refinements advance tags for fresh CM/FinalMark reacquisition and validate a current metadata-live owner's exact GCDesc reference field before payload access; byte tags alone are not falsely claimed safe after wrap.
+- **Correctness:** Actual whole-block and 256 same-line-reuse poison cases pass532/1375, same-shape duplicates pass1376 with exact RC/single-copy checks, and header/interior/dead-owner boundaries pass5505 in both configurations/OSes. Independently omitting only shape validation fails1372/1375 at primitive payload/replay/read receipts on both OSes. Retained selected-owner fields are also remembered for pins/failures (22 checks); these recorded port-safety deviations do not add wider identities, dense planes, stronger barriers or a new collection policy.
+- **Benchmarks:** Remembered/stale/invalid/replay counts and separately intrusive closure ticks are retained per default-recycling scenario. Nested worker wall scopes are not additive/exclusive GC CPU, and safe replay is not a performance-win claim.
 - **Dependencies:** P2.4, P6.3
-- **References:** `304ce69d:src/plan/lxr/remset.rs:39` (`MatureEvecRemSet`)
+- **References:** `304ce69d:src/plan/lxr/remset.rs::{MatureEvecRemSet,RemSetEntry}`, `mature_evac.rs::address_is_valid_oop_slot`, `immixspace.rs::rc_get_next_available_lines`, fresh initialization in `block_allocation.rs`; safety counterexamples/mappings in `docs/design/lxr-port/P6mature/README.md`, record `99faa6aec19`
 
 ### P6.5 — Implement mature evacuation and source block release
 
-- **Status:** planned
-- **Summary:** Feed surviving remembered-set slots into the ordinary STW closure and release defragmentation source blocks once their live content has been copied out.
-- **Correctness:** Source blocks are released unconditionally after evacuation, and no slot referencing them survives unforwarded, verified by a post-evacuation heap audit. The oracle can release unconditionally only because it never compiles pinning and answers `is_pinned()` with a compile-time `false`; a .NET port must design the release path from the start to tolerate a block holding an immovable object, so P7.4 is a constraint on this step rather than a later addition.
-- **Benchmarks:** Defragmentation effectiveness, evacuation ratio, and its pause cost.
+- **Status:** done
+- **Summary:** Implemented positive-RC/sticky mature forwarding through the ordinary STW closure, actual incoming-field/root/handle/reader repair and source-incarnation retirement, with pins and failed/partial copies retaining required content. Native tests prove real whole-block release followed by default allocation at exact released source addresses, not merely a release counter.
+- **Correctness:** Mature3324, retained-owner22, released-incarnation117, completed-descriptor45, native-pin155 and current three-mode lifetime100632 pass both OS/configurations. Reader47's old scheduling assumption allowed the scanner to finish naturally; P7 test-only publication hold now guarantees a real active user/range through copying, with unchanged omitted-range46/47 and separate completed-descriptor45 controls. The uninstrumented old46/47 failure remains causally untraced, not waived; callback slots/source-reader/pin/failure ownership remains intact, and the mature proof does not claim consumption after source reuse like nursery48.
+- **Benchmarks:** Four default-recycling scenarios/seven arms retain392 processes and56 groups, with four normal observations and separate intrusive diagnostics. Mature versus nursery-only timing regresses 6.93%-68.87% across OS/scenarios despite large fragmentation reduction; collector-wide release events are not cohort/distinct-block counts, and old-payload-block hits can be ordinary holes. RSS/native-plane/shared-allocator/scratch-recommit limits remain unresolved.
 - **Dependencies:** P6.4
-- **References:** `304ce69d:src/plan/lxr/mature_evac.rs:19` (`EvacuateMatureObjects`)
+- **References:** `304ce69d:src/plan/lxr/mature_evac.rs::EvacuateMatureObjects`, `immixspace.rs::trace_forward_rc_mature_object`, `rc_work.rs::sweep_mature_evac_candidates`; `docs/design/lxr-port/P6mature/README.md`, source `daa247720d4`, record `99faa6aec19`
 
 ## P7 — Managed object lifecycle
 
-- **Status:** planned
-- **Summary:** Implement the .NET lifecycle semantics the reference does not have — weak reference ordering, dependent handles, finalization, and pinning — as a deliberate superset of LXR.
+- **Status:** done
+- **Summary:** P7 lifecycle contracts are qualified at the Windows/Linux x64 selected-host prototype boundary, with finalizer discovery/promotion and null-secondary dependent-primary lifetime defects repaired in measured source `564c76e7020370be8d01e06e048417b1856e13f7`, strengthened cycle tests `33820852bb8` and sealed record `039e630ed1866505ccf75d87ca48cbfd321563a7`. Registered scan execution now reuses one worker and meets the declared primary steady-state cost goals, but full P9/production/fault-injection qualification and log/native-memory convergence remain unfinished.
 
 ### P7.1 — Implement weak reference semantics
 
-- **Status:** planned
-- **Summary:** Implement CoreCLR's handle clearing order, which the reference implementation does not model.
-- **Correctness:** Short weak handles clear before f-reachability and long weak and weak-interior handles clear after; ref-counted handles consult the EE callback; surviving weak locations are relocation-pinned without becoming roots.
-- **Benchmarks:** Lifecycle semantics scenario, which must pass identically on all three collectors.
+- **Status:** done
+- **Summary:** Qualified existing short/long/refcounted weak, resurrection, collectible-static weak-interior and identity/address-replacement behavior across nonmoving/nursery/mature modes. CoreCLR supplies these .NET contracts; they are not invented MMTk semantics, and nontracing lifetime leases do not make dead weak targets into strong roots.
+- **Correctness:** Independent both-OS Debug/Release qualification passes weak/finalizer73, identity13, collectible-interior10 and refcounted15 per mode, plus existing full suites100632. Short weak clearing precedes f-reachability, dependent closure follows promotion and long/SyncBlock cleanup follows it; callback slot ownership and actual ComWrappers target death remain checked, not inferred from stale extents.
+- **Benchmarks:** Same-runtime WKS/Server pass the single-collection finalizer contract control; LXR-specific RC/probe cases run all three movement modes rather than pretending stock collectors expose those APIs. Current root/lease/finalizer counters and cycle costs are retained with no broad lifecycle-latency parity claim.
 - **Dependencies:** P5.4
-- **References:** `src/coreclr/gc/objecthandle.cpp`; `docs/design/coreclr/botr/garbage-collection.md`
+- **References:** `src/coreclr/gc/{gcscan.cpp,objecthandle.cpp}`, CoreCLR weak/refcounted/relocation callbacks; `docs/design/lxr-port/P7-lifecycle/README.md`, measured source `564c76e7020`, record `039e630ed18`
 
 ### P7.2 — Implement dependent handles to a fixed point
 
-- **Status:** planned
-- **Summary:** Resolve ephemeron dependencies to a fixed point in both the mark phase and the RC increment phase, and again after finalization promotion.
-- **Correctness:** A dependent-handle chain of arbitrary depth is fully resolved in one collection, not progressively across several.
-- **Benchmarks:** Dependent-handle-heavy variant of the lifecycle scenario, measuring iteration count to fixed point.
+- **Status:** done
+- **Summary:** Qualified reverse dependent chains, mixed ordinary/dependent cycles, mutation/death and post-finalization fixed points in one collection, and repaired the omitted null-secondary primary lease. The existing suspended owning-slot relocation enumerator now supplies nonmutating nontracing leases for both actual slots, replacing the filtered profiler pass without new interfaces or double leasing.
+- **Correctness:** Independent fixture6/fixture8 cases pass139 in all modes/configurations on both OSes for corrected and optimized implementations; null-secondary20 proves four RC epochs preserve the original allocation, Full clears/reclaims it and exact replacement survives old-root retirement. The source-bound old omission fails before any Full/target getter with original reclaims=1; no strong/permanent lease or repeated-GC workaround masks it. EE inner table-loop pass counts remain unmeasured, not zero or inferred from external rescans.
+- **Benchmarks:** Lifetime cost input requires all1024 finalizers and post-f-reachability dependent closure; diagnostic dependent callbacks512 and scan counts8/8/8/24 match both arms. Collector-wide finalizer counts are distinct from workload counts (Linux1048 versus workload1024), and all physical/log/lease bounds stay unchanged.
 - **Dependencies:** P7.1
-- **References:** `src/coreclr/gc/objecthandle.cpp`
+- **References:** `objecthandle.cpp::{TraceDependentHandle,UpdateDependentHandle,Ref_ScanDependentHandlesForRelocation}`, `gcscan.cpp` dependent scans; `docs/design/lxr-port/P7-lifecycle/README.md`, source `564c76e7020`, cycle tests `33820852bb8`, record `039e630ed18`
 
 ### P7.3 — Implement the finalization lifecycle
 
-- **Status:** planned
-- **Summary:** Implement registration at allocation-complete, suppression, re-registration, f-reachability, resurrection, and normal-before-critical ordering, with deferred removal from the RC world.
-- **Correctness:** Block release never outruns finalizable promotion, which is why this depends on the lazy-sweeping counters; resurrection during finalization keeps the object and its transitive closure alive.
-- **Benchmarks:** Lifecycle semantics scenario including resurrection and critical finalizers.
+- **Status:** done
+- **Summary:** Repaired discovery so the complete unreachable finalizer batch is identified before any pending graph promotion, then qualified suppression/re-registration, resurrection, critical ordering, delivery/waits and nested finalizer-thread collection. One existing-EE-registered executor now handles fresh serialized scan contexts instead of per-operation thread creation, preserving lifecycle callbacks/order and fail-fast behavior rather than returning while a timed-out scan might still own its epoch.
+- **Correctness:** Old accepted LXR fails single-collection parent/child discovery while same-runtime WKS/Server pass; corrected implementations pass5/4 respectively without ordinary-finalizer ordering assumptions. Independent all-mode/configuration re-registration5,2048-finalizer churn1050 and nested-GC/wait3 pass alongside full100632; source-block/RC leases remain behind promotion and reader completion. Startup/event/operation/exit fault injection, arbitrary hosting races and production stress are explicitly unperformed.
+- **Benchmarks:** Against the baseline containing BOTH lifecycle fixes, nonmoving empty/lifetime wall improves11.12%/11.20% Windows and17.09%/11.87% Linux; STW improves12.91%-19.41% and Linux CPU improves. These four-sample primary point estimates meet the unchanged10% target, not universal gains; all48 operations remain, initial worker startup lies outside the region, and RSS regression/allocator variability remain visible.
 - **Dependencies:** P3.4, P7.1
-- **References:** `src/coreclr/vm/finalizerthread.cpp`; `src/coreclr/gc/gcinterface.h`
+- **References:** `finalization.cpp::CFinalize::ScanForFinalization`, `finalizerthread.cpp`, `gcenv.ee.cpp::CreateNonSuspendableThread`; pinned MMTk `FinalizableProcessor::scan`/`GCWorker::run`; `docs/design/lxr-port/P7-lifecycle/README.md`, measured source `564c76e7020`, record `039e630ed18`
 
 ### P7.4 — Honour pinning and interior pointers
 
-- **Status:** planned
-- **Summary:** Design and implement pinning for a collector that evacuates, consuming the pinning and interior-pointer flags reported by root scanning and additionally honouring heap-resident pinned objects. **The reference provides no realization to port:** LXR declares `PinningProcessEdges = UnsupportedProcessEdges` in both work contexts and disables the `TPinningClosure` and `PinningRootsTrace` buckets, so this mechanism is designed fresh rather than ported.
-- **Correctness:** Ordinary roots are never blanket-pinned, which would permanently exclude them from first promotion and mature evacuation; callback-local roots may still be forwarded and rewritten during the callback while the slot is valid. Pinning is not root-only: `GCHandleType.Pinned`, `fixed`, and the pinned object heap make objects immovable while reachable from the heap, so evacuation and defragmentation must honour a pinned bit rather than assume `is_pinned()` is false. Source-block release must tolerate a block that cannot be fully evacuated.
-- **Benchmarks:** Pinning-heavy I/O scenario, comparing pinned-object counts and fragmentation against both baselines. Because the oracle never ran with pinning compiled, any pinning cost is a .NET-only delta with no reference number to match.
+- **Status:** done
+- **Summary:** Nursery and mature pin/interior mechanisms are complete at Windows/Linux x64 selected-host prototype scope: discovery precedes copying, immovable/fixed/pinned-handle/POH/frozen constraints survive candidate selection, ordinary interiors relocate with offsets and partially retained blocks remain valid. The reference disables pinning, so this is an explicit .NET adaptation, not enabled-reference pinning parity or universal runtime/platform qualification.
+- **Correctness:** Existing readonly-frozen/late-alias/nursery controls remain; mature/native-pin155 proves aged movement, hash/inflated-monitor identity, writable interiors and native memcpy consumption of16 pinned buffers across four collections on both OS/configurations. Retained-owner22 and partial-exhaustion cases prevent lost outgoing edges or pinned-source release; existing weak/dependent/refcounted/finalizer/SyncBlock/collectible owner relocation and scoped callback lifetimes pass all three modes.
+- **Benchmarks:** Default-recycling mature pin-pressure timing regresses38.04% Windows/9.26% Linux versus nursery-only, with actual copies, pins, failures and release events retained. Native pointer consumption is proved, but broad real-device/network I/O stress and production latency remain unqualified.
 - **Dependencies:** P6.2, P6.5
-- **References:** `src/coreclr/gc/gcinterface.h` `GC_CALL_INTERIOR` and `GC_CALL_PINNED`; the reference's unbuilt surface at `304ce69d:src/policy/sft.rs:50-55` and `304ce69d:src/policy/immix/immixspace.rs:169-179`, both `cfg(object_pinning)`, against LXR's opt-out at `304ce69d:src/plan/lxr/gc_work.rs:12`, `:21` and `304ce69d:src/plan/lxr/global.rs:707-708`
+- **References:** `src/coreclr/gc/gcinterface.h` pin/interior/read-only contracts; reference pinning opt-out at `304ce69d:src/plan/lxr/gc_work.rs`/`global.rs`; nursery record `5eb593a902d`, mature adaptation/source-release proofs in `docs/design/lxr-port/P6mature/README.md`, source `daa247720d4`, record `99faa6aec19`
 
 ## P8 — Triggers, predictors, and tunables
 
-- **Status:** planned
-- **Summary:** Implement the feedback loop that decides when to collect and which pause to run, at the reference's exact formulas and defaults.
+- **Status:** done
+- **Summary:** The scoped prototype policy work is complete, including genuine copied-survival feedback, mature/defrag controls and occupied-capacity/headroom integration in `daa247720d4`. This is not full reference tuning parity: missing live options/default differences remain open under P9.1, the shipped reservation-unit mismatch is explicit, and standard total-GC hard limits plus throughput/RSS parity remain unsupported.
 
 ### P8.1 — Implement survival and mature-live predictors
 
-- **Status:** planned
-- **Summary:** Implement the survival ratio predictor with its rising and falling bias variants, and the mature live predictor fed only after FinalMark or Full pauses.
-- **Correctness:** Weights and update points match the reference exactly, including which pause kinds feed which predictor.
-- **Benchmarks:** Prediction error over time on the allocation churn and long-lived cache scenarios.
+- **Status:** done
+- **Summary:** Literal HEAD survival/mature formulas and update points are now fed by genuine nursery copied promotions in `48b33d906e9`, not in-place or pinned bytes. Nursery-off still records zero copied feed; the earlier nonmoving P8 qualification remains historical rather than being relabelled as active survival measurement.
+- **Correctness:** Native policy50 and copied-volume controls pass per OS/configuration; nursery feed excludes mature/pinned/in-place bytes, and omitted or mature-contaminated feed controls fail. Independent weighted/harmonic cases and positive-RC mature copies preserve that separation, reference update ordering and actual resource-limit checks.
+- **Benchmarks:** Copied volume and predictor values are measured in the 225-row-per-OS survival studies, with fresh-source settings explicit and default-policy movement separately proven. No production forecast-error or paper/application-latency qualification is inferred from the integration tests.
 - **Dependencies:** P4.5
-- **References:** `mmtk-core/src/plan/lxr/mod.rs:24-124`
+- **References:** `304ce69d:src/plan/lxr/mod.rs::{SurvivalRatioPredictorLocal,SurvivalRatioPredictor}`, `rc.rs::promote` and `global.rs` ordering; P8 `e7e6594`/nursery `5eb593a902d`; mature-volume exclusion and counterfactual in `docs/design/lxr-port/P6mature/README.md`, source `daa247720d4`, record `99faa6aec19`
 
 ### P8.2 — Implement collection trigger conditions
 
-- **Status:** planned
-- **Summary:** Implement the ordered trigger conditions from heap-full through the young allocation cap.
-- **Correctness:** Conditions are evaluated in the reference's order, since an earlier condition firing changes which pause kind is chosen.
-- **Benchmarks:** Collection frequency and heap occupancy at trigger across the matrix.
+- **Status:** done
+- **Summary:** Ordered heap/space/SATB/survival/increment/young-cap triggers now include mature headroom and actual occupied/admitted pressure; acquisition/release counters replace repeated pressure walks. The noncontiguous oracle branch remains a tested model branch, not an active mechanism in this contiguous-reservation host.
+- **Correctness:** Policy50, actual nursery-headroom131 and storage1952 pass per OS/configuration; fresh nursery occupancy counts despite Unallocated mark-state encoding, and trigger/unit/headroom counterfactuals fail. Literal MiB-to-page-field reference accounting is documented rather than silently corrected; admission/commit/copy-failure/OOM safety remains independent.
+- **Benchmarks:** Matched 128 MiB automatic churn falls from 2656.820 to 270.487 ms on Windows and 3590.761 to 438.658 ms on Linux; the gain includes changed collection frequency, not just allocation fast paths. Collection, admission, commitment and live-byte samples remain in the P8 raw records.
 - **Dependencies:** P8.1
-- **References:** `mmtk-core/src/plan/lxr/global.rs:125-179`
+- **References:** `304ce69d:src/plan/lxr/global.rs::{collection_required,get_collection_reserved_pages}`, Immix `defrag.rs`; P8 history `e7e6594`, `docs/design/lxr-port/P6mature/README.md`, source `daa247720d4`, record `99faa6aec19`
 
 ### P8.3 — Implement the pause selection state machine
 
-- **Status:** planned
-- **Summary:** Implement pause selection: finish an in-flight marking cycle, then emergency and user-triggered collections, then the cycle hint, otherwise a RefCount pause.
-- **Correctness:** The cycle hint is computed only after the previous collection's lazy sweeping completes, behind the same condition variable the reference uses.
-- **Benchmarks:** Pause kind mix compared against the paper's reported distribution.
+- **Status:** done
+- **Summary:** Integrated in-flight completion, emergency/user/hint precedence and RC selection behind prior lazy/trace ownership completion. A forced request completes an existing trace with blocking FinalMark when appropriate, rather than inventing a new Full counter or ignoring GC.Collect.
+- **Correctness:** Current policy50 and selected-host three-mode lifetime100631/OOM13 pass in Debug/Release on both OSes, including independent reruns. Prior-generation drainage still precedes mature prediction/hints, and pressure/headroom integration never replaces explicit blocking Full/FinalMark completion with an ignored request.
+- **Benchmarks:** The workload retaining eight explicit full calls falls from 707.642 to 414.246 ms on Windows and 1164.668 to 420.855 ms on Linux; unchanged original P5 timed-DLL replay also improves. These are elapsed-workload/mix characterizations, not a paper pause-distribution or P9.2 latency qualification.
 - **Dependencies:** P5.4, P8.2
-- **References:** `mmtk-core/src/plan/lxr/global.rs:738-789`
+- **References:** `304ce69d:src/plan/lxr/global.rs` selector/completion ordering; historical P8 `e7e6594`; integrated mature validation in `docs/design/lxr-port/P6mature/README.md`, source `daa247720d4`, record `99faa6aec19`
 
 ### P8.4 — Expose the tunable surface and configuration
 
-- **Status:** planned
-- **Summary:** Expose the reference's tunables through `DOTNET_` configuration at the reference defaults.
-- **Correctness:** Defaults match the reference exactly — trace threshold 20, RC stop percent 15, chunk defragmentation percent 32, max survival 128 MB, buffer size 1024, defragmentation headroom 5 percent, lazy decrements on, nursery and mature evacuation on.
-- **Benchmarks:** Sensitivity of each tunable on at least one scenario where it is load-bearing.
+- **Status:** done
+- **Summary:** Nursery/mature toggles default on within the explicitly selected collector; headroom5 and chunk-defrag32 are real decimal/runtimeconfig controls, while active RC width defaults8 versus reference2. The full audit explicitly retains missing max-pause/huge-page/prefetch behavior and2048-entry ingress support; existing scoped budgets do not implement the standard total-GC-limit contract.
+- **Correctness:** Both OSes pass34 actual environment/JSON controls; three-mode lifetimes100631, OOM13, birth32 and storage1952 pass per configuration. Managed admission and native-plane limits remain partial, excluding unaccounted native/process components; malformed/unsupported settings fail explicitly, copy capacity stays real, and the reference unit mismatch is not relabelled correct byte reservation.
+- **Benchmarks:** Historical P8 records show99.8% fast births and roughly11%/22% same-binary fast-off allocation improvement on Windows/Linux; its634-637 MiB working set/1252-1331 MiB private growth figures remain historical, not latest-module results. Compact/nursery/mature changes and current growth limits are reported under P9; all failed apparatus runs, including180 rejected collector-contaminated rows, remain retained, and not every knob has precision-qualified sensitivity.
 - **Dependencies:** P8.3
-- **References:** `mmtk-core/src/plan/lxr/args.rs`
+- **References:** HEAD `304ce69d:src/args.rs`, Immix `defrag.rs`, `global.rs`; historical P8 `e7e6594`; active mature options/validation in `docs/design/lxr-port/P6mature/README.md`, source `daa247720d4`, record `99faa6aec19`
 
 ## P9 — Parity audit and performance convergence
 
-- **Status:** planned
-- **Summary:** Independently verify every ledger row against its declared oracle, then close the gap to the paper's reported pause, throughput, and footprint behavior.
+- **Status:** in_progress
+- **Summary:** Accepted Full trace batching at `e8d2d23ef60` remains the integration baseline; both bounded metadata-access experiments fail their frozen overall performance acceptance and are not integrated. The checked SC pair has real scoped Linux gains, but Windows/mature misses and a severe pointer-free nursery guard failure prevent an all-mode win or broader P9 closure.
 
 ### P9.1 — Run an independent mechanism parity audit
 
-- **Status:** planned
-- **Summary:** Re-verify every ledger row against the revision that row declares as its oracle, performed by someone other than the implementer of that row.
-- **Correctness:** The audit does not trust prior status text; coupled groups are checked for oracle consistency, not only row-by-row correctness, and any unrecorded deviation reopens its step.
-- **Benchmarks:** None directly; the audit gates whether later performance numbers describe LXR at all.
+- **Status:** in_progress
+- **Summary:** All 27 canonical live IDs and the separate C06-to-R05 redirect retain their records, while the new comparison of the Java LXR and our port identifies sixteen structural differences in a full collection, including per-field locked operations, late rejection of marked objects, dense trace-table setup and whole-heap passes. These are not measured contributions to the complete slowdown; closure remains open for execution fidelity, in-method JIT barriers, RC default8 versus reference2, missing max-pause/huge-page/prefetch and2048-entry support, and broad VM/lifecycle/interop qualification.
+- **Correctness:** Both shipped binding/core pins and PLDI-declared/HEAD-validation history are retained; the port's combined real-to-space selection cap differs from HEAD's two-queue zero-budget/overshoot behavior, explicitly rather than silently. Independent bounded codec/consumer inspection,448 positive processes and36 exact negatives qualify this vertical, not every historical ledger or production contract.
+- **Benchmarks:** Audit gates storage interpretation; no blanket parity verdict, paper throughput transfer or renewed P1.7 pass follows from accepted counts.
 - **Dependencies:** P0.3, P8.4
-- **References:** P0.3 ledger; both oracle revisions
+- **References:** P0.3 ledger; pinned cores `df8d30a3`/`304ce69d` and their actual bindings; `docs/design/lxr-port/P9-log-conformance/README.md`, implementation `46c366e0845`, test-only `66aba309448`, final record `9f25603ec75`; `docs/design/lxr-port/P13-full-reference-first/{README.md,source-bindings.json}`, read-only Java LXR versus accepted `e8d2d23ef60` Full-collection map and F01-F16 gap register; no new build, timing, candidate or integration
 
 ### P9.2 — Converge pause times
 
-- **Status:** planned
-- **Summary:** Close the gap to the paper's pause behavior: frequent light RefCount pauses with a few milliseconds for InitialMark and FinalMark.
+- **Status:** in_progress
+- **Summary:** Full-batching primary empirical request p95 improves in all three modes, including nonmoving 352.45 to 203.59 ms Windows and 486.74 to 308.35 ms Linux. These 32-call observations are not production pause guarantees; pointer-free p95 regressions up to 13.51% Windows and 12.36% Linux remain explicit at only one process per arm.
 - **Correctness:** Pause improvements never come from deferring work indefinitely; lazy backlog is reported alongside pause figures.
 - **Benchmarks:** Report p50 through p99.99 and maximum, never averages alone, across the full matrix against both baselines, but read as a characterization rather than a win condition: the paper's only comparative pause table shows LXR's pauses longer than G1's at every percentile while its query latency is far better, so application-observed latency is the acceptance signal and pause distribution is reported alongside it.
 - **Dependencies:** P9.1
-- **References:** paper §5.2, Figure 5; Table 1 pause versus query-latency split; `docs/design/lxr-port/P0.2-paper-targets.md`
+- **References:** paper §5.2/Figure 5/Table 1; `docs/design/lxr-port/P0.2-paper-targets.md`; historical lifecycle/log results and regressions preserved; `docs/design/lxr-port/P11-trace-batching/{README.md,comparisons-*.csv,failures-and-limits.json}`, source `e8d2d23ef60`
 
 ### P9.3 — Converge throughput
 
-- **Status:** planned
-- **Summary:** Close the throughput gap against both built-in collectors, isolating the barrier's own contribution.
-- **Correctness:** Throughput wins are rejected if verifier offenders, crashes, hangs, or lifecycle failures increase.
-- **Benchmarks:** Full matrix against Workstation and Server GC, with a barrier-isolation measurement against the paper's reported barrier overhead, noting that the paper's throughput advantage is heap-dependent — `0.97` at 1.3x, `0.96` at 2x, and `1.01` at 6x, where LXR is slower than G1 — and that its `1.016` barrier geomean sits inside a noise floor of roughly plus or minus three percent.
+- **Status:** in_progress
+- **Summary:** The RC-only candidate at `92db3fec086` fails all twelve primary performance goals despite its faster native probe; the separate checked SC pair passes correctness but also fails overall performance acceptance. Only seven of twelve pair primary point goals and five point-plus-precision goals pass, while Linux pointer-free nursery breaches the guard; accepted LXR remains `e8d2d23ef60`, not either experiment. A separate natural-collection matrix without forced collections (same three programs in C# and Java, Linux, 270 runs, identical checksums) shows the accepted port 7.5 to 28 times slower than .NET Workstation GC, with stalls of 140 ms to 1.9 s and many full collections, while the Java LXR stays within 1.1 to 2.2 times of Java G1 at four times the minimum heap or more; the port also stops with Out of memory at twice the minimum heap in the list-suffix program.
+- **Correctness:** The repaired pair retains both checked lookups/error boundaries and later stores, with three optimized two-fence prefixes and Windows Debug's original four-fence fallback; known instrumentation and legacy targets retain fallback, and eight symbol pairs/52 complete extents/33,894 actual bytes are independently bound. Independent replay passes 373 positive processes (including all 264 managed cells) and detects 24 exact negative controls, with 6279 ordinary-pair/6280 instrumented checks, all ten lifecycle seams and unchanged frozen identities; the original `/RTC1` gate rejection and invalid-mask test-fixture attempts remain retained, and no performance or production acceptance follows.
+- **Benchmarks:** Fresh SC-pair indexed-paired wall/CPU changes are Windows nonmoving -6.65/-4.32%, nursery -5.36/-7.58% (nursery intervals include one), mature -0.53/+1.73%; Linux -9.26/-6.43%, -9.33/-7.24%, -3.88/-3.64% (mature directions resolve but miss 5%). Linux pointer-free nursery n1 regresses 31.54% wall/30.71% CPU/119.27% request p95, and the 65536-node mature case n2 regresses 16.77/16.53/70.81%; neither is retried or dismissed, and primary Work/object/reference totals remain conserved in the separate observer cohort. Candidate body-wall Workstation gaps remain 24.68/33.59/65.80x Windows and 36.82/46.84/93.64x Linux; all 144 normal, 32 pressure and 48 diagnostic records are retained, with no exclusive-cost claim or pooled cohorts, while the first experiment's failed goals and 19.81/17.02% Linux mature pressure regression remain historical evidence.
 - **Dependencies:** P9.1
-- **References:** paper §5.1, §5.3; Table 5 heap-size sensitivity; `docs/design/lxr-port/P0.2-paper-targets.md`
+- **References:** paper §5.1/§5.3/Table 5; accepted batching `e8d2d23ef60` and `docs/design/lxr-port/P11-trace-batching/README.md`; failed RC experiment `92db3fec086`, read-only proof `e6fe1a06014`, `docs/design/lxr-port/P12-metadata-rc/{README.md,GENERAL-ACCESS-ADDENDUM.md,SC-PAIR-FEASIBILITY.md,pair-independent-review.json}`; sealed failed SC-pair experiment `a23d3598b57`, `docs/design/lxr-port/P12-checked-pair/{README.md,DESIGN.md,FALLBACK-AMENDMENT.md,product-gate.json,final-windows/catalog.json,final-linux/catalog.json}`, `linked-code-qualified`; all 10,015 final and 6066 rejected-attempt file hashes independently verified; valid but explicitly failed/unintegrated chart checkpoints; `docs/design/lxr-port/P13-full-reference-first/README.md` records the complete Full-path comparison before further candidate design; `docs/design/lxr-port/P14-natural-gc/{index.html,results/}` records the matched natural-collection benchmark on the Java LXR, our port and the standard collectors; all prior misses and raw observations unchanged
 
 ### P9.4 — Converge footprint and reclamation mix
 
-- **Status:** planned
-- **Summary:** Bring working set, committed-versus-live ratio, fragmentation, and the reclamation split into line with the paper.
-- **Correctness:** The reclamation split is measured, not inferred, and attributed to Young, Old-RC, and SATB paths separately.
-- **Benchmarks:** Compare the measured split against the paper's reported proportions, plus footprint against both baselines.
+- **Status:** in_progress
+- **Summary:** Earlier log backing 640 to 512 MiB and 17.34% native-plane reductions remain accepted; Full batching additionally reduces combined packet-plus-pending peak by about 91.2% in the primary diagnostic cohort. The 512 MiB payload backing remains and allocator retention is not universally solved, so footprint convergence and historical RSS regressions stay open.
+- **Correctness:** Four streams retain full capacity, two banks/1024-entry ingress and independent RC/SATB lifetimes; actual reader/movement/growth/failure and all nine wrong mechanisms pass their respective positive/negative seams in both configurations/OSes. Packed publication is an explicit private representation adaptation, not a reference algorithm, new allocator/pool, callback admission seam, smaller mutation bound or managed-reference compression.
+- **Benchmarks:** Fresh normal Linux RSS falls 516.71/525.65/586.06 to 188.08/196.47/251.09 MiB across nonmoving/nursery/mature, while Windows stays near 179/188/237 before and 178/187/236 MiB after. These are matched live-boundary snapshots, not peak RSS or identical cross-OS private-memory contracts; no allocator trim/policy change occurred, and prior log-reset traffic, variable retention and inconclusive injection results remain historical evidence.
 - **Dependencies:** P9.1
-- **References:** paper §5.4, Tables 5-7
+- **References:** paper §5.4/Tables 5-7; historical compact/nursery/mature/lifecycle/log evidence unchanged; log record `9f25603ec75`; `docs/design/lxr-port/P11-trace-batching/{README.md,diagnostic-deltas-*.csv,comparisons-*.csv}`, implementation/evidence `e8d2d23ef60`
 
 ### P9.5 — Reproduce the paper's ablations and sensitivity study
 

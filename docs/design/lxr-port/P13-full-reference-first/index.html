@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta name="description" content="A plain explanation of how a full garbage collection works in the Java LXR and in our .NET port, and where our port does extra work.">
+    <title>How a full collection works: the Java LXR and our .NET port</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #08131c;
+            --panel: #102331;
+            --panel-soft: #0c1b27;
+            --line: #355264;
+            --text: #edf3f7;
+            --muted: #b8cad6;
+            --java: #75e2cc;
+            --port: #ffc481;
+            --link: #92d5ff;
+            --warn: #fb7185;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: radial-gradient(ellipse at 10% 0, #16313d 0, transparent 44rem), var(--bg);
+            color: var(--text);
+            font: 1.0625rem/1.75 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        a { color: var(--link); text-underline-offset: 0.2em; }
+        a:hover { color: var(--java); }
+        :focus-visible { outline: 3px solid var(--java); outline-offset: 4px; }
+        h1, h2, h3 { line-height: 1.25; text-wrap: balance; }
+        h1 { margin: 0.5rem 0 1.2rem; font-size: clamp(2.1rem, 5.5vw, 3.8rem); letter-spacing: -0.04em; }
+        h2 { margin: 0 0 1.1rem; font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -0.02em; }
+        h3 { margin: 1.8rem 0 0.6rem; font-size: 1.3rem; }
+        p, li { max-width: 46rem; }
+        p { margin: 0.8rem 0 1.1rem; }
+        li { margin: 0.5rem 0; }
+        code { font: 0.9em/1.5 "Cascadia Code", Consolas, monospace; overflow-wrap: anywhere; }
+        pre { padding: 1rem; overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+        .wrap { width: min(1100px, calc(100% - 2.5rem)); margin-inline: auto; }
+        header { padding: 3.5rem 0 1.5rem; }
+        .eyebrow { margin: 0; color: var(--java); font-size: 0.85rem; font-weight: 750; letter-spacing: 0.12em; text-transform: uppercase; }
+        .lead { font-size: 1.25rem; color: #d6e3ea; }
+        .java { color: var(--java); }
+        .port { color: var(--port); }
+        .warn { color: var(--warn); }
+        .src { color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
+        nav { display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; padding: 1rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        nav a { font-weight: 650; }
+        main > section { padding: 2.8rem 0; border-bottom: 1px solid var(--line); }
+        [id] { scroll-margin-top: 1.5rem; }
+        .box { max-width: 52rem; padding: 1.1rem 1.4rem; margin: 1.4rem 0; border: 1px solid var(--line); border-left: 5px solid var(--java); border-radius: 12px; background: var(--panel); }
+        .box.alert { border-left-color: var(--warn); }
+        .box.port-box { border-left-color: var(--port); }
+        .box h3 { margin-top: 0.2rem; }
+        .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+        .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin: 1.2rem 0; }
+        .two > div { padding: 1.1rem 1.3rem; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+        .two > div h3 { margin-top: 0; }
+        .two .j { border-top: 4px solid var(--java); }
+        .two .p { border-top: 4px solid var(--port); }
+        figure { margin: 1.6rem 0; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); overflow: hidden; }
+        .visual { overflow-x: auto; padding: 1rem; }
+        .visual svg { display: block; width: 100%; min-width: 760px; height: auto; }
+        figcaption { padding: 0.8rem 1.2rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.92rem; }
+        svg text { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #edf3f7; font-size: 16px; }
+        svg .h { font-size: 20px; font-weight: 700; }
+        svg .b { font-size: 16px; font-weight: 700; }
+        svg .c { font-size: 14.5px; fill: #b8cad6; }
+        svg .jt { fill: #75e2cc; }
+        svg .pt { fill: #ffc481; }
+        svg .rt { fill: #fb7185; }
+        svg .ok { fill: #0f2f33; stroke: #75e2cc; stroke-width: 2; }
+        svg .lock { fill: #40202b; stroke: #fb7185; stroke-width: 3; }
+        svg .chk { fill: #35290d; stroke: #fbbf24; stroke-width: 2; }
+        svg .nb { fill: #142c3c; stroke: #7d97a8; stroke-width: 1.5; }
+        svg .pb { fill: #302a25; stroke: #ffc481; stroke-width: 2; }
+        svg .dead { fill: #1b2630; stroke: #8da1ad; stroke-width: 2; stroke-dasharray: 6 5; }
+        svg .ghost { fill: none; stroke: #7d97a8; stroke-width: 1.5; stroke-dasharray: 6 5; }
+        svg .ar { stroke: #cfe0ea; stroke-width: 2; fill: none; }
+        svg .arj { stroke: #75e2cc; stroke-width: 2; fill: none; }
+        svg .ard { stroke: #8da1ad; stroke-width: 2; fill: none; }
+        details { max-width: 52rem; margin: 1rem 0; padding: 0.9rem 1.2rem; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-soft); }
+        summary { cursor: pointer; font-weight: 700; color: var(--link); }
+        details[open] > summary { margin-bottom: 0.9rem; }
+        .item { max-width: 52rem; margin: 1.3rem 0; padding: 1.1rem 1.4rem; border: 1px solid var(--line); border-top: 4px solid var(--port); border-radius: 12px; background: var(--panel); }
+        .item h4 { margin: 0 0 0.6rem; font-size: 1.12rem; }
+        .item h4 small { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+        .item p { margin: 0.5rem 0; }
+        .table-wrap { max-width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.94rem; }
+        th, td { padding: 0.7rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+        th { color: var(--java); font-size: 0.86rem; }
+        dt { font-weight: 700; color: var(--java); margin-top: 0.8rem; }
+        dd { margin: 0.2rem 0 0.6rem; max-width: 44rem; }
+        footer { padding: 2rem 0 3rem; color: var(--muted); font-size: 0.9rem; }
+        .skip { position: absolute; left: 1rem; top: -10rem; padding: 0.7rem; background: var(--bg); z-index: 1; }
+        .skip:focus { top: 1rem; }
+        @media (max-width: 720px) {
+            .two { grid-template-columns: 1fr; }
+            .wrap { width: calc(100% - 1.5rem); }
+            header { padding-top: 2.2rem; }
+            main > section { padding: 2rem 0; }
+        }
+        @media print {
+            :root { color-scheme: light; --bg: #fff; --panel: #fff; --panel-soft: #f4f6f8; --line: #9daab3; --text: #101820; --muted: #344753; --java: #006355; --port: #804200; --link: #064c81; --warn: #9b1c31; }
+            body { background: #fff; font-size: 10.5pt; }
+            .visual svg { min-width: 0; background: #102331; print-color-adjust: exact; }
+            nav, .skip { display: none; }
+            figure, .item, .box { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <a class="skip" href="#main">Skip to the report</a>
+    <header class="wrap">
+        <p class="eyebrow">Full collection / how it works / where we differ</p>
+        <h1>How a full collection works in the Java LXR and in our .NET port</h1>
+        <p class="lead">We have a garbage collector named LXR. In Java, it works well and it is fast. We copied its ideas into .NET. Our copy is much slower in one test. This page explains, from the basics, how each one works. It shows where our copy does extra work.</p>
+        <nav aria-label="Sections">
+            <a href="#answer">Short answer</a>
+            <a href="#compare">What we compare</a>
+            <a href="#basics">GC basics</a>
+            <a href="#lxr">How LXR works</a>
+            <a href="#stages">Stage by stage</a>
+            <a href="#trace">The trace in detail</a>
+            <a href="#dotnet">What .NET needs</a>
+            <a href="#unknown">What we do not know</a>
+            <a href="#next">Next steps</a>
+            <a href="#list">All 16 differences</a>
+            <a href="#sources">Sources</a>
+            <a href="#words">Words</a>
+        </nav>
+    </header>
+    <main id="main" class="wrap">
+
+        <section id="answer" aria-labelledby="answer-h">
+            <p class="eyebrow">Short answer</p>
+            <h2 id="answer-h">Are we reinventing the wheel?</h2>
+            <p><strong>Partly, yes.</strong> We copied the main ideas of LXR. We did not copy the way the Java LXR organizes the work. In several places, we built our own method. Our methods do more steps than the Java LXR does.</p>
+            <p>Two examples:</p>
+            <ul>
+                <li>The Java LXR shares the main marking work between many threads. Our port uses one thread for it.</li>
+                <li>The Java LXR reads a field of an object with a normal memory read. Our port reads it with a locked CPU instruction, and then adds one to a shared counter with a second locked instruction.</li>
+            </ul>
+            <div class="box">
+                <h3>What we found</h3>
+                <p>We found <strong>16 places</strong> where our port does different or extra work in a full collection. The last part of this page lists all 16.</p>
+            </div>
+            <div class="box alert">
+                <h3>What we do not know</h3>
+                <p>We do not know how much time each difference costs. We did not measure them one by one. So this page does <strong>not</strong> say that these 16 differences explain the whole slowdown.</p>
+            </div>
+        </section>
+
+        <section id="compare" aria-labelledby="compare-h">
+            <p class="eyebrow">01</p>
+            <h2 id="compare-h">What we compare</h2>
+            <div class="two">
+                <div class="j">
+                    <h3 class="java">The Java LXR</h3>
+                    <p>LXR comes from a 2022 research paper by Zhao, Blackburn and McKinley. The authors wrote the code in the Rust language. It is part of MMTk, a toolkit for building collectors. It works inside the Java runtime (OpenJDK).</p>
+                    <p>We use the exact version that the authors keep today. We built it and ran it ourselves. It works.</p>
+                </div>
+                <div class="p">
+                    <h3 class="port">Our port</h3>
+                    <p>We wrote LXR again for .NET. It is C++ code inside the .NET runtime (CoreCLR). A setting selects it in place of the standard .NET GC.</p>
+                    <p>This is the version we accepted earlier. It is not the two later experiments that we rejected.</p>
+                </div>
+            </div>
+            <h3>What we study</h3>
+            <p>This page explains one kind of collection: the <strong>full collection</strong>. A full collection stops the program and looks at the whole heap. You start one when you call <code>GC.Collect()</code> in .NET or <code>System.gc()</code> in Java. LXR also starts one by itself, for example when the heap is nearly full.</p>
+            <h3>Why we study it</h3>
+            <p>Our first test called <code>GC.Collect()</code> eight times. Our port needed roughly 30 to 100 times longer than the standard .NET Workstation GC for this test. We wanted to know why, and if we built what the Java LXR builds.</p>
+            <p>Real programs do not call <code>GC.Collect()</code>. So we also measured the collectors when they run by themselves, with the same programs written in C# and in Java. <a href="../P14-natural-gc/index.html">That second page</a> has the results. Our port is 7 to 28 times slower there, and it makes many full collections by itself. So the full collection matters in real use too, but it is not the only problem.</p>
+            <h3>How we studied it</h3>
+            <p>We read the source code of both collectors, from the start of a full collection to its end. We used exact versions. We also looked at the machine code of one hot place in our port. We did <strong>not</strong> run a new test.</p>
+            <div class="box alert">
+                <h3>Two limits to keep in mind</h3>
+                <ul>
+                    <li>A full collection is the rare path in LXR when the heap is large enough. LXR does most of its work in short, cheap collections. This page explains the full collection, because it is easy to read in the source code. The cheap collections need their own comparison.</li>
+                    <li>The exact test of eight forced collections was not run on the Java LXR. The <a href="../P14-natural-gc/index.html">natural-collection page</a> runs three matched programs on the Java LXR instead, without forced collections.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="basics" aria-labelledby="basics-h">
+            <p class="eyebrow">02 / basics</p>
+            <h2 id="basics-h">What a garbage collector does</h2>
+            <p>A program makes objects. Objects live in a large area of memory named the <strong>heap</strong>. An object has fields. A field can hold a <strong>pointer</strong>: the address of another object.</p>
+            <p>When the program stops using an object, its memory must become free again. The GC finds these objects and frees them.</p>
+            <p>How does the GC know that an object is not in use? It starts from the <strong>roots</strong>. Roots are the places where the program holds pointers: local variables on thread stacks, static variables and handles. An object is <strong>live</strong> if you can reach it from a root when you follow pointers. All other objects are <strong>garbage</strong>.</p>
+            <figure>
+                <div class="visual" tabindex="0" role="region" aria-label="Figure 1, scroll sideways on a small screen">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" role="img" aria-labelledby="f1t f1d">
+                        <title id="f1t">Live objects and garbage</title>
+                        <desc id="f1d">Three roots point to objects A, B and C. These lead to objects D, E and F. All six are live. Objects G, H and I are garbage. G and H point to each other. I points to G. No path from a root leads to G, H or I.</desc>
+                        <defs>
+                            <marker id="f1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#cfe0ea"/></marker>
+                            <marker id="f1g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#8da1ad"/></marker>
+                        </defs>
+                        <text x="30" y="34" class="h">Roots</text>
+                        <text x="300" y="34" class="h">Live objects</text>
+                        <text x="680" y="34" class="h">Garbage</text>
+                        <rect x="30" y="60" width="140" height="50" rx="10" class="nb"/><text x="45" y="91">Stack variable</text>
+                        <rect x="30" y="160" width="140" height="50" rx="10" class="nb"/><text x="45" y="191">Static field</text>
+                        <rect x="30" y="260" width="140" height="50" rx="10" class="nb"/><text x="45" y="291">Handle</text>
+                        <path d="M172 85H298" class="ar" marker-end="url(#f1m)"/>
+                        <path d="M172 185H298" class="ar" marker-end="url(#f1m)"/>
+                        <path d="M172 285H298" class="ar" marker-end="url(#f1m)"/>
+                        <path d="M357.7 80.9L468.3 64.7" class="ar" marker-end="url(#f1m)"/>
+                        <path d="M355.6 96.3L470.7 147.1" class="ar" marker-end="url(#f1m)"/>
+                        <path d="M357.7 180.9L468.3 164.7" class="ar" marker-end="url(#f1m)"/>
+                        <path d="M357.7 280.9L468.3 264.7" class="ar" marker-end="url(#f1m)"/>
+                        <path d="M500 190V226" class="ar" marker-end="url(#f1m)"/>
+                        <circle cx="330" cy="85" r="28" class="ok"/><text x="330" y="91" text-anchor="middle" class="b">A</text>
+                        <circle cx="330" cy="185" r="28" class="ok"/><text x="330" y="191" text-anchor="middle" class="b">B</text>
+                        <circle cx="330" cy="285" r="28" class="ok"/><text x="330" y="291" text-anchor="middle" class="b">C</text>
+                        <circle cx="500" cy="60" r="28" class="ok"/><text x="500" y="66" text-anchor="middle" class="b">D</text>
+                        <circle cx="500" cy="160" r="28" class="ok"/><text x="500" y="166" text-anchor="middle" class="b">E</text>
+                        <circle cx="500" cy="260" r="28" class="ok"/><text x="500" y="266" text-anchor="middle" class="b">F</text>
+                        <rect x="650" y="52" width="235" height="260" rx="14" class="ghost"/>
+                        <path d="M746 100H808" class="ard" marker-end="url(#f1g)"/>
+                        <path d="M814 122H752" class="ard" marker-end="url(#f1g)"/>
+                        <path d="M720 222V144" class="ard" marker-end="url(#f1g)"/>
+                        <circle cx="720" cy="110" r="28" class="dead"/><text x="720" y="116" text-anchor="middle" class="b">G</text>
+                        <circle cx="840" cy="110" r="28" class="dead"/><text x="840" y="116" text-anchor="middle" class="b">H</text>
+                        <circle cx="720" cy="250" r="28" class="dead"/><text x="720" y="256" text-anchor="middle" class="b">I</text>
+                        <text x="30" y="344">Live: a path of pointers leads from a root to the object.</text>
+                        <text x="30" y="370">Garbage: no path from a root. G and H point to each other, but that does not keep them alive.</text>
+                    </svg>
+                </div>
+                <figcaption>Figure 1. The GC finds the live objects. It frees the garbage.</figcaption>
+            </figure>
+            <p>The GC does two jobs:</p>
+            <ol>
+                <li><strong>Find the live objects.</strong> The GC follows pointers from the roots and puts a <strong>mark</strong> on each object that it reaches. We call this a <strong>trace</strong>.</li>
+                <li><strong>Free the memory</strong> of the objects without a mark.</li>
+            </ol>
+            <p>Some collectors also <strong>move</strong> live objects together, to close the gaps between them. When an object moves, every pointer to it must change to the new address.</p>
+            <p>While the GC changes pointers, the program must not run. So the GC <strong>stops</strong> all program threads. The time the program waits is a <strong>pause</strong>.</p>
+        </section>
+
+        <section id="lxr" aria-labelledby="lxr-h">
+            <p class="eyebrow">03 / the LXR idea</p>
+            <h2 id="lxr-h">How LXR works</h2>
+            <p>LXR uses two methods together.</p>
+            <h3>Method 1: counting</h3>
+            <p>Each object keeps a number: how many pointers point to it. When the program changes a pointer, it writes a short note in a log. During a pause, LXR reads the log and changes the counts. When a count falls to zero, nothing points to the object. Its memory is free.</p>
+            <p>Counting is fast. It looks only at what changed. It does not look at the whole heap.</p>
+            <p>Counting has one problem: <strong>cycles</strong>.</p>
+            <figure>
+                <div class="visual" tabindex="0" role="region" aria-label="Figure 2, scroll sideways on a small screen">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 370" role="img" aria-labelledby="f2t f2d">
+                        <title id="f2t">Counting frees an object, but not a cycle</title>
+                        <desc id="f2d">Part A: object P points to object X, so the count of X is 1. The program removes the pointer. The count falls to 0 and X is freed. Part B: objects G and H point to each other. Each has a count of 1. Nothing live points to them, but counting never frees them.</desc>
+                        <defs>
+                            <marker id="f2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#cfe0ea"/></marker>
+                        </defs>
+                        <text x="30" y="30" class="h">A. Counting frees an object when its count reaches zero</text>
+                        <rect x="30" y="60" width="90" height="46" rx="8" class="nb"/><text x="75" y="89" text-anchor="middle">Object P</text>
+                        <rect x="200" y="60" width="110" height="46" rx="8" class="ok"/><text x="255" y="89" text-anchor="middle">Object X</text>
+                        <path d="M122 83H196" class="ar" marker-end="url(#f2m)"/>
+                        <text x="255" y="132" text-anchor="middle" class="jt b">count 1</text>
+                        <text x="30" y="162" class="c">1. P points to X.</text>
+                        <rect x="340" y="60" width="90" height="46" rx="8" class="nb"/><text x="385" y="89" text-anchor="middle">Object P</text>
+                        <rect x="510" y="60" width="110" height="46" rx="8" class="lock"/><text x="565" y="89" text-anchor="middle">Object X</text>
+                        <path d="M434 83H506" class="ard" stroke-dasharray="5 5"/>
+                        <text x="470" y="74" text-anchor="middle" class="c">removed</text>
+                        <text x="565" y="132" text-anchor="middle" class="rt b">count 0</text>
+                        <text x="340" y="162" class="c">2. The program removes the pointer.</text>
+                        <text x="340" y="182" class="c">The count of X falls to 0.</text>
+                        <rect x="690" y="60" width="110" height="46" rx="8" class="dead"/><text x="745" y="89" text-anchor="middle" fill="#8da1ad">Object X</text>
+                        <text x="690" y="132" class="c">freed</text>
+                        <text x="690" y="162" class="c">3. Nothing points to X.</text>
+                        <text x="690" y="182" class="c">Its memory is free.</text>
+                        <text x="30" y="232" class="h">B. A cycle: counting fails</text>
+                        <circle cx="100" cy="292" r="30" class="dead"/><text x="100" y="298" text-anchor="middle" class="b">G</text>
+                        <circle cx="260" cy="292" r="30" class="dead"/><text x="260" y="298" text-anchor="middle" class="b">H</text>
+                        <path d="M131 282H228" class="ar" marker-end="url(#f2m)"/>
+                        <path d="M229 302H132" class="ar" marker-end="url(#f2m)"/>
+                        <text x="100" y="344" text-anchor="middle" class="c">count 1</text>
+                        <text x="260" y="344" text-anchor="middle" class="c">count 1</text>
+                        <text x="350" y="270">Nothing live points to G or H.</text>
+                        <text x="350" y="295">G points to H. H points to G.</text>
+                        <text x="350" y="320">Both counts stay at 1.</text>
+                        <text x="350" y="345">Counting never frees them. A trace does.</text>
+                    </svg>
+                </div>
+                <figcaption>Figure 2. Counting works for A. It fails for B.</figcaption>
+            </figure>
+            <h3>Method 2: tracing</h3>
+            <p>A trace finds garbage that counting cannot find. LXR follows pointers from the roots and marks every live object. An object without a mark is garbage, also when it is part of a cycle. Tracing costs more, because it reads every live object.</p>
+            <h3>Full collection</h3>
+            <p>LXR does most of its work in short pauses that only use counting. It runs a trace in the background when it can. A <strong>full collection</strong> is different. It is one pause that does the counting work <em>and</em> a complete trace while the program is stopped. LXR uses it when the program asks for it, or when memory is nearly full.</p>
+            <p>A full collection has these stages. We use these numbers on the rest of this page.</p>
+            <figure>
+                <div class="visual" tabindex="0" role="region" aria-label="Figure 3, scroll sideways on a small screen">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 290" role="img" aria-labelledby="f3t f3d">
+                        <title id="f3t">The eight stages of a full collection</title>
+                        <desc id="f3d">Stage 1 decide. Stage 2 stop the program. Stage 3 find the roots. Stage 4 do the counting work. Stage 5 trace the live objects. Stage 6 handle special objects such as weak pointers and finalizers. Stage 7 free memory. Stage 8 finish and let the program run again.</desc>
+                        <defs>
+                            <marker id="f3m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#cfe0ea"/></marker>
+                        </defs>
+                        <rect x="25" y="25" width="190" height="80" rx="12" class="nb"/><text x="39" y="56" class="b">1  Decide</text><text x="39" y="82" class="c">Full collection chosen</text>
+                        <rect x="245" y="25" width="190" height="80" rx="12" class="nb"/><text x="259" y="56" class="b">2  Stop</text><text x="259" y="82" class="c">Program threads wait</text>
+                        <rect x="465" y="25" width="190" height="80" rx="12" class="nb"/><text x="479" y="56" class="b">3  Find roots</text><text x="479" y="82" class="c">Stacks and handles</text>
+                        <rect x="685" y="25" width="190" height="80" rx="12" class="nb"/><text x="699" y="56" class="b">4  Count</text><text x="699" y="82" class="c">Update pointer counts</text>
+                        <path d="M217 65H243" class="ar" marker-end="url(#f3m)"/>
+                        <path d="M437 65H463" class="ar" marker-end="url(#f3m)"/>
+                        <path d="M657 65H683" class="ar" marker-end="url(#f3m)"/>
+                        <path d="M780 107V132H120V158" class="ar" marker-end="url(#f3m)"/>
+                        <rect x="25" y="160" width="190" height="80" rx="12" class="nb"/><text x="39" y="191" class="b">5  Trace</text><text x="39" y="217" class="c">Mark every live object</text>
+                        <rect x="245" y="160" width="190" height="80" rx="12" class="nb"/><text x="259" y="191" class="b">6  Special</text><text x="259" y="217" class="c">Weak and finalizable</text>
+                        <rect x="465" y="160" width="190" height="80" rx="12" class="nb"/><text x="479" y="191" class="b">7  Free memory</text><text x="479" y="217" class="c">Sweep dead objects</text>
+                        <rect x="685" y="160" width="190" height="80" rx="12" class="nb"/><text x="699" y="191" class="b">8  Finish</text><text x="699" y="217" class="c">Program runs again</text>
+                        <path d="M217 200H243" class="ar" marker-end="url(#f3m)"/>
+                        <path d="M437 200H463" class="ar" marker-end="url(#f3m)"/>
+                        <path d="M657 200H683" class="ar" marker-end="url(#f3m)"/>
+                        <text x="25" y="272" class="c">When objects move, the collector also repairs pointers to the moved objects. This happens at several points in stages 3 to 7.</text>
+                    </svg>
+                </div>
+                <figcaption>Figure 3. The stages of a full collection. The boxes do not show how long each stage takes.</figcaption>
+            </figure>
+        </section>
+
+        <section id="stages" aria-labelledby="stages-h">
+            <p class="eyebrow">04 / the walk-through</p>
+            <h2 id="stages-h">The full collection, stage by stage</h2>
+            <p>Both collectors use <strong>worker threads</strong>. A worker thread is an extra thread that takes small jobs from queues. If many workers do jobs at the same time, the work is <strong>parallel</strong>.</p>
+            <p>The time of a full collection depends on three things. First, how many steps the collector does for each object and each pointer. Second, how it shares the work between threads. Third, how many times it visits all objects. We look at all three.</p>
+            <p>In this text, <span class="java">the Java LXR</span> is the version that works in Java. <span class="port">Our port</span> is the version in .NET.</p>
+
+            <h3>Stages 1 and 2: decide and stop</h3>
+            <p>Both collectors treat <code>GC.Collect()</code> or <code>System.gc()</code> as a request for a full collection. If no background trace is active, both choose a full collection. Both stop the program threads before they start. We found no important difference here.</p>
+            <p>One note. The older Java LXR, from the paper, ignores <code>System.gc()</code>. The newer one that we use does not ignore it.</p>
+            <p class="src">Java LXR: <code>src/hotspot/share/prims/jvm.cpp:457-462</code>, <code>openjdk/mmtkHeap.cpp:340-363</code>, <code>src/mmtk.rs:436-456</code>, <code>src/util/heap/gc_trigger.rs:143-169</code>, <code>src/plan/lxr/global.rs:610-662</code>. Our port: <code>src/coreclr/vm/comutilnative.cpp:958-973</code>, <code>src/coreclr/gc/lxr_gc.cpp:914-922,967-981</code>, <code>src/coreclr/gc/lxr_collection_policy.h:166-178</code>.</p>
+
+            <h3>Stage 3: find the roots and prepare</h3>
+            <div class="two">
+                <div class="j">
+                    <h3 class="java">The Java LXR</h3>
+                    <p>Worker threads scan the thread stacks. Each worker takes some of the stacks. Many small jobs clear the old marks, one job for each chunk of the heap.</p>
+                </div>
+                <div class="p">
+                    <h3 class="port">Our port</h3>
+                    <p>One thread scans the roots. It is a thread that the .NET runtime knows. Before the scan, our port prepares two large helper tables. The same thread also visits <strong>every object in the heap</strong> to reset flags for pinning and finalizers.</p>
+                </div>
+            </div>
+            <p><strong>The helper tables.</strong> Our trace uses two tables: one lock byte and one pointer for each 8 bytes of the heap. In our test, the normal-object area is 64 MiB. The tables for it are 72 MiB, <em>larger than the area itself</em>, because they use 9 bytes for each 8 bytes of heap. At the start of every full collection, our port asks the operating system for this memory and writes a starting value into every cell. At the end, it gives the memory back.</p>
+            <figure>
+                <div class="visual" tabindex="0" role="region" aria-label="Figure 4, scroll sideways on a small screen">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 330" role="img" aria-labelledby="f4t f4d">
+                        <title id="f4t">The helper tables of our port</title>
+                        <desc id="f4d">The normal-object area is 64 MiB. Our helper tables are 72 MiB. Each full collection creates the tables, runs the collection and frees the tables. The test does this 8 times, which asks for about 577 MiB of writes. The time was not measured.</desc>
+                        <defs>
+                            <marker id="f4m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#cfe0ea"/></marker>
+                        </defs>
+                        <text x="30" y="30" class="h">Size in our test heap</text>
+                        <rect x="30" y="45" width="512" height="36" rx="6" class="ok"/><text x="44" y="69">Normal-object area: 64 MiB</text>
+                        <rect x="30" y="95" width="577" height="36" rx="6" class="pb"/><text x="44" y="119">Our helper tables: 72 MiB</text>
+                        <text x="30" y="160" class="c">The tables use 9 bytes for every 8 bytes of heap. We counted this in the source code. We did not measure time.</text>
+                        <text x="30" y="205" class="h">What happens in each full collection</text>
+                        <rect x="30" y="225" width="210" height="50" rx="10" class="pb"/><text x="44" y="256">Create + fill tables</text>
+                        <rect x="270" y="225" width="300" height="50" rx="10" class="nb"/><text x="284" y="256">The collection itself</text>
+                        <rect x="600" y="225" width="210" height="50" rx="10" class="pb"/><text x="614" y="256">Free the tables</text>
+                        <path d="M242 250H268" class="ar" marker-end="url(#f4m)"/>
+                        <path d="M572 250H598" class="ar" marker-end="url(#f4m)"/>
+                        <text x="830" y="258" class="h">x 8</text>
+                        <text x="30" y="312" class="c">Eight collections ask for about 577 MiB of writes. The Java LXR also clears its mark table, but this is a different, smaller table.</text>
+                    </svg>
+                </div>
+                <figcaption>Figure 4. The helper tables are created and freed in every full collection.</figcaption>
+            </figure>
+            <p><strong>Visiting every object.</strong> Most objects in a heap are plain data. They have no finalizer and no pin. Our port still visits all of them, one by one, to reset the flags. The time of this visit grows with the number of objects.</p>
+            <p class="src">Java LXR: <code>src/scheduler/gc_work.rs:238-293</code>, <code>src/plan/lxr/global.rs:213-218,559-568</code>, <code>src/policy/immix/immixspace.rs:532-581</code>. Our port: <code>src/coreclr/gc/lxr_gc.cpp:1109-1223,1335-1431</code>, <code>src/coreclr/gc/lxr_reference_counting.cpp:659-677,1825-1892</code>, <code>src/coreclr/gc/lxr_virtual_array.h:37-84</code>.</p>
+
+            <h3>Stage 4: the counting work</h3>
+            <p>Both collectors share this work between worker threads. Our port does this part in parallel too. Not all work in our port is single-threaded.</p>
+            <p>The difference is in how the trace starts. In the Java LXR, the root pointers become the starting points of the trace. In our port, the counting work for each root also adds that root to the list of objects to trace. Later, the trace-preparation step adds the same roots again. Our port also adds the objects that logged pointer changes point to. The Java LXR does not add these.</p>
+            <p>These extra starting points take time. They do not find more live objects if the roots already lead to them. We do not know yet which of them our port needs.</p>
+            <p class="src">Java LXR: <code>src/plan/lxr/rc.rs:527-661</code>. Our port: <code>src/coreclr/gc/lxr_reference_counting.cpp:1711-1822,2911-3040,3744-3807,5309-5337</code>.</p>
+
+            <h3>Stage 5: the trace</h3>
+            <p>This is the largest stage. The next part of this page explains it in detail. Here is the main difference in one sentence: the Java LXR shares the trace between many worker threads, and our port runs the whole trace on one thread.</p>
+
+            <h3>Stage 6: weak pointers and finalizers</h3>
+            <p>Some objects need special care. A <strong>weak pointer</strong> does not keep its object alive. A <strong>finalizer</strong> is code that must run after its object dies. A <strong>dependent handle</strong> keeps object B alive only if object A is alive. The GC must handle all of these after the trace.</p>
+            <div class="two">
+                <div class="j">
+                    <h3 class="java">The Java LXR</h3>
+                    <p>During the trace, the Java runtime finds weak and finalizable objects and puts them in lists. In this stage, the collector reads only these lists. It does not search the heap.</p>
+                </div>
+                <div class="p">
+                    <h3 class="port">Our port</h3>
+                    <p>Our port searches the heap. It visits every object again to find the ones that have finalizers. Sometimes it visits them a third time. It also repeats the loop for dependent handles until nothing changes.</p>
+                </div>
+            </div>
+            <p>.NET needs finalizers, so the work itself is required. The standard .NET GC keeps a list of the objects that have finalizers. It does not visit every object. We have not yet checked if our port can use the same list.</p>
+            <p class="src">Java LXR: <code>src/scheduler/scheduler.rs:311-350</code>, <code>mmtk/src/reference_glue.rs:181-287</code>. Our port: <code>src/coreclr/gc/lxr_gc.cpp:1194-1223</code>, <code>src/coreclr/gc/lxr_reference_counting.cpp:3685-3707</code>.</p>
+
+            <h3>Fixing pointers to moved objects</h3>
+            <p>When a collector moves an object, it must change all pointers to that object. Our port has three modes: no moving, move young objects, and move young and old objects. In a mode that moves objects, our port repairs several lists in several passes. The lists are the roots, the logs and the lists of trace work. It makes these passes <strong>also when the collection moved nothing</strong>. In the no-moving mode, it skips these passes.</p>
+            <p class="src">Our port: <code>src/coreclr/gc/lxr_reference_counting.cpp:3362-3435,3628-3707</code>, <code>src/coreclr/gc/lxr_gc.cpp:1224-1240</code>.</p>
+
+            <h3>Stage 7: free the memory</h3>
+            <p>Both collectors finish the counting work and sweep memory for objects without a mark. The Java LXR cuts the heap into chunks and gives each chunk to a worker thread. Each worker reads the tables directly. Our port does similar work, but it uses general functions that check each address.</p>
+            <p>In one place our port does <em>less</em> work than the Java LXR. It keeps a list of where objects start. The Java LXR checks every possible start position. So we cannot say that every difference in this stage costs us time.</p>
+            <p class="src">Java LXR: <code>src/plan/lxr/global.rs:272-297</code>, <code>src/policy/immix/immixspace.rs:602-638</code>, <code>src/plan/lxr/rc.rs:692-913</code>, <code>src/policy/immix/rc_work.rs:181-292</code>. Our port: <code>src/coreclr/gc/lxr_reference_counting.cpp:3122-3359,3434-3595,5369-5454</code>.</p>
+
+            <h3>Stage 8: finish</h3>
+            <div class="two">
+                <div class="j">
+                    <h3 class="java">The Java LXR</h3>
+                    <p>A worker deletes each job when it ends it. The last worker closes the queues, updates the page counts and lets the program run again.</p>
+                </div>
+                <div class="p">
+                    <h3 class="port">Our port</h3>
+                    <p>Our port visits every object once more, to compute statistics for <code>GC.GetGCMemoryInfo()</code>. Then the program runs again. After that, but before <code>GC.Collect()</code> returns, our port deletes its job records and frees the helper tables.</p>
+                </div>
+            </div>
+            <p>.NET needs these statistics. A separate visit of all objects is our own choice. The Java LXR uses page counts.</p>
+            <figure>
+                <div class="visual" tabindex="0" role="region" aria-label="Figure 5, scroll sideways on a small screen">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 340" role="img" aria-labelledby="f5t f5d">
+                        <title id="f5t">Visits of every object in our port</title>
+                        <desc id="f5d">Our port visits every object in stage 3 to reset flags, in stage 6 to find finalizers, sometimes once more in stage 6, and in stage 8 to compute statistics. The Java LXR keeps lists and page counts and does not visit every ordinary object for these jobs.</desc>
+                        <text x="30" y="30" class="h pt">Our port visits all objects at least three times</text>
+                        <rect x="25" y="48" width="270" height="118" rx="12" class="pb"/>
+                        <text x="39" y="76" class="b">Stage 3: reset flags</text>
+                        <text x="39" y="102" class="c">Visits every object.</text>
+                        <text x="39" y="124" class="c">Clears pin and copy flags.</text>
+                        <text x="39" y="146" class="c">Most objects need nothing.</text>
+                        <rect x="315" y="48" width="270" height="118" rx="12" class="pb"/>
+                        <text x="329" y="76" class="b">Stage 6: find finalizers</text>
+                        <text x="329" y="102" class="c">Visits every object again.</text>
+                        <text x="329" y="124" class="c">Sometimes one more visit.</text>
+                        <text x="329" y="146" class="c">Most objects have none.</text>
+                        <rect x="605" y="48" width="270" height="118" rx="12" class="pb"/>
+                        <text x="619" y="76" class="b">Stage 8: statistics</text>
+                        <text x="619" y="102" class="c">Visits every object again.</text>
+                        <text x="619" y="124" class="c">Computes heap size and gaps.</text>
+                        <text x="619" y="146" class="c">For GC.GetGCMemoryInfo().</text>
+                        <text x="30" y="210" class="h jt">The Java LXR</text>
+                        <rect x="25" y="228" width="850" height="78" rx="12" class="ok"/>
+                        <text x="39" y="256">It keeps lists of the weak and finalizable objects that it meets in the trace.</text>
+                        <text x="39" y="282">It reads page counts for statistics. It does not visit every ordinary object for these jobs.</text>
+                        <text x="30" y="330" class="c">A visit costs time in proportion to the number of objects. We have not measured it.</text>
+                    </svg>
+                </div>
+                <figcaption>Figure 5. Whole-heap visits in our port.</figcaption>
+            </figure>
+            <p>The Java LXR drops each finished job at once. Our port keeps the finished jobs on a list until the end of the collection. This keeps the old jobs available for safety checks. We do not know yet if it can free them earlier.</p>
+            <p class="src">Java LXR: <code>src/scheduler/worker.rs:284-305</code>, <code>src/scheduler/scheduler.rs:682-697,824-912</code>. Our port: <code>src/coreclr/gc/lxr_gc.cpp:1002-1028,1241-1268</code>, <code>src/coreclr/gc/lxr_reference_counting.cpp:1462-1610,2048-2069,4581-4646</code>.</p>
+        </section>
+
+        <section id="trace" aria-labelledby="trace-h">
+            <p class="eyebrow">05 / stage 5 in detail</p>
+            <h2 id="trace-h">The trace: how each collector marks live objects</h2>
+            <p>A trace is simple in principle. Start at a root. Mark the object that it points to. Look at each field of that object. For each field that holds a pointer, do the same for the object it points to. Continue until nothing new is left.</p>
+            <p>The collector keeps a <strong>queue of work</strong> that it still has to do. The two collectors differ in <em>what is in the queue</em>, <em>who takes work from it</em> and <em>how many steps each item needs</em>.</p>
+
+            <h3>What is in the queue, and who works on it</h3>
+            <p><span class="java">The Java LXR</span> puts <strong>fields</strong> in the queue. It groups them in <strong>packets</strong>: small jobs of up to 8,192 fields. Packets go to queues that all workers can use. A worker takes a packet, processes it, and puts new packets back. A worker with no work takes packets from a busy worker. A very large array is cut into slices of 8,192 fields.</p>
+            <figure>
+                <div class="visual" tabindex="0" role="region" aria-label="Figure 6, scroll sideways on a small screen">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 330" role="img" aria-labelledby="f6t f6d">
+                        <title id="f6t">The trace in the Java LXR</title>
+                        <desc id="f6d">Starting fields go into shared queues of packets. Three worker threads take packets from the queues, process them and put new packets back. Idle workers take packets from busy workers.</desc>
+                        <defs>
+                            <marker id="f6m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#75e2cc"/></marker>
+                        </defs>
+                        <rect x="25" y="105" width="170" height="70" rx="12" class="nb"/><text x="40" y="135" class="b">Root fields</text><text x="40" y="158" class="c">Start of the trace</text>
+                        <path d="M197 140H258" class="arj" marker-end="url(#f6m)"/>
+                        <rect x="260" y="40" width="270" height="200" rx="14" class="ok"/>
+                        <text x="275" y="68" class="b jt">Shared queues of packets</text>
+                        <rect x="278" y="88" width="64" height="34" rx="6" class="nb"/><rect x="352" y="88" width="64" height="34" rx="6" class="nb"/><rect x="426" y="88" width="64" height="34" rx="6" class="nb"/>
+                        <rect x="278" y="132" width="64" height="34" rx="6" class="nb"/><rect x="352" y="132" width="64" height="34" rx="6" class="nb"/>
+                        <text x="275" y="196" class="c">Packet: up to 8,192 fields</text>
+                        <text x="275" y="219" class="c">Every worker can use the queues.</text>
+                        <path d="M532 100L638 68" class="arj" marker-end="url(#f6m)"/>
+                        <path d="M532 140L638 148" class="arj" marker-end="url(#f6m)"/>
+                        <path d="M532 180L638 228" class="arj" marker-end="url(#f6m)"/>
+                        <rect x="640" y="40" width="235" height="56" rx="10" class="ok"/><text x="656" y="74" class="b">Worker thread 1</text>
+                        <rect x="640" y="120" width="235" height="56" rx="10" class="ok"/><text x="656" y="154" class="b">Worker thread 2</text>
+                        <rect x="640" y="200" width="235" height="56" rx="10" class="ok"/><text x="656" y="234" class="b">Worker thread 3</text>
+                        <text x="25" y="286">Workers put new packets back in the queues. A worker with no work takes packets from a busy one.</text>
+                        <text x="25" y="312" class="c">How much this helps depends on the object graph. A long linked list gives little work to share.</text>
+                    </svg>
+                </div>
+                <figcaption>Figure 6. The trace in the Java LXR.</figcaption>
+            </figure>
+            <p><span class="port">Our port</span> puts <strong>objects</strong> in the queue. Our trace list is one list. One thread takes objects from it, one after another. The other worker threads do counting work. They do not help with the trace. A large array is cut into slices of 1,024 fields. For an array of 262,144 fields, this is at least 256 slices. The Java LXR needs 32 slices for the same array. Each slice is a job that must save where it stopped.</p>
+            <figure>
+                <div class="visual" tabindex="0" role="region" aria-label="Figure 7, scroll sideways on a small screen">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" role="img" aria-labelledby="f7t f7d">
+                        <title id="f7t">The trace in our port, and array slices</title>
+                        <desc id="f7d">In our port, the starting objects go into one list. One thread takes the objects from the list. The other worker threads do not help with the trace. For an array of 262144 fields, the Java LXR uses 32 slices and our port uses at least 256.</desc>
+                        <defs>
+                            <marker id="f7m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#ffc481"/></marker>
+                        </defs>
+                        <rect x="25" y="55" width="170" height="70" rx="12" class="nb"/><text x="40" y="85" class="b">Root objects</text><text x="40" y="108" class="c">Start of the trace</text>
+                        <path d="M197 90H258" class="ar" stroke="#ffc481" marker-end="url(#f7m)"/>
+                        <rect x="260" y="55" width="270" height="70" rx="14" class="pb"/><text x="275" y="85" class="b pt">One list of objects</text><text x="275" y="108" class="c">Every child object goes in.</text>
+                        <path d="M532 90H638" class="ar" stroke="#ffc481" marker-end="url(#f7m)"/>
+                        <rect x="640" y="55" width="235" height="70" rx="12" class="pb"/><text x="656" y="85" class="b pt">One thread</text><text x="656" y="108" class="c">Runs the whole trace.</text>
+                        <rect x="400" y="145" width="475" height="46" rx="10" class="ghost"/><text x="414" y="174" class="c">Other worker threads: counting work only.</text>
+                        <text x="25" y="235" class="h">One array with 262,144 fields</text>
+                        <text x="25" y="278">Java LXR</text>
+                        <rect x="150" y="260" width="80" height="26" rx="4" fill="#75e2cc"/>
+                        <text x="240" y="279" class="c">32 slices (8,192 fields each)</text>
+                        <text x="25" y="320">Our port</text>
+                        <rect x="150" y="302" width="640" height="26" rx="4" fill="#ffc481"/>
+                        <text x="160" y="321" fill="#08131c" class="b">at least 256 slices (1,024 fields each)</text>
+                        <text x="25" y="352" class="c">Slice counts for one array only. The bars do not show the total work or time of a collection.</text>
+                    </svg>
+                </div>
+                <figcaption>Figure 7. The trace in our port, and the number of slices for one large array.</figcaption>
+            </figure>
+
+            <h3>The steps for one field</h3>
+            <p>Now look at what each collector does for one field, and for the object that the field points to. We call that object the <strong>child</strong>.</p>
+            <p>A <strong>locked CPU instruction</strong> is a special instruction. It makes sure that no other CPU core changes the same memory at the same moment. The CPU must wait for earlier memory work to finish. So a locked instruction is slower than a normal read. We have not measured by how much in this program.</p>
+            <figure>
+                <div class="visual" tabindex="0" role="region" aria-label="Figure 8, scroll sideways on a small screen">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 530" role="img" aria-labelledby="f8t f8d">
+                        <title id="f8t">The steps for one field</title>
+                        <desc id="f8d">The Java LXR reads the field with a normal read, stops if the child is already marked, marks a new child with one atomic update and queues its fields. Our port, for each field, reads it with a locked instruction, counts it with a second locked instruction, stops if the field is empty, and queues the child even if it is already marked. Later, for each object in the list, it takes a lock, reads the count and mark with checked reads, stops if the object is already marked, and writes the mark with six CPU waits and an atomic update.</desc>
+                        <defs>
+                            <marker id="f8m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#cfe0ea"/></marker>
+                        </defs>
+                        <text x="25" y="26" class="h jt">Java LXR: for each field</text>
+                        <rect x="25" y="38" width="190" height="78" rx="10" class="ok"/><text x="39" y="70" class="b">Read the field</text><text x="39" y="96" class="c">normal memory read</text>
+                        <rect x="245" y="38" width="190" height="78" rx="10" class="ok"/><text x="259" y="70" class="b">Child marked?</text><text x="259" y="96" class="c">yes: stop here</text>
+                        <rect x="465" y="38" width="190" height="78" rx="10" class="lock"/><text x="479" y="70" class="b">Mark the child</text><text x="479" y="96" class="c">atomic, new ones only</text>
+                        <rect x="685" y="38" width="190" height="78" rx="10" class="ok"/><text x="699" y="70" class="b">Queue its fields</text><text x="699" y="96" class="c">packet: up to 8,192</text>
+                        <path d="M217 77H243" class="ar" marker-end="url(#f8m)"/>
+                        <path d="M437 77H463" class="ar" marker-end="url(#f8m)"/>
+                        <path d="M657 77H683" class="ar" marker-end="url(#f8m)"/>
+
+                        <text x="25" y="161" class="h pt">Our port, part 1: for each field</text>
+                        <rect x="25" y="173" width="190" height="78" rx="10" class="lock"/><text x="39" y="205" class="b">Read the field</text><text x="39" y="231" class="c">LOCKED instruction</text>
+                        <rect x="245" y="173" width="190" height="78" rx="10" class="lock"/><text x="259" y="205" class="b">Count the field</text><text x="259" y="231" class="c">LOCKED, shared counter</text>
+                        <rect x="465" y="173" width="190" height="78" rx="10" class="nb"/><text x="479" y="205" class="b">Field empty?</text><text x="479" y="231" class="c">yes: stop here</text>
+                        <rect x="685" y="173" width="190" height="78" rx="10" class="nb"/><text x="699" y="205" class="b">Queue the child</text><text x="699" y="231" class="c">even if already marked</text>
+                        <path d="M217 212H243" class="ar" marker-end="url(#f8m)"/>
+                        <path d="M437 212H463" class="ar" marker-end="url(#f8m)"/>
+                        <path d="M657 212H683" class="ar" marker-end="url(#f8m)"/>
+                        <path d="M780 253V272H12V347H23" class="ar" marker-end="url(#f8m)"/>
+
+                        <text x="25" y="296" class="h pt">Our port, part 2: later, for each object in the list</text>
+                        <rect x="25" y="308" width="190" height="78" rx="10" class="lock"/><text x="39" y="340" class="b">Take the object</text><text x="39" y="366" class="c">per-object LOCK</text>
+                        <rect x="245" y="308" width="190" height="78" rx="10" class="chk"/><text x="259" y="340" class="b">Read count, mark</text><text x="259" y="366" class="c">checked table reads</text>
+                        <rect x="465" y="308" width="190" height="78" rx="10" class="nb"/><text x="479" y="340" class="b">Marked already?</text><text x="479" y="366" class="c">yes: stop here</text>
+                        <rect x="685" y="308" width="190" height="78" rx="10" class="lock"/><text x="699" y="340" class="b">Write the mark</text><text x="699" y="366" class="c">6 CPU waits + atomic</text>
+                        <path d="M217 347H243" class="ar" marker-end="url(#f8m)"/>
+                        <path d="M437 347H463" class="ar" marker-end="url(#f8m)"/>
+                        <path d="M657 347H683" class="ar" marker-end="url(#f8m)"/>
+
+                        <rect x="25" y="418" width="22" height="22" rx="4" class="ok"/><text x="56" y="436" class="c">Normal step</text>
+                        <rect x="230" y="418" width="22" height="22" rx="4" class="lock"/><text x="261" y="436" class="c">Locked instruction or CPU wait</text>
+                        <rect x="560" y="418" width="22" height="22" rx="4" class="chk"/><text x="591" y="436" class="c">Checked table access</text>
+                        <text x="25" y="475">In the Java LXR, the locked step happens only for a child that is new.</text>
+                        <text x="25" y="502">In our port, part 1 repeats for every field. Part 2 repeats for every object in the list.</text>
+                    </svg>
+                </div>
+                <figcaption>Figure 8. The steps for one field in the two collectors. The boxes show steps, not time.</figcaption>
+            </figure>
+            <h3>Why our port does more</h3>
+            <ul>
+                <li><strong>Reading a field.</strong> Our port reads each field with <code>Interlocked.CompareExchange(field, null, null)</code>. This asks the CPU: "if the field holds null, store null, and tell me what was in it." It is a trick for an ordered read. We checked the machine code of our Linux build. It uses a locked instruction. The Java LXR reads the field with a normal read on x64.
+                    <br>The same code also runs during a background trace, while the program runs. There, ordered reads may be needed. In a full collection, the program is stopped. A locked read may not be needed. We must check this case by case.</li>
+                <li><strong>Counting every field.</strong> Our port adds one to a shared counter for every field it visits, also for empty fields. This is a second locked instruction. The Java LXR has detailed counters too, but they are off unless a special option is on.</li>
+                <li><strong>Queuing every child.</strong> Our port puts every non-empty child in the list, also children that are already marked. It finds out later, when it takes the object from the list, that the object is marked. By then, it has already used the lock and the table reads. The Java LXR checks the mark before it queues. This early check is used for ordinary objects. It is not used for the slices of a large array.</li>
+                <li><strong>Marking an object.</strong> Our port reads the count and the mark with general functions that first check the address and the table layout. For a new object, it makes the CPU wait six times, and then does one more atomic update. The Java LXR does one atomic update with no extra waits.</li>
+                <li><strong>Extra writes.</strong> In the modes that move old objects, our port writes the field back after the scan, also when the child did not move.</li>
+            </ul>
+            <div class="box port-box">
+                <h3>The two experiments we rejected</h3>
+                <p>Earlier, we spent two experiments on how our port reads two small tables: the count and the mark. The second experiment removed two of the CPU waits. In some tests, the full collection became 4 to 10 percent faster. In one Linux test, it became 31 percent slower. We rejected it.</p>
+                <p>This page shows why a gain of this size was expected: those two reads are one small part of the whole picture.</p>
+            </div>
+            <p class="src">Java LXR: <code>src/plan/lxr/cm.rs:399-700</code>, <code>src/policy/immix/immixspace.rs:1072-1110,1189-1225</code>, <code>mmtk/src/slots.rs:96-115,234-266</code>, <code>src/scheduler/worker.rs:175-240,251-319</code>. Our port: <code>src/coreclr/gc/lxr_reference_counting.cpp:4728-4859,5014-5226,5281-5337</code>. Machine code of the accepted Linux build: a locked <code>cmpxchgq</code> at <code>0x2c167/0x2c168</code> and a locked <code>addq $1</code> at <code>0x2c177/0x2c178</code>, inside <code>ScanTraceLocked</code>, which starts at <code>0x2bfc0</code>.</p>
+        </section>
+
+        <section id="dotnet" aria-labelledby="dotnet-h">
+            <p class="eyebrow">06</p>
+            <h2 id="dotnet-h">What .NET needs that Java does not</h2>
+            <p>We cannot copy the Java LXR without change. .NET asks for things that the Java LXR does not do. Our port must keep all of them:</p>
+            <ul>
+                <li><strong>Pinned objects.</strong> A program can fix the address of an object, for example when it passes it to native code. The Java LXR does not support this at all. Its code says pinning is unsupported.</li>
+                <li><strong>Finalizers, weak pointers and dependent handles</strong>, with their exact rules.</li>
+                <li><strong>Pointers into the middle of an object</strong> (interior pointers), frozen objects and the pinned object heap.</li>
+                <li><strong>Collectible code</strong>: assemblies that .NET can unload.</li>
+                <li>The rules of the .NET runtime for suspending threads and scanning roots.</li>
+            </ul>
+            <div class="box">
+                <p>A requirement does not tell us how much the implementation must cost. For example, .NET needs finalizers. It does not need us to visit every object to find them. Each extra step in our port needs its own reason.</p>
+            </div>
+        </section>
+
+        <section id="unknown" aria-labelledby="unknown-h">
+            <p class="eyebrow">07</p>
+            <h2 id="unknown-h">What we do not know</h2>
+            <ul>
+                <li><strong>The cost of each difference.</strong> We did not measure them one by one. They overlap. You cannot add them as percentages.</li>
+                <li><strong>The time of the Java LXR on the forced test.</strong> We did not run it. On matched programs without forced collections, the Java LXR is close to the standard Java collectors (<a href="../P14-natural-gc/index.html">natural-collection page</a>). There, the Java LXR also makes full collections, but they are short.</li>
+                <li><strong>How much the single trace thread costs.</strong> One thread alone cannot explain a slowdown of 30 to 100 times compared with the standard .NET Workstation GC. That GC also marks with one thread. The cost of each step matters too.</li>
+                <li><strong>Which extra steps in our port are really needed.</strong> Some protect against stale pointers or old readers. We must prove what is safe to remove.</li>
+                <li><strong>Where our port does less.</strong> The list of object starts in the sweep is one example.</li>
+            </ul>
+            <p>We found these facts by reading code. We did not profile the Java LXR.</p>
+        </section>
+
+        <section id="next" aria-labelledby="next-h">
+            <p class="eyebrow">08</p>
+            <h2 id="next-h">What we should do next</h2>
+            <p>The lesson: do not tune one helper function. Rebuild the full collection so that it has the same shape as the Java LXR. Keep every .NET rule. Do it in these steps:</p>
+            <ol>
+                <li><strong>Use the matched programs as the target.</strong> The <a href="../P14-natural-gc/index.html">natural-collection benchmark</a> already runs the Java LXR on the same work. A change is good only if it moves our port toward the Java LXR there.</li>
+                <li><strong>Change the trace to the Java LXR shape.</strong> Use fields as work items. Skip marked children before you queue them. Use slices of 8,192 fields. Give the work to all worker threads.</li>
+                <li><strong>Remove setup and extra visits.</strong> Do not create and free the 72 MiB tables in every collection. Find a list or a counter to replace the visits of every object.</li>
+                <li><strong>Make the hot loop small.</strong> Use a short, fixed way to read the count and mark. Do it only after we prove that it is safe.</li>
+                <li><strong>Keep the .NET rules.</strong> Test pins, finalizers, weak pointers and moved objects after each change.</li>
+            </ol>
+            <p>For each change, count the steps before and after. Then measure the time, and compare with both the Workstation GC and the Server GC.</p>
+        </section>
+
+        <section id="list" aria-labelledby="list-h">
+            <p class="eyebrow">Appendix A</p>
+            <h2 id="list-h">All 16 differences</h2>
+            <p>The labels F01 to F16 are the names used in the technical record (<a href="README.md">README.md</a>). Each item says if .NET needs the work.</p>
+
+            <h3>Who does the trace work, and what the work is</h3>
+            <div class="item">
+                <h4>One thread runs the trace <small>F01</small></h4>
+                <p>Our port runs the trace in one thread. The Java LXR gives trace jobs to all workers.</p>
+                <p><strong>Does .NET need it?</strong> We know of no .NET reason.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_reference_counting.cpp:4728-4759,5281-5337</code>; <code>src/plan/lxr/cm.rs:399-513</code>, <code>src/scheduler/worker.rs:175-240,251-319</code></p>
+            </div>
+            <div class="item">
+                <h4>We queue children that are already marked <small>F04</small></h4>
+                <p>Our port queues every non-empty child. It finds out later that the child is marked. The Java LXR checks the mark first, for ordinary objects.</p>
+                <p><strong>Does .NET need it?</strong> Partly. Our port keeps checks against stale pointers that the Java LXR does not have. We must prove which of them stay.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_reference_counting.cpp:5014-5058,5116-5200</code>; <code>src/plan/lxr/cm.rs:661-700</code></p>
+            </div>
+            <div class="item">
+                <h4>More starting points for the trace <small>F05</small></h4>
+                <p>Our port queues the roots twice. It also queues objects that logged pointer changes point to. The Java LXR starts from the root fields.</p>
+                <p><strong>Does .NET need it?</strong> We do not know yet.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_reference_counting.cpp:1711-1822,2911-3040,3744-3807,5309-5337</code>; <code>src/plan/lxr/rc.rs:527-661</code></p>
+            </div>
+            <div class="item">
+                <h4>Smaller slices of large arrays <small>F06</small></h4>
+                <p>1,024 fields in a slice, against 8,192 in the Java LXR. For an array of 262,144 fields, this is at least 256 slices against 32. This is only the count for one array, not for the whole collection.</p>
+                <p><strong>Does .NET need it?</strong> No.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_reference_counting.cpp:4804-4859,5014-5226</code>; <code>src/plan/lxr/cm.rs:661-700</code></p>
+            </div>
+
+            <h3>The cost of each field and object</h3>
+            <div class="item">
+                <h4>A locked read for every field <small>F02</small></h4>
+                <p>Our port reads each field with a locked instruction. The Java LXR uses a normal read.</p>
+                <p><strong>Does .NET need it?</strong> Partly. A background trace may need ordered reads. A paused full collection may not.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_reference_counting.cpp:5116-5200</code>; <code>mmtk/src/slots.rs:96-115,234-266</code></p>
+            </div>
+            <div class="item">
+                <h4>A shared counter for every field <small>F03</small></h4>
+                <p>Our port adds one to a shared counter for every field, also empty ones, with a locked instruction.</p>
+                <p><strong>Does .NET need it?</strong> No. It is a statistic.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_reference_counting.cpp:5116-5200</code>; <code>src/lib.rs:469-476</code></p>
+            </div>
+            <div class="item">
+                <h4>The marking path is general and checked <small>F08</small></h4>
+                <p>Our port takes a per-object lock. It reads the count and mark with checked functions. It writes the mark with six CPU waits. The Java LXR uses one fixed mark update.</p>
+                <p><strong>Does .NET need it?</strong> Partly. Stale pointers and old readers need safety. This does not prove that this exact sequence is needed.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_reference_counting.cpp:5014-5114</code>; <code>src/policy/immix/immixspace.rs:1072-1110,1189-1225</code></p>
+            </div>
+            <div class="item">
+                <h4>Repeated address checks in count changes <small>F09</small></h4>
+                <p>A normal count change in our port checks the address four times and finds the table cell three times. It uses a full machine word for the atomic update. The Java LXR uses fixed table geometry and a byte update.</p>
+                <p><strong>Does .NET need it?</strong> Partly. The checks protect against bugs. They can move out of the hot loop.</p>
+                <p class="src"><code>src/coreclr/gc/reference_count.cpp:295-363,504-548</code>; <code>src/coreclr/gc/side_metadata.cpp:390-507,596-715</code>; <code>src/util/rc.rs</code></p>
+            </div>
+
+            <h3>Setup, extra visits and statistics</h3>
+            <div class="item">
+                <h4>Helper tables: create, fill, free, repeat <small>F07</small></h4>
+                <p>Our port creates and fills two helper tables (72 MiB in our test) in every full collection. It frees them at the end.</p>
+                <p><strong>Does .NET need it?</strong> We do not know. We must prove which collections need these tables.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_reference_counting.cpp:659-677,1846-1849,2048-2066</code>; <code>src/coreclr/gc/lxr_virtual_array.h:37-84</code></p>
+            </div>
+            <div class="item">
+                <h4>We find finalizer and pin state by visiting every object <small>F10</small></h4>
+                <p>Our port visits all objects to reset flags, and again to find finalizers. The Java LXR uses lists.</p>
+                <p><strong>Does .NET need it?</strong> .NET needs the result. The way to find it is our choice.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_gc.cpp:1150-1223,1335-1431</code>; <code>mmtk/src/reference_glue.rs:181-287</code></p>
+            </div>
+            <div class="item">
+                <h4>Repeated repairs for moved objects <small>F11</small></h4>
+                <p>Several passes repair roots, logs and trace work. They also run when nothing moved, in modes that can move objects.</p>
+                <p><strong>Does .NET need it?</strong> Partly. Moved objects need repair. Repair when nothing moved is not clear.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_reference_counting.cpp:3362-3435,3628-3707</code>; <code>src/coreclr/gc/lxr_gc.cpp:1224-1240</code></p>
+            </div>
+            <div class="item">
+                <h4>A separate visit for statistics <small>F12</small></h4>
+                <p>Our port visits every object at the end to compute heap statistics. The Java LXR uses page counts.</p>
+                <p><strong>Does .NET need it?</strong> .NET needs statistics. A separate visit is our choice.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_gc.cpp:1241-1268</code>; <code>src/coreclr/gc/lxr_reference_counting.cpp:4581-4646</code>; <code>src/scheduler/scheduler.rs:872-887</code></p>
+            </div>
+            <div class="item">
+                <h4>One thread scans the roots <small>F15</small></h4>
+                <p>One registered thread does the root, finalizer and statistics scans. The Java LXR gives stack scans to workers.</p>
+                <p><strong>Does .NET need it?</strong> Partly. The .NET runtime needs registered threads for these scans. One thread is our choice.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_gc.cpp:1109-1268</code>; <code>src/scheduler/gc_work.rs:238-293</code></p>
+            </div>
+
+            <h3>Free memory and clean up</h3>
+            <div class="item">
+                <h4>General checked operations in the sweep <small>F13</small></h4>
+                <p>Our port sweeps with general checked functions. The Java LXR sweeps chunks with direct table reads. Our list of object starts saves work in one place.</p>
+                <p><strong>Does .NET need it?</strong> We do not know. Some of our choices cost less, some more.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_reference_counting.cpp:3249-3359,5369-5454</code>; <code>src/policy/immix/rc_work.rs:181-292</code></p>
+            </div>
+            <div class="item">
+                <h4>Finished jobs stay on a list <small>F16</small></h4>
+                <p>Our port keeps finished jobs until the end of the collection. The Java LXR deletes a job when it ends. The jobs are not lost: our port deletes them at the end of a normal full collection.</p>
+                <p><strong>Does .NET need it?</strong> We do not know. Old readers may need some of them.</p>
+                <p class="src"><code>src/coreclr/gc/lxr_reference_counting.cpp:1462-1610,1837,2048-2069</code>; <code>src/scheduler/worker.rs:284-305</code></p>
+            </div>
+
+            <h3>Settings</h3>
+            <div class="item">
+                <h4>Different defaults <small>F14</small></h4>
+                <p>The Java LXR counts with 2 bits for each object, uses byte updates and reads ahead in memory (prefetch). Our port counts with 8 bits, uses word updates and does not prefetch. They also limit moving in different ways.</p>
+                <p><strong>Does .NET need it?</strong> These are settings. We must set them equal when we compare, one at a time. We must not delete pin safety, change the object layout, or copy unsafe behavior only to match a name.</p>
+                <p class="src"><code>src/util/rc.rs:12-28</code>; <code>src/args.rs:88-150</code></p>
+            </div>
+        </section>
+
+        <section id="sources" aria-labelledby="sources-h">
+            <p class="eyebrow">Appendix B</p>
+            <h2 id="sources-h">Exact versions and how we checked</h2>
+            <p>We did not use moving checkouts. We took six exact Git archives. They gave 1,952 source files, and we checked that every byte matches. The archive hashes are in <a href="source-bindings.json">source-bindings.json</a>.</p>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Exact versions">
+                <table>
+                    <caption>Source versions</caption>
+                    <thead><tr><th scope="col">Name on this page</th><th scope="col">Repository and version</th></tr></thead>
+                    <tbody>
+                        <tr><td>Java LXR: core library</td><td>wenyuzhao/mmtk-core <code>304ce69d43aae87de501111fceb8cbd33173a03a</code></td></tr>
+                        <tr><td>Java LXR: Java binding</td><td>wenyuzhao/mmtk-openjdk <code>0682434ae725787e38defbc17bd66dc918e4bdb7</code></td></tr>
+                        <tr><td>Java runtime under it</td><td>mmtk/openjdk <code>7caf8f7d19b19a9fd53be6f909db805246790807</code></td></tr>
+                        <tr><td>Our port (accepted)</td><td>kkokosa/runtime <code>e8d2d23ef60e44ba7efd35a7cb3f4a76271adc6a</code></td></tr>
+                        <tr><td>Paper-era LXR: core library</td><td>wenyuzhao/mmtk-core <code>df8d30a39237a5bf5a8e27ca5a6f46acc6080c94</code></td></tr>
+                        <tr><td>Paper-era LXR: Java binding</td><td>wenyuzhao/mmtk-openjdk <code>abbdd1dbbe7277e4b0dfd1d37ba613c53f5ca50d</code></td></tr>
+                        <tr><td>Rejected experiment (not our port)</td><td>kkokosa/runtime <code>a23d3598b57837f3e858622f83b8ffbc13e0de58</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>Some notes about the Java LXR versions:</p>
+            <ul>
+                <li>The paper-era version ignores <code>System.gc()</code>. It cannot run our test. The newer version serves the request. We use the newer version for the comparison.</li>
+                <li>The paper-era version counts with a 16-byte step. The newer version uses an 8-byte step. Our port uses an 8-byte step.</li>
+                <li>The Java LXR builds use optimized code. Their default settings count 2 bits for each object and prefetch memory.</li>
+            </ul>
+            <p>We checked the machine code of the accepted Linux build of our port. Its hash is <code>0909a5b1ce5e6383e944d45ffd17791050acfb62a26b048c4955fb0917b71e14</code>.</p>
+            <p>This work made no change to the collector code. It did not build or time anything new. Our accepted port is still <code>e8d2d23</code>. The roadmap items for the pause time and the full test stay open.</p>
+        </section>
+
+        <section id="words" aria-labelledby="words-h">
+            <p class="eyebrow">Appendix C</p>
+            <h2 id="words-h">Words used on this page</h2>
+            <dl>
+                <dt>Heap</dt><dd>The large area of memory where a program's objects live.</dd>
+                <dt>Pointer</dt><dd>The address of an object. A field can hold a pointer.</dd>
+                <dt>Root</dt><dd>A place where the program holds a pointer: a stack variable, a static field or a handle.</dd>
+                <dt>Live object / garbage</dt><dd>A live object has a path from a root. Garbage has no such path.</dd>
+                <dt>Mark / trace</dt><dd>A trace follows pointers from the roots. It puts a mark on each object that it reaches.</dd>
+                <dt>Counting</dt><dd>The method that keeps a number for each object: how many pointers point to it. The research papers call it reference counting.</dd>
+                <dt>Cycle</dt><dd>Objects that point to each other. Their counts never fall to zero.</dd>
+                <dt>Full collection</dt><dd>One pause with the counting work and a complete trace.</dd>
+                <dt>Pause</dt><dd>The time that the program waits for the GC.</dd>
+                <dt>Worker thread</dt><dd>An extra thread that takes small jobs from queues.</dd>
+                <dt>Packet</dt><dd>A small job in the Java LXR. It holds up to 8,192 fields.</dd>
+                <dt>Child</dt><dd>The object that a field points to.</dd>
+                <dt>Locked CPU instruction</dt><dd>A CPU instruction that makes sure that no other core changes the same memory at the same time. It is slower than a normal read.</dd>
+                <dt>Pinned object</dt><dd>An object that must stay at the same address.</dd>
+                <dt>Finalizer</dt><dd>Code that runs after an object dies.</dd>
+                <dt>Weak pointer</dt><dd>A pointer that does not keep its object alive.</dd>
+                <dt>Dependent handle</dt><dd>A handle that keeps object B alive only while object A is alive.</dd>
+                <dt>Moving</dt><dd>The collector copies a live object to a new address and changes all pointers to it.</dd>
+            </dl>
+        </section>
+    </main>
+    <footer class="wrap">
+        <p>Technical record with the full source tables: <a href="README.md">README.md</a>. Related pages: <a href="../README.md">LXR design record</a> and <a href="../lxr-gc-explained.html">LXR concepts guide</a>.</p>
+        <p>This page is one HTML file with inline SVG. It needs no script, font or network.</p>
+    </footer>
+</body>
+</html>

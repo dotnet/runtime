@@ -1,0 +1,6 @@
+collector,passed,total,result
+lxr-head,48,48,PASS
+g1,48,48,PASS
+parallel,48,48,PASS
+serial,48,48,PASS
+zgc,48,48,PASS

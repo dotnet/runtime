@@ -1,0 +1,42 @@
+captured_utc=2026-10-07T21:27:37Z
+host_windows_build=26200
+guest=Ubuntu 22.04.5 LTS
+kernel=Linux 6.18.33.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun 18 21:54:43 UTC 2026 x86_64
+cpu=Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz
+logical_processors=16
+wsl_visible_memory_bytes=33626411008
+
+openjdk_commit=7caf8f7d19b19a9fd53be6f909db805246790807
+binding_commit=0682434ae725787e38defbc17bd66dc918e4bdb7
+named_core_checkout=9625c174f3a3d226fee460afe62e9c4b581f6044
+java_version=openjdk version "11.0.19-internal" 2023-04-18
+java_runtime=OpenJDK Runtime Environment (build 11.0.19-internal+0-adhoc.root.openjdk)
+java_vm=OpenJDK 64-Bit Server VM (build 11.0.19-internal+0-adhoc.root.openjdk, mixed mode)
+java_sha256=c1bff77bca05217eabfb03a27c8e913b3d00cc734762f517df2ea7334a76fdd1
+libjvm_sha256=9c99a8840b492529a38228e7fccbe9eae84f4ee47936948ec946903e00c7a9f9
+dacapo_sha256=0fde3d8ccabdd9da791612ee2c1adcd7efec524ac154c3c705467cfae294a8bd
+hiccup_source_sha256=799ed46a9778395f3a98e319df98191a759f80eb56b516bc31b578afec829f9f
+bench_source_sha256=0c3ea7477a895d271dc7b427a215da817aa5f5bb5117fd0d46b7d65a2290a8b8
+
+jdk_release_source=.:git:7caf8f7d19b1
+jdk_release_os=Linux
+jdk_release_arch=x86_64
+jdk_release_libc=gnu
+openjdk_tracked_status=clean
+binding_tracked_status=clean; one pre-existing untracked Cargo.toml.orig remains
+core_named_checkout_tracked_status=clean
+
+g1_flags=(none; JDK default, UseG1GC=true ergonomic)
+parallel_flags=-XX:+UseParallelGC
+serial_flags=-XX:+UseSerialGC
+zgc_flags=-XX:+UnlockExperimentalVMOptions -XX:+UseZGC
+zgc_startup_log=Using The Z Garbage Collector
+
+common_flags=-server -XX:MetaspaceSize=100M -Xms<heap>M -Xmx<heap>M
+third_party_heap_flag=absent
+mmtk_plan_environment=unset
+iterations=5
+invocations=3
+heaps_mb=500;2000
+benchmarks=antlr;fop;luindex;lusearch;pmd;hsqldb;eclipse;xalan
+pause_meter=Hiccup.java; 1 ms sleep cadence; reports mean,p50,p90,p99,p999,max overshoot in milliseconds

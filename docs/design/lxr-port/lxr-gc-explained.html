@@ -1,0 +1,3157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta name="description" content="A concept-by-concept explanation of LXR garbage collection, from reference counting and Immix through the paper, MMTk reference code, and the current CoreCLR port.">
+    <title>LXR GC, from first principles to the CoreCLR port</title>
+    <style>
+        :root {
+            --bg: #071018;
+            --bg-soft: #0b1823;
+            --panel: #102231;
+            --panel-2: #142b3c;
+            --text: #e8f0f5;
+            --muted: #a8bbc8;
+            --line: #2b4658;
+            --accent: #5eead4;
+            --accent-2: #7dd3fc;
+            --paper: #fbbf24;
+            --reference: #c084fc;
+            --dotnet: #60a5fa;
+            --planned: #94a3b8;
+            --background: #34d399;
+            --danger: #fb7185;
+            --warning: #fdba74;
+            --good: #4ade80;
+            --shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+            --radius: 18px;
+            --content: 1180px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            background:
+                radial-gradient(circle at 12% 5%, rgba(94, 234, 212, 0.09), transparent 28rem),
+                radial-gradient(circle at 88% 8%, rgba(96, 165, 250, 0.08), transparent 30rem),
+                var(--bg);
+            color: var(--text);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.63;
+        }
+
+        a {
+            color: var(--accent-2);
+            text-underline-offset: 0.18em;
+        }
+
+        a:hover {
+            color: var(--accent);
+        }
+
+        code,
+        pre {
+            font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+        }
+
+        code {
+            color: #d8f8ff;
+            overflow-wrap: anywhere;
+        }
+
+        pre {
+            margin: 1rem 0;
+            padding: 1rem 1.15rem;
+            overflow: auto;
+            border: 1px solid var(--line);
+            border-radius: 13px;
+            background: #07131d;
+            color: #d7edf7;
+            font-size: 0.9rem;
+            line-height: 1.55;
+        }
+
+        .skip-link {
+            position: fixed;
+            top: 0.5rem;
+            left: 0.5rem;
+            z-index: 100;
+            transform: translateY(-150%);
+            padding: 0.65rem 0.9rem;
+            border-radius: 9px;
+            background: var(--accent);
+            color: #031014;
+            font-weight: 800;
+        }
+
+        .skip-link:focus {
+            transform: none;
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            padding: 5.5rem 1.25rem 4rem;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .hero::after {
+            position: absolute;
+            inset: auto -10% -45% 35%;
+            height: 24rem;
+            content: "";
+            background: radial-gradient(circle, rgba(125, 211, 252, 0.12), transparent 68%);
+            pointer-events: none;
+        }
+
+        .hero-inner {
+            position: relative;
+            z-index: 1;
+            max-width: var(--content);
+            margin: 0 auto;
+        }
+
+        .eyebrow {
+            margin: 0 0 0.7rem;
+            color: var(--accent);
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            max-width: 980px;
+            margin: 0;
+            font-size: clamp(2.6rem, 7vw, 5.8rem);
+            line-height: 0.98;
+            letter-spacing: -0.055em;
+        }
+
+        h1 span {
+            color: var(--accent);
+        }
+
+        .lede {
+            max-width: 890px;
+            margin: 1.4rem 0 0;
+            color: #c8d8e2;
+            font-size: clamp(1.05rem, 2.1vw, 1.34rem);
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+            margin-top: 2.1rem;
+        }
+
+        .hero-stat {
+            padding: 1rem 1.1rem;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(10, 28, 40, 0.72);
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-stat strong {
+            display: block;
+            color: #fff;
+            font-size: 1.05rem;
+        }
+
+        .hero-stat span {
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 260px minmax(0, 1fr);
+            gap: 2rem;
+            max-width: calc(var(--content) + 300px);
+            margin: 0 auto;
+            padding: 2rem 1.25rem 6rem;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 1rem;
+            align-self: start;
+            max-height: calc(100vh - 2rem);
+            overflow: auto;
+            padding: 1rem;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(8, 23, 34, 0.9);
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-title {
+            margin: 0 0 0.7rem;
+            color: var(--muted);
+            font-size: 0.73rem;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .toc {
+            display: grid;
+            gap: 0.15rem;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .toc a {
+            display: block;
+            padding: 0.4rem 0.55rem;
+            border-left: 2px solid transparent;
+            border-radius: 6px;
+            color: var(--muted);
+            font-size: 0.84rem;
+            text-decoration: none;
+        }
+
+        .toc a:hover,
+        .toc a[aria-current="true"] {
+            border-left-color: var(--accent);
+            background: rgba(94, 234, 212, 0.08);
+            color: var(--text);
+        }
+
+        .filter-box {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--line);
+        }
+
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .filter-button,
+        .utility-button {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: #0a1a26;
+            color: var(--text);
+            font: inherit;
+            font-size: 0.74rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .filter-button {
+            padding: 0.34rem 0.6rem;
+        }
+
+        .utility-button {
+            margin-top: 0.75rem;
+            padding: 0.45rem 0.7rem;
+        }
+
+        .filter-button:hover,
+        .filter-button[aria-pressed="true"],
+        .utility-button:hover {
+            border-color: var(--accent);
+            background: rgba(94, 234, 212, 0.1);
+        }
+
+        main {
+            min-width: 0;
+        }
+
+        section {
+            scroll-margin-top: 1rem;
+            margin-bottom: 2rem;
+            padding: clamp(1.25rem, 3vw, 2.2rem);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: linear-gradient(145deg, rgba(16, 34, 49, 0.98), rgba(9, 26, 38, 0.98));
+            box-shadow: var(--shadow);
+        }
+
+        section > :last-child {
+            margin-bottom: 0;
+        }
+
+        h2 {
+            margin: 0 0 0.55rem;
+            font-size: clamp(1.65rem, 3.5vw, 2.55rem);
+            line-height: 1.1;
+            letter-spacing: -0.035em;
+        }
+
+        h3 {
+            margin: 1.7rem 0 0.55rem;
+            color: #f5fbff;
+            font-size: 1.25rem;
+            line-height: 1.25;
+        }
+
+        h4 {
+            margin: 1.2rem 0 0.35rem;
+            color: var(--accent-2);
+            font-size: 1rem;
+        }
+
+        p,
+        li {
+            color: #c5d4dd;
+        }
+
+        .section-intro {
+            max-width: 850px;
+            margin-top: 0;
+            color: var(--muted);
+            font-size: 1.03rem;
+        }
+
+        .source-row,
+        .source-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin: 0.8rem 0 1.2rem;
+        }
+
+        .source-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.55rem;
+            border: 1px solid currentColor;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        .source-tag::before {
+            width: 0.42rem;
+            height: 0.42rem;
+            border-radius: 50%;
+            background: currentColor;
+            content: "";
+        }
+
+        .paper {
+            color: var(--paper);
+        }
+
+        .reference {
+            color: var(--reference);
+        }
+
+        .dotnet {
+            color: var(--dotnet);
+        }
+
+        .planned {
+            color: var(--planned);
+        }
+
+        .background {
+            color: var(--background);
+        }
+
+        [data-source] {
+            transition: opacity 160ms ease, filter 160ms ease;
+        }
+
+        body[data-filter="paper"] [data-source]:not([data-source~="paper"]),
+        body[data-filter="reference"] [data-source]:not([data-source~="reference"]),
+        body[data-filter="dotnet"] [data-source]:not([data-source~="dotnet"]),
+        body[data-filter="background"] [data-source]:not([data-source~="background"]) {
+            opacity: 0.25;
+            filter: saturate(0.4);
+        }
+
+        .grid-2,
+        .grid-3 {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .grid-2 > *,
+        .grid-3 > * {
+            min-width: 0;
+        }
+
+        .card {
+            padding: 1rem 1.05rem;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(11, 29, 42, 0.76);
+        }
+
+        .card h3,
+        .card h4 {
+            margin-top: 0;
+        }
+
+        .callout {
+            margin: 1.15rem 0;
+            padding: 1rem 1.1rem;
+            border-left: 4px solid var(--accent);
+            border-radius: 0 12px 12px 0;
+            background: rgba(94, 234, 212, 0.07);
+        }
+
+        .callout.warning {
+            border-left-color: var(--warning);
+            background: rgba(253, 186, 116, 0.07);
+        }
+
+        .callout.danger {
+            border-left-color: var(--danger);
+            background: rgba(251, 113, 133, 0.07);
+        }
+
+        .callout strong {
+            color: #fff;
+        }
+
+        .diagram {
+            margin: 1.2rem 0;
+            padding: 0.65rem;
+            overflow: auto;
+            border: 1px solid var(--line);
+            border-radius: 15px;
+            background: #081722;
+        }
+
+        svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            min-width: 650px;
+        }
+
+        .svg-title {
+            fill: #eff8fb;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .svg-label {
+            fill: #c8d8e2;
+            font-size: 13px;
+        }
+
+        .svg-small {
+            fill: #9fb4c2;
+            font-size: 11px;
+        }
+
+        .svg-box {
+            fill: #102a3b;
+            stroke: #3c6178;
+            stroke-width: 1.5;
+        }
+
+        .svg-object {
+            fill: #17394e;
+            stroke: #7dd3fc;
+            stroke-width: 2;
+        }
+
+        .svg-young {
+            fill: #113b35;
+            stroke: #5eead4;
+            stroke-width: 2;
+        }
+
+        .svg-dead {
+            fill: #3a1c29;
+            stroke: #fb7185;
+            stroke-width: 2;
+        }
+
+        .svg-paper {
+            fill: rgba(251, 191, 36, 0.13);
+            stroke: #fbbf24;
+            stroke-width: 1.5;
+        }
+
+        .svg-dotnet {
+            fill: rgba(96, 165, 250, 0.13);
+            stroke: #60a5fa;
+            stroke-width: 1.5;
+        }
+
+        .svg-reference {
+            fill: rgba(192, 132, 252, 0.13);
+            stroke: #c084fc;
+            stroke-width: 1.5;
+        }
+
+        .svg-arrow {
+            fill: none;
+            stroke: #7dd3fc;
+            stroke-width: 2;
+        }
+
+        .svg-arrow-muted {
+            fill: none;
+            stroke: #7894a5;
+            stroke-width: 1.7;
+        }
+
+        .svg-arrow-danger {
+            fill: none;
+            stroke: #fb7185;
+            stroke-width: 2;
+        }
+
+        .formula {
+            display: block;
+            margin: 0.8rem 0;
+            padding: 0.9rem 1rem;
+            overflow-x: auto;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: #07131d;
+            color: #ddf6ff;
+            font-family: "Cascadia Code", Consolas, monospace;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            margin: 1rem 0;
+            border-spacing: 0;
+            border-collapse: separate;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            font-size: 0.88rem;
+        }
+
+        th,
+        td {
+            padding: 0.7rem 0.75rem;
+            border-right: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th:last-child,
+        td:last-child {
+            border-right: 0;
+        }
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
+
+        th {
+            background: #132c3d;
+            color: #eef8fb;
+            font-size: 0.75rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        td {
+            color: #c5d4dd;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 0.2rem 0.45rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 800;
+        }
+
+        .status.done {
+            background: rgba(74, 222, 128, 0.14);
+            color: var(--good);
+        }
+
+        .status.partial {
+            background: rgba(96, 165, 250, 0.14);
+            color: var(--dotnet);
+        }
+
+        .status.future {
+            background: rgba(148, 163, 184, 0.14);
+            color: var(--planned);
+        }
+
+        .step-list {
+            margin: 0;
+            padding: 0;
+            counter-reset: step;
+            list-style: none;
+        }
+
+        .step-list li {
+            position: relative;
+            min-height: 3.4rem;
+            padding: 0 0 1.1rem 3.5rem;
+            counter-increment: step;
+        }
+
+        .step-list li::before {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: grid;
+            width: 2.35rem;
+            height: 2.35rem;
+            border: 1px solid var(--accent);
+            border-radius: 50%;
+            background: rgba(94, 234, 212, 0.08);
+            color: var(--accent);
+            content: counter(step);
+            font-weight: 900;
+            place-items: center;
+        }
+
+        .step-list li::after {
+            position: absolute;
+            top: 2.45rem;
+            bottom: 0;
+            left: 1.15rem;
+            width: 1px;
+            background: var(--line);
+            content: "";
+        }
+
+        .step-list li:last-child::after {
+            display: none;
+        }
+
+        .step-list strong {
+            display: block;
+            color: #fff;
+        }
+
+        details {
+            margin: 0.8rem 0;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: rgba(6, 20, 30, 0.6);
+        }
+
+        summary {
+            padding: 0.8rem 1rem;
+            color: #e7f4f8;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        details > div {
+            padding: 0 1rem 1rem;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+
+        .metric {
+            padding: 0.85rem;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: rgba(8, 24, 35, 0.7);
+        }
+
+        .metric strong {
+            display: block;
+            color: #fff;
+            font-size: 1.25rem;
+        }
+
+        .metric span {
+            color: var(--muted);
+            font-size: 0.76rem;
+        }
+
+        .citation {
+            color: #9cc5da;
+            font-size: 0.8rem;
+        }
+
+        .reference-list {
+            padding-left: 1.2rem;
+        }
+
+        .reference-list li {
+            margin-bottom: 0.7rem;
+        }
+
+        .footer-note {
+            max-width: var(--content);
+            margin: 0 auto;
+            padding: 0 1.25rem 3rem;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 1050px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: relative;
+                top: 0;
+                max-height: none;
+            }
+
+            .toc {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 760px) {
+            .hero {
+                padding-top: 3.5rem;
+            }
+
+            .hero-grid,
+            .grid-2,
+            .grid-3,
+            .metric-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .toc {
+                grid-template-columns: 1fr;
+            }
+
+            section {
+                padding: 1.1rem;
+            }
+
+            th,
+            td {
+                padding: 0.55rem;
+            }
+        }
+
+        @media print {
+            :root {
+                color-scheme: light;
+            }
+
+            body {
+                background: #fff;
+                color: #111;
+            }
+
+            .sidebar,
+            .filter-box,
+            .utility-button {
+                display: none;
+            }
+
+            .layout {
+                display: block;
+                max-width: none;
+            }
+
+            section,
+            .card,
+            .diagram,
+            details {
+                break-inside: avoid;
+                border-color: #bbb;
+                background: #fff;
+                box-shadow: none;
+            }
+
+            p,
+            li,
+            td,
+            .section-intro,
+            .lede {
+                color: #222;
+            }
+
+            h1,
+            h2,
+            h3,
+            h4,
+            th,
+            strong,
+            summary {
+                color: #000;
+            }
+
+            svg {
+                min-width: 0;
+            }
+        }
+    </style>
+</head>
+<body data-filter="all">
+    <a class="skip-link" href="#content">Skip to content</a>
+
+    <header class="hero">
+        <div class="hero-inner">
+            <p class="eyebrow">LXR garbage collection · an implementation-aware guide</p>
+            <h1>From “what is a reference count?” to <span>how LXR actually works</span></h1>
+            <p class="lede">
+                A progressive explanation of reference counting, deferral and coalescing, SATB,
+                Immix, young copying, mature evacuation, the PLDI/extended paper, the two MMTk
+                oracle revisions, and the current CoreCLR port through P2.3.
+            </p>
+            <div class="hero-grid" aria-label="Scope summary">
+                <div class="hero-stat">
+                    <strong>Paper</strong>
+                    <span>arXiv:2210.17175, extended version, 1 Nov 2022</span>
+                </div>
+                <div class="hero-stat">
+                    <strong>Reference code</strong>
+                    <span>PLDI core df8d30a3 and HEAD core 304ce69d</span>
+                </div>
+                <div class="hero-stat">
+                    <strong>.NET port</strong>
+                    <span>Generic substrate through side metadata, Immix state, and sticky RC</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar" aria-label="Page navigation">
+            <p class="sidebar-title">Concept path</p>
+            <nav>
+                <ol class="toc">
+                    <li><a href="#reading">How to read this</a></li>
+                    <li><a href="#map">LXR in one picture</a></li>
+                    <li><a href="#gc-basics">GC basics</a></li>
+                    <li><a href="#rc">Reference counting</a></li>
+                    <li><a href="#deferred">Deferred &amp; coalescing RC</a></li>
+                    <li><a href="#sticky">Sticky counts</a></li>
+                    <li><a href="#young">Young objects</a></li>
+                    <li><a href="#satb">SATB &amp; cycles</a></li>
+                    <li><a href="#immix">Immix</a></li>
+                    <li><a href="#straddles">Straddle lines</a></li>
+                    <li><a href="#epoch">One LXR epoch</a></li>
+                    <li><a href="#evacuation">Copying &amp; evacuation</a></li>
+                    <li><a href="#requirements">What a port needs</a></li>
+                    <li><a href="#code">What the code does</a></li>
+                    <li><a href="#dotnet-port">Current .NET status</a></li>
+                    <li><a href="#results">What the paper measured</a></li>
+                    <li><a href="#misconceptions">Misconceptions</a></li>
+                    <li><a href="#glossary">Glossary</a></li>
+                    <li><a href="#references">References</a></li>
+                </ol>
+            </nav>
+            <div class="filter-box">
+                <p class="sidebar-title">Emphasize source</p>
+                <div class="filter-buttons" aria-label="Source emphasis">
+                    <button class="filter-button" type="button" data-filter="all" aria-pressed="true">All</button>
+                    <button class="filter-button" type="button" data-filter="paper" aria-pressed="false">Paper</button>
+                    <button class="filter-button" type="button" data-filter="reference" aria-pressed="false">Reference</button>
+                    <button class="filter-button" type="button" data-filter="dotnet" aria-pressed="false">.NET</button>
+                    <button class="filter-button" type="button" data-filter="background" aria-pressed="false">Background</button>
+                </div>
+                <button class="utility-button" type="button" id="toggle-details">Expand deep dives</button>
+            </div>
+        </aside>
+
+        <main id="content">
+            <section id="reading">
+                <h2>How to read this document</h2>
+                <p class="section-intro">
+                    “LXR” can mean a paper design, a particular MMTk implementation revision, or
+                    the in-progress CoreCLR port. They overlap, but they are not identical.
+                </p>
+                <div class="source-legend" aria-label="Source legend">
+                    <span class="source-tag paper">Paper</span>
+                    <span class="source-tag reference">Reference code</span>
+                    <span class="source-tag dotnet">.NET implemented</span>
+                    <span class="source-tag planned">.NET planned</span>
+                    <span class="source-tag background">Background / derived</span>
+                </div>
+                <div class="callout">
+                    <strong>Offline-ready:</strong> all layout, JavaScript, and 16 SVG diagrams are
+                    embedded in this one HTML file. The external paper/DOI links in the references
+                    are optional reading; no network request is required to render or navigate this
+                    document.
+                </div>
+                <div class="grid-2">
+                    <div class="card" data-source="paper">
+                        <h3>Paper means measured design</h3>
+                        <p>
+                            The primary paper source is Zhao, Blackburn, and McKinley,
+                            <em>Low-Latency, High-Throughput Garbage Collection (Extended Version)</em>,
+                            arXiv:2210.17175v1. Page numbers here are PDF pages, not proceedings pages.
+                        </p>
+                    </div>
+                    <div class="card" data-source="reference">
+                        <h3>Reference means an exact build pair</h3>
+                        <p>
+                            The paper-era oracle is MMTk core <code>df8d30a3</code>, pinned by binding
+                            <code>abbdd1d</code>. The newer validation oracle is core
+                            <code>304ce69d</code>, pinned by binding <code>0682434</code>. Citations use
+                            <code>git show revision:path</code>, never the checked-out tree.
+                        </p>
+                    </div>
+                    <div class="card" data-source="dotnet">
+                        <h3>.NET implemented means code that exists</h3>
+                        <p>
+                            The port has generic runtime substrate (P1.1–P1.6), fixed-address side
+                            metadata (P2.1), Immix block/line state (P2.2), and a default-off sticky
+                            RC/straddle substrate (P2.3).
+                        </p>
+                    </div>
+                    <div class="card" data-source="planned">
+                        <h3>.NET planned means not present yet</h3>
+                        <p>
+                            There is no selectable LXR collector yet. Allocation, hole finding,
+                            barrier packet processing, lazy decrement cascades, sweeping, SATB,
+                            young copying, mature evacuation, and end-to-end policy remain future work.
+                        </p>
+                    </div>
+                </div>
+                <div class="callout warning">
+                    <strong>Most important status boundary:</strong> P2.3 proves substrate semantics.
+                    Its benchmark is synthetic. It is not a benchmark of a functioning LXR collector,
+                    and it is not a Workstation/Server GC comparison.
+                </div>
+            </section>
+
+            <section id="map">
+                <h2>LXR in one picture</h2>
+                <p class="section-intro">
+                    LXR uses fast reference-count epochs for most garbage, a concurrent SATB trace
+                    for cycles and saturated counts, and an Immix heap for bump allocation, hole
+                    reuse, and occasional stop-the-world copying.
+                </p>
+                <div class="diagram">
+                    <svg viewBox="0 0 1100 460" role="img" aria-labelledby="map-title map-desc">
+                        <title id="map-title">LXR mechanism map</title>
+                        <desc id="map-desc">Mutators allocate into an Immix heap and use a field logging barrier. Short RC pauses apply increments before decrements. Lazy decrements and sweeping run concurrently. Occasional SATB traces recover cycles and sticky counts. Copying is stop the world.</desc>
+                        <defs>
+                            <marker id="arrow-map" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#7dd3fc"></path>
+                            </marker>
+                            <marker id="arrow-map-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#7894a5"></path>
+                            </marker>
+                        </defs>
+                        <text x="40" y="38" class="svg-title">Application + collector timeline</text>
+
+                        <rect x="40" y="75" width="230" height="92" rx="14" class="svg-young"></rect>
+                        <text x="155" y="108" text-anchor="middle" class="svg-title">Mutators run</text>
+                        <text x="155" y="132" text-anchor="middle" class="svg-label">allocate + update fields</text>
+                        <text x="155" y="151" text-anchor="middle" class="svg-small">first-write barrier logs old + slot</text>
+
+                        <rect x="340" y="75" width="250" height="92" rx="14" class="svg-paper"></rect>
+                        <text x="465" y="108" text-anchor="middle" class="svg-title">Short parallel RC pause</text>
+                        <text x="465" y="132" text-anchor="middle" class="svg-label">roots + final slot values</text>
+                        <text x="465" y="151" text-anchor="middle" class="svg-small">increments before decrements</text>
+
+                        <rect x="660" y="75" width="240" height="92" rx="14" class="svg-reference"></rect>
+                        <text x="780" y="108" text-anchor="middle" class="svg-title">Concurrent work</text>
+                        <text x="780" y="132" text-anchor="middle" class="svg-label">lazy decrement cascades</text>
+                        <text x="780" y="151" text-anchor="middle" class="svg-small">mature sweeping + optional SATB</text>
+
+                        <path d="M270 121 H340" class="svg-arrow" marker-end="url(#arrow-map)"></path>
+                        <path d="M590 121 H660" class="svg-arrow" marker-end="url(#arrow-map)"></path>
+                        <path d="M900 121 C1010 121 1010 211 920 211 H155 C70 211 65 178 105 167" class="svg-arrow-muted" marker-end="url(#arrow-map-muted)"></path>
+
+                        <rect x="80" y="270" width="430" height="135" rx="16" class="svg-box"></rect>
+                        <text x="295" y="302" text-anchor="middle" class="svg-title">Immix heap</text>
+                        <text x="295" y="327" text-anchor="middle" class="svg-label">32 KiB blocks · 256 B lines</text>
+                        <text x="295" y="350" text-anchor="middle" class="svg-label">bump allocation + free-line runs</text>
+                        <text x="295" y="374" text-anchor="middle" class="svg-small">most dead memory reclaimed without movement</text>
+
+                        <rect x="590" y="270" width="430" height="135" rx="16" class="svg-box"></rect>
+                        <text x="805" y="302" text-anchor="middle" class="svg-title">Occasional stop-the-world copying</text>
+                        <text x="805" y="327" text-anchor="middle" class="svg-label">young survivors + selected fragmented blocks</text>
+                        <text x="805" y="350" text-anchor="middle" class="svg-label">incoming slots are known and rewritten</text>
+                        <text x="805" y="374" text-anchor="middle" class="svg-small">LXR never copies concurrently</text>
+
+                        <path d="M465 167 C465 220 380 230 330 270" class="svg-arrow-muted" marker-end="url(#arrow-map-muted)"></path>
+                        <path d="M780 167 C780 225 805 235 805 270" class="svg-arrow-muted" marker-end="url(#arrow-map-muted)"></path>
+                        <path d="M510 337 H590" class="svg-arrow" marker-end="url(#arrow-map)"></path>
+                    </svg>
+                </div>
+                <p data-source="paper">
+                    <span class="source-tag paper">Paper</span>
+                    The design is not “pause-free.” It deliberately uses regular parallel
+                    stop-the-world RC epochs, runs most decrements and SATB work concurrently, and
+                    performs all copying during pauses. <span class="citation">[P §§1, 3; PDF pp.2, 5–9]</span>
+                </p>
+            </section>
+
+            <section id="gc-basics">
+                <h2>1. GC basics: the graph, the roots, and the mutator</h2>
+                <p class="section-intro">
+                    Start with a directed graph. Objects are nodes; object fields are edges; stacks,
+                    registers, statics, and VM-owned handles are roots. The application threads are
+                    “mutators” because they continuously mutate this graph.
+                </p>
+                <div class="grid-3">
+                    <div class="card" data-source="background">
+                        <span class="source-tag background">Background</span>
+                        <h3>Reachable</h3>
+                        <p>An object is live if at least one path from a root reaches it.</p>
+                    </div>
+                    <div class="card" data-source="background">
+                        <span class="source-tag background">Background</span>
+                        <h3>Unreachable</h3>
+                        <p>No root path reaches it. Its memory may be reclaimed safely.</p>
+                    </div>
+                    <div class="card" data-source="background">
+                        <span class="source-tag background">Background</span>
+                        <h3>Collector invariant</h3>
+                        <p>Never reclaim something a correct mutator can still reach.</p>
+                    </div>
+                </div>
+                <div class="diagram">
+                    <svg viewBox="0 0 1050 390" role="img" aria-labelledby="graph-title graph-desc">
+                        <title id="graph-title">Reachable and unreachable object graphs</title>
+                        <desc id="graph-desc">A root reaches objects A, B, and C. A disconnected D and E cycle is unreachable despite internal edges.</desc>
+                        <defs>
+                            <marker id="arrow-graph" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#7dd3fc"></path>
+                            </marker>
+                            <marker id="arrow-graph-dead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#fb7185"></path>
+                            </marker>
+                        </defs>
+                        <text x="45" y="35" class="svg-title">Reachability answers “can a root get here?”</text>
+                        <rect x="45" y="125" width="125" height="65" rx="12" class="svg-paper"></rect>
+                        <text x="107" y="164" text-anchor="middle" class="svg-title">ROOT</text>
+
+                        <circle cx="300" cy="158" r="48" class="svg-object"></circle>
+                        <text x="300" y="154" text-anchor="middle" class="svg-title">A</text>
+                        <text x="300" y="174" text-anchor="middle" class="svg-small">reachable</text>
+
+                        <circle cx="500" cy="100" r="48" class="svg-object"></circle>
+                        <text x="500" y="96" text-anchor="middle" class="svg-title">B</text>
+                        <text x="500" y="116" text-anchor="middle" class="svg-small">reachable</text>
+
+                        <circle cx="500" cy="250" r="48" class="svg-object"></circle>
+                        <text x="500" y="246" text-anchor="middle" class="svg-title">C</text>
+                        <text x="500" y="266" text-anchor="middle" class="svg-small">reachable</text>
+
+                        <path d="M170 157 H250" class="svg-arrow" marker-end="url(#arrow-graph)"></path>
+                        <path d="M343 137 C390 115 418 105 450 103" class="svg-arrow" marker-end="url(#arrow-graph)"></path>
+                        <path d="M343 180 C393 206 418 231 452 242" class="svg-arrow" marker-end="url(#arrow-graph)"></path>
+
+                        <circle cx="760" cy="120" r="48" class="svg-dead"></circle>
+                        <text x="760" y="116" text-anchor="middle" class="svg-title">D</text>
+                        <text x="760" y="136" text-anchor="middle" class="svg-small">unreachable</text>
+
+                        <circle cx="900" cy="250" r="48" class="svg-dead"></circle>
+                        <text x="900" y="246" text-anchor="middle" class="svg-title">E</text>
+                        <text x="900" y="266" text-anchor="middle" class="svg-small">unreachable</text>
+
+                        <path d="M798 151 C840 180 868 202 880 213" class="svg-arrow-danger" marker-end="url(#arrow-graph-dead)"></path>
+                        <path d="M864 218 C825 188 786 164 778 162" class="svg-arrow-danger" marker-end="url(#arrow-graph-dead)"></path>
+                        <text x="820" y="338" text-anchor="middle" class="svg-label">Internal edges do not make a root path.</text>
+                    </svg>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Tracing</h3>
+                        <p>
+                            Start at roots and walk outward. Anything visited is live; everything
+                            else is dead. Tracing naturally finds disconnected cycles, but a whole
+                            graph traversal can be expensive.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h3>Reference counting</h3>
+                        <p>
+                            Maintain incoming-edge counts incrementally. A count that becomes zero
+                            proves death immediately, but positive count does not prove reachability.
+                            Cycles are the counterexample.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="rc">
+                <h2>2. Reference counting: cheap proof of death, expensive updates</h2>
+                <p class="section-intro">
+                    Conceptually, every object stores the number of references pointing to it.
+                    Creating an edge increments the target; deleting an edge decrements the old target.
+                </p>
+                <span class="formula">RC(object) = number of incoming references currently represented by the counting scheme</span>
+                <ol class="step-list">
+                    <li>
+                        <strong>Store a new reference.</strong>
+                        Increment the new target.
+                    </li>
+                    <li>
+                        <strong>Overwrite the old reference.</strong>
+                        Decrement the old target.
+                    </li>
+                    <li>
+                        <strong>Observe 1 → 0.</strong>
+                        The target is dead. Scan its outgoing fields and recursively decrement their targets.
+                    </li>
+                </ol>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>What RC is good at</h3>
+                        <ul>
+                            <li>Death can be identified without scanning the whole heap.</li>
+                            <li>Most garbage can be reclaimed close to when it becomes unreachable.</li>
+                            <li>Work is naturally incremental and can target changed objects.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>What naïve RC gets wrong</h3>
+                        <ul>
+                            <li>Every pointer store can require atomic metadata work.</li>
+                            <li>Recursive decrement chains can be arbitrarily long.</li>
+                            <li>Disconnected cycles retain positive internal counts forever.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="callout danger">
+                    <strong>Key logic:</strong> <code>RC == 0</code> is sufficient evidence of death.
+                    <code>RC &gt; 0</code> is not sufficient evidence of life. LXR is built around this
+                    asymmetry.
+                </div>
+            </section>
+
+            <section id="deferred">
+                <h2>3. Deferred and coalescing RC: pay for the boundary, not every mutation</h2>
+                <p class="section-intro">
+                    LXR does not update counts synchronously after every assignment. It divides time
+                    into mutator epochs separated by short RC pauses and retains just enough
+                    information to compute each field’s net change.
+                </p>
+                <h3>Root deferral</h3>
+                <p data-source="paper background">
+                    Roots change too frequently to barrier every register and stack slot. At an RC
+                    pause, LXR scans roots, increments their targets, and remembers those targets so
+                    matching decrements can be applied at the next epoch.
+                    <span class="citation">[P §2.1, PDF p.3; Deutsch–Bobrow 1976]</span>
+                </p>
+
+                <h3>Heap-field coalescing</h3>
+                <div class="diagram">
+                    <svg viewBox="0 0 1100 430" role="img" aria-labelledby="coal-title coal-desc">
+                        <title id="coal-title">Coalescing repeated field writes</title>
+                        <desc id="coal-desc">A field changes from A to B to C to D. Naive reference counting performs six metadata updates. Coalescing logs A and the slot once, then reads D at the pause and performs one increment and one decrement.</desc>
+                        <defs>
+                            <marker id="arrow-coal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#7dd3fc"></path>
+                            </marker>
+                        </defs>
+                        <text x="45" y="38" class="svg-title">One field during one epoch</text>
+                        <text x="45" y="80" class="svg-label">field value</text>
+
+                        <circle cx="160" cy="130" r="38" class="svg-object"></circle>
+                        <text x="160" y="136" text-anchor="middle" class="svg-title">A</text>
+                        <circle cx="380" cy="130" r="38" class="svg-object"></circle>
+                        <text x="380" y="136" text-anchor="middle" class="svg-title">B</text>
+                        <circle cx="600" cy="130" r="38" class="svg-object"></circle>
+                        <text x="600" y="136" text-anchor="middle" class="svg-title">C</text>
+                        <circle cx="820" cy="130" r="38" class="svg-young"></circle>
+                        <text x="820" y="136" text-anchor="middle" class="svg-title">D</text>
+
+                        <path d="M198 130 H342" class="svg-arrow" marker-end="url(#arrow-coal)"></path>
+                        <path d="M418 130 H562" class="svg-arrow" marker-end="url(#arrow-coal)"></path>
+                        <path d="M638 130 H782" class="svg-arrow" marker-end="url(#arrow-coal)"></path>
+                        <text x="270" y="112" text-anchor="middle" class="svg-small">write 1</text>
+                        <text x="490" y="112" text-anchor="middle" class="svg-small">write 2</text>
+                        <text x="710" y="112" text-anchor="middle" class="svg-small">write 3</text>
+
+                        <rect x="55" y="220" width="445" height="155" rx="14" class="svg-box"></rect>
+                        <text x="277" y="250" text-anchor="middle" class="svg-title">Naïve RC</text>
+                        <text x="90" y="282" class="svg-label">dec(A), inc(B)</text>
+                        <text x="90" y="310" class="svg-label">dec(B), inc(C)</text>
+                        <text x="90" y="338" class="svg-label">dec(C), inc(D)</text>
+                        <text x="90" y="362" class="svg-small">6 count operations; B and C cancel eventually</text>
+
+                        <rect x="600" y="220" width="445" height="155" rx="14" class="svg-paper"></rect>
+                        <text x="822" y="250" text-anchor="middle" class="svg-title">LXR coalescing</text>
+                        <text x="635" y="282" class="svg-label">first write: log old A + field address</text>
+                        <text x="635" y="310" class="svg-label">pause: read final D from the field address</text>
+                        <text x="635" y="338" class="svg-label">inc(D), then later dec(A)</text>
+                        <text x="635" y="362" class="svg-small">2 count operations; B and C disappear from RC work</text>
+                    </svg>
+                </div>
+                <p data-source="paper">
+                    <span class="source-tag paper">Paper</span>
+                    On the first write to a field in an epoch, LXR logs the old referent and the
+                    field address. At the next RC pause it reads the final referent from that address.
+                    Intermediate values cancel. <span class="citation">[P §2.1; §3.4, Fig.3; PDF pp.3, 8–9]</span>
+                </p>
+
+                <h3>What coalescing requires</h3>
+                <div class="grid-2">
+                    <div class="card">
+                        <h4>At every reference-store path</h4>
+                        <ul>
+                            <li>A per-field “unlogged this epoch” state.</li>
+                            <li>A cheap fast-path test.</li>
+                            <li>Atomic first-writer arbitration.</li>
+                            <li>The old referent and the exact field address.</li>
+                            <li>Thread-local buffers with flush/teardown rules.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h4>At each RC pause</h4>
+                        <ul>
+                            <li>Stop mutators long enough to get a stable boundary.</li>
+                            <li>Scan roots and modified slot addresses.</li>
+                            <li>Apply all increments before decrements.</li>
+                            <li>Reset logging state for the next epoch.</li>
+                            <li>Hand old referents to lazy decrement/SATB work.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="callout">
+                    <strong>Why increments first?</strong> Suppose a reference moved from one slot to
+                    another. Decrementing the old slot first could transiently drive the object to zero
+                    and reclaim it before the new slot’s increment arrives. Increment-first ordering
+                    turns a move into a temporary over-count, which is safe.
+                </div>
+            </section>
+
+            <section id="sticky">
+                <h2>4. Sticky counts: make tiny counters safe</h2>
+                <p class="section-intro">
+                    The evaluated paper design uses two bits per allocation quantum. The value 3 means
+                    “three or more,” not exactly three. Once reached, it never moves again.
+                </p>
+                <div class="diagram">
+                    <svg viewBox="0 0 1050 330" role="img" aria-labelledby="sticky-title sticky-desc">
+                        <title id="sticky-title">Sticky two-bit reference count state machine</title>
+                        <desc id="sticky-desc">Counts move between zero, one, and two. Incrementing two produces sticky three. Sticky three refuses both increments and decrements. Zero refuses decrement.</desc>
+                        <defs>
+                            <marker id="arrow-sticky" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#7dd3fc"></path>
+                            </marker>
+                            <marker id="arrow-sticky-danger" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#fb7185"></path>
+                            </marker>
+                        </defs>
+                        <text x="40" y="35" class="svg-title">2-bit counter states</text>
+                        <circle cx="150" cy="155" r="62" class="svg-dead"></circle>
+                        <text x="150" y="150" text-anchor="middle" class="svg-title">0</text>
+                        <text x="150" y="174" text-anchor="middle" class="svg-small">dead candidate</text>
+
+                        <circle cx="400" cy="155" r="62" class="svg-object"></circle>
+                        <text x="400" y="150" text-anchor="middle" class="svg-title">1</text>
+                        <text x="400" y="174" text-anchor="middle" class="svg-small">exact</text>
+
+                        <circle cx="650" cy="155" r="62" class="svg-object"></circle>
+                        <text x="650" y="150" text-anchor="middle" class="svg-title">2</text>
+                        <text x="650" y="174" text-anchor="middle" class="svg-small">exact</text>
+
+                        <circle cx="900" cy="155" r="67" class="svg-paper"></circle>
+                        <text x="900" y="146" text-anchor="middle" class="svg-title">3+</text>
+                        <text x="900" y="170" text-anchor="middle" class="svg-small">sticky / saturated</text>
+                        <text x="900" y="188" text-anchor="middle" class="svg-small">trace decides later</text>
+
+                        <path d="M212 130 H338" class="svg-arrow" marker-end="url(#arrow-sticky)"></path>
+                        <path d="M462 130 H588" class="svg-arrow" marker-end="url(#arrow-sticky)"></path>
+                        <path d="M712 130 H833" class="svg-arrow" marker-end="url(#arrow-sticky)"></path>
+                        <text x="275" y="112" text-anchor="middle" class="svg-small">inc</text>
+                        <text x="525" y="112" text-anchor="middle" class="svg-small">inc</text>
+                        <text x="775" y="112" text-anchor="middle" class="svg-small">inc → stick</text>
+
+                        <path d="M338 185 H212" class="svg-arrow" marker-end="url(#arrow-sticky)"></path>
+                        <path d="M588 185 H462" class="svg-arrow" marker-end="url(#arrow-sticky)"></path>
+                        <text x="275" y="212" text-anchor="middle" class="svg-small">dec</text>
+                        <text x="525" y="212" text-anchor="middle" class="svg-small">dec</text>
+
+                        <path d="M850 235 C880 280 935 280 960 235" class="svg-arrow-danger" marker-end="url(#arrow-sticky-danger)"></path>
+                        <text x="905" y="300" text-anchor="middle" class="svg-label">inc/dec/CAS demotion refused</text>
+                    </svg>
+                </div>
+                <div class="grid-2">
+                    <div class="card" data-source="paper">
+                        <span class="source-tag paper">Paper design</span>
+                        <ul>
+                            <li>Two bits per 16-byte minimum object quantum.</li>
+                            <li>Values 0, 1, 2, and sticky 3+.</li>
+                            <li>Sticky counts are recovered only by backup tracing.</li>
+                            <li>0–1% stuck objects in 16/17 benchmarks; Batik 6.6%.</li>
+                        </ul>
+                        <p class="citation">[P §3.2.1, Table 7; PDF pp.6, 13]</p>
+                    </div>
+                    <div class="card" data-source="reference dotnet">
+                        <span class="source-tag reference">Reference + .NET</span>
+                        <ul>
+                            <li>Reference code parameterizes 2/4/8 active bits.</li>
+                            <li>.NET implements all three widths; default remains 2 bits.</li>
+                            <li>.NET granularity is 8 bytes; minimum object is 24 bytes.</li>
+                            <li>Masked native-word CAS preserves neighboring packed counters.</li>
+                        </ul>
+                        <p class="citation">
+                            [<code>df8d30a3:src/util/rc.rs:30–43,72–100</code>;
+                            <code>304ce69d:src/util/rc.rs:13–26,90–123</code>;
+                            <code>a9817282:reference_count.cpp:243–323</code>]
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Why saturation is safer than wraparound</h3>
+                <p>
+                    Two bits cannot represent an arbitrary number of incoming references. A normal
+                    modulo counter would be catastrophically unsafe: the fourth increment could wrap
+                    <code>3 → 0</code>, making a heavily referenced live object look dead. Saturation
+                    deliberately loses precision in the safe direction. The collector remembers
+                    “at least three” forever and asks tracing—not arithmetic—to decide whether the
+                    object later dies.
+                </p>
+                <div class="grid-3">
+                    <div class="card">
+                        <h4>Exact region: 0, 1, 2</h4>
+                        <p>
+                            Increment and decrement preserve exact incoming-edge information. A
+                            <code>1 → 0</code> transition may start a recursive death cascade.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h4>Conservative region: maximum</h4>
+                        <p>
+                            The maximum value means “this object had at least this many references.”
+                            Refusing decrements may retain garbage, but cannot reclaim live data.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h4>Precision recovery: SATB</h4>
+                        <p>
+                            A later root-based trace ignores the imprecise arithmetic: marked means
+                            reachable; unmarked means dead even if the stored count is sticky.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Packed counters and the neighboring-count problem</h3>
+                <p data-source="reference dotnet">
+                    Side metadata packs several small counters into one native word. Updating one
+                    object therefore performs a masked compare-and-swap over a word that also contains
+                    other objects’ counters. A correct retry loop must re-read the whole word after a
+                    failed CAS, replace only its own bit field, and preserve every neighbor exactly.
+                </p>
+                <div class="diagram">
+                    <svg viewBox="0 0 1100 470" role="img" aria-labelledby="packed-title packed-desc">
+                        <title id="packed-title">Masked CAS preserves neighboring packed reference counts</title>
+                        <desc id="packed-desc">Four two-bit counters share one example byte. Thread A increments slot one while thread B increments slot three. Each computes a masked replacement, one CAS loses, and the loser retries from the winner's word so both updates survive.</desc>
+                        <text x="40" y="35" class="svg-title">Illustrative byte: four independent 2-bit counters</text>
+
+                        <text x="48" y="82" class="svg-label">initial word</text>
+                        <rect x="190" y="55" width="180" height="62" rx="10" class="svg-box"></rect>
+                        <rect x="190" y="55" width="45" height="62" rx="8" fill="#17394e" stroke="#7dd3fc"></rect>
+                        <rect x="235" y="55" width="45" height="62" fill="#113b35" stroke="#5eead4"></rect>
+                        <rect x="280" y="55" width="45" height="62" fill="#17394e" stroke="#7dd3fc"></rect>
+                        <rect x="325" y="55" width="45" height="62" rx="8" fill="#3a1c29" stroke="#fb7185"></rect>
+                        <text x="212" y="91" text-anchor="middle" class="svg-title">1</text>
+                        <text x="257" y="91" text-anchor="middle" class="svg-title">1</text>
+                        <text x="302" y="91" text-anchor="middle" class="svg-title">2</text>
+                        <text x="347" y="91" text-anchor="middle" class="svg-title">0</text>
+                        <text x="212" y="137" text-anchor="middle" class="svg-small">slot 0</text>
+                        <text x="257" y="137" text-anchor="middle" class="svg-small">slot 1</text>
+                        <text x="302" y="137" text-anchor="middle" class="svg-small">slot 2</text>
+                        <text x="347" y="137" text-anchor="middle" class="svg-small">slot 3</text>
+
+                        <rect x="50" y="190" width="440" height="200" rx="14" class="svg-dotnet"></rect>
+                        <text x="270" y="222" text-anchor="middle" class="svg-title">Thread A: increment slot 1</text>
+                        <text x="85" y="257" class="svg-label">read [1,1,2,0]</text>
+                        <text x="85" y="287" class="svg-label">candidate [1,2,2,0]</text>
+                        <text x="85" y="317" class="svg-label">CAS loses: Thread B changed the word</text>
+                        <text x="85" y="347" class="svg-label">re-read [1,1,2,1]</text>
+                        <text x="85" y="377" class="svg-label">retry [1,2,2,1] ✓</text>
+
+                        <rect x="610" y="190" width="440" height="200" rx="14" class="svg-reference"></rect>
+                        <text x="830" y="222" text-anchor="middle" class="svg-title">Thread B: increment slot 3</text>
+                        <text x="645" y="257" class="svg-label">read [1,1,2,0]</text>
+                        <text x="645" y="287" class="svg-label">candidate [1,1,2,1]</text>
+                        <text x="645" y="317" class="svg-label">CAS wins</text>
+                        <text x="645" y="347" class="svg-label">publishes only slot 3's field</text>
+                        <text x="645" y="377" class="svg-label">neighbors remain unchanged ✓</text>
+
+                        <text x="550" y="437" text-anchor="middle" class="svg-label">Final word [1,2,2,1]: neither racing update is lost.</text>
+                    </svg>
+                </div>
+
+                <h3>Operation contract in the current CoreCLR substrate</h3>
+                <table data-source="dotnet">
+                    <thead>
+                        <tr>
+                            <th>Operation</th>
+                            <th>Exact state</th>
+                            <th>Zero</th>
+                            <th>Sticky maximum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Increment</td>
+                            <td>Atomically add one; return previous value.</td>
+                            <td>0 → 1 is allowed.</td>
+                            <td>No mutation; report saturated.</td>
+                        </tr>
+                        <tr>
+                            <td>Decrement</td>
+                            <td>Atomically subtract one; 1 → 0 exposes death.</td>
+                            <td>Refused; underflow is never allowed.</td>
+                            <td>Refused; sticky never becomes precise again.</td>
+                        </tr>
+                        <tr>
+                            <td>Compare-exchange</td>
+                            <td>Masked replacement when the exact comparand matches.</td>
+                            <td>Allowed when explicitly requested by lifecycle code.</td>
+                            <td>Demotion is rejected even if the comparand matches.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="callout warning">
+                    <strong>Zero is phase-sensitive.</strong> A newly allocated object intentionally
+                    begins at zero while its allocating thread is still constructing it. “Zero means
+                    reclaim now” is valid only at the collector’s defined reclamation point, after
+                    allocation completion and boundary increments have been accounted for.
+                </div>
+                <details class="deep-dive" data-source="paper reference dotnet">
+                    <summary>Paper, reference, and CoreCLR granularity compared</summary>
+                    <div>
+                        <table>
+                            <thead>
+                                <tr><th>System</th><th>Counter lattice</th><th>Default width</th><th>Meaning of maximum</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Evaluated paper</td><td>One count per 16-byte allocation quantum</td><td>2 bits</td><td>3 or more, permanently sticky</td></tr>
+                                <tr><td>MMTk oracles</td><td>Parameter selected by <code>LOG_REF_COUNT_BITS</code></td><td>2 bits</td><td><code>MAX_REF_COUNT</code>, sticky</td></tr>
+                                <tr><td>CoreCLR P2.3</td><td>One count per 8-byte address granule; exact starts require 24-byte minimum objects</td><td>2 bits; 4/8 also operational</td><td>3/15/255 respectively, sticky</td></tr>
+                            </tbody>
+                        </table>
+                        <p>
+                            The 8-byte CoreCLR lattice is an addressability choice, not a claim that
+                            8-byte managed objects exist. CoreCLR’s enforced minimum remains 24 bytes.
+                        </p>
+                    </div>
+                </details>
+            </section>
+
+            <section id="young">
+                <h2>5. The implicit nursery: “young” means allocated since the last epoch</h2>
+                <p class="section-intro">
+                    LXR does not require a permanently reserved semispace nursery. Time defines the
+                    nursery: objects allocated since the previous RC epoch start with count zero.
+                </p>
+                <div class="diagram">
+                    <svg viewBox="0 0 1080 410" role="img" aria-labelledby="young-title young-desc">
+                        <title id="young-title">Implicit nursery and first promotion</title>
+                        <desc id="young-desc">A root or mature object seeds an increment into a new object. The collector recursively follows young outgoing edges and promotes that reachable subgraph. A disconnected young cycle receives no seed increment and remains zero-count garbage.</desc>
+                        <defs>
+                            <marker id="arrow-young" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#5eead4"></path>
+                            </marker>
+                            <marker id="arrow-young-dead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#fb7185"></path>
+                            </marker>
+                        </defs>
+                        <text x="40" y="35" class="svg-title">First RC epoch after allocation</text>
+                        <rect x="45" y="130" width="135" height="65" rx="12" class="svg-paper"></rect>
+                        <text x="112" y="169" text-anchor="middle" class="svg-title">ROOT</text>
+
+                        <circle cx="330" cy="162" r="55" class="svg-young"></circle>
+                        <text x="330" y="154" text-anchor="middle" class="svg-title">Y1</text>
+                        <text x="330" y="176" text-anchor="middle" class="svg-small">seed increment</text>
+
+                        <circle cx="540" cy="95" r="55" class="svg-young"></circle>
+                        <text x="540" y="87" text-anchor="middle" class="svg-title">Y2</text>
+                        <text x="540" y="109" text-anchor="middle" class="svg-small">followed</text>
+
+                        <circle cx="540" cy="250" r="55" class="svg-young"></circle>
+                        <text x="540" y="242" text-anchor="middle" class="svg-title">Y3</text>
+                        <text x="540" y="264" text-anchor="middle" class="svg-small">followed</text>
+
+                        <path d="M180 162 H275" fill="none" stroke="#5eead4" stroke-width="2" marker-end="url(#arrow-young)"></path>
+                        <path d="M378 135 C430 111 462 101 485 98" fill="none" stroke="#5eead4" stroke-width="2" marker-end="url(#arrow-young)"></path>
+                        <path d="M378 189 C430 215 458 235 486 244" fill="none" stroke="#5eead4" stroke-width="2" marker-end="url(#arrow-young)"></path>
+
+                        <circle cx="800" cy="100" r="50" class="svg-dead"></circle>
+                        <text x="800" y="95" text-anchor="middle" class="svg-title">Y4</text>
+                        <text x="800" y="116" text-anchor="middle" class="svg-small">RC 0</text>
+                        <circle cx="925" cy="245" r="50" class="svg-dead"></circle>
+                        <text x="925" y="240" text-anchor="middle" class="svg-title">Y5</text>
+                        <text x="925" y="261" text-anchor="middle" class="svg-small">RC 0</text>
+                        <path d="M838 132 C875 166 897 194 905 206" class="svg-arrow-danger" marker-end="url(#arrow-young-dead)"></path>
+                        <path d="M889 212 C855 175 826 151 820 149" class="svg-arrow-danger" marker-end="url(#arrow-young-dead)"></path>
+
+                        <text x="415" y="350" text-anchor="middle" class="svg-label">Reachable young subgraph: establish counts, optionally copy survivors.</text>
+                        <text x="860" y="350" text-anchor="middle" class="svg-label">Disconnected young cycle: no seed, remains zero, reclaimed.</text>
+                    </svg>
+                </div>
+                <p data-source="paper">
+                    <span class="source-tag paper">Paper</span>
+                    Mutations inside newly allocated zeroed objects need not be logged. At the next
+                    RC epoch, only young objects receiving an external increment seed survive; the
+                    collector follows their outgoing edges to establish counts. A disconnected young
+                    cycle receives no seed and dies without cycle tracing.
+                    <span class="citation">[P §2.1; PDF p.3]</span>
+                </p>
+                <div class="callout">
+                    <strong>“Promotion” here is temporal.</strong> It means a new object survived its
+                    first RC epoch and joined the mature counted graph. It need not cross a fixed
+                    address-space boundary, and copying may stop if reserve space runs out.
+                </div>
+
+                <h3>Why internal young-object writes need no old-image log</h3>
+                <p>
+                    A newly allocated object did not exist at the previous epoch boundary. Therefore
+                    no reference from its fields can belong to the old graph whose decrements must be
+                    preserved. While the object is being initialized, replacing <code>null</code> or
+                    another new value inside it does not remove an edge that was counted at the last
+                    boundary. Suppressing those logs is the <em>implicitly dead young-object</em>
+                    optimization.
+                </p>
+                <div class="grid-2">
+                    <div class="card">
+                        <h4>Old or root → young</h4>
+                        <p>
+                            This is a boundary edge. The final root/field scan contributes a seed
+                            increment. Without at least one such seed, the young subgraph remains dead.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h4>Young → young / mature</h4>
+                        <p>
+                            When the first seed reaches a young object, promotion scans its outgoing
+                            fields. Young targets join the promotion traversal; mature targets receive
+                            ordinary increments.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="diagram">
+                    <svg viewBox="0 0 1100 510" role="img" aria-labelledby="birth-title birth-desc">
+                        <title id="birth-title">Young-object lifecycle across one RC epoch</title>
+                        <desc id="birth-desc">A new object is allocated at count zero, initialized without old-image logging, and then classified at the next RC pause. A boundary seed promotes a reachable subgraph, while an unseeded object or cycle is reclaimed. Surviving objects may be copied or promoted in place.</desc>
+                        <defs>
+                            <marker id="arrow-birth" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#5eead4"></path>
+                            </marker>
+                            <marker id="arrow-birth-dead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#fb7185"></path>
+                            </marker>
+                        </defs>
+                        <text x="40" y="35" class="svg-title">Temporal nursery: birth → boundary → outcome</text>
+
+                        <rect x="45" y="80" width="210" height="100" rx="14" class="svg-young"></rect>
+                        <text x="150" y="112" text-anchor="middle" class="svg-title">1. Allocate</text>
+                        <text x="150" y="138" text-anchor="middle" class="svg-label">RC = 0</text>
+                        <text x="150" y="159" text-anchor="middle" class="svg-small">exact start becomes known</text>
+
+                        <rect x="325" y="80" width="210" height="100" rx="14" class="svg-young"></rect>
+                        <text x="430" y="112" text-anchor="middle" class="svg-title">2. Initialize</text>
+                        <text x="430" y="138" text-anchor="middle" class="svg-label">write internal fields</text>
+                        <text x="430" y="159" text-anchor="middle" class="svg-small">no previous-epoch old image</text>
+
+                        <rect x="605" y="80" width="210" height="100" rx="14" class="svg-paper"></rect>
+                        <text x="710" y="112" text-anchor="middle" class="svg-title">3. RC pause</text>
+                        <text x="710" y="138" text-anchor="middle" class="svg-label">roots + final old slots</text>
+                        <text x="710" y="159" text-anchor="middle" class="svg-small">does a seed increment arrive?</text>
+
+                        <path d="M255 130 H325" fill="none" stroke="#5eead4" stroke-width="2" marker-end="url(#arrow-birth)"></path>
+                        <path d="M535 130 H605" fill="none" stroke="#5eead4" stroke-width="2" marker-end="url(#arrow-birth)"></path>
+
+                        <path d="M680 180 C610 235 465 245 365 275" fill="none" stroke="#5eead4" stroke-width="2" marker-end="url(#arrow-birth)"></path>
+                        <path d="M740 180 C815 235 900 250 930 280" fill="none" stroke="#fb7185" stroke-width="2" marker-end="url(#arrow-birth-dead)"></path>
+                        <text x="548" y="226" text-anchor="middle" class="svg-small">yes: external seed</text>
+                        <text x="845" y="226" text-anchor="middle" class="svg-small">no seed</text>
+
+                        <rect x="75" y="285" width="540" height="160" rx="14" class="svg-dotnet"></rect>
+                        <text x="345" y="318" text-anchor="middle" class="svg-title">Reachable young subgraph</text>
+                        <text x="110" y="352" class="svg-label">a. Increment seed target</text>
+                        <text x="110" y="379" class="svg-label">b. On first young promotion, scan outgoing fields</text>
+                        <text x="110" y="406" class="svg-label">c. Establish all young/mature outgoing counts</text>
+                        <text x="110" y="430" class="svg-small">then copy to packed space or promote in place</text>
+
+                        <rect x="705" y="285" width="340" height="160" rx="14" class="svg-dead"></rect>
+                        <text x="875" y="318" text-anchor="middle" class="svg-title">Implicitly dead</text>
+                        <text x="740" y="354" class="svg-label">RC stays zero</text>
+                        <text x="740" y="381" class="svg-label">includes disconnected young cycles</text>
+                        <text x="740" y="408" class="svg-label">reclaim lines / all-young block</text>
+                    </svg>
+                </div>
+
+                <h3>Young copying is an optimization, not the liveness rule</h3>
+                <p data-source="paper">
+                    Liveness is established by the seed-and-promotion traversal. Copying is possible
+                    because that traversal already enumerates incoming references to first-surviving
+                    young objects. LXR normally targets blocks containing only current-epoch
+                    allocations, packs the few survivors into partially free blocks, and releases the
+                    source block wholesale. If copy reserve is exhausted, it stops moving and
+                    establishes counts in place; correctness does not depend on successful copying.
+                    <span class="citation">[P §§2.1, 3.3.2; PDF pp.3, 7–8]</span>
+                </p>
+                <h3>Boundary cases to keep straight</h3>
+                <table>
+                    <thead>
+                        <tr><th>Graph shape at the pause</th><th>Seed?</th><th>Result</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Root → Y</td><td>Root scan increments Y</td><td>Y survives; scan its young outgoing graph.</td></tr>
+                        <tr><td>Mature M.finalField → Y</td><td>Modified-slot scan increments Y</td><td>Y survives even if intermediate stores pointed elsewhere.</td></tr>
+                        <tr><td>Y1 ↔ Y2, no outside edge</td><td>None</td><td>Both remain zero and are reclaimed despite the cycle.</td></tr>
+                        <tr><td>Root → Y1 → Y2 ↔ Y3</td><td>Root seeds Y1</td><td>The promotion traversal reaches and preserves the whole subgraph.</td></tr>
+                        <tr><td>Y → mature M</td><td>Y is promoted</td><td>Promotion contributes M’s incoming increment.</td></tr>
+                    </tbody>
+                </table>
+                <div class="callout warning">
+                    <strong>Porting consequence:</strong> allocation completion and object-reference
+                    enumeration are both correctness surfaces. The collector must not scan a
+                    half-initialized object, and it must enumerate every managed reference in the
+                    finished layout. CoreCLR P1.4 and P1.5 provide those generic capabilities; P2.3
+                    does not yet connect them to an allocator or promotion packet.
+                </div>
+            </section>
+
+            <section id="satb">
+                <h2>6. SATB: recover cycles and saturated counts without stopping RC</h2>
+                <p class="section-intro">
+                    Periodic mature-only tracing answers the question RC cannot: “is this positive
+                    count backed by a path from roots, or only by a cycle?”
+                </p>
+                <h3>Snapshot-at-the-beginning in plain language</h3>
+                <p data-source="background paper">
+                    A concurrent tracer sees a graph while the application changes it. SATB models
+                    the graph as it existed at trace start. If a field’s old value is overwritten
+                    while tracing, a pre-write/deletion barrier gives that old referent to the
+                    tracer. LXR reuses the same old referent already captured for RC.
+                    <span class="citation">[Yuasa 1990; P §§2.2–2.3, 3.4; PDF pp.4, 8–9]</span>
+                </p>
+                <div class="grid-2">
+                    <div class="card" data-source="paper">
+                        <h3>What triggers a backup trace?</h3>
+                        <ul>
+                            <li>Too few clean blocks remain after RC.</li>
+                            <li>Predicted mature wastage (dead objects + fragmentation) crosses a threshold.</li>
+                            <li>The evaluated mature-wastage threshold was 5%.</li>
+                        </ul>
+                    </div>
+                    <div class="card" data-source="paper">
+                        <h3>What the trace recovers</h3>
+                        <ul>
+                            <li>Disconnected mature cycles.</li>
+                            <li>Dead objects whose count stuck at maximum.</li>
+                            <li>Any mature garbage still carrying a nonzero count.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>One SATB trace may span several RC epochs</h3>
+                <ol class="step-list" data-source="paper">
+                    <li>
+                        <strong>Begin at a normal RC pause.</strong>
+                        Snapshot roots and start concurrent mature tracing.
+                    </li>
+                    <li>
+                        <strong>Keep running normal RC epochs.</strong>
+                        Young and ordinary zero-count reclamation do not wait for tracing to finish.
+                    </li>
+                    <li>
+                        <strong>Before RC deletes an unmarked, unscanned mature object, mark and scan it.</strong>
+                        Its outgoing snapshot edges become visible before its storage is reused.
+                    </li>
+                    <li>
+                        <strong>Finish the trace.</strong>
+                        At the next RC pause, unmarked mature objects are trace-dead; clear their counts and reclaim them.
+                    </li>
+                </ol>
+                <div class="callout warning">
+                    <strong>This is not local trial deletion.</strong> LXR does not discover cycles by
+                    speculatively subtracting internal edges. It uses a periodic global mature-only
+                    SATB backup trace.
+                </div>
+
+                <h3>Why the deletion barrier is necessary</h3>
+                <p>
+                    A concurrent marker may have discovered object A but not yet scanned A’s field
+                    pointing to B. If the mutator clears that field first, a naïve marker can miss B
+                    even though B belonged to the graph at snapshot time. SATB solves this by
+                    preserving the deleted edge’s old target. In LXR, that old target is already the
+                    before-image needed for deferred RC, so one logged value serves both algorithms.
+                </p>
+                <div class="diagram">
+                    <svg viewBox="0 0 1100 500" role="img" aria-labelledby="satb-delete-title satb-delete-desc">
+                        <title id="satb-delete-title">SATB deletion barrier preserves an edge removed during concurrent tracing</title>
+                        <desc id="satb-delete-desc">At snapshot start root reaches A and A reaches B. The marker has reached A but not scanned it. The mutator clears A's field. The field logging barrier enqueues old B, so the tracer still marks B from the snapshot.</desc>
+                        <defs>
+                            <marker id="arrow-satb-delete" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#7dd3fc"></path>
+                            </marker>
+                            <marker id="arrow-satb-log" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#fbbf24"></path>
+                            </marker>
+                        </defs>
+                        <text x="40" y="35" class="svg-title">Snapshot says ROOT → A → B</text>
+
+                        <rect x="45" y="95" width="135" height="62" rx="12" class="svg-paper"></rect>
+                        <text x="112" y="133" text-anchor="middle" class="svg-title">ROOT</text>
+                        <circle cx="335" cy="126" r="52" class="svg-object"></circle>
+                        <text x="335" y="121" text-anchor="middle" class="svg-title">A</text>
+                        <text x="335" y="143" text-anchor="middle" class="svg-small">marked, unscanned</text>
+                        <circle cx="600" cy="126" r="52" class="svg-object"></circle>
+                        <text x="600" y="121" text-anchor="middle" class="svg-title">B</text>
+                        <text x="600" y="143" text-anchor="middle" class="svg-small">not yet discovered</text>
+                        <path d="M180 126 H283" class="svg-arrow" marker-end="url(#arrow-satb-delete)"></path>
+                        <path d="M387 126 H548" class="svg-arrow" marker-end="url(#arrow-satb-delete)"></path>
+                        <text x="470" y="108" text-anchor="middle" class="svg-small">A.field</text>
+
+                        <rect x="45" y="235" width="620" height="200" rx="14" class="svg-box"></rect>
+                        <text x="355" y="268" text-anchor="middle" class="svg-title">Mutator executes A.field = null</text>
+                        <text x="80" y="308" class="svg-label">1. First-write test sees slot unlogged.</text>
+                        <text x="80" y="338" class="svg-label">2. Barrier captures old referent B and slot address &amp;A.field.</text>
+                        <text x="80" y="368" class="svg-label">3. Store publishes null.</text>
+                        <text x="80" y="398" class="svg-small">Without step 2, scanning A later sees null and loses B.</text>
+
+                        <rect x="740" y="235" width="310" height="200" rx="14" class="svg-paper"></rect>
+                        <text x="895" y="268" text-anchor="middle" class="svg-title">Old-value packet</text>
+                        <rect x="805" y="300" width="180" height="62" rx="10" fill="rgba(251,191,36,0.18)" stroke="#fbbf24" stroke-width="2"></rect>
+                        <text x="895" y="338" text-anchor="middle" class="svg-title">B</text>
+                        <path d="M665 330 H805" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrow-satb-log)"></path>
+                        <text x="895" y="392" text-anchor="middle" class="svg-label">SATB marks B</text>
+                        <text x="895" y="415" text-anchor="middle" class="svg-small">RC later decrements B</text>
+                    </svg>
+                </div>
+                <div class="callout">
+                    <strong>Deletion versus insertion:</strong> SATB needs the old value because it
+                    preserves the beginning-of-trace graph. A new edge inserted after the snapshot
+                    need not become part of that snapshot. RC still needs the slot’s final value as
+                    the after-image, so the same field log serves both different semantics.
+                </div>
+
+                <h3>Why LXR traces mature objects only</h3>
+                <p data-source="paper">
+                    New objects start at RC zero and are handled by the implicit nursery. Tracing
+                    zero-count young objects would conservatively retain objects that did not exist at
+                    snapshot start—the classic SATB floating-garbage effect. LXR instead ignores
+                    zero-count objects in the backup trace and uses the RC promotion rules for young
+                    liveness. This both reduces work and keeps young reclamation precise.
+                    <span class="citation">[P §3.2.2; PDF p.7]</span>
+                </p>
+
+                <h3>How a trace safely crosses RC pauses</h3>
+                <div class="diagram">
+                    <svg viewBox="0 0 1120 500" role="img" aria-labelledby="satb-span-title satb-span-desc">
+                        <title id="satb-span-title">SATB trace spanning multiple RC epochs</title>
+                        <desc id="satb-span-desc">A SATB trace starts at pause N, runs concurrently across mutator epoch N, crosses another RC pause, and finishes later. If RC wants to reclaim an unmarked unscanned object, it first marks and scans the object, then may reclaim its storage. Final mark identifies remaining unmarked mature garbage.</desc>
+                        <text x="40" y="35" class="svg-title">Trace lifetime is independent of one RC epoch</text>
+                        <text x="45" y="88" class="svg-label">time →</text>
+
+                        <rect x="120" y="65" width="130" height="70" rx="12" class="svg-paper"></rect>
+                        <text x="185" y="94" text-anchor="middle" class="svg-title">Pause N</text>
+                        <text x="185" y="116" text-anchor="middle" class="svg-small">snapshot roots</text>
+
+                        <rect x="250" y="65" width="270" height="70" rx="8" class="svg-young"></rect>
+                        <text x="385" y="105" text-anchor="middle" class="svg-label">mutators + RC logging</text>
+
+                        <rect x="520" y="65" width="130" height="70" rx="12" class="svg-paper"></rect>
+                        <text x="585" y="94" text-anchor="middle" class="svg-title">Pause N+1</text>
+                        <text x="585" y="116" text-anchor="middle" class="svg-small">normal RC still runs</text>
+
+                        <rect x="650" y="65" width="270" height="70" rx="8" class="svg-young"></rect>
+                        <text x="785" y="105" text-anchor="middle" class="svg-label">mutators + RC logging</text>
+
+                        <rect x="920" y="65" width="150" height="70" rx="12" class="svg-paper"></rect>
+                        <text x="995" y="94" text-anchor="middle" class="svg-title">Final mark</text>
+                        <text x="995" y="116" text-anchor="middle" class="svg-small">classify unmarked</text>
+
+                        <rect x="185" y="185" width="810" height="72" rx="12" class="svg-reference"></rect>
+                        <text x="590" y="217" text-anchor="middle" class="svg-title">Concurrent mature SATB trace</text>
+                        <text x="590" y="241" text-anchor="middle" class="svg-small">old-value packets + trace work may span both mutator epochs</text>
+
+                        <rect x="325" y="310" width="475" height="130" rx="14" class="svg-box"></rect>
+                        <text x="562" y="342" text-anchor="middle" class="svg-title">RC wants to delete mature X during trace</text>
+                        <text x="360" y="375" class="svg-label">if X is unmarked + unscanned:</text>
+                        <text x="360" y="403" class="svg-label">mark X → scan outgoing snapshot edges → reclaim X</text>
+                        <text x="360" y="428" class="svg-small">later stale work sees the mark and never reads reused contents</text>
+                    </svg>
+                </div>
+
+                <h3>The safety invariant, stated precisely</h3>
+                <p>
+                    While SATB is active, RC must not reclaim an <em>unmarked and unscanned mature
+                    object</em> whose outgoing edges may still be required by the initial snapshot.
+                    LXR does not need to retain the object itself until trace completion; it needs to
+                    publish its outgoing snapshot edges first. Mark-then-scan-before-reclaim satisfies
+                    that requirement and lets normal RC reclamation continue.
+                </p>
+                <details class="deep-dive" data-source="paper reference">
+                    <summary>Trace trigger, priority, and completion details</summary>
+                    <div>
+                        <ul>
+                            <li>The trace starts when clean blocks are scarce or predicted mature wastage crosses the configured threshold.</li>
+                            <li>The paper’s evaluated mature-wastage threshold was 5%.</li>
+                            <li>Lazy decrements run at higher priority than SATB work because they expose immediately reusable garbage.</li>
+                            <li>At final mark, remaining unmarked mature objects are dead even when their RC is positive or sticky.</li>
+                            <li>Counts for trace-dead objects are cleared before their lines are returned.</li>
+                        </ul>
+                        <p class="citation">
+                            [P §3.2.2; PDF p.7;
+                            <code>304ce69d:src/plan/lxr/barrier.rs:136–175</code>;
+                            <code>304ce69d:src/plan/lxr/global.rs:870–946</code>]
+                        </p>
+                    </div>
+                </details>
+            </section>
+
+            <section id="immix">
+                <h2>7. Immix: fast bump allocation without giving up hole reuse</h2>
+                <p class="section-intro">
+                    Immix divides memory into blocks and lines. Allocation is usually a fast bump
+                    through a contiguous run; collection can reuse free line runs inside partially
+                    occupied blocks; selective evacuation repairs fragmentation.
+                </p>
+                <div class="diagram">
+                    <svg viewBox="0 0 1100 500" role="img" aria-labelledby="immix-title immix-desc">
+                        <title id="immix-title">Immix block and line geometry</title>
+                        <desc id="immix-desc">A 32 KiB block contains 128 lines of 256 bytes. Example objects occupy runs of lines and may straddle line boundaries. Free runs are reused. A conservative unavailable line protects partial tails.</desc>
+                        <text x="40" y="35" class="svg-title">One LXR Immix block = 32 KiB = 128 × 256-byte lines</text>
+
+                        <rect x="45" y="70" width="1000" height="300" rx="14" fill="#0c1c29" stroke="#3c6178" stroke-width="2"></rect>
+                        <g stroke="#274556" stroke-width="1">
+                            <line x1="107.5" y1="70" x2="107.5" y2="370"></line>
+                            <line x1="170" y1="70" x2="170" y2="370"></line>
+                            <line x1="232.5" y1="70" x2="232.5" y2="370"></line>
+                            <line x1="295" y1="70" x2="295" y2="370"></line>
+                            <line x1="357.5" y1="70" x2="357.5" y2="370"></line>
+                            <line x1="420" y1="70" x2="420" y2="370"></line>
+                            <line x1="482.5" y1="70" x2="482.5" y2="370"></line>
+                            <line x1="545" y1="70" x2="545" y2="370"></line>
+                            <line x1="607.5" y1="70" x2="607.5" y2="370"></line>
+                            <line x1="670" y1="70" x2="670" y2="370"></line>
+                            <line x1="732.5" y1="70" x2="732.5" y2="370"></line>
+                            <line x1="795" y1="70" x2="795" y2="370"></line>
+                            <line x1="857.5" y1="70" x2="857.5" y2="370"></line>
+                            <line x1="920" y1="70" x2="920" y2="370"></line>
+                            <line x1="982.5" y1="70" x2="982.5" y2="370"></line>
+                        </g>
+
+                        <rect x="58" y="95" width="172" height="72" rx="10" fill="#16445a" stroke="#7dd3fc" stroke-width="2"></rect>
+                        <text x="144" y="126" text-anchor="middle" class="svg-title">Object A</text>
+                        <text x="144" y="148" text-anchor="middle" class="svg-small">spans lines</text>
+
+                        <rect x="320" y="185" width="145" height="72" rx="10" fill="#123c35" stroke="#5eead4" stroke-width="2"></rect>
+                        <text x="392" y="216" text-anchor="middle" class="svg-title">Object B</text>
+                        <text x="392" y="238" text-anchor="middle" class="svg-small">live</text>
+
+                        <rect x="690" y="105" width="245" height="72" rx="10" fill="#16445a" stroke="#7dd3fc" stroke-width="2"></rect>
+                        <text x="812" y="136" text-anchor="middle" class="svg-title">Object C</text>
+                        <text x="812" y="158" text-anchor="middle" class="svg-small">straddles 4 lines</text>
+
+                        <rect x="483" y="285" width="187" height="58" rx="8" fill="rgba(74,222,128,0.12)" stroke="#4ade80" stroke-width="2" stroke-dasharray="8 5"></rect>
+                        <text x="576" y="318" text-anchor="middle" class="svg-label">free-line run</text>
+
+                        <rect x="935" y="90" width="47" height="240" rx="5" fill="rgba(253,186,116,0.16)" stroke="#fdba74" stroke-width="1.5"></rect>
+                        <text x="1020" y="410" text-anchor="end" class="svg-small">diagram compresses 128 lines into 16 columns</text>
+                        <text x="958" y="350" text-anchor="middle" class="svg-small" transform="rotate(-90 958 350)">conservative unavailable line</text>
+
+                        <text x="45" y="420" class="svg-label">Allocation normally bump-points through a free run.</text>
+                        <text x="45" y="447" class="svg-label">Partially free blocks are preferred; clean blocks are preserved for large/copy allocations.</text>
+                        <text x="45" y="474" class="svg-label">Objects may cross lines, but never a block boundary.</text>
+                    </svg>
+                </div>
+                <div class="grid-3">
+                    <div class="card" data-source="paper">
+                        <h3>Allocation</h3>
+                        <p>Thread-local bump pointer, partially free blocks first, clean overflow blocks when a run is too small.</p>
+                    </div>
+                    <div class="card" data-source="paper">
+                        <h3>Large objects</h3>
+                        <p>Objects larger than half a block (16 KiB) use a separate large-object allocator.</p>
+                    </div>
+                    <div class="card" data-source="background paper">
+                        <h3>Fragmentation</h3>
+                        <p>Reuse holes cheaply; occasionally evacuate low-occupancy blocks to recover whole blocks.</p>
+                    </div>
+                </div>
+                <p data-source="paper">
+                    <span class="source-tag paper">Paper parameter</span>
+                    LXR uses 32 KiB blocks and 256-byte lines. The original 2008 Immix paper used
+                    128-byte lines; do not transfer that value into LXR.
+                    <span class="citation">[P §§2.6, 3.1; PDF p.5]</span>
+                </p>
+
+                <h3>The allocation hierarchy</h3>
+                <p>
+                    “Immix allocation” is not one free list. A thread normally owns a local cursor
+                    inside a line run. When that run cannot satisfy a request, it asks successively
+                    broader sources for space. The order is chosen to consume holes first and preserve
+                    clean contiguous blocks for objects or copying that genuinely need them.
+                </p>
+                <div class="diagram">
+                    <svg viewBox="0 0 1120 570" role="img" aria-labelledby="alloc-title alloc-desc">
+                        <title id="alloc-title">LXR Immix allocation decision flow</title>
+                        <desc id="alloc-desc">A small or medium allocation first tries the thread-local bump region, then another free-line run in a partially free block, then a clean overflow block. Objects over 16 KiB go directly to the large-object allocator. Copying uses reserved clean or partially free blocks.</desc>
+                        <defs>
+                            <marker id="arrow-alloc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#7dd3fc"></path>
+                            </marker>
+                            <marker id="arrow-alloc-alt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#5eead4"></path>
+                            </marker>
+                        </defs>
+                        <text x="40" y="35" class="svg-title">Where does the next object go?</text>
+
+                        <rect x="415" y="65" width="290" height="75" rx="14" class="svg-paper"></rect>
+                        <text x="560" y="95" text-anchor="middle" class="svg-title">Allocation request</text>
+                        <text x="560" y="119" text-anchor="middle" class="svg-small">size + alignment</text>
+
+                        <rect x="790" y="65" width="270" height="75" rx="14" class="svg-box"></rect>
+                        <text x="925" y="95" text-anchor="middle" class="svg-title">size &gt; 16 KiB?</text>
+                        <text x="925" y="119" text-anchor="middle" class="svg-small">more than half a block</text>
+                        <path d="M705 102 H790" class="svg-arrow" marker-end="url(#arrow-alloc)"></path>
+
+                        <rect x="790" y="195" width="270" height="80" rx="14" class="svg-reference"></rect>
+                        <text x="925" y="228" text-anchor="middle" class="svg-title">Large-object allocator</text>
+                        <text x="925" y="252" text-anchor="middle" class="svg-small">separate from Immix blocks</text>
+                        <path d="M925 140 V195" class="svg-arrow" marker-end="url(#arrow-alloc)"></path>
+                        <text x="943" y="174" class="svg-small">yes</text>
+
+                        <rect x="415" y="195" width="290" height="80" rx="14" class="svg-young"></rect>
+                        <text x="560" y="228" text-anchor="middle" class="svg-title">Thread-local bump region</text>
+                        <text x="560" y="252" text-anchor="middle" class="svg-small">fast pointer bump if request fits</text>
+                        <path d="M560 140 V195" fill="none" stroke="#5eead4" stroke-width="2" marker-end="url(#arrow-alloc-alt)"></path>
+                        <text x="578" y="174" class="svg-small">≤ 16 KiB</text>
+
+                        <rect x="415" y="330" width="290" height="80" rx="14" class="svg-box"></rect>
+                        <text x="560" y="363" text-anchor="middle" class="svg-title">Another free-line run?</text>
+                        <text x="560" y="387" text-anchor="middle" class="svg-small">partially free block list first</text>
+                        <path d="M560 275 V330" class="svg-arrow" marker-end="url(#arrow-alloc)"></path>
+                        <text x="578" y="310" class="svg-small">doesn't fit</text>
+
+                        <rect x="55" y="465" width="300" height="80" rx="14" class="svg-young"></rect>
+                        <text x="205" y="498" text-anchor="middle" class="svg-title">Use recycled hole</text>
+                        <text x="205" y="522" text-anchor="middle" class="svg-small">preserve clean blocks</text>
+                        <path d="M470 410 C405 445 355 470 355 500" fill="none" stroke="#5eead4" stroke-width="2" marker-end="url(#arrow-alloc-alt)"></path>
+                        <text x="395" y="458" class="svg-small">yes</text>
+
+                        <rect x="410" y="465" width="300" height="80" rx="14" class="svg-dotnet"></rect>
+                        <text x="560" y="498" text-anchor="middle" class="svg-title">Clean overflow block</text>
+                        <text x="560" y="522" text-anchor="middle" class="svg-small">dynamic overflow for medium object</text>
+                        <path d="M560 410 V465" class="svg-arrow" marker-end="url(#arrow-alloc)"></path>
+                        <text x="578" y="447" class="svg-small">no suitable run</text>
+
+                        <rect x="765" y="465" width="300" height="80" rx="14" class="svg-paper"></rect>
+                        <text x="915" y="498" text-anchor="middle" class="svg-title">Copy reserve</text>
+                        <text x="915" y="522" text-anchor="middle" class="svg-small">young/mature evacuation destination</text>
+                        <path d="M705 370 C790 395 860 420 900 465" class="svg-arrow" marker-end="url(#arrow-alloc)"></path>
+                    </svg>
+                </div>
+
+                <h3>Three different kinds of metadata are easy to confuse</h3>
+                <table>
+                    <thead>
+                        <tr><th>Metadata</th><th>Question it answers</th><th>Typical granularity</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Object-start / RC metadata</td><td>Does an object start here, and what is its count?</td><td>Allocation quantum / exact object start</td></tr>
+                        <tr><td>Straddle metadata</td><td>Is this line a full continuation of an earlier object?</td><td>Line</td></tr>
+                        <tr><td>Line availability / hole state</td><td>May the allocator reuse this line in the current block lifecycle?</td><td>Line or encoded block summary</td></tr>
+                        <tr><td>Block state / ownership / epoch</td><td>Who may allocate or collect this block, and in which phase?</td><td>Block</td></tr>
+                    </tbody>
+                </table>
+                <p>
+                    An RC of zero does not by itself make a byte range allocatable. The death
+                    transition, outgoing-edge processing, straddle cleanup, line-availability update,
+                    and block ownership rules must agree before reuse.
+                </p>
+
+                <h3>Fragmentation: what Immix fixes and what it cannot hide</h3>
+                <div class="grid-2">
+                    <div class="card">
+                        <h4>Reusable internal holes</h4>
+                        <p>
+                            If dead objects leave sufficiently large line runs, bump allocation can
+                            consume those runs directly. This recovers space without moving live
+                            neighbors.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h4>Stranded small holes</h4>
+                        <p>
+                            Live objects may split a block into runs too small for incoming requests.
+                            Total free bytes can be high while useful contiguous capacity is low.
+                            Selective evacuation converts these fragments into whole free blocks.
+                        </p>
+                    </div>
+                </div>
+                <h3>Zeroing and reuse</h3>
+                <p data-source="paper">
+                    Reused regions are zeroed before the mutator receives them. Whole free blocks can
+                    be zeroed in bulk, which is cheaper than interleaving small clears with every
+                    allocation. Zeroed memory also supports the young-object optimization: untouched
+                    reference fields are null, and initialization cannot expose a previous tenant’s
+                    pointers. <span class="citation">[P §3.1; PDF p.5]</span>
+                </p>
+                <details class="deep-dive" data-source="dotnet planned">
+                    <summary>What P2.2 implements versus what P2.4 still owes</summary>
+                    <div>
+                        <p>
+                            P2.2 implements checked block/line arithmetic, state bytes, owners, locks,
+                            and odd/even phase epochs. It can say whether a transition is valid. It
+                            does not yet maintain an allocation cursor, discover holes, skip unsafe
+                            partial tails, map object requests to free runs, zero returned memory, or
+                            publish a shipping block pool. Those are allocator semantics, not merely
+                            more state bits.
+                        </p>
+                    </div>
+                </details>
+            </section>
+
+            <section id="straddles">
+                <h2>8. Straddle lines: keep a multi-line object from looking like a hole</h2>
+                <p class="section-intro">
+                    An object can start in one line and continue through later lines. Those line
+                    starts are not object starts, but the allocator/sweeper still needs to know that
+                    their bytes belong to the earlier object.
+                </p>
+                <span class="formula">continuation range = [align_down(S, 256) + 256, align_down(S + N, 256))</span>
+                <p>
+                    For object start <code>S</code> and size <code>N</code>, the .NET P2.3 substrate
+                    marks only full continuation lines. It excludes the first line and a partial final
+                    line. An object of 257 bytes starting exactly at a line boundary therefore has no
+                    full continuation line.
+                </p>
+                <div class="grid-2">
+                    <div class="card" data-source="reference">
+                        <span class="source-tag reference">Reference</span>
+                        <h3>Paired sentinel</h3>
+                        <p>
+                            At each full continuation line start, the reference sets a straddle marker
+                            and an RC sentinel of 1. PLDI and HEAD use the same interval and order.
+                        </p>
+                        <p class="citation">
+                            [<code>df8d30a3:src/util/rc.rs:145–177</code>;
+                            <code>304ce69d:src/util/rc.rs</code> straddle helpers]
+                        </p>
+                    </div>
+                    <div class="card" data-source="dotnet">
+                        <span class="source-tag dotnet">.NET P2.3</span>
+                        <h3>Fail-closed realization</h3>
+                        <ul>
+                            <li><code>ReferenceCount(lineStart) = 1</code></li>
+                            <li><code>ReferenceCountStraddle(line) = 1</code></li>
+                            <li><code>ValidObject(lineStart) = 0</code></li>
+                            <li>Broken half-pairs return <code>InconsistentState</code>.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="callout">
+                    <strong>Write order matters.</strong> Marking stores straddle first, then RC.
+                    Clearing stores RC first, then straddle. A concurrent observation can therefore
+                    fail closed as inconsistent; it cannot silently reinterpret a stale RC=1 as a
+                    real object start. The accepted source is
+                    <code>a9817282:src/coreclr/gc/reference_count.cpp:602–678</code>.
+                </div>
+                <p data-source="planned">
+                    <span class="source-tag planned">Still needed in .NET</span>
+                    The allocator-side “skip the first dead line” rule that makes partial-tail
+                    omission safe belongs to P2.4. P2.3 intentionally proves metadata semantics, not
+                    reclamation.
+                </p>
+
+                <h3>Read the half-open interval literally</h3>
+                <p>
+                    <code>align_down(S, 256) + 256</code> is the first line boundary strictly after
+                    the object’s start line. <code>align_down(S + N, 256)</code> is the boundary at
+                    or before the object end. Because the end is exclusive, only line starts whose
+                    entire line lies inside the object are emitted.
+                </p>
+                <div class="diagram">
+                    <svg viewBox="0 0 1120 650" role="img" aria-labelledby="straddle-examples-title straddle-examples-desc">
+                        <title id="straddle-examples-title">Examples of the exact straddle continuation interval</title>
+                        <desc id="straddle-examples-desc">Four line-aligned objects of sizes 257, 512, 600, and 768 bytes are shown over 256-byte lines. The 257-byte object has no full continuation. The 512 and 600-byte objects mark one continuation line. The 768-byte object marks two. Partial tail lines remain unmarked.</desc>
+                        <text x="40" y="35" class="svg-title">Line-aligned examples (each cell = 256 bytes)</text>
+
+                        <g transform="translate(210 75)">
+                            <rect x="0" y="0" width="170" height="50" fill="#102a3b" stroke="#3c6178"></rect>
+                            <rect x="170" y="0" width="170" height="50" fill="#102a3b" stroke="#3c6178"></rect>
+                            <rect x="340" y="0" width="170" height="50" fill="#102a3b" stroke="#3c6178"></rect>
+                            <rect x="510" y="0" width="170" height="50" fill="#102a3b" stroke="#3c6178"></rect>
+                            <rect x="680" y="0" width="170" height="50" fill="#102a3b" stroke="#3c6178"></rect>
+                            <text x="85" y="31" text-anchor="middle" class="svg-small">line 0</text>
+                            <text x="255" y="31" text-anchor="middle" class="svg-small">line 1</text>
+                            <text x="425" y="31" text-anchor="middle" class="svg-small">line 2</text>
+                            <text x="595" y="31" text-anchor="middle" class="svg-small">line 3</text>
+                            <text x="765" y="31" text-anchor="middle" class="svg-small">line 4</text>
+                        </g>
+
+                        <text x="40" y="188" class="svg-label">N = 257</text>
+                        <rect x="210" y="150" width="171" height="58" rx="8" fill="#16445a" stroke="#7dd3fc" stroke-width="2"></rect>
+                        <text x="500" y="184" class="svg-label">no full continuation: range [256,256)</text>
+                        <rect x="380" y="150" width="24" height="58" fill="rgba(253,186,116,0.24)" stroke="#fdba74"></rect>
+                        <text x="392" y="228" text-anchor="middle" class="svg-small">1 B tail</text>
+
+                        <text x="40" y="298" class="svg-label">N = 512</text>
+                        <rect x="210" y="260" width="340" height="58" rx="8" fill="#16445a" stroke="#7dd3fc" stroke-width="2"></rect>
+                        <rect x="380" y="260" width="170" height="58" fill="rgba(192,132,252,0.22)" stroke="#c084fc" stroke-width="2"></rect>
+                        <text x="465" y="294" text-anchor="middle" class="svg-label">sentinel</text>
+                        <text x="590" y="294" class="svg-label">range [256,512): one line</text>
+
+                        <text x="40" y="408" class="svg-label">N = 600</text>
+                        <rect x="210" y="370" width="398" height="58" rx="8" fill="#16445a" stroke="#7dd3fc" stroke-width="2"></rect>
+                        <rect x="380" y="370" width="170" height="58" fill="rgba(192,132,252,0.22)" stroke="#c084fc" stroke-width="2"></rect>
+                        <text x="465" y="404" text-anchor="middle" class="svg-label">sentinel</text>
+                        <rect x="550" y="370" width="58" height="58" fill="rgba(253,186,116,0.24)" stroke="#fdba74"></rect>
+                        <text x="580" y="450" text-anchor="middle" class="svg-small">88 B partial tail</text>
+
+                        <text x="40" y="518" class="svg-label">N = 768</text>
+                        <rect x="210" y="480" width="510" height="58" rx="8" fill="#16445a" stroke="#7dd3fc" stroke-width="2"></rect>
+                        <rect x="380" y="480" width="170" height="58" fill="rgba(192,132,252,0.22)" stroke="#c084fc" stroke-width="2"></rect>
+                        <rect x="550" y="480" width="170" height="58" fill="rgba(192,132,252,0.22)" stroke="#c084fc" stroke-width="2"></rect>
+                        <text x="465" y="514" text-anchor="middle" class="svg-label">sentinel</text>
+                        <text x="635" y="514" text-anchor="middle" class="svg-label">sentinel</text>
+
+                        <rect x="210" y="580" width="22" height="22" fill="#16445a" stroke="#7dd3fc"></rect>
+                        <text x="243" y="597" class="svg-small">object bytes</text>
+                        <rect x="390" y="580" width="22" height="22" fill="rgba(192,132,252,0.22)" stroke="#c084fc"></rect>
+                        <text x="423" y="597" class="svg-small">full continuation + paired sentinel</text>
+                        <rect x="730" y="580" width="22" height="22" fill="rgba(253,186,116,0.24)" stroke="#fdba74"></rect>
+                        <text x="763" y="597" class="svg-small">unmarked partial tail</text>
+                    </svg>
+                </div>
+
+                <h3>Why a continuation line is not an object start</h3>
+                <p>
+                    The RC table is addressable on an 8-byte lattice, so a count stored at a line
+                    boundary could otherwise look like a real object’s count. P2.3 uses a three-part
+                    interpretation:
+                </p>
+                <table data-source="dotnet">
+                    <thead>
+                        <tr><th>RC at line start</th><th>Straddle byte</th><th>ValidObject</th><th>Meaning</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>1</td><td>1</td><td>0</td><td>Valid continuation sentinel.</td></tr>
+                        <tr><td>any count</td><td>0</td><td>1</td><td>Real exact object start.</td></tr>
+                        <tr><td>0</td><td>0</td><td>0</td><td>Empty/unregistered metadata.</td></tr>
+                        <tr><td>1</td><td>0</td><td>0</td><td>Broken half-pair: fail closed.</td></tr>
+                        <tr><td>0 or ≠1</td><td>1</td><td>0</td><td>Broken half-pair: fail closed.</td></tr>
+                        <tr><td>any</td><td>1</td><td>1</td><td>Impossible overlap: fail closed.</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Mark and clear ordering as observable states</h3>
+                <div class="grid-2">
+                    <div class="card" data-source="reference dotnet">
+                        <h4>Mark: straddle → RC</h4>
+                        <ol>
+                            <li>Store straddle = 1.</li>
+                            <li>Store RC = 1 at line start.</li>
+                        </ol>
+                        <p>
+                            A reader between stores sees straddle=1/RC=0 and reports inconsistency.
+                            It never mistakes the half-written sentinel for a real object.
+                        </p>
+                    </div>
+                    <div class="card" data-source="reference dotnet">
+                        <h4>Clear: RC → straddle</h4>
+                        <ol>
+                            <li>Store RC = 0.</li>
+                            <li>Store straddle = 0.</li>
+                        </ol>
+                        <p>
+                            A reader between stores again sees an explicit inconsistency, not an
+                            apparently valid standalone RC=1 object.
+                        </p>
+                    </div>
+                </div>
+                <h3>Lifecycle and reuse</h3>
+                <p data-source="dotnet">
+                    Returning or reassigning P2.2 block ownership does not prove that old objects died;
+                    therefore ownership handoff alone does not clear RC/straddle metadata or license
+                    overlap. Reclamation must first revoke the old object’s registration, clear its own
+                    count, and dismantle its derived continuation sentinels. P2.3 models that operation
+                    with <code>ResetObjectQuiescent</code>; the future allocator/sweeper will own when
+                    production code invokes the equivalent lifecycle.
+                </p>
+                <details class="deep-dive">
+                    <summary>Worked mid-line example</summary>
+                    <div>
+                        <p>
+                            Let <code>S = lineBase + 64</code> and <code>N = 512</code>. The object
+                            ends at <code>lineBase + 576</code>.
+                        </p>
+                        <pre><code>first = align_down(S, 256) + 256 = lineBase + 256
+end   = align_down(S + N, 256)   = lineBase + 512
+range = [lineBase + 256, lineBase + 512)</code></pre>
+                        <p>
+                            Exactly one line start is marked: <code>lineBase + 256</code>. The bytes
+                            from 512 through 575 occupy a partial tail and receive no sentinel.
+                        </p>
+                    </div>
+                </details>
+            </section>
+
+            <section id="epoch">
+                <h2>9. One LXR epoch, step by step</h2>
+                <p class="section-intro">
+                    The algorithm is easiest to understand as three overlapping time domains:
+                    mutator logging, a short RC pause, then concurrent cleanup.
+                </p>
+                <h3>A. While mutators run</h3>
+                <ol class="step-list">
+                    <li>
+                        <strong>Allocate zero-count young objects into Immix space.</strong>
+                        New-object initialization suppresses needless logging of internal writes.
+                    </li>
+                    <li>
+                        <strong>On the first write to an old field, log old referent + slot address.</strong>
+                        Later writes to that slot in the same epoch do not add more RC boundary work.
+                    </li>
+                    <li>
+                        <strong>If SATB is active, the same old referent preserves the initial snapshot.</strong>
+                        One barrier payload serves RC, SATB, and later evacuation remembered sets.
+                    </li>
+                </ol>
+                <h3>B. During the parallel stop-the-world RC pause</h3>
+                <ol class="step-list">
+                    <li>
+                        <strong>Scan roots and increment current root targets.</strong>
+                        Save matching root decrements for the next epoch.
+                    </li>
+                    <li>
+                        <strong>Read every logged slot address and increment its final referent.</strong>
+                        This computes each modified field’s after-image.
+                    </li>
+                    <li>
+                        <strong>Finish all increments before any decrements.</strong>
+                        Avoid temporary zero when a reference merely moved.
+                    </li>
+                    <li>
+                        <strong>Trace first increments into young objects.</strong>
+                        Establish the reachable young subgraph’s counts and reclaim zero-count young garbage.
+                    </li>
+                    <li>
+                        <strong>Optionally copy young survivors or evacuate selected mature blocks.</strong>
+                        All movement is stop-the-world and bounded by known incoming slots.
+                    </li>
+                </ol>
+                <h3>C. After mutators resume</h3>
+                <ol class="step-list">
+                    <li>
+                        <strong>Process old referents and previous root targets as lazy decrements.</strong>
+                        A 1 → 0 transition enqueues the dead object.
+                    </li>
+                    <li>
+                        <strong>Scan dead objects and cascade decrements through outgoing references.</strong>
+                        This recursive graph work can be long, so it runs concurrently.
+                    </li>
+                    <li>
+                        <strong>Sweep affected mature blocks and return reusable lines/blocks.</strong>
+                        If lazy work has not finished by the next pause, that pause completes it first.
+                    </li>
+                </ol>
+                <p data-source="paper">
+                    <span class="source-tag paper">Paper evidence</span>
+                    Only avrora, lusearch, and xalan reported lazy decrement spillover into the next
+                    pause; xalan was the substantial outlier.
+                    <span class="citation">[P §3.2.1, Table 7; PDF pp.6, 13]</span>
+                </p>
+
+                <h3>The same epoch as a scheduling diagram</h3>
+                <div class="diagram">
+                    <svg viewBox="0 0 1160 650" role="img" aria-labelledby="epoch-lanes-title epoch-lanes-desc">
+                        <title id="epoch-lanes-title">LXR RC epoch swimlane schedule</title>
+                        <desc id="epoch-lanes-desc">Mutator, stop-the-world, lazy decrement, sweep, and SATB lanes across two RC pauses. Mutators log old values and slots. Pause N applies roots and final slots, processes increments and young objects, and resumes. Lazy decrements and mature sweep run concurrently. SATB may continue across pause N plus one. Unfinished lazy decrements are completed before that next pause proceeds.</desc>
+                        <text x="40" y="35" class="svg-title">Work overlaps, but ordering boundaries remain strict</text>
+                        <text x="180" y="75" class="svg-small">epoch N mutators</text>
+                        <text x="500" y="75" class="svg-small">pause N</text>
+                        <text x="705" y="75" class="svg-small">epoch N+1 mutators</text>
+                        <text x="1030" y="75" class="svg-small">pause N+1</text>
+
+                        <line x1="155" y1="90" x2="1090" y2="90" stroke="#3c6178" stroke-width="2"></line>
+                        <line x1="470" y1="70" x2="470" y2="610" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 5"></line>
+                        <line x1="620" y1="70" x2="620" y2="610" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 5"></line>
+                        <line x1="970" y1="70" x2="970" y2="610" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 5"></line>
+                        <line x1="1090" y1="70" x2="1090" y2="610" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 5"></line>
+
+                        <text x="35" y="145" class="svg-label">Mutators</text>
+                        <rect x="155" y="115" width="315" height="55" rx="10" class="svg-young"></rect>
+                        <text x="312" y="148" text-anchor="middle" class="svg-label">allocate + first-write logs</text>
+                        <rect x="620" y="115" width="350" height="55" rx="10" class="svg-young"></rect>
+                        <text x="795" y="148" text-anchor="middle" class="svg-label">resume; build next logs</text>
+
+                        <text x="35" y="235" class="svg-label">STW RC</text>
+                        <rect x="470" y="195" width="150" height="80" rx="10" class="svg-paper"></rect>
+                        <text x="545" y="222" text-anchor="middle" class="svg-label">roots + slots</text>
+                        <text x="545" y="244" text-anchor="middle" class="svg-label">all increments</text>
+                        <text x="545" y="264" text-anchor="middle" class="svg-small">young + optional copy</text>
+                        <rect x="970" y="195" width="120" height="80" rx="10" class="svg-paper"></rect>
+                        <text x="1030" y="222" text-anchor="middle" class="svg-label">finish spill</text>
+                        <text x="1030" y="244" text-anchor="middle" class="svg-label">then roots</text>
+                        <text x="1030" y="264" text-anchor="middle" class="svg-small">next boundary</text>
+
+                        <text x="35" y="335" class="svg-label">Lazy decs</text>
+                        <rect x="620" y="300" width="285" height="62" rx="10" class="svg-reference"></rect>
+                        <text x="762" y="328" text-anchor="middle" class="svg-label">old refs + old roots</text>
+                        <text x="762" y="350" text-anchor="middle" class="svg-small">1→0 cascades; higher priority</text>
+                        <rect x="905" y="300" width="65" height="62" rx="8" fill="rgba(251,113,133,0.15)" stroke="#fb7185"></rect>
+                        <text x="938" y="328" text-anchor="middle" class="svg-small">spill</text>
+                        <text x="938" y="347" text-anchor="middle" class="svg-small">if any</text>
+
+                        <text x="35" y="435" class="svg-label">Mature sweep</text>
+                        <rect x="690" y="400" width="250" height="62" rx="10" class="svg-box"></rect>
+                        <text x="815" y="428" text-anchor="middle" class="svg-label">sweep affected blocks</text>
+                        <text x="815" y="450" text-anchor="middle" class="svg-small">publish reusable space</text>
+
+                        <text x="35" y="535" class="svg-label">SATB</text>
+                        <rect x="520" y="500" width="500" height="62" rx="10" class="svg-reference"></rect>
+                        <text x="770" y="528" text-anchor="middle" class="svg-label">optional mature trace spans epochs</text>
+                        <text x="770" y="550" text-anchor="middle" class="svg-small">lower priority than lazy decrements</text>
+
+                        <text x="155" y="615" class="svg-small">time →</text>
+                    </svg>
+                </div>
+
+                <h3>What lives in each buffer</h3>
+                <table>
+                    <thead>
+                        <tr><th>Buffer / packet</th><th>Produced when</th><th>Consumed as</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Modified slot addresses</td><td>First write to a field in an epoch</td><td>Read final referent at pause; increment after-image; reset logging state.</td></tr>
+                        <tr><td>Old referents</td><td>Same first write</td><td>Lazy RC decrement; also SATB old-value input while tracing.</td></tr>
+                        <tr><td>Current root targets</td><td>Root scan at pause</td><td>Immediate increments; retained as next epoch’s root decrements.</td></tr>
+                        <tr><td>Increment packets</td><td>Roots, final slots, promotion scans</td><td>Processed before any decrement can expose death.</td></tr>
+                        <tr><td>Zero-count/decrement work</td><td>1 → 0 transition</td><td>Enumerate dead object; recursively decrement outgoing referents.</td></tr>
+                        <tr><td>SATB trace packets</td><td>Root snapshot and old-value barrier</td><td>Concurrent mature marking, potentially across epochs.</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>What must be stop-the-world, and what may be concurrent?</h3>
+                <div class="grid-2">
+                    <div class="card">
+                        <h4>Stop-the-world boundary work</h4>
+                        <ul>
+                            <li>Obtain a stable root set.</li>
+                            <li>Freeze the current modified-slot boundary.</li>
+                            <li>Apply final-slot and root increments before decrements.</li>
+                            <li>Classify/promote current young objects.</li>
+                            <li>Rewrite pointers while copying.</li>
+                            <li>Finish previous lazy decrements if they spilled into this pause.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h4>Concurrent after-boundary work</h4>
+                        <ul>
+                            <li>Process old-reference decrements and death cascades.</li>
+                            <li>Sweep mature blocks affected by those cascades.</li>
+                            <li>Advance mature-only SATB marking.</li>
+                            <li>Build/maintain evacuation remembered information.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>When does an RC pause start?</h3>
+                <p data-source="paper">
+                    The design can trigger on heap fullness, accumulated increment work, or predicted
+                    young survival/work. The evaluated configuration used a 128 MiB survival
+                    threshold and no increment threshold. The survival predictor reacts faster when
+                    survival exceeds its prediction (<code>¾ latest + ¼ old</code>) than when it falls
+                    below (<code>¼ latest + ¾ old</code>), biasing toward avoiding unexpectedly large
+                    pauses. <span class="citation">[P §§3.2.1, 4; PDF pp.6, 9]</span>
+                </p>
+                <h3>Pause-overrun rule</h3>
+                <p>
+                    The collector must never let unresolved decrements from epoch N coexist
+                    ambiguously with a new boundary that assumes epoch N is complete. If concurrent
+                    lazy work reaches pause N+1 unfinished, mutators are already stopped, so the pause
+                    drains the remaining work before establishing the next boundary. This makes the
+                    cost visible as a longer pause rather than weakening count correctness.
+                </p>
+                <details class="deep-dive" data-source="reference">
+                    <summary>How the HEAD scheduler realizes this shape</summary>
+                    <div>
+                        <p>
+                            <code>304ce69d:src/plan/lxr/barrier.rs:136–175</code> flushes increment
+                            packets separately from decrement/SATB packets and routes lazy decrements
+                            to deferred concurrent work. <code>global.rs:870–946</code> enables and
+                            disables scheduler buckets according to pause type, schedules RC, initial
+                            and final mark, emergency full-heap work, and previous-root decrements.
+                            The concrete scheduler is more complex than the conceptual three-phase
+                            diagram, but it preserves the same ordering edges.
+                        </p>
+                    </div>
+                </details>
+                <div class="callout warning" data-source="planned">
+                    <strong>Current .NET boundary:</strong> P1 provides barrier/store/allocation/
+                    enumeration contracts and P2 provides metadata/state. No CoreCLR code yet creates
+                    these increment, decrement, zero-count, SATB, or sweep packets. This complete
+                    schedule is roadmap work, not a hidden mode behind P2.3.
+                </div>
+            </section>
+
+            <section id="evacuation">
+                <h2>10. Copying and evacuation: movement is selective, never concurrent</h2>
+                <div class="grid-2">
+                    <div class="card" data-source="paper">
+                        <h3>Young copying</h3>
+                        <p>
+                            On first survival, every incoming edge to a young object is already being
+                            enumerated. LXR can copy the survivor, pack it into partially free space,
+                            rewrite those edges, and free an all-young source block. If reserve space
+                            runs out, it establishes counts in place instead.
+                        </p>
+                    </div>
+                    <div class="card" data-source="paper reference">
+                        <h3>Mature evacuation</h3>
+                        <p>
+                            Before SATB, estimate occupancy from RC metadata, sort blocks under 50%
+                            occupancy, and choose a bounded evacuation set. SATB bootstraps incoming
+                            slot locations; the write barrier keeps the remembered set current.
+                        </p>
+                    </div>
+                </div>
+                <h3>Why remembered sets contain slots, not only source objects</h3>
+                <p>
+                    Moving an object requires rewriting the exact memory locations that point to it.
+                    The remembered set therefore stores incoming reference locations. A line-reuse
+                    counter rejects stale entries whose source line died and was reused before
+                    evacuation.
+                </p>
+                <div class="diagram">
+                    <svg viewBox="0 0 1160 620" role="img" aria-labelledby="evac-title evac-desc">
+                        <title id="evac-title">Mature evacuation uses incoming slot locations to compact selected blocks</title>
+                        <desc id="evac-desc">Before evacuation, a sparse source block contains live objects A and B among holes. Roots and objects X and Y contain slots pointing to A and B. The remembered set stores those slot locations. During a stop-the-world pause A and B are copied into destination space, forwarding information maps old to new addresses, and every incoming slot is rewritten. The sparse source block becomes entirely free.</desc>
+                        <defs>
+                            <marker id="arrow-evac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#7dd3fc"></path>
+                            </marker>
+                            <marker id="arrow-evac-copy" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#5eead4"></path>
+                            </marker>
+                        </defs>
+                        <text x="40" y="35" class="svg-title">Selected sparse block → packed destination + free source</text>
+
+                        <text x="65" y="80" class="svg-label">Before</text>
+                        <rect x="65" y="100" width="420" height="250" rx="14" class="svg-box"></rect>
+                        <text x="275" y="130" text-anchor="middle" class="svg-title">Evacuation-set source block</text>
+                        <rect x="95" y="165" width="95" height="62" rx="9" class="svg-object"></rect>
+                        <text x="142" y="202" text-anchor="middle" class="svg-title">A</text>
+                        <rect x="330" y="250" width="95" height="62" rx="9" class="svg-object"></rect>
+                        <text x="377" y="287" text-anchor="middle" class="svg-title">B</text>
+                        <rect x="205" y="165" width="105" height="62" rx="8" fill="rgba(74,222,128,0.08)" stroke="#4ade80" stroke-dasharray="6 5"></rect>
+                        <text x="257" y="202" text-anchor="middle" class="svg-small">hole</text>
+                        <rect x="95" y="250" width="215" height="62" rx="8" fill="rgba(74,222,128,0.08)" stroke="#4ade80" stroke-dasharray="6 5"></rect>
+                        <text x="202" y="287" text-anchor="middle" class="svg-small">holes / fragmentation</text>
+
+                        <rect x="65" y="405" width="420" height="145" rx="14" class="svg-paper"></rect>
+                        <text x="275" y="438" text-anchor="middle" class="svg-title">Incoming slot locations</text>
+                        <text x="100" y="472" class="svg-label">root slot r1 → A</text>
+                        <text x="100" y="501" class="svg-label">X.field2 address → A</text>
+                        <text x="100" y="530" class="svg-label">Y.items[4] address → B</text>
+                        <path d="M350 465 C430 430 450 300 425 280" class="svg-arrow" marker-end="url(#arrow-evac)"></path>
+                        <path d="M350 500 C420 470 290 210 190 198" class="svg-arrow" marker-end="url(#arrow-evac)"></path>
+
+                        <text x="640" y="80" class="svg-label">Stop-the-world evacuation</text>
+                        <rect x="615" y="100" width="480" height="250" rx="14" class="svg-dotnet"></rect>
+                        <text x="855" y="130" text-anchor="middle" class="svg-title">Destination allocation</text>
+                        <rect x="660" y="175" width="95" height="62" rx="9" class="svg-young"></rect>
+                        <text x="707" y="212" text-anchor="middle" class="svg-title">A′</text>
+                        <rect x="755" y="175" width="95" height="62" rx="9" class="svg-young"></rect>
+                        <text x="802" y="212" text-anchor="middle" class="svg-title">B′</text>
+                        <rect x="850" y="175" width="200" height="62" rx="8" fill="rgba(74,222,128,0.08)" stroke="#4ade80" stroke-dasharray="6 5"></rect>
+                        <text x="950" y="212" text-anchor="middle" class="svg-small">remaining packed capacity</text>
+
+                        <text x="660" y="285" class="svg-label">forward A → A′, B → B′</text>
+                        <text x="660" y="315" class="svg-label">rewrite r1, X.field2, Y.items[4]</text>
+
+                        <path d="M485 190 C555 160 590 175 660 195" fill="none" stroke="#5eead4" stroke-width="2" marker-end="url(#arrow-evac-copy)"></path>
+                        <path d="M485 285 C555 275 590 240 755 210" fill="none" stroke="#5eead4" stroke-width="2" marker-end="url(#arrow-evac-copy)"></path>
+
+                        <rect x="615" y="405" width="480" height="145" rx="14" class="svg-young"></rect>
+                        <text x="855" y="442" text-anchor="middle" class="svg-title">After</text>
+                        <text x="855" y="477" text-anchor="middle" class="svg-label">all known incoming slots point to A′ / B′</text>
+                        <text x="855" y="507" text-anchor="middle" class="svg-label">source block contains no live objects</text>
+                        <text x="855" y="533" text-anchor="middle" class="svg-small">release entire 32 KiB block</text>
+                    </svg>
+                </div>
+
+                <h3>Mature evacuation, from selection to release</h3>
+                <ol class="step-list" data-source="paper">
+                    <li>
+                        <strong>Estimate per-block occupancy from RC metadata.</strong>
+                        Consider blocks below 50% occupancy and sort the sparsest first.
+                    </li>
+                    <li>
+                        <strong>Choose a bounded evacuation set.</strong>
+                        Candidates come from a contiguous region (4 MiB or whole heap); the evaluated
+                        configuration used one set, limiting pause scope.
+                    </li>
+                    <li>
+                        <strong>Bootstrap incoming locations during SATB.</strong>
+                        When tracing sees a reference into a selected block, record the address of the
+                        slot containing that reference.
+                    </li>
+                    <li>
+                        <strong>Keep the remembered set current.</strong>
+                        Field logging observes later writes. Final slot values into the set become
+                        new incoming locations.
+                    </li>
+                    <li>
+                        <strong>Stop mutators and trace only into the set.</strong>
+                        Roots and remembered slots define the incoming frontier; unrelated heap
+                        objects do not need a full evacuation trace.
+                    </li>
+                    <li>
+                        <strong>Copy, forward, and rewrite.</strong>
+                        Allocate destination objects, publish old→new forwarding information, and
+                        rewrite every incoming slot.
+                    </li>
+                    <li>
+                        <strong>Release the emptied source blocks.</strong>
+                        The useful result is not just packed objects—it is whole blocks returned to
+                        the clean pool.
+                    </li>
+                </ol>
+
+                <h3>Why stale remembered-set entries are dangerous</h3>
+                <p>
+                    A remembered entry is an address in the heap. If its source line dies and is
+                    reused, that same numeric address may now contain unrelated data. Treating it as a
+                    reference slot could corrupt a new object. LXR tags remembered entries with a
+                    line-reuse counter; a mismatch proves that the recorded slot belongs to an older
+                    incarnation of the line and must be discarded.
+                </p>
+                <div class="grid-2">
+                    <div class="card">
+                        <h4>Remember source object only?</h4>
+                        <p>
+                            Insufficient. After moving the target, the collector would still need to
+                            rediscover which field or array element inside that source object to edit.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h4>Remember exact slot address?</h4>
+                        <p>
+                            Directly rewritable, but only while the source line incarnation is still
+                            valid. The reuse counter supplies that temporal validity check.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Young copying versus mature evacuation</h3>
+                <table>
+                    <thead>
+                        <tr><th>Dimension</th><th>Young copying</th><th>Mature evacuation</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Why move?</td><td>Pack rare first-surviving young objects and free all-young blocks.</td><td>Repair mature fragmentation and recover clean blocks.</td></tr>
+                        <tr><td>How incoming edges are known</td><td>First-promotion traversal enumerates every incoming seed/reference.</td><td>SATB bootstraps a remembered set; barrier maintains it.</td></tr>
+                        <tr><td>Failure fallback</td><td>Stop copying; establish counts in place.</td><td>Select less/no work or obey pause/copy-space budget.</td></tr>
+                        <tr><td>Concurrency</td><td colspan="2">Selection/bookkeeping may be concurrent; object movement and pointer rewriting are stop-the-world.</td></tr>
+                    </tbody>
+                </table>
+                <div class="callout warning">
+                    <strong>CoreCLR complication:</strong> .NET has pinned heap objects. The measured
+                    LXR reference declares pinning unsupported and can release evacuation source
+                    blocks unconditionally. A .NET port needs an independently designed, generic
+                    pin-aware contract; there is no paper/reference mechanism to copy directly.
+                </div>
+                <details class="deep-dive" data-source="paper reference planned">
+                    <summary>Pinning changes the proof, not only the implementation</summary>
+                    <div>
+                        <p>
+                            The reference implementation’s measured configuration treats
+                            <code>is_pinned()</code> as false and disables pinning work buckets. Its
+                            proof that every selected live object moves—and therefore every source
+                            block empties—depends on that premise.
+                        </p>
+                        <p>
+                            CoreCLR cannot adopt the premise: fixed statements, interop, and runtime
+                            services can create heap-resident pinned objects. A correct port must
+                            either exclude pinned blocks from candidate sets, split sets around
+                            immovable objects, or retain partially evacuated sources with adjusted
+                            metadata. The choice affects candidate selection, forwarding, line
+                            availability, pause budgeting, and the condition for releasing a block.
+                            It is a first-class design obligation, not an edge-case branch.
+                        </p>
+                    </div>
+                </details>
+            </section>
+
+            <section id="requirements">
+                <h2>11. What is needed to port coalescing LXR correctly?</h2>
+                <p class="section-intro">
+                    The algorithm depends on runtime surfaces far outside a collector source file.
+                    Missing one store path or one lifecycle transition is a correctness bug, not a
+                    small performance loss.
+                </p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Capability</th>
+                            <th>Why LXR needs it</th>
+                            <th>CoreCLR port status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Barrier shape negotiation</td>
+                            <td>Select an LXR-compatible write-barrier family at initialization without adding a hot-path mode branch.</td>
+                            <td><span class="status done">P1.1 implemented</span></td>
+                        </tr>
+                        <tr>
+                            <td>Slot-log barrier on every reference store</td>
+                            <td>Capture first old referent + exact slot across Windows/System V x64 helpers.</td>
+                            <td><span class="status done">P1.2 implemented</span></td>
+                        </tr>
+                        <tr>
+                            <td>Bulk/copy store coverage</td>
+                            <td>Array copies and bulk writes must preserve the same logging contract.</td>
+                            <td><span class="status done">P1.3 implemented</span></td>
+                        </tr>
+                        <tr>
+                            <td>Allocation-complete notification</td>
+                            <td>Register an exact object start only after its managed shape is complete.</td>
+                            <td><span class="status done">P1.4 implemented</span></td>
+                        </tr>
+                        <tr>
+                            <td>Object reference enumeration</td>
+                            <td>Scan outgoing fields for promotion, decrement cascades, tracing, and copying.</td>
+                            <td><span class="status done">P1.5 implemented</span></td>
+                        </tr>
+                        <tr>
+                            <td>Reserved object-header state</td>
+                            <td>Negotiate collector-owned bits while coexisting with sync blocks, locks, and hash codes.</td>
+                            <td><span class="status done">P1.6 implemented</span></td>
+                        </tr>
+                        <tr>
+                            <td>Atomic side metadata</td>
+                            <td>Pack counters and block/line/object state outside object headers.</td>
+                            <td><span class="status done">P2.1 implemented</span></td>
+                        </tr>
+                        <tr>
+                            <td>Immix geometry + block lifecycle</td>
+                            <td>Represent blocks, lines, ownership, phase epochs, and reusable-line state.</td>
+                            <td><span class="status done">P2.2 implemented</span></td>
+                        </tr>
+                        <tr>
+                            <td>Sticky RC + continuation sentinels</td>
+                            <td>Implement exact counter semantics and multi-line object metadata.</td>
+                            <td><span class="status done">P2.3 implemented, default-off</span></td>
+                        </tr>
+                        <tr>
+                            <td>Allocator + holes + recycled lines</td>
+                            <td>Turn line metadata into safe bump allocation and reuse.</td>
+                            <td><span class="status future">P2.4 planned</span></td>
+                        </tr>
+                        <tr>
+                            <td>Barrier buffers + packet scheduler</td>
+                            <td>Flush slot logs, apply increments, and route lazy decrements/SATB work.</td>
+                            <td><span class="status future">P3/P4 planned</span></td>
+                        </tr>
+                        <tr>
+                            <td>SATB + evacuation + complete policy</td>
+                            <td>Recover cycles/sticky garbage, defragment, and select LXR as a collector.</td>
+                            <td><span class="status future">P5+ planned</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="code">
+                <h2>12. What the reference code does beyond the paper</h2>
+                <p class="section-intro">
+                    The paper explains the algorithm. The code makes ordering, buffering, feature
+                    gates, state machines, and failure modes concrete.
+                </p>
+                <div class="grid-2">
+                    <div class="card" data-source="reference">
+                        <span class="source-tag reference">PLDI oracle</span>
+                        <h3><code>df8d30a3</code></h3>
+                        <ul>
+                            <li>No <code>src/plan/lxr/</code> tree; LXR is an Immix feature configuration.</li>
+                            <li>Selectable <code>LOG_REF_COUNT_BITS</code> and sticky max in <code>src/util/rc.rs:30–43,72–100</code>.</li>
+                            <li>Straddle operations in <code>src/util/rc.rs:133–186</code>.</li>
+                            <li>Barrier invariant in <code>src/plan/barriers.rs:312–320</code>, condition at 315–316.</li>
+                        </ul>
+                    </div>
+                    <div class="card" data-source="reference">
+                        <span class="source-tag reference">HEAD oracle</span>
+                        <h3><code>304ce69d</code></h3>
+                        <ul>
+                            <li>Flat 9-file <code>src/plan/lxr/</code> tree at this exact revision.</li>
+                            <li>RC widths/sticky logic in <code>src/util/rc.rs:13–26,90–123</code>.</li>
+                            <li>Increment/decrement/SATB flush in <code>src/plan/lxr/barrier.rs:136–175</code>.</li>
+                            <li>Pause/bucket scheduling in <code>src/plan/lxr/global.rs:870–946</code>.</li>
+                        </ul>
+                    </div>
+                </div>
+                <details class="deep-dive" data-source="reference">
+                    <summary>Important reference-code correctness caveat</summary>
+                    <div>
+                        <p>
+                            The PLDI oracle fails under sustained load in its normal barrier path:
+                            <code>assert!(old.is_null() || rc::count(old) != 0)</code> at
+                            <code>df8d30a3:src/plan/barriers.rs:312–320</code>. The condition spans
+                            lines 315–316.
+                        </p>
+                        <p>
+                            A clean default run of HEAD does <em>not</em> prove that invariant there.
+                            HEAD removed the barrier-side check; its only equivalent assertion is
+                            <code>304ce69d:src/util/sanity/sanity_checker.rs:311–316</code>, condition
+                            line 312, behind the non-default <code>sanity</code> feature.
+                        </p>
+                        <p>
+                            Therefore the port uses “specify from PLDI, validate against HEAD after
+                            reinstating the invariant,” rather than treating either default binary
+                            as a complete executable specification.
+                        </p>
+                    </div>
+                </details>
+                <details class="deep-dive" data-source="reference">
+                    <summary>Code-level barrier and scheduler flow at HEAD</summary>
+                    <div>
+                        <ul>
+                            <li><code>flush_incs()</code> packages increments into RC work.</li>
+                            <li><code>flush_decs_and_satb()</code> packages old referents for decrements and, when active, SATB.</li>
+                            <li>Lazy decrements route to the concurrent work bucket; otherwise they enter stop-the-world decrement/sweep work.</li>
+                            <li><code>global.rs</code> enables/disables work buckets per pause type, schedules RC, initial/final mark, emergency full-heap work, zeroing, and defrag selection.</li>
+                        </ul>
+                        <p class="citation">
+                            [<code>304ce69d:src/plan/lxr/barrier.rs:136–175</code>;
+                            <code>304ce69d:src/plan/lxr/global.rs:870–946</code>]
+                        </p>
+                    </div>
+                </details>
+            </section>
+
+            <section id="dotnet-port">
+                <h2>13. What exists in the CoreCLR port today</h2>
+                <p class="section-intro">
+                    The port is deliberately building generic runtime capabilities first. LXR is the
+                    first consumer, not the definition of those contracts.
+                </p>
+
+                <h3>P2.1: fixed-address side metadata</h3>
+                <div class="diagram">
+                    <svg viewBox="0 0 1080 400" role="img" aria-labelledby="meta-title meta-desc">
+                        <title id="meta-title">CoreCLR LXR side-metadata mapping</title>
+                        <desc id="meta-desc">A 47-bit data address maps into independently reserved global and local metadata regions. Only represented heap ranges are committed. Planes include ValidObject, reference counts, straddles, block state, ownership, phase, and line reuse.</desc>
+                        <defs>
+                            <marker id="arrow-meta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#60a5fa"></path>
+                            </marker>
+                        </defs>
+                        <text x="40" y="35" class="svg-title">Address-derived metadata: no object-header expansion</text>
+
+                        <rect x="50" y="90" width="260" height="210" rx="16" class="svg-box"></rect>
+                        <text x="180" y="125" text-anchor="middle" class="svg-title">Managed heap address</text>
+                        <text x="180" y="155" text-anchor="middle" class="svg-label">47-bit supported data space</text>
+                        <text x="180" y="182" text-anchor="middle" class="svg-small">exact object or line/block address</text>
+                        <rect x="90" y="215" width="180" height="48" rx="9" class="svg-dotnet"></rect>
+                        <text x="180" y="244" text-anchor="middle" class="svg-label">shift / scale by plane</text>
+
+                        <rect x="410" y="65" width="280" height="120" rx="16" class="svg-dotnet"></rect>
+                        <text x="550" y="100" text-anchor="middle" class="svg-title">Global metadata region</text>
+                        <text x="550" y="127" text-anchor="middle" class="svg-label">base 0x00000c0000000000</text>
+                        <text x="550" y="151" text-anchor="middle" class="svg-small">shared/global specifications</text>
+
+                        <rect x="410" y="225" width="280" height="120" rx="16" class="svg-dotnet"></rect>
+                        <text x="550" y="260" text-anchor="middle" class="svg-title">Local metadata region</text>
+                        <text x="550" y="287" text-anchor="middle" class="svg-label">base 0x00004c0000000000</text>
+                        <text x="550" y="311" text-anchor="middle" class="svg-small">collector-local specifications</text>
+
+                        <path d="M310 155 C350 140 370 125 410 125" fill="none" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow-meta)"></path>
+                        <path d="M310 245 C350 260 370 285 410 285" fill="none" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow-meta)"></path>
+
+                        <rect x="780" y="70" width="250" height="270" rx="16" class="svg-box"></rect>
+                        <text x="905" y="105" text-anchor="middle" class="svg-title">Planes</text>
+                        <text x="815" y="140" class="svg-label">ValidObject</text>
+                        <text x="815" y="167" class="svg-label">ReferenceCount</text>
+                        <text x="815" y="194" class="svg-label">RC straddle</text>
+                        <text x="815" y="221" class="svg-label">Block mark/log/defrag</text>
+                        <text x="815" y="248" class="svg-label">Block owner/in-use</text>
+                        <text x="815" y="275" class="svg-label">Phase epoch</text>
+                        <text x="815" y="302" class="svg-label">Line reuse</text>
+                        <path d="M690 125 H780" fill="none" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow-meta)"></path>
+                        <path d="M690 285 H780" fill="none" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow-meta)"></path>
+                    </svg>
+                </div>
+                <p data-source="dotnet">
+                    <span class="source-tag dotnet">Implemented</span>
+                    P2.1 reserves metadata outside objects, commits pages only for represented data
+                    ranges, and supplies atomic bit/byte/word and masked packed-field operations.
+                    Concrete surfaces are <code>side_metadata.h:37–53,90–147</code> and
+                    <code>side_metadata.cpp:101–220</code>.
+                </p>
+
+                <h3>P2.2: block state and phase epochs</h3>
+                <div class="grid-2">
+                    <div class="card" data-source="dotnet">
+                        <h4>Geometry</h4>
+                        <ul>
+                            <li>32 KiB block (<code>BlockLogBytes = 15</code>)</li>
+                            <li>256-byte line (<code>LineLogBytes = 8</code>)</li>
+                            <li>128 lines per block</li>
+                            <li>Objects may straddle lines, not blocks</li>
+                        </ul>
+                    </div>
+                    <div class="card" data-source="dotnet">
+                        <h4>State byte</h4>
+                        <ul>
+                            <li><code>0</code>: unallocated</li>
+                            <li><code>1..253</code>: reusable with encoded unavailable lines</li>
+                            <li><code>254</code>: marked</li>
+                            <li><code>255</code>: unmarked</li>
+                        </ul>
+                    </div>
+                </div>
+                <p>
+                    A global phase epoch starts at 1. Odd means normal execution; even means GC work.
+                    Each block also records an epoch. State + global epoch + block epoch derive
+                    nursery/reusing/GC-reusing predicates without embedding all modes in one state byte.
+                    This follows the HEAD mechanism rather than combining it with PLDI’s incompatible
+                    six-state representation.
+                </p>
+                <p class="citation">
+                    [<code>immix_block.h:26–37,77–170</code>;
+                    <code>immix_block.cpp:25–246</code>]
+                </p>
+
+                <h3>P2.3: sticky RC facade and object lifecycle</h3>
+                <div class="grid-3">
+                    <div class="card" data-source="dotnet">
+                        <h4>Accepted start</h4>
+                        <p>8-byte aligned, owned, registered in <code>ValidObject</code>, at least 24 bytes, single block.</p>
+                    </div>
+                    <div class="card" data-source="dotnet">
+                        <h4>Rejected input</h4>
+                        <p>Interior/byref, misaligned, unregistered, cross-block, or a start inside a marked continuation line.</p>
+                    </div>
+                    <div class="card" data-source="dotnet">
+                        <h4>Lifecycle</h4>
+                        <p>Quiescent initialize, copy, object reset, range reset; copy re-derives destination sentinels.</p>
+                    </div>
+                </div>
+                <p class="citation">
+                    [<code>a9817282:reference_count.h:12–86</code>;
+                    <code>a9817282:reference_count.cpp:47–173,243–323,419–534,602–678</code>]
+                </p>
+                <div class="metric-grid" data-source="dotnet">
+                    <div class="metric"><strong>37/37</strong><span>Windows x64 cases</span></div>
+                    <div class="metric"><strong>37/37</strong><span>Linux x64 cases</span></div>
+                    <div class="metric"><strong>1,882</strong><span>checks per x64 platform in committed raw evidence</span></div>
+                    <div class="metric"><strong>631 + 32</strong><span>verifier checks + archive-gate rows</span></div>
+                </div>
+                <div class="callout warning">
+                    <strong>Evidence-count note:</strong> the authoritative accepted raw file
+                    <code>fcac4c90:docs/design/lxr-port/P2.3/raw/validation-summary.csv</code>
+                    records 1,882 checks per x64 platform. An earlier coordinator summary retained
+                    the pre-hardening total 1,874; this page uses the committed raw evidence.
+                </div>
+            </section>
+
+            <section id="results">
+                <h2>14. What the paper measured—and what it did not</h2>
+                <p class="section-intro">
+                    LXR’s central empirical lesson is that short GC pauses are not the same thing as
+                    good application-observed latency.
+                </p>
+
+                <h3>Table 1: Lusearch at 1.3× minimum heap</h3>
+                <div class="diagram">
+                    <svg viewBox="0 0 1100 430" role="img" aria-labelledby="result-title result-desc">
+                        <title id="result-title">LXR versus G1 pause and query latency from paper Table 1</title>
+                        <desc id="result-desc">At p99.99, LXR has a longer GC pause than G1, 2.9 versus 1.2 milliseconds, but lower query latency, 13.1 versus 15.9 milliseconds.</desc>
+                        <text x="45" y="35" class="svg-title">Longer GC pause, better application tail latency</text>
+
+                        <text x="80" y="85" class="svg-label">GC pause p99.99 (ms)</text>
+                        <rect x="80" y="110" width="240" height="42" rx="7" fill="#24475a"></rect>
+                        <rect x="80" y="110" width="99" height="42" rx="7" fill="#94a3b8"></rect>
+                        <text x="188" y="137" class="svg-label">G1 1.2</text>
+                        <rect x="80" y="170" width="240" height="42" rx="7" fill="#24475a"></rect>
+                        <rect x="80" y="170" width="239" height="42" rx="7" fill="#fbbf24"></rect>
+                        <text x="188" y="197" fill="#111827" font-size="13" font-weight="800">LXR 2.9</text>
+
+                        <text x="600" y="85" class="svg-label">Query latency p99.99 (ms)</text>
+                        <rect x="600" y="110" width="400" height="42" rx="7" fill="#24475a"></rect>
+                        <rect x="600" y="110" width="400" height="42" rx="7" fill="#94a3b8"></rect>
+                        <text x="755" y="137" fill="#111827" font-size="13" font-weight="800">G1 15.9</text>
+                        <rect x="600" y="170" width="400" height="42" rx="7" fill="#24475a"></rect>
+                        <rect x="600" y="170" width="330" height="42" rx="7" fill="#5eead4"></rect>
+                        <text x="755" y="197" fill="#06221d" font-size="13" font-weight="800">LXR 13.1</text>
+
+                        <rect x="80" y="270" width="920" height="100" rx="14" class="svg-paper"></rect>
+                        <text x="540" y="305" text-anchor="middle" class="svg-title">Interpretation</text>
+                        <text x="540" y="334" text-anchor="middle" class="svg-label">LXR's GC pauses are longer than G1 at every percentile in Table 1.</text>
+                        <text x="540" y="357" text-anchor="middle" class="svg-label">Its request tail is still much better at p99, p99.9, and p99.99.</text>
+                    </svg>
+                </div>
+
+                <h3>Table 5: execution-time ratio versus G1</h3>
+                <table data-source="paper">
+                    <thead>
+                        <tr>
+                            <th>Heap</th>
+                            <th>LXR p99.99 latency / G1</th>
+                            <th>LXR time / G1</th>
+                            <th>Correct reading</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>1.3×</td><td>0.72</td><td>0.97</td><td>Better latency, about 3% lower execution time.</td></tr>
+                        <tr><td>2×</td><td>0.92</td><td>0.96</td><td>Better latency, about 4% lower execution time.</td></tr>
+                        <tr><td>6×</td><td>0.85</td><td>1.01</td><td>Better latency, approximately equal/slightly slower.</td></tr>
+                    </tbody>
+                </table>
+                <div class="callout warning">
+                    <strong>Do not invert the metric.</strong> Table 5 reports <code>Time/G1</code>,
+                    not operations per second. Lower is better.
+                </div>
+
+                <h3>Table 7: LXR-only characterization at 2× heap</h3>
+                <div class="metric-grid" data-source="paper">
+                    <div class="metric"><strong>3.0 ms</strong><span>geometric-mean p50 pause</span></div>
+                    <div class="metric"><strong>4.7 ms</strong><span>geometric-mean p95 pause</span></div>
+                    <div class="metric"><strong>94.3%</strong><span>arithmetic-mean implicitly dead young reclamation</span></div>
+                    <div class="metric"><strong>5.1%</strong><span>arithmetic-mean SATB reclamation</span></div>
+                </div>
+                <p>
+                    Table 7 does not compare pause distributions with G1, Shenandoah, or ZGC. Its
+                    p50/p95 columns are LXR-only. It also reports a 1.016 geometric-mean barrier ratio
+                    against <em>no-barrier full-heap Immix</em>, not against G1.
+                </p>
+
+                <h3>Methodology boundaries</h3>
+                <ul data-source="paper">
+                    <li>OpenJDK 11 + MMTk, 17 DaCapo Chopin workloads.</li>
+                    <li>Class unloading, compressed pointers, and weak references were disabled in every collector.</li>
+                    <li>Request latency includes computation, interruption, and queueing—not only GC pause time.</li>
+                    <li>The extended lower-bound-overhead analysis is a model, not an executable zero-cost collector.</li>
+                </ul>
+
+                <h3>.NET P2.3 benchmark: useful, but narrower</h3>
+                <p data-source="dotnet">
+                    The accepted substrate benchmark has 57 rows: width operations for 2/4/8-bit
+                    configurations and contention controls at 1/4/16 workers. Its A/A control,
+                    extra-CAS slowdown, and injected-delay slowdown prove the harness responds to
+                    noise and known perturbations. It measures native RC/straddle operations and
+                    synthetic increment-heavy churn—not an allocator and not full LXR.
+                </p>
+            </section>
+
+            <section id="misconceptions">
+                <h2>15. Common misconceptions</h2>
+                <details class="deep-dive" open>
+                    <summary>“LXR is pause-free or purely concurrent.”</summary>
+                    <div>
+                        <p>
+                            False. Frequent parallel stop-the-world RC epochs are central. Lazy
+                            decrements and SATB are mostly concurrent; all copying is stop-the-world.
+                        </p>
+                    </div>
+                </details>
+                <details class="deep-dive">
+                    <summary>“Reference counting collects cycles.”</summary>
+                    <div>
+                        <p>
+                            Zero counts cannot discover a closed cycle. LXR’s mature-only SATB backup
+                            trace finds cycles and saturated-count garbage.
+                        </p>
+                    </div>
+                </details>
+                <details class="deep-dive">
+                    <summary>“A sticky count eventually decrements again.”</summary>
+                    <div>
+                        <p>
+                            No. Once maximum is reached, increments and decrements stop. Tracing
+                            decides whether the object remains reachable.
+                        </p>
+                    </div>
+                </details>
+                <details class="deep-dive">
+                    <summary>“LXR never moves objects.”</summary>
+                    <div>
+                        <p>
+                            Incomplete. Most reclamation is non-moving, but young survivors and
+                            selected mature evacuation sets may be copied during pauses.
+                        </p>
+                    </div>
+                </details>
+                <details class="deep-dive">
+                    <summary>“LXR has a conventional copying nursery.”</summary>
+                    <div>
+                        <p>
+                            Misleading. Young means allocated since the previous RC epoch. Copying
+                            all-young blocks is opportunistic and may fall back to promotion in place.
+                        </p>
+                    </div>
+                </details>
+                <details class="deep-dive">
+                    <summary>“The paper’s 1.6% barrier overhead is versus G1.”</summary>
+                    <div>
+                        <p>
+                            False. The baseline is no-barrier full-heap Immix. The value is a
+                            geometric mean from this experiment and sits near a roughly ±3% noise scale.
+                        </p>
+                    </div>
+                </details>
+                <details class="deep-dive">
+                    <summary>“The current CoreCLR branch contains a working LXR collector.”</summary>
+                    <div>
+                        <p>
+                            False. It contains enabling runtime contracts and P2.1–P2.3 metadata/state
+                            substrate. The allocator, work packets, sweep, SATB, evacuation, and collector
+                            integration are not implemented yet.
+                        </p>
+                    </div>
+                </details>
+            </section>
+
+            <section id="glossary">
+                <h2>16. Glossary</h2>
+                <div class="grid-2">
+                    <div class="card"><h3>After-image</h3><p>The final value of a modified field at the RC epoch boundary.</p></div>
+                    <div class="card"><h3>Before-image</h3><p>The old referent captured on the field’s first write in an epoch.</p></div>
+                    <div class="card"><h3>Coalescing</h3><p>Replacing many intermediate field updates with one boundary decrement and one boundary increment.</p></div>
+                    <div class="card"><h3>Lazy decrement</h3><p>A deferred decrement processed concurrently after the pause, including recursive death cascades.</p></div>
+                    <div class="card"><h3>Line</h3><p>A 256-byte LXR Immix allocation/reuse unit inside a 32 KiB block.</p></div>
+                    <div class="card"><h3>RC epoch</h3><p>The interval between two stop-the-world reference-count boundary operations.</p></div>
+                    <div class="card"><h3>SATB</h3><p>Snapshot-at-the-beginning concurrent tracing, preserving referents that existed at trace start.</p></div>
+                    <div class="card"><h3>Sticky count</h3><p>A saturated counter that refuses future increments and decrements until tracing reclaims the object.</p></div>
+                    <div class="card"><h3>Straddle line</h3><p>A full line occupied by an object that began in an earlier line.</p></div>
+                    <div class="card"><h3>Temporal nursery</h3><p>The set of objects allocated since the previous RC epoch, rather than a fixed nursery address range.</p></div>
+                </div>
+            </section>
+
+            <section id="references">
+                <h2>17. Sources and exact identities</h2>
+                <h3>Primary LXR sources</h3>
+                <ol class="reference-list">
+                    <li>
+                        Wenyu Zhao, Stephen M. Blackburn, and Kathryn S. McKinley,
+                        <a href="https://arxiv.org/pdf/2210.17175v1">Low-Latency, High-Throughput Garbage Collection (Extended Version)</a>,
+                        arXiv:2210.17175v1, 1 Nov 2022.
+                    </li>
+                    <li>
+                        Conference DOI:
+                        <a href="https://doi.org/10.1145/3519939.3523440">10.1145/3519939.3523440</a>.
+                    </li>
+                    <li>
+                        Archived artifact:
+                        <a href="https://doi.org/10.5281/zenodo.6501899">Zenodo 6501899</a>.
+                    </li>
+                    <li>
+                        PLDI build pair: binding <code>abbdd1dbbe7277e4b0dfd1d37ba613c53f5ca50d</code>
+                        → core <code>df8d30a39237a5bf5a8e27ca5a6f46acc6080c94</code>.
+                    </li>
+                    <li>
+                        HEAD build pair: binding <code>0682434ae725787e38defbc17bd66dc918e4bdb7</code>
+                        → core <code>304ce69d43aae87de501111fceb8cbd33173a03a</code>.
+                    </li>
+                </ol>
+
+                <h3>CoreCLR port sources</h3>
+                <ol class="reference-list">
+                    <li><code>docs/design/lxr-port/P0.1-mechanism-diff.md</code> — oracle mechanism comparison.</li>
+                    <li><code>docs/design/lxr-port/P0.2-paper-targets.md</code> — paper metrics and caveats.</li>
+                    <li><code>docs/design/lxr-port/P2.1-side-metadata-framework.md</code> — fixed-address metadata design.</li>
+                    <li><code>docs/design/lxr-port/P2.2-block-line-state.md</code> — block/line geometry and state.</li>
+                    <li><code>a9817282:docs/design/lxr-port/P2.3-sticky-reference-counts.md</code> — accepted sticky RC design.</li>
+                    <li><code>fcac4c90:docs/design/lxr-port/P2.3/raw/</code> — accepted raw P2.3 evidence.</li>
+                </ol>
+
+                <h3>Background sources</h3>
+                <ol class="reference-list">
+                    <li>Collins, <a href="https://doi.org/10.1145/367487.367501">A Method for Overlapping and Erasure of Lists</a>, 1960.</li>
+                    <li>Deutsch &amp; Bobrow, <a href="https://doi.org/10.1145/360336.360345">An Efficient, Incremental, Automatic Garbage Collector</a>, 1976.</li>
+                    <li>Levanoni &amp; Petrank, <a href="https://doi.org/10.1145/504282.504309">An On-the-Fly Reference Counting Garbage Collector for Java</a>, 2001.</li>
+                    <li>Yuasa, <a href="https://doi.org/10.1016/0164-1212(90)90084-Y">Real-Time Garbage Collection on General-Purpose Machines</a>, 1990.</li>
+                    <li>Blackburn &amp; McKinley, <a href="https://doi.org/10.1145/1375581.1375586">Immix</a>, 2008.</li>
+                    <li>Shahriyar et al., <a href="https://doi.org/10.1145/2509136.2509527">Taking Off the Gloves with Reference Counting Immix</a>, 2013.</li>
+                    <li>Blackburn, <a href="https://doi.org/10.1145/3315573.3329981">Design and Analysis of Field-Logging Write Barriers</a>, 2019.</li>
+                    <li>Jones, Hosking &amp; Moss, <a href="https://gchandbook.org/">The Garbage Collection Handbook</a>.</li>
+                </ol>
+            </section>
+        </main>
+    </div>
+
+    <footer class="footer-note">
+        This explainer separates paper claims, exact reference-code behavior, and the current
+        CoreCLR implementation status. It intentionally does not treat an unimplemented roadmap
+        mechanism as working code or a synthetic substrate benchmark as end-to-end collector evidence.
+    </footer>
+
+    <script>
+        (() => {
+            const filterButtons = [...document.querySelectorAll(".filter-button[data-filter]")];
+            for (const button of filterButtons) {
+                button.addEventListener("click", () => {
+                    const filter = button.dataset.filter;
+                    document.body.dataset.filter = filter;
+                    for (const candidate of filterButtons) {
+                        candidate.setAttribute("aria-pressed", String(candidate === button));
+                    }
+                });
+            }
+
+            const detailButton = document.getElementById("toggle-details");
+            const details = [...document.querySelectorAll("details.deep-dive")];
+            detailButton.addEventListener("click", () => {
+                const shouldOpen = details.some(detail => !detail.open);
+                for (const detail of details) {
+                    detail.open = shouldOpen;
+                }
+                detailButton.textContent = shouldOpen ? "Collapse deep dives" : "Expand deep dives";
+            });
+
+            const tocLinks = [...document.querySelectorAll(".toc a")];
+            const linkById = new Map(tocLinks.map(link => [link.getAttribute("href").slice(1), link]));
+            const sections = [...document.querySelectorAll("main > section")];
+            const observer = new IntersectionObserver(entries => {
+                const visible = entries
+                    .filter(entry => entry.isIntersecting)
+                    .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+                if (!visible) {
+                    return;
+                }
+                for (const link of tocLinks) {
+                    link.removeAttribute("aria-current");
+                }
+                linkById.get(visible.target.id)?.setAttribute("aria-current", "true");
+            }, {
+                rootMargin: "-15% 0px -70% 0px",
+                threshold: [0.05, 0.2, 0.5]
+            });
+
+            for (const section of sections) {
+                observer.observe(section);
+            }
+        })();
+    </script>
+</body>
+</html>

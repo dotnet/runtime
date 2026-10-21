@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta name="description" content="Matched benchmarks of the Java LXR and our .NET port in real use: no explicit collections, same programs written twice, same checksums.">
+    <title>The collectors in real use: the Java LXR and our .NET port, without forced collections</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #08131c;
+            --panel: #102331;
+            --panel-soft: #0c1b27;
+            --line: #355264;
+            --text: #edf3f7;
+            --muted: #b8cad6;
+            --java: #75e2cc;
+            --port: #ffc481;
+            --link: #92d5ff;
+            --warn: #fb7185;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: radial-gradient(ellipse at 10% 0, #16313d 0, transparent 44rem), var(--bg);
+            color: var(--text);
+            font: 1.0625rem/1.75 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        a { color: var(--link); text-underline-offset: 0.2em; }
+        a:hover { color: var(--java); }
+        :focus-visible { outline: 3px solid var(--java); outline-offset: 4px; }
+        h1, h2, h3 { line-height: 1.25; text-wrap: balance; }
+        h1 { margin: 0.5rem 0 1.2rem; font-size: clamp(2.1rem, 5.5vw, 3.6rem); letter-spacing: -0.04em; }
+        h2 { margin: 0 0 1.1rem; font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -0.02em; }
+        h3 { margin: 1.8rem 0 0.6rem; font-size: 1.3rem; }
+        p, li { max-width: 46rem; }
+        p { margin: 0.8rem 0 1.1rem; }
+        li { margin: 0.5rem 0; }
+        code { font: 0.9em/1.5 "Cascadia Code", Consolas, monospace; overflow-wrap: anywhere; }
+        .wrap { width: min(1100px, calc(100% - 2.5rem)); margin-inline: auto; }
+        header { padding: 3.5rem 0 1.5rem; }
+        .eyebrow { margin: 0; color: var(--java); font-size: 0.85rem; font-weight: 750; letter-spacing: 0.12em; text-transform: uppercase; }
+        .lead { font-size: 1.25rem; color: #d6e3ea; }
+        .java { color: var(--java); }
+        .port { color: var(--port); }
+        .src { color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
+        nav { display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; padding: 1rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        nav a { font-weight: 650; }
+        main > section { padding: 2.8rem 0; border-bottom: 1px solid var(--line); }
+        [id] { scroll-margin-top: 1.5rem; }
+        .box { max-width: 52rem; padding: 1.1rem 1.4rem; margin: 1.4rem 0; border: 1px solid var(--line); border-left: 5px solid var(--java); border-radius: 12px; background: var(--panel); }
+        .box.alert { border-left-color: var(--warn); }
+        .box.port-box { border-left-color: var(--port); }
+        .box h3 { margin-top: 0.2rem; }
+        .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+        .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin: 1.2rem 0; }
+        .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.2rem; margin: 1.2rem 0; }
+        .two > div, .three > div { padding: 1.1rem 1.3rem; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+        .two h3, .three h3 { margin-top: 0; }
+        figure { margin: 1.6rem 0; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); overflow: hidden; }
+        .visual { overflow-x: auto; padding: 1rem; }
+        .visual svg { display: block; width: 100%; min-width: 820px; height: auto; }
+        figcaption { padding: 0.8rem 1.2rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.92rem; }
+        svg text { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #edf3f7; font-size: 15px; }
+        svg .b { font-size: 16px; font-weight: 700; }
+        svg .c { font-size: 13px; fill: #b8cad6; }
+        svg .v { font-size: 11.5px; fill: #edf3f7; }
+        svg .rt { fill: #fb7185; }
+        details { max-width: 100%; margin: 1rem 0; padding: 0.9rem 1.2rem; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-soft); }
+        summary { cursor: pointer; font-weight: 700; color: var(--link); }
+        details[open] > summary { margin-bottom: 0.9rem; }
+        .table-wrap { max-width: 100%; overflow-x: auto; margin: 1.2rem 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+        th, td { padding: 0.55rem 0.7rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+        th { color: var(--java); font-size: 0.84rem; }
+        thead th { background: #142c3c; }
+        caption { text-align: left; font-weight: 700; padding: 0 0 0.8rem; }
+        dt { font-weight: 700; color: var(--java); margin-top: 0.8rem; }
+        dd { margin: 0.2rem 0 0.6rem; max-width: 44rem; }
+        footer { padding: 2rem 0 3rem; color: var(--muted); font-size: 0.9rem; }
+        .skip { position: absolute; left: 1rem; top: -10rem; padding: 0.7rem; background: var(--bg); z-index: 1; }
+        .skip:focus { top: 1rem; }
+        @media (max-width: 720px) {
+            .two, .three { grid-template-columns: 1fr; }
+            .wrap { width: calc(100% - 1.5rem); }
+            header { padding-top: 2.2rem; }
+            main > section { padding: 2rem 0; }
+        }
+        @media print {
+            :root { color-scheme: light; --bg: #fff; --panel: #fff; --panel-soft: #f4f6f8; --line: #9daab3; --text: #101820; --muted: #344753; --java: #006355; --port: #804200; --link: #064c81; --warn: #9b1c31; }
+            body { background: #fff; font-size: 10.5pt; }
+            .visual svg { min-width: 0; background: #102331; print-color-adjust: exact; }
+            nav, .skip { display: none; }
+            figure, .box { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <a class="skip" href="#main">Skip to the report</a>
+    <header class="wrap">
+        <p class="eyebrow">Real use / no forced collections / matched programs</p>
+        <h1>What the collectors do when nobody calls the GC</h1>
+        <p class="lead">Our earlier tests called <code>GC.Collect()</code> eight times. Real programs do not do that. This page measures what happens when the collector runs by itself, because the program allocates memory. We wrote the same three programs in C# and in Java. We ran them on the Java LXR, on our .NET port and on the standard collectors of both runtimes.</p>
+        <nav aria-label="Sections">
+            <a href="#answer">Short answer</a>
+            <a href="#what">What we ran</a>
+            <a href="#results">Results</a>
+            <a href="#stalls">Stalls</a>
+            <a href="#kinds">Kinds of collections</a>
+            <a href="#meaning">What it means</a>
+            <a href="#limits">Limits</a>
+            <a href="#all">All numbers</a>
+            <a href="#repeat">Repeat it</a>
+        </nav>
+    </header>
+    <main id="main" class="wrap">
+
+        <section id="answer" aria-labelledby="answer-h">
+            <p class="eyebrow">Short answer</p>
+            <h2 id="answer-h">The gap is real, and it is not only about full collections</h2>
+            <ul>
+                <li><strong>Our port is much slower in real use.</strong> In all 24 cases where it finished, it needed 7.5 to 28 times the wall time and 12 to 43 times the CPU time of the .NET Workstation GC.</li>
+                <li><strong>The Java LXR is close to the standard Java collectors.</strong> At 4 times the minimum heap or more, it is 1.1 to 2.2 times slower than Java G1. So the Java LXR is a real, working target.</li>
+                <li><strong>Our port stops the program for a long time.</strong> Its longest stall is 140 ms to 1.9 s. The Java LXR and the standard collectors stay below 50 ms.</li>
+                <li><strong>Even the cheap collections are slow in our port.</strong> In the binary-trees program, neither LXR runs a full collection. The Java LXR pauses for 2 ms on average. Our port pauses for 109 ms.</li>
+                <li><strong>Our port also chooses full collections too often.</strong> In the requests program at 4 times the minimum heap, 51 of its 57 collections are full collections. The Java LXR runs none in 113.</li>
+                <li><strong>Our port stops with "Out of memory"</strong> in the tightest heap of the list-suffix program, where .NET Workstation and the Java LXR both finish.</li>
+            </ul>
+            <div class="box alert">
+                <h3>This changes our earlier picture</h3>
+                <p>We studied forced full collections first. That was too narrow. In real use, the cost comes from three places: slow normal collections, too many full collections, and slow full collections. All three need work.</p>
+            </div>
+        </section>
+
+        <section id="what" aria-labelledby="what-h">
+            <p class="eyebrow">01</p>
+            <h2 id="what-h">What we ran</h2>
+            <h3>Three programs, written twice</h3>
+            <p>Each program exists in C# and in Java. The two versions do the same steps, use the same random numbers and compute the same checksum. All 234 successful runs of a program gave the same checksum, so every collector did the same work. (36 runs failed: see the limits.) No program asks for a collection while it is measured.</p>
+            <div class="three">
+                <div>
+                    <h3>Binary trees</h3>
+                    <p>A well-known GC test. It builds many short-lived trees of small objects and keeps one large tree alive. It makes many objects and many pointers. It does not change old objects.</p>
+                </div>
+                <div>
+                    <h3>Requests</h3>
+                    <p>Like a server with a cache. 32,768 cache entries stay alive (about 295,000 objects). Each of 600,000 requests builds 24 short-lived objects, reads 8 entries and, one time in 8, replaces an entry.</p>
+                </div>
+                <div>
+                    <h3>List suffix</h3>
+                    <p>4,096 lists of 64 nodes stay alive (262,144 objects). Each of 800,000 steps cuts a list at a random place and builds a new tail. It writes pointers into old objects and makes garbage.</p>
+                </div>
+            </div>
+            <h3>Who competes</h3>
+            <div class="two">
+                <div>
+                    <h3 class="java">In Java</h3>
+                    <p>The Java LXR, and the standard collectors G1, Parallel, Serial and ZGC. All run on the same Java build that contains the Java LXR.</p>
+                </div>
+                <div>
+                    <h3 class="port">In .NET</h3>
+                    <p>Our accepted port in three modes (no moving of objects, moving young objects, moving all objects), the Workstation GC and the Server GC. They run on the same .NET build.</p>
+                </div>
+            </div>
+            <h3>How big is the heap</h3>
+            <p>Java objects and .NET objects have different sizes. So we do not use one heap size for both. For each runtime, we find the smallest heap in which its simple standard collector (Java Serial, .NET Workstation) finishes the work. Then every collector of that runtime gets 2, 4 and 8 times this size. A tight heap makes the collector work more.</p>
+            <div class="table-wrap"><table><caption>Heap sizes</caption><thead><tr><th scope="col">Workload</th><th scope="col">Java: smallest heap for Serial</th><th scope="col">Java heap at 2x / 4x / 8x</th><th scope="col">.NET: smallest heap for Workstation</th><th scope="col">.NET heap at 2x / 4x / 8x</th></tr></thead><tbody><tr><td>Binary trees</td><td>7 MiB</td><td>14 / 28 / 56 MiB</td><td>10 MiB</td><td>20 / 40 / 80 MiB</td></tr><tr><td>Requests</td><td>13 MiB</td><td>26 / 52 / 104 MiB</td><td>21 MiB</td><td>42 / 84 / 168 MiB</td></tr><tr><td>List suffix</td><td>7 MiB</td><td>14 / 28 / 56 MiB</td><td>10 MiB</td><td>20 / 40 / 80 MiB</td></tr></tbody></table></div>
+            <h3>What we measure</h3>
+            <ul>
+                <li><strong>Wall time and CPU time</strong> of the measured part. An unmeasured warm-up of one eighth of the work comes first.</li>
+                <li><strong>Collections and pause time.</strong> The runtime reports them. For the Java LXR, we read its own log, because the Java tools report nothing for it. For our port, we also read its own counters.</li>
+                <li><strong>Longest stall.</strong> A helper thread sleeps for 1 ms in a loop and notes how long it really waited. A long wait means that the program stopped. It uses the same method in both runtimes.</li>
+                <li><strong>Peak memory</strong> of the process (RSS).</li>
+            </ul>
+            <p>We ran each case 3 times, with the order of the collectors changed in each round, and we use the median. The machine has 16 logical CPUs (Intel Xeon Platinum 8370C) and runs Linux under WSL2. Both runtimes use their default number of GC threads, except that the .NET Server GC uses 2 heaps, as in our earlier tests.</p>
+        </section>
+
+        <section id="results" aria-labelledby="results-h">
+            <p class="eyebrow">02</p>
+            <h2 id="results-h">How much slower than the standard collector</h2>
+            <p>We compare each collector with the standard collector <em>of its own runtime</em>: the Java LXR with Java G1, and our port with the .NET Workstation GC. We never compare a Java time with a .NET time. A bar of 1 means the same speed. A bar of 10 means ten times slower. The scale is logarithmic.</p>
+            <figure>
+                <div class="visual" tabindex="0" role="region" aria-label="Figure 1, scroll sideways on a small screen">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" role="img" aria-labelledby="slow-t slow-d">
+<title id="slow-t">How many times slower than the standard collector of the same runtime</title>
+<desc id="slow-d">For three workloads and three heap sizes, bars show the wall time of the Java LXR divided by the time of Java G1, and of our port in three modes divided by the time of the .NET Workstation GC. A log scale is used. Our port is 7 to 28 times slower. The Java LXR is 1.1 to 2.2 times slower, except 6.9 times in the tightest heap of the list suffix workload, where our port crashes.</desc>
+<path d="M70 400.0H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="405.0" text-anchor="end" class="c">0.5x</text>
+<path d="M70 350.3H985" stroke="#cfe0ea" stroke-width="2" fill="none"/>
+<text x="62" y="355.3" text-anchor="end" class="c">1x</text>
+<path d="M70 300.7H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="305.7" text-anchor="end" class="c">2x</text>
+<path d="M70 235.0H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="240.0" text-anchor="end" class="c">5x</text>
+<path d="M70 185.3H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="190.3" text-anchor="end" class="c">10x</text>
+<path d="M70 135.7H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="140.7" text-anchor="end" class="c">20x</text>
+<path d="M70 70.0H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="75.0" text-anchor="end" class="c">50x</text>
+<text x="222" y="452" text-anchor="middle" class="b">Binary trees</text>
+<text x="121" y="422" text-anchor="middle" class="c">heap 2x</text>
+<rect x="82.3" y="344.9" width="17" height="55.1" fill="#75e2cc"/>
+<text x="90.8" y="340.9" text-anchor="middle" class="v">1.1</text>
+<rect x="102.3" y="136.8" width="17" height="263.2" fill="#ffd9a8"/>
+<text x="110.8" y="132.8" text-anchor="middle" class="v">20</text>
+<rect x="122.3" y="121.4" width="17" height="278.6" fill="#ffb259"/>
+<text x="130.8" y="117.4" text-anchor="middle" class="v">24</text>
+<rect x="142.3" y="122.9" width="17" height="277.1" fill="#e07b00"/>
+<text x="150.8" y="118.9" text-anchor="middle" class="v">24</text>
+<text x="222" y="422" text-anchor="middle" class="c">heap 4x</text>
+<rect x="184.0" y="323.4" width="17" height="76.6" fill="#75e2cc"/>
+<text x="192.5" y="319.4" text-anchor="middle" class="v">1.5</text>
+<rect x="204.0" y="157.5" width="17" height="242.5" fill="#ffd9a8"/>
+<text x="212.5" y="153.5" text-anchor="middle" class="v">15</text>
+<rect x="224.0" y="149.7" width="17" height="250.3" fill="#ffb259"/>
+<text x="232.5" y="145.7" text-anchor="middle" class="v">16</text>
+<rect x="244.0" y="148.2" width="17" height="251.8" fill="#e07b00"/>
+<text x="252.5" y="144.2" text-anchor="middle" class="v">17</text>
+<text x="324" y="422" text-anchor="middle" class="c">heap 8x</text>
+<rect x="285.7" y="322.0" width="17" height="78.0" fill="#75e2cc"/>
+<text x="294.2" y="318.0" text-anchor="middle" class="v">1.5</text>
+<rect x="305.7" y="148.9" width="17" height="251.1" fill="#ffd9a8"/>
+<text x="314.2" y="144.9" text-anchor="middle" class="v">17</text>
+<rect x="325.7" y="143.1" width="17" height="256.9" fill="#ffb259"/>
+<text x="334.2" y="139.1" text-anchor="middle" class="v">18</text>
+<rect x="345.7" y="142.7" width="17" height="257.3" fill="#e07b00"/>
+<text x="354.2" y="138.7" text-anchor="middle" class="v">18</text>
+<text x="528" y="452" text-anchor="middle" class="b">Requests</text>
+<text x="426" y="422" text-anchor="middle" class="c">heap 2x</text>
+<rect x="387.3" y="319.8" width="17" height="80.2" fill="#75e2cc"/>
+<text x="395.8" y="315.8" text-anchor="middle" class="v">1.5</text>
+<rect x="407.3" y="125.5" width="17" height="274.5" fill="#ffd9a8"/>
+<text x="415.8" y="121.5" text-anchor="middle" class="v">23</text>
+<rect x="427.3" y="112.4" width="17" height="287.6" fill="#ffb259"/>
+<text x="435.8" y="108.4" text-anchor="middle" class="v">28</text>
+<rect x="447.3" y="113.2" width="17" height="286.8" fill="#e07b00"/>
+<text x="455.8" y="109.2" text-anchor="middle" class="v">27</text>
+<text x="528" y="422" text-anchor="middle" class="c">heap 4x</text>
+<rect x="489.0" y="332.6" width="17" height="67.4" fill="#75e2cc"/>
+<text x="497.5" y="328.6" text-anchor="middle" class="v">1.3</text>
+<rect x="509.0" y="141.5" width="17" height="258.5" fill="#ffd9a8"/>
+<text x="517.5" y="137.5" text-anchor="middle" class="v">18</text>
+<rect x="529.0" y="131.6" width="17" height="268.4" fill="#ffb259"/>
+<text x="537.5" y="127.6" text-anchor="middle" class="v">21</text>
+<rect x="549.0" y="121.4" width="17" height="278.6" fill="#e07b00"/>
+<text x="557.5" y="117.4" text-anchor="middle" class="v">24</text>
+<text x="629" y="422" text-anchor="middle" class="c">heap 8x</text>
+<rect x="590.7" y="322.9" width="17" height="77.1" fill="#75e2cc"/>
+<text x="599.2" y="318.9" text-anchor="middle" class="v">1.5</text>
+<rect x="610.7" y="165.2" width="17" height="234.8" fill="#ffd9a8"/>
+<text x="619.2" y="161.2" text-anchor="middle" class="v">13</text>
+<rect x="630.7" y="157.7" width="17" height="242.3" fill="#ffb259"/>
+<text x="639.2" y="153.7" text-anchor="middle" class="v">15</text>
+<rect x="650.7" y="149.9" width="17" height="250.1" fill="#e07b00"/>
+<text x="659.2" y="145.9" text-anchor="middle" class="v">16</text>
+<text x="832" y="452" text-anchor="middle" class="b">List suffix</text>
+<text x="731" y="422" text-anchor="middle" class="c">heap 2x</text>
+<rect x="692.3" y="211.6" width="17" height="188.4" fill="#75e2cc"/>
+<text x="700.8" y="207.6" text-anchor="middle" class="v">6.9</text>
+<text x="720.8" y="392" text-anchor="middle" class="rt b">X</text>
+<text x="740.8" y="392" text-anchor="middle" class="rt b">X</text>
+<text x="760.8" y="392" text-anchor="middle" class="rt b">X</text>
+<text x="832" y="422" text-anchor="middle" class="c">heap 4x</text>
+<rect x="794.0" y="293.5" width="17" height="106.5" fill="#75e2cc"/>
+<text x="802.5" y="289.5" text-anchor="middle" class="v">2.2</text>
+<rect x="814.0" y="195.1" width="17" height="204.9" fill="#ffd9a8"/>
+<text x="822.5" y="191.1" text-anchor="middle" class="v">8.7</text>
+<rect x="834.0" y="165.6" width="17" height="234.4" fill="#ffb259"/>
+<text x="842.5" y="161.6" text-anchor="middle" class="v">13</text>
+<rect x="854.0" y="152.6" width="17" height="247.4" fill="#e07b00"/>
+<text x="862.5" y="148.6" text-anchor="middle" class="v">16</text>
+<text x="934" y="422" text-anchor="middle" class="c">heap 8x</text>
+<rect x="895.7" y="345.8" width="17" height="54.2" fill="#75e2cc"/>
+<text x="904.2" y="341.8" text-anchor="middle" class="v">1.1</text>
+<rect x="915.7" y="205.6" width="17" height="194.4" fill="#ffd9a8"/>
+<text x="924.2" y="201.6" text-anchor="middle" class="v">7.5</text>
+<rect x="935.7" y="189.0" width="17" height="211.0" fill="#ffb259"/>
+<text x="944.2" y="185.0" text-anchor="middle" class="v">9.5</text>
+<rect x="955.7" y="185.7" width="17" height="214.3" fill="#e07b00"/>
+<text x="964.2" y="181.7" text-anchor="middle" class="v">10.0</text>
+<rect x="70" y="14" width="16" height="16" fill="#75e2cc"/>
+<text x="92" y="27" class="c">Java LXR</text>
+<rect x="285" y="14" width="16" height="16" fill="#ffd9a8"/>
+<text x="307" y="27" class="c">Our port: no moving</text>
+<rect x="500" y="14" width="16" height="16" fill="#ffb259"/>
+<text x="522" y="27" class="c">Our port: move young</text>
+<rect x="715" y="14" width="16" height="16" fill="#e07b00"/>
+<text x="737" y="27" class="c">Our port: move all</text>
+<text x="70" y="52" class="rt c">X = our port stops with "Out of memory" in all 3 runs</text>
+<text x="490" y="52" class="c">White line (1x) = the standard collector of the same runtime</text>
+</svg>
+                </div>
+                <figcaption>Figure 1. Wall time divided by the time of the standard collector of the same runtime. Median of 3 runs. Lower is better.</figcaption>
+            </figure>
+            <p>What the figure shows:</p>
+            <ul>
+                <li>Every bar of our port is above 7. The best case for our port is the list-suffix program at the largest heap (7.5 times slower). The worst is the requests program with moving of young objects at the tightest heap (27.7 times).</li>
+                <li>The Java LXR stays between 1.1 and 2.2 at 4 times the heap or more. At the tightest heap it is 1.1 (binary trees), 1.5 (requests) and 6.9 (list suffix). So the Java LXR also needs some room. It is not perfect.</li>
+                <li>Moving objects makes our port slower in most cases.</li>
+                <li>The .NET Server GC is faster than the Workstation GC in the list-suffix program (0.4 to 0.7 times). The table at the end of this page has the numbers.</li>
+            </ul>
+        </section>
+
+        <section id="stalls" aria-labelledby="stalls-h">
+            <p class="eyebrow">03</p>
+            <h2 id="stalls-h">How long the program stops</h2>
+            <p>Low latency is the purpose of LXR. So the stalls matter as much as the total time.</p>
+            <figure>
+                <div class="visual" tabindex="0" role="region" aria-label="Figure 2, scroll sideways on a small screen">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" role="img" aria-labelledby="stall-t stall-d">
+<title id="stall-t">Longest stall of the program, at 4 times the minimum heap</title>
+<desc id="stall-d">For each workload, bars show the longest time that a 1 millisecond sleeper thread had to wait. Java LXR, G1, Parallel, Serial, and .NET Workstation and Server stay between 5 and 50 milliseconds. Our port waits between 140 milliseconds and 1 second.</desc>
+<path d="M70 400.0H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="405.0" text-anchor="end" class="c">2 ms</text>
+<path d="M70 361.2H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="366.2" text-anchor="end" class="c">5 ms</text>
+<path d="M70 331.8H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="336.8" text-anchor="end" class="c">10 ms</text>
+<path d="M70 302.4H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="307.4" text-anchor="end" class="c">20 ms</text>
+<path d="M70 263.6H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="268.6" text-anchor="end" class="c">50 ms</text>
+<path d="M70 234.2H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="239.2" text-anchor="end" class="c">100 ms</text>
+<path d="M70 204.8H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="209.8" text-anchor="end" class="c">200 ms</text>
+<path d="M70 166.0H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="171.0" text-anchor="end" class="c">500 ms</text>
+<path d="M70 136.6H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="141.6" text-anchor="end" class="c">1000 ms</text>
+<path d="M70 107.2H985" stroke="#2b4658" stroke-width="1" fill="none"/>
+<text x="62" y="112.2" text-anchor="end" class="c">2000 ms</text>
+<text x="222" y="428" text-anchor="middle" class="b">Binary trees</text>
+<rect x="112.5" y="321.7" width="24" height="78.3" fill="#75e2cc"/>
+<text x="124.5" y="317.7" text-anchor="middle" class="v">13</text>
+<rect x="140.5" y="354.8" width="24" height="45.2" fill="#a5c8ff"/>
+<text x="152.5" y="350.8" text-anchor="middle" class="v">5.8</text>
+<rect x="168.5" y="342.0" width="24" height="58.0" fill="#6aa6ff"/>
+<text x="180.5" y="338.0" text-anchor="middle" class="v">7.9</text>
+<rect x="196.5" y="332.8" width="24" height="67.2" fill="#3b82f6"/>
+<text x="208.5" y="328.8" text-anchor="middle" class="v">9.8</text>
+<rect x="224.5" y="185.8" width="24" height="214.2" fill="#ffd9a8"/>
+<text x="236.5" y="181.8" text-anchor="middle" class="v">313</text>
+<rect x="252.5" y="180.8" width="24" height="219.2" fill="#e07b00"/>
+<text x="264.5" y="176.8" text-anchor="middle" class="v">352</text>
+<rect x="280.5" y="323.4" width="24" height="76.6" fill="#d4c8ff"/>
+<text x="292.5" y="319.4" text-anchor="middle" class="v">12</text>
+<rect x="308.5" y="333.5" width="24" height="66.5" fill="#a78bfa"/>
+<text x="320.5" y="329.5" text-anchor="middle" class="v">9.6</text>
+<text x="528" y="428" text-anchor="middle" class="b">Requests</text>
+<rect x="417.5" y="340.3" width="24" height="59.7" fill="#75e2cc"/>
+<text x="429.5" y="336.3" text-anchor="middle" class="v">8.2</text>
+<rect x="445.5" y="315.5" width="24" height="84.5" fill="#a5c8ff"/>
+<text x="457.5" y="311.5" text-anchor="middle" class="v">15</text>
+<rect x="473.5" y="277.8" width="24" height="122.2" fill="#6aa6ff"/>
+<text x="485.5" y="273.8" text-anchor="middle" class="v">36</text>
+<rect x="501.5" y="267.6" width="24" height="132.4" fill="#3b82f6"/>
+<text x="513.5" y="263.6" text-anchor="middle" class="v">45</text>
+<rect x="529.5" y="173.9" width="24" height="226.1" fill="#ffd9a8"/>
+<text x="541.5" y="169.9" text-anchor="middle" class="v">415</text>
+<rect x="557.5" y="143.3" width="24" height="256.7" fill="#e07b00"/>
+<text x="569.5" y="139.3" text-anchor="middle" class="v">853</text>
+<rect x="585.5" y="313.7" width="24" height="86.3" fill="#d4c8ff"/>
+<text x="597.5" y="309.7" text-anchor="middle" class="v">15</text>
+<rect x="613.5" y="303.6" width="24" height="96.4" fill="#a78bfa"/>
+<text x="625.5" y="299.6" text-anchor="middle" class="v">19</text>
+<text x="832" y="428" text-anchor="middle" class="b">List suffix</text>
+<rect x="722.5" y="273.0" width="24" height="127.0" fill="#75e2cc"/>
+<text x="734.5" y="269.0" text-anchor="middle" class="v">40</text>
+<rect x="750.5" y="293.4" width="24" height="106.6" fill="#a5c8ff"/>
+<text x="762.5" y="289.4" text-anchor="middle" class="v">25</text>
+<rect x="778.5" y="290.4" width="24" height="109.6" fill="#6aa6ff"/>
+<text x="790.5" y="286.4" text-anchor="middle" class="v">27</text>
+<rect x="806.5" y="282.8" width="24" height="117.2" fill="#3b82f6"/>
+<text x="818.5" y="278.8" text-anchor="middle" class="v">32</text>
+<rect x="834.5" y="161.8" width="24" height="238.2" fill="#ffd9a8"/>
+<text x="846.5" y="157.8" text-anchor="middle" class="v">551</text>
+<rect x="862.5" y="146.7" width="24" height="253.3" fill="#e07b00"/>
+<text x="874.5" y="142.7" text-anchor="middle" class="v">787</text>
+<rect x="890.5" y="296.9" width="24" height="103.1" fill="#d4c8ff"/>
+<text x="902.5" y="292.9" text-anchor="middle" class="v">23</text>
+<rect x="918.5" y="309.2" width="24" height="90.8" fill="#a78bfa"/>
+<text x="930.5" y="305.2" text-anchor="middle" class="v">17</text>
+<rect x="70" y="18" width="16" height="16" fill="#75e2cc"/>
+<text x="92" y="31" class="c">Java LXR</text>
+<rect x="295" y="18" width="16" height="16" fill="#a5c8ff"/>
+<text x="317" y="31" class="c">Java G1</text>
+<rect x="520" y="18" width="16" height="16" fill="#6aa6ff"/>
+<text x="542" y="31" class="c">Java Parallel</text>
+<rect x="745" y="18" width="16" height="16" fill="#3b82f6"/>
+<text x="767" y="31" class="c">Java Serial</text>
+<rect x="70" y="44" width="16" height="16" fill="#ffd9a8"/>
+<text x="92" y="57" class="c">Our port: no moving</text>
+<rect x="295" y="44" width="16" height="16" fill="#e07b00"/>
+<text x="317" y="57" class="c">Our port: move all</text>
+<rect x="520" y="44" width="16" height="16" fill="#d4c8ff"/>
+<text x="542" y="57" class="c">.NET Workstation</text>
+<rect x="745" y="44" width="16" height="16" fill="#a78bfa"/>
+<text x="767" y="57" class="c">.NET Server</text>
+</svg>
+                </div>
+                <figcaption>Figure 2. The longest wait of the 1 ms sleeper thread, in ms, at 4 times the minimum heap. Logarithmic scale. Lower is better.</figcaption>
+            </figure>
+            <p>Over all 27 cases, the longest stall of the Java LXR is 7 to 43 ms. For .NET Workstation, it is 8 to 39 ms. For our port, it is 143 ms to 1.9 s.</p>
+        </section>
+
+        <section id="kinds" aria-labelledby="kinds-h">
+            <p class="eyebrow">04</p>
+            <h2 id="kinds-h">What kinds of collections happen</h2>
+            <p>LXR has cheap collections that only use counting (the stage 4 work in our earlier page). It also has full collections that trace the whole heap. A good LXR makes mostly cheap collections.</p>
+            <div class="table-wrap"><table><caption>Collections in the measured part, at 4 times the minimum heap (median of 3 runs)</caption><thead><tr><th scope="col">Workload</th><th scope="col">Collector</th><th scope="col">Heap</th><th scope="col">Collections</th><th scope="col">Of these: full</th><th scope="col">Average pause</th><th scope="col">Longest stall</th></tr></thead><tbody><tr><td>Binary trees</td><td>Java LXR</td><td>28 MiB</td><td>19</td><td>0</td><td>2.2 ms</td><td>13 ms</td></tr><tr><td>Binary trees</td><td>Our port: no moving</td><td>40 MiB</td><td>18</td><td>0</td><td>109.4 ms</td><td>313 ms</td></tr><tr><td>Binary trees</td><td>Our port: move all</td><td>40 MiB</td><td>18</td><td>0</td><td>146.2 ms</td><td>352 ms</td></tr><tr><td>Requests</td><td>Java LXR</td><td>52 MiB</td><td>113</td><td>0</td><td>1.7 ms</td><td>8 ms</td></tr><tr><td>Requests</td><td>Our port: no moving</td><td>84 MiB</td><td>57</td><td>51</td><td>304.9 ms</td><td>415 ms</td></tr><tr><td>Requests</td><td>Our port: move all</td><td>84 MiB</td><td>57</td><td>51</td><td>462.5 ms</td><td>853 ms</td></tr><tr><td>List suffix</td><td>Java LXR</td><td>28 MiB</td><td>153</td><td>74</td><td>18.7 ms</td><td>40 ms</td></tr><tr><td>List suffix</td><td>Our port: no moving</td><td>40 MiB</td><td>63</td><td>0</td><td>338.8 ms</td><td>551 ms</td></tr><tr><td>List suffix</td><td>Our port: move all</td><td>40 MiB</td><td>63</td><td>0</td><td>706.1 ms</td><td>787 ms</td></tr></tbody></table></div>
+            <ul>
+                <li><strong>Binary trees.</strong> Neither LXR makes a full collection, but our port needs 109 ms for an average cheap collection. The Java LXR needs 2.2 ms. This is a 50 times difference <em>without any full collection</em>.</li>
+                <li><strong>Requests.</strong> Our port makes 51 full collections in 57 collections, at about 300 ms each. The Java LXR makes 113 cheap collections of 1.7 ms each. Our policy chooses full collections much more often, although the heap is 4 times the minimum.</li>
+                <li><strong>List suffix.</strong> Here the Java LXR also makes many full collections (74 of 153), but they are short (19 ms on average). Our port makes none, but its cheap collections need 339 ms each.</li>
+            </ul>
+        </section>
+
+        <section id="meaning" aria-labelledby="meaning-h">
+            <p class="eyebrow">05</p>
+            <h2 id="meaning-h">What it means</h2>
+            <ol>
+                <li><strong>The comparison is now fair.</strong> The same programs run on the working Java LXR and on our port. The result of the earlier forced tests (a gap of 30 to 100 times) was too large for real use. The real gap is 7 to 28 times. It is still large.</li>
+                <li><strong>The Java LXR proves that the design can be fast.</strong> In the same conditions, it stays within about 2 times of G1.</li>
+                <li><strong>We must fix more than the full collection.</strong> Three problems show up: the cost of the cheap collections, the choice to run full collections, and the cost of a full collection. Our earlier page about the full collection explains the last one. The first two need their own source comparison.</li>
+                <li><strong>Our port is not robust at tight heaps.</strong> It stops with "Out of memory" at 2 times the minimum heap in the list-suffix program, in 9 of 9 runs. .NET Workstation finishes in the same heap size, and the Java LXR finishes in a smaller one.</li>
+                <li><strong>Memory.</strong> Peak RSS of our port is 147 to 658 MiB. The standard collectors use 46 to 146 MiB. The Java LXR uses 869 to 959 MiB in every case, even with a 14 MiB heap. We did not look for the reason. It may come from memory that the Java LXR reserves outside its heap.</li>
+            </ol>
+            <div class="box port-box">
+                <h3>Where to look next (a proposal)</h3>
+                <ul>
+                    <li>Count the causes of our collections. Find why the policy chooses a full collection in the requests program.</li>
+                    <li>Compare one cheap collection step by step with the Java LXR, as we did for the full collection.</li>
+                    <li>Find why the tight heap ends with "Out of memory" in our port.</li>
+                    <li>Then fix the full-collection path (the 16 differences in the earlier page).</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="limits" aria-labelledby="limits-h">
+            <p class="eyebrow">06</p>
+            <h2 id="limits-h">Limits of this measurement</h2>
+            <ul>
+                <li>One machine, Linux under WSL2, 3 runs per case. The table shows the fastest and slowest run of each case. We did not measure on Windows in this test.</li>
+                <li>The programs are small and synthetic. The heaps are small (14 to 168 MiB).</li>
+                <li>A larger live set makes our port slower still. In one single probe with 1 million live objects (file <code>results/probe-large-live-set.jsonl</code>), our port needed 75 to 98 s. .NET Workstation needed 8 s, Java G1 needed 4 s and the Java LXR needed 7 s. Each collection of our port took about 3 s.</li>
+                <li>Java 11 and .NET 11 have different runtimes. The ratios to the standard collector of the same runtime reduce the problem. They do not remove it.</li>
+                <li>The Java LXR writes a log line for each collection. We did not measure the cost of this.</li>
+                <li>Java ZGC finished in none of the 27 runs. ZGC needs more room than the other collectors. We did not use it in the conclusions.</li>
+                <li>Our minimum-heap search used a shortened run (one twentieth of the steps). The real runs are longer, so a heap of 2 times the minimum can be tight.</li>
+                <li>The measured .NET code is the accepted port <code>e8d2d23</code> (Release build). Nothing in the collector changed for this test.</li>
+            </ul>
+        </section>
+
+        <section id="all" aria-labelledby="all-h">
+            <p class="eyebrow">Appendix A</p>
+            <h2 id="all-h">All numbers</h2>
+            <details>
+                <summary>Show the table with all 270 runs, aggregated into 90 cases</summary>
+                <div class="table-wrap"><table><caption>All results. Wall and CPU times in ms, median of 3 runs. The ratio divides by Java G1 (Java) or .NET Workstation (.NET).</caption><thead><tr><th scope="col">Workload</th><th scope="col">Heap</th><th scope="col">Collector</th><th scope="col">MiB</th><th scope="col">Wall</th><th scope="col">Wall, fastest to slowest run</th><th scope="col">Ratio</th><th scope="col">CPU (ratio)</th><th scope="col">Collections</th><th scope="col">Pause ms</th><th scope="col">Longest stall ms</th><th scope="col">Peak RSS MiB</th></tr></thead><tbody><tr><td>Binary trees</td><td>2x</td><td>Java LXR</td><td>14</td><td>273</td><td>266 to 286</td><td>1.08</td><td>610 (1.69)</td><td>56</td><td>116</td><td>18</td><td>871</td></tr><tr><td>Binary trees</td><td>2x</td><td>Java G1</td><td>14</td><td>253</td><td>228 to 327</td><td>1.00</td><td>360 (1.00)</td><td>90</td><td>146</td><td>36</td><td>62</td></tr><tr><td>Binary trees</td><td>2x</td><td>Java Parallel</td><td>14</td><td>441</td><td>414 to 450</td><td>1.74</td><td>720 (2.00)</td><td>154</td><td>322</td><td>25</td><td>56</td></tr><tr><td>Binary trees</td><td>2x</td><td>Java Serial</td><td>14</td><td>206</td><td>202 to 236</td><td>0.82</td><td>230 (0.64)</td><td>98</td><td>114</td><td>21</td><td>57</td></tr><tr><td>Binary trees</td><td>2x</td><td>Java ZGC</td><td>14</td><td colspan="8">failed in 3 of 3 runs: java.lang.OutOfMemoryError: Java heap too small</td></tr><tr><td>Binary trees</td><td>2x</td><td>Our port: no moving</td><td>20</td><td>5569</td><td>5564 to 5727</td><td>19.68</td><td>9464 (32.23)</td><td>68</td><td>2788</td><td>249</td><td>152</td></tr><tr><td>Binary trees</td><td>2x</td><td>Our port: move young</td><td>20</td><td>6907</td><td>6854 to 6917</td><td>24.41</td><td>12577 (42.83)</td><td>69</td><td>4041</td><td>301</td><td>152</td></tr><tr><td>Binary trees</td><td>2x</td><td>Our port: move all</td><td>20</td><td>6761</td><td>6611 to 7173</td><td>23.89</td><td>11831 (40.29)</td><td>67</td><td>3891</td><td>250</td><td>147</td></tr><tr><td>Binary trees</td><td>2x</td><td>.NET Workstation</td><td>20</td><td>283</td><td>272 to 302</td><td>1.00</td><td>294 (1.00)</td><td>146</td><td>68</td><td>8</td><td>46</td></tr><tr><td>Binary trees</td><td>2x</td><td>.NET Server</td><td>20</td><td>300</td><td>294 to 340</td><td>1.06</td><td>346 (1.18)</td><td>130</td><td>65</td><td>13</td><td>46</td></tr><tr><td>Binary trees</td><td>4x</td><td>Java LXR</td><td>28</td><td>172</td><td>154 to 280</td><td>1.46</td><td>400 (2.50)</td><td>19</td><td>42</td><td>13</td><td>884</td></tr><tr><td>Binary trees</td><td>4x</td><td>Java G1</td><td>28</td><td>118</td><td>105 to 127</td><td>1.00</td><td>160 (1.00)</td><td>24</td><td>22</td><td>6</td><td>68</td></tr><tr><td>Binary trees</td><td>4x</td><td>Java Parallel</td><td>28</td><td>123</td><td>123 to 136</td><td>1.04</td><td>170 (1.06)</td><td>62</td><td>40</td><td>8</td><td>60</td></tr><tr><td>Binary trees</td><td>4x</td><td>Java Serial</td><td>28</td><td>117</td><td>113 to 122</td><td>0.99</td><td>130 (0.81)</td><td>45</td><td>33</td><td>10</td><td>66</td></tr><tr><td>Binary trees</td><td>4x</td><td>Java ZGC</td><td>28</td><td colspan="8">failed in 3 of 3 runs: java.lang.OutOfMemoryError: Java heap too small</td></tr><tr><td>Binary trees</td><td>4x</td><td>Our port: no moving</td><td>40</td><td>4721</td><td>4711 to 4825</td><td>14.75</td><td>6385 (19.39)</td><td>18</td><td>1970</td><td>313</td><td>229</td></tr><tr><td>Binary trees</td><td>4x</td><td>Our port: move young</td><td>40</td><td>5259</td><td>5223 to 5274</td><td>16.43</td><td>7296 (22.16)</td><td>18</td><td>2501</td><td>355</td><td>229</td></tr><tr><td>Binary trees</td><td>4x</td><td>Our port: move all</td><td>40</td><td>5374</td><td>5220 to 5489</td><td>16.79</td><td>7680 (23.32)</td><td>18</td><td>2631</td><td>352</td><td>224</td></tr><tr><td>Binary trees</td><td>4x</td><td>.NET Workstation</td><td>40</td><td>320</td><td>291 to 329</td><td>1.00</td><td>329 (1.00)</td><td>87</td><td>98</td><td>12</td><td>50</td></tr><tr><td>Binary trees</td><td>4x</td><td>.NET Server</td><td>40</td><td>300</td><td>294 to 340</td><td>0.94</td><td>341 (1.04)</td><td>69</td><td>55</td><td>10</td><td>63</td></tr><tr><td>Binary trees</td><td>8x</td><td>Java LXR</td><td>56</td><td>176</td><td>163 to 178</td><td>1.49</td><td>290 (1.81)</td><td>8</td><td>22</td><td>15</td><td>903</td></tr><tr><td>Binary trees</td><td>8x</td><td>Java G1</td><td>56</td><td>119</td><td>115 to 127</td><td>1.00</td><td>160 (1.00)</td><td>11</td><td>19</td><td>7</td><td>89</td></tr><tr><td>Binary trees</td><td>8x</td><td>Java Parallel</td><td>56</td><td>133</td><td>120 to 146</td><td>1.12</td><td>180 (1.12)</td><td>31</td><td>36</td><td>7</td><td>69</td></tr><tr><td>Binary trees</td><td>8x</td><td>Java Serial</td><td>56</td><td>118</td><td>107 to 127</td><td>0.99</td><td>130 (0.81)</td><td>23</td><td>25</td><td>10</td><td>68</td></tr><tr><td>Binary trees</td><td>8x</td><td>Java ZGC</td><td>56</td><td colspan="8">failed in 3 of 3 runs: 	&lt;&lt;no stack trace available&gt;&gt;</td></tr><tr><td>Binary trees</td><td>8x</td><td>Our port: no moving</td><td>80</td><td>4992</td><td>4984 to 5027</td><td>16.62</td><td>5302 (16.94)</td><td>7</td><td>1395</td><td>242</td><td>314</td></tr><tr><td>Binary trees</td><td>8x</td><td>Our port: move young</td><td>80</td><td>5412</td><td>5365 to 5428</td><td>18.02</td><td>5893 (18.83)</td><td>7</td><td>1817</td><td>313</td><td>314</td></tr><tr><td>Binary trees</td><td>8x</td><td>Our port: move all</td><td>80</td><td>5443</td><td>5413 to 5473</td><td>18.13</td><td>5914 (18.90)</td><td>7</td><td>1840</td><td>323</td><td>314</td></tr><tr><td>Binary trees</td><td>8x</td><td>.NET Workstation</td><td>80</td><td>300</td><td>278 to 302</td><td>1.00</td><td>313 (1.00)</td><td>46</td><td>59</td><td>10</td><td>54</td></tr><tr><td>Binary trees</td><td>8x</td><td>.NET Server</td><td>80</td><td>306</td><td>297 to 312</td><td>1.02</td><td>346 (1.11)</td><td>33</td><td>49</td><td>14</td><td>76</td></tr><tr><td>Requests</td><td>2x</td><td>Java LXR</td><td>26</td><td>2637</td><td>2175 to 2954</td><td>1.53</td><td>4140 (1.55)</td><td>522</td><td>691</td><td>17</td><td>887</td></tr><tr><td>Requests</td><td>2x</td><td>Java G1</td><td>26</td><td>1721</td><td>1707 to 2346</td><td>1.00</td><td>2670 (1.00)</td><td>660</td><td>587</td><td>11</td><td>73</td></tr><tr><td>Requests</td><td>2x</td><td>Java Parallel</td><td>26</td><td>1340</td><td>1248 to 1411</td><td>0.78</td><td>1670 (0.63)</td><td>338</td><td>347</td><td>31</td><td>71</td></tr><tr><td>Requests</td><td>2x</td><td>Java Serial</td><td>26</td><td>1608</td><td>1579 to 2032</td><td>0.93</td><td>1680 (0.63)</td><td>347</td><td>377</td><td>36</td><td>71</td></tr><tr><td>Requests</td><td>2x</td><td>Java ZGC</td><td>26</td><td colspan="8">failed in 3 of 3 runs: java.lang.OutOfMemoryError: Java heap too small</td></tr><tr><td>Requests</td><td>2x</td><td>Our port: no moving</td><td>42</td><td>38759</td><td>37083 to 39758</td><td>23.05</td><td>40945 (23.73)</td><td>531</td><td>22471</td><td>143</td><td>184</td></tr><tr><td>Requests</td><td>2x</td><td>Our port: move young</td><td>42</td><td>46511</td><td>46183 to 49266</td><td>27.67</td><td>48977 (28.39)</td><td>532</td><td>30060</td><td>211</td><td>184</td></tr><tr><td>Requests</td><td>2x</td><td>Our port: move all</td><td>42</td><td>46032</td><td>45747 to 48319</td><td>27.38</td><td>48451 (28.08)</td><td>531</td><td>29822</td><td>217</td><td>184</td></tr><tr><td>Requests</td><td>2x</td><td>.NET Workstation</td><td>42</td><td>1681</td><td>1464 to 1867</td><td>1.00</td><td>1725 (1.00)</td><td>539</td><td>295</td><td>25</td><td>70</td></tr><tr><td>Requests</td><td>2x</td><td>.NET Server</td><td>42</td><td>1629</td><td>1582 to 1972</td><td>0.97</td><td>1978 (1.15)</td><td>549</td><td>275</td><td>13</td><td>70</td></tr><tr><td>Requests</td><td>4x</td><td>Java LXR</td><td>52</td><td>1589</td><td>1561 to 1946</td><td>1.28</td><td>2080 (1.37)</td><td>113</td><td>191</td><td>8</td><td>909</td></tr><tr><td>Requests</td><td>4x</td><td>Java G1</td><td>52</td><td>1240</td><td>1230 to 1422</td><td>1.00</td><td>1520 (1.00)</td><td>118</td><td>205</td><td>15</td><td>99</td></tr><tr><td>Requests</td><td>4x</td><td>Java Parallel</td><td>52</td><td>1078</td><td>1066 to 1125</td><td>0.87</td><td>1260 (0.83)</td><td>160</td><td>155</td><td>36</td><td>94</td></tr><tr><td>Requests</td><td>4x</td><td>Java Serial</td><td>52</td><td>1743</td><td>1496 to 1799</td><td>1.40</td><td>1810 (1.19)</td><td>170</td><td>230</td><td>45</td><td>95</td></tr><tr><td>Requests</td><td>4x</td><td>Java ZGC</td><td>52</td><td colspan="8">failed in 3 of 3 runs: java.lang.OutOfMemoryError: Java heap too small</td></tr><tr><td>Requests</td><td>4x</td><td>Our port: no moving</td><td>84</td><td>28808</td><td>28309 to 29884</td><td>18.43</td><td>30189 (18.70)</td><td>57</td><td>17381</td><td>415</td><td>369</td></tr><tr><td>Requests</td><td>4x</td><td>Our port: move young</td><td>84</td><td>33109</td><td>32736 to 35497</td><td>21.18</td><td>34880 (21.60)</td><td>57</td><td>21617</td><td>511</td><td>340</td></tr><tr><td>Requests</td><td>4x</td><td>Our port: move all</td><td>84</td><td>38153</td><td>37418 to 40065</td><td>24.40</td><td>40499 (25.09)</td><td>57</td><td>26365</td><td>853</td><td>368</td></tr><tr><td>Requests</td><td>4x</td><td>.NET Workstation</td><td>84</td><td>1563</td><td>1450 to 1918</td><td>1.00</td><td>1614 (1.00)</td><td>277</td><td>209</td><td>15</td><td>79</td></tr><tr><td>Requests</td><td>4x</td><td>.NET Server</td><td>84</td><td>1876</td><td>1655 to 1906</td><td>1.20</td><td>2194 (1.36)</td><td>277</td><td>288</td><td>19</td><td>83</td></tr><tr><td>Requests</td><td>8x</td><td>Java LXR</td><td>104</td><td>1524</td><td>1377 to 1584</td><td>1.47</td><td>1890 (1.54)</td><td>37</td><td>81</td><td>7</td><td>959</td></tr><tr><td>Requests</td><td>8x</td><td>Java G1</td><td>104</td><td>1039</td><td>1028 to 1049</td><td>1.00</td><td>1230 (1.00)</td><td>41</td><td>130</td><td>14</td><td>141</td></tr><tr><td>Requests</td><td>8x</td><td>Java Parallel</td><td>104</td><td>1065</td><td>1003 to 1127</td><td>1.02</td><td>1220 (0.99)</td><td>79</td><td>112</td><td>42</td><td>119</td></tr><tr><td>Requests</td><td>8x</td><td>Java Serial</td><td>104</td><td>1478</td><td>1279 to 1520</td><td>1.42</td><td>1550 (1.26)</td><td>84</td><td>172</td><td>17</td><td>111</td></tr><tr><td>Requests</td><td>8x</td><td>Java ZGC</td><td>104</td><td colspan="8">failed in 3 of 3 runs: 	at GcBench.main(GcBench.java:285)</td></tr><tr><td>Requests</td><td>8x</td><td>Our port: no moving</td><td>168</td><td>23832</td><td>23268 to 24057</td><td>13.25</td><td>26186 (14.15)</td><td>22</td><td>9736</td><td>634</td><td>658</td></tr><tr><td>Requests</td><td>8x</td><td>Our port: move young</td><td>168</td><td>26439</td><td>26254 to 26678</td><td>14.70</td><td>29583 (15.99)</td><td>22</td><td>12166</td><td>750</td><td>658</td></tr><tr><td>Requests</td><td>8x</td><td>Our port: move all</td><td>168</td><td>29491</td><td>29225 to 29612</td><td>16.40</td><td>32644 (17.64)</td><td>22</td><td>15165</td><td>929</td><td>658</td></tr><tr><td>Requests</td><td>8x</td><td>.NET Workstation</td><td>168</td><td>1798</td><td>1702 to 1827</td><td>1.00</td><td>1850 (1.00)</td><td>142</td><td>260</td><td>20</td><td>86</td></tr><tr><td>Requests</td><td>8x</td><td>.NET Server</td><td>168</td><td>1592</td><td>1591 to 1678</td><td>0.89</td><td>1847 (1.00)</td><td>134</td><td>198</td><td>15</td><td>99</td></tr><tr><td>List suffix</td><td>2x</td><td>Java LXR</td><td>14</td><td>32020</td><td>31848 to 33889</td><td>6.93</td><td>46380 (6.50)</td><td>1873</td><td>20731</td><td>43</td><td>869</td></tr><tr><td>List suffix</td><td>2x</td><td>Java G1</td><td>14</td><td>4621</td><td>4456 to 4765</td><td>1.00</td><td>7140 (1.00)</td><td>664</td><td>3859</td><td>33</td><td>63</td></tr><tr><td>List suffix</td><td>2x</td><td>Java Parallel</td><td>14</td><td>4935</td><td>4890 to 5075</td><td>1.07</td><td>8820 (1.24)</td><td>592</td><td>4352</td><td>28</td><td>56</td></tr><tr><td>List suffix</td><td>2x</td><td>Java Serial</td><td>14</td><td>2895</td><td>2740 to 3049</td><td>0.63</td><td>2940 (0.41)</td><td>311</td><td>2422</td><td>33</td><td>56</td></tr><tr><td>List suffix</td><td>2x</td><td>Java ZGC</td><td>14</td><td colspan="8">failed in 3 of 3 runs: java.lang.OutOfMemoryError: Java heap too small</td></tr><tr><td>List suffix</td><td>2x</td><td>Our port: no moving</td><td>20</td><td colspan="8">failed in 3 of 3 runs: Out of memory.</td></tr><tr><td>List suffix</td><td>2x</td><td>Our port: move young</td><td>20</td><td colspan="8">failed in 3 of 3 runs: Out of memory.</td></tr><tr><td>List suffix</td><td>2x</td><td>Our port: move all</td><td>20</td><td colspan="8">failed in 3 of 3 runs: Out of memory.</td></tr><tr><td>List suffix</td><td>2x</td><td>.NET Workstation</td><td>20</td><td>2490</td><td>2421 to 2567</td><td>1.00</td><td>2515 (1.00)</td><td>131</td><td>1753</td><td>18</td><td>50</td></tr><tr><td>List suffix</td><td>2x</td><td>.NET Server</td><td>20</td><td>1702</td><td>1647 to 1940</td><td>0.68</td><td>2506 (1.00)</td><td>114</td><td>982</td><td>15</td><td>52</td></tr><tr><td>List suffix</td><td>4x</td><td>Java LXR</td><td>28</td><td>4882</td><td>4875 to 5012</td><td>2.21</td><td>8990 (2.13)</td><td>153</td><td>2862</td><td>40</td><td>883</td></tr><tr><td>List suffix</td><td>4x</td><td>Java G1</td><td>28</td><td>2209</td><td>2069 to 2252</td><td>1.00</td><td>4230 (1.00)</td><td>335</td><td>1482</td><td>25</td><td>77</td></tr><tr><td>List suffix</td><td>4x</td><td>Java Parallel</td><td>28</td><td>1928</td><td>1881 to 2139</td><td>0.87</td><td>3230 (0.76)</td><td>230</td><td>1375</td><td>27</td><td>69</td></tr><tr><td>List suffix</td><td>4x</td><td>Java Serial</td><td>28</td><td>2241</td><td>1987 to 2271</td><td>1.01</td><td>2280 (0.54)</td><td>113</td><td>1340</td><td>32</td><td>70</td></tr><tr><td>List suffix</td><td>4x</td><td>Java ZGC</td><td>28</td><td colspan="8">failed in 3 of 3 runs: java.lang.OutOfMemoryError: Java heap too small</td></tr><tr><td>List suffix</td><td>4x</td><td>Our port: no moving</td><td>40</td><td>28793</td><td>26070 to 29147</td><td>8.73</td><td>86064 (24.32)</td><td>63</td><td>21344</td><td>551</td><td>311</td></tr><tr><td>List suffix</td><td>4x</td><td>Our port: move young</td><td>40</td><td>43441</td><td>42467 to 44749</td><td>13.17</td><td>115971 (32.77)</td><td>63</td><td>35866</td><td>966</td><td>311</td></tr><tr><td>List suffix</td><td>4x</td><td>Our port: move all</td><td>40</td><td>52057</td><td>51580 to 52103</td><td>15.78</td><td>127262 (35.96)</td><td>63</td><td>44484</td><td>787</td><td>359</td></tr><tr><td>List suffix</td><td>4x</td><td>.NET Workstation</td><td>40</td><td>3299</td><td>3140 to 3326</td><td>1.00</td><td>3539 (1.00)</td><td>192</td><td>1905</td><td>23</td><td>63</td></tr><tr><td>List suffix</td><td>4x</td><td>.NET Server</td><td>40</td><td>1364</td><td>1258 to 1399</td><td>0.41</td><td>1857 (0.52)</td><td>49</td><td>587</td><td>17</td><td>66</td></tr><tr><td>List suffix</td><td>8x</td><td>Java LXR</td><td>56</td><td>1571</td><td>1282 to 2034</td><td>1.07</td><td>4650 (1.87)</td><td>28</td><td>279</td><td>18</td><td>916</td></tr><tr><td>List suffix</td><td>8x</td><td>Java G1</td><td>56</td><td>1474</td><td>1340 to 1488</td><td>1.00</td><td>2490 (1.00)</td><td>125</td><td>729</td><td>17</td><td>104</td></tr><tr><td>List suffix</td><td>8x</td><td>Java Parallel</td><td>56</td><td>1469</td><td>1346 to 1482</td><td>1.00</td><td>2200 (0.88)</td><td>90</td><td>764</td><td>32</td><td>98</td></tr><tr><td>List suffix</td><td>8x</td><td>Java Serial</td><td>56</td><td>2195</td><td>2001 to 2317</td><td>1.49</td><td>2270 (0.91)</td><td>48</td><td>951</td><td>49</td><td>93</td></tr><tr><td>List suffix</td><td>8x</td><td>Java ZGC</td><td>56</td><td colspan="8">failed in 3 of 3 runs: 	&lt;&lt;no stack trace available&gt;&gt;</td></tr><tr><td>List suffix</td><td>8x</td><td>Our port: no moving</td><td>80</td><td>21345</td><td>20610 to 22220</td><td>7.54</td><td>36331 (12.40)</td><td>15</td><td>14966</td><td>1356</td><td>487</td></tr><tr><td>List suffix</td><td>8x</td><td>Our port: move young</td><td>80</td><td>26920</td><td>26830 to 27654</td><td>9.51</td><td>51203 (17.48)</td><td>15</td><td>19903</td><td>1706</td><td>535</td></tr><tr><td>List suffix</td><td>8x</td><td>Our port: move all</td><td>80</td><td>28181</td><td>28077 to 30553</td><td>9.95</td><td>52546 (17.94)</td><td>15</td><td>21193</td><td>1924</td><td>524</td></tr><tr><td>List suffix</td><td>8x</td><td>.NET Workstation</td><td>80</td><td>2832</td><td>2677 to 2906</td><td>1.00</td><td>2929 (1.00)</td><td>97</td><td>1659</td><td>39</td><td>81</td></tr><tr><td>List suffix</td><td>8x</td><td>.NET Server</td><td>80</td><td>1184</td><td>1160 to 1585</td><td>0.42</td><td>1510 (0.52)</td><td>25</td><td>360</td><td>23</td><td>81</td></tr></tbody></table></div>
+            </details>
+        </section>
+
+        <section id="repeat" aria-labelledby="repeat-h">
+            <p class="eyebrow">Appendix B</p>
+            <h2 id="repeat-h">Repeat it</h2>
+            <p>The files are in the same folder as this page.</p>
+            <dl>
+                <dt><code>GcBench.cs</code> and <code>GcBench.java</code></dt><dd>The two versions of the programs. The run mode never calls the GC. An unused calibration mode does, and these results do not use it.</dd>
+                <dt><code>run-matrix.py</code></dt><dd>Finds the minimum heaps, selects each collector, runs the matrix and records one JSON line per run. It runs in WSL.</dd>
+                <dt><code>summarize.py</code> and <code>build-report.py</code></dt><dd>Make the medians and the checks of the checksums, and then this page.</dd>
+                <dt><code>results/</code></dt><dd><code>runs.jsonl</code> has all 270 runs. <code>summary.json</code> has the 90 aggregated cases. <code>sizes.json</code> has the minimum heaps. <code>probe-large-live-set.jsonl</code> has the single probe with a larger live set.</dd>
+            </dl>
+            <p>Measured binaries: our port <code>libclrlxrgc.so</code> SHA-256 <code>0909a5b1ce5e6383e944d45ffd17791050acfb62a26b048c4955fb0917b71e14</code>; Java <code>libjvm.so</code> <code>9c99a8840b492529a38228e7fccbe9eae84f4ee47936948ec946903e00c7a9f9</code> (OpenJDK 11.0.19, source revision <code>7caf8f7d19b1</code>, Java LXR binding <code>0682434</code>).</p>
+        </section>
+    </main>
+    <footer class="wrap">
+        <p>Related: <a href="index.html">this page</a> was built from <code>results/summary.json</code>. The explanation of the full collection is in <a href="../P13-full-reference-first/index.html">the full-collection page</a>. <a href="../README.md">LXR design record</a>.</p>
+    </footer>
+</body>
+</html>
