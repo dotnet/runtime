@@ -290,13 +290,13 @@ static const Entry s_libSystem_Globalization_Native [] = {
 
 static const Entry s_libSystem_IO_Compression_Native [] = {
     DllImportEntry(CompressionNative_Crc32) // System.IO.Compression
-    DllImportEntry(CompressionNative_Deflate) // System.IO.Compression
-    DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression
-    DllImportEntry(CompressionNative_DeflateInit2_) // System.IO.Compression
+    DllImportEntry(CompressionNative_Deflate) // System.IO.Compression, System.Net.WebSockets
+    DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression, System.Net.WebSockets
+    DllImportEntry(CompressionNative_DeflateInit2_) // System.IO.Compression, System.Net.WebSockets
     DllImportEntry(CompressionNative_DeflateReset) // System.IO.Compression
-    DllImportEntry(CompressionNative_Inflate) // System.IO.Compression
-    DllImportEntry(CompressionNative_InflateEnd) // System.IO.Compression
-    DllImportEntry(CompressionNative_InflateInit2_) // System.IO.Compression
+    DllImportEntry(CompressionNative_Inflate) // System.IO.Compression, System.Net.WebSockets
+    DllImportEntry(CompressionNative_InflateEnd) // System.IO.Compression, System.Net.WebSockets
+    DllImportEntry(CompressionNative_InflateInit2_) // System.IO.Compression, System.Net.WebSockets
     DllImportEntry(CompressionNative_InflateReset2_) // System.IO.Compression
 };
 
