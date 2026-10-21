@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -19,101 +20,141 @@ namespace Microsoft.NET.Build.Tasks;
 internal readonly struct InvocationCacheRequest
 {
     internal string Key { get; }
-    internal string OutputDirectory { get; }
+    internal InvocationOutputs Outputs { get; }
 
-    internal InvocationCacheRequest(string key, string outputDirectory)
+    internal InvocationCacheRequest(string key, InvocationOutputs outputs)
     {
         Key = key;
-        OutputDirectory = outputDirectory;
+        Outputs = outputs;
     }
 }
 
 internal sealed partial class InvocationCache
 {
-    private const int FormatVersion = 1;
     private readonly TaskLoggingHelper _log;
     private readonly string _toolName;
-    private static readonly StringComparison s_pathComparison = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-        ? StringComparison.OrdinalIgnoreCase
-        : StringComparison.Ordinal;
+    private readonly MessageImportance _importance;
 
     internal string CacheDirectory { get; }
 
-    internal InvocationCache(string cacheDirectory, TaskLoggingHelper log, string toolName)
+    internal InvocationCache(string cacheDirectory, TaskLoggingHelper log, string toolName,
+        MessageImportance importance = MessageImportance.Low)
     {
         CacheDirectory = cacheDirectory;
         _log = log;
         _toolName = toolName;
+        _importance = importance;
     }
 
-    internal static int Execute(InvocationCache? cache, DateTime outputTimestampUtc,
-        Func<InvocationCacheRequest?> getInvocation, Func<string?, int> execute,
-        Action? onRestored = null)
-    {
-        InvocationCacheRequest? invocation = cache is null ? null : getInvocation();
-        if (cache is null || invocation is null)
-            return execute(null);
+    internal static int ExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
+        Func<InvocationDescription?> describeInvocation, Func<int> executeNormally)
+        => TryExecuteCached(log, configuration, describeInvocation, executeNormally, out int exitCode)
+            ? exitCode : executeNormally();
 
-        string key = invocation.Value.Key;
-        string outputDirectory = invocation.Value.OutputDirectory;
-        if (cache.TryRestore(key, outputDirectory, outputTimestampUtc))
+    private static bool TryExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
+        Func<InvocationDescription?> describeInvocation, Func<int> executeNormally, out int exitCode)
+    {
+        exitCode = 0;
+        InvocationCache? cache = TryCreateFromEnvironment(log, configuration);
+        if (cache is null)
+            return false;
+
+        InvocationDescription? invocation = describeInvocation();
+        if (invocation is null)
+            return false;
+
+        try
         {
-            onRestored?.Invoke();
-            return 0;
+            cache.ValidateOutputs(invocation.Outputs);
+        }
+        catch (ArgumentException ex)
+        {
+            log.LogMessage(MessageImportance.Low, $"{configuration.ToolName} cache bypassed: invalid output declaration: {ex.Message}");
+            return false;
         }
 
-        int exitCode = execute(outputDirectory);
+        DateTime outputTimestampUtc = DateTime.UtcNow;
+        if (!TryComputeKey(log, configuration.ToolName, invocation, out string key))
+            return false;
+
+        exitCode = ExecutePrepared(cache, outputTimestampUtc,
+            new InvocationCacheRequest(key, invocation.Outputs), executeNormally);
+        return true;
+    }
+
+    internal static int ExecutePrepared(InvocationCache? cache, DateTime outputTimestampUtc,
+        InvocationCacheRequest? request,
+        Func<int> execute)
+    {
+        if (cache is null || request is null)
+            return execute();
+
+        string key = request.Value.Key;
+        InvocationOutputs outputs = request.Value.Outputs;
+        if (cache.TryRestore(key, outputs, outputTimestampUtc))
+            return 0;
+
+        int exitCode = execute();
         if (exitCode == 0 && !cache._log.HasLoggedErrors)
-            cache.Store(key, outputDirectory);
+            cache.Store(key, outputs);
 
         return exitCode;
     }
 
-    internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc)
+    internal bool TryRestore(string inputHash, InvocationOutputs outputs, DateTime outputTimestampUtc)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
-        outputDirectory = ValidateOutputDirectory(outputDirectory);
+        ValidateOutputs(outputs);
         if (outputTimestampUtc.Kind != DateTimeKind.Utc)
             throw new ArgumentException("The output timestamp must be UTC.", nameof(outputTimestampUtc));
 
         if (!Directory.Exists(entryDirectory))
         {
-            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache miss: {inputHash}");
+            _log.LogMessage(_importance, $"{_toolName} cache miss: {inputHash}");
             return false;
         }
 
         try
         {
-            List<string> files = ReadManifest(entryDirectory);
+            List<(string Name, bool Present)> files = ReadManifest(entryDirectory, outputs);
 
             // Check the entire entry before modifying outputs. Copies can still fail if the cache is wiped concurrently.
-            if (Directory.Exists(outputDirectory))
-                Directory.Delete(outputDirectory, recursive: true);
-
-            Directory.CreateDirectory(outputDirectory);
-            foreach (string relativePath in files)
+            if (outputs.DirectoryPath is not null)
             {
-                string destination = Path.Combine(outputDirectory, relativePath);
-                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-                File.Copy(Path.Combine(entryDirectory, "outputs", relativePath), destination, overwrite: true);
-                File.SetLastWriteTimeUtc(destination, outputTimestampUtc);
+                if (Directory.Exists(outputs.DirectoryPath))
+                    Directory.Delete(outputs.DirectoryPath, recursive: true);
+                Directory.CreateDirectory(outputs.DirectoryPath);
+            }
+            for (int i = 0; i < files.Count; i++)
+            {
+                string destination = GetOutputPath(outputs, files[i].Name, i);
+                if (files[i].Present)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                    File.Copy(Path.Combine(entryDirectory, "outputs", files[i].Name), destination, overwrite: true);
+                    File.SetLastWriteTimeUtc(destination, outputTimestampUtc);
+                }
+                else
+                {
+                    DeleteOutputFile(destination);
+                }
             }
 
             UpdateLastUsed(entryDirectory);
-            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache hit: {inputHash}");
+            _log.LogMessage(_importance, $"{_toolName} cache hit: {inputHash}");
             return true;
         }
         catch (Exception ex) when (IsCacheFailure(ex))
         {
-            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache restore failed for '{inputHash}'; running {_toolName} normally: {ex.Message}");
+            _log.LogMessage(_importance, $"{_toolName} cache restore failed for '{inputHash}'; running {_toolName} normally: {ex.Message}");
             return false;
         }
     }
 
-    internal void Store(string inputHash, string outputDirectory)
+    internal void Store(string inputHash, InvocationOutputs outputs)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
-        outputDirectory = ValidateOutputDirectory(outputDirectory);
+        ValidateOutputs(outputs);
         string? stagingDirectory = null;
 
         try
@@ -127,12 +168,12 @@ internal sealed partial class InvocationCache
             catch (AbandonedMutexException)
             {
                 acquired = true;
-                _log.LogMessage(MessageImportance.Low, $"{_toolName} cache writer lock was abandoned: {inputHash}");
+                _log.LogMessage(_importance, $"{_toolName} cache writer lock was abandoned: {inputHash}");
             }
 
             if (!acquired)
             {
-                _log.LogMessage(MessageImportance.Low, $"{_toolName} cache store skipped; another writer owns '{inputHash}'.");
+                _log.LogMessage(_importance, $"{_toolName} cache store skipped; another writer owns '{inputHash}'.");
                 return;
             }
 
@@ -140,13 +181,12 @@ internal sealed partial class InvocationCache
             {
                 if (Directory.Exists(entryDirectory))
                 {
-                    _log.LogMessage(MessageImportance.Low, $"{_toolName} cache store skipped; entry '{inputHash}' already exists.");
+                    _log.LogMessage(_importance, $"{_toolName} cache store skipped; entry '{inputHash}' already exists.");
                     return;
                 }
 
-                var files = new List<string>();
-                CollectOutputFiles(outputDirectory, "", files);
-                files.Sort(StringComparer.Ordinal);
+                List<string> files = GetFileNames(outputs);
+                bool fileSet = outputs.DirectoryPath is null;
 
                 string parentDirectory = Path.GetDirectoryName(entryDirectory)!;
                 Directory.CreateDirectory(parentDirectory);
@@ -155,23 +195,38 @@ internal sealed partial class InvocationCache
 
                 using (var manifest = new BinaryWriter(File.Create(Path.Combine(stagingDirectory, "manifest"))))
                 {
-                    manifest.Write(FormatVersion);
+                    manifest.Write(InvocationCacheEntry.FormatVersion);
+                    manifest.Write(fileSet);
                     manifest.Write(files.Count);
-                    foreach (string relativePath in files)
+                    for (int i = 0; i < files.Count; i++)
                     {
+                        string relativePath = files[i];
                         string cachedFile = Path.Combine(stagingDirectory, "outputs", relativePath);
                         Directory.CreateDirectory(Path.GetDirectoryName(cachedFile)!);
-                        File.Copy(Path.Combine(outputDirectory, relativePath), cachedFile);
+                        bool present = true;
+                        try
+                        {
+                            File.Copy(GetOutputPath(outputs, relativePath, i), cachedFile);
+                        }
+                        catch (Exception ex) when (fileSet && ex is FileNotFoundException or DirectoryNotFoundException)
+                        {
+                            present = false;
+                        }
                         manifest.Write(relativePath);
-                        manifest.Write(new FileInfo(cachedFile).Length);
-                        manifest.Write(HashFile(cachedFile));
+                        manifest.Write(present);
+                        if (present)
+                        {
+                            manifest.Write(new FileInfo(cachedFile).Length);
+                            manifest.Write(HashFile(cachedFile));
+                        }
                     }
                 }
+                File.WriteAllBytes(Path.Combine(stagingDirectory, "manifest.sha256"), HashFile(Path.Combine(stagingDirectory, "manifest")));
 
                 InvocationCacheEntry.WriteLastUsed(Path.Combine(stagingDirectory, InvocationCacheEntry.LastUsedFileName));
                 Directory.Move(stagingDirectory, entryDirectory);
                 stagingDirectory = null;
-                _log.LogMessage(MessageImportance.Low, $"{_toolName} cache stored: {inputHash}");
+                _log.LogMessage(_importance, $"{_toolName} cache stored: {inputHash}");
             }
             finally
             {
@@ -180,7 +235,7 @@ internal sealed partial class InvocationCache
         }
         catch (Exception ex) when (IsCacheFailure(ex))
         {
-            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache store failed for '{inputHash}': {ex.Message}");
+            _log.LogMessage(_importance, $"{_toolName} cache store failed for '{inputHash}': {ex.Message}");
         }
         finally
         {
@@ -193,7 +248,7 @@ internal sealed partial class InvocationCache
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
-                    _log.LogMessage(MessageImportance.Low, $"{_toolName} cache staging cleanup failed for '{stagingDirectory}': {ex.Message}");
+                    _log.LogMessage(_importance, $"{_toolName} cache staging cleanup failed for '{stagingDirectory}': {ex.Message}");
                 }
             }
         }
@@ -207,7 +262,7 @@ internal sealed partial class InvocationCache
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache last-used update failed for '{entryDirectory}': {ex.Message}");
+            _log.LogMessage(_importance, $"{_toolName} cache last-used update failed for '{entryDirectory}': {ex.Message}");
         }
     }
 
@@ -235,58 +290,47 @@ internal sealed partial class InvocationCache
 #endif
     }
 
-    private string ValidateOutputDirectory(string outputDirectory)
+    private List<(string Name, bool Present)> ReadManifest(string entryDirectory, InvocationOutputs outputs)
     {
-        string outputPath = Path.GetFullPath(outputDirectory);
-        string cachePrefix = CacheDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        string outputPrefix = outputPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        if (cachePrefix.StartsWith(outputPrefix, s_pathComparison) || outputPrefix.StartsWith(cachePrefix, s_pathComparison))
-            throw new ArgumentException("The cache and output directories must not contain each other.", nameof(outputDirectory));
+        bool fileSet = outputs.DirectoryPath is null;
+        if (!File.ReadAllBytes(Path.Combine(entryDirectory, "manifest.sha256")).SequenceEqual(HashFile(Path.Combine(entryDirectory, "manifest"))))
+            throw new InvalidDataException("Cached manifest checksum mismatch.");
 
-        return outputPath;
-    }
-
-    private static void CollectOutputFiles(string directory, string relativeDirectory, List<string> files)
-    {
-        foreach (string path in Directory.EnumerateFileSystemEntries(directory))
-        {
-            string relativePath = Path.Combine(relativeDirectory, Path.GetFileName(path));
-            if (Directory.Exists(path))
-                CollectOutputFiles(path, relativePath, files);
-            else
-                files.Add(relativePath);
-        }
-    }
-
-    private List<string> ReadManifest(string entryDirectory)
-    {
         using var manifest = new BinaryReader(File.OpenRead(Path.Combine(entryDirectory, "manifest")));
-        if (manifest.ReadInt32() != FormatVersion)
+        if (manifest.ReadInt32() != InvocationCacheEntry.FormatVersion)
             throw new InvalidDataException($"Unsupported {_toolName} cache format.");
+        if (manifest.ReadBoolean() != fileSet)
+            throw new InvalidDataException($"Cached {_toolName} output contract does not match the invocation.");
 
         int fileCount = manifest.ReadInt32();
         if (fileCount < 0 || fileCount > manifest.BaseStream.Length - manifest.BaseStream.Position)
             throw new InvalidDataException($"Invalid {_toolName} cache file count.");
+        if (fileSet && fileCount != outputs.Files.Length)
+            throw new InvalidDataException($"Invalid {_toolName} cache output inventory.");
 
-        var files = new List<string>();
+        var files = new List<(string Name, bool Present)>();
         var paths = new HashSet<string>(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         string outputsDirectory = Path.Combine(entryDirectory, "outputs");
         for (int i = 0; i < fileCount; i++)
         {
             string relativePath = manifest.ReadString();
             ValidateRelativePath(relativePath);
-            if (!paths.Add(relativePath))
+            if (!paths.Add(relativePath) || (fileSet && relativePath != i.ToString(CultureInfo.InvariantCulture)))
                 throw new InvalidDataException($"Invalid {_toolName} cache output inventory.");
 
-            long length = manifest.ReadInt64();
-            byte[] expectedHash = manifest.ReadBytes(32);
-            string cachedFile = Path.Combine(outputsDirectory, relativePath);
-
-            if (expectedHash.Length != 32 || new FileInfo(cachedFile).Length != length ||
-                !expectedHash.SequenceEqual(HashFile(cachedFile)))
-                throw new InvalidDataException($"Invalid {_toolName} cache output: '{relativePath}'.");
-
-            files.Add(relativePath);
+            bool present = manifest.ReadBoolean();
+            if (!present && !fileSet)
+                throw new InvalidDataException($"Directory inventory contains an absent {_toolName} cache file.");
+            if (present)
+            {
+                long length = manifest.ReadInt64();
+                byte[] expectedHash = manifest.ReadBytes(32);
+                string cachedFile = Path.Combine(outputsDirectory, relativePath);
+                if (expectedHash.Length != 32 || new FileInfo(cachedFile).Length != length ||
+                    !expectedHash.SequenceEqual(HashFile(cachedFile)))
+                    throw new InvalidDataException($"Invalid {_toolName} cache output: '{relativePath}'.");
+            }
+            files.Add((relativePath, present));
         }
 
         if (manifest.BaseStream.Position != manifest.BaseStream.Length)

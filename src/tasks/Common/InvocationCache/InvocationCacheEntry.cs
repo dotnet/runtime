@@ -8,6 +8,7 @@ namespace Microsoft.NET.Build.Tasks;
 
 internal static class InvocationCacheEntry
 {
+    internal const int FormatVersion = 1;
     internal const string VersionDirectory = "v1";
     internal const string LastUsedFileName = "last-used";
 

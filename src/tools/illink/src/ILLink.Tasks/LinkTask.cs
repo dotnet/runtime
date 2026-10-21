@@ -3,14 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -20,6 +17,9 @@ namespace ILLink.Tasks
 {
     public class ILLink : ToolTask
     {
+        private static readonly InvocationCacheConfiguration s_cacheConfiguration =
+            new("ILLink", "ILLINK_EXPERIMENTAL_CACHE", "ILLINK_EXPERIMENTAL_CACHE_PATH");
+
         /// <summary>
         ///   Paths to the assembly files that should be considered as
         ///   input to the ILLink.
@@ -270,47 +270,42 @@ namespace ILLink.Tasks
         protected override string GenerateFullPathToTool() => DotNetPath;
 
         protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
+            => InvocationCache.ExecuteCached(Log, s_cacheConfiguration,
+                () => DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands),
+                () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands));
+
+        private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
-            DateTime outputTimestampUtc = DateTime.UtcNow;
-            InvocationCache cache = InvocationCache.TryCreateFromEnvironment(Log, "ILLink",
-                "ILLINK_EXPERIMENTAL_CACHE", "ILLINK_EXPERIMENTAL_CACHE_PATH", "illink");
-            return InvocationCache.Execute(cache, outputTimestampUtc,
-                () => TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out string inputHash)
-                    ? new InvocationCacheRequest(inputHash, OutputDirectory.ItemSpec) : null,
-                _ =>
-                {
-                    try
-                    {
-                        string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
-                        if (Directory.Exists(outputDirectory))
-                            Directory.Delete(outputDirectory, recursive: true);
+            try
+            {
+                string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
+                if (Directory.Exists(outputDirectory))
+                    Directory.Delete(outputDirectory, recursive: true);
+                Directory.CreateDirectory(outputDirectory);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Log.LogError($"Could not prepare ILLink output directory '{OutputDirectory.ItemSpec}': {ex.Message}");
+                return -1;
+            }
 
-                        Directory.CreateDirectory(outputDirectory);
-                    }
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                    {
-                        Log.LogError($"Could not prepare ILLink output directory '{OutputDirectory.ItemSpec}': {ex.Message}");
-                        return -1;
-                    }
-
-                    return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
-                });
+            return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
         }
 
-        private bool TryComputeCacheKey(string pathToTool, string commandLineCommands, string responseFileCommands, out string inputHash)
+#nullable enable annotations
+        private InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
-            inputHash = string.Empty;
             if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
                 !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)
             {
                 Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: custom steps/data, dependency dumps, and task environment overrides are not supported.");
-                return false;
+                return null;
             }
 
             if (!string.IsNullOrWhiteSpace(ExtraArgs))
             {
                 Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
-                return false;
+                return null;
             }
 
             try
@@ -330,34 +325,11 @@ namespace ILLink.Tasks
                 AddFile(pathToTool);
                 AddFile(ILLinkPath);
 
-                using var sha256 = SHA256.Create();
-                using var description = new MemoryStream();
-                using var writer = new BinaryWriter(description, Encoding.UTF8, leaveOpen: true);
-                writer.Write("ILLink task cache key v1");
-                writer.Write(commandLineCommands);
-                writer.Write(responseFileCommands);
-                writer.Write(Environment.CurrentDirectory);
-                writer.Write(Path.GetFullPath(OutputDirectory.ItemSpec));
-                writer.Write(RuntimeInformation.OSDescription);
-                writer.Write(RuntimeInformation.ProcessArchitecture.ToString());
-                writer.Write(CultureInfo.CurrentCulture.Name);
-                writer.Write(CultureInfo.CurrentUICulture.Name);
-                writer.Write(files.Count);
-                foreach (string file in files)
+                return new InvocationDescription(InvocationInputs.FromFiles(files.ToArray()), new[]
                 {
-                    writer.Write(file);
-                    using var input = File.OpenRead(file);
-                    writer.Write(sha256.ComputeHash(input));
-                }
-
-                writer.Flush();
-                description.Position = 0;
-#if NET
-                inputHash = Convert.ToHexStringLower(sha256.ComputeHash(description));
-#else
-                inputHash = BitConverter.ToString(sha256.ComputeHash(description)).Replace("-", "").ToLowerInvariant();
-#endif
-                return true;
+                    commandLineCommands,
+                    responseFileCommands
+                }, InvocationOutputs.FromDirectory(OutputDirectory.ItemSpec));
 
                 void AddFile(string path) => files.Add(Path.GetFullPath(path));
 
@@ -400,10 +372,12 @@ namespace ILLink.Tasks
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or BadImageFormatException or InvalidDataException)
             {
-                Log.LogMessage(MessageImportance.Low, $"ILLink cache bypassed: input identity could not be computed: {ex.Message}");
-                return false;
+                Log.LogMessage(MessageImportance.Low, $"ILLink cache bypassed: invocation could not be described: {ex.Message}");
+                return null;
             }
         }
+
+#nullable restore annotations
 
         private string _illinkPath = "";
 

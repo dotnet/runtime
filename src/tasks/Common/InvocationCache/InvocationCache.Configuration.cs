@@ -11,28 +11,41 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Build.Tasks;
 
+internal sealed class InvocationCacheConfiguration
+{
+    internal string ToolName { get; }
+    internal string EnabledEnvironmentVariable { get; }
+    internal string PathEnvironmentVariable { get; }
+
+    internal InvocationCacheConfiguration(string toolName, string enabledEnvironmentVariable, string pathEnvironmentVariable)
+    {
+        ToolName = toolName;
+        EnabledEnvironmentVariable = enabledEnvironmentVariable;
+        PathEnvironmentVariable = pathEnvironmentVariable;
+    }
+}
+
 internal sealed partial class InvocationCache
 {
-    internal static InvocationCache? TryCreateFromEnvironment(TaskLoggingHelper log, string toolName,
-        string enabledEnvironmentVariable, string pathEnvironmentVariable, string cacheDirectoryName)
+    internal static InvocationCache? TryCreateFromEnvironment(TaskLoggingHelper log, InvocationCacheConfiguration configuration)
     {
-        string? setting = Environment.GetEnvironmentVariable(enabledEnvironmentVariable);
+        string? setting = Environment.GetEnvironmentVariable(configuration.EnabledEnvironmentVariable);
         if (string.IsNullOrEmpty(setting))
             return null;
 
         if (!bool.TryParse(setting, out bool enabled))
         {
-            log.LogMessage(MessageImportance.Low, $"{toolName} caching is disabled because {enabledEnvironmentVariable} must be 'true' or 'false'.");
+            log.LogMessage(MessageImportance.Low, $"{configuration.ToolName} caching is disabled because {configuration.EnabledEnvironmentVariable} must be 'true' or 'false'.");
             return null;
         }
 
-        return enabled ? TryCreate(Environment.GetEnvironmentVariable(pathEnvironmentVariable), log, toolName, cacheDirectoryName) : null;
+        return enabled ? TryCreate(Environment.GetEnvironmentVariable(configuration.PathEnvironmentVariable), log, configuration.ToolName) : null;
     }
 
-    internal static InvocationCache? TryCreate(string? cacheDirectory, TaskLoggingHelper log, string toolName, string cacheDirectoryName)
+    internal static InvocationCache? TryCreate(string? cacheDirectory, TaskLoggingHelper log, string toolName)
     {
         if (string.IsNullOrEmpty(cacheDirectory))
-            cacheDirectory = GetDefaultCacheDirectory(cacheDirectoryName);
+            cacheDirectory = GetDefaultCacheDirectory(toolName.ToLowerInvariant());
 
         if (cacheDirectory is null)
         {
@@ -42,7 +55,10 @@ internal sealed partial class InvocationCache
 
         try
         {
-            return new InvocationCache(Path.GetFullPath(cacheDirectory), log, toolName);
+            string fullPath = Path.GetFullPath(cacheDirectory);
+            if (File.Exists(fullPath))
+                throw new IOException($"Cache location is a file: '{fullPath}'.");
+            return new InvocationCache(fullPath, log, toolName);
         }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException or IOException or UnauthorizedAccessException)
         {
