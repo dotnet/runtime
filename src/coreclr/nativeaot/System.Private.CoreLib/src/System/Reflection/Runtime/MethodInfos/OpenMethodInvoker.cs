@@ -20,13 +20,11 @@ namespace System.Reflection.Runtime.MethodInfos
 
         protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            ValidateArgumentCount(arguments?.Length ?? 0);
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
         }
 
         protected sealed override object CreateInstance(object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            ValidateArgumentCount(arguments?.Length ?? 0);
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
         }
 
