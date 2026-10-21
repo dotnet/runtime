@@ -49,12 +49,14 @@
     <Compile Include="System\Formats\Tar\TarEntry.Windows.cs" />
     <Compile Include="System\Formats\Tar\TarHelpers.Windows.cs" />
     <Compile Include="System\Formats\Tar\TarWriter.Windows.cs" />
-    <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Windows.cs" Link="Common\System\IO\Archiving.Utils.Windows.cs" />
-    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs" Link="Common\System\IO\PathInternal.Windows.cs" />
-    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs" Link="Common\System\IO\Win32Marshal.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateHardLink.cs" Link="Common\Interop\Windows\Kernel32\Interop.CreateHardLink.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
+    <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Windows.cs" Link="Common\System\IO\Archiving.Utils.Windows.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs" Link="Common\System\IO\PathInternal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs" Link="Common\System\IO\Win32Marshal.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs" Link="Common\Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Kernel32\Interop.CreateFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeviceIoControl.cs" Link="Common\Interop\Windows\Kernel32\Interop.DeviceIoControl.cs" />
