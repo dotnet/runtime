@@ -414,6 +414,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <para>
         /// For <strong>union types</strong>: determines which case type matches the JSON payload.
         /// When set by the user, replaces the default token-based matching.
+        /// The returned type must match a <see cref="JsonUnionCaseInfo.CaseType"/> in <see cref="UnionCases"/>;
+        /// otherwise deserialization throws a <see cref="JsonException"/>.
         /// </para>
         /// </remarks>
         public JsonTypeClassifier? TypeClassifier
@@ -545,6 +547,11 @@ namespace System.Text.Json.Serialization.Metadata
         /// serializes as that value shape. Populated at configuration time from <see cref="UnionCases"/>.
         /// </summary>
         internal Dictionary<JsonValueType, Type>? UnionValueTypeMap { get; set; }
+
+        /// <summary>
+        /// Declared union case types allowed as custom classifier results, cached at configuration time.
+        /// </summary>
+        internal HashSet<Type>? UnionCaseTypes { get; private set; }
 
         /// <summary>
         /// Bitmask of <see cref="JsonValueType"/> shapes that two or more declared case types both
@@ -1023,15 +1030,21 @@ namespace System.Text.Json.Serialization.Metadata
                 ValidateUnionContract();
                 CacheUnionNullableCaseType();
                 ConfigureTypeClassifier();
-            }
 
-            // Build the union dispatch map after modifiers have had a chance to install
-            // a custom TypeClassifier. The classifier path bypasses the value-shape map entirely.
-            if (Kind is JsonTypeInfoKind.Union &&
-                _typeClassifier is null &&
-                UnionCases.Count > 0)
-            {
-                BuildUnionValueTypeMap(UnionCases, Options, this);
+                if (_typeClassifier is null)
+                {
+                    BuildUnionValueTypeMap(UnionCases, Options, this);
+                }
+                else
+                {
+                    HashSet<Type> caseTypes = new();
+                    foreach (JsonUnionCaseInfo unionCase in UnionCases)
+                    {
+                        caseTypes.Add(unionCase.CaseType);
+                    }
+
+                    UnionCaseTypes = caseTypes;
+                }
             }
         }
 
