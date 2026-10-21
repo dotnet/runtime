@@ -493,18 +493,6 @@ public class ExecutionManagerTests
         Assert.Equal(new TargetPointer(CapturedVirtualIP), em.GetStartAddress(handle.Value));
         Assert.Equal(new TargetPointer(LoadedImageBase), em.GetUnwindInfoBaseAddress(handle.Value));
         Assert.Equal(new TargetPointer(runtimeFunctionsAddress + (ulong)runtimeFunctionSize), em.GetUnwindInfo(handle.Value));
-        Assert.True(em.TryGetUnwindInfo(
-            virtualIP,
-            out TargetPointer runtimeFunction,
-            out TargetPointer unwindInfoBaseAddress));
-        Assert.Equal(new TargetPointer(runtimeFunctionsAddress + (ulong)runtimeFunctionSize), runtimeFunction);
-        Assert.Equal(new TargetPointer(LoadedImageBase), unwindInfoBaseAddress);
-        Assert.False(em.TryGetUnwindInfo(
-            new TargetCodePointer(0x7000_0000),
-            out runtimeFunction,
-            out unwindInfoBaseAddress));
-        Assert.Equal(TargetPointer.Null, runtimeFunction);
-        Assert.Equal(TargetPointer.Null, unwindInfoBaseAddress);
         Assert.Equal(new TargetPointer(moduleAddress), em.FindReadyToRunModule(new TargetPointer(CapturedVirtualIP)));
         Assert.Equal(CodeKind.ReadyToRun, em.GetCodeKind(virtualIP));
     }

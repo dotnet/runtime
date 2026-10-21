@@ -4407,6 +4407,7 @@ public:
         bool     inUse;
     };
     jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
+    BitVec* m_wasmGCRefCandidates = nullptr;
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -5219,7 +5220,7 @@ public:
 #endif // defined(DEBUG)
     );
 
-    bool impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
+    void impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
 
     enum class GDVProbeType
     {
@@ -7025,6 +7026,7 @@ public:
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();

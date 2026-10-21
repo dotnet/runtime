@@ -49,24 +49,14 @@ public class WasmUnwinderTests
     {
         public Dictionary<ulong, (TargetPointer RuntimeFunction, TargetPointer BaseAddress)> UnwindInfo { get; } = new();
 
-        public bool TryGetUnwindInfo(
-            TargetCodePointer controlPC,
-            out TargetPointer runtimeFunction,
-            out TargetPointer unwindInfoBaseAddress)
-        {
-            if (UnwindInfo.TryGetValue(
-                controlPC.Value,
-                out (TargetPointer RuntimeFunction, TargetPointer BaseAddress) info))
-            {
-                runtimeFunction = info.RuntimeFunction;
-                unwindInfoBaseAddress = info.BaseAddress;
-                return true;
-            }
+        public CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip)
+            => UnwindInfo.ContainsKey(ip.Value) ? new CodeBlockHandle(ip.AsTargetPointer) : null;
 
-            runtimeFunction = TargetPointer.Null;
-            unwindInfoBaseAddress = TargetPointer.Null;
-            return false;
-        }
+        public TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle)
+            => UnwindInfo[codeInfoHandle.Address.Value].RuntimeFunction;
+
+        public TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle)
+            => UnwindInfo[codeInfoHandle.Address.Value].BaseAddress;
     }
 
     private static TestPlaceholderTarget CreateTarget(MockMemorySpace.HeapFragment[] fragments)

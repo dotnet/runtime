@@ -671,7 +671,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 }
 
                 GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
-                assert(fptr != nullptr);
+                if (fptr == nullptr)
+                {
+                    assert(compDonotInline());
+                    return TYP_UNDEF;
+                }
 
                 call->AsCall()
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
@@ -1151,11 +1155,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
 DEVIRT:
 
-    bool probing;
-    probing = impConsiderCallProbe(call->AsCall(), rawILOffset);
-
-    // See if we can devirt if we aren't probing.
-    if (!probing && opts.OptimizationEnabled())
+    // See if we can devirt. This is done before considering whether the call needs a probe,
+    // since a call we manage to devirtualize is no longer virtual and so needs no probe.
+    if (opts.OptimizationEnabled())
     {
         if (call->AsCall()->IsDevirtualizationCandidate(this))
         {
@@ -1202,6 +1204,8 @@ DEVIRT:
                                             NO_CLASS_HANDLE, nullptr);
         }
     }
+
+    impConsiderCallProbe(call->AsCall(), rawILOffset);
 
     //-------------------------------------------------------------------------
     // The "this" pointer for "newobj"
@@ -8799,6 +8803,15 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 {
     JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
 
+    // The probe info and the candidate info share storage in the call node, so a
+    // call that is going to be probed can't also be a candidate.
+    //
+    if (compClassifyGDVProbeType(call) != GDVProbeType::None)
+    {
+        JITDUMP("Call will be probed for instrumentation, no guarded devirtualization.\n");
+        return;
+    }
+
     if (call->IsGenericVirtual(this))
     {
         JITDUMP("Generic virtual methods are not supported by guarded devirtualization, sorry.\n");
@@ -10718,19 +10731,17 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
 //     call - The call
 //     ilOffset - The precise IL offset of the call
 //
-// Returns:
-//     True if the call was marked such that we will add a class or method probe for it.
+// Notes:
+//     When optimizing this is done after the importer has tried to devirtualize the call.
+//     Calls that were devirtualized are no longer virtual and so are not probed.
 //
-bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
+void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 {
-    // Possibly instrument. Note for OSR+PGO we will instrument when
-    // optimizing and (currently) won't devirtualize. We may want
-    // to revisit -- if we can devirtualize we should be able to
-    // suppress the probe.
+    // Possibly instrument.
     //
     if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
-        return false;
+        return;
     }
 
     assert(opts.OptimizationDisabled() || opts.IsInstrumentedAndOptimized());
@@ -10742,7 +10753,7 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
     //
     if (compClassifyGDVProbeType(call) == GDVProbeType::None)
     {
-        return false;
+        return;
     }
 
     JITDUMP("\n ... marking [%06u] in " FMT_BB " for method/class profile instrumentation\n", dspTreeID(call),
@@ -10758,7 +10769,6 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
     // Flag block as needing scrutiny
     //
     compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
-    return true;
 }
 
 //------------------------------------------------------------------------

@@ -1645,21 +1645,13 @@ public unsafe class StackWalkTests
         public CodeKind GetCodeKind(TargetCodePointer codeAddress)
             => _interpreterIps.Contains(codeAddress.Value) ? CodeKind.Interpreter : default;
 
-        public bool TryGetUnwindInfo(
-            TargetCodePointer controlPC,
-            out TargetPointer runtimeFunction,
-            out TargetPointer unwindInfoBaseAddress)
-        {
-            if ((_managedIps?.Contains(controlPC.Value) ?? false) && _unwindInfo is not null)
-            {
-                (runtimeFunction, unwindInfoBaseAddress) = _unwindInfo();
-                return runtimeFunction != TargetPointer.Null;
-            }
+        public TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle)
+            => (_managedIps?.Contains(codeInfoHandle.Address.Value) ?? false) && _unwindInfo is not null
+                ? _unwindInfo().RuntimeFunction
+                : TargetPointer.Null;
 
-            runtimeFunction = TargetPointer.Null;
-            unwindInfoBaseAddress = TargetPointer.Null;
-            return false;
-        }
+        public TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle)
+            => _unwindInfo?.Invoke().BaseAddress ?? TargetPointer.Null;
     }
 
     private static IExecutionManager CreateInterpreterExecutionManager(
