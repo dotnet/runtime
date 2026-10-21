@@ -16,6 +16,7 @@ public interface IPlatformMetadata : IContract
     static string IContract.Name { get; } = nameof(PlatformMetadata);
     TargetPointer GetPrecodeMachineDescriptor() => throw new NotImplementedException();
     CodePointerFlags GetCodePointerFlags() => throw new NotImplementedException();
+    ulong GetPointerAuthenticationMask() => throw new NotImplementedException();
 }
 
 public readonly struct PlatformMetadata : IPlatformMetadata
