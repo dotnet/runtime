@@ -551,11 +551,9 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
                         ecmd.cmd = ETHTOOL_GSET;
                         if (ioctl(socketfd, SIOCETHTOOL, &ifr) == 0)
                         {
-#ifdef TARGET_ANDROID
-                            nii->Speed = (int64_t)ecmd.speed;
-#elif defined(TARGET_OPENHARMONY)
-                            // ethtool_cmd_speed() is not in the OpenHarmony UAPI headers; inline it so
-                            // speeds above 65535 Mbps are not truncated.
+#if defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
+                            // The Android/OpenHarmony UAPI headers do not provide the inline
+                            // ethtool_cmd_speed helper; inline it so high speeds are not truncated.
                             nii->Speed = (int64_t)(((uint32_t)ecmd.speed_hi << 16) | ecmd.speed);
 #else
                             nii->Speed = (int64_t)ethtool_cmd_speed(&ecmd);
