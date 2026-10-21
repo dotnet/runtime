@@ -22,7 +22,6 @@
     <ProjectReference Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj" />
     <ProjectReference Include="../ILCompiler.Compiler/ILCompiler.Compiler.csproj" />
     <ProjectReference Include="../ILCompiler.RyuJit/ILCompiler.RyuJit.csproj" />
-    <ProjectReference Include="../ILCompiler/ILCompiler.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,9 +32,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.DotNetHostPath">
-      <Value>$(DotNetTool)</Value>
-    </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.RuntimeBinDirectory">
       <Value>$(RuntimeBinDir)</Value>
     </RuntimeHostConfigurationOption>

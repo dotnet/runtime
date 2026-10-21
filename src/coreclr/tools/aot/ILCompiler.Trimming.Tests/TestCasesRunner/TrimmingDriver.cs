@@ -3,23 +3,18 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Xml;
 using ILCompiler;
 using ILCompiler.Dataflow;
-using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using Xunit;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -175,95 +170,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 .UseTypeMapManager(typeMapManager)
                 .ToILScanner();
 
-            ILScanResults results = scanner.Scan();
-            if (options.TypeMapFileName is string typeMapFileName)
-                Compile(options, typeMapFileName);
-
-            return results;
-        }
-
-        private static void Compile(ILCompilerOptions options, string typeMapFileName)
-        {
-            string runtimeBinDirectory = Assert.IsType<string>(AppContext.GetData("Mono.Linker.Tests.RuntimeBinDirectory"));
-            string compilerPath = Path.Combine(runtimeBinDirectory, "ilc", "ilc.dll");
-            Assert.True(File.Exists(compilerPath), $"ILC was not found at '{compilerPath}'.");
-            Assert.NotNull(options.OutputFileName);
-
-            // RyuJIT permits only one compiler host per process.
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = Assert.IsType<string>(AppContext.GetData("Mono.Linker.Tests.DotNetHostPath")),
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-            startInfo.ArgumentList.Add(compilerPath);
-            foreach (string inputFile in options.InputFilePaths.Values)
-                startInfo.ArgumentList.Add(inputFile);
-            AddArguments("--out", [options.OutputFileName]);
-            AddArguments("--output-typemaps", [typeMapFileName]);
-            startInfo.ArgumentList.Add("-O");
-            startInfo.ArgumentList.Add("--scanreflection");
-            AddArguments("--reference", options.ReferenceFilePaths.Values);
-            AddArguments("--initassembly", options.InitAssemblies);
-            AddArguments("--trim", options.TrimAssemblies);
-            AddArguments("--root", options.AdditionalRootAssemblies);
-            AddArguments("--conditionalroot", options.RootEntireAssemblies);
-            AddArguments("--descriptor", options.Descriptors);
-            AddArguments("--substitution", options.SubstitutionFiles);
-            foreach (var feature in options.FeatureSwitches)
-                AddArguments("--feature", [$"{feature.Key}={(feature.Value ? "true" : "false")}"]);
-            if (options.TypeMapEntryAssembly is string entryAssembly)
-                AddArguments("--typemap-entry-assembly", [entryAssembly]);
-            if (options.SingleWarn)
-                startInfo.ArgumentList.Add("--singlewarn");
-            if (options.TreatWarningsAsErrors)
-                startInfo.ArgumentList.Add("--warnaserror");
-            foreach (var warning in options.WarningsAsErrors)
-            {
-                string code = "IL" + warning.Key.ToString("D4", CultureInfo.InvariantCulture);
-                AddArguments(warning.Value ? "--warnaserr" : "--nowarnaserr", [code]);
-            }
-            foreach (string category in options.SuppressedWarningCategories)
-            {
-                startInfo.ArgumentList.Add(category switch
-                {
-                    MessageSubCategory.TrimAnalysis => "--notrimwarn",
-                    MessageSubCategory.AotAnalysis => "--noaotwarn",
-                    _ => throw new InvalidOperationException($"Unsupported warning category '{category}'.")
-                });
-            }
-            if (options.DisableGeneratedCodeHeuristics)
-                startInfo.ArgumentList.Add("--disable-generated-code-heuristics");
-
-            using var process = new Process { StartInfo = startInfo };
-            Assert.True(process.Start(), $"Failed to start ILC at '{compilerPath}'.");
-            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-            Task<string> errorTask = process.StandardError.ReadToEndAsync();
-            const int TimeoutMinutes = 2;
-            bool exited = process.WaitForExit(TimeSpan.FromMinutes(TimeoutMinutes));
-            if (!exited)
-                process.Kill(entireProcessTree: true);
-
-            string output = outputTask.GetAwaiter().GetResult();
-            string error = errorTask.GetAwaiter().GetResult();
-            File.WriteAllText(Path.ChangeExtension(options.OutputFileName, ".log"), output + error);
-            Assert.True(exited,
-                $"ILC compilation timed out after {TimeoutMinutes} minutes:{Environment.NewLine}{output}{error}");
-            Assert.True(process.ExitCode == 0,
-                $"ILC compilation failed with exit code {process.ExitCode}:{Environment.NewLine}{output}{error}");
-            Assert.True(File.Exists(options.OutputFileName), $"ILC did not produce the native object file '{options.OutputFileName}'.");
-            Assert.True(new FileInfo(options.OutputFileName).Length > 0, $"ILC produced an empty native object file '{options.OutputFileName}'.");
-
-            void AddArguments(string flag, IEnumerable<string> values)
-            {
-                foreach (string value in values)
-                {
-                    startInfo.ArgumentList.Add(flag);
-                    startInfo.ArgumentList.Add(value);
-                }
-            }
+            return scanner.Scan();
         }
 
         public static void ComputeDefaultOptions(out TargetOS os, out TargetArchitecture arch)

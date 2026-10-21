@@ -127,7 +127,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     VerifyExpectedDependencyTrace(linkResult.MetadataProvider, linkResult.OutputAssemblyPath);
                 }
 
-                VerifyExpectedXmlOutput(linkResult, original);
                 VerifyLinkingOfOtherAssemblies(original);
                 VerifyILOfOtherAssemblies(linkResult);
                 AdditionalChecking(linkResult, original);

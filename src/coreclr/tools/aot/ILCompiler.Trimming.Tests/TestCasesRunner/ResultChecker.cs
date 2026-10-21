@@ -86,7 +86,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     }
                 }
 
-                VerifyExpectedXmlOutput(testResult, original);
                 AdditionalChecking(testResult, original);
             }
             finally

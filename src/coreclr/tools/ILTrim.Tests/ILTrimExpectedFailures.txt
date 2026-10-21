@@ -350,7 +350,6 @@ Reflection.TypeHierarchyLibraryModeSuppressions
 Reflection.TypeHierarchyReflectionWarnings
 Reflection.TypeMap
 Reflection.TypeMapAssemblyTargetRemovedWhenAllEntriesTrimmed
-Reflection.TypeMapOutput
 Reflection.TypeUsedViaReflection
 Reflection.UnsafeAccessor
 RequiresCapability.BasicRequires
