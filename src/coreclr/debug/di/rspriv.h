@@ -1734,7 +1734,7 @@ public:
     bool IsInitialized();
 
 #ifndef DACCESS_COMPILE
-    CordbHashTable(ULONG)
+    CordbHashTable()
     {
 #ifdef _DEBUG
     m_pDbgLock = NULL;
@@ -1795,9 +1795,7 @@ class CordbSafeHashTable : public CordbHashTable
 {
 public:
 #ifndef DACCESS_COMPILE
-    CordbSafeHashTable<T>(ULONG size) : CordbHashTable(size)
-    {
-    }
+    CordbSafeHashTable() = default;
 #endif
     // Typesafe wrappers
     HRESULT AddBase(T * pBase) { return UnsafeAddBase(pBase); }

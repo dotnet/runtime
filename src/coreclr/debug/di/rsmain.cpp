@@ -927,7 +927,7 @@ Cordb::Cordb(CorDebugInterfaceVersion iDebuggerVersion)
 
 Cordb::Cordb(CorDebugInterfaceVersion iDebuggerVersion, const ProcessDescriptor& pd, LPCWSTR dacModulePath)
   : CordbBase(NULL, 0, enumCordb),
-    m_processes(11),
+    m_processes(),
     m_initialized(false),
     m_debuggerSpecifiedVersion(iDebuggerVersion),
     m_pd(pd),

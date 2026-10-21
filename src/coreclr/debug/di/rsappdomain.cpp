@@ -42,10 +42,10 @@
 CordbAppDomain::CordbAppDomain(CordbProcess *  pProcess, VMPTR_AppDomain vmAppDomain)
   : CordbBase(pProcess, LsPtrToCookie(vmAppDomain.ToLsPtr()), enumCordbAppDomain),
     m_AppDomainId(0),
-    m_breakpoints(17),
-    m_sharedtypes(3),
-    m_modules(17),
-    m_assemblies(9),
+    m_breakpoints(),
+    m_sharedtypes(),
+    m_modules(),
+    m_assemblies(),
     m_vmAppDomain(vmAppDomain)
 {
     // This may throw out of the Ctor on error.
