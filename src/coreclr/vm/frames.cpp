@@ -1491,7 +1491,7 @@ void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
 //
 //
 
-PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc()
+PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc(bool allowReceiverLookup)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -1507,7 +1507,7 @@ PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc()
             return nullptr;
         bool dispatch = frame == FrameIdentifier::StubDispatchFrame;
         PTR_BYTE map = pMD->FindGCRefMap(nullptr, dispatch);
-        if (map != nullptr || pMD->IsStatic() || pMD->IsCtor() || pMD->HasMethodInstantiation() ||
+        if (map != nullptr || !allowReceiverLookup || pMD->IsStatic() || pMD->IsCtor() || pMD->HasMethodInstantiation() ||
             (!dispatch && pMD->RequiresInstArg()))
             return map;
 
@@ -1549,7 +1549,8 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     if (pFunction == NULL)
         return;
 
-    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc();
+    // Relocation updates roots before moving objects, so their MethodTables cannot be read.
+    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc(sc->promotion);
     if (pGCRefMap != nullptr)
     {
         PromoteCallerStackUsingGCRefMap(fn, sc, pGCRefMap);

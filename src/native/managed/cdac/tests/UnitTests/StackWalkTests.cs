@@ -348,9 +348,9 @@ public unsafe class StackWalkTests
     [InlineData("interface-owner", nameof(FrameType.StubDispatchFrame))]
     [InlineData("interface-owner-implementation", nameof(FrameType.StubDispatchFrame))]
     [InlineData("interface-owner-ancestor", nameof(FrameType.StubDispatchFrame))]
-    public void TransitionFrame_VirtualMapUsedForScanningAndX86Unwind(string scenario, string frameType)
+    public void TransitionFrame_VirtualMapScanningAndX86Unwind(string scenario, string frameType)
     {
-        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(scenario, frameType: frameType);
+        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(scenario, frameType: frameType, signatureMap: [0xfd, 0x04]);
         GcScanContext scan = new(target, resolveInteriorPointers: false);
         scan.UpdateScanContext(new TargetPointer(0x2000), TargetCodePointer.Null, new TargetPointer(0x1000));
         new GcScanner(target).GcScanRoots(new TargetPointer(0x1000), scan);
@@ -388,6 +388,29 @@ public unsafe class StackWalkTests
     {
         (TestPlaceholderTarget target, _) = CreateVirtualMapTarget("declaration", unreadableThis: true);
         Assert.Equal(0xa000UL, new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+    }
+
+    [Theory]
+    [InlineData("declaration", nameof(FrameType.PrestubMethodFrame))]
+    [InlineData("declaration", nameof(FrameType.CallCountingHelperFrame))]
+    [InlineData("declaration", nameof(FrameType.StubDispatchFrame))]
+    [InlineData("interface", nameof(FrameType.PrestubMethodFrame))]
+    [InlineData("interface", nameof(FrameType.CallCountingHelperFrame))]
+    [InlineData("interface", nameof(FrameType.StubDispatchFrame))]
+    public void TransitionFrame_X86UnwindDoesNotReadReceiver(string scenario, string frameType)
+    {
+        byte[] signatureMap = [0xfd, 0x04];
+        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
+            scenario, frameType: frameType, unreadableThis: true, signatureMap: signatureMap);
+        ContextHolder<X86Context> context = new() { Context = new X86Context { ContextFlags = (uint)X86Context.ContextFlagsValues.CONTEXT_FULL } };
+
+        new X86FrameHandler(target, context).HandleTransitionFrame(
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
+
+        AssertX86TransitionFrameContext(context, stackPopSlots: 1);
+        Mock.Get(target.Contracts.CallingConvention).Verify(
+            callingConvention => callingConvention.TryComputeArgGCRefMapBlob(It.IsAny<MethodDescHandle>(), out signatureMap),
+            Times.Exactly(scenario == "interface" ? 1 : 0));
     }
 
     [Theory]
@@ -495,11 +518,18 @@ public unsafe class StackWalkTests
     private static (TestPlaceholderTarget Target, VirtualMapTypeSystem RuntimeTypeSystem) CreateVirtualMapTarget(
         string scenario, byte[]? map = null, string frameType = nameof(FrameType.PrestubMethodFrame),
         MetadataReader? metadata = null, bool unreadableThis = false, bool metadataMissing = false, ushort methodFlags = 0,
-        bool markedReceiver = false, bool ownMap = false, uint auxiliarySize = 4, byte[]? overrideMap = null)
+        bool markedReceiver = false, bool ownMap = false, uint auxiliarySize = 4, byte[]? overrideMap = null,
+        byte[]? signatureMap = null)
     {
         TestPlaceholderTarget.Builder builder = new(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false });
         TargetTestHelpers helpers = builder.MemoryBuilder.TargetTestHelpers;
         VirtualMapTypeSystem rts = new();
+        if (signatureMap is not null)
+        {
+            Mock<ICallingConvention> callingConvention = new(MockBehavior.Strict);
+            callingConvention.Setup(c => c.TryComputeArgGCRefMapBlob(It.IsAny<MethodDescHandle>(), out signatureMap)).Returns(true);
+            builder.AddMockContract(callingConvention);
+        }
         if (metadata is not null || metadataMissing)
         {
             rts.MethodToken = 0x06000001;

@@ -906,9 +906,9 @@ Currently there isn't great documentation on the algorithm, beyond inspecting th
 Version 2 supports cached method-entry and virtual declaration-map lookup for
 `PrestubMethodFrame`, `CallCountingHelperFrame`, and `StubDispatchFrame`. Compatible maps
 supply argument roots and, on x86, the stack-pop count without resolving the method signature.
-If no compatible map is available, the signature-based path is retained. Both GC root
-enumeration and x86 frame unwinding use the same lookup. Import maps on `ExternalMethodFrame`
-and `StubDispatchFrame` take precedence over method-entry maps.
+If no compatible map is available, the signature-based path is retained. GC root enumeration
+and x86 frame unwinding first use the same metadata-only lookup. Import maps on
+`ExternalMethodFrame` and `StubDispatchFrame` take precedence over method-entry maps.
 
 The runtime publishes Version 2 when ReadyToRun imports can leave signature layouts unloaded.
 An older reader must not apply Version 1's signature-only algorithm to such a target.
@@ -953,9 +953,14 @@ Publication attaches an import map directly to the already-resolved call declara
 without traversing the hierarchy, decoding maps, or checking an image-format flag during
 preparation. The runtime rejects images predating the contextual-receiver format; legacy
 concrete import-map rejection is not part of Version 2 lookup.
-If lookup in the method's owning type fails, obtain the actual receiver type from the saved
-`this` object for reference types, boxed wrappers, and dispatch frames. Do not dereference
+If lookup in the method's owning type fails during root enumeration, obtain the actual receiver
+type from the saved `this` object for reference types, boxed wrappers, and dispatch frames. Do not dereference
 `this` for constructors, static methods, excluded generic bodies, or unboxed value-type bodies.
+Native root scanning permits this additional lookup only during promotion. Relocation can
+update a root to its future address before the object has moved, so neither relocation nor
+x86 unwinding may dereference the receiver. These paths use only metadata-based lookup and
+fall back to the signature on a miss. Target preparation does not depend on receiver-based
+lookup, so a metadata-only miss retains the prepared signature path.
 Reading method metadata to recognize `.ctor` does not load signature value-type layouts.
 When metadata is unavailable, do not dereference a potentially synthetic constructor receiver;
 retain the signature fallback, which can defer frames whose layouts are unavailable.

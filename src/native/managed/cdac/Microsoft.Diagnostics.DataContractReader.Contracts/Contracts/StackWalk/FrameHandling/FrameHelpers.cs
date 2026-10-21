@@ -179,7 +179,7 @@ internal sealed class FrameHelpers
             : TargetPointer.Null;
     }
 
-    public TargetPointer GetGCRefMapForFrame(TargetPointer frameAddress)
+    public TargetPointer GetGCRefMapForFrame(TargetPointer frameAddress, bool allowReceiverLookup = true)
     {
         FrameType kind = GetFrameType(_target.ProcessedData.GetOrAdd<Data.Frame>(frameAddress).Identifier);
         if (kind is not (FrameType.PrestubMethodFrame or FrameType.CallCountingHelperFrame or FrameType.StubDispatchFrame))
@@ -203,7 +203,7 @@ internal sealed class FrameHelpers
         MethodGCRefMapLookup lookup = new(_target, this);
         bool dispatch = kind is FrameType.StubDispatchFrame;
         TargetPointer map = lookup.Find(md, TargetPointer.Null, dispatch);
-        if (map != TargetPointer.Null)
+        if (map != TargetPointer.Null || !allowReceiverLookup)
             return map;
         if (rts.GetGenericMethodInstantiation(md).Length != 0 ||
             (!dispatch && rts.GetGenericContextLoc(md) is GenericContextLoc.InstArgMethodDesc or GenericContextLoc.InstArgMethodTable))
