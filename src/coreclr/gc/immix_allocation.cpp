@@ -573,6 +573,7 @@ SideMetadataResult ImmixAllocationManager::InitializeFieldLogRange(
     size_t size,
     bool copy)
 {
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_VALID_CLEAR_CONTROL)
     if (m_metadata->IsSpecEnabled(LxrSideMetadataKind::ValidObject))
     {
         SideMetadataResult result = m_metadata->ResetRangeQuiescent(
@@ -582,6 +583,7 @@ SideMetadataResult ImmixAllocationManager::InitializeFieldLogRange(
             return result;
         }
     }
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_VALID_CLEAR_CONTROL
     uintptr_t value = copy ? 1 : 0;
     return m_metadata->ResetRangeQuiescent(LxrSideMetadataKind::FieldUnlogged, start, size, value);
 }

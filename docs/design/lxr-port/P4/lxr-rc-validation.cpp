@@ -3037,22 +3037,25 @@ namespace
         {
             return;
         }
-        deadLeft->RawSetMethodTable(reinterpret_cast<MethodTable*>(static_cast<uintptr_t>(1)));
-        deadRight->RawSetMethodTable(reinterpret_cast<MethodTable*>(static_cast<uintptr_t>(1)));
-        self->RawSetMethodTable(reinterpret_cast<MethodTable*>(static_cast<uintptr_t>(1)));
-        stuck->RawSetMethodTable(reinterpret_cast<MethodTable*>(static_cast<uintptr_t>(1)));
         uint64_t queries = engine.GetMetrics().objectSizeQueries;
+        // The cycle sweep reads the size of a dead object from the object (rule 4 was relaxed in P17 S3), so the
+        // types stay valid until the sweep ends. The runtime frees type data only after that: see ValidateCycleSweepGate.
         if (!TracePause(engine, {liveLeft}, LxrPauseKind::Full))
         {
             return;
         }
+        Check(!engine.IsCycleSweepPending(), "the cycle sweep has finished when the trace release drains");
+        deadLeft->RawSetMethodTable(reinterpret_cast<MethodTable*>(static_cast<uintptr_t>(1)));
+        deadRight->RawSetMethodTable(reinterpret_cast<MethodTable*>(static_cast<uintptr_t>(1)));
+        self->RawSetMethodTable(reinterpret_cast<MethodTable*>(static_cast<uintptr_t>(1)));
+        stuck->RawSetMethodTable(reinterpret_cast<MethodTable*>(static_cast<uintptr_t>(1)));
         LxrTraceMetrics metrics = engine.GetTraceMetrics();
         Check(metrics.cycleObjects == 4 && metrics.cycleBytes == 96,
-            "metadata-only tracing reclaims both dead-cycle nodes, self-cycle and saturation");
+            "tracing reclaims both dead-cycle nodes, self-cycle and saturation with sizes read from the objects");
         Check(engine.GetLiveBytes() == 48 && engine.GetReclaimedBytes() == 96,
             "actual owned birth extents conserve live and reclaimed payload bytes");
         Check(engine.GetMetrics().objectSizeQueries == queries,
-            "dead mature cycle sweep never queries poisoned object layouts");
+            "the dead mature cycle sweep reads sizes without the counted size query");
         Check(*Field(liveLeft) == liveRight && *Field(liveRight) == liveLeft &&
                 liveLeft->RawGetMethodTable() == link.table && liveRight->RawGetMethodTable() == link.table,
             "reachable cycle payloads and MethodTables survive the same full trace");
@@ -3580,10 +3583,593 @@ namespace
             metadata.Shutdown();
         }
     }
+
+    // ---- P17 S3: the engine keeps no size table and no live bitmap in the product. These tests check the
+    // replacements against the oracle that the test platform still keeps (GetObjectExtent, GetLiveBytes). ----
+
+    class ArrayType final
+    {
+    public:
+        ArrayType()
+            : m_bytes(sizeof(MethodTable), 0), table(reinterpret_cast<MethodTable*>(m_bytes.data()))
+        {
+            table->m_baseSize = 24;
+            table->m_flags = MTFlag_HasComponentSize | MTFlag_IsArray;
+            table->m_componentSize = sizeof(void*);
+        }
+
+    private:
+        std::vector<uint8_t> m_bytes;
+
+    public:
+        MethodTable* table;
+    };
+
+    uintptr_t StartOf(Object* object)
+    {
+        return reinterpret_cast<uintptr_t>(object) - sizeof(ObjHeader);
+    }
+
+    uint32_t ArrayLength(Object* object)
+    {
+        return *reinterpret_cast<uint32_t*>(
+            reinterpret_cast<uint8_t*>(object) + ArrayBase::GetOffsetOfNumComponents());
+    }
+
+    Object* AllocateArray(LxrReferenceCounting& engine, LxrRcMutator* mutator, ArrayType& type, uint32_t length)
+    {
+        size_t size = type.table->GetBaseSize() + static_cast<size_t>(length) * type.table->RawGetComponentSize();
+        Object* object = nullptr;
+        if (!Check(engine.Allocate(mutator, size, &object) == LxrRcResult::Success, "array allocation succeeds"))
+        {
+            return nullptr;
+        }
+        object->RawSetMethodTable(type.table);
+        *reinterpret_cast<uint32_t*>(
+            reinterpret_cast<uint8_t*>(object) + ArrayBase::GetOffsetOfNumComponents()) = length;
+        return Check(engine.CompleteAllocation(object, size, AllocationCompleteFlags::None) ==
+                LxrRcResult::Success, "array allocation completes") ? object : nullptr;
+    }
+
+    // A forwarded source loses its first field to the forwarding pointer, and an array keeps its length there.
+    // The size of the source must still be right when the source is retired: the straddle lines of a mature
+    // source are cleared with it, and a wrong size would leave the block unreleasable.
+    void ValidateForwardedArraySizes()
+    {
+        ArrayType array;
+        {
+            LxrReferenceCounting engine;
+            LxrRcMutator* mutator = nullptr;
+            MovingRoots roots;
+            int identity;
+            if (!InitializeMoving(engine, &roots, 16, &mutator, &identity, 8))
+            {
+                return;
+            }
+            const uint32_t lengths[] = {40, 100, 33, 7, 509};
+            size_t total = 0;
+            for (uint32_t length : lengths)
+            {
+                Object* object = AllocateArray(engine, mutator, array, length);
+                if (object == nullptr)
+                {
+                    return;
+                }
+                roots.objects.push_back(object);
+                total += object->GetSize();
+            }
+            std::vector<Object*> sources = roots.objects;
+            // An interior root into a source finds the object through its start bit and must take the size from
+            // the copy, because the source lost its length.
+            size_t interiorOffset = array.table->GetBaseSize() + 5 * sizeof(void*);
+            roots.interior = reinterpret_cast<Object*>(reinterpret_cast<uint8_t*>(sources[2]) + interiorOffset);
+            Check(engine.Collect(CaptureMoving, &roots, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success, "nursery copy of arrays completes");
+            Check(roots.interior == reinterpret_cast<Object*>(
+                    reinterpret_cast<uint8_t*>(roots.objects[2]) + interiorOffset),
+                "an interior root into a forwarded array source follows the copy");
+            LxrNurseryMetrics nursery = engine.GetNurseryMetrics();
+            Check(nursery.copiedObjects == 5 && nursery.copiedBytes == total && nursery.retiredSourceBytes == total,
+                "retired source bytes equal the copied bytes although each source lost its array length");
+            for (size_t index = 0; index < sources.size(); index++)
+            {
+                Object* destination = roots.objects[index];
+                size_t expected = array.table->GetBaseSize() + lengths[index] * sizeof(void*);
+                uintptr_t count;
+                Check(destination != sources[index] && destination->GetSize() == expected &&
+                        ArrayLength(destination) == lengths[index] &&
+                        engine.LoadCount(destination, &count) == LxrRcResult::Success &&
+                        count == (index == 2 ? 2 : 1),
+                    "the copy keeps the exact array length and has one increment per root");
+                Check(!engine.IsObjectStart(sources[index]) && engine.GetObjectExtent(sources[index]) == 0 &&
+                        engine.IsObjectStart(destination) && engine.GetObjectExtent(destination) == expected,
+                    "the source start is retired and the copy start is registered");
+            }
+        }
+        {
+            LxrReferenceCounting engine;
+            LxrRcMutator* mutator = nullptr;
+            MovingRoots roots;
+            int identity;
+            LxrRcConfiguration configuration{
+                32 * ImmixBlockGeometry::BlockBytes, 4 * LxrLargeObjectSpace::MinimumObjectBytes,
+                4, 4096, 4, 8,
+            };
+            configuration.evacuateMature = true;
+            LxrPauseRuntimeAdapter adapter{Suspend, Resume, nullptr, false};
+            LxrRcObjectModel model{};
+            model.context = &roots;
+            model.finishRelocation = RelocateMoving;
+            if (!Check(engine.Initialize(configuration, adapter, &model) == LxrRcResult::Success &&
+                    engine.AttachMutator(&identity, &mutator) == LxrRcResult::Success,
+                    "mature array engine initializes"))
+            {
+                return;
+            }
+            std::vector<Object*> sources;
+            for (size_t index = 0; index < 64; index++)
+            {
+                Object* object = AllocateArray(engine, mutator, array, 509);
+                if (object == nullptr)
+                {
+                    return;
+                }
+                if (index % 8 == 0)
+                {
+                    sources.push_back(object);
+                }
+            }
+            roots.objects = sources;
+            roots.interior = reinterpret_cast<Object*>(
+                reinterpret_cast<uint8_t*>(sources[3]) + array.table->GetBaseSize() + 300 * sizeof(void*));
+            if (!Check(engine.Collect(CaptureMoving, &roots, Timeout) == LxrRcResult::Success &&
+                    engine.Drain(Timeout) == LxrRcResult::Success &&
+                    engine.CollectFull(CaptureMoving, &roots, Timeout) == LxrRcResult::Success &&
+                    engine.Drain(Timeout) == LxrRcResult::Success, "mature array evacuation completes"))
+            {
+                return;
+            }
+            Check(roots.interior == reinterpret_cast<Object*>(
+                    reinterpret_cast<uint8_t*>(roots.objects[3]) + array.table->GetBaseSize() + 300 * sizeof(void*)),
+                "an interior root into a mature array source follows the copy");
+            LxrMatureMetrics mature = engine.GetMatureMetrics();
+            Check(mature.copiedObjects == 8 && mature.copiedBytes == 8 * 4096 &&
+                    mature.retiredSourceBytes == mature.copiedBytes && mature.releasedBlocks == 8,
+                "mature array sources retire with their exact size and their whole blocks are released");
+            for (size_t index = 0; index < sources.size(); index++)
+            {
+                Check(roots.objects[index] != sources[index] && roots.objects[index]->GetSize() == 4096 &&
+                        ArrayLength(roots.objects[index]) == 509,
+                    "mature array destinations keep their length");
+            }
+        }
+    }
+
+    struct WalkCapture
+    {
+        LxrReferenceCounting* engine;
+        MovingRoots* roots;
+        std::vector<Object*> expected;
+        bool checkStatistics;
+        int rounds = 0;
+    };
+
+    struct WalkCollector
+    {
+        std::vector<Object*> objects;
+        std::vector<size_t> sizes;
+    };
+
+    // Runs at the start of a pause, before the increments: an object has a count above zero exactly when an
+    // earlier pause promoted it and it has not died. The walkers must visit exactly those objects.
+    LxrRcResult CaptureWalk(LxrReferenceCounting* engine, void* context)
+    {
+        WalkCapture* walk = static_cast<WalkCapture*>(context);
+        WalkCollector live;
+        WalkCollector starts;
+        auto collect = [](Object* object, size_t size, void* state)
+        {
+            WalkCollector* collector = static_cast<WalkCollector*>(state);
+            collector->objects.push_back(object);
+            collector->sizes.push_back(size);
+            return true;
+        };
+        Check(engine->WalkObjects(collect, &live) == LxrRcResult::Success &&
+                engine->WalkObjectStarts(collect, &starts) == LxrRcResult::Success, "ValidObject walkers run in a pause");
+        std::vector<Object*> expected = walk->expected;
+        std::sort(expected.begin(), expected.end());
+        std::vector<Object*> visited = live.objects;
+        std::sort(visited.begin(), visited.end());
+        Check(visited == expected, "WalkObjects visits exactly the objects with a count above zero");
+        bool sizes = true;
+        for (size_t index = 0; index < live.objects.size(); index++)
+        {
+            sizes = sizes && live.sizes[index] == live.objects[index]->GetSize() &&
+                live.sizes[index] == engine->GetObjectExtent(live.objects[index]);
+        }
+        Check(sizes, "WalkObjects passes the size that the oracle recorded");
+        std::vector<Object*> raw = starts.objects;
+        std::sort(raw.begin(), raw.end());
+        Check(std::includes(raw.begin(), raw.end(), expected.begin(), expected.end()),
+            "the raw walk visits every live object and may also visit stale bits");
+        bool chain = true;
+        for (size_t index = 1; index < expected.size(); index++)
+        {
+            chain = chain && engine->FindNextObject(expected[index - 1]) == expected[index];
+        }
+        Check(chain && (expected.empty() || engine->FindNextObject(expected.back()) == nullptr),
+            "FindNextObject follows the counted objects in address order");
+        if (walk->checkStatistics)
+        {
+            size_t heap = 0;
+            size_t fragmentation = 0;
+            size_t block = SIZE_MAX;
+            size_t end = 0;
+            size_t used = 0;
+            for (Object* object : expected)
+            {
+                size_t offset = StartOf(object) - engine->GetReservationStart();
+                size_t index = offset / ImmixBlockGeometry::BlockBytes;
+                if (index != block)
+                {
+                    heap += end;
+                    fragmentation += end - used;
+                    block = index;
+                    end = used = 0;
+                }
+                size_t limit = offset % ImmixBlockGeometry::BlockBytes + object->GetSize();
+                end = end > limit ? end : limit;
+                used += object->GetSize();
+            }
+            heap += end;
+            fragmentation += end - used;
+            size_t actualHeap = 0;
+            size_t actualFragmentation = 0;
+            Check(engine->GetHeapStatistics(&actualHeap, &actualFragmentation) == LxrRcResult::Success &&
+                    actualHeap == heap && actualFragmentation == fragmentation,
+                "heap statistics equal the statistics computed from the oracle sizes");
+        }
+        walk->rounds++;
+        return CaptureMoving(engine, walk->roots);
+    }
+
+    Object* TryAllocateQuietly(LxrReferenceCounting& engine, LxrRcMutator* mutator, Type& type)
+    {
+        Object* object = nullptr;
+        if (engine.Allocate(mutator, type.table->GetBaseSize(), &object) != LxrRcResult::Success)
+        {
+            return nullptr;
+        }
+        object->RawSetMethodTable(type.table);
+        return Check(engine.CompleteAllocation(object, type.table->GetBaseSize(), AllocationCompleteFlags::None) ==
+                LxrRcResult::Success, "random allocation completes") ? object : nullptr;
+    }
+
+    // Random allocation, death and reuse of holes and blocks. After every pause the ValidObject plane, the counts and
+    // the interior-pointer lookup are compared with the oracle. This is the proof for C3 (every reuse path clears the
+    // ValidObject and the count bytes of the reused range) and for the stale-bit safety of FindContainingObject.
+    void ValidateValidObjectBookkeeping(bool moving)
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        MovingRoots roots;
+        int identity;
+        LxrRcConfiguration configuration{
+            24 * ImmixBlockGeometry::BlockBytes, 4 * LxrLargeObjectSpace::MinimumObjectBytes,
+            4, 4096, 4, 8,
+        };
+        configuration.evacuateNursery = moving;
+        LxrPauseRuntimeAdapter adapter{Suspend, Resume, nullptr, false};
+        LxrRcObjectModel model{};
+        model.context = &roots;
+        if (moving)
+        {
+            model.finishRelocation = RelocateMoving;
+        }
+        if (!Check(engine.Initialize(configuration, adapter, &model) == LxrRcResult::Success &&
+                engine.AttachMutator(&identity, &mutator) == LxrRcResult::Success,
+                "ValidObject bookkeeping engine initializes"))
+        {
+            return;
+        }
+        std::vector<Type*> types;
+        for (size_t index = 0; index < 64; index++)
+        {
+            types.push_back(new Type(static_cast<uint32_t>(24 + 16 * index), 0));
+        }
+        uint64_t state = moving ? 0x2545F4914F6CDD1Dull : 0x9E3779B97F4A7C15ull;
+        auto next = [&state]()
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        };
+        WalkCapture walk{&engine, &roots, {}, true};
+        size_t slots = engine.GetReservationBytes() / sizeof(uintptr_t);
+        uintptr_t arena = engine.GetReservationStart();
+        size_t holeReuseChecks = 0;
+        for (int round = 0; round < 60; round++)
+        {
+            size_t burst = 100 + next() % 120;
+            for (size_t index = 0; index < burst; index++)
+            {
+                Object* object = TryAllocateQuietly(engine, mutator, *types[next() % types.size()]);
+                if (object == nullptr)
+                {
+                    break;
+                }
+                if (next() % 100 < 18)
+                {
+                    roots.objects.push_back(object);
+                }
+            }
+            // Before the pause: the range of every live or young object holds no foreign ValidObject bit
+            // and no count except a straddle mark, whether the object sits in a fresh block or a reused hole.
+            bool clean = true;
+            for (Object* object : roots.objects)
+            {
+                size_t first = (StartOf(object) - arena) / sizeof(uintptr_t);
+                size_t last = first + object->GetSize() / sizeof(uintptr_t);
+                clean = clean && engine.FindNextValidSlot(first + 1) >= last;
+                for (size_t index = first + 1; index < last; index++)
+                {
+                    uintptr_t address = arena + index * sizeof(uintptr_t);
+                    uintptr_t count = 0;
+                    clean = clean && engine.LoadCount(reinterpret_cast<Object*>(address + sizeof(ObjHeader)), &count) ==
+                        LxrRcResult::Success && (count == 0 || (count == 1 && address % ImmixBlockGeometry::LineBytes == 0));
+                }
+                holeReuseChecks++;
+            }
+            Check(clean, "no ValidObject bit and no stray count lies inside a live or young object");
+            if (next() % 8 == 0 && !roots.objects.empty())
+            {
+                roots.objects.erase(roots.objects.begin() + static_cast<std::ptrdiff_t>(next() % roots.objects.size()));
+            }
+            for (size_t index = 0; index < roots.objects.size();)
+            {
+                if (next() % 100 < 22)
+                {
+                    roots.objects.erase(roots.objects.begin() + static_cast<std::ptrdiff_t>(index));
+                }
+                else
+                {
+                    index++;
+                }
+            }
+            while (roots.objects.size() > 300)
+            {
+                roots.objects.erase(roots.objects.begin());
+            }
+            bool full = round % 9 == 8;
+            walk.checkStatistics = !full;
+            LxrRcResult result = full ? engine.CollectFull(CaptureWalk, &walk, Timeout)
+                : engine.Collect(CaptureWalk, &walk, Timeout);
+            if (!Check(result == LxrRcResult::Success && engine.Drain(Timeout) == LxrRcResult::Success,
+                    "random pause completes"))
+            {
+                break;
+            }
+            walk.expected = roots.objects;
+            std::vector<Object*> sorted = roots.objects;
+            std::sort(sorted.begin(), sorted.end());
+            size_t counted = 0;
+            bool consistent = true;
+            for (size_t index = engine.FindNextValidSlot(0); index < slots; index = engine.FindNextValidSlot(index + 1))
+            {
+                Object* object = reinterpret_cast<Object*>(arena + index * sizeof(uintptr_t) + sizeof(ObjHeader));
+                uintptr_t count = 0;
+                consistent = consistent && engine.LoadCount(object, &count) == LxrRcResult::Success;
+                if (count != 0)
+                {
+                    counted++;
+                    consistent = consistent && std::binary_search(sorted.begin(), sorted.end(), object) &&
+                        engine.GetObjectExtent(object) == object->GetSize();
+                }
+                else
+                {
+                    // A bit without a count is a stale bit of a dead young object: the oracle has reclaimed it.
+                    consistent = consistent && engine.GetObjectExtent(object) == 0;
+                }
+            }
+            Check(consistent && counted == roots.objects.size(),
+                "after a pause every counted ValidObject bit is a live object and every other bit is stale");
+            bool lookups = true;
+            for (Object* object : roots.objects)
+            {
+                size_t size = object->GetSize();
+                for (size_t probe = 0; probe < 6; probe++)
+                {
+                    uintptr_t offset = sizeof(ObjHeader) + next() % (size - sizeof(ObjHeader));
+                    Object* found = nullptr;
+                    lookups = lookups &&
+                        engine.FindContainingObject(StartOf(object) + offset, &found) == LxrRcResult::Success &&
+                        found == object;
+                }
+            }
+            Check(lookups, "random interior addresses of live objects resolve to their object next to stale bits");
+        }
+        Check(holeReuseChecks > 1000 && walk.rounds == 60, "the random run exercised reuse and every pause walk");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "bookkeeping owner detaches");
+        for (Type* type : types)
+        {
+            delete type;
+        }
+    }
+
+    // A dead young object keeps its ValidObject bit. The bit must not count as live for any query.
+    void ValidateStaleBitQueries()
+    {
+        Type leaf(24, 0);
+        Type link(24, 1);
+        LxrReferenceCounting engine;
+        int identity;
+        LxrRcMutator* mutator;
+        if (!Initialize(engine, 8, &mutator, &identity))
+        {
+            return;
+        }
+        Object* kept = Allocate(engine, mutator, link);
+        Object* dead = Allocate(engine, mutator, leaf);
+        if (kept == nullptr || dead == nullptr || !Epoch(engine, {kept}))
+        {
+            return;
+        }
+        Object* containing = nullptr;
+        Check(engine.IsObjectStart(dead) && engine.GetObjectExtent(dead) == 0 && Count(engine, dead) == 0,
+            "a dead young object keeps a stale ValidObject bit while the oracle has reclaimed it");
+        Check(!engine.IsMarked(dead) && engine.GetLiveObjectSize(dead) == 0 && engine.GetLiveObjectSize(kept) == 24,
+            "a stale bit is neither marked nor live, and the live size comes from the object");
+        Check(engine.FindContainingObject(StartOf(kept) + 16, &containing) == LxrRcResult::Success && containing == kept,
+            "interior lookup of a live neighbour ignores the stale bit");
+        Check(engine.GetUsedBytesEstimate() >= ImmixBlockGeometry::BlockBytes,
+            "the block-count estimate counts the block that holds the objects");
+        // A remembered slot of a dead holder can lie in memory that a later allocation has overwritten, while the
+        // stale bit of the old object is still the nearest bit. The lookup must not read that memory.
+        memset(dead, 0, 24);
+        Object* stale = reinterpret_cast<Object*>(0x1);
+        Check(engine.FindContainingObject(StartOf(dead) + 16, &stale, true) == LxrRcResult::InvalidArgument &&
+                stale == nullptr &&
+                engine.FindContainingObject(StartOf(dead) + 64, &stale, true) == LxrRcResult::InvalidArgument &&
+                engine.FindContainingObject(StartOf(kept) + 16, &containing, true) == LxrRcResult::Success &&
+                containing == kept,
+            "a counted lookup rejects a stale bit without reading the overwritten memory");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "stale-bit owner detaches");
+    }
+
+    struct SweepGate
+    {
+        LxrReferenceCounting* engine = nullptr;
+        MethodTable* collectible = nullptr;
+        Object* loader = nullptr;
+        std::thread finalizer;
+        std::atomic<bool> poisoned{false};
+        std::atomic<uint64_t> cycleObjectsAtPoison{UINT64_MAX};
+    };
+
+    SweepGate* g_sweepGate = nullptr;
+
+    Object** GateLoaderSlot(MethodTable*)
+    {
+        return &g_sweepGate->loader;
+    }
+
+    // The runtime frees the type data of a collectible type from a finalizer thread, which the collector signals
+    // when the pause resumes. The thread here does what that thread does: it waits for the collector to allow
+    // finalization (IsCycleSweepPending is false) and then destroys the type data.
+    void GateResume(bool, void* context)
+    {
+        SweepGate* gate = static_cast<SweepGate*>(context);
+        if (gate->engine == nullptr || gate->engine->GetTraceMetrics().finalMarks == 0 || gate->finalizer.joinable())
+        {
+            return;
+        }
+        gate->finalizer = std::thread([gate]()
+        {
+            while (gate->engine->IsCycleSweepPending())
+            {
+                std::this_thread::yield();
+            }
+            gate->cycleObjectsAtPoison.store(gate->engine->GetTraceMetrics().cycleObjects);
+            gate->collectible->m_baseSize = 0;
+            gate->poisoned.store(true);
+        });
+    }
+
+    void ValidateCycleSweepGate()
+    {
+        Type link(24, 1);
+        Type plain(24, 1);
+        Type leaf(24, 0);
+        link.table->m_flags |= MTFlag_Collectible;
+        SweepGate gate;
+        g_sweepGate = &gate;
+        LxrReferenceCounting engine;
+        gate.engine = &engine;
+        gate.collectible = link.table;
+        LxrRcConfiguration configuration{
+            16 * ImmixBlockGeometry::BlockBytes, 8 * LxrLargeObjectSpace::MinimumObjectBytes, 16, 1024, 4, 8,
+        };
+        LxrPauseRuntimeAdapter adapter{Suspend, GateResume, &gate, false};
+        LxrRcObjectModel model{};
+        model.getLoaderAllocatorSlot = GateLoaderSlot;
+        model.context = &gate;
+        int identity;
+        LxrRcMutator* mutator = nullptr;
+        if (!Check(engine.Initialize(configuration, adapter, &model) == LxrRcResult::Success &&
+                engine.AttachMutator(&identity, &mutator) == LxrRcResult::Success, "sweep gate engine initializes"))
+        {
+            return;
+        }
+        gate.loader = Allocate(engine, mutator, leaf);
+        Object* left = Allocate(engine, mutator, link);
+        Object* right = Allocate(engine, mutator, link);
+        Object* live = Allocate(engine, mutator, plain);
+        Object* other = Allocate(engine, mutator, leaf);
+        if (gate.loader == nullptr || left == nullptr || right == nullptr || live == nullptr || other == nullptr)
+        {
+            return;
+        }
+        Check(Store(engine, mutator, Field(left), right) && Store(engine, mutator, Field(right), left) &&
+                Store(engine, mutator, Field(live), other), "dead cycle of collectible objects initializes");
+        std::vector<Object*> roots{left, live};
+        std::vector<Object*> remaining{live};
+        Roots rootsB{&remaining};
+        if (!Epoch(engine, roots) ||
+            !Check(engine.HoldTrace(true) == LxrRcResult::Success &&
+                engine.BeginTrace(Capture, &rootsB, Timeout) == LxrRcResult::Success, "the trace starts"))
+        {
+            return;
+        }
+        // The overwritten field gives the next pause a logged decrement. Holding the log reader keeps the lazy
+        // decrements, and so the cycle sweep that follows them, from running after the final pause.
+        Check(Store(engine, mutator, Field(live), nullptr), "a logged decrement exists");
+        engine.HoldLogReaderForTest(true);
+        Check(engine.HoldTrace(false) == LxrRcResult::Success &&
+                engine.FinishTrace(Capture, &rootsB, Timeout) == LxrRcResult::Success,
+            "the final pause completes while the lazy decrements wait");
+        for (int attempt = 0; attempt < 5000 && !engine.IsLogReaderHeldForTest(); attempt++)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        Check(engine.IsLogReaderHeldForTest() && engine.IsCycleSweepPending(),
+            "the cycle sweep is pending after the tracing pause");
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        Check(!gate.poisoned.load(), "the runtime cannot free type data while the cycle sweep is pending");
+        engine.HoldLogReaderForTest(false);
+        Check(engine.Drain(Timeout) == LxrRcResult::Success, "the lazy tail and the cycle sweep finish");
+        if (gate.finalizer.joinable())
+        {
+            gate.finalizer.join();
+        }
+        Check(gate.poisoned.load() && gate.cycleObjectsAtPoison.load() == 3 &&
+                engine.GetTraceMetrics().cycleObjects == 3 && engine.GetTraceMetrics().cycleBytes == 72,
+            "type data was freed only after the sweep had read the sizes of all three dead cycle objects");
+        Check(!engine.IsCycleSweepPending() && Count(engine, left) == 0 && Count(engine, right) == 0 &&
+                Count(engine, gate.loader) == 0, "the dead cycle and its loader allocator object are reclaimed");
+        link.table->m_baseSize = 24;
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "sweep gate owner detaches");
+    }
+
+    void ValidateS3Bookkeeping()
+    {
+        ValidateForwardedArraySizes();
+        ValidateStaleBitQueries();
+        ValidateValidObjectBookkeeping(false);
+        ValidateValidObjectBookkeeping(true);
+        ValidateCycleSweepGate();
+    }
 }
 
 int main(int argc, char** argv)
 {
+    if (argc == 2 && strcmp(argv[1], "--s3-bookkeeping") == 0)
+    {
+        ValidateS3Bookkeeping();
+        std::printf("%s: %d/%d S3 bookkeeping checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
     if (argc == 2 && strcmp(argv[1], "--lazy-large-release") == 0)
     {
         ValidateLazyLargeReleaseDuringTrace();

@@ -567,6 +567,30 @@ struct alignas(64) LxrReferenceCounting::WorkerCounters
     std::atomic<uint64_t> values[24]{};
 };
 
+// A copied source keeps its first field only until the copy is published, so the size of a forwarded source
+// cannot be read from the source afterwards (an array or string length is that field). The copy path stores the
+// size here, and RetireForwardedSources consumes the records. Only the worker that owns a list appends to it;
+// the shared slot (mature copy) takes a spin lock.
+struct alignas(64) LxrReferenceCounting::CopyLog
+{
+    struct Chunk
+    {
+        static constexpr size_t Capacity = 1024;
+        struct Entry
+        {
+            uintptr_t start;
+            size_t size;
+        };
+
+        Entry entries[Capacity];
+        size_t count = 0;
+        Chunk* next = nullptr;
+    };
+
+    Chunk* head = nullptr;
+    std::atomic_flag lock = ATOMIC_FLAG_INIT;
+};
+
 namespace
 {
     constexpr size_t PromotedBytes = Epochs + 1;
@@ -584,8 +608,8 @@ LxrReferenceCounting::LxrReferenceCounting()
     : m_configuration{}, m_object_model{}, m_observer(false), m_runtime{},
       m_capture(nullptr), m_capture_context(nullptr),
       m_layout{}, m_metadata(), m_blocks(), m_counts(), m_allocation(), m_large(),
-      m_scheduler(), m_coordinator(), m_arena(nullptr), m_extents(nullptr),
-      m_live_bytes(0), m_reclaimed_bytes(0), m_trace_locks(nullptr), m_trace_scans(nullptr),
+      m_scheduler(), m_coordinator(), m_arena(nullptr),
+      m_trace_locks(nullptr), m_trace_scans(nullptr),
       m_scan_work(nullptr), m_trace_phase(LxrTracePhase::Inactive), m_marking(false),
       m_hold_trace(false), m_scan_checkpoint(0), m_scan_checkpoint_active(false),
       m_trace_pending(0), m_trace_metrics{},
@@ -765,14 +789,23 @@ LxrRcResult LxrReferenceCounting::InitializeBuffers(size_t slots)
     {
         return LxrRcResult::OutOfMemory;
     }
+    m_copy_logs = new (std::nothrow) CopyLog[m_configuration.workers + 1];
+    if (m_copy_logs == nullptr)
+    {
+        return LxrRcResult::OutOfMemory;
+    }
     m_mutators = new (std::nothrow) LxrRcMutator[m_configuration.maximumMutators];
     m_mutator_chunks = new (std::nothrow) LogChunk[2 * m_configuration.maximumMutators];
     m_banks = new (std::nothrow) LogBank[2];
     if (!m_observer)
     {
         size_t objectSlots = GetObjectStorageSlots();
-        if (!m_extent_storage.Reserve(objectSlots) || !m_trace_lock_storage.Reserve(objectSlots) ||
-            !m_trace_scan_storage.Reserve(objectSlots) || !m_live_storage.Reserve(slots / 64) ||
+        if (
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+            !m_extent_storage.Reserve(objectSlots) || !m_live_storage.Reserve(slots / 64) ||
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
+            !m_trace_lock_storage.Reserve(objectSlots) ||
+            !m_trace_scan_storage.Reserve(objectSlots) ||
             !m_allocated_block_storage.Reserve(m_configuration.immixBytes / ImmixBlockGeometry::BlockBytes) ||
             !CommitPlanes(0, m_initial_immix / sizeof(uintptr_t)) ||
             !CommitPlanes(m_configuration.immixBytes / sizeof(uintptr_t),
@@ -780,10 +813,12 @@ LxrRcResult LxrReferenceCounting::InitializeBuffers(size_t slots)
         {
             return Fail(LxrRcResult::OutOfMemory);
         }
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
         m_extents = m_extent_storage.Get();
+        m_live_objects = m_live_storage.Get();
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
         m_trace_locks = m_trace_lock_storage.Get();
         m_trace_scans = m_trace_scan_storage.Get();
-        m_live_objects = m_live_storage.Get();
     }
     m_roots[0] = new (std::nothrow) uintptr_t[m_configuration.maximumRoots]{};
     m_roots[1] = new (std::nothrow) uintptr_t[m_configuration.maximumRoots]{};
@@ -808,7 +843,7 @@ LxrRcResult LxrReferenceCounting::InitializeBuffers(size_t slots)
     }
     if (m_mutators == nullptr || m_mutator_chunks == nullptr ||
         m_banks == nullptr || (!m_observer &&
-            (m_extents == nullptr || m_trace_locks == nullptr || m_trace_scans == nullptr)) ||
+            (m_trace_locks == nullptr || m_trace_scans == nullptr)) ||
         m_roots[0] == nullptr ||
         m_roots[1] == nullptr || (m_configuration.largeObjectBytes != 0 && m_dead_large == nullptr) ||
         (m_configuration.immixBytes != 0 && m_mature_candidates == nullptr))
@@ -852,10 +887,12 @@ bool LxrReferenceCounting::CommitPlanes(size_t first, size_t count)
     size_t immixSlots = m_configuration.immixBytes / sizeof(uintptr_t);
     size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
     return (first >= immixSlots || m_allocated_block_storage.Commit(first / blockSlots, count / blockSlots)) &&
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
         m_extent_storage.Commit(objectFirst, objectCount) &&
+        m_live_storage.Commit(first / 64, count / 64) &&
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
         m_trace_lock_storage.Commit(objectFirst, objectCount) &&
-        m_trace_scan_storage.Commit(objectFirst, objectCount) &&
-        m_live_storage.Commit(first / 64, count / 64);
+        m_trace_scan_storage.Commit(objectFirst, objectCount);
 }
 
 bool LxrReferenceCounting::CommitTracePlanes()
@@ -892,10 +929,12 @@ size_t LxrReferenceCounting::GetObjectStorageSlots() const
         m_configuration.largeObjectBytes / LxrLargeObjectSpace::PageBytes;
 }
 
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
 std::atomic<size_t>& LxrReferenceCounting::ExtentSlot(size_t heapSlot) const
 {
     return m_extents[GetObjectStorageIndex(heapSlot)];
 }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
 
 std::atomic<uint8_t>& LxrReferenceCounting::TraceLockSlot(size_t heapSlot) const
 {
@@ -1029,13 +1068,17 @@ void LxrReferenceCounting::Shutdown()
     delete[] m_banks;
     delete[] m_mutators;
     delete[] m_copy_allocators;
+    DeleteCopyLogs();
+    delete[] m_copy_logs;
     delete[] m_worker_counters;
     delete[] m_evacuation_sources;
     delete[] m_mutator_chunks;
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     m_extent_storage.Shutdown();
+    m_live_storage.Shutdown();
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     m_trace_lock_storage.Shutdown();
     m_trace_scan_storage.Shutdown();
-    m_live_storage.Shutdown();
     m_allocated_block_storage.Shutdown();
     delete[] m_roots[0];
     delete[] m_roots[1];
@@ -1044,10 +1087,14 @@ void LxrReferenceCounting::Shutdown()
     m_banks = nullptr;
     m_mutators = nullptr;
     m_copy_allocators = nullptr;
+    m_copy_logs = nullptr;
     m_worker_counters = nullptr;
     m_evacuation_sources = nullptr;
     m_mutator_chunks = nullptr;
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     m_extents = nullptr;
+    m_live_objects = nullptr;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     m_trace_locks = nullptr;
     m_trace_scans = nullptr;
     m_roots[0] = nullptr;
@@ -1640,10 +1687,12 @@ LxrRcResult LxrReferenceCounting::CompleteAllocation(
     LxrRcResult result;
     if (IsImmix(start))
     {
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
         if (ExtentSlot(index).load(std::memory_order_acquire) != 0)
         {
             return Fail(LxrRcResult::InvariantViolation);
         }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
         result = FromMetadata(cleared ? m_counts.RegisterObjectInClearedSpan(start, completeSize) :
             m_counts.InitializeObjectQuiescent(start, completeSize));
     }
@@ -1661,14 +1710,17 @@ LxrRcResult LxrReferenceCounting::CompleteAllocation(
     {
         return result;
     }
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     if (ExtentSlot(index).exchange(completeSize, std::memory_order_release) != 0)
     {
         return Fail(LxrRcResult::InvariantViolation);
     }
     m_live_objects[index / 64].fetch_or(UINT64_C(1) << (index % 64), std::memory_order_release);
     m_live_bytes.fetch_add(completeSize, std::memory_order_relaxed);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     if (m_probe_start.load(std::memory_order_acquire) == start)
     {
+        m_probe_retired.store(false, std::memory_order_release);
         m_probe_births.fetch_add(1, std::memory_order_release);
     }
     return LxrRcResult::Success;
@@ -2105,7 +2157,7 @@ void LxrReferenceCounting::Suspend(void* context)
         engine->m_hold_trace.store(false, std::memory_order_release);
         engine->m_trace_phase.store(engine->m_pause_kind == LxrPauseKind::Full
             ? LxrTracePhase::Full : LxrTracePhase::FinalMark, std::memory_order_release);
-        engine->m_cycle_sweep = true;
+        engine->m_cycle_sweep.store(true, std::memory_order_release);
     }
     else if (engine->m_pause_kind == LxrPauseKind::InitialMark)
     {
@@ -2375,9 +2427,15 @@ LxrRcResult LxrReferenceCounting::GetObjectSize(Object* object, size_t* size, si
 
 Object* LxrReferenceCounting::ResolveForwarded(Object* object) const
 {
-    if ((!m_configuration.evacuateNursery && !m_configuration.evacuateMature) ||
-        object == nullptr || !IsImmix(Start(object)) ||
-        GetObjectExtent(object) == 0)
+    if ((!m_configuration.evacuateNursery && !m_configuration.evacuateMature) || object == nullptr)
+    {
+        return object;
+    }
+    uintptr_t start = Start(object);
+    // A source keeps its ValidObject bit until RetireForwardedSources, so the bit tells a registered start from
+    // an arbitrary address without a per-object size table.
+    if (!IsImmix(start) || start % sizeof(uintptr_t) != 0 ||
+        m_valid_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0)
     {
         return object;
     }
@@ -2656,20 +2714,37 @@ LxrRcResult LxrReferenceCounting::RetainPinnedMatureBlocks()
     {
         return LxrRcResult::Success;
     }
-    size_t end = GetImmixCapacityBytes() / sizeof(uintptr_t);
-    for (size_t index = FindNextOccupiedSlot(0); index < end; index = FindNextOccupiedSlot(index + 1))
+    size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
+    size_t blocks = GetImmixCapacityBytes() / ImmixBlockGeometry::BlockBytes;
+    for (size_t block = 0; block < blocks; block++)
     {
-        uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
-        Object* object = Reference(start);
-        if (IsMatureCandidate(start) && ResolveForwarded(object) == object &&
-            ((object->GetHeader()->GetBits() & BIT_SBLK_GC_RESERVE) != 0 ||
-             (m_object_model.isPinned != nullptr && m_object_model.isPinned(object, m_object_model.context))))
+        uintptr_t blockStart = GetReservationStart() + block * ImmixBlockGeometry::BlockBytes;
+        if (!IsMatureCandidate(blockStart) ||
+            (m_evacuation_sources[block].load(std::memory_order_acquire) & RetainedSource) != 0)
         {
-            size_t block = index / (ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t));
-            if ((m_evacuation_sources[block].fetch_or(RetainedSource, std::memory_order_acq_rel) &
-                    RetainedSource) == 0)
+            continue;
+        }
+        for (size_t index = FindNextValidSlot(block * blockSlots); index < (block + 1) * blockSlots;
+             index = FindNextValidSlot(index + 1))
+        {
+            uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
+            // A stale ValidObject bit belongs to a dead young object whose count is zero. A young object in a
+            // candidate block is promoted in place and never moves, so only counted objects need the check.
+            if (m_rc_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0)
             {
-                m_mature_metrics[2].fetch_add(1, std::memory_order_relaxed);
+                continue;
+            }
+            Object* object = Reference(start);
+            if (ResolveForwarded(object) == object &&
+                ((object->GetHeader()->GetBits() & BIT_SBLK_GC_RESERVE) != 0 ||
+                 (m_object_model.isPinned != nullptr && m_object_model.isPinned(object, m_object_model.context))))
+            {
+                if ((m_evacuation_sources[block].fetch_or(RetainedSource, std::memory_order_acq_rel) &
+                        RetainedSource) == 0)
+                {
+                    m_mature_metrics[2].fetch_add(1, std::memory_order_relaxed);
+                }
+                break;
             }
         }
     }
@@ -2772,7 +2847,7 @@ LxrRcResult LxrReferenceCounting::ReplayMatureRememberedSlots()
             }
 #if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_REMSET_SHAPE_CONTROL)
             Object* owner = nullptr;
-            result = FindContainingObject(address, &owner);
+            result = FindContainingObject(address, &owner, true);
             if (result == LxrRcResult::InvalidArgument)
             {
                 m_mature_metrics[12].fetch_add(1, std::memory_order_relaxed);
@@ -2911,9 +2986,8 @@ LxrRcResult LxrReferenceCounting::TryCopyMature(Object** reference)
     {
         return LxrRcResult::Success;
     }
-    size_t size = GetObjectExtent(source);
 #if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_MATURE_DEAD_SCAN_CONTROL)
-    if (size == 0)
+    if (!IsObjectStart(source))
     {
         return LxrRcResult::Success;
     }
@@ -2939,6 +3013,8 @@ LxrRcResult LxrReferenceCounting::TryCopyMature(Object** reference)
         *reference = ResolveForwarded(source);
         return LxrRcResult::Success;
     }
+    // The source is claimed and its first field is intact, so the size comes from the object.
+    size_t size = ObjectSize(source);
     uintptr_t copyStart;
     {
         CostScope cost(this, 3);
@@ -2951,6 +3027,10 @@ LxrRcResult LxrReferenceCounting::TryCopyMature(Object** reference)
         m_mature_metrics[6].fetch_add(1, std::memory_order_relaxed);
         header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
         return LxrRcResult::Success;
+    }
+    if (result == LxrRcResult::Success)
+    {
+        result = ReserveCopyRecord(m_configuration.workers);
     }
     if (result == LxrRcResult::Success)
     {
@@ -2976,10 +3056,9 @@ LxrRcResult LxrReferenceCounting::TryCopyMature(Object** reference)
     }
     destination->GetHeader()->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
     size_t destinationIndex = (copyStart - GetReservationStart()) / sizeof(uintptr_t);
-    ExtentSlot(destinationIndex).store(size, std::memory_order_release);
-    m_live_objects[destinationIndex / 64].fetch_or(
-        UINT64_C(1) << (destinationIndex % 64), std::memory_order_release);
-    m_live_bytes.fetch_add(size, std::memory_order_relaxed);
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    OracleBirth(copyStart, size);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     TraceScan* scan = TraceScanSlot(index);
     if (scan != nullptr)
     {
@@ -3009,6 +3088,7 @@ LxrRcResult LxrReferenceCounting::TryCopyMature(Object** reference)
     }
     uintptr_t watched = Start(source);
     m_probe_start.compare_exchange_strong(watched, copyStart, std::memory_order_acq_rel);
+    CommitCopyRecord(m_configuration.workers, Start(source), size);
     Object** forwarding = reinterpret_cast<Object**>(reinterpret_cast<uint8_t*>(source) + sizeof(uintptr_t));
     Interlocked::ExchangePointer(forwarding, destination);
     header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 3);
@@ -3060,10 +3140,17 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
         header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
         return result;
     }
-    if (!nursery || GetObjectExtent(source) >= m_configuration.maximumYoungCopyBytes ||
-        m_copy_exhausted.load(std::memory_order_relaxed) ||
-        (source->GetHeader()->GetBits() & BIT_SBLK_GC_RESERVE) != 0 ||
-        (m_object_model.isPinned != nullptr && m_object_model.isPinned(source, m_object_model.context)))
+    size_t size = 0;
+    bool copyable = nursery && !m_copy_exhausted.load(std::memory_order_relaxed) &&
+        (source->GetHeader()->GetBits() & BIT_SBLK_GC_RESERVE) == 0 &&
+        !(m_object_model.isPinned != nullptr && m_object_model.isPinned(source, m_object_model.context));
+    if (copyable)
+    {
+        // The source is claimed and its first field is intact, so the size comes from the object.
+        size = ObjectSize(source);
+        copyable = size < m_configuration.maximumYoungCopyBytes;
+    }
+    if (!copyable)
     {
         SideMetadataUpdateStatus updated;
         result = FromMetadata(m_counts.IncrementFast(start, previous, &updated));
@@ -3071,7 +3158,6 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
         header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
         return result;
     }
-    size_t size = GetObjectExtent(source);
     uintptr_t copyStart = 0;
     {
         CostScope cost(this, 0);
@@ -3090,6 +3176,12 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
         SideMetadataUpdateStatus updated;
         result = FromMetadata(m_counts.IncrementFast(start, previous, &updated));
         *incrementedInPlace = result == LxrRcResult::Success;
+        header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
+        return result;
+    }
+    result = ReserveCopyRecord(worker);
+    if (result != LxrRcResult::Success)
+    {
         header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
         return result;
     }
@@ -3117,16 +3209,16 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
         memcpy(reinterpret_cast<void*>(copyStart), reinterpret_cast<void*>(start), size);
     }
     copy->GetHeader()->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
-    size_t index = (copyStart - GetReservationStart()) / sizeof(uintptr_t);
-    ExtentSlot(index).store(size, std::memory_order_release);
-    m_live_objects[index / 64].fetch_or(UINT64_C(1) << (index % 64), std::memory_order_release);
-    m_live_bytes.fetch_add(size, std::memory_order_relaxed);
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    OracleBirth(copyStart, size);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     if (m_object_model.didCopy != nullptr)
     {
         m_object_model.didCopy(source, copy, m_object_model.context);
     }
     uintptr_t watched = start;
     m_probe_start.compare_exchange_strong(watched, copyStart, std::memory_order_acq_rel);
+    CommitCopyRecord(worker, start, size);
     Object** forwarding = reinterpret_cast<Object**>(reinterpret_cast<uint8_t*>(source) + sizeof(uintptr_t));
     Interlocked::ExchangePointer(forwarding, copy);
     // Destination RC/VO/extent/flags and the full copied header precede publication.
@@ -3440,7 +3532,7 @@ LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* p
             }
             return Fail(LxrRcResult::UnsupportedLifetime);
         }
-        if (m_cycle_sweep && !IsMarked(object))
+        if (m_cycle_sweep.load(std::memory_order_acquire) && !IsMarked(object))
         {
             continue;
         }
@@ -3474,7 +3566,7 @@ LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* p
 LxrRcResult LxrReferenceCounting::Sweep(const LxrBlockReleaseGuard* guard)
 {
     LxrRcPhase phase = GetPhase();
-    if (guard != nullptr && m_cycle_sweep)
+    if (guard != nullptr && m_cycle_sweep.load(std::memory_order_acquire))
     {
         LxrRcResult result = SweepCycles();
         if (result != LxrRcResult::Success)
@@ -3672,10 +3764,9 @@ LxrRcResult LxrReferenceCounting::RetireForwardedSources()
             return Fail(LxrRcResult::AllocationFailure);
         }
     }
-    size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_MATURE_EARLY_RELEASE_CONTROL)
     for (size_t block = 0; block < GetImmixCapacityBytes() / ImmixBlockGeometry::BlockBytes; block++)
     {
-#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_MATURE_EARLY_RELEASE_CONTROL)
         if (m_evacuation_sources != nullptr &&
             (m_evacuation_sources[block].load() & RetainedSource) != 0)
         {
@@ -3685,55 +3776,127 @@ LxrRcResult LxrReferenceCounting::RetireForwardedSources()
                 return GetFailure();
             }
         }
+    }
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_MATURE_EARLY_RELEASE_CONTROL
-        if (m_allocated_block_storage.Get()[block].load(std::memory_order_acquire) == 0 &&
-            !IsMatureCandidate(GetReservationStart() + block * ImmixBlockGeometry::BlockBytes))
+    // The copy path logged every forwarded source with its size, so no walk over the heap is needed.
+    for (size_t slot = 0; slot <= m_configuration.workers; slot++)
+    {
+        CopyLog& log = m_copy_logs[slot];
+        for (CopyLog::Chunk* chunk = log.head; chunk != nullptr; chunk = chunk->next)
         {
-            continue;
-        }
-        for (size_t index = FindNextOccupiedSlot(block * blockSlots); index < (block + 1) * blockSlots;
-             index = FindNextOccupiedSlot(index + 1))
-        {
-            uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
-            Object* object = Reference(start);
-            if (ResolveForwarded(object) == object)
+            for (size_t entry = 0; entry < chunk->count; entry++)
             {
-                continue;
-            }
-            uintptr_t count;
-            LxrRcResult result = FromMetadata(m_counts.LoadFast(start, &count));
-            bool mature = IsMatureCandidate(start);
-            if (result != LxrRcResult::Success || (count != 0 && !mature))
-            {
-                return Fail(LxrRcResult::InvariantViolation);
-            }
-            if (mature)
-            {
-                result = FromMetadata(m_counts.ClearStraddleLinesFast(start, GetObjectExtent(object)));
-                if (result == LxrRcResult::Success)
+                uintptr_t start = chunk->entries[entry].start;
+                size_t size = chunk->entries[entry].size;
+                uintptr_t count;
+                LxrRcResult result = FromMetadata(m_counts.LoadFast(start, &count));
+                bool mature = IsMatureCandidate(start);
+                if (result != LxrRcResult::Success || (count != 0 && !mature))
                 {
-                    m_rc_metadata.Store(start, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
+                    return Fail(LxrRcResult::InvariantViolation);
                 }
-                if (result != LxrRcResult::Success)
+                if (mature)
                 {
-                    return result;
+                    result = FromMetadata(m_counts.ClearStraddleLinesFast(start, size));
+                    if (result == LxrRcResult::Success)
+                    {
+                        m_rc_metadata.Store(start, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
+                    }
+                    if (result != LxrRcResult::Success)
+                    {
+                        return result;
+                    }
                 }
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+                OracleRetire(start);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
+                if (mature)
+                {
+                    m_mature_metrics[10].fetch_add(size, std::memory_order_relaxed);
+                }
+                else
+                {
+                    m_nursery_metrics[5].fetch_add(size, std::memory_order_relaxed);
+                }
+                m_valid_metadata.Store(start, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
             }
-            size_t size = ExtentSlot(index).exchange(0, std::memory_order_acq_rel);
-            m_live_objects[index / 64].fetch_and(~(UINT64_C(1) << (index % 64)), std::memory_order_acq_rel);
-            m_live_bytes.fetch_sub(size, std::memory_order_relaxed);
-            if (mature)
-            {
-                m_mature_metrics[10].fetch_add(size, std::memory_order_relaxed);
-            }
-            else
-            {
-                m_nursery_metrics[5].fetch_add(size, std::memory_order_relaxed);
-            }
-            m_valid_metadata.Store(start, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
         }
     }
+    DeleteCopyLogs();
     return LxrRcResult::Success;
+}
+
+LxrRcResult LxrReferenceCounting::ReserveCopyRecord(size_t slot)
+{
+    CopyLog& log = m_copy_logs[slot];
+    if (slot == m_configuration.workers)
+    {
+        while (log.lock.test_and_set(std::memory_order_acquire))
+        {
+            YieldProcessor();
+        }
+    }
+    LxrRcResult result = LxrRcResult::Success;
+    if (log.head == nullptr || log.head->count == CopyLog::Chunk::Capacity)
+    {
+        CopyLog::Chunk* chunk = new (std::nothrow) CopyLog::Chunk;
+        if (chunk == nullptr)
+        {
+            result = Fail(LxrRcResult::OutOfMemory);
+        }
+        else
+        {
+            chunk->next = log.head;
+            log.head = chunk;
+        }
+    }
+    if (slot == m_configuration.workers)
+    {
+        log.lock.clear(std::memory_order_release);
+    }
+    return result;
+}
+
+void LxrReferenceCounting::CommitCopyRecord(size_t slot, uintptr_t start, size_t size)
+{
+    CopyLog& log = m_copy_logs[slot];
+    if (slot == m_configuration.workers)
+    {
+        while (log.lock.test_and_set(std::memory_order_acquire))
+        {
+            YieldProcessor();
+        }
+    }
+    // ReserveCopyRecord left room in the head chunk. Only one thread appends to a worker slot.
+    log.head->entries[log.head->count++] = {start, size};
+    if (slot == m_configuration.workers)
+    {
+        log.lock.clear(std::memory_order_release);
+    }
+}
+
+void LxrReferenceCounting::DeleteCopyLogs()
+{
+    if (m_copy_logs == nullptr)
+    {
+        return;
+    }
+    for (size_t slot = 0; slot <= m_configuration.workers; slot++)
+    {
+        CopyLog::Chunk* chunk = m_copy_logs[slot].head;
+        while (chunk != nullptr)
+        {
+            CopyLog::Chunk* next = chunk->next;
+            delete chunk;
+            chunk = next;
+        }
+        m_copy_logs[slot].head = nullptr;
+    }
+}
+
+size_t LxrReferenceCounting::ObjectSize(Object* object)
+{
+    return (object->GetSize() + sizeof(uintptr_t) - 1) & ~(sizeof(uintptr_t) - 1);
 }
 
 LxrRcResult LxrReferenceCounting::ReleaseEpoch()
@@ -3747,7 +3910,7 @@ LxrRcResult LxrReferenceCounting::ReleaseEpoch()
     if (result == LxrRcResult::Success)
     {
         LxrPhaseScope scope(m_pause_timers, LxrPauseTimers::ReclaimNursery);
-        result = ReclaimNursery();
+        result = ClearAllocatedBlocks();
     }
     if (result == LxrRcResult::Success)
     {
@@ -3889,7 +4052,9 @@ void LxrReferenceCounting::Execute(LxrWorkPacket* packet, size_t worker, void* c
                 if (engine->m_configuration.evacuateMature &&
                     (engine->m_pause_kind == LxrPauseKind::Full || engine->m_pause_kind == LxrPauseKind::FinalMark))
                 {
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
                     result = engine->ReclaimLargeNursery();
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
                     size_t released = 0;
                     if (result == LxrRcResult::Success &&
                         engine->m_large.SweepNursery(&released) != LxrLargeObjectResult::Success)
@@ -4075,10 +4240,11 @@ LxrCompletionCallbackResult LxrReferenceCounting::DecrementsDrained(
 LxrCompletionCallbackResult LxrReferenceCounting::OverallDrained(uint64_t, void* context)
 {
     LxrReferenceCounting* engine = static_cast<LxrReferenceCounting*>(context);
-    if (engine->m_cycle_sweep)
+    if (engine->m_cycle_sweep.load(std::memory_order_acquire))
     {
-        engine->m_cycle_sweep = false;
         engine->m_trace_phase.store(LxrTracePhase::Inactive, std::memory_order_release);
+        // The sweep has read every dead object it needed. Only now may the runtime free type data.
+        engine->m_cycle_sweep.store(false, std::memory_order_release);
     }
     if (engine->m_object_model.finishLazy != nullptr)
     {
@@ -4103,7 +4269,7 @@ LxrRcResult LxrReferenceCounting::LoadCount(Object* object, uintptr_t* count) co
     return result == SideMetadataResult::Success ? LxrRcResult::Success : LxrRcResult::MetadataFailure;
 }
 
-LxrRcResult LxrReferenceCounting::FindContainingObject(uintptr_t address, Object** object) const
+LxrRcResult LxrReferenceCounting::FindContainingObject(uintptr_t address, Object** object, bool requireCounted) const
 {
     if (object == nullptr || (!IsImmix(address) && !IsLarge(address)))
     {
@@ -4123,7 +4289,7 @@ LxrRcResult LxrReferenceCounting::FindContainingObject(uintptr_t address, Object
             return LxrRcResult::MetadataFailure;
         }
         Object* candidate = Reference(allocation.object);
-        if (address < reinterpret_cast<uintptr_t>(candidate) || GetObjectExtent(candidate) == 0)
+        if (address < reinterpret_cast<uintptr_t>(candidate) || !IsObjectStart(candidate))
         {
             return LxrRcResult::InvalidArgument;
         }
@@ -4132,25 +4298,42 @@ LxrRcResult LxrReferenceCounting::FindContainingObject(uintptr_t address, Object
     }
     uintptr_t lower = IsImmix(address)
         ? address & ~ImmixBlockGeometry::BlockMask : m_large.GetReservationStart();
+    uintptr_t upper = lower + ImmixBlockGeometry::BlockBytes;
     uintptr_t cursor = address & ~(sizeof(uintptr_t) - 1);
+    // The nearest ValidObject bit at or below the address is the start of the object that contains it. An object
+    // range is cleared (ValidObject and counts) before an allocation or a copy reuses it, and only the start of the
+    // object is set afterwards, so no stale bit lies between the start of a live object and an address inside it.
+    // The size comes from the object, which is intact: it is live. A stale bit of a dead young object can be the
+    // nearest bit only for an address outside every live object; the checks below turn most such addresses into
+    // an error, but the result is not defined for an address that no live object contains.
     while (cursor >= lower)
     {
         // The address is inside the admitted Immix space and the scan stays in its block.
         if (m_valid_metadata.Load(cursor, SideMetadataMemoryOrder::Relaxed) != 0)
         {
+            if (requireCounted && m_rc_metadata.Load(cursor, SideMetadataMemoryOrder::Relaxed) == 0)
+            {
+                return LxrRcResult::InvalidArgument;
+            }
             Object* candidate = Reference(cursor);
-            size_t size = ExtentSlot((cursor - GetReservationStart()) / sizeof(uintptr_t)).load(
-                std::memory_order_acquire);
-            if (size != 0 && address >= reinterpret_cast<uintptr_t>(candidate) &&
-                address - cursor < size)
+            // A forwarded source has its first field overwritten by the forwarding pointer, so an array or string
+            // length is lost. The copy has the same size.
+            Object* sizeSource = ResolveForwarded(candidate);
+            if (sizeSource != candidate && !IsObjectStart(sizeSource))
+            {
+                return LxrRcResult::InvalidArgument;
+            }
+            size_t size = ObjectSize(sizeSource);
+            if (size < MIN_OBJECT_SIZE || size > upper - cursor)
+            {
+                return LxrRcResult::InvalidArgument;
+            }
+            if (address >= reinterpret_cast<uintptr_t>(candidate) && address - cursor < size)
             {
                 *object = candidate;
                 return LxrRcResult::Success;
             }
-            if (size != 0)
-            {
-                return LxrRcResult::InvalidArgument;
-            }
+            return LxrRcResult::InvalidArgument;
         }
         if (cursor == lower)
         {
@@ -4193,6 +4376,41 @@ uintptr_t LxrReferenceCounting::GetFieldMetadataBase() const
 
 LxrRcResult LxrReferenceCounting::Reclaim(uintptr_t start)
 {
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    LxrRcResult result = OracleReclaim(start);
+    if (result != LxrRcResult::Success)
+    {
+        return result;
+    }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
+    NoteProbeReclaim(start);
+    return LxrRcResult::Success;
+}
+
+void LxrReferenceCounting::NoteProbeReclaim(uintptr_t start)
+{
+    // The product has no per-object record of a young death, so the probe is also checked once per pause
+    // (ClearAllocatedBlocks). The flag makes the two sources count one retirement per birth.
+    if (m_probe_start.load(std::memory_order_acquire) == start &&
+        !m_probe_retired.exchange(true, std::memory_order_acq_rel))
+    {
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_PROBE_SKIP_RECLAIM_CONTROL)
+        m_probe_reclaims.fetch_add(1, std::memory_order_release);
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_PROBE_SKIP_RECLAIM_CONTROL
+    }
+}
+
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+void LxrReferenceCounting::OracleBirth(uintptr_t start, size_t size)
+{
+    size_t index = (start - GetReservationStart()) / sizeof(uintptr_t);
+    ExtentSlot(index).store(size, std::memory_order_release);
+    m_live_objects[index / 64].fetch_or(UINT64_C(1) << (index % 64), std::memory_order_release);
+    m_live_bytes.fetch_add(size, std::memory_order_relaxed);
+}
+
+LxrRcResult LxrReferenceCounting::OracleReclaim(uintptr_t start)
+{
     size_t index = (start - GetReservationStart()) / sizeof(uintptr_t);
     size_t size = ExtentSlot(index).exchange(0, std::memory_order_acq_rel);
     if (size == 0)
@@ -4202,24 +4420,75 @@ LxrRcResult LxrReferenceCounting::Reclaim(uintptr_t start)
     m_live_objects[index / 64].fetch_and(~(UINT64_C(1) << (index % 64)), std::memory_order_acq_rel);
     m_live_bytes.fetch_sub(size, std::memory_order_relaxed);
     m_reclaimed_bytes.fetch_add(size, std::memory_order_relaxed);
-    if (m_probe_start.load(std::memory_order_acquire) == start)
-    {
-#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_PROBE_SKIP_RECLAIM_CONTROL)
-        m_probe_reclaims.fetch_add(1, std::memory_order_release);
-#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_PROBE_SKIP_RECLAIM_CONTROL
-    }
     return LxrRcResult::Success;
 }
 
+void LxrReferenceCounting::OracleRetire(uintptr_t start)
+{
+    size_t index = (start - GetReservationStart()) / sizeof(uintptr_t);
+    size_t size = ExtentSlot(index).exchange(0, std::memory_order_acq_rel);
+    m_live_objects[index / 64].fetch_and(~(UINT64_C(1) << (index % 64)), std::memory_order_acq_rel);
+    m_live_bytes.fetch_sub(size, std::memory_order_relaxed);
+}
+
+size_t LxrReferenceCounting::GetObjectExtent(Object* object) const
+{
+    uintptr_t start = Start(object);
+    if (!OwnsAddress(start) || start % sizeof(uintptr_t) != 0)
+    {
+        return 0;
+    }
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_OBJECT_INTERIOR_CONTROL)
+    if (IsLarge(start) && start % LxrLargeObjectSpace::PageBytes != 0)
+    {
+        return 0;
+    }
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_OBJECT_INTERIOR_CONTROL
+    return ExtentSlot((start - GetReservationStart()) / sizeof(uintptr_t)).load(std::memory_order_acquire);
+}
+
+size_t LxrReferenceCounting::FindNextOracleSlot(size_t first) const
+{
+    size_t total = GetReservationBytes() / sizeof(uintptr_t);
+    size_t immixEnd = GetImmixCapacityBytes() / sizeof(uintptr_t);
+    size_t largeStart = m_configuration.immixBytes / sizeof(uintptr_t);
+    size_t largeEnd = largeStart + m_large.GetAdmittedBytes() / sizeof(uintptr_t);
+    while (first < largeEnd)
+    {
+        if (first >= immixEnd && first < largeStart)
+        {
+            first = largeStart;
+        }
+        uint64_t bits = m_live_objects[first / 64].load(std::memory_order_acquire) &
+            (UINT64_MAX << (first % 64));
+#ifdef TARGET_WINDOWS
+        DWORD bit;
+#else
+        uint32_t bit;
+#endif // TARGET_WINDOWS
+        if (BitScanForward64(&bit, bits))
+        {
+            return first / 64 * 64 + bit;
+        }
+        first = (first / 64 + 1) * 64;
+    }
+    return total;
+}
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
+
 LxrRcResult LxrReferenceCounting::ArmLifetimeProbe(Object* object)
 {
-    if (GetPhase() != LxrRcPhase::Mutator || GetObjectExtent(object) == 0)
+    if (GetPhase() != LxrRcPhase::Mutator || !IsObjectStart(object))
     {
         return LxrRcResult::InvalidArgument;
     }
     uintptr_t expected = 0;
-    return m_probe_start.compare_exchange_strong(expected, Start(object), std::memory_order_release)
-        ? LxrRcResult::Success : LxrRcResult::InvalidPhase;
+    if (!m_probe_start.compare_exchange_strong(expected, Start(object), std::memory_order_release))
+    {
+        return LxrRcResult::InvalidPhase;
+    }
+    m_probe_retired.store(false, std::memory_order_release);
+    return LxrRcResult::Success;
 }
 
 uint64_t LxrReferenceCounting::GetLifetimeProbeBirths() const
@@ -4260,10 +4529,20 @@ uint64_t LxrReferenceCounting::GetStorageMetric(size_t metric) const
     }
     switch (metric)
     {
+        // Components 7 and 10 were the size table and the live-object bitmap. P17 S3 removed them from the product;
+        // the test platform keeps them as an oracle.
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
         case 7: return m_extent_storage.GetCommittedBytes();
+#else
+        case 7: return 0;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
         case 8: return m_trace_lock_storage.GetCommittedBytes();
         case 9: return m_trace_scan_storage.GetCommittedBytes();
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
         case 10: return m_live_storage.GetCommittedBytes();
+#else
+        case 10: return 0;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
         case 23: return m_storage_metrics[7].load(std::memory_order_acquire);
         case 24: return m_storage_metrics[8].load(std::memory_order_acquire);
         case 25: return 2 * m_configuration.maximumRoots * sizeof(uintptr_t);
@@ -4298,8 +4577,10 @@ LxrRcResult LxrReferenceCounting::GetStorageRange(
     switch (component)
     {
         case 0:
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
             *start = reinterpret_cast<uintptr_t>(m_extent_storage.Get());
             *bytes = m_extent_storage.GetReservedBytes();
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
             return LxrRcResult::Success;
         case 1:
             *start = reinterpret_cast<uintptr_t>(m_trace_lock_storage.Get());
@@ -4310,8 +4591,10 @@ LxrRcResult LxrReferenceCounting::GetStorageRange(
             *bytes = m_trace_scan_storage.GetReservedBytes();
             return LxrRcResult::Success;
         case 3:
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
             *start = reinterpret_cast<uintptr_t>(m_live_storage.Get());
             *bytes = m_live_storage.GetReservedBytes();
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
             return LxrRcResult::Success;
         default: break;
     }
@@ -4399,39 +4682,46 @@ LxrRcResult LxrReferenceCounting::EnableStorageDiagnostics(uint32_t timeout)
     return LxrRcResult::Success;
 }
 
-LxrRcResult LxrReferenceCounting::ReclaimNursery()
+LxrRcResult LxrReferenceCounting::ClearAllocatedBlocks()
 {
-    size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
-    for (size_t block = 0; block < GetImmixCapacityBytes() / ImmixBlockGeometry::BlockBytes; block++)
+    size_t blocks = GetImmixCapacityBytes() / ImmixBlockGeometry::BlockBytes;
+    for (size_t block = 0; block < blocks; block++)
     {
         if (m_allocated_block_storage.Get()[block].exchange(0, std::memory_order_acq_rel) == 0)
         {
             continue;
         }
-        for (size_t index = FindNextOccupiedSlot(block * blockSlots); index < (block + 1) * blockSlots;
-             index = FindNextOccupiedSlot(index + 1))
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+        LxrRcResult result = OracleReclaimNursery(block);
+        if (result != LxrRcResult::Success)
         {
-            uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
-            uintptr_t references;
-            LxrRcResult result = FromMetadata(m_counts.LoadFast(start, &references));
-            if (result != LxrRcResult::Success)
-            {
-                return result;
-            }
-            if (references == 0 && Reclaim(start) != LxrRcResult::Success)
-            {
-                return GetFailure();
-            }
+            return result;
         }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     }
-    return ReclaimLargeNursery();
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    LxrRcResult large = ReclaimLargeNursery();
+    if (large != LxrRcResult::Success)
+    {
+        return large;
+    }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
+    // Every live young object has its first increment by now, so a probed object with count zero is dead.
+    uintptr_t probe = m_probe_start.load(std::memory_order_acquire);
+    if (probe != 0 && !m_probe_retired.load(std::memory_order_acquire) && OwnsAddress(probe) &&
+        m_rc_metadata.Load(probe, SideMetadataMemoryOrder::Relaxed) == 0)
+    {
+        NoteProbeReclaim(probe);
+    }
+    return LxrRcResult::Success;
 }
 
-LxrRcResult LxrReferenceCounting::ReclaimLargeNursery()
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+LxrRcResult LxrReferenceCounting::OracleReclaimNursery(size_t block)
 {
-    size_t slots = GetReservationBytes() / sizeof(uintptr_t);
-    for (size_t index = FindNextOccupiedSlot(m_configuration.immixBytes / sizeof(uintptr_t)); index < slots;
-         index = FindNextOccupiedSlot(index + 1))
+    size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
+    for (size_t index = FindNextOracleSlot(block * blockSlots); index < (block + 1) * blockSlots;
+         index = FindNextOracleSlot(index + 1))
     {
         uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
         uintptr_t references;
@@ -4440,13 +4730,35 @@ LxrRcResult LxrReferenceCounting::ReclaimLargeNursery()
         {
             return result;
         }
-        if (references == 0 && Reclaim(start) != LxrRcResult::Success)
+        if (references == 0 && OracleReclaim(start) != LxrRcResult::Success)
         {
             return GetFailure();
         }
     }
     return LxrRcResult::Success;
 }
+
+LxrRcResult LxrReferenceCounting::ReclaimLargeNursery()
+{
+    size_t slots = GetReservationBytes() / sizeof(uintptr_t);
+    for (size_t index = FindNextOracleSlot(m_configuration.immixBytes / sizeof(uintptr_t)); index < slots;
+         index = FindNextOracleSlot(index + 1))
+    {
+        uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
+        uintptr_t references;
+        LxrRcResult result = FromMetadata(m_counts.LoadFast(start, &references));
+        if (result != LxrRcResult::Success)
+        {
+            return result;
+        }
+        if (references == 0 && OracleReclaim(start) != LxrRcResult::Success)
+        {
+            return GetFailure();
+        }
+    }
+    return LxrRcResult::Success;
+}
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
 
 uintptr_t LxrReferenceCounting::GetReservationStart() const
 {
@@ -4458,6 +4770,12 @@ size_t LxrReferenceCounting::GetReservationBytes() const
     return m_configuration.immixBytes + m_configuration.largeObjectBytes;
 }
 
+size_t LxrReferenceCounting::GetUsedBytesEstimate() const
+{
+    return m_allocation.GetBlocksInUse() * ImmixBlockGeometry::BlockBytes + m_large.GetCommittedBytes();
+}
+
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
 size_t LxrReferenceCounting::GetLiveBytes() const
 {
     return m_live_bytes.load(std::memory_order_acquire);
@@ -4467,26 +4785,11 @@ uint64_t LxrReferenceCounting::GetReclaimedBytes() const
 {
     return m_reclaimed_bytes.load(std::memory_order_acquire);
 }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
 
 bool LxrReferenceCounting::OwnsAddress(uintptr_t address) const
 {
     return m_arena != nullptr && (IsImmix(address) || IsLarge(address));
-}
-
-size_t LxrReferenceCounting::GetObjectExtent(Object* object) const
-{
-    uintptr_t start = Start(object);
-    if (!OwnsAddress(start) || start % sizeof(uintptr_t) != 0)
-    {
-        return 0;
-    }
-#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_OBJECT_INTERIOR_CONTROL)
-    if (IsLarge(start) && start % LxrLargeObjectSpace::PageBytes != 0)
-    {
-        return 0;
-    }
-#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_OBJECT_INTERIOR_CONTROL
-    return ExtentSlot((start - GetReservationStart()) / sizeof(uintptr_t)).load(std::memory_order_acquire);
 }
 
 Object* LxrReferenceCounting::FindNextObject(Object* object) const
@@ -4498,21 +4801,30 @@ Object* LxrReferenceCounting::FindNextObject(Object* object) const
     }
     if (GetPhase() == LxrRcPhase::Mutator)
     {
-        size_t size = GetObjectExtent(object);
+        // Outside a pause the neighbour is found from the size of the object. The size of a registered object
+        // is intact. A stale bit can make the neighbour a dead young object; the caller filters by liveness.
+        if (!IsObjectStart(object))
+        {
+            return nullptr;
+        }
+        size_t size = IsLarge(start) ? GetLargeObjectSize(start) : ObjectSize(object);
         if (size == 0 || size >= GetReservationBytes() - (start - GetReservationStart()))
         {
             return nullptr;
         }
         Object* next = Reference(start + size);
-        return GetObjectExtent(next) == 0 ? nullptr : next;
+        return IsObjectStart(next) ? next : nullptr;
     }
     size_t slots = GetReservationBytes() / sizeof(uintptr_t);
     size_t first = (start - GetReservationStart()) / sizeof(uintptr_t) + 1;
-    for (size_t index = FindNextOccupiedSlot(first); index < slots;
-         index = FindNextOccupiedSlot(index + 1))
+    for (size_t index = FindNextValidSlot(first); index < slots;
+         index = FindNextValidSlot(index + 1))
     {
-        Object* candidate = Reference(GetReservationStart() + index * sizeof(uintptr_t));
-        if (ExtentSlot(index).load(std::memory_order_acquire) != 0 && ResolveForwarded(candidate) == candidate)
+        uintptr_t candidateStart = GetReservationStart() + index * sizeof(uintptr_t);
+        Object* candidate = Reference(candidateStart);
+        // A stale bit belongs to a dead young object, and its count is zero.
+        if (m_rc_metadata.Load(candidateStart, SideMetadataMemoryOrder::Relaxed) != 0 &&
+            ResolveForwarded(candidate) == candidate)
         {
             return candidate;
         }
@@ -4524,13 +4836,14 @@ size_t LxrReferenceCounting::GetMarkedBytes() const
 {
     size_t bytes = 0;
     size_t slots = GetReservationBytes() / sizeof(uintptr_t);
-    for (size_t index = FindNextOccupiedSlot(0); index < slots;
-         index = FindNextOccupiedSlot(index + 1))
+    for (size_t index = FindNextValidSlot(0); index < slots;
+         index = FindNextValidSlot(index + 1))
     {
-        size_t size = ExtentSlot(index).load(std::memory_order_acquire);
-        if (size != 0 && IsMarked(Reference(GetReservationStart() + index * sizeof(uintptr_t))))
+        uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
+        Object* object = Reference(start);
+        if (IsMarked(object))
         {
-            bytes += size;
+            bytes += IsLarge(start) ? GetLargeObjectSize(start) : ObjectSize(object);
         }
     }
     return bytes;
@@ -4563,8 +4876,8 @@ uint64_t LxrReferenceCounting::GetGrowthCount() const
 
 size_t LxrReferenceCounting::GetNativePlaneCommittedBytes() const
 {
-    size_t bytes = m_extent_storage.GetCommittedBytes() + m_trace_lock_storage.GetCommittedBytes() +
-        m_trace_scan_storage.GetCommittedBytes() + m_live_storage.GetCommittedBytes() +
+    size_t bytes = m_trace_lock_storage.GetCommittedBytes() +
+        m_trace_scan_storage.GetCommittedBytes() +
         m_allocated_block_storage.GetCommittedBytes();
     for (size_t bank = 0; bank < 2; bank++)
     {
@@ -4578,20 +4891,24 @@ size_t LxrReferenceCounting::GetNativePlaneCommittedBytes() const
     return bytes;
 }
 
-size_t LxrReferenceCounting::FindNextOccupiedSlot(size_t first) const
+size_t LxrReferenceCounting::FindNextValidSlot(size_t first) const
 {
     size_t total = GetReservationBytes() / sizeof(uintptr_t);
     size_t immixEnd = GetImmixCapacityBytes() / sizeof(uintptr_t);
     size_t largeStart = m_configuration.immixBytes / sizeof(uintptr_t);
     size_t largeEnd = largeStart + m_large.GetAdmittedBytes() / sizeof(uintptr_t);
+    uintptr_t arena = GetReservationStart();
     while (first < largeEnd)
     {
         if (first >= immixEnd && first < largeStart)
         {
             first = largeStart;
         }
-        uint64_t bits = m_live_objects[first / 64].load(std::memory_order_acquire) &
-            (UINT64_MAX << (first % 64));
+        // One ValidObject word covers 64 slots, and the arena start is aligned to a block, so a slot index and
+        // the bit position in its word agree.
+        SideMetadataLocation location = m_valid_metadata.Locate(arena + first * sizeof(uintptr_t));
+        uint64_t bits = static_cast<uint64_t>(
+            SideMetadataAccessor::LoadWord(location.word, SideMetadataMemoryOrder::Relaxed)) >> location.shift;
 #ifdef TARGET_WINDOWS
         DWORD bit;
 #else
@@ -4599,9 +4916,10 @@ size_t LxrReferenceCounting::FindNextOccupiedSlot(size_t first) const
 #endif // TARGET_WINDOWS
         if (BitScanForward64(&bit, bits))
         {
-            return first / 64 * 64 + bit;
+            std::atomic_thread_fence(std::memory_order_acquire);
+            return first + bit;
         }
-        first = (first / 64 + 1) * 64;
+        first += 64 - location.shift;
     }
     return total;
 }
@@ -4725,13 +5043,9 @@ LxrRcResult LxrReferenceCounting::GrowSuspended()
     auto fits = [&](size_t candidate)
     {
         size_t slots = candidate / sizeof(uintptr_t);
-        size_t objectFirst = GetObjectStorageIndex(first);
-        size_t objectSlots = GetObjectStorageIndex(first + slots) - objectFirst;
-        size_t nativeBytes = m_extent_storage.ProjectedCommittedBytes(objectFirst, objectSlots) +
-            GetTracePlaneBudget(
+        size_t nativeBytes = GetTracePlaneBudget(
                 m_grow_large ? GetImmixCapacityBytes() : current + candidate,
-                m_grow_large ? current + candidate : m_large.GetAdmittedBytes()) +
-            m_live_storage.ProjectedCommittedBytes(first / 64, slots / 64);
+                m_grow_large ? current + candidate : m_large.GetAdmittedBytes());
         size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
         nativeBytes += m_grow_large ? m_allocated_block_storage.GetCommittedBytes() :
             m_allocated_block_storage.ProjectedCommittedBytes(first / blockSlots, slots / blockSlots);
@@ -4841,15 +5155,20 @@ LxrRcResult LxrReferenceCounting::GetHeapStatistics(size_t* heapBytes, size_t* f
     size_t end = 0;
     size_t live = 0;
     size_t first = m_configuration.immixBytes / sizeof(uintptr_t);
-    for (size_t index = FindNextOccupiedSlot(0); index < first;
-         index = FindNextOccupiedSlot(index + 1))
+    // The statistics run after the increments of the pause. A live object has a count above zero. A dead young
+    // object keeps its ValidObject bit but has count zero, so it is not counted. A forwarded source is counted
+    // through its copy.
+    for (size_t index = FindNextValidSlot(0); index < first;
+         index = FindNextValidSlot(index + 1))
     {
-        size_t size = ExtentSlot(index).load(std::memory_order_acquire);
         uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
-        if (size == 0 || (traced && !IsMarked(Reference(start))))
+        Object* object = Reference(start);
+        if (m_rc_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0 ||
+            (traced && !IsMarked(object)) || ResolveForwarded(object) != object)
         {
             continue;
         }
+        size_t size = ObjectSize(object);
         size_t block = index / slotsPerBlock;
         if (block != currentBlock)
         {
@@ -4873,12 +5192,12 @@ LxrRcResult LxrReferenceCounting::GetHeapStatistics(size_t* heapBytes, size_t* f
     heap += end;
     fragmentation += end - live;
     size_t limit = GetReservationBytes() / sizeof(uintptr_t);
-    for (size_t index = FindNextOccupiedSlot(first); index < limit;
-         index = FindNextOccupiedSlot(index + 1))
+    for (size_t index = FindNextValidSlot(first); index < limit;
+         index = FindNextValidSlot(index + 1))
     {
-        size_t size = ExtentSlot(index).load(std::memory_order_acquire);
         uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
-        if (size == 0 || (traced && !IsMarked(Reference(start))))
+        if (m_rc_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0 ||
+            (traced && !IsMarked(Reference(start))))
         {
             continue;
         }
@@ -4889,7 +5208,7 @@ LxrRcResult LxrReferenceCounting::GetHeapStatistics(size_t* heapBytes, size_t* f
         }
         size_t pages = allocation.page_count * LxrLargeObjectSpace::PageBytes;
         heap += pages;
-        fragmentation += pages - size;
+        fragmentation += pages - allocation.object_bytes;
     }
     *heapBytes = heap;
     *fragmentationBytes = fragmentation;
@@ -4921,12 +5240,41 @@ LxrRcResult LxrReferenceCounting::WalkObjects(LxrRcWalkObject visit, void* conte
         return LxrRcResult::InvalidPhase;
     }
     size_t slots = GetReservationBytes() / sizeof(uintptr_t);
-    for (size_t index = FindNextOccupiedSlot(0); index < slots;
-         index = FindNextOccupiedSlot(index + 1))
+    for (size_t index = FindNextValidSlot(0); index < slots;
+         index = FindNextValidSlot(index + 1))
     {
-        size_t size = ExtentSlot(index).load(std::memory_order_acquire);
+        uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
+        // A count of zero marks a dead young object with a stale bit, or a young object that has no increment yet.
+        if (m_rc_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0)
+        {
+            continue;
+        }
+        Object* object = Reference(start);
+        if (ResolveForwarded(object) != object)
+        {
+            continue;
+        }
+        size_t size = IsLarge(start) ? GetLargeObjectSize(start) : ObjectSize(object);
+        if (size != 0 && !visit(object, size, context))
+        {
+            break;
+        }
+    }
+    return LxrRcResult::Success;
+}
+
+LxrRcResult LxrReferenceCounting::WalkObjectStarts(LxrRcWalkObject visit, void* context) const
+{
+    if (visit == nullptr || m_observer || GetPhase() != LxrRcPhase::Suspended)
+    {
+        return LxrRcResult::InvalidPhase;
+    }
+    size_t slots = GetReservationBytes() / sizeof(uintptr_t);
+    for (size_t index = FindNextValidSlot(0); index < slots;
+         index = FindNextValidSlot(index + 1))
+    {
         Object* object = Reference(GetReservationStart() + index * sizeof(uintptr_t));
-        if (size != 0 && ResolveForwarded(object) == object && !visit(object, size, context))
+        if (!visit(object, 0, context))
         {
             break;
         }
@@ -4944,15 +5292,20 @@ LxrRcResult LxrReferenceCounting::WalkForwarded(LxrRcWalkForwarded visit, void* 
     {
         return LxrRcResult::Success;
     }
-    size_t slots = GetImmixCapacityBytes() / sizeof(uintptr_t);
-    for (size_t index = FindNextOccupiedSlot(0); index < slots; index = FindNextOccupiedSlot(index + 1))
+    // The copy path logged every forwarded source with its size; RetireForwardedSources consumes the log later.
+    for (size_t slot = 0; slot <= m_configuration.workers; slot++)
     {
-        Object* source = Reference(GetReservationStart() + index * sizeof(uintptr_t));
-        Object* destination = ResolveForwarded(source);
-        if (destination != source &&
-            !visit(source, destination, ExtentSlot(index).load(std::memory_order_acquire), context))
+        for (CopyLog::Chunk* chunk = m_copy_logs[slot].head; chunk != nullptr; chunk = chunk->next)
         {
-            break;
+            for (size_t entry = 0; entry < chunk->count; entry++)
+            {
+                Object* source = Reference(chunk->entries[entry].start);
+                Object* destination = ResolveForwarded(source);
+                if (destination != source && !visit(source, destination, chunk->entries[entry].size, context))
+                {
+                    return LxrRcResult::Success;
+                }
+            }
         }
     }
     return LxrRcResult::Success;
@@ -5118,7 +5471,7 @@ LxrRcResult LxrReferenceCounting::ValidateTraceBatchForTest(Object* object, size
 {
     if (GetPhase() != LxrRcPhase::Mutator || GetTracePhase() != LxrTracePhase::Inactive ||
         m_trace_pending.load() != 0 || m_work.load() != nullptr ||
-        GetObjectExtent(object) == 0 || count == 0 || count > FullTraceBatchCapacity + 1)
+        !IsObjectStart(object) || count == 0 || count > FullTraceBatchCapacity + 1)
     {
         return LxrRcResult::InvalidPhase;
     }
@@ -5293,15 +5646,14 @@ LxrRcResult LxrReferenceCounting::ProcessTraceObject(
     uintptr_t count = m_rc_metadata.Load(start, SideMetadataMemoryOrder::SequentiallyConsistent);
     uintptr_t mark = m_mark_metadata.Load(start, SideMetadataMemoryOrder::SequentiallyConsistent);
     LxrRcResult result = LxrRcResult::Success;
-    if (count == 0 || mark != 0 ||
-        ExtentSlot(index).load(std::memory_order_acquire) == 0)
+    if (count == 0 || mark != 0 || !IsObjectStart(object))
     {
         ExitTraceLock(index);
         return result;
     }
     Object* loader = GetLoaderAllocator(object);
     size_t maximumReferences = object->GetGCSafeMethodTable()->ContainsGCPointers()
-        ? ExtentSlot(index).load(std::memory_order_acquire) / sizeof(uintptr_t) + 1
+        ? ObjectSize(object) / sizeof(uintptr_t) + 1
         : (loader == nullptr ? 0 : 1);
     if (maximumReferences <= *directBudget)
     {
@@ -5591,8 +5943,62 @@ bool LxrReferenceCounting::IsMarked(Object* object) const
     {
         return false;
     }
-    return GetObjectExtent(object) != 0 &&
+    // A black-allocated young object keeps its mark and its ValidObject bit after it dies, so liveness also needs a
+    // count above zero. Every live object has one by the time a pause scans weak references.
+    return IsObjectStart(object) &&
+        m_rc_metadata.Load(Start(object), SideMetadataMemoryOrder::Relaxed) != 0 &&
         m_mark_metadata.Load(Start(object), SideMetadataMemoryOrder::SequentiallyConsistent) != 0;
+}
+
+bool LxrReferenceCounting::IsObjectStart(Object* object) const
+{
+    uintptr_t start = Start(object);
+    if (!OwnsAddress(start) || start % sizeof(uintptr_t) != 0)
+    {
+        return false;
+    }
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_OBJECT_INTERIOR_CONTROL)
+    if (IsLarge(start) && start % LxrLargeObjectSpace::PageBytes != 0)
+    {
+        return false;
+    }
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_OBJECT_INTERIOR_CONTROL
+    return m_valid_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) != 0;
+}
+
+bool LxrReferenceCounting::IsLargeObject(Object* object) const
+{
+    return IsObjectStart(object) && IsLarge(Start(object));
+}
+
+size_t LxrReferenceCounting::GetLargeObjectSize(uintptr_t start) const
+{
+    LxrLargeObjectAllocation allocation;
+    return m_large.GetAllocation(start, &allocation) == LxrLargeObjectResult::Success
+        ? allocation.object_bytes : 0;
+}
+
+size_t LxrReferenceCounting::GetLiveObjectSize(Object* object) const
+{
+    if (!IsObjectStart(object))
+    {
+        return 0;
+    }
+    uintptr_t start = Start(object);
+    if (IsLarge(start))
+    {
+        return GetLargeObjectSize(start);
+    }
+    return m_rc_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) != 0 ? ObjectSize(object) : 0;
+}
+
+bool LxrReferenceCounting::IsCycleSweepPending() const
+{
+#if defined(LXR_CYCLE_GATE_CONTROL)
+    return false;
+#else
+    return m_cycle_sweep.load(std::memory_order_acquire);
+#endif // LXR_CYCLE_GATE_CONTROL
 }
 
 LxrRcResult LxrReferenceCounting::SweepCycles()
@@ -5615,28 +6021,32 @@ LxrRcResult LxrReferenceCounting::SweepCycles()
         }
     }
     size_t slots = GetReservationBytes() / sizeof(uintptr_t);
-    for (size_t index = FindNextOccupiedSlot(0); index < slots;
-         index = FindNextOccupiedSlot(index + 1))
+    for (size_t index = FindNextValidSlot(0); index < slots;
+         index = FindNextValidSlot(index + 1))
     {
-        size_t size = ExtentSlot(index).load(std::memory_order_acquire);
-        if (size == 0)
-        {
-            continue;
-        }
         uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
-        if (ResolveForwarded(Reference(start)) != Reference(start))
-        {
-            continue;
-        }
+        // Only an object with a count and without a mark is a dead cycle. A stale bit of a dead young object has
+        // count zero, so the sweep never reads such an object.
         uintptr_t count = m_rc_metadata.Load(start, SideMetadataMemoryOrder::SequentiallyConsistent);
         uintptr_t mark = m_mark_metadata.Load(start, SideMetadataMemoryOrder::SequentiallyConsistent);
-        LxrRcResult result;
         if (count == 0 || mark != 0)
         {
             continue;
         }
+        Object* object = Reference(start);
+        if (ResolveForwarded(object) != object)
+        {
+            continue;
+        }
+        LxrRcResult result;
+        size_t size;
         if (IsImmix(start))
         {
+            // The size comes from the dead object, as in the Java LXR. For an object of a collectible type this
+            // reads the type data of a loader allocator that the runtime may free once it knows that the loader is
+            // dead. The runtime frees it only from a finalizer, and the collector holds finalization back while
+            // m_cycle_sweep is set (see IsCycleSweepPending), so the data is valid until this sweep has finished.
+            size = ObjectSize(object);
             result = FromMetadata(m_counts.ClearStraddleLinesFast(start, size));
             if (result != LxrRcResult::Success)
             {
@@ -5647,6 +6057,7 @@ LxrRcResult LxrReferenceCounting::SweepCycles()
         }
         else
         {
+            size = GetLargeObjectSize(start);
             size_t dead = m_dead_large_count.fetch_add(1, std::memory_order_relaxed);
             if (dead >= m_configuration.largeObjectBytes / LxrLargeObjectSpace::PageBytes)
             {
@@ -5660,6 +6071,7 @@ LxrRcResult LxrReferenceCounting::SweepCycles()
             return result;
         }
         m_rc_metadata.Store(start, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
+        m_valid_metadata.Store(start, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
         m_trace_metrics[CycleObjects].fetch_add(1, std::memory_order_relaxed);
         m_trace_metrics[CycleBytes].fetch_add(size, std::memory_order_relaxed);
     }
@@ -5704,7 +6116,7 @@ LxrTraceMetrics LxrReferenceCounting::GetTraceMetrics() const
 LxrRcResult LxrReferenceCounting::ArmScanCheckpoint(Object* object)
 {
     if (GetPhase() != LxrRcPhase::Mutator || GetTracePhase() != LxrTracePhase::Inactive ||
-        GetObjectExtent(object) == 0 || m_scan_checkpoint_active.load(std::memory_order_acquire))
+        !IsObjectStart(object) || m_scan_checkpoint_active.load(std::memory_order_acquire))
     {
         return LxrRcResult::InvalidPhase;
     }

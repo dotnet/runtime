@@ -348,17 +348,44 @@ public:
     bool IsScanCheckpointActive() const;
     LxrRcResult Drain(uint32_t timeoutMilliseconds);
     LxrRcResult LoadCount(Object* object, uintptr_t* count) const;
-    LxrRcResult FindContainingObject(uintptr_t address, Object** object) const;
+    // requireCounted: the address may lie outside every live object (a remembered slot of a dead holder). The
+    // ValidObject bit of a dead young object stays set, and its memory may be overwritten, so only an object with a
+    // count above zero may be read. Use it after the increments of a pause.
+    LxrRcResult FindContainingObject(uintptr_t address, Object** object, bool requireCounted = false) const;
     LxrRcMetrics GetMetrics() const;
     LxrRcResult GetFailure() const;
     LxrRcPhase GetPhase() const;
     uintptr_t GetFieldMetadataBase() const;
     uintptr_t GetReservationStart() const;
     size_t GetReservationBytes() const;
+    // Estimate for the .NET memory APIs: blocks in use times the block size, plus the committed large-object
+    // bytes. It is updated at block state changes, never per object, so it includes dead objects that the
+    // collector has not yet released.
+    size_t GetUsedBytesEstimate() const;
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    // Exact per-object accounting. Only the test platform keeps it, as an oracle for the sweep checks.
     size_t GetLiveBytes() const;
     uint64_t GetReclaimedBytes() const;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     bool OwnsAddress(uintptr_t address) const;
+    // Whether the address is the start of an object that the engine registered: the ValidObject bit is set.
+    // The bit stays set for a dead young object until its range is reused or its block is released, so
+    // "start of an object" does not mean "live". Use the reference count (above zero) for liveness after the
+    // increments of a pause.
+    bool IsObjectStart(Object* object) const;
+    // Size of a live object (ValidObject bit set and reference count above zero), or of a large object that is
+    // registered in the large-object space (from its allocation record). Zero for anything else.
+    size_t GetLiveObjectSize(Object* object) const;
+    bool IsLargeObject(Object* object) const;
+    // Set while a tracing pause has dead cycles whose lazy sweep has not finished. The sweep reads the size of a
+    // dead object from the object itself, so the type data of its collectible loader allocator must stay valid.
+    // The collector holds back finalization (the only place where the runtime frees a loader allocator) while this
+    // is true.
+    bool IsCycleSweepPending() const;
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    // Size of each object, kept only by the test platform as an oracle: product code never reads it.
     size_t GetObjectExtent(Object* object) const;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     LxrRcResult ArmLifetimeProbe(Object* object);
     uint64_t GetLifetimeProbeBirths() const;
     uint64_t GetLifetimeProbeReclaims() const;
@@ -372,7 +399,9 @@ public:
     size_t GetCommittedBytes() const;
     size_t GetAdmittedBytes() const;
     size_t GetNativePlaneCommittedBytes() const;
-    size_t FindNextOccupiedSlot(size_t first) const;
+    // Next slot at or after first whose ValidObject bit is set, or the reservation size in slots when there is none.
+    // Stale bits of dead young objects are included.
+    size_t FindNextValidSlot(size_t first) const;
     LxrRcResult Grow(
         bool large, size_t minimumBytes, LxrRcCaptureRoots capture, void* context, uint32_t timeout);
     uint64_t GetGrowthCount() const;
@@ -390,6 +419,9 @@ public:
     LxrRcResult GetHeapStatistics(size_t* heapBytes, size_t* fragmentationBytes) const;
     LxrRcResult StopWorkers();
     LxrRcResult WalkObjects(LxrRcWalkObject visit, void* context) const;
+    // Visits every object start whose ValidObject bit is set, stale bits included, without reading the object.
+    // The size passed to the callback is zero. Use it for per-object flag walks that run before the increments.
+    LxrRcResult WalkObjectStarts(LxrRcWalkObject visit, void* context) const;
     LxrRcResult WalkForwarded(LxrRcWalkForwarded visit, void* context) const;
     bool HasPendingDetaches() const;
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
@@ -423,6 +455,7 @@ private:
     struct TraceScan;
     struct RememberedChunk;
     struct WorkerCounters;
+    struct CopyLog;
     class CostScope;
     enum class WorkKind : uint8_t;
 
@@ -477,14 +510,23 @@ private:
     void DeleteRememberedChunks();
     LxrRcResult FixForwardingReaders();
     LxrRcResult RetireForwardedSources();
+    LxrRcResult ReserveCopyRecord(size_t slot);
+    void CommitCopyRecord(size_t slot, uintptr_t start, size_t size);
+    void DeleteCopyLogs();
+    static size_t ObjectSize(Object* object);
     LxrRcResult ScanIncrements(Object* object, bool trace, ReferenceBatch* children, size_t worker);
     LxrRcResult ProcessDecrements(Work* work, LxrWorkPacket* packet, size_t worker);
     LxrRcResult ScanDecrements(Object* object, ReferenceBatch* children, size_t worker);
     LxrRcResult Sweep(const LxrBlockReleaseGuard* guard);
     LxrRcResult ReleaseEpoch();
+    // Per-object accounting after a death or a swept cycle (the lifetime probe and, in the test platform, the
+    // oracle). The product keeps no per-object record, so this costs one load.
     LxrRcResult Reclaim(uintptr_t start);
-    LxrRcResult ReclaimNursery();
+    void NoteProbeReclaim(uintptr_t start);
+    LxrRcResult ClearAllocatedBlocks();
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     LxrRcResult ReclaimLargeNursery();
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     Object* GetLoaderAllocator(Object* object) const;
     LxrRcResult RunPause(
         LxrPauseKind kind, LxrRcCaptureRoots capture, void* context, uint32_t timeoutMilliseconds);
@@ -509,7 +551,15 @@ private:
     bool IsLarge(uintptr_t start) const;
     static uintptr_t Start(Object* object);
     static Object* Reference(uintptr_t start);
+    size_t GetLargeObjectSize(uintptr_t start) const;
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     std::atomic<size_t>& ExtentSlot(size_t heapSlot) const;
+    void OracleBirth(uintptr_t start, size_t size);
+    LxrRcResult OracleReclaim(uintptr_t start);
+    void OracleRetire(uintptr_t start);
+    LxrRcResult OracleReclaimNursery(size_t block);
+    size_t FindNextOracleSlot(size_t first) const;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     std::atomic<uint8_t>& TraceLockSlot(size_t heapSlot) const;
     TraceScan*& TraceScanSlot(size_t heapSlot) const;
 
@@ -538,13 +588,17 @@ private:
     LxrWorkScheduler m_scheduler;
     LxrPauseCoordinator m_coordinator;
     void* m_arena;
-    std::atomic<size_t>* m_extents;
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    // The oracle of the test platform: the size of each object and one live bit per slot, as the port kept them
+    // before P17 S3. Product code never reads them. They are not counted as native planes.
+    std::atomic<size_t>* m_extents = nullptr;
     LxrVirtualArray<std::atomic<size_t>> m_extent_storage;
+    LxrVirtualArray<std::atomic<uint64_t>> m_live_storage;
+    std::atomic<uint64_t>* m_live_objects = nullptr;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     LxrVirtualArray<std::atomic<uint8_t>> m_trace_lock_storage;
     LxrVirtualArray<TraceScan*> m_trace_scan_storage;
-    LxrVirtualArray<std::atomic<uint64_t>> m_live_storage;
     LxrVirtualArray<std::atomic<uint8_t>> m_allocated_block_storage;
-    std::atomic<uint64_t>* m_live_objects = nullptr;
     std::atomic<size_t> m_immix_capacity{0};
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     std::atomic<bool> m_log_reader_hold{false};
@@ -558,10 +612,13 @@ private:
     std::atomic<uint64_t> m_growth_count{0};
     std::atomic<size_t> m_epoch_fresh_blocks{0};
     std::atomic<size_t> m_epoch_recycled_lines{0};
-    std::atomic<size_t> m_live_bytes;
-    std::atomic<uint64_t> m_reclaimed_bytes;
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    std::atomic<size_t> m_live_bytes{0};
+    std::atomic<uint64_t> m_reclaimed_bytes{0};
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     std::atomic<uintptr_t> m_probe_start{0};
     std::atomic<uint64_t> m_probe_births{0};
+    std::atomic<bool> m_probe_retired{false};
     std::atomic<uint64_t> m_probe_reclaims{0};
     std::atomic<uint64_t> m_storage_metrics[9]{};
     std::atomic<uint64_t> m_trace_batch_metrics[5]{};
@@ -577,9 +634,12 @@ private:
     std::atomic<uint64_t> m_trace_pending;
     std::atomic<uint64_t> m_trace_metrics[14];
     LxrPauseKind m_pause_kind;
-    bool m_cycle_sweep;
+    std::atomic<bool> m_cycle_sweep;
     LxrRcMutator* m_mutators;
     ImmixBumpAllocator* m_copy_allocators = nullptr;
+    // One list of copied sources per worker, plus one shared slot for the mature copy. A source loses its first
+    // field to the forwarding pointer, so the pause keeps its size here until RetireForwardedSources.
+    CopyLog* m_copy_logs = nullptr;
     WorkerCounters* m_worker_counters = nullptr;
     std::atomic<bool> m_copy_exhausted{false};
     std::atomic<bool> m_mature_copy_exhausted{false};

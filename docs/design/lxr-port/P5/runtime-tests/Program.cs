@@ -1747,6 +1747,62 @@ internal static partial class Program
         GC.KeepAlive(assembly);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference CreateCollectibleCycles(int round)
+    {
+        AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+            new AssemblyName("LxrCollectibleCycles" + round), AssemblyBuilderAccess.RunAndCollect);
+        TypeBuilder builder = assembly.DefineDynamicModule("Cycles").DefineType("Cell", TypeAttributes.Public);
+        builder.DefineField("Next", typeof(object), FieldAttributes.Public);
+        builder.DefineField("Payload", typeof(long), FieldAttributes.Public);
+        Type type = builder.CreateType() ?? throw new InvalidOperationException("Collectible cell type creation failed.");
+        FieldInfo next = type.GetField("Next") ?? throw new InvalidOperationException("Collectible field is missing.");
+        const int Count = 96;
+        object[] cells = new object[Count];
+        Array all = Array.CreateInstance(type, Count + round % 7);
+        for (int index = 0; index < Count; index++)
+        {
+            cells[index] = Activator.CreateInstance(type) ?? throw new InvalidOperationException("Collectible birth failed.");
+            all.SetValue(cells[index], index);
+        }
+        for (int index = 0; index < Count; index++)
+        {
+            next.SetValue(cells[index], index == Count - 1 ? all : cells[index + 1]);
+        }
+        return new WeakReference(assembly);
+    }
+
+    // Dead cycles of objects of a collectible type: the lazy cycle sweep of a tracing pause reads their sizes from the
+    // objects, while the runtime frees the type data from the finalizer thread once it learns that the loader is dead.
+    // The collector must not let that happen before the sweep has finished. Many rounds make the race likely.
+    private static void VerifyCollectibleCycleUnload()
+    {
+        // A large live set makes the lazy sweep long, so the finalizer thread has time to free type data if it may.
+        Node[] ballast = new Node[150000];
+        for (int index = 0; index < ballast.Length; index++)
+        {
+            ballast[index] = new Node(index);
+        }
+        int unloaded = 0;
+        for (int round = 0; round < 40; round++)
+        {
+            WeakReference weak = CreateCollectibleCycles(round);
+            for (int attempt = 0; attempt < 30 && weak.IsAlive; attempt++)
+            {
+                GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+                GC.WaitForPendingFinalizers();
+                CreateAcyclicGarbage(512);
+            }
+            if (!weak.IsAlive)
+            {
+                unloaded++;
+            }
+        }
+        Console.WriteLine($"collectible_cycles unloaded={unloaded} of 40");
+        Check(unloaded >= 30, "Dead cycles of collectible-type objects did not unload their loader allocators.");
+        GC.KeepAlive(ballast);
+    }
+
     private static int RunLifecycle(string scenario, string path)
     {
         Collect? collect = null;
@@ -1815,6 +1871,9 @@ internal static partial class Program
                 break;
             case "weak-interior-statics":
                 VerifyCollectibleStaticInteriors();
+                break;
+            case "collectible-cycles":
+                VerifyCollectibleCycleUnload();
                 break;
             case "finalizer-reentrant":
                 VerifyFinalizerReentrancy();

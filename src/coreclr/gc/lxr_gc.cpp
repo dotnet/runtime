@@ -976,6 +976,11 @@ LxrRcResult LxrGcHeap::UpdatePolicyHints()
 LxrRcResult LxrGcHeap::FinishLazy(LxrReferenceCounting* engine, void* context)
 {
     LxrGcHeap* heap = static_cast<LxrGcHeap*>(context);
+    // The engine cleared its cycle-sweep flag before this callback, so the finalizers may run now.
+    if (heap->m_finalization_deferred.exchange(false, std::memory_order_seq_cst))
+    {
+        GCToEEInterface::EnableFinalization(heap->m_pending_finalizers.load() != 0);
+    }
     size_t mature;
     LxrRcResult result = engine->GetMaturePages(&mature);
     if (result != LxrRcResult::Success)
@@ -1047,7 +1052,15 @@ void LxrGcHeap::Resume(bool finished, void* context)
     LxrPauseTimers& timers = heap->m_engine.GetPauseTimers();
     {
         LxrPhaseScope resume(timers, LxrPauseTimers::ResumeRuntime);
-        GCToEEInterface::EnableFinalization(heap->m_pending_finalizers.load() != 0);
+        // A tracing pause leaves a lazy sweep of dead cycles. It reads the type data of dead objects, which the runtime
+        // frees only from a finalizer, so the finalizer thread is signalled when the sweep ends (FinishLazy). The flag
+        // is set before the check, so exactly one of Resume and FinishLazy sends the signal.
+        heap->m_finalization_deferred.store(true, std::memory_order_seq_cst);
+        if (!heap->m_engine.IsCycleSweepPending() &&
+            heap->m_finalization_deferred.exchange(false, std::memory_order_seq_cst))
+        {
+            GCToEEInterface::EnableFinalization(heap->m_pending_finalizers.load() != 0);
+        }
         GCToEEInterface::GcDone(2);
         GCToEEInterface::RestartEE(finished);
     }
@@ -1215,7 +1228,7 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
         int64_t start = timed ? GCToOSInterface::QueryPerformanceCounter() : 0;
         measure(31, LxrPauseTimers::ScanBeforeRoots, [&]() { GCToEEInterface::BeforeGcScanRoots(2, false, false); });
         LxrRcResult result = LxrRcResult::Success;
-        measure(14, LxrPauseTimers::ScanLeaseFinalizers, [&]() { result = heap->m_engine.WalkObjects(LeaseFinalizer, heap); });
+        measure(14, LxrPauseTimers::ScanLeaseFinalizers, [&]() { result = heap->m_engine.WalkObjectStarts(LeaseFinalizer, heap); });
         if (result != LxrRcResult::Success)
         {
             heap->m_scan_failure.store(result);
@@ -1253,11 +1266,11 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
         });
         measure(22, LxrPauseTimers::ScanShortWeak, [&]() { GCScan::GcShortWeakPtrScan(2, 2, &scan); });
         LxrRcResult result = LxrRcResult::Success;
-        measure(23, LxrPauseTimers::ScanQueueFinalizers, [&]() { result = heap->m_engine.WalkObjects(QueueFinalizer, heap); });
+        measure(23, LxrPauseTimers::ScanQueueFinalizers, [&]() { result = heap->m_engine.WalkObjectStarts(QueueFinalizer, heap); });
         if (result == LxrRcResult::Success && heap->m_pending_finalizers.load() != 0)
         {
             // Discover every unreachable candidate before f-reachability can mark another candidate.
-            measure(24, LxrPauseTimers::ScanTraceFinalizers, [&]() { result = heap->m_engine.WalkObjects(TracePendingFinalizer, heap); });
+            measure(24, LxrPauseTimers::ScanTraceFinalizers, [&]() { result = heap->m_engine.WalkObjectStarts(TracePendingFinalizer, heap); });
         }
         if (result != LxrRcResult::Success)
         {
@@ -1601,7 +1614,7 @@ bool LxrGcHeap::IsPromoted(Object* object)
         return m_engine.IsMarked(object);
     }
     uintptr_t count;
-    return m_engine.GetObjectExtent(object) != 0 &&
+    return m_engine.IsObjectStart(object) &&
         m_engine.LoadCount(object, &count) == LxrRcResult::Success && count != 0;
 }
 
@@ -1631,7 +1644,7 @@ Object* LxrGcHeap::GetContainingObject(void* interior, bool)
 
 bool LxrGcHeap::IsLargeObject(Object* object)
 {
-    return m_engine.GetObjectExtent(object) >= LxrLargeObjectSpace::MinimumObjectBytes;
+    return m_engine.IsLargeObject(object);
 }
 
 bool LxrGcHeap::IsGCInProgressHelper(bool considerStart)
@@ -1700,13 +1713,21 @@ Object* LxrGcHeap::GetNextFinalizable()
     {
         return nullptr;
     }
+    // The runtime frees a loader allocator (and so the type data of its collectible types) only from a finalizer.
+    // The lazy cycle sweep of a tracing pause reads the size of each dead cycle object from the object itself, so
+    // no finalizer may run until that sweep has finished. Resume does not signal the finalizer thread while the
+    // sweep is pending, and FinishLazy signals it once the sweep is done.
+    if (m_engine.IsCycleSweepPending())
+    {
+        return nullptr;
+    }
     size_t slots = m_engine.GetReservationBytes() / sizeof(uintptr_t);
     for (bool critical : {false, true})
     {
         size_t pass = critical ? 1 : 0;
-        for (size_t index = m_engine.FindNextOccupiedSlot(
+        for (size_t index = m_engine.FindNextValidSlot(
                 m_finalizer_cursor[pass].load(std::memory_order_acquire)); index < slots;
-             index = m_engine.FindNextOccupiedSlot(index + 1))
+             index = m_engine.FindNextValidSlot(index + 1))
         {
             std::atomic<uint32_t>& flags = m_flags[m_engine.GetObjectStorageIndex(index)];
             uint32_t state = flags.load(std::memory_order_acquire);
@@ -1721,7 +1742,7 @@ Object* LxrGcHeap::GetNextFinalizable()
                     }
                     Object* object = reinterpret_cast<Object*>(
                         m_engine.GetReservationStart() + index * sizeof(uintptr_t) + sizeof(ObjHeader));
-                    if (m_engine.GetObjectExtent(object) == 0)
+                    if (!m_engine.IsObjectStart(object))
                     {
                         Fatal("LXR finalizer queue lost its managed allocation lease.");
                     }
@@ -1742,7 +1763,7 @@ Object* LxrGcHeap::GetNextFinalizable()
 
 bool LxrGcHeap::RegisterForFinalization(int, Object* object)
 {
-    if (m_engine.GetObjectExtent(object) == 0)
+    if (!m_engine.IsObjectStart(object))
     {
         Unsupported("LXR cannot register finalization for a nonowned or incomplete object.");
         return false;
@@ -1758,7 +1779,7 @@ bool LxrGcHeap::RegisterForFinalization(int, Object* object)
 
 void LxrGcHeap::SetFinalizationRun(Object* object)
 {
-    if (m_engine.GetObjectExtent(object) == 0)
+    if (!m_engine.IsObjectStart(object))
     {
         Fatal("LXR finalization suppression received a nonowned object.");
     }
@@ -1776,9 +1797,9 @@ void LxrGcHeap::SetFinalizationRun(Object* object)
 
 size_t LxrGcHeap::GetValidSegmentSize(bool) { return m_engine.GetReservationBytes(); }
 void LxrGcHeap::SetReservedVMLimit(size_t limit) { m_reserved_limit = limit; }
-size_t LxrGcHeap::GetTotalBytesInUse() { return m_engine.GetLiveBytes(); }
+size_t LxrGcHeap::GetTotalBytesInUse() { return m_engine.GetUsedBytesEstimate(); }
 uint64_t LxrGcHeap::GetTotalAllocatedBytes() { return m_context_allocated_bytes.load(); }
-size_t LxrGcHeap::GetCurrentObjSize() { return m_engine.GetLiveBytes(); }
+size_t LxrGcHeap::GetCurrentObjSize() { return m_engine.GetUsedBytesEstimate(); }
 int LxrGcHeap::CollectionCount(int, int) { return static_cast<int>(m_collections.load()); }
 unsigned LxrGcHeap::GetGcCount() { return m_collections.load(); }
 int LxrGcHeap::GetGcLatencyMode() { return m_latency.load(); }
@@ -1834,7 +1855,7 @@ void LxrGcHeap::PublishMemoryInfo()
     uint64_t values[MemoryFields]{
         available, physical / 10 * 9, physical / 100 * m_last_memory_load.load(),
         m_last_heap_size.load(), m_last_fragmentation.load(), m_last_committed.load(),
-        m_engine.GetLiveBytes(), m_pinned_roots.load(), m_pending_finalizers.load(),
+        m_engine.GetUsedBytesEstimate(), m_pinned_roots.load(), m_pending_finalizers.load(),
         m_collections.load(), 2, static_cast<uint64_t>(GetLastGCPercentTimeInGC()),
         concurrent ? 1u : 0u,
         m_engine.GetNurseryMetrics().pauseCopiedBytes != 0 ||
@@ -2077,7 +2098,7 @@ void LxrGcHeap::PublishObject(uint8_t* object)
 void LxrGcHeap::ValidateObjectMember(Object* object)
 {
     object = m_engine.ResolveForwarded(object);
-    if (m_engine.GetObjectExtent(object) == 0 && !IsInFrozenSegment(object))
+    if (!m_engine.IsObjectStart(object) && !IsInFrozenSegment(object))
     {
         Fatal("LXR object verification received a reclaimed or nonowned object.");
     }
@@ -2086,7 +2107,7 @@ void LxrGcHeap::ValidateObjectMember(Object* object)
         for (size_t index = 0; index < count; index++)
         {
             Object* child = first[index];
-            if (child != nullptr && m_engine.GetObjectExtent(child) == 0 && !IsInFrozenSegment(child))
+            if (child != nullptr && !m_engine.IsObjectStart(child) && !IsInFrozenSegment(child))
             {
                 Fatal("LXR object verification found an invalid managed child.");
             }
@@ -2346,7 +2367,7 @@ LxrRcResult LxrGcHeap::ArmPrototypeScan(OBJECTHANDLE handle)
 bool LxrGcHeap::IsOwnedHandle(OBJECTHANDLE handle) const
 {
     Object** slot = reinterpret_cast<Object**>(reinterpret_cast<uintptr_t>(handle) & ~static_cast<uintptr_t>(1));
-    return slot != nullptr && m_engine.GetObjectExtent(*slot) != 0;
+    return slot != nullptr && m_engine.IsObjectStart(*slot);
 }
 
 uintptr_t LxrGcHeap::GetOwnedStart() const { return m_engine.GetReservationStart(); }
@@ -2359,7 +2380,7 @@ uintptr_t LxrGcHeap::GetHandleAddress(OBJECTHANDLE handle) const
 
 size_t LxrGcHeap::GetAddressExtent(uintptr_t address) const
 {
-    return m_engine.GetObjectExtent(reinterpret_cast<Object*>(address));
+    return m_engine.GetLiveObjectSize(reinterpret_cast<Object*>(address));
 }
 
 segment_handle LxrGcHeap::RegisterPrototypeFrozenArray(
@@ -2374,7 +2395,7 @@ segment_handle LxrGcHeap::RegisterPrototypeFrozenArray(
         templateObject->GetGCSafeMethodTable()->RawGetComponentSize() == sizeof(Object*) &&
         templateObject->GetGCSafeMethodTable()->ContainsGCPointers() &&
         reinterpret_cast<ArrayBase*>(templateObject)->GetNumComponents() == 1 &&
-        m_engine.GetObjectExtent(referent) != 0)
+        m_engine.IsObjectStart(referent))
     {
         size_t size = templateObject->GetSize();
         if (size <= capacity && sizeof(ObjHeader) <= capacity - size)
@@ -2464,8 +2485,8 @@ uint64_t LxrGcHeap::GetPrototypeMetric(uint32_t metric) const
         case 0: return m_initialized.load();
         case 1: return rc.allocations;
         case 2: return rc.allocatedBytes;
-        case 3: return m_engine.GetLiveBytes();
-        case 4: return m_engine.GetReclaimedBytes();
+        case 3: return m_engine.GetUsedBytesEstimate();
+        case 4: return UINT64_MAX; // Per-object reclaimed bytes exist only in the test platform (P17 S3).
         case 5: return m_collections.load();
         case 6: return rc.largeObjectBytesReleased;
         case 7: return rc.blocksReleased;

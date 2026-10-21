@@ -267,6 +267,9 @@ private:
     std::atomic<bool> m_concurrent_enabled;
     std::atomic<unsigned> m_collections;
     std::atomic<size_t> m_pending_finalizers;
+    // Set by Resume when it did not signal the finalizer thread because a cycle sweep was pending (see
+    // GetNextFinalizable). FinishLazy sends the signal once the sweep has finished.
+    std::atomic<bool> m_finalization_deferred{false};
     std::atomic<size_t> m_finalizer_cursor[2];
     std::atomic<uint64_t> m_memory_info[4][MemoryFields];
     std::atomic<uint64_t> m_memory_sequence[4];
