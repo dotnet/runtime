@@ -18,6 +18,8 @@
 #include "../../vm/methoditer.h"
 #include "../../vm/tailcallhelp.h"
 
+#include <type_traits>
+
 const char *GetTType( TraceType tt);
 
 #define IsSingleStep(exception) ((exception) == EXCEPTION_SINGLE_STEP)
@@ -277,6 +279,11 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBu
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
+static_assert(std::is_trivially_copyable<DebuggerControllerPatch>::value);
+static_assert(offsetof(DebuggerControllerPatch, entry) == 0);
+static_assert(offsetof(FREEHASHENTRY, iPrev) == offsetof(HASHENTRY, iPrev));
+static_assert(offsetof(FREEHASHENTRY, iNext) == offsetof(HASHENTRY, iNext));
+
 DebuggerPatchTable::~DebuggerPatchTable()
 {
     if (m_pcEntries != 0)
