@@ -104,6 +104,6 @@ namespace System.Net.Http
 
         private void SetCredentials(ICredentials? value) => WasiHandler.Credentials = value;
 
-        private static HttpMessageHandler CreateNativeHandler() => new WasiHttpHandler();
+        private static WasiHttpHandler CreateNativeHandler() => new WasiHttpHandler();
     }
 }
