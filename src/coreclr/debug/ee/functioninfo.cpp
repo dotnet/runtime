@@ -2095,25 +2095,6 @@ DebuggerJitInfo* DebuggerMethodInfo::GetLatestJitInfo_NoCreate()
 }
 
 
-DebuggerMethodInfoTable::DebuggerMethodInfoTable() : CHashTableAndData<CNewZeroData>(101)
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        GC_NOTRIGGER;
-
-    }
-    CONTRACTL_END;
-
-    SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    HRESULT hr = NewInit(101, sizeof(DebuggerMethodInfoEntry), 101);
-
-    if (FAILED(hr))
-    {
-        ThrowWin32(hr);
-    }
-}
-
 HRESULT DebuggerMethodInfoTable::AddMethodInfo(Module *pModule,
                    mdMethodDef token,
                    DebuggerMethodInfo *mi)
@@ -2144,18 +2125,10 @@ HRESULT DebuggerMethodInfoTable::AddMethodInfo(Module *pModule,
     dmik.pModule = pModule;
     dmik.token = token;
 
-    DebuggerMethodInfoEntry *dmie =
-        (DebuggerMethodInfoEntry *) Add(HASH(&dmik));
-
-    if (dmie == NULL)
-    {
-        ThrowOutOfMemory();
-        return E_OUTOFMEMORY;
-    }
-
-    dmie->key.pModule = pModule;
-    dmie->key.token = token;
-    dmie->mi = mi;
+    DebuggerMethodInfoEntry entry = {};
+    entry.key = dmik;
+    entry.mi = mi;
+    m_table.Add(entry);
 
     LOG((LF_CORDB, LL_INFO1000, "DMIT::AMI: mod:%p tok:0x%08x\n",
         pModule, token));
@@ -2187,7 +2160,7 @@ HRESULT DebuggerMethodInfoTable::OverwriteMethodInfo(Module *pModule,
     dmik.token = token;
 
     DebuggerMethodInfoEntry *entry
-      = (DebuggerMethodInfoEntry *) Find(HASH(&dmik), KEY(&dmik));
+      = const_cast<DebuggerMethodInfoEntry *>(m_table.LookupPtr(dmik));
     if (entry != NULL)
     {
         if ( (fOnlyIfNull && entry->mi == NULL)
@@ -2221,7 +2194,7 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
     HASHFIND info;
 
     DebuggerMethodInfoEntry *entry
-      = (DebuggerMethodInfoEntry *) FindFirstEntry(&info);
+      = m_table.FindFirstEntry(&info);
     while(entry != NULL)
     {
         Module *pMod = entry->key.pModule ;
@@ -2234,7 +2207,7 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
                 DeleteEntryDMI(entry);
             }
 
-            Delete(HASH(&(entry->key)), (HASHENTRY*)entry);
+            m_table.Remove(entry->key);
         }
         else
         {
@@ -2259,7 +2232,7 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
             }
         }
 
-        entry = (DebuggerMethodInfoEntry *) FindNextEntry(&info);
+        entry = m_table.FindNextEntry(&info);
     }
 }
 
@@ -2321,7 +2294,7 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetMethodInfo(Module *pModule, mdMe
     dmik.pModule = dac_cast<PTR_Module>(pModule);
     dmik.token = token;
 
-    DebuggerMethodInfoEntry *entry = dac_cast<PTR_DebuggerMethodInfoEntry>(Find(HASH(&dmik), KEY(&dmik)));
+    const DebuggerMethodInfoEntry *entry = m_table.LookupPtr(dmik);
 
     if (entry == NULL )
     {
@@ -2349,8 +2322,7 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetFirstMethodInfo(HASHFIND *info)
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
-    DebuggerMethodInfoEntry *entry = PTR_DebuggerMethodInfoEntry
-        (PTR_HOST_TO_TADDR(FindFirstEntry(info)));
+    DebuggerMethodInfoEntry *entry = m_table.FindFirstEntry(info);
     if (entry == NULL)
         return NULL;
     else
@@ -2372,8 +2344,7 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
-    DebuggerMethodInfoEntry *entry = PTR_DebuggerMethodInfoEntry
-        (PTR_HOST_TO_TADDR(FindNextEntry(info)));
+    DebuggerMethodInfoEntry *entry = m_table.FindNextEntry(info);
 
     // We may have incremented the version number
     // for methods that never got JITted, so we should
@@ -2381,8 +2352,7 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
     while (entry != NULL &&
            entry->mi == NULL)
     {
-        entry = PTR_DebuggerMethodInfoEntry
-            (PTR_HOST_TO_TADDR(FindNextEntry(info)));
+        entry = m_table.FindNextEntry(info);
     }
 
     if (entry == NULL)
@@ -2401,9 +2371,7 @@ DebuggerMethodInfoEntry::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
 
-    // This structure is in an array in the hash
-    // so the 'this' is implicitly enumerated by the
-    // array enum in CHashTable.
+    // The containing SHash enumerates the entry storage.
 
     // For a MiniDumpNormal, what is needed for modules is already enumerated elsewhere.
     // Don't waste time doing it here an extra time. Also, this will add many MB extra into the dump.
@@ -2412,10 +2380,11 @@ DebuggerMethodInfoEntry::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         key.pModule->EnumMemoryRegions(flags, true);
     }
 
-    while (mi.IsValid())
+    PTR_DebuggerMethodInfo methodInfo = mi;
+    while (methodInfo.IsValid())
     {
-        mi->EnumMemoryRegions(flags);
-        mi = mi->m_prevMethodInfo;
+        methodInfo->EnumMemoryRegions(flags);
+        methodInfo = methodInfo->m_prevMethodInfo;
     }
 }
 
@@ -2452,12 +2421,13 @@ void DebuggerMethodInfoTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
 
     DAC_ENUM_VTHIS();
-    CHashTableAndData<CNewZeroData>::EnumMemoryRegions(flags);
+    m_table.EnumMemoryRegions();
 
-    for (ULONG i = 0; i < m_iEntries; i++)
+    HASHFIND find;
+    for (DebuggerMethodInfoEntry *entry = m_table.FindFirstEntry(&find);
+         entry != nullptr;
+         entry = m_table.FindNextEntry(&find))
     {
-        DebuggerMethodInfoEntry* entry =
-            PTR_DebuggerMethodInfoEntry(PTR_HOST_TO_TADDR(EntryPtr(i)));
         entry->EnumMemoryRegions(flags);
     }
 }

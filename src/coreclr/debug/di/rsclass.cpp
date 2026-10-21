@@ -46,7 +46,7 @@ CordbClass::CordbClass(CordbModule *m, mdTypeDef classMetadataToken)
     HANDLED:
         CordbModule*            m_module; // Assigned w/o AddRef()
         FieldData *m_fields;              // Deleted in ~CordbClass
-        CordbHangingFieldTable  m_hangingFieldsStatic; // by value, ~CHashTableAndData frees
+        CordbHangingFieldTable  m_hangingFieldsStatic; // by value, owns its storage
 */
 
 

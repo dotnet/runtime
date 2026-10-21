@@ -1709,45 +1709,35 @@ typedef CordbEnumerator<RSSmartPtr<CordbVariableHome>,
 //   explicitly associate w/ an optional RSLock and assert that lock is held on access.
 // ----------------------------------------------------------------------------
 
-struct CordbHashEntry
+class EMPTY_BASES CordbHashTraits : public NonDacAwareSHashTraits<DefaultSHashTraits<CordbBase *>>
 {
-    FREEHASHENTRY entry;
-    CordbBase *pBase;
+public:
+    typedef ULONG_PTR key_t;
+    static key_t GetKey(CordbBase *const &element) { return element->m_id; }
+    static BOOL Equals(key_t left, key_t right) { return left == right; }
+    static count_t Hash(key_t key)
+    {
+        count_t hash = static_cast<count_t>(key);
+#ifdef HOST_64BIT
+        hash = HashCOUNT_T(hash, static_cast<count_t>(key >> 32));
+#endif
+        return hash;
+    }
 };
 
-class CordbHashTable : private CHashTableAndData<CNewDataNoThrow>
+class CordbHashTable
 {
 private:
-    bool    m_initialized;
-    SIZE_T  m_count;
-
-    BOOL Cmp(SIZE_T k1, const HASHENTRY * pc2)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return ((ULONG_PTR)k1) != (reinterpret_cast<const CordbHashEntry *>(pc2))->pBase->m_id;
-    }
-
-    ULONG HASH(ULONG_PTR id)
-    {
-        return (ULONG)(id);
-    }
-
-    SIZE_T KEY(UINT_PTR id)
-    {
-        return (SIZE_T)id;
-    }
+    SHash<CordbHashTraits> m_table;
 
 public:
     bool IsInitialized();
 
 #ifndef DACCESS_COMPILE
-    CordbHashTable(ULONG size)
-    : CHashTableAndData<CNewDataNoThrow>(size), m_initialized(false), m_count(0)
+    CordbHashTable(ULONG)
     {
 #ifdef _DEBUG
     m_pDbgLock = NULL;
-    m_dbgChangeCount = 0;
 #endif
     }
     virtual ~CordbHashTable();
@@ -1759,19 +1749,13 @@ public:
     {
         m_pDbgLock = pLock;
     }
-    int GetChangeCount() { return m_dbgChangeCount; }
 private:
     void AssertIsProtected();
 
-    // Increment the Change count. This can be used to check if the hashtable changes while being enumerated.
-    void DbgIncChangeCount() { m_dbgChangeCount++; }
-
-    int m_dbgChangeCount;
     RSLock * m_pDbgLock;
 #else
     // RSLock association is a no-op on free builds.
     void AssertIsProtected() { };
-    void DbgIncChangeCount() { };
 #endif // _DEBUG
 
 public:
@@ -1781,7 +1765,7 @@ public:
 
     ULONG32 GetCount()
     {
-        return ((ULONG32)m_count);
+        return m_table.GetCount();
     }
 
     // These operators are unsafe b/c they have no typesafety.
@@ -1855,7 +1839,6 @@ public ICorDebugAssemblyEnum
     CordbHashTableEnum(
         CordbBase * pOwnerObj,
         NeuterList * pOwnerList,
-        CordbHashTable *table,
         const GUID &id);
 
 public:
@@ -2007,38 +1990,15 @@ private:
     NeuterList *    m_pOwnerNeuterList;
 
 
-    CordbHashTable *m_table;
-    bool            m_started;
-    bool            m_done;
-    HASHFIND        m_hashfind;
+    RSPtrArray<CordbBase> m_items;
     REFIID          m_guid;
     ULONG           m_iCurElt;
-    ULONG           m_count;
-    BOOL            m_fCountInit;
 
 #ifdef _DEBUG
-    // timestampt of hashtable when we start enumerating it. Useful for detecting if the table
-    // changes underneath us.
-    int             m_DbgChangeCount;
     void AssertValid();
 #else
     void AssertValid() { }
 #endif
-
-private:
-    //These factor code between Next & Skip
-    HRESULT PrepForEnum(CordbBase **pBase);
-
-    // Note that the set of types advanced by Pre & by Post are disjoint, and
-    // that the union of these two sets are all possible types enuerated by
-    // the CordbHashTableEnum.
-    HRESULT AdvancePreAssign(CordbBase **pBase);
-    HRESULT AdvancePostAssign(CordbBase **pBase,
-                              CordbBase     **b,
-                              CordbBase   **bEnd);
-
-    // This factors some code that initializes the module enumerator.
-    HRESULT SetupModuleEnum();
 
 };
 
@@ -3975,7 +3935,6 @@ public:
     CORDB_ADDRESS       m_minPatchAddr; //smallest patch in table
     CORDB_ADDRESS       m_maxPatchAddr;
 
-    // <TODO>@todo port : if slots of CHashTable change, so should these</TODO>
 #define DPT_TERMINATING_INDEX (UINT32_MAX)
     // Index into m_pPatchTable of the first patch (first used entry).
     ULONG                  m_iFirstPatch;
@@ -4433,69 +4392,57 @@ private:
 };
 
 
-struct CordbHangingField
+class EMPTY_BASES CordbHangingFieldTraits : public NonDacAwareSHashTraits<DefaultSHashTraits<FieldData>>
 {
-    FREEHASHENTRY   entry;
-    FieldData data;
+public:
+    typedef mdFieldDef key_t;
+    static key_t GetKey(const FieldData &element) { return element.m_fldMetadataToken; }
+    static BOOL Equals(key_t left, key_t right) { return left == right; }
+    static count_t Hash(key_t key) { return key; }
+    static FieldData Null() { return {}; }
+    static FieldData Deleted()
+    {
+        FieldData element = {};
+        element.m_fldMetadataToken = static_cast<mdFieldDef>(-1);
+        return element;
+    }
+    static bool IsNull(const FieldData &element) { return element.m_fldMetadataToken == 0; }
+    static bool IsDeleted(const FieldData &element) { return element.m_fldMetadataToken == static_cast<mdFieldDef>(-1); }
 };
 
 // A hashtable for storing EnC hanging field information
 // FieldData.m_fldMetadataToken is the key
-class CordbHangingFieldTable : public CHashTableAndData<CNewDataNoThrow>
+class CordbHangingFieldTable
 {
-  private:
-
-    BOOL Cmp(SIZE_T k1, const HASHENTRY *pc2)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (ULONG)(UINT_PTR)(k1) !=
-               (reinterpret_cast<const CordbHangingField *>(pc2))->data.m_fldMetadataToken;
-    }
-
-    ULONG HASH(mdFieldDef fldToken)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fldToken;
-    }
-
-    SIZE_T KEY(mdFieldDef fldToken)
-    {
-        return (SIZE_T)fldToken;
-    }
+    SHash<CordbHangingFieldTraits> m_table;
 
   public:
 
 #ifndef DACCESS_COMPILE
 
-    CordbHangingFieldTable() : CHashTableAndData<CNewDataNoThrow>(11)
+    void Clear()
     {
-        NewInit(11, sizeof(CordbHangingField), 11);
+        m_table.RemoveAll();
     }
 
     FieldData * AddFieldInfo(FieldData * pInfo)
     {
         _ASSERTE(pInfo != NULL);
 
-        CordbHangingField *pEntry = (CordbHangingField *)Add(HASH(pInfo->m_fldMetadataToken));
-        pEntry->data = *pInfo; // copy everything over
-
-        // Return a pointer to the data
-        return &(pEntry->data);
+        m_table.Add(*pInfo);
+        return GetFieldInfo(pInfo->m_fldMetadataToken);
     }
 
     void RemoveFieldInfo(mdFieldDef fldToken)
     {
-        CordbHangingField *entry = (CordbHangingField*)Find(HASH(fldToken), KEY(fldToken));
-        _ASSERTE(entry != NULL);
-        Delete(HASH(fldToken), (HASHENTRY*)entry);
+        m_table.Remove(fldToken);
    }
 
 #endif // #ifndef DACCESS_COMPILE
 
     FieldData * GetFieldInfo(mdFieldDef fldToken)
     {
-        CordbHangingField * entry = (CordbHangingField *)Find(HASH(fldToken), KEY(fldToken));
-        return (entry!=NULL?&(entry->data):NULL);
+        return const_cast<FieldData *>(m_table.LookupPtr(fldToken));
     }
 };
 

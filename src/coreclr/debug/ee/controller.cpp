@@ -276,7 +276,87 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBu
 #endif // !FEATURE_EMULATE_SINGLESTEP
 #endif // !DACCESS_COMPILE
 
-// @todo - remove all this splicing trash
+#ifndef DACCESS_COMPILE
+DebuggerPatchTable::~DebuggerPatchTable()
+{
+    if (m_pcEntries != 0)
+        CNewZeroData::Free(reinterpret_cast<BYTE *>(m_pcEntries), 0);
+}
+
+void DebuggerPatchTable::EnsureList(DebuggerPatchKey key)
+{
+    if (m_patchLists.LookupPtr(key) == nullptr)
+    {
+        DebuggerPatchListEntry entry = {};
+        entry.key = key;
+        entry.first = DPT_INVALID_SLOT;
+        m_patchLists.Add(entry);
+    }
+}
+
+DebuggerControllerPatch *DebuggerPatchTable::AddPatch(DebuggerPatchKey key)
+{
+    if (m_iFree == DPT_INVALID_SLOT)
+    {
+        S_UINT32 count = S_UINT32(m_iEntries) + S_UINT32(m_iEntries / 2) + S_UINT32(17);
+        S_UINT32 size = count * S_UINT32(sizeof(DebuggerControllerPatch));
+        if (count.IsOverflow() || size.IsOverflow() || size.Value() > INT_MAX)
+            ThrowOutOfMemory();
+
+        BYTE *memory = CNewZeroData::Alloc(static_cast<int>(size.Value()), 0);
+        if (memory == nullptr)
+            ThrowOutOfMemory();
+
+        if (m_pcEntries != 0)
+        {
+            memcpy(memory, reinterpret_cast<void *>(m_pcEntries), m_iEntries * sizeof(DebuggerControllerPatch));
+            CNewZeroData::Free(reinterpret_cast<BYTE *>(m_pcEntries), 0);
+        }
+        m_pcEntries = reinterpret_cast<TADDR>(memory);
+        for (ULONG index = m_iEntries; index < count.Value(); index++)
+        {
+            DebuggerControllerPatch *patch = reinterpret_cast<DebuggerControllerPatch *>(EntryPtr(index));
+            patch->entry.iFree = index + 1;
+        }
+        reinterpret_cast<DebuggerControllerPatch *>(EntryPtr(count.Value() - 1))->entry.iFree = DPT_INVALID_SLOT;
+        m_iFree = m_iEntries;
+        m_iEntries = count.Value();
+    }
+
+    // Allocate the index before taking a slot so OOM leaves the table unchanged.
+    EnsureList(key);
+    const DebuggerPatchListEntry *list = m_patchLists.LookupPtr(key);
+    ULONG index = m_iFree;
+    DebuggerControllerPatch *patch = reinterpret_cast<DebuggerControllerPatch *>(EntryPtr(index));
+    m_iFree = patch->entry.iFree;
+    memset(patch, 0, sizeof(*patch));
+    patch->entry.iPrev = DPT_INVALID_SLOT;
+    patch->entry.iNext = list->first;
+    if (list->first != DPT_INVALID_SLOT)
+        EntryPtr(list->first)->iPrev = index;
+
+    DebuggerPatchListEntry updated = *list;
+    updated.first = index;
+    m_patchLists.ReplacePtr(list, updated);
+    return patch;
+}
+
+void DebuggerPatchTable::LinkPatch(DebuggerControllerPatch *patch)
+{
+    const DebuggerPatchListEntry *list = m_patchLists.LookupPtr(Key(patch));
+    _ASSERTE(list != nullptr);
+    ULONG index = ItemIndex(reinterpret_cast<HASHENTRY *>(patch));
+    patch->entry.iPrev = DPT_INVALID_SLOT;
+    patch->entry.iNext = list->first;
+    if (list->first != DPT_INVALID_SLOT)
+        EntryPtr(list->first)->iPrev = index;
+
+    DebuggerPatchListEntry updated = *list;
+    updated.first = index;
+    m_patchLists.ReplacePtr(list, updated);
+}
+#endif // DACCESS_COMPILE
+
 // This Sort/Splice stuff just reorders the patches within a particular chain such
 // that when we iterate through by calling GetPatch() and GetNextPatch(DebuggerControllerPatch),
 // we'll get patches in increasing order of DebuggerControllerTypes.
@@ -288,7 +368,7 @@ void DebuggerPatchTable::SortPatchIntoPatchList(DebuggerControllerPatch **ppPatc
     LOG((LF_CORDB, LL_EVERYTHING, "DPT::SPIPL ppPatch: %p, pPatch: %p \n", ppPatch, (*ppPatch)));
 #ifdef _DEBUG
     DebuggerControllerPatch *patchFirst
-        = (DebuggerControllerPatch *) Find(Hash((*ppPatch)), Key((*ppPatch)));
+        = FindPatch(Key(*ppPatch));
     _ASSERTE(patchFirst == (*ppPatch));
     _ASSERTE((*ppPatch)->controller->GetDCType() != DEBUGGER_CONTROLLER_STATIC);
 #endif //_DEBUG
@@ -300,14 +380,6 @@ void DebuggerPatchTable::SortPatchIntoPatchList(DebuggerControllerPatch **ppPatc
         LOG((LF_CORDB, LL_INFO10000, "DPT::SPIPL: %p single element\n", (*ppPatch)));
         return;
     }
-
-    // If we decide to reorder the list, we'll need to keep the element
-    // indexed by the hash function as the (sorted)first item.  Everything else
-    // chains off this element, can thus stay put.
-    // Thus, either the element we just added is already sorted, or else we'll
-    // have to move it elsewhere in the list, meaning that we'll have to swap
-    // the second item & the new item, so that the index points to the proper
-    // first item in the list.
 
     //use Cur ptr for case where patch gets appended to list
     DebuggerControllerPatch *patchCur = patchNext;
@@ -348,26 +420,25 @@ void DebuggerPatchTable::SortPatchIntoPatchList(DebuggerControllerPatch **ppPatc
 // the patch back somewhere else.
 void DebuggerPatchTable::SpliceOutOfList(DebuggerControllerPatch *patch)
 {
-    // We need to get iHash, the index of the ptr within
-    // m_piBuckets, ie it's entry in the hashtable.
-    ULONG iHash = Hash(patch) % m_iBuckets;
-    ULONG iElement = m_piBuckets[iHash];
-    DebuggerControllerPatch *patchFirst
-        = (DebuggerControllerPatch *) EntryPtr(iElement);
+    DebuggerPatchKey key = Key(patch);
+    const DebuggerPatchListEntry *list = m_patchLists.LookupPtr(key);
+    _ASSERTE(list != nullptr);
 
     // Fix up pointers to chain
-    if (patchFirst == patch)
+    if (patch->entry.iPrev == DPT_INVALID_SLOT)
     {
         // The first patch shouldn't have anything behind it.
         _ASSERTE(patch->entry.iPrev == DPT_INVALID_SLOT);
 
-        if (patch->entry.iNext != DPT_INVALID_SLOT)
+        if (patch->entry.iNext == DPT_INVALID_SLOT)
         {
-            m_piBuckets[iHash] = patch->entry.iNext;
+            m_patchLists.Remove(key);
         }
         else
         {
-            m_piBuckets[iHash] = DPT_INVALID_SLOT;
+            DebuggerPatchListEntry updated = *list;
+            updated.first = patch->entry.iNext;
+            m_patchLists.ReplacePtr(list, updated);
         }
     }
 
@@ -378,7 +449,7 @@ void DebuggerPatchTable::SpliceOutOfList(DebuggerControllerPatch *patch)
 
     if (patch->entry.iPrev != DPT_INVALID_SLOT)
     {
-        EntryPtr(patch->entry.iNext)->iNext = patch->entry.iNext;
+        EntryPtr(patch->entry.iPrev)->iNext = patch->entry.iNext;
     }
 
     patch->entry.iNext = DPT_INVALID_SLOT;
@@ -634,13 +705,8 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatchForMethodDef(DebuggerContro
     LOG( (LF_CORDB,LL_INFO10000,"DPT:APFMD 0x%x with dji %p, %s offset 0x%zx controller:%p AD:%p\n",
         md, dji, (offsetIsIL ? "IL" : "native"), offset, controller, pAppDomain));
 
-    DebuggerFunctionKey key;
-
-    key.module = module;
-    key.md = md;
-
     // Get a new uninitialized patch object
-    DebuggerControllerPatch *patch = (DebuggerControllerPatch *) Add(HashKey(&key));
+    DebuggerControllerPatch *patch = AddPatch({0, dac_cast<TADDR>(module), md});
     if (patch == NULL)
         ThrowOutOfMemory();
 
@@ -747,7 +813,7 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatchForAddress(DebuggerControll
 
     // get new uninitialized patch object
     DebuggerControllerPatch *patch =
-      (DebuggerControllerPatch *) Add(HashAddress(address));
+      AddPatch({dac_cast<TADDR>(address), 0, 0});
 
     if (patch == NULL)
     {
@@ -826,11 +892,12 @@ void DebuggerPatchTable::BindPatch(DebuggerControllerPatch *patch, CORDB_ADDRESS
     //zeroing out the opcode field (see lengthy comment above)
     // Since the patch is double-hashed based off Address, if we change the address,
     // we must remove and reinsert the patch.
-    CHashTable::Delete(HashKey(&patch->key), ItemIndex((HASHENTRY*)patch));
+    EnsureList({dac_cast<TADDR>(address), 0, 0});
+    SpliceOutOfList(patch);
 
     patch->address = address;
 
-    CHashTable::Add(HashAddress(address), ItemIndex((HASHENTRY*)patch));
+    LinkPatch(patch);
 
     SortPatchIntoPatchList(&patch);
 
@@ -861,13 +928,12 @@ void DebuggerPatchTable::UnbindPatch(DebuggerControllerPatch *patch)
     // Update it's index entry in the table to use it's unbound key
     // Since the patch is double-hashed based off Address, if we change the address,
     // we must remove and reinsert the patch.
-    CHashTable::Delete( HashAddress(patch->address),
-                        ItemIndex((HASHENTRY*)patch));
+    EnsureList({0, dac_cast<TADDR>(patch->key.module), patch->key.md});
+    SpliceOutOfList(patch);
 
     patch->address = NULL;      // we're no longer bound to this address
 
-    CHashTable::Add( HashKey(&patch->key),
-                     ItemIndex((HASHENTRY*)patch));
+    LinkPatch(patch);
 
      _ASSERTE(!patch->IsBound() );
 
@@ -881,47 +947,17 @@ void DebuggerPatchTable::RemovePatch(DebuggerControllerPatch *patch)
     patch->DoCleanup();
 #endif // !FEATURE_EMULATE_SINGLESTEP
 
-    //
-    // Because of the implementation of CHashTable, we can safely
-    // delete elements while iterating through the table.  This
-    // behavior is relied upon - do not change to a different
-    // implementation without considering this fact.
-    //
-    Delete(Hash(patch),  (HASHENTRY *) patch);
+    SpliceOutOfList(patch);
+    patch->refCount = 0;
+    patch->entry.iFree = m_iFree;
+    m_iFree = ItemIndex(reinterpret_cast<HASHENTRY *>(patch));
 }
 
 DebuggerControllerPatch *DebuggerPatchTable::GetNextPatch(DebuggerControllerPatch *prev)
 {
-    ULONG iNext;
-    HASHENTRY *psEntry;
-
-    // Start at the next entry in the chain.
-    // @todo - note that: EntryPtr(ItemIndex(x)) == x
-    iNext = EntryPtr(ItemIndex((HASHENTRY*)prev))->iNext;
-
-    // Search until we hit the end.
-    while (iNext != UINT32_MAX)
-    {
-        // Compare the keys.
-        psEntry = EntryPtr(iNext);
-
-        // Careful here... we can hash the entries in this table
-        // by two types of keys. In this type of search, the type
-        // of the second key (psEntry) does not necessarily
-        // indicate the type of the first key (prev), so we have
-        // to check for sure.
-        DebuggerControllerPatch *pc2 = (DebuggerControllerPatch*)psEntry;
-
-        if (((pc2->address == NULL) && (prev->address == NULL)) ||
-            ((pc2->address != NULL) && (prev->address != NULL)))
-            if (!Cmp(Key(prev), psEntry))
-                return pc2;
-
-        // Advance to the next item in the chain.
-        iNext = psEntry->iNext;
-    }
-
-    return NULL;
+    ULONG next = prev->entry.iNext;
+    return next == DPT_INVALID_SLOT ? nullptr
+        : dac_cast<PTR_DebuggerControllerPatch>(EntryPtr(next));
 }
 
 // Count how many patches are in the table.
@@ -933,9 +969,7 @@ int DebuggerPatchTable::GetNumberOfPatches()
     if ((TADDR)NULL != m_pcEntries)
     {
         DebuggerControllerPatch *dcp;
-        ULONG i = 0;
-
-        while (i++ <m_iEntries)
+        for (ULONG i = 0; i < m_iEntries; i++)
         {
             dcp = (DebuggerControllerPatch*)&(((DebuggerControllerPatch *)m_pcEntries)[i]);
 

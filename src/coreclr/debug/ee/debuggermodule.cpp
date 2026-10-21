@@ -30,14 +30,6 @@ void DebuggerModule::SetCanChangeJitFlags(bool fCanChangeJitFlags)
 #ifndef DACCESS_COMPILE
 
 
-DebuggerModuleTable::DebuggerModuleTable() : CHashTableAndData<CNewZeroData>(101)
-{
-    WRAPPER_NO_CONTRACT;
-
-    SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    NewInit(101, sizeof(DebuggerModuleEntry), 101);
-}
-
 DebuggerModuleTable::~DebuggerModuleTable()
 {
     WRAPPER_NO_CONTRACT;
@@ -69,21 +61,19 @@ void DebuggerModuleTable::Clear()
     HASHFIND hf;
     DebuggerModuleEntry *pDME;
 
-    pDME = (DebuggerModuleEntry *) FindFirstEntry(&hf);
+    pDME = m_table.FindFirstEntry(&hf);
 
     while (pDME)
     {
         DebuggerModule *pDM = pDME->module;
-        Module         *pEEM = pDM->GetRuntimeModule();
-
         TRACE_FREE(pDME->module);
+        m_table.Remove(pDM->GetRuntimeModule());
         DeleteInteropSafe(pDM);
-        Delete(HASH(pEEM), (HASHENTRY *) pDME);
 
-        pDME = (DebuggerModuleEntry *) FindFirstEntry(&hf);
+        pDME = m_table.FindNextEntry(&hf);
     }
 
-    CHashTableAndData<CNewZeroData>::Clear();
+    m_table.RemoveAll();
 }
 
 void DebuggerModuleTable::AddModule(DebuggerModule *pModule)
@@ -102,13 +92,9 @@ void DebuggerModuleTable::AddModule(DebuggerModule *pModule)
     LOG((LF_CORDB, LL_EVERYTHING, "DMT::AM: DebuggerMod:%p Module:%p\n",
         pModule, pModule->GetRuntimeModule()));
 
-    DebuggerModuleEntry * pEntry = (DebuggerModuleEntry *) Add(HASH(pModule->GetRuntimeModule()));
-    if (pEntry == NULL)
-    {
-        ThrowOutOfMemory();
-    }
-
-    pEntry->module = pModule;
+    DebuggerModuleEntry entry = {};
+    entry.module = pModule;
+    m_table.Add(entry);
 }
 
 //-----------------------------------------------------------------------------
@@ -129,25 +115,17 @@ void DebuggerModuleTable::RemoveModule(Module* pModule)
     _ASSERTE(ThreadHoldsLock());
     _ASSERTE(pModule != NULL);
 
-    HASHFIND hf;
-
-    for (DebuggerModuleEntry *pDME = (DebuggerModuleEntry *) FindFirstEntry(&hf);
-         pDME != NULL;
-         pDME = (DebuggerModuleEntry*) FindNextEntry(&hf))
+    const DebuggerModuleEntry *entry = m_table.LookupPtr(pModule);
+    if (entry != nullptr)
     {
-        DebuggerModule *pDM = pDME->module;
-        Module* pRuntimeModule = pDM->GetRuntimeModule();
-
-        if (pRuntimeModule == pModule)
-        {
-            LOG((LF_CORDB, LL_INFO1000, "DMT::RM Removing DebuggerMod:%p - Module:%p Asm:%p\n",
-                pDM, pModule, pDM->GetAssembly()));
-            TRACE_FREE(pDM);
-            DeleteInteropSafe(pDM);
-            Delete(HASH(pRuntimeModule), (HASHENTRY *) pDME);
-            _ASSERTE(GetModule(pModule) == NULL);
-            return;
-        }
+        DebuggerModule *pDM = entry->module;
+        LOG((LF_CORDB, LL_INFO1000, "DMT::RM Removing DebuggerMod:%p - Module:%p Asm:%p\n",
+            pDM, pModule, pDM->GetAssembly()));
+        TRACE_FREE(pDM);
+        m_table.Remove(pModule);
+        DeleteInteropSafe(pDM);
+        _ASSERTE(GetModule(pModule) == NULL);
+        return;
     }
 
     LOG((LF_CORDB, LL_INFO1000, "DMT::RM  No debugger module found for Module:%p\n", pModule));
@@ -168,8 +146,7 @@ DebuggerModule *DebuggerModuleTable::GetModule(Module* module)
     _ASSERTE(module != NULL);
     _ASSERTE(ThreadHoldsLock());
 
-    DebuggerModuleEntry *entry
-      = (DebuggerModuleEntry *) Find(HASH(module), KEY(module));
+    const DebuggerModuleEntry *entry = m_table.LookupPtr(dac_cast<PTR_Module>(module));
     if (entry == NULL)
         return NULL;
     else
@@ -187,7 +164,7 @@ DebuggerModule *DebuggerModuleTable::GetFirstModule(HASHFIND *info)
 
     _ASSERTE(ThreadHoldsLock());
 
-    DebuggerModuleEntry *entry = (DebuggerModuleEntry *) FindFirstEntry(info);
+    DebuggerModuleEntry *entry = m_table.FindFirstEntry(info);
     if (entry == NULL)
         return NULL;
     else
@@ -205,7 +182,7 @@ DebuggerModule *DebuggerModuleTable::GetNextModule(HASHFIND *info)
 
     _ASSERTE(ThreadHoldsLock());
 
-    DebuggerModuleEntry *entry = (DebuggerModuleEntry *) FindNextEntry(info);
+    DebuggerModuleEntry *entry = m_table.FindNextEntry(info);
     if (entry == NULL)
         return NULL;
     else

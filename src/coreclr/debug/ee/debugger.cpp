@@ -65,6 +65,26 @@ InteropSafe interopsafe;
 
 #ifndef DACCESS_COMPILE
 
+void *DebuggerHeapHashEntry::operator new[](size_t size, const std::nothrow_t &) noexcept
+{
+    if (size > INT_MAX)
+        return nullptr;
+    return CNewZeroData::Alloc(static_cast<int>(size), 0);
+}
+
+void *DebuggerHeapHashEntry::operator new[](size_t size)
+{
+    void *memory = operator new[](size, std::nothrow);
+    if (memory == nullptr)
+        ThrowOutOfMemory();
+    return memory;
+}
+
+void DebuggerHeapHashEntry::operator delete[](void *memory)
+{
+    CNewZeroData::Free(static_cast<BYTE *>(memory), 0);
+}
+
 DebuggerRCThread        *g_pRCThread = NULL;
 
 // Do some compile time checking on the events in DbgIpcEventTypes.h
@@ -1062,7 +1082,63 @@ HRESULT Debugger::CheckInitModuleTable()
     return S_OK;
 }
 
-// Checks if the m_pModules table has been allocated, and if not does so.
+#ifndef DACCESS_COMPILE
+HRESULT DebuggerPendingFuncEvalTable::AddPendingEval(Thread *pThread, DebuggerEval *pDE)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pThread != nullptr && pDE != nullptr);
+    _ASSERTE(pDE->m_nextPendingEval == nullptr);
+
+    DebuggerPendingFuncEval *entry = GetPendingEval(pThread);
+    if (entry != nullptr)
+    {
+        // Keep newest-first order independently of SHash rehashing.
+        pDE->m_nextPendingEval = entry->pDE;
+        entry->pDE = pDE;
+        return S_OK;
+    }
+
+    DebuggerPendingFuncEval newEntry = {};
+    newEntry.pThread = pThread;
+    newEntry.pDE = pDE;
+    return m_table.AddNoThrow(newEntry) ? S_OK : E_OUTOFMEMORY;
+}
+
+void DebuggerPendingFuncEvalTable::RemovePendingEval(Thread *pThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pThread != nullptr);
+
+    DebuggerPendingFuncEval *entry = GetPendingEval(pThread);
+    if (entry != nullptr)
+    {
+        DebuggerEval *pDE = entry->pDE;
+        if (pDE->m_nextPendingEval != nullptr)
+        {
+            entry->pDE = pDE->m_nextPendingEval;
+        }
+        else
+        {
+            m_table.RemovePtr(entry);
+        }
+        pDE->m_nextPendingEval = nullptr;
+    }
+}
+#endif // DACCESS_COMPILE
+
+// Checks if the pending-evaluation table has been allocated, and if not does so.
 HRESULT Debugger::CheckInitPendingFuncEvalTable()
 {
     CONTRACTL
@@ -1102,83 +1178,17 @@ ULONG DebuggerMethodInfoTable::CheckDmiTable(void)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ULONG cApparent = 0;
-    ULONG cOfficial = 0;
-
-    if (NULL != m_pcEntries)
+    HASHFIND find;
+    ULONG count = 0;
+    for (DebuggerMethodInfoEntry *entry = m_table.FindFirstEntry(&find);
+         entry != nullptr;
+         entry = m_table.FindNextEntry(&find))
     {
-        DebuggerMethodInfoEntry *dcp;
-        int i = 0;
-        while (i++ <m_iEntries)
-        {
-            dcp = (DebuggerMethodInfoEntry*)&(((DebuggerMethodInfoEntry *)m_pcEntries)[i]);
-            if(dcp->pFD != 0 &&
-               dcp->pFD != (MethodDesc*)0xcdcdcdcd &&
-               dcp->mi != NULL)
-            {
-                cApparent++;
-
-                _ASSERTE( dcp->pFD == dcp->mi->m_fd );
-                LOG((LF_CORDB, LL_INFO1000, "DMIT::CDT:Entry:0x%p mi:0x%p\nPrevs:\n",
-                    dcp, dcp->mi));
-                DebuggerMethodInfo *dmi = dcp->mi->m_prevMethodInfo;
-
-                while(dmi != NULL)
-                {
-                    LOG((LF_CORDB, LL_INFO1000, "\t0x%p\n", dmi));
-                    dmi = dmi->m_prevMethodInfo;
-                }
-                dmi = dcp->mi->m_nextMethodInfo;
-
-                LOG((LF_CORDB, LL_INFO1000, "Nexts:\n", dmi));
-                while(dmi != NULL)
-                {
-                    LOG((LF_CORDB, LL_INFO1000, "\t0x%p\n", dmi));
-                    dmi = dmi->m_nextMethodInfo;
-                }
-
-                LOG((LF_CORDB, LL_INFO1000, "DMIT::CDT:DONE\n",
-                    dcp, dcp->mi));
-            }
-        }
-
-        if (m_piBuckets == 0)
-        {
-            LOG((LF_CORDB, LL_INFO1000, "DMIT::CDT: The table is officially empty!\n"));
-            return cOfficial;
-        }
-
-        LOG((LF_CORDB, LL_INFO1000, "DMIT::CDT:Looking for official entries:\n"));
-
-        ULONG iNext = m_piBuckets[0];
-        ULONG iBucket = 1;
-        HASHENTRY   *psEntry = NULL;
-        while (TRUE)
-        {
-            while (iNext != UINT32_MAX)
-            {
-                cOfficial++;
-
-                psEntry = EntryPtr(iNext);
-                dcp = ((DebuggerMethodInfoEntry *)psEntry);
-
-                LOG((LF_CORDB, LL_INFO1000, "\tEntry:0x%p mi:0x%p @idx:0x%x @bucket:0x%x\n",
-                    dcp, dcp->mi, iNext, iBucket));
-
-                iNext = psEntry->iNext;
-            }
-
-            // Advance to the next bucket.
-            if (iBucket < m_iBuckets)
-                iNext = m_piBuckets[iBucket++];
-            else
-                break;
-        }
-
-        LOG((LF_CORDB, LL_INFO1000, "DMIT::CDT:Finished official entries: ****************"));
+        _ASSERTE(entry->key.pModule != nullptr);
+        count++;
     }
-
-    return cOfficial;
+    _ASSERTE(count == m_table.GetCount());
+    return count;
 }
 #endif // _DEBUG_DMI_TABLE
 
@@ -1225,6 +1235,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     }
 
     m_thread = pEvalInfo->vmThreadToken.GetRawPtr();
+    m_nextPendingEval = nullptr;
     m_evalType = pEvalInfo->funcEvalType;
     m_methodToken = pEvalInfo->funcMetadataToken;
     m_classToken = pEvalInfo->funcClassMetadataToken;
@@ -14144,12 +14155,9 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 
         if (pDE->m_argData == NULL)
         {
-            DeleteInteropSafeExecutable(pDE);
+            DeleteInteropSafe(pDE);
             return E_OUTOFMEMORY;
         }
-
-        // Pass back the address of the argument data area so the right side can write to it for us.
-        *argDataArea = pDE->m_argData;
     }
 
     // Hijacked evals rewrite the thread's native context to enter FuncEvalHijack when execution resumes.
@@ -14199,7 +14207,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 
         if (FAILED(hr))
         {
-            DeleteInteropSafeExecutable(pDE);  // Note this runs the destructor for DebuggerEval, which releases its internal buffers
+            DeleteInteropSafe(pDE);
             return hr;
         }
 
@@ -14207,7 +14215,12 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         // the process continues. Interpreter evals run from the INTOP_BREAKPOINT handler after
         // the debugger callback returns — no context modification and no IncThreadsAtUnsafePlaces
         // needed because the stack remains walkable.
-        GetPendingEvals()->AddPendingEval(pDE->m_thread, pDE);
+        hr = GetPendingEvals()->AddPendingEval(pDE->m_thread, pDE);
+        if (FAILED(hr))
+        {
+            DeleteInteropSafe(pDE);
+            return hr;
+        }
 
         LOG((LF_CORDB, LL_INFO1000, "D::FES: Non-hijack func eval setup for pDE:%p on thread %p (fInException=%d)\n",
              pDE, pThread, fInException));
@@ -14216,6 +14229,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 
     // Return that all went well. Tracing the stack at this point should not show that the func eval is setup, but it
     // will show a wrong IP, so it shouldn't be done.
+    *argDataArea = pDE->m_argData;
     *debuggerEvalKey = pDE;
 
     LOG((LF_CORDB, LL_INFO100000, "D:FES for pDE:%p evalType:%d on thread %p, id=0x%x\n",
