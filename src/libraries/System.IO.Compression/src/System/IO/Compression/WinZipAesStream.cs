@@ -265,7 +265,7 @@ namespace System.IO.Compression
                 {
                     int remainingCount = AuthenticationCodeSize - _storedAuthenticationCodeBytesRead;
                     _storedAuthenticationCodeBytesRead += ThrowIfZero(isAsync
-                        ? await _baseStream.ReadAsync(_storedAuthenticationCode, _storedAuthenticationCodeBytesRead, remainingCount, cancellationToken).ConfigureAwait(false)
+                        ? await _baseStream.ReadAsync(_storedAuthenticationCode.AsMemory(_storedAuthenticationCodeBytesRead, remainingCount), cancellationToken).ConfigureAwait(false)
                         : _baseStream.Read(_storedAuthenticationCode, _storedAuthenticationCodeBytesRead, remainingCount));
                 }
 
@@ -781,7 +781,7 @@ namespace System.IO.Compression
 
             // Runs authentication exactly once, no matter how many completion paths (end-of-payload, overshoot,
             // or a faulted payload-stream read) end up calling it.
-            private async ValueTask CompleteAuthentication(bool isAsync, CancellationToken cancellationToken)
+            private async Task CompleteAuthentication(bool isAsync, CancellationToken cancellationToken)
             {
                 if (_completed)
                 {
@@ -797,46 +797,73 @@ namespace System.IO.Compression
             // (e.g. because the decompressor itself already reported end-of-stream). Also treats a decompressor EOF
             // that happens before the declared length is reached as truncation, so authentication still runs before
             // the resulting exception propagates.
-            private async ValueTask CompleteIfEndOfPayloadCoreAsync(bool isAsync, int bytesRead, CancellationToken cancellationToken)
+            private async Task CompleteIfEndOfPayloadCoreAsync(bool isAsync, int bytesRead, CancellationToken cancellationToken)
             {
                 _totalBytesRead += bytesRead;
 
-                if (_totalBytesRead > _expectedLength)
-                {
-                    // A single bulk read overshot the declared length in one call - validate authentication before
-                    // reporting the corruption.
-                    await CompleteAuthentication(isAsync, cancellationToken).ConfigureAwait(false);
-                    throw new InvalidDataException(SR.UnexpectedStreamLength); // Too much data.
-                }
-
                 if (_completed)
                 {
-                    return; // Authentication already ran on an earlier read; nothing left to do.
-                }
-
-                if (_totalBytesRead == _expectedLength)
-                {
-                    // Probe for a single extra byte: if the payload stream has more data than its declared length,
-                    // the entry is corrupt and we must not silently stop short.
-                    byte[] probeBuffer = new byte[1];
-                    int probeBytesRead = isAsync
-                        ? await _payloadStream.ReadAsync(probeBuffer, cancellationToken).ConfigureAwait(false)
-                        : _payloadStream.Read(probeBuffer);
-
-                    await CompleteAuthentication(isAsync, cancellationToken).ConfigureAwait(false);
-
-                    if (probeBytesRead != 0)
+                    // Authentication already ran on an earlier read. There's nothing left to authenticate, but a
+                    // caller that keeps reading past that point is still misbehaving - report the length mismatch.
+                    if (_totalBytesRead != _expectedLength)
                     {
-                        _totalBytesRead++;
-                        throw new InvalidDataException(SR.UnexpectedStreamLength); // Too much data.
+                        throw new InvalidDataException(SR.UnexpectedStreamLength);
                     }
+
+                    return;
                 }
-                else if (bytesRead == 0)
+
+                // Still mid-stream: more data is expected and the payload stream hasn't signalled EOF yet.
+                bool reachedEndOfPayload = _totalBytesRead >= _expectedLength || bytesRead == 0;
+                if (!reachedEndOfPayload)
                 {
-                    // Decompressor reached EOF before the declared length - the entry was truncated.
-                    await CompleteAuthentication(isAsync, cancellationToken).ConfigureAwait(false);
-                    throw new InvalidDataException(SR.UnexpectedStreamLength); // Too little data.
+                    return;
                 }
+
+                bool lengthMismatch;
+                try
+                {
+                    lengthMismatch = await HasLengthMismatchAsync(isAsync, cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    // Whichever outcome above - a clean match, a detected mismatch, or the payload stream (e.g. CRC
+                    // validation for AE-1 entries) throwing mid-probe - authenticate exactly once before anything is
+                    // reported to the caller. A bad HMAC must supersede whatever length-mismatch exception would
+                    // otherwise surface.
+                    await CompleteAuthentication(isAsync, cancellationToken).ConfigureAwait(false);
+                }
+
+                if (lengthMismatch)
+                {
+                    throw new InvalidDataException(SR.UnexpectedStreamLength);
+                }
+            }
+
+            // Returns whether the payload stream delivered too little or too much plaintext relative to
+            // _expectedLength. Only called once the stream has reached or exceeded the declared length, or reported
+            // EOF early. For an exact match, probes for one extra byte - reaching the declared length doesn't
+            // guarantee there isn't more (corrupt) data behind it.
+            private async ValueTask<bool> HasLengthMismatchAsync(bool isAsync, CancellationToken cancellationToken)
+            {
+                if (_totalBytesRead != _expectedLength)
+                {
+                    // Either overshot in a single bulk read, or the payload stream hit EOF before the declared
+                    // length was reached.
+                    return true;
+                }
+
+                byte[] probeBuffer = new byte[1];
+                int probeBytesRead = isAsync
+                    ? await _payloadStream.ReadAsync(probeBuffer, cancellationToken).ConfigureAwait(false)
+                    : _payloadStream.Read(probeBuffer);
+
+                if (probeBytesRead != 0)
+                {
+                    _totalBytesRead++; // Account for the extra byte so a retried read reports the same mismatch.
+                }
+
+                return probeBytesRead != 0;
             }
 
             private void ThrowIfDisposed()

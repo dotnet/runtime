@@ -258,13 +258,19 @@ namespace System.IO.Compression.Tests
         {
             // bulkOvershoot: a single large read delivers more than the declared length at once, vs. byte-at-a-time
             // reads that land exactly on the declared length first, so the 1-byte boundary probe finds the excess.
+            // simulateAe1WithCrcValidation: AE-1 entries validate CRC (CrcValidatingReadStream) below the
+            // authentication guard and can throw their own length-mismatch error before AuthenticatedReadStream's
+            // own bookkeeping gets a turn - authentication must still run first.
             foreach (bool async in new[] { false, true })
             {
                 foreach (bool corruptAuthenticationCode in new[] { false, true })
                 {
                     foreach (bool bulkOvershoot in new[] { false, true })
                     {
-                        yield return new object[] { async, corruptAuthenticationCode, bulkOvershoot };
+                        foreach (bool simulateAe1WithCrcValidation in new[] { false, true })
+                        {
+                            yield return new object[] { async, corruptAuthenticationCode, bulkOvershoot, simulateAe1WithCrcValidation };
+                        }
                     }
                 }
             }
@@ -273,7 +279,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(PayloadLongerThanDeclaredLengthCases))]
         public async Task PayloadStreamProducesMoreThanDeclaredLength_AuthenticationIsCompleted(
-            bool async, bool corruptAuthenticationCode, bool bulkOvershoot)
+            bool async, bool corruptAuthenticationCode, bool bulkOvershoot, bool simulateAe1WithCrcValidation)
         {
             byte[] plaintext = new byte[4096];
             new Random(42).NextBytes(plaintext);
@@ -300,7 +306,15 @@ namespace System.IO.Compression.Tests
 
             // Force single-byte reads so the exact-length boundary probe - rather than a single bulk read - is the
             // one that discovers the excess byte, when bulkOvershoot is false.
-            Stream payloadStream = bulkOvershoot ? decryptStream : new OneByteAtATimeStream(decryptStream);
+            Stream decryptedPayloadStream = bulkOvershoot ? decryptStream : new OneByteAtATimeStream(decryptStream);
+
+            // CRC computed over just the declared-length prefix, so CrcValidatingReadStream validates cleanly at
+            // the boundary and only raises its own UnexpectedStreamLength once the excess byte arrives - exactly
+            // like a real AE-1 entry whose declared length disagrees with its actual (tampered) content.
+            Stream payloadStream = simulateAe1WithCrcValidation
+                ? (Stream)s_crcValidatingReadStreamConstructor.Invoke(new object[]
+                    { decryptedPayloadStream, ComputeCrc32(plaintext.AsSpan(0, (int)declaredLength)), declaredLength })
+                : decryptedPayloadStream;
 
             using var authenticatedStream = (Stream)s_createAuthenticatedStreamMethod.Invoke(null, new object[]
             {
@@ -311,12 +325,91 @@ namespace System.IO.Compression.Tests
             InvalidDataException ex = async
                 ? await Assert.ThrowsAsync<InvalidDataException>(() => authenticatedStream.CopyToAsync(output, CancellationToken.None))
                 : Assert.Throws<InvalidDataException>(() => authenticatedStream.CopyTo(output));
-            Console.WriteLine($"DEBUG ex.Message={ex.Message}");
 
             if (corruptAuthenticationCode)
             {
                 // A bad HMAC must still be detected and surface even though the entry is also the wrong length -
-                // authentication cannot be silently skipped just because the overshoot error fires first.
+                // authentication cannot be silently skipped just because the overshoot error (whether raised by
+                // AuthenticatedReadStream itself or by a CRC-validating payload stream below it) fires first.
+                Assert.Contains("authentication code", ex.Message, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                Assert.Contains("decompressed data length", ex.Message, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        public static IEnumerable<object[]> DecompressorEndsBeforeDeclaredLengthCases()
+        {
+            foreach (bool async in new[] { false, true })
+            {
+                foreach (bool corruptAuthenticationCode in new[] { false, true })
+                {
+                    yield return new object[] { async, corruptAuthenticationCode };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(DecompressorEndsBeforeDeclaredLengthCases))]
+        public async Task DecompressorProducesLessThanDeclaredLength_AuthenticationIsCompleted(
+            bool async, bool corruptAuthenticationCode)
+        {
+            byte[] plaintext = new byte[4096];
+            new Random(42).NextBytes(plaintext);
+
+            byte[] compressedData;
+            using (var compressedStream = new MemoryStream())
+            {
+                using (var compressionStream = new DeflateStream(compressedStream, CompressionLevel.SmallestSize, leaveOpen: true))
+                {
+                    compressionStream.Write(plaintext);
+                }
+
+                compressedData = compressedStream.ToArray();
+            }
+
+            // Pad with trailing ciphertext the decompressor never needs to reach, so authentication still has
+            // unread encrypted data to drain through CompleteAuthenticationCoreAsync's drain loop.
+            byte[] compressedDataWithTrailingBytes = new byte[compressedData.Length + 16 * 1024];
+            compressedData.CopyTo(compressedDataWithTrailingBytes, 0);
+
+            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData(compressedDataWithTrailingBytes);
+            if (corruptAuthenticationCode)
+            {
+                byte[] hmacKey = (byte[])decryptKeyMaterial.GetType().GetProperty("HmacKey")!.GetValue(decryptKeyMaterial)!;
+                HMACSHA1.HashData(hmacKey, ReadOnlySpan<byte>.Empty)
+                    .AsSpan(0, AuthenticationCodeSize)
+                    .CopyTo(encryptedData.AsSpan(^AuthenticationCodeSize));
+            }
+
+            using var encryptedStream = new MemoryStream(encryptedData);
+            using var decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
+            {
+                encryptedStream, decryptKeyMaterial, (long)encryptedData.Length, false, true
+            })!;
+
+            using Stream decompressedStream = new DeflateStream(decryptStream, CompressionMode.Decompress, leaveOpen: true);
+
+            // Declare more plaintext than the decompressor will actually produce, so the decompressor reports its
+            // own EOF (bytesRead == 0) before AuthenticatedReadStream reaches the declared length - the truncation
+            // branch, as opposed to the overshoot branch covered above.
+            long declaredLength = plaintext.Length + 16;
+
+            using var authenticatedStream = (Stream)s_createAuthenticatedStreamMethod.Invoke(null, new object[]
+            {
+                decompressedStream, decryptStream, declaredLength
+            })!;
+
+            using var output = new MemoryStream();
+            InvalidDataException ex = async
+                ? await Assert.ThrowsAsync<InvalidDataException>(() => authenticatedStream.CopyToAsync(output, CancellationToken.None))
+                : Assert.Throws<InvalidDataException>(() => authenticatedStream.CopyTo(output));
+
+            if (corruptAuthenticationCode)
+            {
+                // A bad HMAC must still be detected and surface even though the entry is also truncated -
+                // authentication cannot be silently skipped just because the decompressor hit EOF first.
                 Assert.Contains("authentication code", ex.Message, StringComparison.OrdinalIgnoreCase);
             }
             else
