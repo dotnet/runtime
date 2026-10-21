@@ -344,7 +344,7 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatch(DebuggerPatchKey key)
 
     DebuggerPatchListEntry updated = *list;
     updated.first = index;
-    m_patchLists.ReplacePtr(list, updated);
+    m_patchLists.ReplacePtr(list, updated, false /* invokeCleanupAction */);
     return patch;
 }
 
@@ -360,7 +360,7 @@ void DebuggerPatchTable::LinkPatch(DebuggerControllerPatch *patch)
 
     DebuggerPatchListEntry updated = *list;
     updated.first = index;
-    m_patchLists.ReplacePtr(list, updated);
+    m_patchLists.ReplacePtr(list, updated, false /* invokeCleanupAction */);
 }
 #endif // DACCESS_COMPILE
 
@@ -445,7 +445,7 @@ void DebuggerPatchTable::SpliceOutOfList(DebuggerControllerPatch *patch)
         {
             DebuggerPatchListEntry updated = *list;
             updated.first = patch->entry.iNext;
-            m_patchLists.ReplacePtr(list, updated);
+            m_patchLists.ReplacePtr(list, updated, false /* invokeCleanupAction */);
         }
     }
 

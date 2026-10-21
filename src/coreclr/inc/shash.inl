@@ -109,27 +109,11 @@ const typename SHash<TRAITS>::element_t * SHash<TRAITS>::LookupPtr(key_t key) co
 }
 
 template <typename TRAITS>
-template <typename Functor>
-bool SHash<TRAITS>::Update(key_t key, Functor &&functor)
+void SHash<TRAITS>::ReplacePtr(const element_t *elementPtr, const element_t &newElement)
 {
     WRAPPER_NO_CONTRACT;
 
-    element_t *element = Lookup(m_table, m_tableSize, key);
-    if (element == nullptr)
-        return false;
-
-#ifdef _DEBUG
-    PTR_element_t table = m_table;
-    count_t tableSize = m_tableSize;
-    count_t count = m_tableCount;
-#endif // _DEBUG
-
-    functor(*element);
-
-    _ASSERTE(m_table == table && m_tableSize == tableSize && m_tableCount == count);
-    _ASSERTE(!TRAITS::IsNull(*element) && !TRAITS::IsDeleted(*element));
-    _ASSERTE(TRAITS::Equals(TRAITS::GetKey(*element), key));
-    return true;
+    ReplacePtr(elementPtr, newElement, TRAITS::s_RemovePerEntryCleanupAction);
 }
 
 template <typename TRAITS>
@@ -150,7 +134,7 @@ void SHash<TRAITS>::ReplacePtr(const element_t *elementPtr, const element_t &new
     }
     CONTRACTL_END;
 
-    if (TRAITS::s_RemovePerEntryCleanupAction && invokeCleanupAction)
+    if (invokeCleanupAction)
     {
         TRAITS::OnRemovePerEntryCleanupAction(*elementPtr);
     }
@@ -676,7 +660,7 @@ SHash<TRAITS>::DeleteOldTable(element_t * oldTable)
 }
 
 template <typename TRAITS>
-typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t table, count_t tableSize, key_t key) const
+const typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t table, count_t tableSize, key_t key) const
 {
     CONTRACTL
     {

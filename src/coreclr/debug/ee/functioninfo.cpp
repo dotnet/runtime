@@ -2159,21 +2159,19 @@ HRESULT DebuggerMethodInfoTable::OverwriteMethodInfo(Module *pModule,
     dmik.pModule = pModule;
     dmik.token = token;
 
-    HRESULT hr = E_FAIL;
-    m_table.Update(dmik, [&](DebuggerMethodInfoEntry &entry)
+    const DebuggerMethodInfoEntry *entry = m_table.LookupPtr(dmik);
+    if (entry == nullptr || (fOnlyIfNull && entry->mi != nullptr))
     {
-        if ( (fOnlyIfNull && entry.mi == NULL)
-            || !fOnlyIfNull)
-        {
-            entry.mi = mi;
+        return E_FAIL;
+    }
 
-            LOG((LF_CORDB, LL_INFO1000, "DMIT::OMI: mod:%p tok:0x%08x remap nVer:0x%zx\n",
-                pModule, token, entry.nVersionLastRemapped));
-            hr = S_OK;
-        }
-    });
+    DebuggerMethodInfoEntry updated = *entry;
+    updated.mi = mi;
+    m_table.ReplacePtr(entry, updated, false /* invokeCleanupAction */);
 
-    return hr;
+    LOG((LF_CORDB, LL_INFO1000, "DMIT::OMI: mod:%p tok:0x%08x remap nVer:0x%zx\n",
+        pModule, token, updated.nVersionLastRemapped));
+    return S_OK;
 }
 
 // pModule is being destroyed - remove any entries that belong to it.  Why?
@@ -2242,16 +2240,14 @@ void DebuggerMethodInfoTable::DeleteEntryDMI(const DebuggerMethodInfoEntry *entr
     }
     CONTRACTL_END;
 
-    bool updated = m_table.Update(entry->key, [](DebuggerMethodInfoEntry &element)
-    {
-        DebuggerMethodInfo *dmiPrev = element.mi->m_prevMethodInfo;
-        TRACE_FREE(element.mi);
-        DeleteInteropSafe(element.mi);
-        element.mi = dmiPrev;
-        if ( dmiPrev != NULL )
-            dmiPrev->m_nextMethodInfo = NULL;
-    });
-    _ASSERTE(updated);
+    DebuggerMethodInfoEntry updated = *entry;
+    DebuggerMethodInfo *dmiPrev = updated.mi->m_prevMethodInfo;
+    TRACE_FREE(updated.mi);
+    DeleteInteropSafe(updated.mi);
+    updated.mi = dmiPrev;
+    m_table.ReplacePtr(entry, updated, false /* invokeCleanupAction */);
+    if (dmiPrev != nullptr)
+        dmiPrev->m_nextMethodInfo = nullptr;
 }
 
 #endif // #ifndef DACCESS_COMPILE

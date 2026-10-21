@@ -1427,13 +1427,17 @@ HRESULT EEToProfInterfaceImpl::AllocByClass(ObjectID objId, ClassID clsId, void 
 
     _ASSERTE(dwProcId == GetCurrentProcessId());
 
-    if (!pData->hashTable.Update(clsId, [](AllocByClassEntry &entry)
+    const AllocByClassEntry *entry = pData->hashTable.LookupPtr(clsId);
+    if (entry != nullptr)
     {
-        entry.m_count++;
-    }))
+        AllocByClassEntry updated = *entry;
+        updated.m_count++;
+        pData->hashTable.ReplacePtr(entry, updated, false /* invokeCleanupAction */);
+    }
+    else
     {
-        AllocByClassEntry entry = { clsId, 1 };
-        if (!pData->hashTable.AddNoThrow(entry))
+        AllocByClassEntry newEntry = { clsId, 1 };
+        if (!pData->hashTable.AddNoThrow(newEntry))
             return E_OUTOFMEMORY;
     }
 
