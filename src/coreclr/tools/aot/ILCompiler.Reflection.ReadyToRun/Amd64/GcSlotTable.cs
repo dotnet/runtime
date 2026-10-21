@@ -201,7 +201,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
         private void DecodeStackSlots(NativeReader imageReader, Machine machine, GcInfoTypes gcInfoTypes, uint nSlots, bool isUntracked, ref int bitOffset, int version)
         {
-            if (version >= 6)
+            if (machine == WasmMachine.Wasm32 || version >= 6)
             {
                 GcSlotFlags slotFlags = 0;
                 GcStackSlotBase previousBase = GcStackSlotBase.GC_SP_REL;

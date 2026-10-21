@@ -22,8 +22,7 @@
 #define READYTORUN_MAJOR_VERSION 33
 #define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 26
-#define MINIMUM_WASM_READYTORUN_MAJOR_VERSION 33
+#define MINIMUM_READYTORUN_MAJOR_VERSION 33
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section

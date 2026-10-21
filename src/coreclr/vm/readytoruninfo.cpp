@@ -671,14 +671,6 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-#ifdef TARGET_WASM
-    if (pHeader->MajorVersion < MINIMUM_WASM_READYTORUN_MAJOR_VERSION)
-    {
-        DoLog("Ready to Run disabled - unsupported Wasm GC/unwind encoding");
-        return NULL;
-    }
-#endif // TARGET_WASM
-
     LoaderHeap *pHeap = pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
 
     NativeImage *nativeImage = NULL;

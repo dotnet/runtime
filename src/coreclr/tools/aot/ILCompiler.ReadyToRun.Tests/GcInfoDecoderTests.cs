@@ -242,11 +242,28 @@ public class GcInfoDecoderTests
         Assert.Equal((writer.BitCount + 7) / 8, info.Size);
     }
 
+    [Fact]
+    public void NonWasmVersion5StackSlotsRemainReadable()
+    {
+        byte[] encoded = [0x0A, 0x80, 0xB0, 0x10, 0x88, 0x00];
+        using MemoryStream stream = new(encoded);
+        GcInfo info = new(new NativeReader(stream), 0, Machine.Amd64, 5);
+
+        Assert.Equal(2, info.CodeLength);
+        Assert.Equal(2u, info.SlotTable.NumUntracked);
+        Assert.Equal(64, info.SlotTable.GcSlots[0].StackSlot.SpOffset);
+        Assert.Equal(GcStackSlotBase.GC_SP_REL, info.SlotTable.GcSlots[0].StackSlot.Base);
+        Assert.Equal(128, info.SlotTable.GcSlots[1].StackSlot.SpOffset);
+        Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, info.SlotTable.GcSlots[1].StackSlot.Base);
+        Assert.All(info.SlotTable.GcSlots, slot => Assert.Equal(GcSlotFlags.GC_SLOT_UNTRACKED, slot.Flags));
+        Assert.Equal(encoded.Length, info.Size);
+    }
+
     [Theory]
+    [InlineData(Machine.Amd64, 5, 0x0A, 5u)]
+    [InlineData(Machine.Amd64, 5, 0x08, uint.MaxValue)]
     [InlineData(Machine.Amd64, 6, 0x0A, 5u)]
     [InlineData(Machine.Amd64, 6, 0x08, uint.MaxValue)]
-    [InlineData(WasmMachine.Wasm32, 5, 0x0A, 2u)]
-    [InlineData(WasmMachine.Wasm32, 5, 0x08, uint.MaxValue)]
     [InlineData(WasmMachine.Wasm32, 6, 0x04, 2u)]
     public void SlimHeaderUsesImplicitDefaultFrameRegister(Machine machine, int version, byte header, uint frameRegister)
     {
@@ -257,18 +274,16 @@ public class GcInfoDecoderTests
         Assert.Equal(2, info.CodeLength);
         Assert.Equal(frameRegister, info.StackBaseRegister);
         Assert.Empty(info.SlotTable.GcSlots);
-        Assert.Equal(machine == WasmMachine.Wasm32 && version >= 6 ? 1 : 2, info.Size);
+        Assert.Equal(machine == WasmMachine.Wasm32 ? 1 : 2, info.Size);
     }
 
     [Theory]
-    [InlineData(5, new byte[] { 0xA1, 0x10, 0x00, 0x01, 0x00 })]
-    [InlineData(5, new byte[] { 0xC1, 0x10, 0x00, 0x01, 0x00 })]
-    [InlineData(6, new byte[] { 0x21, 0x08, 0x02, 0x00 })]
-    [InlineData(6, new byte[] { 0x41, 0x08, 0x02, 0x00 })]
-    public void WasmFatHeaderPreservesGenericContext(int version, byte[] encoded)
+    [InlineData(new byte[] { 0x21, 0x08, 0x02, 0x00 })]
+    [InlineData(new byte[] { 0x41, 0x08, 0x02, 0x00 })]
+    public void WasmFatHeaderPreservesGenericContext(byte[] encoded)
     {
         using MemoryStream stream = new(encoded);
-        GcInfo info = new(new NativeReader(stream), 0, WasmMachine.Wasm32, version);
+        GcInfo info = new(new NativeReader(stream), 0, WasmMachine.Wasm32, 6);
 
         Assert.Equal(2, info.CodeLength);
         Assert.Equal(2u, info.StackBaseRegister);

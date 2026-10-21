@@ -138,17 +138,37 @@ public class GCInfoTests
     }
 
     [Theory]
-    [InlineData(5u, new byte[] { 0x0A, 0x00 }, 0, 0u, 0u)]
-    [InlineData(5u, new byte[] { 0xA1, 0x10, 0x00, 0x01, 0x00 }, 8, 1u, 0u)]
-    [InlineData(5u, new byte[] { 0xC1, 0x10, 0x00, 0x01, 0x00 }, 8, 1u, 0u)]
-    [InlineData(6u, new byte[] { 0x04 }, 0, 0u, 0u)]
-    [InlineData(6u, new byte[] { 0x21, 0x08, 0x02, 0x00 }, 8, 1u, 0u)]
-    [InlineData(6u, new byte[] { 0x41, 0x08, 0x02, 0x00 }, 8, 1u, 0u)]
-    [InlineData(6u, new byte[] { 0x01, 0x08, 0x01 }, 0, 0u, 1u)]
-    public void WasmHeadersDecodePrologAndFrameRegister(uint version, byte[] encoded, int genericContextOffset,
+    [InlineData(false, new byte[] { 0x0A, 0x80, 0xB0, 0x10, 0x88, 0x00 })]
+    [InlineData(true, new byte[] { 0x0A, 0x40, 0x58, 0x08, 0x44 })]
+    public void NonWasmVersion5StackSlotsRemainReadable(bool interpreter, byte[] encoded)
+    {
+        IGCInfoDecoder decoder = CreateDecoder(RuntimeInfoArchitecture.X64, interpreter, encoded, 5);
+        IReadOnlyList<GCSlotLifetime> slots = decoder.GetSlotLifetimes();
+
+        Assert.Equal(2u, decoder.GetCodeLength());
+        Assert.Equal(2, slots.Count);
+        Assert.Equal(interpreter ? 8 : 64, slots[0].SpOffset);
+        Assert.Equal(1u, slots[0].BaseRegister);
+        Assert.Equal(interpreter ? 16 : 128, slots[1].SpOffset);
+        Assert.Equal(2u, slots[1].BaseRegister);
+        Assert.All(slots, slot =>
+        {
+            Assert.False(slot.IsRegister);
+            Assert.Equal(0u, slot.GcFlags);
+            Assert.Equal(0u, slot.BeginOffset);
+            Assert.Equal(2u, slot.EndOffset);
+        });
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x04 }, 0, 0u, 0u)]
+    [InlineData(new byte[] { 0x21, 0x08, 0x02, 0x00 }, 8, 1u, 0u)]
+    [InlineData(new byte[] { 0x41, 0x08, 0x02, 0x00 }, 8, 1u, 0u)]
+    [InlineData(new byte[] { 0x01, 0x08, 0x01 }, 0, 0u, 1u)]
+    public void WasmHeadersDecodePrologAndFrameRegister(byte[] encoded, int genericContextOffset,
         uint prologSize, uint safePoints)
     {
-        IGCInfoDecoder decoder = CreateDecoder(RuntimeInfoArchitecture.Wasm, false, encoded, version);
+        IGCInfoDecoder decoder = CreateDecoder(RuntimeInfoArchitecture.Wasm, false, encoded, 6);
         GCInfoHeader header = decoder.GetHeader();
 
         Assert.Equal(2u, header.CodeSize);

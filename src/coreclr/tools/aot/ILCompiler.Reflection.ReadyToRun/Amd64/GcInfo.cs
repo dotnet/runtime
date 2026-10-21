@@ -64,7 +64,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         private Machine _machine;
         private GcInfoTypes _gcInfoTypes;
 
-        private bool UsesCompactWasmHeader => _machine == WasmMachine.Wasm32 && Version >= 6;
+        private bool UsesCompactWasmHeader => _machine == WasmMachine.Wasm32;
 
         public int Version { get; set; }
         public ReturnKinds ReturnKind { get; set; }
@@ -94,7 +94,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             Offset = offset;
             Version = version;
             bool denormalizeCodeOffsets = Version > MIN_GCINFO_VERSION_WITH_NORMALIZED_CODE_OFFSETS;
-            _gcInfoTypes = new GcInfoTypes(machine, denormalizeCodeOffsets, version);
+            _gcInfoTypes = new GcInfoTypes(machine, denormalizeCodeOffsets);
             _machine = machine;
 
             SecurityObjectStackSlot = -1;

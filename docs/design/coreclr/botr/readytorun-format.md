@@ -478,9 +478,9 @@ The largest representable frame size is `2^28 - 16` bytes; the largest virtual I
 is below 256 bytes and the virtual IP count is below 16.
 
 ReadyToRun format 33.0 uses this packed unwind data and the compact Wasm GC encoding described
-below. Earlier Wasm images use incompatible encodings and must be regenerated. The Wasm runtime
-and managed reader reject them before interpreting their unwind or GC metadata; native targets
-retain their existing minimum supported format version.
+below. The runtime requires ReadyToRun format 33.0 or later on every architecture and only
+decodes GCInfo v6. Earlier images must be regenerated. Inspection tools retain older non-Wasm
+format support, but reject earlier Wasm images before interpreting their unwind or GC metadata.
 
 The virtual IP count (after multiplying by 2) gives the span of virtual IPs covered by this
 function or funclet. All virtual IPs are forced to even numbers so that the runtime can force all virtual
@@ -514,7 +514,6 @@ bits of the target register number, without another continuation bit:
 
 This reserves x64 encoding space for APX roots without changing register allocation or
 runtime context support for them. Legacy x86 GCInfo uses its separate, unchanged format.
-GCInfo versions before v6 retain the original flags-after-absolute, unbounded register encoding.
 
 Stack slots use the same shrinking flag bits as registers: two bits initially and after a
 pinned slot, only the interior bit after an unpinned interior slot, and no flag bits after an
@@ -525,7 +524,6 @@ frame-relative. Caller-SP-relative slots are not represented in v6.
 The first slot of each flags/base combination has a signed absolute stack offset, followed
 by unsigned offset deltas for the remaining slots in that group. Flags, base, and offset state
 reset at the tracked/untracked boundary. Platform-specific offset normalization is unchanged.
-Older non-Wasm ReadyToRun images retain their original GCInfo decoding.
 
 ### GC info (wasm)
 

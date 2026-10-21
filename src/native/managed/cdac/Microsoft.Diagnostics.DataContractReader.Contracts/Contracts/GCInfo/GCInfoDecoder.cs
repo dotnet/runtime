@@ -103,8 +103,6 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     private readonly NativeReader _reader;
     private readonly RuntimeInfoArchitecture _arch;
     private readonly bool PartiallyInterruptibleGCSupported = true;
-    private bool UsesCompactWasmHeader => TTraits.USES_COMPACT_WASM_HEADER && _gcVersion >= 6;
-    private bool UsesLegacyWasmEncoding => TTraits.USES_COMPACT_WASM_HEADER && _gcVersion < 6;
 
     /* Decode State */
     private int _bitOffset;
@@ -223,8 +221,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         if (_reader.ReadBits(1, ref _bitOffset) != 0)
         {
             numStackSlots = _reader.DecodeVarLengthUnsigned(TTraits.NUM_STACK_SLOTS_ENCBASE, ref _bitOffset);
-            _numUntrackedSlots = _reader.DecodeVarLengthUnsigned(
-                UsesLegacyWasmEncoding ? 5 : TTraits.NUM_UNTRACKED_SLOTS_ENCBASE, ref _bitOffset);
+            _numUntrackedSlots = _reader.DecodeVarLengthUnsigned(TTraits.NUM_UNTRACKED_SLOTS_ENCBASE, ref _bitOffset);
         }
 
         _numSlots = _numRegisters + numStackSlots + _numUntrackedSlots;
@@ -256,7 +253,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             }
         }
 
-        if (_gcVersion >= 6)
+        if (TTraits.USES_COMPACT_WASM_HEADER || _gcVersion >= 6)
         {
             DecodeStackSlots(numStackSlots, isUntracked: false);
             DecodeStackSlots(_numUntrackedSlots, isUntracked: true);
@@ -413,7 +410,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private IEnumerable<DecodePoints> DecodeSlimHeader()
     {
-        if (UsesCompactWasmHeader || _reader.ReadBits(1, ref _bitOffset) != 0)
+        if (TTraits.USES_COMPACT_WASM_HEADER || _reader.ReadBits(1, ref _bitOffset) != 0)
         {
             _headerFlags = GcInfoHeaderFlags.GC_INFO_HAS_STACK_BASE_REGISTER;
             _stackBaseRegister = TTraits.DenormalizeStackBaseRegister(0);
@@ -426,8 +423,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.ReturnKind;
         yield return DecodePoints.VarArg;
 
-        _codeLength = TTraits.DenormalizeCodeLength(_reader.DecodeVarLengthUnsigned(
-            UsesLegacyWasmEncoding ? 6 : TTraits.CODE_LENGTH_ENCBASE, ref _bitOffset));
+        _codeLength = TTraits.DenormalizeCodeLength(_reader.DecodeVarLengthUnsigned(TTraits.CODE_LENGTH_ENCBASE, ref _bitOffset));
 
         // predecoding the rest of slim header does not require any reading.
         _validRangeStart = 0;
@@ -450,10 +446,9 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.EditAndContinue;
         yield return DecodePoints.ReversePInvoke;
 
-        if (PartiallyInterruptibleGCSupported && !UsesCompactWasmHeader)
+        if (PartiallyInterruptibleGCSupported && !TTraits.USES_COMPACT_WASM_HEADER)
         {
-            _numSafePoints = _reader.DecodeVarLengthUnsigned(
-                UsesLegacyWasmEncoding ? 4 : TTraits.NUM_SAFE_POINTS_ENCBASE, ref _bitOffset);
+            _numSafePoints = _reader.DecodeVarLengthUnsigned(TTraits.NUM_SAFE_POINTS_ENCBASE, ref _bitOffset);
         }
 
         _numInterruptibleRanges = 0;
@@ -461,7 +456,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private IEnumerable<DecodePoints> DecodeFatHeader()
     {
-        if (UsesCompactWasmHeader)
+        if (TTraits.USES_COMPACT_WASM_HEADER)
         {
             uint flags = (uint)_reader.ReadBits((int)GcInfoHeaderFlags.GC_INFO_FLAGS_BIT_SIZE - 1, ref _bitOffset);
             _headerFlags = (GcInfoHeaderFlags)((flags & 0x3F) | ((flags & 0x1C0) << 1)) |
@@ -474,8 +469,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.ReturnKind;
         yield return DecodePoints.VarArg;
 
-        _codeLength = TTraits.DenormalizeCodeLength(_reader.DecodeVarLengthUnsigned(
-            UsesLegacyWasmEncoding ? 6 : TTraits.CODE_LENGTH_ENCBASE, ref _bitOffset));
+        _codeLength = TTraits.DenormalizeCodeLength(_reader.DecodeVarLengthUnsigned(TTraits.CODE_LENGTH_ENCBASE, ref _bitOffset));
         yield return DecodePoints.CodeLength;
 
         if (_headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_HAS_GS_COOKIE))
@@ -485,7 +479,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             uint normCodeLength = TTraits.NormalizeCodeLength(_codeLength);
 
             // Decode prolog/epilog information
-            uint normPrologSize = UsesCompactWasmHeader ? 1 :
+            uint normPrologSize = TTraits.USES_COMPACT_WASM_HEADER ? 1 :
                 _reader.DecodeVarLengthUnsigned(TTraits.NORM_PROLOG_SIZE_ENCBASE, ref _bitOffset) + 1;
             uint normEpilogSize = _reader.DecodeVarLengthUnsigned(TTraits.NORM_EPILOG_SIZE_ENCBASE, ref _bitOffset);
 
@@ -496,7 +490,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         else if ((_headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
         {
             // Decode prolog information
-            uint normPrologSize = UsesCompactWasmHeader ? 1 :
+            uint normPrologSize = TTraits.USES_COMPACT_WASM_HEADER ? 1 :
                 _reader.DecodeVarLengthUnsigned(TTraits.NORM_PROLOG_SIZE_ENCBASE, ref _bitOffset) + 1;
             _validRangeStart = TTraits.DenormalizeCodeOffset(normPrologSize);
             // satisfy asserts that assume m_GSCookieValidRangeStart != 0 ==> m_GSCookieValidRangeStart < m_GSCookieValidRangeEnd
@@ -523,7 +517,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.GenericInstContext;
 
         _stackBaseRegister = _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_HAS_STACK_BASE_REGISTER) ?
-            TTraits.DenormalizeStackBaseRegister(UsesCompactWasmHeader ? 0 :
+            TTraits.DenormalizeStackBaseRegister(TTraits.USES_COMPACT_WASM_HEADER ? 0 :
                 _reader.DecodeVarLengthUnsigned(TTraits.STACK_BASE_REGISTER_ENCBASE, ref _bitOffset)) :
             TTraits.NO_STACK_BASE_REGISTER;
 
@@ -546,8 +540,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.EditAndContinue;
 
         _reversePInvokeFrameStackSlot = _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_REVERSE_PINVOKE_FRAME) ?
-            TTraits.DenormalizeStackSlot(_reader.DecodeVarLengthSigned(
-                UsesLegacyWasmEncoding ? 6 : TTraits.REVERSE_PINVOKE_FRAME_ENCBASE, ref _bitOffset)) :
+            TTraits.DenormalizeStackSlot(_reader.DecodeVarLengthSigned(TTraits.REVERSE_PINVOKE_FRAME_ENCBASE, ref _bitOffset)) :
             TTraits.NO_REVERSE_PINVOKE_FRAME;
         yield return DecodePoints.ReversePInvoke;
 
@@ -559,8 +552,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
         if (PartiallyInterruptibleGCSupported)
         {
-            _numSafePoints = _reader.DecodeVarLengthUnsigned(
-                UsesLegacyWasmEncoding ? 4 : TTraits.NUM_SAFE_POINTS_ENCBASE, ref _bitOffset);
+            _numSafePoints = _reader.DecodeVarLengthUnsigned(TTraits.NUM_SAFE_POINTS_ENCBASE, ref _bitOffset);
         }
 
         _numInterruptibleRanges = TTraits.HAS_INTERRUPTIBLE_RANGES
