@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509RevocationFlag revocationFlag,
             X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode,
-            DateTime verificationTime,
+            DateTimeOffset verificationTime,
             TimeSpan timeout,
             bool disableAia);
     }

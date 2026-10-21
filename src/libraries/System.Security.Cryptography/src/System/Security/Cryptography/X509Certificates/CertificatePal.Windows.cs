@@ -217,24 +217,24 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public DateTime NotAfter
+        public DateTimeOffset NotAfter
         {
             get
             {
                 unsafe
                 {
-                    return InvokeWithCertContext(static pCertContext => pCertContext->pCertInfo->NotAfter.ToDateTime());
+                    return InvokeWithCertContext(static pCertContext => pCertContext->pCertInfo->NotAfter.ToDateTimeOffset());
                 }
             }
         }
 
-        public DateTime NotBefore
+        public DateTimeOffset NotBefore
         {
             get
             {
                 unsafe
                 {
-                    return InvokeWithCertContext(static pCertContext => pCertContext->pCertInfo->NotBefore.ToDateTime());
+                    return InvokeWithCertContext(static pCertContext => pCertContext->pCertInfo->NotBefore.ToDateTimeOffset());
                 }
             }
         }
