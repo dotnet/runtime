@@ -174,6 +174,9 @@ public:
         return SideMetadataResult::Success;
     }
     SideMetadataResult IsNursery(uintptr_t block, bool* result) const;
+    // Whether the block is Unallocated and no allocator owns it. For a quiescent caller (a pause that has released its
+    // nursery blocks) this means that the block holds no object and that nothing can touch it before the next epoch.
+    SideMetadataResult IsFreeBlock(uintptr_t block, bool* result) const;
 
     // Fast form of IsNursery for the pause loops. It does the same two block-metadata loads and the
     // same epoch load, with the same memory orders, but does not validate the block. The caller

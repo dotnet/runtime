@@ -250,6 +250,12 @@ public:
     // CommitDataRange is an initialization/collector-quiescent operation. It must not race
     // metadata accesses or another commit on the same manager.
     SideMetadataResult CommitDataRange(uintptr_t start, size_t size);
+    // The reverse of CommitDataRange for a range inside an owned range (in practice the free tail of the Immix space):
+    // the metadata of the range is made zero again. Whole pages are decommitted, and the part of a page that stays
+    // committed (shared with the data next to it) is cleared, down to single bits when several entries share a
+    // byte. The range is no longer owned afterwards, so a checked access to it fails. Collector-quiescent, like
+    // CommitDataRange. The range must start and end on a whole entry of every enabled kind (a block boundary does).
+    SideMetadataResult DecommitDataRange(uintptr_t start, size_t size);
     bool IsDataAddressOwned(uintptr_t address) const;
     bool IsDataRangeOwned(uintptr_t start, size_t size) const;
 
@@ -401,6 +407,7 @@ private:
         size_t dataSize,
         uintptr_t value);
     SideMetadataResult AddDataRange(uintptr_t start, uintptr_t end);
+    SideMetadataResult RemoveDataRange(uintptr_t start, uintptr_t end);
     void ClearDataRanges();
 
     static uintptr_t AtomicLoadWord(volatile uintptr_t* word, SideMetadataMemoryOrder order);

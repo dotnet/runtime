@@ -120,6 +120,8 @@ void ImmixAllocationManager::Shutdown()
     m_recycled_lines_consumed.store(0, std::memory_order_relaxed);
     m_blocks_in_use.store(0, std::memory_order_relaxed);
     m_notes = AcquireNotes{};
+    m_placement = false;
+    m_mutator_fresh_blocks = 0;
 }
 
 SideMetadataResult ImmixAllocationManager::GrowQuiescent(size_t arenaSize)
@@ -133,6 +135,39 @@ SideMetadataResult ImmixAllocationManager::GrowQuiescent(size_t arenaSize)
     m_arena_size = arenaSize;
     m_block_count = arenaSize / ImmixBlockGeometry::BlockBytes;
     return SideMetadataResult::Success;
+}
+
+SideMetadataResult ImmixAllocationManager::ShrinkQuiescent(size_t arenaSize)
+{
+    if (m_metadata == nullptr || arenaSize == 0 || arenaSize >= m_arena_size ||
+        arenaSize % ImmixBlockGeometry::BlockBytes != 0)
+    {
+        return SideMetadataResult::InvalidArgument;
+    }
+    m_arena_size = arenaSize;
+    m_block_count = arenaSize / ImmixBlockGeometry::BlockBytes;
+    return SideMetadataResult::Success;
+}
+
+void ImmixAllocationManager::EnablePlacementQuiescent(size_t mutatorFreshBlocks)
+{
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_S5B_NO_PLACEMENT_CONTROL)
+    m_placement = true;
+    m_mutator_fresh_blocks = mutatorFreshBlocks;
+    m_next_copy_block.store(0, std::memory_order_relaxed);
+#else
+    (void)mutatorFreshBlocks;
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_S5B_NO_PLACEMENT_CONTROL
+}
+
+void ImmixAllocationManager::SetMutatorFreshBlocksQuiescent(size_t mutatorFreshBlocks)
+{
+    m_mutator_fresh_blocks = mutatorFreshBlocks;
+}
+
+void ImmixAllocationManager::ResetCopyCursorQuiescent()
+{
+    m_next_copy_block.store(0, std::memory_order_relaxed);
 }
 
 SideMetadataResult ImmixAllocationManager::TryFindNextHole(
@@ -382,14 +417,16 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
     {
         return SideMetadataResult::Success;
     }
-    for (size_t attempt = 0; attempt < m_block_count; attempt++)
+    bool placed = fresh && m_placement;
+    size_t modulus = placed && mutator && m_mutator_fresh_blocks < m_block_count ? m_mutator_fresh_blocks : m_block_count;
+    for (size_t attempt = 0; attempt < modulus; attempt++)
     {
         size_t index;
         if (fresh)
         {
-            index = m_next_fresh_block.fetch_add(
-                1,
-                std::memory_order_relaxed) % m_block_count;
+            index = placed && !mutator
+                ? m_next_copy_block.fetch_add(1, std::memory_order_relaxed) % m_block_count
+                : m_next_fresh_block.fetch_add(1, std::memory_order_relaxed) % modulus;
         }
         else
         {

@@ -304,6 +304,7 @@ HRESULT LxrGcHeap::Initialize()
     size_t nativePlaneLimitMB = 4096;
     bool noRecycling = false;
     bool noMutatorRecycling = false;
+    bool overshoot = true;
     bool phaseTimers = true;
     bool immixReserveSpecified = false;
     bool largeReserveSpecified = false;
@@ -327,6 +328,7 @@ HRESULT LxrGcHeap::Initialize()
         !ReadSetting("LXRBufferSize", &configuration.bufferSize, 10, LxrReferenceCounting::BufferCapacity) ||
         !ReadBooleanSetting("LXRNoLineRecycling", &noRecycling) ||
         !ReadBooleanSetting("LXRNoMutatorLineRecycling", &noMutatorRecycling) ||
+        !ReadBooleanSetting("LXROvershootToSpace", &overshoot) ||
         !ReadBooleanSetting("LXRLazyDecrements", &configuration.lazyDecrements) ||
         !ReadBooleanSetting("LXRFastAllocation", &m_fast_enabled) ||
         !ReadBooleanSetting("LXREvacuateNursery", &configuration.evacuateNursery) ||
@@ -393,6 +395,9 @@ HRESULT LxrGcHeap::Initialize()
     m_native_plane_limit = nativePlaneLimitMB << 20;
     configuration.lineRecycling = !noRecycling && !noMutatorRecycling;
     configuration.copyLineRecycling = !noRecycling;
+    // The engine enables overshoot only when there is no hard limit and the reservation is larger than the initial
+    // capacity; this setting only switches it off. A hard limit below the reservation always disables it.
+    configuration.overshootToSpace = overshoot;
     m_policy_configuration.youngLimitBytes = youngMB == (SIZE_MAX >> 20) ? SIZE_MAX : youngMB << 20;
     if (nurseryRatio != SIZE_MAX)
     {
@@ -410,7 +415,7 @@ HRESULT LxrGcHeap::Initialize()
     LxrRcObjectModel model{
         m_enumeration.get_loader_allocator_object_slot, true, FinishTrace, this, IsImmortal, FinishEpoch,
         AdmitRange, FinishLazy, CanAdmitRange,
-        IsPinned, DidCopy, FinishRelocation,
+        IsPinned, DidCopy, FinishRelocation, ReleaseRange,
     };
     if (m_engine.Initialize(configuration, runtime, &model) != LxrRcResult::Success)
     {
@@ -669,12 +674,20 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
     return object;
 }
 
-bool LxrGcHeap::AdmitRange(size_t firstSlot, size_t slotCount, void* heap)
+bool LxrGcHeap::AdmitRange(size_t firstSlot, size_t slotCount, bool initialize, void* heap)
 {
     LxrGcHeap* owner = static_cast<LxrGcHeap*>(heap);
     size_t first = owner->m_engine.GetObjectStorageIndex(firstSlot);
     size_t count = owner->m_engine.GetObjectStorageIndex(firstSlot + slotCount) - first;
-    return owner->m_flag_storage.Commit(first, count);
+    return owner->m_flag_storage.Commit(first, count, initialize);
+}
+
+bool LxrGcHeap::ReleaseRange(size_t firstSlot, size_t slotCount, bool tailIsLast, void* heap)
+{
+    LxrGcHeap* owner = static_cast<LxrGcHeap*>(heap);
+    size_t first = owner->m_engine.GetObjectStorageIndex(firstSlot);
+    size_t count = owner->m_engine.GetObjectStorageIndex(firstSlot + slotCount) - first;
+    return owner->m_flag_storage.Decommit(first, count, tailIsLast);
 }
 
 bool LxrGcHeap::CanAdmitRange(size_t firstSlot, size_t slotCount, size_t nativeBytes, void* context)
@@ -962,6 +975,9 @@ LxrCollectionCause LxrGcHeap::GetCollectionCause(bool heapFull) const
     {
         pressure.copyReservePages = GetCollectionReservedPages(headroom);
         pressure.immixFreePages = m_engine.GetImmixFreePages();
+        // With overshoot the pause takes the to-space it needs from the reservation. The heap is full when no block is
+        // free, and no reserve is kept. A hard limit disables overshoot in the engine, and then this stays as before.
+        pressure.overshoot = m_engine.IsOvershootEnabled();
     }
     return m_policy.Trigger(pressure);
 }
@@ -1055,6 +1071,11 @@ void LxrGcHeap::Suspend(void* context)
             heap->m_pause_free_pages.store(heap->m_engine.GetImmixFreePages(), std::memory_order_release);
             heap->m_pause_reserve_pages.store(
                 heap->GetCollectionReservedPages(headroom), std::memory_order_release);
+            if (heap->m_heap_configuration.evacuateNursery && heap->m_engine.IsOvershootEnabled())
+            {
+                // The engine admits the missing blocks right after it has flushed the mutators.
+                heap->m_engine.RequestBorrow(heap->m_pause_reserve_pages.load(std::memory_order_acquire));
+            }
         }
     }
     if (!heap->m_policy.BeginPause(
@@ -1990,6 +2011,8 @@ void LxrGcHeap::EnumerateConfigurationValues(void* context, ConfigurationValueFu
     callback(context, "LXRLineRecycling", "System.GC.LXRLineRecycling",
         GCConfigurationType::Boolean, m_heap_configuration.lineRecycling);
     callback(context, "LXRFastAllocation", "System.GC.LXRFastAllocation", GCConfigurationType::Boolean, m_fast_enabled);
+    callback(context, "LXROvershootToSpace", "System.GC.LXROvershootToSpace", GCConfigurationType::Boolean,
+        m_engine.IsOvershootEnabled());
     callback(context, "LXRMaxMutators", "System.GC.LXRMaxMutators", GCConfigurationType::Int64, MaximumMutators);
     callback(context, "GCConcurrent", "System.GC.Concurrent", GCConfigurationType::Boolean, IsConcurrentGCEnabled());
 }
@@ -2606,6 +2629,14 @@ uint64_t LxrGcHeap::GetPrototypeMetric(uint32_t metric) const
                 case 249: return ImmixBlockManager::GetFlipOverlaps();
                 case 250: return ImmixBlockManager::GetFlipBlockedOperations();
                 default: break;
+            }
+            if (metric >= 410 && metric < 410 + LxrReferenceCounting::OvershootMetricCount)
+            {
+                return m_engine.GetOvershootMetric(metric - 410);
+            }
+            if (metric == 410 + LxrReferenceCounting::OvershootMetricCount)
+            {
+                return m_engine.IsOvershootEnabled();
             }
             if (metric >= 256 && metric < 256 + LxrPauseTimers::PublishedCount)
             {

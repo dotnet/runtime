@@ -63,6 +63,16 @@ public:
     // Requires all allocation workers to be quiescent.
     void Shutdown();
     SideMetadataResult GrowQuiescent(size_t arenaSize);
+    // Lowers the arena to arenaSize. Requires all allocation workers to be quiescent and no allocator to hold a
+    // block at or above the new end. The cursors wrap on the new block count.
+    SideMetadataResult ShrinkQuiescent(size_t arenaSize);
+    // P17 S5b placement. With it, mutators take fresh blocks only below mutatorFreshBlocks (the kept capacity), and the
+    // collector takes fresh blocks for copying from the lowest free block upwards, restarting at block 0 in every pause
+    // (ResetCopyCursorQuiescent). Survivors then fill free blocks low in the arena and the borrowed range above them is
+    // free at the end of the pause. Without it both use one shared round-robin cursor over the whole arena.
+    void EnablePlacementQuiescent(size_t mutatorFreshBlocks);
+    void SetMutatorFreshBlocksQuiescent(size_t mutatorFreshBlocks);
+    void ResetCopyCursorQuiescent();
 
     SideMetadataResult TryFindNextHole(
         uintptr_t block,
@@ -146,6 +156,9 @@ private:
     size_t m_minimum_reuse_lines;
     std::atomic<size_t> m_next_fresh_block;
     std::atomic<size_t> m_next_recycled_block;
+    bool m_placement = false;
+    size_t m_mutator_fresh_blocks = 0;
+    std::atomic<size_t> m_next_copy_block{0};
     // Block-state token at which a mutator search for recycled blocks scanned every block and found none.
     // The token changes at every epoch flip and when a block is made Reusable, so the search is not repeated
     // while no block can have become a candidate. (The epoch value itself wraps and cannot be used.)

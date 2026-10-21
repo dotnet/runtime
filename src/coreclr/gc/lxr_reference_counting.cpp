@@ -680,6 +680,15 @@ LxrRcResult LxrReferenceCounting::Initialize(
     }
     size_t slots = GetReservationBytes() / sizeof(uintptr_t);
     m_immix_capacity.store(m_initial_immix, std::memory_order_relaxed);
+    m_immix_floor = m_initial_immix;
+    // Overshoot needs room in the reservation and no hard limit below it. With a hard limit the engine never admits
+    // more than the configuration allows, so this mode keeps the reserve of the trigger and nothing else.
+    m_overshoot = configuration.overshootToSpace && (configuration.evacuateNursery || configuration.evacuateMature) &&
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_S5B_IGNORE_HARD_LIMIT_CONTROL)
+        m_configuration.hardLimitBytes == GetReservationBytes() &&
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_S5B_IGNORE_HARD_LIMIT_CONTROL
+        m_configuration.immixBytes > m_initial_immix;
+    m_overshoot_metrics[PeakCapacityBytes].store(m_initial_immix, std::memory_order_relaxed);
     m_object_model = objectModel == nullptr ? LxrRcObjectModel{} : *objectModel;
     m_runtime = runtime;
     LxrRcResult buffers = InitializeBuffers(slots);
@@ -724,6 +733,10 @@ LxrRcResult LxrReferenceCounting::Initialize(
                 LxrLargeObjectResult::Success)
     {
         return Fail(LxrRcResult::MetadataFailure);
+    }
+    if (m_overshoot)
+    {
+        m_allocation.EnablePlacementQuiescent(m_immix_floor / ImmixBlockGeometry::BlockBytes);
     }
     if (m_scheduler.Initialize(configuration.workers, true, true,
             DecrementsDrained, OverallDrained, this) != LxrWorkSchedulerResult::Success)
@@ -888,19 +901,37 @@ LxrRcResult LxrReferenceCounting::InitializeBuffers(size_t slots)
     return LxrRcResult::Success;
 }
 
-bool LxrReferenceCounting::CommitPlanes(size_t first, size_t count)
+bool LxrReferenceCounting::CommitPlanes(size_t first, size_t count, bool commitTrace, bool initialize)
 {
     size_t objectFirst = GetObjectStorageIndex(first);
     size_t objectCount = GetObjectStorageIndex(first + count) - objectFirst;
     size_t immixSlots = m_configuration.immixBytes / sizeof(uintptr_t);
     size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
-    return (first >= immixSlots || m_allocated_block_storage.Commit(first / blockSlots, count / blockSlots)) &&
+    return (first >= immixSlots ||
+            m_allocated_block_storage.Commit(first / blockSlots, count / blockSlots, initialize)) &&
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
-        m_extent_storage.Commit(objectFirst, objectCount) &&
-        m_live_storage.Commit(first / 64, count / 64) &&
+        m_extent_storage.Commit(objectFirst, objectCount, initialize) &&
+        m_live_storage.Commit(first / 64, count / 64, initialize) &&
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
-        m_trace_lock_storage.Commit(objectFirst, objectCount) &&
-        m_trace_scan_storage.Commit(objectFirst, objectCount);
+        (!commitTrace ||
+            (m_trace_lock_storage.Commit(objectFirst, objectCount, initialize) &&
+             m_trace_scan_storage.Commit(objectFirst, objectCount, initialize)));
+}
+
+bool LxrReferenceCounting::DecommitPlanes(size_t first, size_t count, bool tailIsLast)
+{
+    size_t objectFirst = GetObjectStorageIndex(first);
+    size_t objectCount = GetObjectStorageIndex(first + count) - objectFirst;
+    size_t immixSlots = m_configuration.immixBytes / sizeof(uintptr_t);
+    size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
+    return (first >= immixSlots ||
+            m_allocated_block_storage.Decommit(first / blockSlots, count / blockSlots, tailIsLast)) &&
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+        m_extent_storage.Decommit(objectFirst, objectCount, tailIsLast) &&
+        m_live_storage.Decommit(first / 64, count / 64, tailIsLast) &&
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
+        m_trace_lock_storage.Decommit(objectFirst, objectCount, tailIsLast) &&
+        m_trace_scan_storage.Decommit(objectFirst, objectCount, tailIsLast);
 }
 
 bool LxrReferenceCounting::CommitTracePlanes()
@@ -1571,6 +1602,18 @@ bool LxrReferenceCounting::IsImmix(uintptr_t start) const
     return start >= arena && start - arena < m_immix_capacity.load(std::memory_order_acquire);
 }
 
+bool LxrReferenceCounting::IsReturnedImmix(uintptr_t start) const
+{
+    // Queued work can name an object of a block that the give-back returned. The block was free, so the object
+    // is dead. Its metadata reads as zero, as it does for a free block that is still admitted.
+#ifdef LXR_S5B_NO_STALE_TOLERANCE_CONTROL
+    return false;
+#endif // LXR_S5B_NO_STALE_TOLERANCE_CONTROL
+    uintptr_t arena = reinterpret_cast<uintptr_t>(m_arena);
+    return m_overshoot && start >= arena && start - arena < m_configuration.immixBytes &&
+        start - arena >= m_immix_capacity.load(std::memory_order_acquire);
+}
+
 bool LxrReferenceCounting::IsLarge(uintptr_t start) const
 {
     uintptr_t arena = m_large.GetReservationStart();
@@ -2132,6 +2175,14 @@ void LxrReferenceCounting::Suspend(void* context)
     if (engine->m_grow_bytes != 0)
     {
         engine->m_growth_result = engine->GrowSuspended();
+    }
+    if (engine->m_overshoot)
+    {
+        engine->m_allocation.ResetCopyCursorQuiescent();
+        if (engine->BorrowSuspended() != LxrRcResult::Success)
+        {
+            return;
+        }
     }
     if (engine->m_pause_kind != LxrPauseKind::RefCount &&
         engine->GetTracePhase() == LxrTracePhase::Inactive && !engine->CommitTracePlanes())
@@ -3548,8 +3599,8 @@ LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* p
         }
         if (!OwnsAddress(Start(object)))
         {
-            if (m_object_model.isImmortal != nullptr &&
-                m_object_model.isImmortal(object, m_object_model.context))
+            if (IsReturnedImmix(Start(object)) || (m_object_model.isImmortal != nullptr &&
+                m_object_model.isImmortal(object, m_object_model.context)))
             {
                 continue;
             }
@@ -4042,6 +4093,14 @@ LxrRcResult LxrReferenceCounting::ReleaseEpoch()
     if (result != LxrRcResult::Success)
     {
         return result;
+    }
+    if (m_overshoot)
+    {
+        result = GiveBackSuspended();
+        if (result != LxrRcResult::Success)
+        {
+            return result;
+        }
     }
     m_current_roots ^= 1;
     m_root_counts[m_current_roots] = 0;
@@ -5190,19 +5249,38 @@ LxrRcResult LxrReferenceCounting::GrowSuspended()
         return LxrRcResult::AllocationFailure;
     }
     size_t minimum = (required + granularity - 1) & ~(granularity - 1);
-    size_t increment = current > minimum ? current : minimum;
+    // With overshoot the capacity above the floor is borrowed to-space, so the doubling starts from the kept part.
+    size_t base = m_overshoot && !m_grow_large && m_immix_floor != 0 ? m_immix_floor : current;
+    size_t increment = base > minimum ? base : minimum;
     increment = increment > maximum - current ? maximum - current : increment;
-    size_t offset = m_grow_large ? m_configuration.immixBytes : 0;
+    if (!FitAdmission(m_grow_large, current, minimum, &increment))
+    {
+        return LxrRcResult::OutOfMemory;
+    }
+    LxrRcResult result = AdmitSuspended(m_grow_large, current, increment, true, true);
+    if (result == LxrRcResult::Success && !m_grow_large)
+    {
+        // A regular growth is permanent: the borrowed range below it stays with the heap.
+        m_immix_floor = GetImmixCapacityBytes();
+        m_allocation.SetMutatorFreshBlocksQuiescent(m_immix_floor / ImmixBlockGeometry::BlockBytes);
+    }
+    return result;
+}
+
+bool LxrReferenceCounting::FitAdmission(bool large, size_t current, size_t minimum, size_t* increment)
+{
+    size_t granularity = large ? LxrLargeObjectSpace::PageBytes : ImmixBlockGeometry::BlockBytes;
+    size_t offset = large ? m_configuration.immixBytes : 0;
     size_t first = (offset + current) / sizeof(uintptr_t);
     size_t previousLogCapacity = GetAdmittedBytes() / sizeof(uintptr_t);
     auto fits = [&](size_t candidate)
     {
         size_t slots = candidate / sizeof(uintptr_t);
         size_t nativeBytes = GetTracePlaneBudget(
-                m_grow_large ? GetImmixCapacityBytes() : current + candidate,
-                m_grow_large ? current + candidate : m_large.GetAdmittedBytes());
+                large ? GetImmixCapacityBytes() : current + candidate,
+                large ? current + candidate : m_large.GetAdmittedBytes());
         size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
-        nativeBytes += m_grow_large ? m_allocated_block_storage.GetCommittedBytes() :
+        nativeBytes += large ? m_allocated_block_storage.GetCommittedBytes() :
             m_allocated_block_storage.ProjectedCommittedBytes(first / blockSlots, slots / blockSlots);
         for (size_t bank = 0; bank < 2; bank++)
         {
@@ -5210,20 +5288,21 @@ LxrRcResult LxrReferenceCounting::GrowSuspended()
                     &m_banks[bank].increments, &m_banks[bank].decrements})
             {
                 size_t desired = previousLogCapacity + slots;
-                nativeBytes += stream->referenceStorage.ProjectedCommittedBytes(
-                    stream->capacity, desired - stream->capacity);
+                nativeBytes += desired > stream->capacity
+                    ? stream->referenceStorage.ProjectedCommittedBytes(stream->capacity, desired - stream->capacity)
+                    : stream->referenceStorage.GetCommittedBytes();
             }
         }
         return m_object_model.canAdmitRange(first, slots, nativeBytes, m_object_model.context);
     };
-    if (m_object_model.canAdmitRange != nullptr && !fits(increment))
+    if (m_object_model.canAdmitRange != nullptr && !fits(*increment))
     {
         if (!fits(minimum))
         {
-            return LxrRcResult::OutOfMemory;
+            return false;
         }
         size_t low = minimum / granularity;
-        size_t high = increment / granularity;
+        size_t high = *increment / granularity;
         while (low < high)
         {
             size_t middle = low + (high - low + 1) / 2;
@@ -5236,12 +5315,21 @@ LxrRcResult LxrReferenceCounting::GrowSuspended()
                 high = middle - 1;
             }
         }
-        increment = low * granularity;
+        *increment = low * granularity;
     }
+    return true;
+}
+
+LxrRcResult LxrReferenceCounting::AdmitSuspended(
+    bool large, size_t current, size_t increment, bool commitTrace, bool initialize)
+{
     size_t next = current + increment;
+    size_t offset = large ? m_configuration.immixBytes : 0;
+    size_t first = (offset + current) / sizeof(uintptr_t);
+    size_t previousLogCapacity = GetAdmittedBytes() / sizeof(uintptr_t);
     size_t count = increment / sizeof(uintptr_t);
     size_t logIncrement = count;
-    if (!CommitPlanes(first, count))
+    if (!CommitPlanes(first, count, commitTrace, initialize))
     {
         return LxrRcResult::OutOfMemory;
     }
@@ -5250,15 +5338,18 @@ LxrRcResult LxrReferenceCounting::GrowSuspended()
         for (LogStream* stream : {
                 &m_banks[bank].increments, &m_banks[bank].decrements})
         {
+            // The log capacity never shrinks (see ReturnTailSuspended), so a range that was given back and is admitted
+            // again may need no new storage.
             size_t desired = previousLogCapacity + logIncrement;
-            if (!stream->referenceStorage.Commit(stream->capacity, desired - stream->capacity, false))
+            if (desired > stream->capacity &&
+                !stream->referenceStorage.Commit(stream->capacity, desired - stream->capacity, false))
             {
                 return LxrRcResult::OutOfMemory;
             }
         }
     }
     if (m_object_model.admitRange != nullptr &&
-        !m_object_model.admitRange(first, count, m_object_model.context))
+        !m_object_model.admitRange(first, count, initialize, m_object_model.context))
     {
         return LxrRcResult::OutOfMemory;
     }
@@ -5267,7 +5358,7 @@ LxrRcResult LxrReferenceCounting::GrowSuspended()
     {
         return LxrRcResult::OutOfMemory;
     }
-    if (m_grow_large)
+    if (large)
     {
         if (m_large.GrowQuiescent(next) != LxrLargeObjectResult::Success)
         {
@@ -5288,11 +5379,243 @@ LxrRcResult LxrReferenceCounting::GrowSuspended()
     }
     for (size_t bank = 0; bank < 2; bank++)
     {
-        m_banks[bank].capacity = previousLogCapacity + logIncrement;
-        m_banks[bank].increments.capacity = m_banks[bank].capacity;
-        m_banks[bank].decrements.capacity = m_banks[bank].capacity;
+        size_t desired = previousLogCapacity + logIncrement;
+        if (desired > m_banks[bank].capacity)
+        {
+            m_banks[bank].capacity = desired;
+            m_banks[bank].increments.capacity = desired;
+            m_banks[bank].decrements.capacity = desired;
+        }
     }
     m_growth_count.fetch_add(1, std::memory_order_release);
+    return LxrRcResult::Success;
+}
+
+namespace
+{
+uint64_t TicksToNanoseconds(int64_t ticks)
+{
+    int64_t frequency = LxrPauseTimers::Frequency();
+    return static_cast<uint64_t>(ticks / frequency * 1000000000 + ticks % frequency * 1000000000 / frequency);
+}
+}
+
+size_t LxrReferenceCounting::GetBorrowedBytes() const
+{
+    size_t capacity = GetImmixCapacityBytes();
+    return capacity > m_immix_floor ? capacity - m_immix_floor : 0;
+}
+
+uint64_t LxrReferenceCounting::GetOvershootMetric(size_t metric) const
+{
+    if (metric >= OvershootMetricCount)
+    {
+        return UINT64_MAX;
+    }
+    if (metric == BorrowedNow)
+    {
+        return GetBorrowedBytes();
+    }
+    return m_overshoot_metrics[metric].load(std::memory_order_relaxed);
+}
+
+LxrRcResult LxrReferenceCounting::BorrowSuspended()
+{
+    size_t request = m_borrow_request_pages;
+    m_borrow_request_pages = 0;
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_S5B_NO_BORROW_CONTROL)
+    return LxrRcResult::Success;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_S5B_NO_BORROW_CONTROL
+    size_t free = GetImmixFreePages();
+    SetOvershoot(BorrowRequestPages, request);
+    SetOvershoot(BorrowFreePages, free);
+    SetOvershoot(BorrowBytesLast, 0);
+    SetOvershoot(BorrowNsLast, 0);
+    if (request <= free)
+    {
+        return LxrRcResult::Success;
+    }
+    LxrPhaseScope scope(m_pause_timers, LxrPauseTimers::Borrow);
+    int64_t started = LxrPauseTimers::Now();
+    size_t current = GetImmixCapacityBytes();
+    size_t block = ImmixBlockGeometry::BlockBytes;
+    size_t missing = ((request - free) * LxrLargeObjectSpace::PageBytes + block - 1) & ~(block - 1);
+    // The hard limit equals the whole reservation here (see m_overshoot), so the room is what is left of it.
+    size_t room = m_configuration.immixBytes - current;
+    size_t limitRoom = m_configuration.hardLimitBytes - GetAdmittedBytes();
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_S5B_IGNORE_HARD_LIMIT_CONTROL)
+    limitRoom = room;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_S5B_IGNORE_HARD_LIMIT_CONTROL
+    size_t available = (room < limitRoom ? room : limitRoom) & ~(block - 1);
+    size_t increment = missing < available ? missing : available;
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_S5B_IGNORE_PLANE_LIMIT_CONTROL)
+    bool fitted = increment != 0;
+#else
+    bool fitted = increment != 0 && FitAdmission(false, current, block, &increment);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_S5B_IGNORE_PLANE_LIMIT_CONTROL
+    if (!fitted)
+    {
+        CountOvershoot(BorrowRefused, 1);
+        return LxrRcResult::Success;
+    }
+    // The planes of a borrowed range are zero from the operating system, and most of the range is never used, so the
+    // storage is committed without writing to it.
+    LxrRcResult result = AdmitSuspended(
+        false, current, increment, GetTracePhase() != LxrTracePhase::Inactive, false);
+    if (result != LxrRcResult::Success)
+    {
+        // A failed commit leaves the capacity as it was; the pause copies into what is free, as without overshoot.
+        CountOvershoot(BorrowRefused, 1);
+        return result == LxrRcResult::OutOfMemory ? LxrRcResult::Success : result;
+    }
+    uint64_t nanoseconds = TicksToNanoseconds(LxrPauseTimers::Now() - started);
+    CountOvershoot(BorrowPauses, 1);
+    CountOvershoot(BorrowBytesTotal, increment);
+    SetOvershoot(BorrowBytesLast, increment);
+    if (increment > m_overshoot_metrics[BorrowBytesMax].load(std::memory_order_relaxed))
+    {
+        SetOvershoot(BorrowBytesMax, increment);
+    }
+    CountOvershoot(BorrowNsTotal, nanoseconds);
+    SetOvershoot(BorrowNsLast, nanoseconds);
+    if (GetImmixCapacityBytes() > m_overshoot_metrics[PeakCapacityBytes].load(std::memory_order_relaxed))
+    {
+        SetOvershoot(PeakCapacityBytes, GetImmixCapacityBytes());
+    }
+    return LxrRcResult::Success;
+}
+
+LxrRcResult LxrReferenceCounting::GiveBackSuspended()
+{
+    size_t capacity = GetImmixCapacityBytes();
+    SetOvershoot(GiveBackBytesLast, 0);
+    SetOvershoot(GiveBackNsLast, 0);
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_S5B_NO_GIVEBACK_CONTROL)
+    return LxrRcResult::Success;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_S5B_NO_GIVEBACK_CONTROL
+    if (capacity <= m_immix_floor)
+    {
+        return LxrRcResult::Success;
+    }
+    LxrPhaseScope scope(m_pause_timers, LxrPauseTimers::GiveBack);
+    int64_t started = LxrPauseTimers::Now();
+    CountOvershoot(GiveBackAttempts, 1);
+    size_t block = ImmixBlockGeometry::BlockBytes;
+    size_t index = capacity / block;
+    size_t floorBlocks = m_immix_floor / block;
+    uintptr_t arena = GetReservationStart();
+    // Only a free tail can go back: the walk stops at the first block that holds an object or that an allocator owns.
+    while (index > floorBlocks)
+    {
+        size_t candidate = index - 1;
+        uintptr_t address = arena + candidate * block;
+        bool free;
+        LxrRcResult result = FromMetadata(m_blocks.IsFreeBlock(address, &free));
+        if (result != LxrRcResult::Success)
+        {
+            return result;
+        }
+        if (!free)
+        {
+            // A copy block that stayed empty is released now, as the lazy sweep would do after the pause. The sweep
+            // runs while mutators allocate, so it could not give the block back.
+            if (m_mature_candidates[candidate].load(std::memory_order_acquire) == 0)
+            {
+                break;
+            }
+            ImmixBlockOperationStatus status;
+            result = ReleaseBlockIfDead(address, candidate, nullptr, &status);
+            if (result != LxrRcResult::Success)
+            {
+                return result;
+            }
+            if (status != ImmixBlockOperationStatus::Updated)
+            {
+                break;
+            }
+            CountOvershoot(EmptyCopyBlocksReleased, 1);
+        }
+        index = candidate;
+    }
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_S5B_ALWAYS_RETURN_CONTROL)
+    index = floorBlocks;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_S5B_ALWAYS_RETURN_CONTROL
+    size_t newCapacity = index * block;
+    if (newCapacity < capacity)
+    {
+        LxrRcResult result = ReturnTailSuspended(newCapacity);
+        if (result != LxrRcResult::Success)
+        {
+            return result;
+        }
+        CountOvershoot(GiveBackSuccesses, 1);
+        CountOvershoot(GiveBackBytesTotal, capacity - newCapacity);
+        SetOvershoot(GiveBackBytesLast, capacity - newCapacity);
+        if (newCapacity == m_immix_floor)
+        {
+            CountOvershoot(GiveBackComplete, 1);
+        }
+    }
+    uint64_t nanoseconds = TicksToNanoseconds(LxrPauseTimers::Now() - started);
+    CountOvershoot(GiveBackNsTotal, nanoseconds);
+    SetOvershoot(GiveBackNsLast, nanoseconds);
+    return LxrRcResult::Success;
+}
+
+LxrRcResult LxrReferenceCounting::ReturnTailSuspended(size_t newCapacity)
+{
+    size_t oldCapacity = GetImmixCapacityBytes();
+    if (GetPhase() != LxrRcPhase::Suspended || newCapacity < m_immix_floor || newCapacity >= oldCapacity ||
+        newCapacity % ImmixBlockGeometry::BlockBytes != 0)
+    {
+        return LxrRcResult::InvalidArgument;
+    }
+    size_t increment = oldCapacity - newCapacity;
+    for (size_t block = newCapacity / ImmixBlockGeometry::BlockBytes;
+         block < oldCapacity / ImmixBlockGeometry::BlockBytes; block++)
+    {
+        // The blocks hold no object, so no flag of the lazy sweep can still be meant for them.
+        m_mature_candidates[block].store(0, std::memory_order_release);
+        if (m_evacuation_sources != nullptr)
+        {
+            m_evacuation_sources[block].store(0, std::memory_order_release);
+        }
+    }
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_S5B_NO_ALLOC_SHRINK_CONTROL)
+    m_immix_capacity.store(newCapacity, std::memory_order_release);
+    return LxrRcResult::Success;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_S5B_NO_ALLOC_SHRINK_CONTROL
+    // Lower the capacity first: from here on the range is not an Immix range, so a stale lookup is refused by
+    // IsImmix and the checked metadata accessors, and no allocator can pick a block of it.
+    if (m_allocation.ShrinkQuiescent(newCapacity) != SideMetadataResult::Success)
+    {
+        return Fail(LxrRcResult::InvariantViolation);
+    }
+    m_immix_capacity.store(newCapacity, std::memory_order_release);
+    size_t first = newCapacity / sizeof(uintptr_t);
+    size_t count = increment / sizeof(uintptr_t);
+    // No Immix block follows the old end when the capacity is below the reservation, so the storage pages that hold
+    // the last slots of the range are not shared with an admitted neighbour.
+    bool tailIsLast = oldCapacity < m_configuration.immixBytes;
+    if ((m_object_model.releaseRange != nullptr &&
+            !m_object_model.releaseRange(first, count, tailIsLast, m_object_model.context)) ||
+        !DecommitPlanes(first, count, tailIsLast))
+    {
+        return Fail(LxrRcResult::OutOfMemory);
+    }
+    uintptr_t start = GetReservationStart() + newCapacity;
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_S5B_NO_PLANE_DECOMMIT_CONTROL)
+    if (m_metadata.DecommitDataRange(start, increment) != SideMetadataResult::Success)
+    {
+        return Fail(LxrRcResult::MetadataFailure);
+    }
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_S5B_NO_PLANE_DECOMMIT_CONTROL
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_S5B_NO_DATA_DECOMMIT_CONTROL)
+    if (!GCToOSInterface::VirtualDecommit(reinterpret_cast<void*>(start), increment))
+    {
+        return Fail(LxrRcResult::OutOfMemory);
+    }
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_S5B_NO_DATA_DECOMMIT_CONTROL
     return LxrRcResult::Success;
 }
 
@@ -5725,6 +6048,10 @@ LxrRcResult LxrReferenceCounting::ProcessTraceObject(
     uintptr_t start = Start(object);
     if (!OwnsAddress(start))
     {
+        if (IsReturnedImmix(start))
+        {
+            return LxrRcResult::Success;
+        }
         return m_object_model.isImmortal != nullptr &&
             m_object_model.isImmortal(object, m_object_model.context)
             ? LxrRcResult::Success : Fail(LxrRcResult::UnsupportedLifetime);
@@ -6268,6 +6595,17 @@ LxrRcResult LxrReferenceCounting::GetBlockStateForTest(
 size_t LxrReferenceCounting::GetFreshBlocksReleasedInPauseForTest() const
 {
     return m_pause_released_blocks.load(std::memory_order_acquire);
+}
+
+bool LxrReferenceCounting::IsDataOwnedForTest(uintptr_t address) const
+{
+    return m_metadata.IsDataAddressOwned(address);
+}
+
+LxrRcResult LxrReferenceCounting::ProcessQueuedTraceReferenceForTest(uintptr_t address)
+{
+    size_t budget = BufferCapacity;
+    return ProcessTraceObject(reinterpret_cast<Object*>(address), &budget, nullptr);
 }
 
 LxrRcResult LxrReferenceCounting::ValidateLogStorageForTest(uint8_t test)

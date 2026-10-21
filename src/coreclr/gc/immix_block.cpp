@@ -499,6 +499,29 @@ SideMetadataResult ImmixBlockManager::IsNursery(uintptr_t block, bool* result) c
     return metadataResult;
 }
 
+SideMetadataResult ImmixBlockManager::IsFreeBlock(uintptr_t block, bool* result) const
+{
+    if (result == nullptr)
+    {
+        return SideMetadataResult::InvalidArgument;
+    }
+
+    *result = false;
+    ImmixBlockState state = ImmixBlockState::Unallocated;
+    uint8_t unavailableLines = 0;
+    SideMetadataResult metadataResult = GetState(block, &state, &unavailableLines);
+    uintptr_t owner = NoOwner;
+    if (metadataResult == SideMetadataResult::Success)
+    {
+        metadataResult = LoadOwner(block, &owner);
+    }
+    if (metadataResult == SideMetadataResult::Success)
+    {
+        *result = (state == ImmixBlockState::Unallocated) && (owner == NoOwner);
+    }
+    return metadataResult;
+}
+
 SideMetadataResult ImmixBlockManager::IsReusing(uintptr_t block, bool* result) const
 {
     if (result == nullptr)

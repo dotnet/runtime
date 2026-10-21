@@ -346,6 +346,146 @@ SideMetadataResult SideMetadataManager::CommitDataRange(uintptr_t start, size_t 
     return result;
 }
 
+SideMetadataResult SideMetadataManager::DecommitDataRange(uintptr_t start, size_t size)
+{
+    if ((m_layout == nullptr) || m_commit_failed || (size == 0))
+    {
+        return SideMetadataResult::InvalidArgument;
+    }
+
+    uintptr_t end;
+    if (!TryAddSize(start, size, &end) || (end > m_layout->GetAddressLimit()))
+    {
+        return SideMetadataResult::AddressOverflow;
+    }
+    if (!IsDataRangeOwned(start, size))
+    {
+        return SideMetadataResult::AddressNotOwned;
+    }
+
+    uintptr_t pageSize = static_cast<uintptr_t>(GCToOSInterface::GetPageSize());
+    for (size_t index = 0; index < m_layout->GetSpecCount(); index++)
+    {
+        const SideMetadataSpec& spec = m_layout->GetSpecs()[index];
+        if (!IsSpecEnabled(spec.kind))
+        {
+            continue;
+        }
+        uint8_t logBits = spec.log_bits_per_value;
+        uintptr_t granule = (static_cast<uintptr_t>(1) << spec.log_bytes_per_value) - 1;
+        if (((start | end) & granule) != 0)
+        {
+            return SideMetadataResult::InvalidArgument;
+        }
+        uintptr_t firstEntry = start >> spec.log_bytes_per_value;
+        uintptr_t endEntry = end >> spec.log_bytes_per_value;
+        // Several entries can share a byte (a block-log bit covers one block). The entries in a byte that the range
+        // fills only partly are cleared one by one; the whole bytes are handled by pages below.
+        uintptr_t perByte = logBits < 3 ? static_cast<uintptr_t>(1) << (3 - logBits) : 1;
+        uintptr_t wholeFirst = (firstEntry + perByte - 1) & ~(perByte - 1);
+        uintptr_t wholeEnd = endEntry & ~(perByte - 1);
+        if (wholeEnd < wholeFirst)
+        {
+            wholeFirst = wholeEnd = endEntry;
+            SideMetadataResult reset = ResetRangeQuiescentCore(spec, start, size, 0);
+            if (reset != SideMetadataResult::Success)
+            {
+                return reset;
+            }
+        }
+        else
+        {
+            SideMetadataResult reset = SideMetadataResult::Success;
+            if (wholeFirst > firstEntry)
+            {
+                reset = ResetRangeQuiescentCore(
+                    spec, start, static_cast<size_t>(wholeFirst - firstEntry) << spec.log_bytes_per_value, 0);
+            }
+            if (reset == SideMetadataResult::Success && endEntry > wholeEnd)
+            {
+                reset = ResetRangeQuiescentCore(
+                    spec, static_cast<uintptr_t>(wholeEnd) << spec.log_bytes_per_value,
+                    static_cast<size_t>(endEntry - wholeEnd) << spec.log_bytes_per_value, 0);
+            }
+            if (reset != SideMetadataResult::Success)
+            {
+                return reset;
+            }
+        }
+        uintptr_t firstOffset;
+        uintptr_t endOffset;
+        if (logBits <= 3)
+        {
+            firstOffset = wholeFirst >> (3 - logBits);
+            endOffset = wholeEnd >> (3 - logBits);
+        }
+        else
+        {
+            uint8_t byteShift = logBits - 3;
+            if (endEntry > (UINTPTR_MAX >> byteShift))
+            {
+                return SideMetadataResult::AddressOverflow;
+            }
+            firstOffset = wholeFirst << byteShift;
+            endOffset = wholeEnd << byteShift;
+        }
+        uintptr_t metadataStart;
+        uintptr_t metadataEnd;
+        uintptr_t specEnd;
+        if (!TryAddSize(spec.base_address, firstOffset, &metadataStart) ||
+            !TryAddSize(spec.base_address, endOffset, &metadataEnd) ||
+            !TryAddSize(spec.base_address, spec.logical_size, &specEnd) ||
+            (metadataEnd > specEnd))
+        {
+            return SideMetadataResult::InvalidLayout;
+        }
+        if (metadataEnd == metadataStart)
+        {
+            continue;
+        }
+        uintptr_t pageLow = (metadataStart + pageSize - 1) & ~(pageSize - 1);
+        uintptr_t pageHigh = metadataEnd & ~(pageSize - 1);
+        bool topShared = false;
+        if (pageHigh != metadataEnd)
+        {
+            // The last page also holds the entries of the data after the range. It can go too when no admitted data
+            // lies there (the Immix space ends, and the large-object range is far away).
+            uintptr_t slack = pageSize - (metadataEnd - pageHigh);
+            uintptr_t dataSpan = logBits < 3 ? (slack * perByte) << spec.log_bytes_per_value
+                : (slack >> (logBits - 3)) << spec.log_bytes_per_value;
+            topShared = false;
+            for (DataRange* range = m_data_ranges; range != nullptr; range = range->next)
+            {
+                topShared = topShared || ((range->end > end) && (range->start < end + dataSpan));
+            }
+            if (!topShared)
+            {
+                pageHigh = metadataEnd + slack;
+            }
+        }
+        if (pageHigh <= pageLow)
+        {
+            memset(reinterpret_cast<void*>(metadataStart), 0, metadataEnd - metadataStart);
+            continue;
+        }
+        memset(reinterpret_cast<void*>(metadataStart), 0, pageLow - metadataStart);
+        if (topShared)
+        {
+            memset(reinterpret_cast<void*>(pageHigh), 0, metadataEnd - pageHigh);
+        }
+        if (!GCToOSInterface::VirtualDecommit(reinterpret_cast<void*>(pageLow), pageHigh - pageLow))
+        {
+            return SideMetadataResult::CommitFailed;
+        }
+    }
+
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_S5B_KEEP_RANGE_OWNED_CONTROL)
+    return SideMetadataResult::Success;
+#else
+    return RemoveDataRange(start, end);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_S5B_KEEP_RANGE_OWNED_CONTROL
+}
+
 bool SideMetadataManager::IsDataAddressOwned(uintptr_t address) const
 {
     for (DataRange* range = m_data_ranges; range != nullptr; range = range->next)
@@ -1275,6 +1415,51 @@ SideMetadataResult SideMetadataManager::AddDataRange(uintptr_t start, uintptr_t 
     mergedRange->next = m_data_ranges;
     m_data_ranges = mergedRange;
     return SideMetadataResult::Success;
+}
+
+SideMetadataResult SideMetadataManager::RemoveDataRange(uintptr_t start, uintptr_t end)
+{
+    DataRange** current = &m_data_ranges;
+    while (*current != nullptr)
+    {
+        DataRange* range = *current;
+        if ((start >= range->start) && (end <= range->end))
+        {
+            bool atStart = start == range->start;
+            bool atEnd = end == range->end;
+            if (atStart && atEnd)
+            {
+                *current = range->next;
+                delete range;
+            }
+            else if (atStart)
+            {
+                range->start = end;
+            }
+            else if (atEnd)
+            {
+                range->end = start;
+            }
+            else
+            {
+                // Touching ranges were merged when they were added (the Immix and the large-object range), so the
+                // range that is given back can lie inside one of them.
+                DataRange* upper = new (nothrow) DataRange;
+                if (upper == nullptr)
+                {
+                    return SideMetadataResult::OutOfMemory;
+                }
+                upper->start = end;
+                upper->end = range->end;
+                upper->next = range->next;
+                range->end = start;
+                range->next = upper;
+            }
+            return SideMetadataResult::Success;
+        }
+        current = &range->next;
+    }
+    return SideMetadataResult::InvalidArgument;
 }
 
 void SideMetadataManager::ClearDataRanges()

@@ -61,6 +61,10 @@ struct LxrRcConfiguration
     bool evacuateMature = false;
     size_t defragHeadroomPercent = 5;
     size_t chunkDefragPercent = 32;
+    // P17 S5b. A pause may admit blocks beyond the admitted Immix capacity for its copy and give them back at its end.
+    // The engine uses this only when no hard limit is set (the hard limit equals the whole reservation) and the
+    // reservation is larger than the initial capacity. With a hard limit below the reservation it does nothing.
+    bool overshootToSpace = false;
 };
 
 struct LxrRcMetrics
@@ -100,12 +104,17 @@ struct LxrRcObjectModel
     void* context;
     bool (*isImmortal)(Object* object, void* context);
     LxrRcTraceClosure finishEpoch;
-    bool (*admitRange)(size_t firstSlot, size_t slotCount, void* context) = nullptr;
+    // initialize: write the zero value into every element. A range that the operating system has just committed is
+    // zero already, and a borrowed range is mostly never used, so the borrow skips the writes (P17 S5b).
+    bool (*admitRange)(size_t firstSlot, size_t slotCount, bool initialize, void* context) = nullptr;
     LxrRcTraceClosure finishLazy = nullptr;
     bool (*canAdmitRange)(size_t firstSlot, size_t slotCount, size_t nativeBytes, void* context) = nullptr;
     bool (*isPinned)(Object* object, void* context) = nullptr;
     void (*didCopy)(Object* source, Object* destination, void* context) = nullptr;
     LxrRcTraceClosure finishRelocation = nullptr;
+    // P17 S5b: releases the per-object storage of a range that the engine gives back (the reverse of admitRange).
+    // tailIsLast: no admitted range follows the one that is given back in the storage, so a shared page may be released.
+    bool (*releaseRange)(size_t firstSlot, size_t slotCount, bool tailIsLast, void* context) = nullptr;
 };
 
 struct LxrNurseryMetrics
@@ -181,6 +190,9 @@ public:
         // Added in P17 S4: time from the end of the last pause packet (ReleaseEpoch) to the engine Resume callback, and
         // the time that Resume spends in PublishTraceWork. Both are inside the stop-the-world time.
         ResumeGap, PublishTrace,
+        // Added in P17 S5b: admission of blocks beyond the capacity at the start of a pause, and the give-back of a free
+        // tail at its end (including the decommit of the memory and of the planes).
+        Borrow, GiveBack,
         ScalarCount,
     };
 
@@ -415,6 +427,22 @@ public:
     size_t GetCleanNurseryBlocks() const;
     size_t GetPendingIncrementEntries() const;
     size_t GetImmixFreePages() const;
+    // P17 S5b: overshoot of the to-space. When it is enabled, the runtime suspend callback tells the engine how many
+    // pages the pause may copy (RequestBorrow). If fewer Immix pages are free, the pause admits the missing blocks
+    // from the reservation, and it gives the free tail of the capacity back before the epoch flips.
+    bool IsOvershootEnabled() const { return m_overshoot; }
+    void RequestBorrow(size_t copyPages) { m_borrow_request_pages = copyPages; }
+    // Bytes of the capacity above the part that is kept (the initial capacity and regular growth).
+    size_t GetBorrowedBytes() const;
+    size_t GetImmixFloorBytes() const { return m_immix_floor; }
+    enum OvershootMetric : size_t
+    {
+        BorrowPauses, BorrowBytesTotal, BorrowBytesLast, BorrowBytesMax, BorrowRefused, GiveBackAttempts,
+        GiveBackSuccesses, GiveBackComplete, GiveBackBytesTotal, GiveBackBytesLast, BorrowedNow, BorrowNsTotal,
+        GiveBackNsTotal, BorrowNsLast, GiveBackNsLast, PeakCapacityBytes, EmptyCopyBlocksReleased,
+        BorrowRequestPages, BorrowFreePages, OvershootMetricCount,
+    };
+    uint64_t GetOvershootMetric(size_t metric) const;
     size_t GetPauseSurvivorBytes() const;
     LxrRcResult GetMaturePages(size_t* pages) const;
     LxrRcResult DrainLazySweep(uint32_t timeout);
@@ -446,6 +474,9 @@ public:
     LxrRcResult GetBlockStateForTest(
         size_t block, ImmixBlockState* state, uint8_t* unavailableLines, bool* nursery) const;
     size_t GetFreshBlocksReleasedInPauseForTest() const;
+    // Whether the side metadata manager owns the data address (CommitDataRange has admitted it and nothing has given it back).
+    bool IsDataOwnedForTest(uintptr_t address) const;
+    LxrRcResult ProcessQueuedTraceReferenceForTest(uintptr_t address);
     LxrRcResult ArmPendingReader(Object* object);
     LxrRcResult ReleasePendingReader();
     uintptr_t GetPendingReaderValue() const;
@@ -488,10 +519,32 @@ private:
     void CountWorker(size_t worker, size_t counter, uint64_t amount);
     uint64_t SumWorker(size_t counter) const;
     LxrRcResult InitializeBuffers(size_t slots);
-    bool CommitPlanes(size_t first, size_t count);
+    bool CommitPlanes(size_t first, size_t count, bool commitTrace = true, bool initialize = true);
+    bool DecommitPlanes(size_t first, size_t count, bool tailIsLast);
     bool CommitTracePlanes();
     size_t GetTracePlaneBudget(size_t immixBytes, size_t largeBytes) const;
     LxrRcResult GrowSuspended();
+    // Whether the native planes and the object storage can take the range [current, current + candidate) of the Immix
+    // or the large-object space. With a larger candidate than fits, the increment is lowered to a number of
+    // granules that fits (but not below minimum). False when even minimum does not fit.
+    bool FitAdmission(bool large, size_t current, size_t minimum, size_t* increment);
+    // Admits increment bytes after the current end of the space: commits the planes and the storage, the arena
+    // memory and the log capacity, and raises the capacity.
+    LxrRcResult AdmitSuspended(bool large, size_t current, size_t increment, bool commitTrace, bool initialize);
+    // P17 S5b. Pause only. Admit the Immix blocks that the copy may need beyond the free ones.
+    LxrRcResult BorrowSuspended();
+    // P17 S5b. Pause only, after the nursery blocks are released and before the epoch flips. Gives back the free tail
+    // of the borrowed range.
+    LxrRcResult GiveBackSuspended();
+    LxrRcResult ReturnTailSuspended(size_t newCapacity);
+    void CountOvershoot(OvershootMetric metric, uint64_t amount)
+    {
+        m_overshoot_metrics[metric].fetch_add(amount, std::memory_order_relaxed);
+    }
+    void SetOvershoot(OvershootMetric metric, uint64_t value)
+    {
+        m_overshoot_metrics[metric].store(value, std::memory_order_relaxed);
+    }
     LxrRcResult FromMetadata(SideMetadataResult result);
     LxrRcResult FromScheduler(LxrWorkSchedulerResult result);
     LxrRcResult Append(LxrRcMutator* mutator, bool increment, uintptr_t value);
@@ -573,6 +626,7 @@ private:
     void ExitTraceLock(size_t index);
     LxrRcResult GetObjectSize(Object* object, size_t* size, size_t worker = SIZE_MAX);
     bool IsImmix(uintptr_t start) const;
+    bool IsReturnedImmix(uintptr_t start) const;
     bool IsLarge(uintptr_t start) const;
     static uintptr_t Start(Object* object);
     static Object* Reference(uintptr_t start);
@@ -641,6 +695,12 @@ private:
     bool m_grow_large = false;
     LxrRcResult m_growth_result = LxrRcResult::Success;
     std::atomic<uint64_t> m_growth_count{0};
+    // P17 S5b. The capacity that is never given back: the initial capacity and every regular growth. The part above it
+    // is borrowed for a pause. Only a pause changes these values.
+    bool m_overshoot = false;
+    size_t m_immix_floor = 0;
+    size_t m_borrow_request_pages = 0;
+    std::atomic<uint64_t> m_overshoot_metrics[OvershootMetricCount]{};
     std::atomic<size_t> m_epoch_fresh_blocks{0};
     std::atomic<size_t> m_epoch_recycled_lines{0};
     std::atomic<int64_t> m_release_end_stamp{0};

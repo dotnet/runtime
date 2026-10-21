@@ -13,6 +13,10 @@
 #include <cstdio>
 #include <thread>
 #include <vector>
+#if defined(__linux__)
+#include <sys/mman.h>
+#include <unistd.h>
+#endif
 
 bool g_oldMethodTableFlags = false;
 void LxrTestFailCommitAfter(int64_t calls);
@@ -4493,10 +4497,597 @@ namespace
             ValidateBlockCounters(kind);
         }
     }
+
+    // ---- P17 S5b: the pause takes to-space beyond the admitted capacity and gives the free tail back ----
+
+    constexpr size_t OvershootBlock = ImmixBlockGeometry::BlockBytes;
+    std::atomic<bool> OvershootRefuse{false};
+
+    bool OvershootCanAdmit(size_t, size_t, size_t, void*)
+    {
+        return !OvershootRefuse.load(std::memory_order_acquire);
+    }
+
+    bool InitializeOvershoot(
+        LxrReferenceCounting& engine, MovingRoots* roots, size_t initialBlocks, size_t reserveBlocks,
+        LxrRcMutator** mutator, void* identity, size_t hardLimitBytes = 0, bool overshoot = true,
+        bool mature = false)
+    {
+        LxrRcConfiguration configuration{
+            initialBlocks * OvershootBlock, 2 * LxrLargeObjectSpace::MinimumObjectBytes, 4, 4096, 4, 8,
+            reserveBlocks * OvershootBlock, 2 * LxrLargeObjectSpace::MinimumObjectBytes, hardLimitBytes,
+        };
+        configuration.evacuateNursery = true;
+        configuration.evacuateMature = mature;
+        configuration.lineRecycling = false;
+        configuration.overshootToSpace = overshoot;
+        LxrPauseRuntimeAdapter adapter{Suspend, Resume, nullptr, false};
+        LxrRcObjectModel model{};
+        model.context = roots;
+        model.finishRelocation = RelocateMoving;
+        model.isPinned = MovingPinned;
+        model.canAdmitRange = OvershootCanAdmit;
+        return Check(engine.Initialize(configuration, adapter, &model) == LxrRcResult::Success,
+                "overshoot engine initializes") &&
+            Check(engine.AttachMutator(identity, mutator) == LxrRcResult::Success, "overshoot mutator attaches");
+    }
+
+    uint64_t* PayloadOf(Object* object)
+    {
+        return reinterpret_cast<uint64_t*>(reinterpret_cast<uint8_t*>(object) + sizeof(void*));
+    }
+
+    uintptr_t PlaneAddress(const LxrSideMetadataLayout& layout, LxrSideMetadataKind kind, uintptr_t dataAddress)
+    {
+        const SideMetadataSpec* spec = layout.GetSpec(kind);
+        uintptr_t entry = dataAddress >> spec->log_bytes_per_value;
+        uintptr_t offset = spec->log_bits_per_value <= 3 ? entry >> (3 - spec->log_bits_per_value)
+            : entry << (spec->log_bits_per_value - 3);
+        return spec->base_address + offset;
+    }
+
+    // 1: a page of the range is resident, 0: no page is, -1: the platform cannot tell.
+    int ResidentPages(uintptr_t address, size_t bytes)
+    {
+#if defined(__linux__)
+        uintptr_t page = static_cast<uintptr_t>(sysconf(_SC_PAGESIZE));
+        uintptr_t first = address & ~(page - 1);
+        size_t length = ((address + bytes + page - 1) & ~(page - 1)) - first;
+        std::vector<unsigned char> pages(length / page);
+        if (mincore(reinterpret_cast<void*>(first), length, pages.data()) != 0)
+        {
+            return -1;
+        }
+        for (unsigned char value : pages)
+        {
+            if ((value & 1) != 0)
+            {
+                return 1;
+            }
+        }
+        return 0;
+#else
+        (void)address;
+        (void)bytes;
+        return -1;
+#endif
+    }
+
+    struct PauseWatch
+    {
+        MovingRoots* roots;
+        size_t capacity = 0;
+        size_t borrowed = 0;
+        bool counters = false;
+        // Dirty the planes and the data of this block range before the copy (a pause that borrows blocks).
+        size_t dirtyFirst = 0;
+        size_t dirtyEnd = 0;
+        uint8_t pattern = 0;
+        bool verifyZero = false;
+        size_t nonZeroBytes = 0;
+    };
+
+    LxrRcResult CaptureWatching(LxrReferenceCounting* engine, void* context)
+    {
+        PauseWatch* watch = static_cast<PauseWatch*>(context);
+        watch->capacity = engine->GetImmixCapacityBytes();
+        watch->borrowed = engine->GetBorrowedBytes();
+        watch->counters = engine->BlockCountersMatchWalk();
+        if (watch->dirtyEnd > watch->dirtyFirst && watch->capacity >= watch->dirtyEnd * OvershootBlock)
+        {
+            LxrSideMetadataLayout layout;
+            LxrSideMetadataLayout::Create(3, &layout);
+            for (size_t block = watch->dirtyFirst; block < watch->dirtyEnd; block++)
+            {
+                uintptr_t address = engine->GetReservationStart() + block * OvershootBlock;
+                for (LxrSideMetadataKind kind : {LxrSideMetadataKind::ReferenceCount, LxrSideMetadataKind::ValidObject})
+                {
+                    uintptr_t plane = PlaneAddress(layout, kind, address);
+                    size_t bytes = kind == LxrSideMetadataKind::ReferenceCount ? OvershootBlock / 8 : OvershootBlock / 64;
+                    for (size_t offset = 0; offset < bytes; offset += 64)
+                    {
+                        volatile uint8_t* cell = reinterpret_cast<volatile uint8_t*>(plane + offset);
+                        if (watch->verifyZero)
+                        {
+                            watch->nonZeroBytes += *cell != 0 ? 1 : 0;
+                        }
+                        else
+                        {
+                            *cell = watch->pattern;
+                        }
+                    }
+                }
+                if (!watch->verifyZero)
+                {
+                    for (size_t offset = 0; offset < OvershootBlock; offset += 4096)
+                    {
+                        *reinterpret_cast<volatile uint8_t*>(address + offset) = 0;
+                    }
+                }
+            }
+        }
+        return CaptureMoving(engine, watch->roots);
+    }
+
+    bool RunPauseAndDrain(
+        LxrReferenceCounting& engine, LxrRcCaptureRoots capture, void* context, const char* message, bool full = false)
+    {
+        LxrRcResult collected = full ? engine.CollectFull(capture, context, Timeout)
+            : engine.Collect(capture, context, Timeout);
+        LxrRcResult drained = collected == LxrRcResult::Success ? engine.Drain(Timeout) : collected;
+        if (drained != LxrRcResult::Success)
+        {
+            std::fprintf(stderr, "pause result=%u failure=%u\n", static_cast<unsigned>(drained),
+                static_cast<unsigned>(engine.GetFailure()));
+        }
+        return Check(drained == LxrRcResult::Success, message);
+    }
+
+    void ValidateOvershootPolicy()
+    {
+        LxrCollectionPolicy policy;
+        LxrPolicyPressure pressure{};
+        pressure.contiguous = true;
+        pressure.admittedPages = 100000;
+        pressure.usedPages = 1000;
+        pressure.immixFreePages = 500;
+        pressure.copyReservePages = 1000;
+        Check(policy.Trigger(pressure) == LxrCollectionCause::HeapFull,
+            "without overshoot a to-space reserve of 1000 pages against 500 free Immix pages triggers");
+        pressure.overshoot = true;
+        Check(policy.Trigger(pressure) == LxrCollectionCause::None,
+            "with overshoot no reserve is kept: 500 free Immix pages do not trigger");
+        pressure.immixFreePages = LxrCollectionPolicy::OvershootFreePages + 1;
+        Check(policy.Trigger(pressure) == LxrCollectionCause::None, "with overshoot more than one free block does not trigger");
+        pressure.immixFreePages = LxrCollectionPolicy::OvershootFreePages;
+        Check(policy.Trigger(pressure) == LxrCollectionCause::HeapFull,
+            "with overshoot the heap is full when no more than one block is free");
+        pressure.immixFreePages = 500;
+        pressure.heapFull = true;
+        Check(policy.Trigger(pressure) == LxrCollectionCause::HeapFull, "a failed allocation still triggers with overshoot");
+        pressure.heapFull = false;
+        pressure.usedPages = pressure.admittedPages;
+        Check(policy.Trigger(pressure) == LxrCollectionCause::HeapFull, "used pages at the admitted pages still trigger with overshoot");
+    }
+
+    // One pause that has to copy two 24 KiB objects into a heap with no free block: the pause admits blocks, copies
+    // into them, gives the unused tail back, and a later pause returns the rest when the survivors are dead.
+    void ValidateOvershootBorrowAndGiveBack()
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        MovingRoots roots;
+        int identity;
+        if (!InitializeOvershoot(engine, &roots, 2, 24, &mutator, &identity))
+        {
+            return;
+        }
+        Check(engine.IsOvershootEnabled() && engine.GetImmixFloorBytes() == 2 * OvershootBlock,
+            "no hard limit and a reservation above the initial capacity enable overshoot");
+        Type big(24576, 0);
+        Object* first = Allocate(engine, mutator, big);
+        Object* second = Allocate(engine, mutator, big);
+        if (first == nullptr || second == nullptr)
+        {
+            return;
+        }
+        *PayloadOf(first) = 0x1111;
+        *PayloadOf(second) = 0x2222;
+        roots.objects = {first, second};
+        Check(engine.GetImmixFreePages() == 0, "the nursery fills the admitted capacity");
+        uintptr_t arena = engine.GetReservationStart();
+        PauseWatch watch{&roots};
+        engine.RequestBorrow(64);
+        RunPauseAndDrain(engine, CaptureWatching, &watch, "the pause that borrows completes");
+        Check(watch.capacity == 10 * OvershootBlock && watch.borrowed == 8 * OvershootBlock && watch.counters,
+            "the pause has admitted eight blocks beyond the capacity when it captures the roots");
+        LxrNurseryMetrics nursery = engine.GetNurseryMetrics();
+        if (!Check(nursery.copiedBytes == 2 * 24576 && nursery.copyFailures == 0 &&
+                roots.objects[0] != first && roots.objects[1] != second,
+                "both objects are copied into the borrowed blocks"))
+        {
+            return;
+        }
+        size_t highest = (std::max)(BlockOfObject(engine, roots.objects[0]), BlockOfObject(engine, roots.objects[1]));
+        size_t capacity = engine.GetImmixCapacityBytes();
+        // A block that holds a survivor, and every block below it, stays. Only the free tail above goes back.
+        if (!Check(highest >= 2 && capacity == (highest + 1) * OvershootBlock &&
+                engine.GetBorrowedBytes() == capacity - 2 * OvershootBlock,
+                "the capacity ends after the highest block that holds a survivor"))
+        {
+            return;
+        }
+        Check(*PayloadOf(roots.objects[0]) == 0x1111 && *PayloadOf(roots.objects[1]) == 0x2222,
+            "the survivors keep their payload");
+        Check(engine.OwnsAddress(arena + capacity - 1) && engine.IsDataOwnedForTest(arena + capacity - 1) &&
+                !engine.OwnsAddress(arena + capacity) && !engine.IsDataOwnedForTest(arena + capacity) &&
+                !engine.IsDataOwnedForTest(arena + 9 * OvershootBlock),
+            "the returned blocks are no Immix space and no owned metadata range any more");
+        Check(engine.ProcessQueuedTraceReferenceForTest(arena + capacity + 64) == LxrRcResult::Success &&
+                engine.GetFailure() == LxrRcResult::Success,
+            "queued trace work that names an object of a returned block finds a dead object and does not fail");
+        Check(engine.GetOvershootMetric(LxrReferenceCounting::BorrowPauses) == 1 &&
+                engine.GetOvershootMetric(LxrReferenceCounting::BorrowBytesLast) == 8 * OvershootBlock &&
+                engine.GetOvershootMetric(LxrReferenceCounting::GiveBackSuccesses) == 1 &&
+                engine.GetOvershootMetric(LxrReferenceCounting::GiveBackBytesLast) == 10 * OvershootBlock - capacity &&
+                engine.GetOvershootMetric(LxrReferenceCounting::GiveBackComplete) == 0 &&
+                engine.GetOvershootMetric(LxrReferenceCounting::BorrowedNow) == capacity - 2 * OvershootBlock,
+            "the borrow and the partial give-back are counted");
+        Check(engine.BlockCountersMatchWalk(), "the block counters equal a walk after the give-back");
+        // No allocator can take a block of the returned range.
+        Type tiny(24, 0);
+        size_t allocated = 0;
+        bool outside = false;
+        for (size_t index = 0; index < 20000; index++)
+        {
+            Object* object = TryAllocateQuietly(engine, mutator, tiny);
+            if (object == nullptr)
+            {
+                break;
+            }
+            allocated++;
+            outside = outside || StartOf(object) >= arena + engine.GetImmixCapacityBytes();
+        }
+        Check(allocated > 1000 && !outside, "allocation fills the capacity and never takes a block of the returned range");
+        // The survivors die. The next pause cannot return their blocks yet (the counts fall after it).
+        roots.objects.clear();
+        RunPauseAndDrain(engine, CaptureMoving, &roots, "the pause while the survivors are still counted completes");
+        Check(engine.GetImmixCapacityBytes() == capacity,
+            "while the survivors are counted, their blocks are in use and stay");
+        // Their blocks are free now, but above the kept capacity: mutators do not take them, and the next pause that has
+        // to copy uses them before it borrows anything.
+        Object* third = Allocate(engine, mutator, big);
+        Object* fourth = Allocate(engine, mutator, big);
+        if (third == nullptr || fourth == nullptr)
+        {
+            return;
+        }
+        if (!Check(BlockOfObject(engine, third) < 2 && BlockOfObject(engine, fourth) < 2,
+                "mutators take fresh blocks only in the kept capacity"))
+        {
+            return;
+        }
+        *PayloadOf(third) = 0x3333;
+        *PayloadOf(fourth) = 0x4444;
+        roots.objects = {third, fourth};
+        engine.RequestBorrow(64);
+        RunPauseAndDrain(engine, CaptureMoving, &roots, "the pause that finds a free retained tail completes");
+        size_t reused = (std::max)(BlockOfObject(engine, roots.objects[0]), BlockOfObject(engine, roots.objects[1]));
+        Check(engine.GetNurseryMetrics().copyFailures == 0 && reused == 3 && engine.GetImmixCapacityBytes() == 4 * OvershootBlock &&
+                *PayloadOf(roots.objects[0]) == 0x3333 && *PayloadOf(roots.objects[1]) == 0x4444,
+            "the copy fills the free blocks of the retained tail from the lowest block, and the new borrow goes back");
+        roots.objects.clear();
+        RunPauseAndDrain(engine, CaptureMoving, &roots, "the pause that kills the second survivors completes");
+        RunPauseAndDrain(engine, CaptureMoving, &roots, "the next pause completes");
+        Check(engine.GetImmixCapacityBytes() == 2 * OvershootBlock && engine.GetBorrowedBytes() == 0 &&
+                engine.GetOvershootMetric(LxrReferenceCounting::GiveBackComplete) == 1 &&
+                !engine.IsDataOwnedForTest(arena + 2 * OvershootBlock) && engine.BlockCountersMatchWalk(),
+            "when the survivors are dead the whole borrowed range goes back to the kept capacity");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "overshoot owner detaches");
+    }
+
+    // A pause with a large borrowed range: the decommit releases the memory and the planes of the free tail, and a
+    // later pause that admits the same addresses finds zero planes.
+    void ValidateOvershootPlanesRoundTrip()
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        MovingRoots roots;
+        int identity;
+        if (!InitializeOvershoot(engine, &roots, 2, 200, &mutator, &identity))
+        {
+            return;
+        }
+        Type big(24576, 0);
+        Object* first = Allocate(engine, mutator, big);
+        Object* second = Allocate(engine, mutator, big);
+        if (first == nullptr || second == nullptr)
+        {
+            return;
+        }
+        *PayloadOf(first) = 0x3333;
+        *PayloadOf(second) = 0x4444;
+        roots.objects = {first, second};
+        uintptr_t arena = engine.GetReservationStart();
+        PauseWatch watch{&roots};
+        watch.dirtyFirst = 20;
+        watch.dirtyEnd = 130;
+        watch.pattern = 0x5A;
+        engine.RequestBorrow(1024);
+        RunPauseAndDrain(engine, CaptureWatching, &watch, "the pause with 128 borrowed blocks completes");
+        if (!Check(watch.capacity == 130 * OvershootBlock &&
+                engine.GetImmixCapacityBytes() < 10 * OvershootBlock && engine.GetNurseryMetrics().copyFailures == 0,
+                "128 blocks are admitted and the tail above the survivors goes back"))
+        {
+            return;
+        }
+        LxrSideMetadataLayout layout;
+        LxrSideMetadataLayout::Create(3, &layout);
+        uintptr_t tail = arena + 20 * OvershootBlock;
+        size_t tailBytes = 110 * OvershootBlock;
+        uintptr_t rcPlane = PlaneAddress(layout, LxrSideMetadataKind::ReferenceCount, tail);
+        uintptr_t validPlane = PlaneAddress(layout, LxrSideMetadataKind::ValidObject, tail);
+        int dataResident = ResidentPages(tail, tailBytes);
+        int rcResident = ResidentPages(rcPlane, tailBytes / 8);
+        int validResident = ResidentPages(validPlane, tailBytes / 64);
+        Check(dataResident <= 0 && rcResident <= 0 && validResident <= 0,
+            "the data and the planes of the returned range are no longer resident (Linux)");
+        if (dataResident > 0 || rcResident > 0 || validResident > 0)
+        {
+            std::fprintf(stderr, "resident: data=%d rc=%d valid=%d\n", dataResident, rcResident, validResident);
+        }
+        Check(!engine.IsDataOwnedForTest(tail) && !engine.OwnsAddress(tail),
+            "the returned range is not owned");
+        Check(*PayloadOf(roots.objects[0]) == 0x3333 && *PayloadOf(roots.objects[1]) == 0x4444,
+            "the survivors keep their payload");
+        // The next pause admits the same addresses again. Every plane byte that it reads must be zero.
+        Object* third = Allocate(engine, mutator, big);
+        Object* fourth = Allocate(engine, mutator, big);
+        if (third == nullptr || fourth == nullptr)
+        {
+            return;
+        }
+        *PayloadOf(third) = 0x5555;
+        roots.objects.push_back(third);
+        roots.objects.push_back(fourth);
+        PauseWatch again{&roots};
+        again.dirtyFirst = 20;
+        again.dirtyEnd = 130;
+        again.verifyZero = true;
+        engine.RequestBorrow(1024);
+        RunPauseAndDrain(engine, CaptureWatching, &again, "the pause that admits the same addresses again completes");
+        Check(again.capacity >= 130 * OvershootBlock && again.nonZeroBytes == 0,
+            "the planes of the re-admitted range are zero");
+        Check(engine.IsOvershootEnabled() && engine.GetNurseryMetrics().copyFailures == 0 &&
+                *PayloadOf(roots.objects[2]) == 0x5555 && *PayloadOf(roots.objects[0]) == 0x3333,
+            "the copy into the re-admitted blocks keeps the payload");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "round trip owner detaches");
+    }
+
+    // Admission needs room in the reservation and the native planes; a refusal leaves the pause as it was.
+    void ValidateOvershootRefusals()
+    {
+        {
+            LxrReferenceCounting engine;
+            LxrRcMutator* mutator = nullptr;
+            MovingRoots roots;
+            int identity;
+            if (!InitializeOvershoot(engine, &roots, 2, 24, &mutator, &identity))
+            {
+                return;
+            }
+            Type big(24576, 0);
+            Object* first = Allocate(engine, mutator, big);
+            Object* second = Allocate(engine, mutator, big);
+            roots.objects = {first, second};
+            OvershootRefuse.store(true, std::memory_order_release);
+            PauseWatch watch{&roots};
+            engine.RequestBorrow(64);
+            RunPauseAndDrain(engine, CaptureWatching, &watch, "the pause completes when the planes cannot grow");
+            OvershootRefuse.store(false, std::memory_order_release);
+            Check(watch.capacity == 2 * OvershootBlock && engine.GetImmixCapacityBytes() == 2 * OvershootBlock &&
+                    engine.GetOvershootMetric(LxrReferenceCounting::BorrowRefused) == 1 &&
+                    engine.GetOvershootMetric(LxrReferenceCounting::BorrowPauses) == 0 &&
+                    engine.GetNurseryMetrics().copyFailures != 0 && roots.objects[0] == first,
+                "a refused admission leaves the capacity and the copy as without overshoot");
+            Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "refusal owner detaches");
+        }
+        {
+            // The request is larger than the room that is left of the reservation: the pause takes what is left.
+            LxrReferenceCounting engine;
+            LxrRcMutator* mutator = nullptr;
+            MovingRoots roots;
+            int identity;
+            if (!InitializeOvershoot(engine, &roots, 2, 6, &mutator, &identity))
+            {
+                return;
+            }
+            Type big(24576, 0);
+            roots.objects = {Allocate(engine, mutator, big), Allocate(engine, mutator, big)};
+            PauseWatch watch{&roots};
+            engine.RequestBorrow(4096);
+            RunPauseAndDrain(engine, CaptureWatching, &watch, "the pause completes when the request exceeds the reservation");
+            Check(watch.capacity == 6 * OvershootBlock && engine.GetImmixCapacityBytes() <= 6 * OvershootBlock &&
+                    engine.GetNurseryMetrics().copyFailures == 0,
+                "the admission is bounded by the reservation");
+            Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "bounded owner detaches");
+        }
+    }
+
+    // With a hard limit, with a reservation equal to the capacity, or with the switch off, nothing changes.
+    void ValidateOvershootHardLimit(int kind)
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        MovingRoots roots;
+        int identity;
+        size_t hardLimit = kind == 0 ? 2 * OvershootBlock + 2 * LxrLargeObjectSpace::MinimumObjectBytes : 0;
+        if (!InitializeOvershoot(engine, &roots, 2, kind == 1 ? 2 : 24, &mutator, &identity, hardLimit, kind != 2))
+        {
+            return;
+        }
+        Check(!engine.IsOvershootEnabled(), "a hard limit, a reservation equal to the capacity, or the switch disable overshoot");
+        Type big(24576, 0);
+        Object* first = Allocate(engine, mutator, big);
+        Object* second = Allocate(engine, mutator, big);
+        roots.objects = {first, second};
+        PauseWatch watch{&roots};
+        engine.RequestBorrow(64);
+        RunPauseAndDrain(engine, CaptureWatching, &watch, "the pause completes");
+        Check(watch.capacity == 2 * OvershootBlock && engine.GetImmixCapacityBytes() == 2 * OvershootBlock &&
+                engine.GetNurseryMetrics().copyFailures != 0 && engine.GetNurseryMetrics().copiedBytes == 0 &&
+                roots.objects[0] == first && roots.objects[1] == second &&
+                engine.GetOvershootMetric(LxrReferenceCounting::BorrowPauses) == 0 &&
+                engine.GetOvershootMetric(LxrReferenceCounting::GiveBackAttempts) == 0,
+            "the capacity stays and the copy fails as before S5b");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "hard limit owner detaches");
+    }
+
+    // A regular growth is permanent: the borrowed range below it is kept, and the kept capacity rises.
+    void ValidateOvershootRegularGrowth()
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        MovingRoots roots;
+        int identity;
+        if (!InitializeOvershoot(engine, &roots, 2, 24, &mutator, &identity))
+        {
+            return;
+        }
+        Type big(24576, 0);
+        roots.objects = {Allocate(engine, mutator, big), Allocate(engine, mutator, big)};
+        Check(engine.Grow(false, 24, CaptureMoving, &roots, Timeout) == LxrRcResult::Success &&
+                engine.GetImmixCapacityBytes() > 2 * OvershootBlock &&
+                engine.GetImmixFloorBytes() == engine.GetImmixCapacityBytes() && engine.GetBorrowedBytes() == 0,
+            "a regular growth raises the kept capacity and leaves nothing borrowed");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "growth owner detaches");
+    }
+
+    // Random allocation, survival, death and pauses with borrowing. More than 127 pauses pass, so the epoch wraps and
+    // resets the epoch plane of every owned range: a range that was given back must not be owned any more.
+    void ValidateOvershootRandom(int kind)
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        MovingRoots roots;
+        int identity;
+        if (!InitializeOvershoot(engine, &roots, 6, 80, &mutator, &identity, 0, true, kind == 1))
+        {
+            return;
+        }
+        std::vector<Type*> types;
+        for (uint32_t size : {24u, 200u, 1000u, 4000u, 9000u, 20000u})
+        {
+            types.push_back(new Type(size, 0));
+        }
+        std::vector<uint64_t> tags;
+        uint64_t state = 0x9E3779B97F4A7C15ull + static_cast<uint64_t>(kind);
+        auto next = [&state]()
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        };
+        uintptr_t arena = engine.GetReservationStart();
+        size_t floorBytes = engine.GetImmixFloorBytes();
+        size_t reservation = 80 * OvershootBlock;
+        int badTags = 0;
+        int badCapacity = 0;
+        int badCounters = 0;
+        int badOwnership = 0;
+        int rounds = 0;
+        for (int round = 0; round < 160; round++)
+        {
+            size_t burst = 10 + next() % 40;
+            for (size_t index = 0; index < burst; index++)
+            {
+                Object* object = TryAllocateQuietly(engine, mutator, *types[next() % types.size()]);
+                if (object == nullptr)
+                {
+                    break;
+                }
+                uint64_t tag = next();
+                *PayloadOf(object) = tag;
+                if (next() % 100 < 25 && roots.objects.size() < 24)
+                {
+                    roots.objects.push_back(object);
+                    tags.push_back(tag);
+                }
+            }
+            for (size_t index = 0; index < roots.objects.size();)
+            {
+                if (next() % 100 < 30)
+                {
+                    roots.objects.erase(roots.objects.begin() + static_cast<std::ptrdiff_t>(index));
+                    tags.erase(tags.begin() + static_cast<std::ptrdiff_t>(index));
+                }
+                else
+                {
+                    index++;
+                }
+            }
+            engine.RequestBorrow(next() % 4 == 0 ? 0 : next() % 700);
+            bool full = kind == 1 ? round % 4 == 3 : round % 11 == 10;
+            LxrRcResult result = full ? engine.CollectFull(CaptureMoving, &roots, Timeout)
+                : engine.Collect(CaptureMoving, &roots, Timeout);
+            if (!Check(result == LxrRcResult::Success && engine.Drain(Timeout) == LxrRcResult::Success,
+                    "random pause with borrowing completes"))
+            {
+                break;
+            }
+            rounds++;
+            size_t capacity = engine.GetImmixCapacityBytes();
+            badCapacity += capacity < floorBytes || capacity > reservation ||
+                engine.GetBorrowedBytes() != capacity - floorBytes ? 1 : 0;
+            badCounters += engine.BlockCountersMatchWalk() ? 0 : 1;
+            badOwnership += engine.IsDataOwnedForTest(arena + capacity - 1) &&
+                (capacity == reservation || !engine.IsDataOwnedForTest(arena + capacity)) ? 0 : 1;
+            for (size_t index = 0; index < roots.objects.size(); index++)
+            {
+                badTags += *PayloadOf(roots.objects[index]) == tags[index] ? 0 : 1;
+            }
+        }
+        Check(rounds == 160 && badCapacity == 0 && badCounters == 0 && badOwnership == 0 && badTags == 0,
+            "capacity, counters, ownership and payloads hold in every random pause");
+        Check(engine.GetOvershootMetric(LxrReferenceCounting::BorrowPauses) > 20 &&
+                engine.GetOvershootMetric(LxrReferenceCounting::GiveBackSuccesses) > 20 &&
+                engine.GetMetrics().epochs >= 160,
+            "the random run borrowed and gave back many times, across the epoch wrap");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "random overshoot owner detaches");
+        for (Type* type : types)
+        {
+            delete type;
+        }
+    }
+
+    void ValidateS5bOvershoot()
+    {
+        ValidateOvershootPolicy();
+        ValidateOvershootBorrowAndGiveBack();
+        ValidateOvershootPlanesRoundTrip();
+        ValidateOvershootRefusals();
+        for (int kind = 0; kind < 3; kind++)
+        {
+            ValidateOvershootHardLimit(kind);
+        }
+        ValidateOvershootRegularGrowth();
+        for (int kind = 0; kind < 2; kind++)
+        {
+            ValidateOvershootRandom(kind);
+        }
+    }
 }
 
 int main(int argc, char** argv)
 {
+    if (argc == 2 && strcmp(argv[1], "--s5b-overshoot") == 0)
+    {
+        ValidateS5bOvershoot();
+        std::printf("%s: %d/%d S5b overshoot checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
     if (argc == 2 && strcmp(argv[1], "--s4-sweep") == 0)
     {
         ValidateS4Sweep();

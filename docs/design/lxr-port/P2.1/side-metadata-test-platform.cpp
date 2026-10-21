@@ -75,6 +75,16 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 #endif
 }
 
+bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
+{
+#ifdef HOST_WINDOWS
+    return VirtualFree(address, size, MEM_DECOMMIT) != 0;
+#else
+    return (madvise(address, size, MADV_DONTNEED) == 0) &&
+        (mprotect(address, size, PROT_NONE) == 0);
+#endif
+}
+
 bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 {
 #ifdef HOST_WINDOWS

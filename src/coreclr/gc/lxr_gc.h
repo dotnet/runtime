@@ -174,7 +174,8 @@ private:
     static void Suspend(void* context);
     static void Resume(bool finished, void* context);
     static void RetireAllocationContext(gc_alloc_context* context, void* heap);
-    static bool AdmitRange(size_t firstSlot, size_t slotCount, void* heap);
+    static bool AdmitRange(size_t firstSlot, size_t slotCount, bool initialize, void* heap);
+    static bool ReleaseRange(size_t firstSlot, size_t slotCount, bool tailIsLast, void* heap);
     static bool CanAdmitRange(size_t firstSlot, size_t slotCount, size_t nativeBytes, void* heap);
     static LxrRcResult CaptureRoots(LxrReferenceCounting* engine, void* context);
     static LxrRcResult FinishTrace(LxrReferenceCounting* engine, void* context);

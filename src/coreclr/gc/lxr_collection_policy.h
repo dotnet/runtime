@@ -43,6 +43,9 @@ struct LxrPolicyPressure
     // Port-specific: pages the young pause may need as to-space, and free Immix pages that can hold it.
     size_t copyReservePages = 0;
     size_t immixFreePages = SIZE_MAX;
+    // Port-specific (P17 S5b): the pause may take blocks beyond the admitted capacity for its copy, so no to-space
+    // reserve is needed. The heap counts as full when no whole block is free.
+    bool overshoot = false;
 };
 
 // Coupled HEAD oracle 304ce69d: plan/lxr/mod.rs and plan/lxr/global.rs.
@@ -154,7 +157,7 @@ public:
 #endif
         if (pressure.heapFull || pressure.usedPages >= pressure.admittedPages ||
             pressure.collectionReservedPages >= pressure.admittedPages - pressure.usedPages ||
-            (pressure.copyReservePages != 0 && pressure.copyReservePages >= pressure.immixFreePages))
+            CopyReserveExhausted(pressure))
         {
             return LxrCollectionCause::HeapFull;
         }
@@ -267,7 +270,23 @@ public:
     bool CycleHint() const { return m_cycle.load(std::memory_order_acquire); }
     bool EmergencyHint() const { return m_emergency.load(std::memory_order_acquire); }
 
+    // Pages of one Immix block: with overshoot the trigger keeps one block free for the mutator and nothing for the copy.
+    static constexpr size_t OvershootFreePages = 8;
+
 private:
+    bool CopyReserveExhausted(const LxrPolicyPressure& pressure) const
+    {
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_S5B_RESERVE_TRIGGER_CONTROL)
+        return pressure.copyReservePages != 0 && pressure.copyReservePages >= pressure.immixFreePages;
+#else
+        if (pressure.overshoot)
+        {
+            return pressure.immixFreePages <= OvershootFreePages;
+        }
+        return pressure.copyReservePages != 0 && pressure.copyReservePages >= pressure.immixFreePages;
+#endif
+    }
+
     LxrPolicyConfiguration m_configuration{};
     std::atomic<double> m_survival{0.01};
     std::atomic<double> m_mature{0.0};
