@@ -1,0 +1,127 @@
+file /root/p24/results/trace-requests-defrag-r2.txt: 58 events
+
+== FinalMark: 2 pauses
+phase                         median ms     sum ms
+suspend_prepare_us                  3.8          8
+stw_pause_us                      126.2        252
+post_drain_us                      52.3        105
+resume_gap_us                       0.7          1
+inc_wall_us                        35.2         70
+inc_busy_us                       133.3        267
+dec_wall_us                         4.3          9
+dec_busy_us                        12.3         25
+prepare_trace_wall_us              74.4        149
+prepare_trace_busy_us              74.4        149
+weak_closure_wall_us               10.4         21
+weak_closure_busy_us               10.4         21
+mature_sweep_wall_us               37.1         74
+mature_sweep_busy_us               37.1         74
+incs_d                           199095     398190
+decs_d                            58239     116478
+nursery_copied_objs_d                 0          0
+nursery_copied_bytes_d                0          0
+traced_objects_d                 114142     228284
+blocks_rel_d                       1943       3886
+inc_packets                         194        389
+dec_packets                          44         88
+young_bytes                    50128896  100257792
+free_pages                         1572       3144
+reserve_pages                       868       1737
+
+== RefCount: 3 pauses
+phase                         median ms     sum ms
+suspend_prepare_us                  4.1          8
+release_epoch_us                    0.5          2
+reclaim_nursery_us                  0.5          2
+stw_pause_us                       24.3         61
+post_drain_us                       0.0         15
+resume_gap_us                       0.7          2
+publish_trace_us                   10.1         22
+inc_wall_us                         4.5         17
+inc_busy_us                        10.4         36
+dec_wall_us                         0.0          3
+dec_busy_us                         0.0          9
+prepare_trace_wall_us               2.7          6
+prepare_trace_busy_us               2.7          6
+nursery_sweep_wall_us               0.5          2
+nursery_sweep_busy_us               0.5          2
+mature_sweep_wall_us                0.0         11
+mature_sweep_busy_us                0.0         11
+incs_d                            13473      40588
+decs_d                            13829      41223
+nursery_copied_objs_d                 0          0
+nursery_copied_bytes_d                0          0
+traced_objects_d                  56546     113125
+blocks_rel_d                         88        694
+inc_packets                          27         82
+dec_packets                           0         41
+young_bytes                    58560512  177111040
+free_pages                            0          0
+reserve_pages                       947       2841
+
+== InitialMark: 1 pauses
+phase                         median ms     sum ms
+prepare_work_us                    35.4         35
+stw_pause_us                       54.0         54
+publish_trace_us                   10.1         10
+inc_wall_us                         4.5          4
+inc_busy_us                        10.9         11
+prepare_trace_wall_us               1.6          2
+prepare_trace_busy_us               1.6          2
+incs_d                            13834      13834
+decs_d                              104        104
+nursery_copied_objs_d                 0          0
+nursery_copied_bytes_d                0          0
+traced_objects_d                   9437       9437
+blocks_rel_d                        203        203
+inc_packets                          27         27
+dec_packets                           0          0
+young_bytes                    59707392   59707392
+free_pages                            0          0
+reserve_pages                       947        947
+
+== Full: 52 pauses
+phase                         median ms     sum ms
+suspend_runtime_us                  0.1          3
+suspend_ee_us                       0.1          3
+suspend_prepare_us                  1.5         76
+root_capture_us                     0.2         14
+prepare_work_us                    46.6       2435
+release_epoch_us                    0.4         24
+reclaim_nursery_us                  0.4         24
+scan0_us                            0.1          4
+scan1_us                            0.0          2
+scan2_us                            0.1          5
+scan3_us                            0.2         10
+scan_roots_us                       0.0          3
+scan_relocate_roots_us              0.2          8
+resume_runtime_us                   0.1          6
+stw_pause_us                      218.7      11286
+post_drain_us                      29.7       1571
+resume_gap_us                       3.4        191
+inc_wall_us                         3.3        176
+inc_busy_us                         6.8        365
+dec_wall_us                         2.5        135
+dec_busy_us                         4.8        260
+satb_wall_us                        0.0          2
+prepare_trace_wall_us             146.8       7576
+prepare_trace_busy_us             146.8       7576
+weak_closure_wall_us               14.2        741
+weak_closure_busy_us               14.2        741
+epoch_closure_wall_us               0.2         11
+epoch_closure_busy_us               0.2         11
+nursery_sweep_wall_us               0.4         24
+nursery_sweep_busy_us               0.4         24
+mature_sweep_wall_us               29.4       1552
+mature_sweep_busy_us               29.4       1552
+incs_d                            11130     585989
+decs_d                            11133     586615
+nursery_copied_objs_d                 0          0
+nursery_copied_bytes_d                0          0
+traced_objects_d                 306270   15932334
+blocks_rel_d                          0         18
+inc_packets                          30       1676
+dec_packets                          18        942
+young_bytes                    48373760 2561802240
+free_pages                            0          0
+reserve_pages                       947      49244

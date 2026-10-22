@@ -1,0 +1,314 @@
+[
+ {
+  "n": 0,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 896,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 888,
+  "block_states": {
+   "Unallocated": 913,
+   "Unmarked": 106,
+   "Marked": 0,
+   "Reusable": 5
+  },
+  "non_free_blocks": 111,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 1,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1056,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1056,
+  "block_states": {
+   "Unallocated": 892,
+   "Unmarked": 124,
+   "Marked": 0,
+   "Reusable": 8
+  },
+  "non_free_blocks": 132,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 2,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1056,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1056,
+  "block_states": {
+   "Unallocated": 892,
+   "Unmarked": 124,
+   "Marked": 0,
+   "Reusable": 8
+  },
+  "non_free_blocks": 132,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 3,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1056,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1056,
+  "block_states": {
+   "Unallocated": 892,
+   "Unmarked": 124,
+   "Marked": 0,
+   "Reusable": 8
+  },
+  "non_free_blocks": 132,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 4,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1056,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1056,
+  "block_states": {
+   "Unallocated": 892,
+   "Unmarked": 124,
+   "Marked": 0,
+   "Reusable": 8
+  },
+  "non_free_blocks": 132,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 5,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1056,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1056,
+  "block_states": {
+   "Unallocated": 892,
+   "Unmarked": 124,
+   "Marked": 0,
+   "Reusable": 8
+  },
+  "non_free_blocks": 132,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 6,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1056,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1056,
+  "block_states": {
+   "Unallocated": 892,
+   "Unmarked": 124,
+   "Marked": 0,
+   "Reusable": 8
+  },
+  "non_free_blocks": 132,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 7,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1064,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1064,
+  "block_states": {
+   "Unallocated": 891,
+   "Unmarked": 125,
+   "Marked": 0,
+   "Reusable": 8
+  },
+  "non_free_blocks": 133,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 8,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1056,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1056,
+  "block_states": {
+   "Unallocated": 892,
+   "Unmarked": 124,
+   "Marked": 0,
+   "Reusable": 8
+  },
+  "non_free_blocks": 132,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 9,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1056,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1056,
+  "block_states": {
+   "Unallocated": 892,
+   "Unmarked": 124,
+   "Marked": 0,
+   "Reusable": 8
+  },
+  "non_free_blocks": 132,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 10,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1056,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1056,
+  "block_states": {
+   "Unallocated": 892,
+   "Unmarked": 124,
+   "Marked": 0,
+   "Reusable": 8
+  },
+  "non_free_blocks": 132,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 11,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1104,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1104,
+  "block_states": {
+   "Unallocated": 886,
+   "Unmarked": 130,
+   "Marked": 0,
+   "Reusable": 8
+  },
+  "non_free_blocks": 138,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 12,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1232,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1232,
+  "block_states": {
+   "Unallocated": 870,
+   "Unmarked": 146,
+   "Marked": 0,
+   "Reusable": 8
+  },
+  "non_free_blocks": 154,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 13,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 1296,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 1296,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 14,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 2064,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 2064,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 15,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 7848,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 2072,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ },
+ {
+  "n": 16,
+  "pause_kind": null,
+  "admitted_pages": 10240,
+  "immix_capacity_blocks": 1024,
+  "used_pages": 4128,
+  "mature_live_pages_before": 0.0,
+  "mature_pages": 2064,
+  "cycle_hint_after": null,
+  "emergency_hint_after": null,
+  "mature_live_pages_after": null,
+  "cause": null
+ }
+]

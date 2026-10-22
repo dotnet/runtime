@@ -1,0 +1,55 @@
+file /root/p24/results/trace-binarytrees-nonmoving-r1.txt: 17 events
+
+== RefCount: 16 pauses
+phase                         median ms     sum ms
+root_capture_us                     0.4          7
+prepare_work_us                     0.2          5
+release_epoch_us                    0.5          9
+reclaim_nursery_us                  0.5          9
+scan0_us                            0.1          1
+scan2_us                            0.1          1
+resume_runtime_us                   0.1          2
+stw_pause_us                        4.4        100
+post_drain_us                       1.1         36
+resume_gap_us                       0.7         11
+inc_wall_us                         1.5         61
+inc_busy_us                         1.9        159
+dec_wall_us                         0.6         27
+dec_busy_us                         0.7         55
+epoch_closure_wall_us               0.2          3
+epoch_closure_busy_us               0.2          3
+nursery_sweep_wall_us               0.5          9
+nursery_sweep_busy_us               0.5          9
+mature_sweep_wall_us                0.1          4
+mature_sweep_busy_us                0.1          4
+incs_d                             2196     465485
+decs_d                              463     209516
+nursery_copied_objs_d                 0          0
+nursery_copied_bytes_d                0          0
+traced_objects_d                      0          0
+blocks_rel_d                        887      13955
+inc_packets                          20        729
+dec_packets                          10        342
+surv_bytes                          444      34312
+young_bytes                    29243392  468066304
+free_pages                            0          0
+reserve_pages                       409       6544
+
+== InitialMark: 1 pauses
+phase                         median ms     sum ms
+stw_pause_us                      141.9        142
+publish_trace_us                  106.0        106
+inc_wall_us                        33.1         33
+inc_busy_us                       123.4        123
+incs_d                           131230     131230
+decs_d                              152        152
+nursery_copied_objs_d                 0          0
+nursery_copied_bytes_d                0          0
+traced_objects_d                 104905     104905
+blocks_rel_d                        639        639
+inc_packets                         146        146
+dec_packets                           2          2
+surv_bytes                         3968       3968
+young_bytes                    25190400   25190400
+free_pages                            0          0
+reserve_pages                       409        409

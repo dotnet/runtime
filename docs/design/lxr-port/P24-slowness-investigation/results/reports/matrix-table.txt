@@ -1,0 +1,28 @@
+workload     arm            extra                   n  wall s   cpu s   gc s pauses full rss MiB wall xWKS cpu xWKS
+binarytrees  wks                                    3    0.34    0.25   0.08     87    0      54       1.0      1.0
+binarytrees  server                                 3    0.33    0.27   0.05     68    0      67       1.0      1.1
+binarytrees  lxr-nonmoving                          3    0.76    1.35   0.35     17    0     145       2.3      5.5
+binarytrees  lxr-nursery                            3    0.82    1.45   0.41     19    0     131       2.4      5.9
+binarytrees  lxr-defrag                             3    0.80    1.41   0.39     17    0     145       2.4      5.7
+binarytrees  lxr-mature                             3    0.86    1.56   0.43     19    0     133       2.5      6.3
+binarytrees  lxr-nonmoving  GCBENCH_LATENCY=batch   2    0.54    0.60   0.11     17    0      92       1.6      2.4
+binarytrees  lxr-nursery    GCBENCH_LATENCY=batch   2    0.60    0.79   0.18     18    0      92       1.8      3.2
+binarytrees  lxr-mature     GCBENCH_LATENCY=batch   2    0.67    0.96   0.22     19    0      92       2.0      3.9
+requests     wks                                    3    1.72    1.58   0.23    277    0      83       1.0      1.0
+requests     server                                 3    1.83    1.93   0.29    274    0      87       1.1      1.2
+requests     lxr-nonmoving                          3   10.72   11.58   6.03     58   52     205       6.2      7.3
+requests     lxr-nursery                            3    4.32    6.86   1.18     69    0     154       2.5      4.3
+requests     lxr-defrag                             3   16.56   17.45  11.79     58   52     205       9.6     11.1
+requests     lxr-mature                             3    4.41    6.98   1.44     66    0     176       2.6      4.4
+requests     lxr-nonmoving  GCBENCH_LATENCY=batch   2   11.26   11.57   6.53     58   53     148       6.5      7.3
+requests     lxr-nursery    GCBENCH_LATENCY=batch   2    4.08    4.86   0.96     67    0     144       2.4      3.1
+requests     lxr-mature     GCBENCH_LATENCY=batch   2    4.04    4.87   0.95     67    0     144       2.3      3.1
+listsuffix   wks                                    3    3.57    3.59   2.00    192    0      68       1.0      1.0
+listsuffix   server                                 3    1.57    1.96   0.64     50    0      74       0.4      0.5
+listsuffix   lxr-nonmoving                          3   20.39   55.30  17.29     62    0     220       5.7     15.4
+listsuffix   lxr-nursery                            3   28.80   69.06  25.57     60    0     219       8.1     19.3
+listsuffix   lxr-defrag                             3   30.03   70.72  26.51     63    0     224       8.4     19.7
+listsuffix   lxr-mature                             3   29.95   72.16  26.66     64    0     219       8.4     20.1
+listsuffix   lxr-nonmoving  GCBENCH_LATENCY=batch   2    5.80   12.44   2.19     51    0      97       1.6      3.5
+listsuffix   lxr-nursery    GCBENCH_LATENCY=batch   2    6.46   14.35   2.75     49    0      97       1.8      4.0
+listsuffix   lxr-mature     GCBENCH_LATENCY=batch   2    6.51   14.49   2.76     49    0      97       1.8      4.0

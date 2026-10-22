@@ -1,0 +1,40 @@
+    19.23%  [kernel.kallsyms]             [k] _raw_spin_unlock_irqrestore                        -      -            
+     8.08%  [kernel.kallsyms]             [k] finish_task_switch.isra.0                          -      -            
+     6.67%  [kernel.kallsyms]             [k] clear_page_erms                                    -      -            
+     5.51%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessTraceObject           -      -            
+     4.10%  libclrlxrgc.so                [.] LxrReferenceCounting::NewWork                      -      -            
+     3.08%  libclrlxrgc.so                [.] ImmixBlockManager::IsNurseryFast                   -      -            
+     2.82%  libclrlxrgc.so                [.] SideMetadataManager::ResetRangeQuiescentCore       -      -            
+     2.31%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessIncrement             -      -            
+     1.79%  libc.so.6                     [.] pthread_mutex_lock@@GLIBC_2.2.5                    -      -            
+     1.67%  libc.so.6                     [.] __memset_evex_unaligned_erms                       -      -            
+     1.67%  libclrlxrgc.so                [.] LxrReferenceCounting::FinishDyingTraceObject       -      -            
+     1.41%  [kernel.kallsyms]             [k] do_user_addr_fault                                 -      -            
+     1.28%  libclrlxrgc.so                [.] ReferenceCountTable::DecrementWithDeathCore<true>  -      -            
+     1.28%  memfd:doublemapper (deleted)  [.] 0x0000000000020033                                 -      -            
+     1.15%  [kernel.kallsyms]             [k] __pv_queued_spin_lock_slowpath                     -      -            
+     1.15%  libc.so.6                     [.] malloc                                             -      -            
+     1.03%  [kernel.kallsyms]             [k] futex_hash                                         -      -            
+     1.03%  libclrlxrgc.so                [.] LxrWorkPacket::TryTransition                       -      -            
+     1.03%  libcoreclr.so                 [.] 0x000000000004f230                                 -      -            
+     1.03%  memfd:doublemapper (deleted)  [.] 0x0000000000020020                                 -      -            
+     1.03%  memfd:doublemapper (deleted)  [.] 0x0000000000134b50                                 -      -            
+     0.90%  [kernel.kallsyms]             [k] do_syscall_64                                      -      -            
+     0.90%  ld-linux-x86-64.so.2          [.] __tls_get_addr                                     -      -            
+     0.90%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessTraceWork             -      -            
+     0.90%  libclrlxrgc.so                [.] LxrReferenceCounting::Resume                       -      -            
+     0.90%  libcoreclr.so                 [.] 0x00000000003a1b8b                                 -      -            
+     0.77%  libc.so.6                     [.] __GI___lll_lock_wait                               -      -            
+     0.77%  libc.so.6                     [.] _int_malloc                                        -      -            
+     0.77%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessIncrementWork         -      -            
+     0.77%  libclrlxrgc.so                [.] LxrReferenceCounting::ScanTraceLocked              -      -            
+     0.77%  memfd:doublemapper (deleted)  [.] 0x0000000000134a80                                 -      -            
+     0.64%  [kernel.kallsyms]             [k] futex_wake                                         -      -            
+     0.64%  libcoreclr.so                 [.] 0x00000000003a1b9c                                 -      -            
+     0.51%  [kernel.kallsyms]             [k] _raw_spin_lock                                     -      -            
+     0.51%  libc.so.6                     [.] pthread_mutex_unlock@@GLIBC_2.2.5                  -      -            
+     0.51%  libclrlxrgc.so                [.] LxrReferenceCounting::QueueTrace                   -      -            
+     0.51%  libclrlxrgc.so                [.] LxrWorkPacket::GetStage                            -      -            
+     0.51%  libclrlxrgc.so                [.] SideMetadataManager::FetchAddWrapping              -      -            
+     0.51%  libcoreclr.so                 [.] 0x00000000003a1b96                                 -      -            
+     0.38%  [kernel.kallsyms]             [k] __futex_hash                                       -      -            

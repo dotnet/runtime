@@ -1,0 +1,26 @@
+== samples by thread (self, percent of all samples)
+    51.00%      762:corerun        
+    12.25%      768:corerun        
+    12.00%      769:corerun        
+    11.75%      771:corerun        
+    11.25%      770:corerun        
+     0.75%      772:LXR root/lifeti
+     0.50%      774:.NET Finalizer 
+     0.50%      775:corerun        
+
+== inclusive (children) share of selected functions
+    36.00%     0.00%  [.] LxrWorkScheduler::Impl::WorkerLoop                    -      -            
+    35.50%     0.00%  [.] LxrReferenceCounting::Execute                         -      -            
+    31.25%     0.25%  [.] LxrReferenceCounting::ProcessIncrementWork            -      -            
+    29.50%     3.00%  [.] LxrReferenceCounting::ProcessIncrement                -      -            
+    24.25%    14.00%  [.] LxrReferenceCounting::TryCopyNursery                  -      -            
+     2.50%     0.25%  [.] LxrReferenceCounting::ProcessDecrements               -      -            
+     1.75%     0.00%  [.] LxrReferenceCounting::ReleaseEpoch                    -      -            
+     1.75%     0.00%  [.] LxrReferenceCounting::SubmitWork                      -      -            
+     0.25%     0.00%  [.] LxrGcHeap::CollectLocked                              -      -            
+     0.25%     0.00%  [.] LxrGcHeap::ExecuteScan                                -      -            
+     0.25%     0.00%  [.] LxrGcHeap::Resume                                     -      -            
+     0.25%     0.00%  [.] LxrGcHeap::ScanOnGcThread                             -      -            
+     0.25%     0.00%  [.] LxrReferenceCounting::Resume                          -      -            
+     0.25%     0.00%  [.] LxrReferenceCounting::RunPause                        -      -            
+     0.25%     0.00%  [.] LxrWorkScheduler::SubmitMatureSweep                   -      -            

@@ -1,0 +1,40 @@
+     4.27%  libcoreclr.so                 [.] 0x000000000004f230                      -      -            
+     4.27%  libcoreclr.so                 [.] 0x00000000003a1b8b                      -      -            
+     3.66%  memfd:doublemapper (deleted)  [.] 0x0000000000020040                      -      -            
+     3.66%  memfd:doublemapper (deleted)  [.] 0x0000000000134b40                      -      -            
+     3.05%  libc.so.6                     [.] __memset_evex_unaligned_erms            -      -            
+     3.05%  memfd:doublemapper (deleted)  [.] 0x0000000000134a8e                      -      -            
+     2.44%  memfd:doublemapper (deleted)  [.] 0x0000000000134a80                      -      -            
+     2.44%  memfd:doublemapper (deleted)  [.] 0x0000000000134ad4                      -      -            
+     1.83%  [kernel.kallsyms]             [k] do_user_addr_fault                      -      -            
+     1.83%  ld-linux-x86-64.so.2          [.] __tls_get_addr                          -      -            
+     1.83%  libcoreclr.so                 [.] 0x000000000017da64                      -      -            
+     1.83%  libcoreclr.so                 [.] 0x00000000003a1b84                      -      -            
+     1.83%  libcoreclr.so                 [.] 0x00000000003a1b96                      -      -            
+     1.83%  memfd:doublemapper (deleted)  [.] 0x0000000000134ab3                      -      -            
+     1.83%  memfd:doublemapper (deleted)  [.] 0x0000000000134b30                      -      -            
+     1.22%  [kernel.kallsyms]             [k] __schedule                              -      -            
+     1.22%  [kernel.kallsyms]             [k] _raw_spin_unlock_irqrestore             -      -            
+     1.22%  libcoreclr.so                 [.] 0x0000000000163b06                      -      -            
+     1.22%  libcoreclr.so                 [.] 0x000000000017da7b                      -      -            
+     1.22%  memfd:doublemapper (deleted)  [.] 0x0000000000134b39                      -      -            
+     1.22%  memfd:doublemapper (deleted)  [.] 0x0000000000134b4b                      -      -            
+     0.61%  [kernel.kallsyms]             [k] __folio_mod_stat                        -      -            
+     0.61%  [kernel.kallsyms]             [k] _raw_spin_lock                          -      -            
+     0.61%  [kernel.kallsyms]             [k] copy_process                            -      -            
+     0.61%  [kernel.kallsyms]             [k] do_syscall_64                           -      -            
+     0.61%  [kernel.kallsyms]             [k] folio_add_file_rmap_ptes                -      -            
+     0.61%  [kernel.kallsyms]             [k] hyperv_flush_tlb_multi                  -      -            
+     0.61%  [kernel.kallsyms]             [k] mas_wr_store_type                       -      -            
+     0.61%  [kernel.kallsyms]             [k] next_uptodate_folio                     -      -            
+     0.61%  [kernel.kallsyms]             [k] str2hashbuf_signed                      -      -            
+     0.61%  libSystem.Native.so           [.] SystemNative_LowLevelMonitor_TimedWait  -      -            
+     0.61%  libc.so.6                     [.] __memmove_evex_unaligned_erms           -      -            
+     0.61%  libc.so.6                     [.] __strncmp_evex                          -      -            
+     0.61%  libc.so.6                     [.] llseek@GLIBC_2.2.5                      -      -            
+     0.61%  libclrjit.so                  [.] 0x000000000003d1df                      -      -            
+     0.61%  libclrjit.so                  [.] 0x000000000008754f                      -      -            
+     0.61%  libclrjit.so                  [.] 0x00000000000934f6                      -      -            
+     0.61%  libclrjit.so                  [.] 0x0000000000094c13                      -      -            
+     0.61%  libclrjit.so                  [.] 0x00000000001187f9                      -      -            
+     0.61%  libclrjit.so                  [.] 0x0000000000120753                      -      -            

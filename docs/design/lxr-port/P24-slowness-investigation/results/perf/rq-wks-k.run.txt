@@ -1,0 +1,3 @@
+{"runtime":"dotnet","workload":"requests","size":32768,"ops":600000,"checksum":317308156512,"elapsed_ms":1690.097,"cpu_ms":1750.184,"gc_count":277,"gc_ms":242,"hiccup_p50_us":1179.6,"hiccup_p99_us":2621.4,"hiccup_p999_us":7864.3,"hiccup_max_us":9542.6,"req_p50_us":2.0,"req_p99_us":5.1,"req_p999_us":57.3,"peak_rss_kb":83948}
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.208 MB /root/p24/results/perf/rq-wks-k.data (959 samples) ]

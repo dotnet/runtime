@@ -1,0 +1,49 @@
+file /root/p24/results/trace-listsuffix-nursery-r1.txt: 66 events
+
+== RefCount: 66 pauses
+phase                         median ms     sum ms
+lock_wait_us                        0.0        174
+policy_drain_us                     0.0         22
+suspend_runtime_us                  0.0          3
+suspend_ee_us                       0.0          3
+suspend_prepare_us                 31.7       2021
+root_capture_us                     0.2         17
+prepare_work_us                     0.4         28
+release_epoch_us                    0.2         30
+retire_sources_us                   0.0         16
+reclaim_nursery_us                  0.2         13
+scan0_us                            0.1          5
+scan2_us                            0.1          6
+scan3_us                            0.1          9
+scan_roots_us                       0.1          4
+scan_relocate_roots_us              0.1          8
+resume_runtime_us                   0.1          9
+stw_pause_us                      389.5      24796
+resume_gap_us                       0.7         45
+publish_trace_us                  203.9      13092
+inc_wall_us                        67.4       4385
+inc_busy_us                       255.9      16553
+dec_wall_us                         0.0         17
+dec_busy_us                         0.0         36
+satb_wall_us                        0.5         59
+satb_busy_us                        0.9         99
+prepare_trace_wall_us              79.3       5071
+prepare_trace_busy_us              79.3       5071
+epoch_closure_wall_us               0.2         13
+epoch_closure_busy_us               0.2         13
+nursery_sweep_wall_us               0.2         30
+nursery_sweep_busy_us               0.2         30
+mature_sweep_wall_us                0.0          4
+mature_sweep_busy_us                0.0          4
+incs_d                           261963   17835783
+decs_d                           261680   17287218
+nursery_copied_objs_d                 0    1174867
+nursery_copied_bytes_d                0   37615456
+traced_objects_d                      0     112712
+blocks_rel_d                          0       3546
+inc_packets                         452      30077
+dec_packets                           0        267
+surv_bytes                            0   10109728
+young_bytes                    12804096  827645952
+free_pages                            0       3648
+reserve_pages                         0       3765

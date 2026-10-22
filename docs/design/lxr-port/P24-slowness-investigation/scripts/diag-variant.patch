@@ -1,0 +1,44 @@
+--- a/src/coreclr/gc/lxr_reference_counting.cpp
++++ b/src/coreclr/gc/lxr_reference_counting.cpp
+@@ -7,6 +7,7 @@
+ #include "lxr_reference_counting.h"
+ 
+ #include <new>
++#include <cstdlib>
+ #include <algorithm>
+ #include <minipal/utils.h>
+ #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+@@ -42,6 +43,8 @@
+     }
+ 
+     constexpr uint8_t RetainedSource = 2;
++    // P24 diagnostic build only (not part of the product): P24_SKIP_BLACK_TRACE=1 does not queue an already marked object for tracing.
++    const bool s_p24SkipBlackTrace = getenv("P24_SKIP_BLACK_TRACE") != nullptr;
+     constexpr uint8_t CopiedSource = 4;
+     constexpr uintptr_t LogReferenceMask = LxrSideMetadataLayout::AddressLimit - 1;
+     constexpr uint8_t LogCountShift = LxrSideMetadataLayout::AddressBits;
+@@ -3832,7 +3835,9 @@
+         }
+         result = FromMetadata(m_counts.IncrementFast(start, &previous, &status));
+     }
+-    if (result == LxrRcResult::Success && trace && GetTracePhase() != LxrTracePhase::Inactive)
++    if (result == LxrRcResult::Success && trace && GetTracePhase() != LxrTracePhase::Inactive &&
++        (targets != nullptr || !s_p24SkipBlackTrace ||
++         m_mark_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0))
+     {
+         uintptr_t target = reinterpret_cast<uintptr_t>(object);
+         result = targets == nullptr ? QueueTrace(&target, 1) : targets->Append(target);
+--- a/src/coreclr/gc/lxr_gc.cpp
++++ b/src/coreclr/gc/lxr_gc.cpp
+@@ -290,7 +290,10 @@
+         return E_FAIL;
+     }
+     LxrRcConfiguration configuration{
+-        ImmixBytes, LargeBytes, MaximumMutators, MaximumRoots, 4, static_cast<uint8_t>(bits),
++        ImmixBytes, LargeBytes, MaximumMutators, MaximumRoots,
++        // P24 diagnostic build only: P24_WORKERS overrides the fixed worker count of 4.
++        getenv("P24_WORKERS") != nullptr ? static_cast<size_t>(atoi(getenv("P24_WORKERS"))) : size_t{4},
++        static_cast<uint8_t>(bits),
+     };
+     configuration.evacuateNursery = true;
+     configuration.evacuateMature = true;

@@ -1,0 +1,91 @@
+file /root/p24/results/trace-listsuffix-nonmoving-r1.txt: 70 events
+
+== RefCount: 67 pauses
+phase                         median ms     sum ms
+lock_wait_us                        0.0        515
+policy_drain_us                     0.0         88
+suspend_runtime_us                  0.0          3
+suspend_ee_us                       0.0          3
+suspend_prepare_us                 22.7       1156
+root_capture_us                     0.2         17
+prepare_work_us                     0.4         27
+release_epoch_us                    0.2         13
+reclaim_nursery_us                  0.2         12
+scan0_us                            0.1          5
+scan2_us                            0.1          6
+scan_roots_us                       0.1          4
+resume_runtime_us                   0.1          8
+stw_pause_us                      256.5      12492
+post_drain_us                       0.0        568
+resume_gap_us                       0.7         46
+publish_trace_us                  161.1       7799
+inc_wall_us                        59.3       3371
+inc_busy_us                       222.4      12213
+dec_wall_us                         0.0        566
+dec_busy_us                         0.0       1843
+satb_wall_us                        0.2         32
+satb_busy_us                        0.2         41
+epoch_closure_wall_us               0.2         14
+epoch_closure_busy_us               0.2         14
+nursery_sweep_wall_us               0.2         13
+nursery_sweep_busy_us               0.2         13
+mature_sweep_wall_us                0.0         78
+mature_sweep_busy_us                0.0         78
+incs_d                           265375   16274890
+decs_d                           266012   16277624
+nursery_copied_objs_d                 0          0
+nursery_copied_bytes_d                0          0
+traced_objects_d                      0     206442
+blocks_rel_d                          0        458
+inc_packets                         475      28829
+dec_packets                           0      10435
+surv_bytes                            0       9624
+young_bytes                    12951552  811200512
+free_pages                            0          0
+reserve_pages                       409      27403
+
+== FinalMark: 2 pauses
+phase                         median ms     sum ms
+suspend_prepare_us                  8.4         17
+stw_pause_us                      115.6        231
+post_drain_us                      70.8        142
+resume_gap_us                       0.6          1
+inc_wall_us                        61.2        122
+inc_busy_us                       230.7        461
+dec_wall_us                        32.5         65
+dec_busy_us                       117.3        235
+prepare_trace_wall_us              43.7         87
+prepare_trace_busy_us              43.7         87
+mature_sweep_wall_us               22.1         44
+mature_sweep_busy_us               22.1         44
+incs_d                           256444     512888
+decs_d                           272786     545572
+nursery_copied_objs_d                 0          0
+nursery_copied_bytes_d                0          0
+traced_objects_d                      0          1
+blocks_rel_d                          0          1
+inc_packets                         452        904
+dec_packets                         474        949
+surv_bytes                            0          0
+young_bytes                    12535808   25071616
+free_pages                            4          8
+reserve_pages                       409        818
+
+== InitialMark: 1 pauses
+phase                         median ms     sum ms
+stw_pause_us                      315.5        315
+publish_trace_us                  243.0        243
+inc_wall_us                        69.9         70
+inc_busy_us                       262.8        263
+incs_d                           297856     297856
+decs_d                              116        116
+nursery_copied_objs_d                 0          0
+nursery_copied_bytes_d                0          0
+traced_objects_d                 160908     160908
+blocks_rel_d                          0          0
+inc_packets                         515        515
+dec_packets                           0          0
+surv_bytes                           32         32
+young_bytes                    15597568   15597568
+free_pages                            0          0
+reserve_pages                       409        409

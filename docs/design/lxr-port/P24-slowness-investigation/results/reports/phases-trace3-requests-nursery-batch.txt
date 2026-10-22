@@ -1,0 +1,45 @@
+file /root/p24/results/trace3-requests-nursery-batch.txt: 66 events
+
+== RefCount: 66 pauses
+phase                         median ms     sum ms
+suspend_runtime_us                  0.1          4
+suspend_ee_us                       0.1          4
+suspend_prepare_us                  0.4         27
+root_capture_us                     0.2         16
+prepare_work_us                     0.2         15
+release_epoch_us                    1.3         93
+retire_sources_us                   0.5         41
+reclaim_nursery_us                  0.8         52
+scan0_us                            0.1          4
+scan2_us                            0.1          5
+scan3_us                            0.1          5
+scan_roots_us                       0.0          3
+scan_relocate_roots_us              0.1          4
+resume_runtime_us                   0.1          7
+stw_pause_us                       12.3        856
+post_drain_us                       5.9        378
+resume_gap_us                       0.7         44
+inc_wall_us                         8.5        597
+inc_busy_us                        16.6       1283
+dec_wall_us                         1.9        127
+dec_busy_us                         3.8        256
+prepare_trace_wall_us               0.4         27
+prepare_trace_busy_us               0.4         27
+epoch_closure_wall_us               0.2         12
+epoch_closure_busy_us               0.2         12
+nursery_sweep_wall_us               1.3         93
+nursery_sweep_busy_us               1.3         93
+mature_sweep_wall_us                3.6        222
+mature_sweep_busy_us                3.6        222
+incs_d                             9740    1046677
+decs_d                             9794     754986
+nursery_copied_objs_d              8514     929950
+nursery_copied_bytes_d           454792   49505992
+traced_objects_d                      0          0
+blocks_rel_d                       1093      84678
+inc_packets                          28       2081
+dec_packets                          26       1875
+surv_bytes                       454792   38262848
+young_bytes                    41574400 2829840384
+free_pages                          872      63704
+reserve_pages                       874      63954

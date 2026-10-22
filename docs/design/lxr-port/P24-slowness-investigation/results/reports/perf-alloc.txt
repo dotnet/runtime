@@ -1,0 +1,32 @@
+=== rq-nursery-k (inclusive share of all samples, allocator side)
+    17.77%     0.19%  [.] LxrGcHeap::Alloc                                                                              
+    15.39%     0.62%  [.] LxrReferenceCounting::Allocate                                                                
+     9.86%     4.05%  [.] ImmixAllocationManager::AcquireBlock                                                          
+     8.40%     0.08%  [.] LxrReferenceCounting::AllocateCopy                                                            
+     4.83%     4.67%  [.] SideMetadataManager::ResetRangeQuiescentCore                                                  
+     3.92%     3.73%  [.] ImmixAllocationManager::IsLineDead                                                            
+     2.86%     0.08%  [.] ImmixAllocationManager::PrepareRecycledHole                                                   
+     1.32%     0.00%  [.] LxrGcHeap::CollectLocked                                                                      
+     0.41%     0.08%  [.] LxrBarrierSlowPath                                                                            
+     0.30%     0.03%  [.] LxrReferenceCounting::LogBeforeWrite                                                          
+=== bt-nursery-k (inclusive share of all samples, allocator side)
+    14.50%     0.25%  [.] LxrGcHeap::Alloc                                      -      -            
+    14.00%     0.00%  [.] LxrReferenceCounting::Allocate                        -      -            
+     3.75%     2.75%  [.] SideMetadataManager::ResetRangeQuiescentCore          -      -            
+     2.75%     2.00%  [.] ImmixAllocationManager::AcquireBlock                  -      -            
+     2.75%     0.25%  [.] LxrReferenceCounting::AllocateCopy                    -      -            
+     0.50%     0.50%  [.] ImmixAllocationManager::IsLineDead                    -      -            
+     0.25%     0.00%  [.] LxrGcHeap::CollectLocked                              -      -            
+=== ls-nursery-batch-k (inclusive share of all samples, allocator side)
+     4.31%     4.28%  [.] SideMetadataManager::ResetRangeQuiescentCore                                                  
+     4.28%     4.28%  [.] SideMetadataManager::ResetRangeQuiescentCore                                                  
+     2.18%     0.04%  [.] LxrGcHeap::Alloc                                                                              
+     2.13%     0.07%  [.] LxrGcHeap::Alloc                                                                              
+     1.88%     0.06%  [.] LxrReferenceCounting::Allocate                                                                
+     1.64%     0.16%  [.] LxrReferenceCounting::Allocate                                                                
+     1.49%     0.45%  [.] ImmixAllocationManager::AcquireBlock                                                          
+     1.33%     0.02%  [.] LxrReferenceCounting::AllocateCopy                                                            
+     0.72%     0.68%  [.] ImmixAllocationManager::IsLineDead                                                            
+     0.71%     0.06%  [.] ImmixAllocationManager::PrepareRecycledHole                                                   
+     0.69%     0.04%  [.] ImmixAllocationManager::PrepareRecycledHole                                                   
+     0.61%     0.57%  [.] ImmixAllocationManager::IsLineDead                                                            

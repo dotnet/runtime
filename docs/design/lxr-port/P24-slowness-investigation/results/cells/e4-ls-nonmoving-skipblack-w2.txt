@@ -1,0 +1,2 @@
+{"runtime":"dotnet","workload":"listsuffix","size":4096,"ops":800000,"checksum":301262627042,"elapsed_ms":7069.119,"cpu_ms":15825.574,"gc_count":74,"gc_ms":4577,"lxr_pauses":74,"lxr_initial_mark":0,"lxr_final_mark":0,"lxr_full":0,"hiccup_p50_us":1179.6,"hiccup_p99_us":67108.9,"hiccup_p999_us":75497.5,"hiccup_max_us":89919.4,"req_p50_us":0.0,"req_p99_us":0.0,"req_p999_us":0.0,"peak_rss_kb":185716,"threads":[{"n":"corerun","u":3000,"s":260},{"n":"corerun","u":5810,"s":1000},{"n":"corerun","u":6960,"s":930}]}
+wall_s=8.860

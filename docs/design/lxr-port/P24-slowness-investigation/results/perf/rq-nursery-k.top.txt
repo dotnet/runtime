@@ -1,0 +1,40 @@
+    12.45%  [kernel.kallsyms]             [k] _raw_spin_unlock_irqrestore                                                                                                                 -      -      
+    10.34%  memfd:doublemapper (deleted)  [.] 0x0000000000134b12                                                                                                                          -      -      
+     4.78%  [kernel.kallsyms]             [k] finish_task_switch.isra.0                                                                                                                   -      -      
+     4.67%  libclrlxrgc.so                [.] SideMetadataManager::ResetRangeQuiescentCore                                                                                                -      -      
+     4.35%  libclrlxrgc.so                [.] LxrReferenceCounting::TryCopyNursery                                                                                                        -      -      
+     4.05%  libclrlxrgc.so                [.] ImmixAllocationManager::AcquireBlock                                                                                                        -      -      
+     3.73%  libclrlxrgc.so                [.] ImmixAllocationManager::IsLineDead                                                                                                          -      -      
+     3.35%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessTraceObject                                                                                                    -      -      
+     2.86%  libc.so.6                     [.] __memset_evex_unaligned_erms                                                                                                                -      -      
+     2.27%  memfd:doublemapper (deleted)  [.] 0x0000000000134b0a                                                                                                                          -      -      
+     1.92%  libclrlxrgc.so                [.] ImmixBlockManager::TryAcquire                                                                                                               -      -      
+     1.59%  [kernel.kallsyms]             [k] clear_page_erms                                                                                                                             -      -      
+     1.57%  libclrlxrgc.so                [.] LxrReferenceCounting::ResolveForwarded                                                                                                      -      -      
+     1.40%  libclrlxrgc.so                [.] ImmixBlockManager::TryLock                                                                                                                  -      -      
+     1.30%  libclrlxrgc.so                [.] SideMetadataManager::FetchAddWrapping                                                                                                       -      -      
+     1.24%  libclrlxrgc.so                [.] LxrReferenceCounting::NewWork                                                                                                               -      -      
+     1.24%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessIncrement                                                                                                      -      -      
+     0.97%  libclrlxrgc.so                [.] ImmixBlockManager::Unlock                                                                                                                   -      -      
+     0.86%  libclrlxrgc.so                [.] ImmixBlockManager::IsNurseryFast                                                                                                            -      -      
+     0.84%  memfd:doublemapper (deleted)  [.] 0x0000000000134b02                                                                                                                          -      -      
+     0.81%  libc.so.6                     [.] malloc                                                                                                                                      -      -      
+     0.81%  libclrlxrgc.so                [.] LxrReferenceCounting::SweepCycles                                                                                                           -      -      
+     0.78%  libclrlxrgc.so                [.] LxrReferenceCounting::RetireForwardedSources                                                                                                -      -      
+     0.70%  libclrlxrgc.so                [.] ImmixBlockManager::GetState                                                                                                                 -      -      
+     0.70%  libclrlxrgc.so                [.] SideMetadataManager::Load                                                                                                                   -      -      
+     0.68%  libc.so.6                     [.] pthread_mutex_unlock@@GLIBC_2.2.5                                                                                                           -      -      
+     0.68%  libclrlxrgc.so                [.] SideMetadataManager::GetLocation                                                                                                            -      -      
+     0.62%  libclrlxrgc.so                [.] LxrReferenceCounting::Allocate                                                                                                              -      -      
+     0.62%  libclrlxrgc.so                [.] ReferenceCountTable::DecrementWithDeathCore<true>                                                                                           -      -      
+     0.59%  libclrlxrgc.so                [.] ImmixAllocationManager::TryFindNextHole                                                                                                     -      -      
+     0.54%  libclrlxrgc.so                [.] LxrReferenceCounting::ScanTraceLocked                                                                                                       -      -      
+     0.51%  [kernel.kallsyms]             [k] __pv_queued_spin_lock_slowpath                                                                                                              -      -      
+     0.51%  libc.so.6                     [.] pthread_mutex_lock@@GLIBC_2.2.5                                                                                                             -      -      
+     0.51%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessDecrements                                                                                                     -      -      
+     0.49%  [vdso]                        [.] 0x000000000000078a                                                                                                                          -      -      
+     0.43%  [kernel.kallsyms]             [k] futex_hash                                                                                                                                  -      -      
+     0.43%  libclrlxrgc.so                [.] LxrReferenceCounting::Execute                                                                                                               -      -      
+     0.43%  libclrlxrgc.so                [.] LxrReferenceCounting::FixForwardingReaders                                                                                                  -      -      
+     0.43%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessIncrementWork                                                                                                  -      -      
+     0.43%  memfd:doublemapper (deleted)  [.] 0x0000000000134ab4                                                                                                                          -      -      

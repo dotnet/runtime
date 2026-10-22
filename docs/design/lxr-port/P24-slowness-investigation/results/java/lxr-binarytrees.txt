@@ -1,0 +1,551 @@
+JVM Process ID: 720
+-------------------- Immix Args --------------------
+ * barrier: "FieldBarrier"
+ * instrumentation: false
+ * log_block_size: 15
+ * log_line_size: 8
+ * log_bytes_per_rc_lock_bit: 9
+ * buffer_size: 1024
+ * cm_large_array_optimization: false
+ * inc_max_copy_depth: false
+ * no_finalizer: false
+ * no_reference_types: false
+ * workers: 13
+ * conc_workers: 3
+ * force_use_contiguous_spaces: false
+ * lxr_no_nursery_evac: false
+ * lxr_no_lazy: false
+ * lxr_no_cm: false
+ * no_meta_counting: false
+
+RuntimeArgs {
+    incs_limit: None,
+    no_mutator_line_recycling: false,
+    no_line_recycling: false,
+    nursery_blocks: None,
+    young_limit_mb: None,
+    nursery_ratio: None,
+    max_pause_millis: None,
+    max_young_evac_size: 18446744073709551615,
+    rc_stop_percent: 15,
+    max_survival_mb: 128,
+    survival_predictor_harmonic_mean: false,
+    survival_predictor_weighted: false,
+    trace_threshold: 20,
+    min_reuse_lines: 1,
+    chunk_defarg_percent: 32,
+    transparent_hugepage: true,
+}
+----------------------------------------------------
+[0.000s][info][gc] total_available_discontiguous_chunks = 768
+[0.000s][info][gc] total_available_large_discontiguous_chunks = 256
+MMTk Heap: start=0x40000000, end=0x100000000
+MMTk Compressed Pointers: enabled
+narrow_oop_mode: 32-bit
+ParallelGCThreads = 13; ConcGCThreads = 3
+ClassUnloading Enabled
+[0.011s][info][gc] new-chunk: 0x40000000 (total=0)
+[1.128s][info][gc] new-chunk: 0x40400000 (total=1)
+[1.258s][info][gc] new-chunk: 0x40800000 (total=2)
+[1.406s][info][gc] new-chunk: 0x40c00000 (total=3)
+[1.412s][info][gc] new-chunk: 0x41000000 (total=4)
+[1.419s][info][gc] new-chunk: 0x41400000 (total=5)
+[1.424s][info][gc] new-chunk: 0x41800000 (total=6)
+[1.566s][info][gc] new-chunk: 0x41c00000 (total=7)
+BENCH_MARK start
+BENCH_MARK start
+[1.603s][info][gc] Hint: cycle = false, emergency = false
+[1.603s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.603s][info][gc] GC(1) RefCount start. cause=FullHeap incs=0 young-alloc=24M young-alloc-ix=24M young-clean-blocks=787(24M)  young-alloc-los=0M
+[1.604s][info][gc]  - (0.000ms) Safepoint start. 0.581000ms since gc was triggered
+[1.604s][info][gc] Discovered 13 mutators
+[1.604s][info][gc]  - (0.196ms) Mutators stopped
+[1.604s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=7M vmmap_avail=3040M
+[1.604s][info][gc]  - ix-used-size: 24M, ix-virt-size: 32M, los-used-size: 0M,  los-virt-size: 0M
+[1.604s][info][gc]  - (0.222ms) Start GC Stage: FinishConcurrentWork
+[1.604s][info][gc]  - (0.223ms) Start GC Stage: Initial
+[1.604s][info][gc] new-chunk: 0x42000000 (total=8)
+[1.610s][info][gc] new-chunk: 0x42400000 (total=9)
+[1.611s][info][gc]     - gc_epilogue
+[1.611s][info][gc]  - (7.216ms) Start GC Stage: Release
+[1.611s][info][gc]  - (7.638ms) Start GC Stage: Final
+[1.611s][info][gc] GC(1) RefCount finished. 27M->2M(28M) used=2M pause-time=7.640ms
+[1.611s][info][gc]  - reserved=2M (ix-2M, los-0M) collection_reserve=0M ix_avail=38M vmmap_avail=3032M
+[1.611s][info][gc]  - ix-used-size: 1M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.612s][info][gc]  - lazy decs finished since-gc-start=7.974ms
+[1.611s][info][gc]  - released young blocks since gc start 0(0M)
+[1.612s][info][gc]  - lazy jobs finished since-gc-start=7.988ms, current-reserved-heap=2M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.612s][info][gc]  - released young blocks since gc start 0(0M)
+[1.612s][info][gc]  - released mature blocks 0(0M)
+[1.612s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.612s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=564 available_pages=6604
+[1.622s][info][gc] Hint: cycle = false, emergency = false
+[1.622s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.622s][info][gc] GC(2) RefCount start. cause=FullHeap incs=0 young-alloc=23M young-alloc-ix=23M young-clean-blocks=726(22M)  young-alloc-los=0M
+[1.623s][info][gc]  - (0.000ms) Safepoint start. 0.312000ms since gc was triggered
+[1.623s][info][gc] Discovered 13 mutators
+[1.623s][info][gc]  - (0.031ms) Mutators stopped
+[1.623s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.623s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.623s][info][gc]  - (0.053ms) Start GC Stage: FinishConcurrentWork
+[1.623s][info][gc]  - (0.054ms) Start GC Stage: Initial
+[1.626s][info][gc]  - Stop evacuation. over_space=true over_time=false
+[1.628s][info][gc]     - gc_epilogue
+[1.628s][info][gc]  - (5.004ms) Start GC Stage: Release
+[1.628s][info][gc]  - (5.490ms) Start GC Stage: Final
+[1.628s][info][gc] GC(2) RefCount finished. 27M->14M(28M) used=13M pause-time=5.492ms
+[1.628s][info][gc]  - reserved=14M (ix-13M, los-0M) collection_reserve=0M ix_avail=27M vmmap_avail=3032M
+[1.628s][info][gc]  - ix-used-size: 12M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.628s][info][gc]  - released young blocks since gc start 0(0M)
+[1.631s][info][gc]  - lazy decs finished since-gc-start=8.132ms
+[1.631s][info][gc]  - lazy jobs finished since-gc-start=8.533ms, current-reserved-heap=17M(28M), released-blocks=164, released-los-pages=0, total-released=5M
+[1.631s][info][gc]  - released young blocks since gc start 0(0M)
+[1.631s][info][gc]  - released mature blocks 164(5M)
+[1.631s][info][gc]  - num_clean_blocks_released_lazy = 164
+[1.631s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=2332 available_pages=4836
+[1.634s][info][gc] Hint: cycle = true, emergency = false
+[1.634s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.634s][info][gc] GC(3) InitialMark start. cause=FullHeap incs=0 young-alloc=17M young-alloc-ix=17M young-clean-blocks=551(17M)  young-alloc-los=0M
+[1.634s][info][gc]  - (0.000ms) Safepoint start. 0.279000ms since gc was triggered
+[1.635s][info][gc] Discovered 13 mutators
+[1.635s][info][gc]  - (0.091ms) Mutators stopped
+[1.635s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.635s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.635s][info][gc]  - (0.101ms) Start GC Stage: FinishConcurrentWork
+[1.635s][info][gc]  - (0.102ms) Start GC Stage: Initial
+[1.635s][info][gc]  - (0.478ms) Start GC Stage: Prepare
+[1.635s][info][gc] max_copy_bytes=1286144 (1M)
+[1.635s][info][gc]  - defrag 94208 mature bytes (74 blocks (2M), 0 blocks in fragmented chunks)
+[1.635s][info][gc]     - gc_epilogue
+[1.635s][info][gc]  - (0.981ms) Start GC Stage: Release
+[1.636s][info][gc]  - (1.102ms) Start GC Stage: Final
+[1.636s][info][gc] GC(3) InitialMark finished. 27M->8M(28M) used=8M pause-time=1.103ms
+[1.636s][info][gc]  - reserved=8M (ix-8M, los-0M) collection_reserve=0M ix_avail=32M vmmap_avail=3032M
+[1.636s][info][gc]  - ix-used-size: 7M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.636s][info][gc]  - released young blocks since gc start 0(0M)
+[1.636s][info][gc]  - lazy decs finished since-gc-start=1.530ms
+[1.636s][info][gc]  - lazy jobs finished since-gc-start=1.619ms, current-reserved-heap=8M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.636s][info][gc]  - released young blocks since gc start 0(0M)
+[1.636s][info][gc]  - released mature blocks 0(0M)
+[1.636s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.636s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=2154 available_pages=5014
+[1.640s][info][gc] SATB: Concurrent marking is done
+[1.640s][info][gc] Hint: cycle = false, emergency = false
+[1.640s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = true, cm_packets = 0, cm_enabled = true
+[1.640s][info][gc] GC(4) FinalMark start. cause=FinalMark incs=0 young-alloc=6M young-alloc-ix=6M young-clean-blocks=195(6M)  young-alloc-los=0M
+[1.640s][info][gc]  - (0.000ms) Safepoint start. 0.287000ms since gc was triggered
+[1.640s][info][gc] Discovered 13 mutators
+[1.640s][info][gc]  - (0.025ms) Mutators stopped
+[1.640s][info][gc]  - reserved=15M (ix-14M, los-0M) collection_reserve=0M ix_avail=26M vmmap_avail=3032M
+[1.640s][info][gc]  - ix-used-size: 13M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.640s][info][gc]  - (0.128ms) Start GC Stage: FinishConcurrentWork
+[1.640s][info][gc]  - (0.129ms) Start GC Stage: Initial
+[1.641s][info][gc]  - (0.529ms) Start GC Stage: Prepare
+[1.641s][info][gc]  - (0.915ms) Start GC Stage: Closure
+[1.642s][info][gc]  - (1.320ms) Start GC Stage: WeakRefClosure
+[1.642s][info][gc]  - (1.751ms) Start GC Stage: FinalRefClosure
+[1.642s][info][gc]  - (1.921ms) Start GC Stage: PhantomRefClosure
+[1.642s][info][gc]  - (2.082ms) Start GC Stage: Release
+[1.643s][info][gc]     - class unloading
+[1.643s][info][gc]     - unload_classes
+[1.644s][info][gc]     - gc_epilogue
+[1.644s][info][gc]     - class unloading finished in 1.459 ms
+[1.644s][info][gc]  - (3.775ms) Start GC Stage: Final
+[1.644s][info][gc] GC(4) FinalMark finished. 15M->6M(28M) used=5M pause-time=3.776ms
+[1.644s][info][gc]  - reserved=6M (ix-5M, los-0M) collection_reserve=0M ix_avail=34M vmmap_avail=3032M
+[1.644s][info][gc]  - ix-used-size: 5M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.644s][info][gc]  - released young blocks since gc start 0(0M)
+[1.645s][info][gc]  - lazy decs finished since-gc-start=4.911ms
+[1.645s][info][gc]  - lazy jobs finished since-gc-start=5.142ms, current-reserved-heap=8M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.645s][info][gc]  - released young blocks since gc start 0(0M)
+[1.645s][info][gc]  - released mature blocks 0(0M)
+[1.645s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.645s][info][gc]  - predicted live mature pages: 1160.25
+[1.645s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1547 available_pages=5621
+[1.651s][info][gc] Hint: cycle = false, emergency = false
+[1.651s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.651s][info][gc] GC(5) RefCount start. cause=FullHeap incs=0 young-alloc=19M young-alloc-ix=19M young-clean-blocks=618(19M)  young-alloc-los=0M
+[1.651s][info][gc]  - (0.000ms) Safepoint start. 0.285000ms since gc was triggered
+[1.651s][info][gc] Discovered 13 mutators
+[1.651s][info][gc]  - (0.032ms) Mutators stopped
+[1.651s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.651s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.651s][info][gc]  - (0.040ms) Start GC Stage: FinishConcurrentWork
+[1.651s][info][gc]  - (0.041ms) Start GC Stage: Initial
+[1.652s][info][gc]     - gc_epilogue
+[1.651s][info][gc]  - (0.427ms) Start GC Stage: Release
+[1.652s][info][gc]  - (0.818ms) Start GC Stage: Final
+[1.652s][info][gc] GC(5) RefCount finished. 27M->6M(28M) used=5M pause-time=0.819ms
+[1.652s][info][gc]  - reserved=6M (ix-5M, los-0M) collection_reserve=0M ix_avail=34M vmmap_avail=3032M
+[1.652s][info][gc]  - ix-used-size: 5M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.652s][info][gc]  - released young blocks since gc start 0(0M)
+[1.652s][info][gc]  - lazy decs finished since-gc-start=1.205ms
+[1.652s][info][gc]  - lazy jobs finished since-gc-start=1.248ms, current-reserved-heap=6M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.652s][info][gc]  - released young blocks since gc start 0(0M)
+[1.652s][info][gc]  - released mature blocks 0(0M)
+[1.652s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.652s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1547 available_pages=5621
+[1.658s][info][gc] Hint: cycle = false, emergency = false
+[1.658s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.658s][info][gc] GC(6) RefCount start. cause=FullHeap incs=0 young-alloc=19M young-alloc-ix=19M young-clean-blocks=618(19M)  young-alloc-los=0M
+[1.658s][info][gc]  - (0.000ms) Safepoint start. 0.267000ms since gc was triggered
+[1.658s][info][gc] Discovered 13 mutators
+[1.658s][info][gc]  - (0.030ms) Mutators stopped
+[1.658s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.658s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.658s][info][gc]  - (0.056ms) Start GC Stage: FinishConcurrentWork
+[1.658s][info][gc]  - (0.058ms) Start GC Stage: Initial
+[1.659s][info][gc]     - gc_epilogue
+[1.659s][info][gc]  - (0.450ms) Start GC Stage: Release
+[1.659s][info][gc]  - (0.820ms) Start GC Stage: Final
+[1.659s][info][gc] GC(6) RefCount finished. 27M->6M(28M) used=5M pause-time=0.820ms
+[1.659s][info][gc]  - reserved=6M (ix-5M, los-0M) collection_reserve=0M ix_avail=34M vmmap_avail=3032M
+[1.659s][info][gc]  - ix-used-size: 5M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.659s][info][gc]  - released young blocks since gc start 0(0M)
+[1.659s][info][gc]  - lazy decs finished since-gc-start=1.122ms
+[1.659s][info][gc]  - lazy jobs finished since-gc-start=1.173ms, current-reserved-heap=6M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.659s][info][gc]  - released young blocks since gc start 0(0M)
+[1.659s][info][gc]  - released mature blocks 0(0M)
+[1.659s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.659s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1547 available_pages=5621
+[1.665s][info][gc] Hint: cycle = false, emergency = false
+[1.665s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.665s][info][gc] GC(7) RefCount start. cause=FullHeap incs=0 young-alloc=19M young-alloc-ix=19M young-clean-blocks=618(19M)  young-alloc-los=0M
+[1.666s][info][gc]  - (0.000ms) Safepoint start. 0.313000ms since gc was triggered
+[1.666s][info][gc] Discovered 13 mutators
+[1.666s][info][gc]  - (0.057ms) Mutators stopped
+[1.666s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.666s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.666s][info][gc]  - (0.066ms) Start GC Stage: FinishConcurrentWork
+[1.666s][info][gc]  - (0.067ms) Start GC Stage: Initial
+[1.666s][info][gc]     - gc_epilogue
+[1.666s][info][gc]  - (0.472ms) Start GC Stage: Release
+[1.666s][info][gc]  - (0.848ms) Start GC Stage: Final
+[1.666s][info][gc] GC(7) RefCount finished. 27M->6M(28M) used=5M pause-time=0.849ms
+[1.666s][info][gc]  - reserved=6M (ix-5M, los-0M) collection_reserve=0M ix_avail=34M vmmap_avail=3032M
+[1.666s][info][gc]  - ix-used-size: 5M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.666s][info][gc]  - released young blocks since gc start 0(0M)
+[1.667s][info][gc]  - lazy decs finished since-gc-start=1.177ms
+[1.667s][info][gc]  - lazy jobs finished since-gc-start=1.231ms, current-reserved-heap=6M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.667s][info][gc]  - released young blocks since gc start 0(0M)
+[1.667s][info][gc]  - released mature blocks 0(0M)
+[1.667s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.667s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1547 available_pages=5621
+[1.673s][info][gc] Hint: cycle = false, emergency = false
+[1.673s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.673s][info][gc] GC(8) RefCount start. cause=FullHeap incs=0 young-alloc=19M young-alloc-ix=19M young-clean-blocks=618(19M)  young-alloc-los=0M
+[1.673s][info][gc]  - (0.000ms) Safepoint start. 0.270000ms since gc was triggered
+[1.673s][info][gc] Discovered 13 mutators
+[1.673s][info][gc]  - (0.042ms) Mutators stopped
+[1.673s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.673s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.673s][info][gc]  - (0.053ms) Start GC Stage: FinishConcurrentWork
+[1.673s][info][gc]  - (0.054ms) Start GC Stage: Initial
+[1.674s][info][gc]     - gc_epilogue
+[1.673s][info][gc]  - (0.440ms) Start GC Stage: Release
+[1.674s][info][gc]  - (0.852ms) Start GC Stage: Final
+[1.674s][info][gc] GC(8) RefCount finished. 27M->6M(28M) used=5M pause-time=0.854ms
+[1.674s][info][gc]  - reserved=6M (ix-5M, los-0M) collection_reserve=0M ix_avail=34M vmmap_avail=3032M
+[1.674s][info][gc]  - ix-used-size: 5M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.674s][info][gc]  - released young blocks since gc start 0(0M)
+[1.674s][info][gc]  - lazy decs finished since-gc-start=1.200ms
+[1.674s][info][gc]  - lazy jobs finished since-gc-start=1.243ms, current-reserved-heap=6M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.674s][info][gc]  - released young blocks since gc start 0(0M)
+[1.674s][info][gc]  - released mature blocks 0(0M)
+[1.674s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.674s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1556 available_pages=5612
+[1.680s][info][gc] Hint: cycle = false, emergency = false
+[1.680s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.680s][info][gc] GC(9) RefCount start. cause=FullHeap incs=0 young-alloc=19M young-alloc-ix=19M young-clean-blocks=617(19M)  young-alloc-los=0M
+[1.680s][info][gc]  - (0.000ms) Safepoint start. 0.295000ms since gc was triggered
+[1.680s][info][gc] Discovered 13 mutators
+[1.680s][info][gc]  - (0.037ms) Mutators stopped
+[1.680s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.680s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.680s][info][gc]  - (0.060ms) Start GC Stage: FinishConcurrentWork
+[1.680s][info][gc]  - (0.061ms) Start GC Stage: Initial
+[1.681s][info][gc]     - gc_epilogue
+[1.680s][info][gc]  - (0.455ms) Start GC Stage: Release
+[1.681s][info][gc]  - (0.826ms) Start GC Stage: Final
+[1.681s][info][gc] GC(9) RefCount finished. 27M->6M(28M) used=5M pause-time=0.827ms
+[1.681s][info][gc]  - reserved=6M (ix-5M, los-0M) collection_reserve=0M ix_avail=34M vmmap_avail=3032M
+[1.681s][info][gc]  - ix-used-size: 5M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.681s][info][gc]  - released young blocks since gc start 0(0M)
+[1.681s][info][gc]  - lazy decs finished since-gc-start=1.130ms
+[1.681s][info][gc]  - lazy jobs finished since-gc-start=1.175ms, current-reserved-heap=6M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.681s][info][gc]  - released young blocks since gc start 0(0M)
+[1.681s][info][gc]  - released mature blocks 0(0M)
+[1.681s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.681s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1556 available_pages=5612
+[1.687s][info][gc] Hint: cycle = false, emergency = false
+[1.687s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.687s][info][gc] GC(10) RefCount start. cause=FullHeap incs=0 young-alloc=19M young-alloc-ix=19M young-clean-blocks=617(19M)  young-alloc-los=0M
+[1.687s][info][gc]  - (0.000ms) Safepoint start. 0.275000ms since gc was triggered
+[1.687s][info][gc] Discovered 13 mutators
+[1.687s][info][gc]  - (0.026ms) Mutators stopped
+[1.687s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.687s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.687s][info][gc]  - (0.033ms) Start GC Stage: FinishConcurrentWork
+[1.687s][info][gc]  - (0.034ms) Start GC Stage: Initial
+[1.688s][info][gc]     - gc_epilogue
+[1.688s][info][gc]  - (0.411ms) Start GC Stage: Release
+[1.688s][info][gc]  - (0.812ms) Start GC Stage: Final
+[1.688s][info][gc] GC(10) RefCount finished. 27M->6M(28M) used=5M pause-time=0.813ms
+[1.688s][info][gc]  - reserved=6M (ix-5M, los-0M) collection_reserve=0M ix_avail=34M vmmap_avail=3032M
+[1.688s][info][gc]  - ix-used-size: 5M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.688s][info][gc]  - released young blocks since gc start 0(0M)
+[1.688s][info][gc]  - lazy decs finished since-gc-start=1.118ms
+[1.688s][info][gc]  - lazy jobs finished since-gc-start=1.177ms, current-reserved-heap=6M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.688s][info][gc]  - released young blocks since gc start 0(0M)
+[1.688s][info][gc]  - released mature blocks 0(0M)
+[1.688s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.688s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1564 available_pages=5604
+[1.694s][info][gc] Hint: cycle = false, emergency = false
+[1.694s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.694s][info][gc] GC(11) RefCount start. cause=FullHeap incs=0 young-alloc=19M young-alloc-ix=19M young-clean-blocks=616(19M)  young-alloc-los=0M
+[1.694s][info][gc]  - (0.000ms) Safepoint start. 0.296000ms since gc was triggered
+[1.694s][info][gc] Discovered 13 mutators
+[1.694s][info][gc]  - (0.027ms) Mutators stopped
+[1.694s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.694s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.694s][info][gc]  - (0.037ms) Start GC Stage: FinishConcurrentWork
+[1.694s][info][gc]  - (0.038ms) Start GC Stage: Initial
+[1.695s][info][gc]     - gc_epilogue
+[1.695s][info][gc]  - (0.424ms) Start GC Stage: Release
+[1.695s][info][gc]  - (0.801ms) Start GC Stage: Final
+[1.695s][info][gc] GC(11) RefCount finished. 27M->6M(28M) used=5M pause-time=0.802ms
+[1.695s][info][gc]  - reserved=6M (ix-5M, los-0M) collection_reserve=0M ix_avail=34M vmmap_avail=3032M
+[1.695s][info][gc]  - ix-used-size: 5M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.695s][info][gc]  - released young blocks since gc start 0(0M)
+[1.695s][info][gc]  - lazy decs finished since-gc-start=1.149ms
+[1.695s][info][gc]  - lazy jobs finished since-gc-start=1.226ms, current-reserved-heap=6M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.695s][info][gc]  - released young blocks since gc start 0(0M)
+[1.695s][info][gc]  - released mature blocks 0(0M)
+[1.695s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.695s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1583 available_pages=5585
+[1.701s][info][gc] Hint: cycle = false, emergency = false
+[1.701s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.701s][info][gc] GC(12) RefCount start. cause=FullHeap incs=0 young-alloc=19M young-alloc-ix=19M young-clean-blocks=614(19M)  young-alloc-los=0M
+[1.702s][info][gc]  - (0.000ms) Safepoint start. 0.258000ms since gc was triggered
+[1.702s][info][gc] Discovered 13 mutators
+[1.702s][info][gc]  - (0.031ms) Mutators stopped
+[1.702s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.702s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.702s][info][gc]  - (0.041ms) Start GC Stage: FinishConcurrentWork
+[1.702s][info][gc]  - (0.042ms) Start GC Stage: Initial
+[1.703s][info][gc]     - gc_epilogue
+[1.702s][info][gc]  - (0.580ms) Start GC Stage: Release
+[1.703s][info][gc]  - (0.995ms) Start GC Stage: Final
+[1.703s][info][gc] GC(12) RefCount finished. 27M->6M(28M) used=6M pause-time=0.996ms
+[1.703s][info][gc]  - reserved=6M (ix-6M, los-0M) collection_reserve=0M ix_avail=34M vmmap_avail=3032M
+[1.703s][info][gc]  - ix-used-size: 5M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.703s][info][gc]  - released young blocks since gc start 0(0M)
+[1.703s][info][gc]  - lazy decs finished since-gc-start=1.351ms
+[1.703s][info][gc]  - lazy jobs finished since-gc-start=1.432ms, current-reserved-heap=6M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.703s][info][gc]  - released young blocks since gc start 0(0M)
+[1.703s][info][gc]  - released mature blocks 0(0M)
+[1.703s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.703s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1619 available_pages=5549
+[1.709s][info][gc] Hint: cycle = false, emergency = false
+[1.709s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.709s][info][gc] GC(13) RefCount start. cause=FullHeap incs=0 young-alloc=19M young-alloc-ix=19M young-clean-blocks=610(19M)  young-alloc-los=0M
+[1.709s][info][gc]  - (0.000ms) Safepoint start. 0.247000ms since gc was triggered
+[1.709s][info][gc] Discovered 13 mutators
+[1.709s][info][gc]  - (0.031ms) Mutators stopped
+[1.709s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.709s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.709s][info][gc]  - (0.042ms) Start GC Stage: FinishConcurrentWork
+[1.709s][info][gc]  - (0.043ms) Start GC Stage: Initial
+[1.710s][info][gc]     - gc_epilogue
+[1.710s][info][gc]  - (1.113ms) Start GC Stage: Release
+[1.710s][info][gc]  - (1.528ms) Start GC Stage: Final
+[1.710s][info][gc] GC(13) RefCount finished. 27M->6M(28M) used=6M pause-time=1.529ms
+[1.710s][info][gc]  - reserved=6M (ix-6M, los-0M) collection_reserve=0M ix_avail=34M vmmap_avail=3032M
+[1.710s][info][gc]  - ix-used-size: 5M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.710s][info][gc]  - released young blocks since gc start 0(0M)
+[1.711s][info][gc]  - lazy decs finished since-gc-start=1.988ms
+[1.711s][info][gc]  - lazy jobs finished since-gc-start=2.129ms, current-reserved-heap=7M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.711s][info][gc]  - released young blocks since gc start 0(0M)
+[1.711s][info][gc]  - released mature blocks 0(0M)
+[1.711s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.711s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1700 available_pages=5468
+[1.717s][info][gc] Hint: cycle = false, emergency = false
+[1.717s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.717s][info][gc] GC(14) RefCount start. cause=FullHeap incs=0 young-alloc=19M young-alloc-ix=19M young-clean-blocks=601(18M)  young-alloc-los=0M
+[1.717s][info][gc]  - (0.000ms) Safepoint start. 0.282000ms since gc was triggered
+[1.717s][info][gc] Discovered 13 mutators
+[1.717s][info][gc]  - (0.032ms) Mutators stopped
+[1.717s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.717s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.717s][info][gc]  - (0.043ms) Start GC Stage: FinishConcurrentWork
+[1.717s][info][gc]  - (0.044ms) Start GC Stage: Initial
+[1.718s][info][gc]     - gc_epilogue
+[1.717s][info][gc]  - (0.450ms) Start GC Stage: Release
+[1.718s][info][gc]  - (0.792ms) Start GC Stage: Final
+[1.718s][info][gc] GC(14) RefCount finished. 27M->6M(28M) used=6M pause-time=0.793ms
+[1.718s][info][gc]  - reserved=6M (ix-6M, los-0M) collection_reserve=0M ix_avail=34M vmmap_avail=3032M
+[1.718s][info][gc]  - ix-used-size: 5M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.718s][info][gc]  - released young blocks since gc start 0(0M)
+[1.718s][info][gc]  - lazy decs finished since-gc-start=1.265ms
+[1.718s][info][gc]  - lazy jobs finished since-gc-start=1.404ms, current-reserved-heap=6M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.718s][info][gc]  - released young blocks since gc start 0(0M)
+[1.718s][info][gc]  - released mature blocks 0(0M)
+[1.718s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.718s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1717 available_pages=5451
+[1.724s][info][gc] Hint: cycle = false, emergency = false
+[1.724s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.724s][info][gc] GC(15) RefCount start. cause=FullHeap incs=0 young-alloc=19M young-alloc-ix=19M young-clean-blocks=599(18M)  young-alloc-los=0M
+[1.724s][info][gc]  - (0.000ms) Safepoint start. 0.301000ms since gc was triggered
+[1.724s][info][gc] Discovered 13 mutators
+[1.724s][info][gc]  - (0.030ms) Mutators stopped
+[1.724s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.724s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.724s][info][gc]  - (0.051ms) Start GC Stage: FinishConcurrentWork
+[1.724s][info][gc]  - (0.052ms) Start GC Stage: Initial
+[1.726s][info][gc]     - gc_epilogue
+[1.725s][info][gc]  - (0.739ms) Start GC Stage: Release
+[1.726s][info][gc]  - (1.157ms) Start GC Stage: Final
+[1.726s][info][gc] GC(15) RefCount finished. 27M->7M(28M) used=6M pause-time=1.158ms
+[1.726s][info][gc]  - reserved=7M (ix-6M, los-0M) collection_reserve=0M ix_avail=33M vmmap_avail=3032M
+[1.726s][info][gc]  - ix-used-size: 6M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.726s][info][gc]  - released young blocks since gc start 0(0M)
+[1.726s][info][gc]  - lazy decs finished since-gc-start=1.697ms
+[1.726s][info][gc]  - lazy jobs finished since-gc-start=1.848ms, current-reserved-heap=7M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.726s][info][gc]  - released young blocks since gc start 0(0M)
+[1.726s][info][gc]  - released mature blocks 0(0M)
+[1.726s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.726s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1801 available_pages=5367
+[1.732s][info][gc] Hint: cycle = false, emergency = false
+[1.732s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.732s][info][gc] GC(16) RefCount start. cause=FullHeap incs=0 young-alloc=19M young-alloc-ix=19M young-clean-blocks=590(18M)  young-alloc-los=0M
+[1.732s][info][gc]  - (0.000ms) Safepoint start. 0.309000ms since gc was triggered
+[1.732s][info][gc] Discovered 13 mutators
+[1.732s][info][gc]  - (0.029ms) Mutators stopped
+[1.732s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.732s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.732s][info][gc]  - (0.046ms) Start GC Stage: FinishConcurrentWork
+[1.732s][info][gc]  - (0.046ms) Start GC Stage: Initial
+[1.733s][info][gc]     - gc_epilogue
+[1.733s][info][gc]  - (1.020ms) Start GC Stage: Release
+[1.733s][info][gc]  - (1.450ms) Start GC Stage: Final
+[1.733s][info][gc] GC(16) RefCount finished. 27M->7M(28M) used=7M pause-time=1.451ms
+[1.733s][info][gc]  - reserved=7M (ix-7M, los-0M) collection_reserve=0M ix_avail=33M vmmap_avail=3032M
+[1.733s][info][gc]  - ix-used-size: 6M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.733s][info][gc]  - released young blocks since gc start 0(0M)
+[1.734s][info][gc]  - lazy decs finished since-gc-start=2.174ms
+[1.734s][info][gc]  - lazy jobs finished since-gc-start=2.470ms, current-reserved-heap=9M(28M), released-blocks=0, released-los-pages=0, total-released=0B
+[1.734s][info][gc]  - released young blocks since gc start 0(0M)
+[1.734s][info][gc]  - released mature blocks 0(0M)
+[1.734s][info][gc]  - num_clean_blocks_released_lazy = 0
+[1.734s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=1954 available_pages=5214
+[1.739s][info][gc] Hint: cycle = false, emergency = false
+[1.739s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.739s][info][gc] GC(17) RefCount start. cause=FullHeap incs=0 young-alloc=18M young-alloc-ix=18M young-clean-blocks=573(17M)  young-alloc-los=0M
+[1.740s][info][gc]  - (0.000ms) Safepoint start. 0.311000ms since gc was triggered
+[1.740s][info][gc] Discovered 13 mutators
+[1.740s][info][gc]  - (0.030ms) Mutators stopped
+[1.740s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.740s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.740s][info][gc]  - (0.038ms) Start GC Stage: FinishConcurrentWork
+[1.740s][info][gc]  - (0.040ms) Start GC Stage: Initial
+[1.743s][info][gc]  - Stop evacuation. over_space=true over_time=false
+[1.743s][info][gc]     - gc_epilogue
+[1.743s][info][gc]  - (3.144ms) Start GC Stage: Release
+[1.743s][info][gc]  - (3.615ms) Start GC Stage: Final
+[1.743s][info][gc] GC(17) RefCount finished. 27M->11M(28M) used=11M pause-time=3.617ms
+[1.743s][info][gc]  - reserved=11M (ix-11M, los-0M) collection_reserve=0M ix_avail=29M vmmap_avail=3032M
+[1.743s][info][gc]  - ix-used-size: 10M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.743s][info][gc]  - released young blocks since gc start 0(0M)
+[1.744s][info][gc]  - lazy decs finished since-gc-start=4.443ms
+[1.744s][info][gc]  - lazy jobs finished since-gc-start=4.754ms, current-reserved-heap=12M(28M), released-blocks=8, released-los-pages=0, total-released=256K
+[1.744s][info][gc]  - released young blocks since gc start 0(0M)
+[1.744s][info][gc]  - released mature blocks 8(0M)
+[1.744s][info][gc]  - num_clean_blocks_released_lazy = 8
+[1.744s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=2954 available_pages=4214
+[1.749s][info][gc] Hint: cycle = true, emergency = false
+[1.749s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.749s][info][gc] GC(18) InitialMark start. cause=FullHeap incs=0 young-alloc=15M young-alloc-ix=15M young-clean-blocks=464(14M)  young-alloc-los=0M
+[1.750s][info][gc]  - (0.000ms) Safepoint start. 0.290000ms since gc was triggered
+[1.750s][info][gc] Discovered 13 mutators
+[1.750s][info][gc]  - (0.059ms) Mutators stopped
+[1.750s][info][gc]  - reserved=27M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.750s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.750s][info][gc]  - (0.072ms) Start GC Stage: FinishConcurrentWork
+[1.750s][info][gc]  - (0.073ms) Start GC Stage: Initial
+[1.751s][info][gc]  - (1.162ms) Start GC Stage: Prepare
+[1.751s][info][gc] max_copy_bytes=1302528 (1M)
+[1.751s][info][gc]  - defrag 40192 mature bytes (37 blocks (1M), 0 blocks in fragmented chunks)
+[1.751s][info][gc]     - gc_epilogue
+[1.751s][info][gc]  - (1.625ms) Start GC Stage: Release
+[1.751s][info][gc]  - (1.734ms) Start GC Stage: Final
+[1.751s][info][gc] GC(18) InitialMark finished. 27M->11M(28M) used=11M pause-time=1.735ms
+[1.751s][info][gc]  - reserved=11M (ix-11M, los-0M) collection_reserve=0M ix_avail=29M vmmap_avail=3032M
+[1.751s][info][gc]  - ix-used-size: 10M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.751s][info][gc]  - released young blocks since gc start 0(0M)
+[1.753s][info][gc]  - lazy decs finished since-gc-start=2.894ms
+[1.753s][info][gc]  - lazy jobs finished since-gc-start=3.317ms, current-reserved-heap=15M(28M), released-blocks=23, released-los-pages=0, total-released=736K
+[1.753s][info][gc]  - released young blocks since gc start 0(0M)
+[1.753s][info][gc]  - released mature blocks 23(0M)
+[1.753s][info][gc]  - num_clean_blocks_released_lazy = 23
+[1.753s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=2842 available_pages=4326
+[1.755s][info][gc] SATB: Concurrent marking is done
+[1.755s][info][gc] Hint: cycle = false, emergency = false
+[1.755s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = true, cm_packets = 0, cm_enabled = true
+[1.755s][info][gc] GC(19) FinalMark start. cause=FinalMark incs=0 young-alloc=8M young-alloc-ix=8M young-clean-blocks=269(8M)  young-alloc-los=0M
+[1.755s][info][gc]  - (0.000ms) Safepoint start. 0.266000ms since gc was triggered
+[1.755s][info][gc] Discovered 13 mutators
+[1.755s][info][gc]  - (0.029ms) Mutators stopped
+[1.755s][info][gc]  - reserved=20M (ix-19M, los-0M) collection_reserve=0M ix_avail=21M vmmap_avail=3032M
+[1.755s][info][gc]  - ix-used-size: 18M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.755s][info][gc]  - (0.040ms) Start GC Stage: FinishConcurrentWork
+[1.755s][info][gc]  - (0.041ms) Start GC Stage: Initial
+[1.757s][info][gc]  - (2.193ms) Start GC Stage: Prepare
+[1.758s][info][gc]  - (2.650ms) Start GC Stage: Closure
+[1.758s][info][gc]  - (3.002ms) Start GC Stage: WeakRefClosure
+[1.758s][info][gc]  - (3.330ms) Start GC Stage: FinalRefClosure
+[1.759s][info][gc]  - (3.468ms) Start GC Stage: PhantomRefClosure
+[1.759s][info][gc]  - (3.541ms) Start GC Stage: Release
+[1.759s][info][gc]     - class unloading
+[1.759s][info][gc]     - unload_classes
+[1.760s][info][gc]     - gc_epilogue
+[1.760s][info][gc]     - class unloading finished in 1.281 ms
+[1.760s][info][gc]  - (4.941ms) Start GC Stage: Final
+[1.760s][info][gc] GC(19) FinalMark finished. 20M->12M(28M) used=11M pause-time=4.942ms
+[1.760s][info][gc]  - reserved=12M (ix-11M, los-0M) collection_reserve=0M ix_avail=29M vmmap_avail=3032M
+[1.760s][info][gc]  - ix-used-size: 11M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.760s][info][gc]  - released young blocks since gc start 0(0M)
+[1.762s][info][gc]  - lazy decs finished since-gc-start=6.955ms
+[1.762s][info][gc]  - lazy jobs finished since-gc-start=7.352ms, current-reserved-heap=15M(28M), released-blocks=69, released-los-pages=0, total-released=2M
+[1.762s][info][gc]  - released young blocks since gc start 0(0M)
+[1.762s][info][gc]  - released mature blocks 69(2M)
+[1.762s][info][gc]  - num_clean_blocks_released_lazy = 69
+[1.762s][info][gc]  - predicted live mature pages: 2280.5625
+[1.762s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=2654 available_pages=4514
+[1.766s][info][gc] Hint: cycle = false, emergency = false
+[1.766s][info][gc] Stat: emergency = false, user_triggered = false, cm_in_progress = false, cm_packets = 0, cm_enabled = true
+[1.766s][info][gc] GC(20) RefCount start. cause=FullHeap incs=0 young-alloc=16M young-alloc-ix=16M young-clean-blocks=504(15M)  young-alloc-los=0M
+[1.767s][info][gc]  - (0.000ms) Safepoint start. 0.312000ms since gc was triggered
+[1.767s][info][gc] Discovered 13 mutators
+[1.767s][info][gc]  - (0.031ms) Mutators stopped
+[1.767s][info][gc]  - reserved=28M (ix-26M, los-0M) collection_reserve=1M ix_avail=15M vmmap_avail=3032M
+[1.767s][info][gc]  - ix-used-size: 24M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.767s][info][gc]  - (0.041ms) Start GC Stage: FinishConcurrentWork
+[1.767s][info][gc]  - (0.042ms) Start GC Stage: Initial
+[1.769s][info][gc]  - Stop evacuation. over_space=true over_time=false
+[1.770s][info][gc]     - gc_epilogue
+[1.769s][info][gc]  - (2.630ms) Start GC Stage: Release
+[1.770s][info][gc]  - (3.075ms) Start GC Stage: Final
+[1.770s][info][gc] GC(20) RefCount finished. 28M->15M(28M) used=14M pause-time=3.077ms
+[1.770s][info][gc]  - reserved=15M (ix-14M, los-0M) collection_reserve=0M ix_avail=26M vmmap_avail=3032M
+[1.770s][info][gc]  - ix-used-size: 13M, ix-virt-size: 40M, los-used-size: 0M,  los-virt-size: 0M
+[1.770s][info][gc]  - released young blocks since gc start 0(0M)
+[1.771s][info][gc]  - lazy decs finished since-gc-start=4.410ms
+[1.771s][info][gc]  - lazy jobs finished since-gc-start=4.839ms, current-reserved-heap=14M(28M), released-blocks=45, released-los-pages=0, total-released=1M
+[1.771s][info][gc]  - released young blocks since gc start 0(0M)
+[1.771s][info][gc]  - released mature blocks 45(1M)
+[1.771s][info][gc]  - num_clean_blocks_released_lazy = 45
+[1.771s][info][gc]  - total_pages=7168 stop_pages=1075 mature_space_pages=3502 available_pages=3666
+BENCH_MARK end
+BENCH_MARK end
+{"runtime":"java","workload":"binarytrees","size":16,"ops":0,"checksum":14985972,"elapsed_ms":169.374,"cpu_ms":390.000,"gc_count":0,"gc_ms":0,"hiccup_p50_us":1179.6,"hiccup_p99_us":6815.7,"hiccup_p999_us":9437.2,"hiccup_max_us":8908.3,"req_p50_us":0.0,"req_p99_us":0.0,"req_p999_us":0.0,"peak_rss_kb":901604}
+wall_s=3.001

@@ -1,0 +1,3 @@
+{"runtime":"dotnet","workload":"binarytrees","size":16,"ops":0,"checksum":14985972,"elapsed_ms":247.990,"cpu_ms":253.084,"gc_count":87,"gc_ms":85,"hiccup_p50_us":1179.6,"hiccup_p99_us":9437.2,"hiccup_p999_us":9437.2,"hiccup_max_us":9416.2,"req_p50_us":0.0,"req_p99_us":0.0,"req_p999_us":0.0,"peak_rss_kb":53836}
+[ perf record: Woken up 2 times to write data ]
+[ perf record: Captured and wrote 0.088 MB /root/p24/results/perf/bt-wks-k.data (164 samples) ]

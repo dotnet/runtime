@@ -1,0 +1,16 @@
+== /root/p24/results/java/lxr-binarytrees.txt
+   pauses=20 total pause=43 ms
+   RefCount     n= 16 median=  0.93 ms max=  7.64 ms median young-alloc=  19 MiB median incs(logged)=     0 heap before->after median 27->6 MiB causes={'FullHeap': 16}
+   InitialMark  n=  2 median=  1.42 ms max=  1.74 ms median young-alloc=  16 MiB median incs(logged)=     0 heap before->after median 27->10 MiB causes={'FullHeap': 2}
+   FinalMark    n=  2 median=  4.36 ms max=  4.94 ms median young-alloc=   7 MiB median incs(logged)=     0 heap before->after median 18->9 MiB causes={'FinalMark': 2}
+== /root/p24/results/java/lxr-requests.txt
+   pauses=112 total pause=190 ms
+   RefCount     n=106 median=  1.58 ms max=  3.99 ms median young-alloc=  20 MiB median incs(logged)=     0 heap before->after median 51->29 MiB causes={'FullHeap': 106}
+   InitialMark  n=  3 median=  1.95 ms max=  2.91 ms median young-alloc=  19 MiB median incs(logged)=     0 heap before->after median 51->31 MiB causes={'FullHeap': 3}
+   FinalMark    n=  3 median=  3.61 ms max=  4.04 ms median young-alloc=   2 MiB median incs(logged)=     0 heap before->after median 33->23 MiB causes={'FinalMark': 3}
+== /root/p24/results/java/lxr-listsuffix.txt
+   pauses=155 total pause=2883 ms
+   RefCount     n= 76 median=  4.60 ms max=  8.69 ms median young-alloc=   5 MiB median incs(logged)=  5120 heap before->after median 27->26 MiB causes={'FullHeap': 76}
+   InitialMark  n=  2 median=  6.07 ms max=  7.14 ms median young-alloc=  10 MiB median incs(logged)=  5120 heap before->after median 28->26 MiB causes={'FullHeap': 2}
+   FinalMark    n=  2 median=  7.38 ms max=  8.39 ms median young-alloc=   2 MiB median incs(logged)=  1536 heap before->after median 28->19 MiB causes={'FullHeap': 1, 'FinalMark': 1}
+   Full         n= 75 median= 32.93 ms max= 39.66 ms median young-alloc=   1 MiB median incs(logged)=  1024 heap before->after median 27->21 MiB causes={'FullHeap': 75}

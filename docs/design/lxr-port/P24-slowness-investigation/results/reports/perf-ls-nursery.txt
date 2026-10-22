@@ -1,0 +1,37 @@
+== samples by thread (self, percent of all samples)
+    22.05%      757:corerun        
+    21.44%      758:corerun        
+    20.98%      756:corerun        
+    20.64%      759:corerun        
+    14.80%      749:corerun        
+     0.03%      760:LXR root/lifeti
+     0.03%      763:corerun        
+     0.02%      761:LXR trace coord
+     0.00%      762:.NET Finalizer 
+
+== inclusive (children) share of selected functions
+    76.59%     0.91%  [.] LxrWorkScheduler::Impl::WorkerLoop                                                                                                          -   
+    69.90%     1.06%  [.] LxrReferenceCounting::Execute                                                                                                               -   
+    29.36%     1.71%  [.] LxrReferenceCounting::ProcessIncrementWork                                                                                                  -   
+    27.43%     2.94%  [.] LxrReferenceCounting::ProcessIncrement                                                                                                      -   
+    19.54%     2.32%  [.] LxrReferenceCounting::ProcessTraceWork                                                                                                      -   
+    17.19%    11.71%  [.] LxrReferenceCounting::ProcessTraceObject                                                                                                    -   
+    11.19%    11.09%  [.] LxrReferenceCounting::FixForwardingReaders                                                                                                  -   
+     8.21%     5.53%  [.] LxrReferenceCounting::TryCopyNursery                                                                                                        -   
+     8.02%     0.35%  [.] LxrReferenceCounting::ProcessDecrements                                                                                                     -   
+     7.98%     7.95%  [.] LxrReferenceCounting::NewWork                                                                                                               -   
+     7.29%     0.00%  [.] LxrGcHeap::CollectLocked                                                                                                                    -   
+     7.29%     0.00%  [.] LxrReferenceCounting::RunPause                                                                                                              -   
+     5.12%     2.79%  [.] LxrReferenceCounting::Resume                                                                                                                -   
+     2.15%     0.00%  [.] LxrReferenceCounting::Suspend                                                                                                               -   
+     1.90%     1.72%  [.] LxrReferenceCounting::RetireCompletedWork                                                                                                   -   
+     0.78%     0.46%  [.] LxrWorkScheduler::Submit                                                                                                                    -   
+     0.28%     0.00%  [.] LxrReferenceCounting::Sweep                                                                                                                 -   
+     0.20%     0.01%  [.] LxrReferenceCounting::RefreshBlock                                                                                                          -   
+     0.17%     0.00%  [.] LxrReferenceCounting::ReleaseEpoch                                                                                                          -   
+     0.07%     0.07%  [.] LxrWorkPacket::Execute                                                                                                                      -   
+     0.07%     0.01%  [.] LxrReferenceCounting::FlushMutators                                                                                                         -   
+     0.06%     0.00%  [.] LxrReferenceCounting::SubmitWork                                                                                                            -   
+     0.03%     0.00%  [.] LxrGcHeap::ScanOnGcThread                                                                                                                   -   
+     0.03%     0.00%  [.] LxrGcHeap::ExecuteScan                                                                                                                      -   
+     0.00%     0.00%  [.] LxrGcHeap::Resume                                                                                                                           -   

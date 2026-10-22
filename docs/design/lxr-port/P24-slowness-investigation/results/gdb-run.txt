@@ -1,0 +1,2 @@
+Terminated
+wall_s=30.368

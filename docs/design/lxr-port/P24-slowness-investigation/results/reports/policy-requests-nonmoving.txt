@@ -1,0 +1,64 @@
+62 records
+           n   pause_kind mature_pages admitted_pag   used_pages non_free_blo immix_capaci   live_bytes mature_live_ mature_live_ cycle_hint_a emergency_hi        cause  block_states
+           0         None         9729        21504         9729         1215         2368                         0         None         None         None         None   {'Unallocated': 1153, 'Unmarked': 0, 'Marked': 0, 'Reusable': 1215}
+           1         None        13553        21504        13553         1693         2368                         0         None         None         None         None   {'Unallocated': 675, 'Unmarked': 0, 'Marked': 0, 'Reusable': 1693}
+           2         None        12465        21504        12465         1557         2368                         0         None         None         None         None   {'Unallocated': 811, 'Unmarked': 0, 'Marked': 0, 'Reusable': 1557}
+           3         None        15041        21504        15041         1879         2368                      9349         None         None         None         None   {'Unallocated': 489, 'Unmarked': 0, 'Marked': 0, 'Reusable': 1879}
+           4         None        15825        21504        15890         1977         2368                      9349         None         None         None         None   {'Unallocated': 391, 'Unmarked': 0, 'Marked': 0, 'Reusable': 1977}
+           5         None         7641        21504         7641          947         2368                      9349         None         None         None         None   {'Unallocated': 1421, 'Unmarked': 0, 'Marked': 0, 'Reusable': 947}
+           6         None        14265        21504        14265         1775         2368                      8068         None         None         None         None   {'Unallocated': 593, 'Unmarked': 0, 'Marked': 0, 'Reusable': 1775}
+           7         None        17121        21504        17121         2132         2368                      8068         None         None         None         None   {'Unallocated': 236, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2132}
+           8         None        18089        21504        18089         2253         2368                      8068         None         None         None         None   {'Unallocated': 115, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2253}
+           9         None        18577        21504        18577         2314         2368                     15584         None         None         None         None   {'Unallocated': 54, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2314}
+          10         None        18793        21504        18793         2341         2368                     15584         None         None         None         None   {'Unallocated': 27, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2341}
+          11         None        18913        21504        18913         2356         2368                     17991         None         None         None         None   {'Unallocated': 12, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2356}
+          12         None        19001        21504        19001         2367         2368                     18682         None         None         None         None   {'Unallocated': 1, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2367}
+          13         None        19001        21504        19001                      2368                     18921         None         None         None         None   
+          14         None        19009        21504        19009                      2368                     18981         None         None         None         None   
+          15         None        19001        21504        19001                      2368                     19002         None         None         None         None   
+          16         None        19009        21504        19009                      2368                     19001         None         None         None         None   
+          17         None        19009        21504        19009                      2368                     19007         None         None         None         None   
+          18         None        19009        21504        19009         2368         2368                     19009         None         None         None         None   {'Unallocated': 0, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2368}
+          19         None        19001        21504        19001                      2368                     19009         None         None         None         None   
+          20         None        19009        21504        19009                      2368                     19003         None         None         None         None   
+          21         None        19009        21504        19009                      2368                     19007         None         None         None         None   
+          22         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          23         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          24         None        19009        21504        19009         2368         2368                     19009         None         None         None         None   {'Unallocated': 0, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2368}
+          25         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          26         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          27         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          28         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          29         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          30         None        19009        21504        19009         2368         2368                     19009         None         None         None         None   {'Unallocated': 0, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2368}
+          31         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          32         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          33         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          34         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          35         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          36         None        19009        21504        19009         2368         2368                     19009         None         None         None         None   {'Unallocated': 0, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2368}
+          37         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          38         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          39         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          40         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          41         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          42         None        19009        21504        19009         2368         2368                     19009         None         None         None         None   {'Unallocated': 0, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2368}
+          43         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          44         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          45         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          46         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          47         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          48         None        19009        21504        19009         2368         2368                     19009         None         None         None         None   {'Unallocated': 0, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2368}
+          49         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          50         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          51         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          52         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          53         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          54         None        19009        21504        19009         2368         2368                     19009         None         None         None         None   {'Unallocated': 0, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2368}
+          55         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          56         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          57         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          58         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          59         None        19009        21504        19009                      2368                     19009         None         None         None         None   
+          60         None        19009        21504        19009         2368         2368                     19009         None         None         None         None   {'Unallocated': 0, 'Unmarked': 0, 'Marked': 0, 'Reusable': 2368}
+          61         None        19009        21504        19009                      2368                     19009         None         None         None         None   

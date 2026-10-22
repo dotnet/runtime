@@ -1,0 +1,3 @@
+{"runtime":"dotnet","workload":"requests","size":32768,"ops":600000,"checksum":317308156512,"elapsed_ms":3966.724,"cpu_ms":7037.597,"gc_count":69,"gc_ms":1157,"lxr_pauses":69,"lxr_initial_mark":3,"lxr_final_mark":3,"lxr_full":0,"hiccup_p50_us":1179.6,"hiccup_p99_us":14680.1,"hiccup_p999_us":37748.7,"hiccup_max_us":65194.7,"req_p50_us":2.0,"req_p99_us":22.5,"req_p999_us":65.5,"peak_rss_kb":157972}
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.575 MB /root/p24/results/perf/rq-nursery-k.data (3703 samples) ]

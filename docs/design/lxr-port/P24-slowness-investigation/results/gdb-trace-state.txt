@@ -1,0 +1,34 @@
+pid=692
+gdb: warning: Couldn't determine a path for the index cache directory.
+[New LWP 694]
+[New LWP 695]
+[New LWP 696]
+[New LWP 697]
+[New LWP 698]
+[New LWP 699]
+[New LWP 700]
+[New LWP 701]
+[New LWP 702]
+[New LWP 703]
+[New LWP 704]
+[New LWP 706]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+futex_wait (private=0, expected=2, futex_word=0x55b1b8f30708) at ../sysdeps/nptl/futex-internal.h:146
+146	../sysdeps/nptl/futex-internal.h: No such file or directory.
+ENGINE {'m_trace_pending': 'std::atomic<unsigned long> = { 326520 }', 'm_trace_phase': 'std::atomic<enum LxrTracePhase> = { LxrTracePhase::Concurrent }', 'm_hold_trace': 'std::atomic<bool> = { false }', 'm_marking': 'std::atomic<bool> = { true }', 'm_phase': 'std::atomic<enum LxrRcPhase> = { LxrRcPhase::Mutator }', 'm_cycle_sweep': 'std::atomic<bool> = { false }'}
+WORK packets in list: 423666
+  kind=0 traceProcessed=0 traceSubmitted=0 count=8
+  kind=1 traceProcessed=0 traceSubmitted=0 count=496
+  kind=2 traceProcessed=0 traceSubmitted=0 count=1
+  kind=4 traceProcessed=0 traceSubmitted=0 count=7
+  kind=5 traceProcessed=0 traceSubmitted=0 count=1
+  kind=6 traceProcessed=0 traceSubmitted=0 count=1
+  kind=8 traceProcessed=0 traceSubmitted=0 count=7
+  kind=9 traceProcessed=0 traceSubmitted=0 count=1
+  kind=11 traceProcessed=0 traceSubmitted=0 count=185108
+  kind=11 traceProcessed=0 traceSubmitted=1 count=141411
+  kind=11 traceProcessed=1 traceSubmitted=1 count=96624
+  kind=13 traceProcessed=0 traceSubmitted=0 count=1
+sample unprocessed trace works: ['0x7cd1607dc4c0', '0x7cd1607dc3e0', '0x7cd1607dc300', '0x7cd1607dc220', '0x7cd1607dc140']
+[Inferior 1 (process 692) detached]

@@ -1,0 +1,19 @@
+17 records
+           n   pause_kind mature_pages admitted_pag   used_pages non_free_blo immix_capaci   live_bytes mature_live_ mature_live_ cycle_hint_a emergency_hi        cause  block_states
+           0         None          888        10240          896          111         1024                         0         None         None         None         None   {'Unallocated': 913, 'Unmarked': 106, 'Marked': 0, 'Reusable': 5}
+           1         None         1056        10240         1056          132         1024                         0         None         None         None         None   {'Unallocated': 892, 'Unmarked': 124, 'Marked': 0, 'Reusable': 8}
+           2         None         1056        10240         1056          132         1024                         0         None         None         None         None   {'Unallocated': 892, 'Unmarked': 124, 'Marked': 0, 'Reusable': 8}
+           3         None         1056        10240         1056          132         1024                         0         None         None         None         None   {'Unallocated': 892, 'Unmarked': 124, 'Marked': 0, 'Reusable': 8}
+           4         None         1056        10240         1056          132         1024                         0         None         None         None         None   {'Unallocated': 892, 'Unmarked': 124, 'Marked': 0, 'Reusable': 8}
+           5         None         1056        10240         1056          132         1024                         0         None         None         None         None   {'Unallocated': 892, 'Unmarked': 124, 'Marked': 0, 'Reusable': 8}
+           6         None         1056        10240         1056          132         1024                         0         None         None         None         None   {'Unallocated': 892, 'Unmarked': 124, 'Marked': 0, 'Reusable': 8}
+           7         None         1064        10240         1064          133         1024                         0         None         None         None         None   {'Unallocated': 891, 'Unmarked': 125, 'Marked': 0, 'Reusable': 8}
+           8         None         1056        10240         1056          132         1024                         0         None         None         None         None   {'Unallocated': 892, 'Unmarked': 124, 'Marked': 0, 'Reusable': 8}
+           9         None         1056        10240         1056          132         1024                         0         None         None         None         None   {'Unallocated': 892, 'Unmarked': 124, 'Marked': 0, 'Reusable': 8}
+          10         None         1056        10240         1056          132         1024                         0         None         None         None         None   {'Unallocated': 892, 'Unmarked': 124, 'Marked': 0, 'Reusable': 8}
+          11         None         1104        10240         1104          138         1024                         0         None         None         None         None   {'Unallocated': 886, 'Unmarked': 130, 'Marked': 0, 'Reusable': 8}
+          12         None         1232        10240         1232          154         1024                         0         None         None         None         None   {'Unallocated': 870, 'Unmarked': 146, 'Marked': 0, 'Reusable': 8}
+          13         None         1296        10240         1296                      1024                         0         None         None         None         None   
+          14         None         2064        10240         2064                      1024                         0         None         None         None         None   
+          15         None         2072        10240         7848                      1024                         0         None         None         None         None   
+          16         None         2064        10240         4128                      1024                         0         None         None         None         None   

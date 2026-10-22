@@ -1,0 +1,40 @@
+    28.26%  memfd:doublemapper (deleted)  [.] 0x0000000000134b0a                         -      -            
+     6.26%  memfd:doublemapper (deleted)  [.] 0x0000000000134b12                         -      -            
+     6.05%  libc.so.6                     [.] __memset_evex_unaligned_erms               -      -            
+     5.21%  memfd:doublemapper (deleted)  [.] 0x0000000000134b02                         -      -            
+     1.88%  libcoreclr.so                 [.] 0x000000000016adc9                         -      -            
+     1.77%  memfd:doublemapper (deleted)  [.] 0x0000000000134a66                         -      -            
+     1.36%  ld-linux-x86-64.so.2          [.] __tls_get_addr                             -      -            
+     1.25%  [kernel.kallsyms]             [k] clear_page_erms                            -      -            
+     1.15%  memfd:doublemapper (deleted)  [.] 0x0000000000134b1c                         -      -            
+     1.04%  [vdso]                        [.] 0x000000000000078a                         -      -            
+     0.94%  libcoreclr.so                 [.] 0x000000000004f230                         -      -            
+     0.94%  libcoreclr.so                 [.] 0x0000000000166e62                         -      -            
+     0.94%  memfd:doublemapper (deleted)  [.] 0x0000000000134ab4                         -      -            
+     0.73%  [kernel.kallsyms]             [k] _raw_spin_unlock_irqrestore                -      -            
+     0.73%  [kernel.kallsyms]             [k] do_user_addr_fault                         -      -            
+     0.73%  libcoreclr.so                 [.] 0x00000000003a1ba4                         -      -            
+     0.73%  memfd:doublemapper (deleted)  [.] 0x0000000000134a97                         -      -            
+     0.63%  libcoreclr.so                 [.] 0x000000000016f084                         -      -            
+     0.63%  libcoreclr.so                 [.] 0x000000000017da8d                         -      -            
+     0.63%  libcoreclr.so                 [.] 0x00000000003a1c80                         -      -            
+     0.63%  libcoreclr.so                 [.] 0x00000000003a1cae                         -      -            
+     0.52%  libcoreclr.so                 [.] 0x00000000003a1b91                         -      -            
+     0.52%  memfd:doublemapper (deleted)  [.] 0x0000000000020040                         -      -            
+     0.52%  memfd:doublemapper (deleted)  [.] 0x0000000000134a77                         -      -            
+     0.52%  memfd:doublemapper (deleted)  [.] 0x0000000000134a7d                         -      -            
+     0.52%  memfd:doublemapper (deleted)  [.] 0x0000000000134afe                         -      -            
+     0.52%  memfd:doublemapper (deleted)  [.] 0x0000000000134b2b                         -      -            
+     0.42%  [kernel.kallsyms]             [k] finish_task_switch.isra.0                  -      -            
+     0.42%  libcoreclr.so                 [.] 0x00000000001667ed                         -      -            
+     0.42%  libcoreclr.so                 [.] 0x000000000016add0                         -      -            
+     0.42%  libcoreclr.so                 [.] 0x000000000017e560                         -      -            
+     0.42%  libcoreclr.so                 [.] 0x00000000003a1ccb                         -      -            
+     0.42%  memfd:doublemapper (deleted)  [.] 0x0000000000020043                         -      -            
+     0.42%  memfd:doublemapper (deleted)  [.] 0x0000000000134b0e                         -      -            
+     0.42%  memfd:doublemapper (deleted)  [.] 0x0000000000134d90                         -      -            
+     0.31%  libcoreclr.so                 [.] 0x000000000014f28c                         -      -            
+     0.31%  libcoreclr.so                 [.] 0x0000000000160a21                         -      -            
+     0.31%  libcoreclr.so                 [.] 0x000000000016a7fa                         -      -            
+     0.31%  libcoreclr.so                 [.] 0x000000000016adf0                         -      -            
+     0.31%  libcoreclr.so                 [.] 0x000000000016e6f9                         -      -            

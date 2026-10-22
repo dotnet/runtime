@@ -1,0 +1,7 @@
+== samples by thread (self, percent of all samples)
+    92.28%      826:corerun       
+     6.26%      834:.NET BGC      
+     1.15%      833:corerun       
+     0.31%      832:.NET Finalizer
+
+== inclusive (children) share of selected functions
