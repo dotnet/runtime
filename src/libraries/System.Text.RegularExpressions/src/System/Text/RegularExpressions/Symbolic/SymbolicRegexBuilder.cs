@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
@@ -16,64 +15,99 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </summary>
     internal sealed class SymbolicRegexBuilder<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
     {
+        private const int InitialNodeCapacity = 16;
+
         internal readonly CharSetSolver _charSetSolver;
         internal readonly ISolver<TSet> _solver;
 
-        internal readonly SymbolicRegexNode<TSet> _nothing;
-        internal readonly SymbolicRegexNode<TSet> _anyChar;
-        internal readonly SymbolicRegexNode<TSet> _anyStar;
-        internal readonly SymbolicRegexNode<TSet> _anyStarLazy;
+        private readonly int _nothingId;
+        private readonly int _anyCharId;
+        private readonly int _anyStarId;
+        private readonly int _anyStarLazyId;
 
-        internal SymbolicRegexNode<TSet> Epsilon => field ??= SymbolicRegexNode<TSet>.CreateEpsilon(this);
-        internal SymbolicRegexNode<TSet> BeginningAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BeginningAnchor);
-        internal SymbolicRegexNode<TSet> EndAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchor);
-        internal SymbolicRegexNode<TSet> EndAnchorZ => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchorZ);
-        internal SymbolicRegexNode<TSet> EndAnchorZReverse => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchorZReverse);
-        internal SymbolicRegexNode<TSet> BolAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BOLAnchor);
-        internal SymbolicRegexNode<TSet> EolAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EOLAnchor);
-        internal SymbolicRegexNode<TSet> BoundaryAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BoundaryAnchor);
-        internal SymbolicRegexNode<TSet> NonBoundaryAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.NonBoundaryAnchor);
+        internal SymbolicRegexNode<TSet> _nothing => GetNode(_nothingId);
+        internal SymbolicRegexNode<TSet> _anyChar => GetNode(_anyCharId);
+        internal SymbolicRegexNode<TSet> _anyStar => GetNode(_anyStarId);
+        internal SymbolicRegexNode<TSet> _anyStarLazy => GetNode(_anyStarLazyId);
+
+        private int _epsilonId;
+        private int _beginningAnchorId;
+        private int _endAnchorId;
+        private int _endAnchorZId;
+        private int _endAnchorZReverseId;
+        private int _bolAnchorId;
+        private int _eolAnchorId;
+        private int _boundaryAnchorId;
+        private int _nonBoundaryAnchorId;
+
+        internal SymbolicRegexNode<TSet> Epsilon => GetOrCreateNode(ref _epsilonId, SymbolicRegexNodeKind.Epsilon);
+        internal SymbolicRegexNode<TSet> BeginningAnchor => GetOrCreateNode(ref _beginningAnchorId, SymbolicRegexNodeKind.BeginningAnchor);
+        internal SymbolicRegexNode<TSet> EndAnchor => GetOrCreateNode(ref _endAnchorId, SymbolicRegexNodeKind.EndAnchor);
+        internal SymbolicRegexNode<TSet> EndAnchorZ => GetOrCreateNode(ref _endAnchorZId, SymbolicRegexNodeKind.EndAnchorZ);
+        internal SymbolicRegexNode<TSet> EndAnchorZReverse => GetOrCreateNode(ref _endAnchorZReverseId, SymbolicRegexNodeKind.EndAnchorZReverse);
+        internal SymbolicRegexNode<TSet> BolAnchor => GetOrCreateNode(ref _bolAnchorId, SymbolicRegexNodeKind.BOLAnchor);
+        internal SymbolicRegexNode<TSet> EolAnchor => GetOrCreateNode(ref _eolAnchorId, SymbolicRegexNodeKind.EOLAnchor);
+        internal SymbolicRegexNode<TSet> BoundaryAnchor => GetOrCreateNode(ref _boundaryAnchorId, SymbolicRegexNodeKind.BoundaryAnchor);
+        internal SymbolicRegexNode<TSet> NonBoundaryAnchor => GetOrCreateNode(ref _nonBoundaryAnchorId, SymbolicRegexNodeKind.NonBoundaryAnchor);
 
         internal TSet _wordLetterForBoundariesSet;
         internal TSet _newLineSet;
 
-        private readonly Dictionary<TSet, SymbolicRegexNode<TSet>> _singletonCache = new();
+        private readonly Dictionary<TSet, int> _singletonCache = new();
+
+        private NodeData[] _nodes = new NodeData[InitialNodeCapacity];
+        private int _nodeCount;
+
+        internal readonly struct NodeData(
+            SymbolicRegexNodeKind kind, int leftId, int rightId,
+            int lower, int upper, TSet set, SymbolicRegexInfo info)
+        {
+            internal readonly SymbolicRegexNodeKind Kind = kind;
+            internal readonly int LeftId = leftId;
+            internal readonly int RightId = rightId;
+            internal readonly int Lower = lower;
+            internal readonly int Upper = upper;
+            internal readonly TSet Set = set;
+            internal readonly SymbolicRegexInfo Info = info;
+            internal readonly byte[]? NullabilityCache =
+                info.StartsWithSomeAnchor && info.CanBeNullable ? new byte[CharKind.ContextLimit] : null;
+        }
 
         /// <summary>
-        /// This cache is used in <see cref="SymbolicRegexNode{TSet}.Create"/> to keep all nodes associated with this builder
-        /// unique. This ensures that reference equality can be used for syntactic equality and that all shared subexpressions
+        /// This cache is used when creating nodes to keep all nodes associated with this builder
+        /// unique. This ensures that handle equality can be used for syntactic equality and that all shared subexpressions
         /// are maximally shared.
         /// </summary>
-        internal readonly Dictionary<NodeCacheKey, SymbolicRegexNode<TSet>> _nodeCache = new();
+        internal readonly Dictionary<NodeCacheKey, int> _nodeCache = new();
 
         /// <summary>Key for the <see cref="_nodeCache"/>.</summary>
         /// <remarks>
         /// Used instead of a ValueTuple`7 to avoid rooting that rarely used type that also
-        /// includes much more code an interface implementation.
+        /// includes much more code for its interface implementations.
         /// </remarks>
         internal readonly struct NodeCacheKey(
-            SymbolicRegexNodeKind kind, SymbolicRegexNode<TSet>? left, SymbolicRegexNode<TSet>? right,
+            SymbolicRegexNodeKind kind, int leftId, int rightId,
             int lower, int upper,
             TSet set, SymbolicRegexInfo info) : IEquatable<NodeCacheKey>
         {
             public readonly SymbolicRegexNodeKind Kind = kind;
-            public readonly SymbolicRegexNode<TSet>? Left = left;
-            public readonly SymbolicRegexNode<TSet>? Right = right;
+            public readonly int LeftId = leftId;
+            public readonly int RightId = rightId;
             public readonly int Lower = lower;
             public readonly int Upper = upper;
             public readonly TSet Set = set;
             public readonly SymbolicRegexInfo Info = info;
 
             public override int GetHashCode() =>
-                HashCode.Combine((int)Kind, Left, Right, Lower, Upper, Set, Info);
+                HashCode.Combine((int)Kind, LeftId, RightId, Lower, Upper, Set, Info);
 
             public override bool Equals([NotNullWhen(true)] object? obj) =>
                 obj is NodeCacheKey other && Equals(other);
 
             public bool Equals(SymbolicRegexBuilder<TSet>.NodeCacheKey other) =>
                 Kind == other.Kind &&
-                Left == other.Left &&
-                Right == other.Right &&
+                LeftId == other.LeftId &&
+                RightId == other.RightId &&
                 Lower == other.Lower &&
                 Upper == other.Upper &&
                 EqualityComparer<TSet>.Default.Equals(Set, other.Set) &&
@@ -92,7 +126,7 @@ namespace System.Text.RegularExpressions.Symbolic
         ///  -The surrounding character context
         /// The value is the derivative.
         /// </summary>
-        internal readonly Dictionary<(SymbolicRegexNode<TSet>, TSet elem, uint context), SymbolicRegexNode<TSet>> _derivativeCache = new();
+        internal readonly Dictionary<(int nodeId, TSet elem, uint context), int> _derivativeCache = new();
 
         /// <summary>
         /// Cache for <see cref="SymbolicRegexNode{TSet}.PruneLowerPriorityThanNullability(SymbolicRegexBuilder{TSet}, uint)"/> keyed by:
@@ -100,7 +134,7 @@ namespace System.Text.RegularExpressions.Symbolic
         ///  -The surrounding character context
         /// The value is the pruned node.
         /// </summary>
-        internal readonly Dictionary<(SymbolicRegexNode<TSet>, uint), SymbolicRegexNode<TSet>> _pruneLowerPriorityThanNullabilityCache = new();
+        internal readonly Dictionary<(int nodeId, uint context), int> _pruneLowerPriorityThanNullabilityCache = new();
 
         /// <summary>
         /// Cache for <see cref="SymbolicRegexNode{TSet}.StripEffects(SymbolicRegexBuilder{TSet})"/> keyed by the node
@@ -108,7 +142,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// stripping effects from derivatives of deeply nested loop patterns (e.g. ((a)*)*), where the derivative
         /// tree is a DAG with shared sub-trees that would otherwise be traversed repeatedly.
         /// </summary>
-        internal readonly Dictionary<SymbolicRegexNode<TSet>, SymbolicRegexNode<TSet>> _stripEffectsCache = new();
+        internal readonly Dictionary<int, int> _stripEffectsCache = new();
 
         /// <summary>
         /// Cache for <see cref="SymbolicRegexNode{TSet}.Subsumes(SymbolicRegexBuilder{TSet}, SymbolicRegexNode{TSet}, int)"/> keyed by:
@@ -116,7 +150,72 @@ namespace System.Text.RegularExpressions.Symbolic
         ///  -The node S potentially being subsumed by R
         /// The value indicates if subsumption is known to hold.
         /// </summary>
-        internal readonly Dictionary<(SymbolicRegexNode<TSet>, SymbolicRegexNode<TSet>), bool> _subsumptionCache = new();
+        internal readonly Dictionary<(int leftId, int rightId), bool> _subsumptionCache = new();
+
+        internal int NodeCount => Volatile.Read(ref _nodeCount);
+
+        internal NodeData[] AcquireNodeDataArray(int id)
+        {
+            int nodeCount = Volatile.Read(ref _nodeCount);
+            Debug.Assert(id > 0 && id <= nodeCount);
+            return _nodes;
+        }
+
+        internal SymbolicRegexNode<TSet> GetNode(int id)
+        {
+            Debug.Assert(id > 0 && id <= Volatile.Read(ref _nodeCount));
+            return new(id);
+        }
+
+        internal SymbolicRegexNodeContext<TSet> GetNodeContext(SymbolicRegexNode<TSet> node)
+        {
+            if (node.IsNull)
+            {
+                return default;
+            }
+
+            // Child nodes were published before their parent, so contexts created from this acquired snapshot can
+            // traverse the complete immutable subtree without another acquire for each field.
+            NodeData[] nodes = AcquireNodeDataArray(node.Id);
+            return new SymbolicRegexNodeContext<TSet>(this, nodes, node.Id);
+        }
+
+        internal int AddNode(SymbolicRegexNodeKind kind, int leftId, int rightId, int lower, int upper, TSet set, SymbolicRegexInfo info)
+        {
+            int id = _nodeCount + 1;
+            var data = new NodeData(kind, leftId, rightId, lower, upper, set, info);
+            NodeData[] nodes = _nodes;
+
+            if (id > nodes.Length)
+            {
+                var newNodes = new NodeData[checked(nodes.Length * 2)];
+                Array.Copy(nodes, newNodes, nodes.Length);
+                newNodes[id - 1] = data;
+                Volatile.Write(ref _nodes, newNodes);
+            }
+            else
+            {
+                nodes[id - 1] = data;
+            }
+
+            Volatile.Write(ref _nodeCount, id);
+            return id;
+        }
+
+        private SymbolicRegexNode<TSet> GetOrCreateNode(ref int id, SymbolicRegexNodeKind kind)
+        {
+            int existingId = id;
+            if (existingId != 0)
+            {
+                return GetNode(existingId);
+            }
+
+            SymbolicRegexNode<TSet> node = kind == SymbolicRegexNodeKind.Epsilon ?
+                SymbolicRegexNode<TSet>.CreateEpsilon(this) :
+                SymbolicRegexNode<TSet>.CreateAnchor(this, kind);
+            id = node.Id;
+            return node;
+        }
 
         /// <summary>Create a new symbolic regex builder.</summary>
         internal SymbolicRegexBuilder(ISolver<TSet> solver, CharSetSolver charSetSolver)
@@ -134,14 +233,14 @@ namespace System.Text.RegularExpressions.Symbolic
             // this implies that if a regex never uses a line anchor then the character context will never
             // update the previous character context to mark that the previous character was \n
             _newLineSet = solver.Empty;
-            _nothing = SymbolicRegexNode<TSet>.CreateFalse(this);
-            _anyChar = SymbolicRegexNode<TSet>.CreateTrue(this);
-            _anyStar = SymbolicRegexNode<TSet>.CreateLoop(this, _anyChar, 0, int.MaxValue, isLazy: false);
-            _anyStarLazy = SymbolicRegexNode<TSet>.CreateLoop(this, _anyChar, 0, int.MaxValue, isLazy: true);
+            _nothingId = SymbolicRegexNode<TSet>.CreateFalse(this).Id;
+            _anyCharId = SymbolicRegexNode<TSet>.CreateTrue(this).Id;
+            _anyStarId = SymbolicRegexNode<TSet>.CreateLoop(this, _anyChar, 0, int.MaxValue, isLazy: false).Id;
+            _anyStarLazyId = SymbolicRegexNode<TSet>.CreateLoop(this, _anyChar, 0, int.MaxValue, isLazy: true).Id;
 
             // --- initialize singletonCache ---
-            _singletonCache[_solver.Empty] = _nothing;
-            _singletonCache[_solver.Full] = _anyChar;
+            _singletonCache[_solver.Empty] = _nothing.Id;
+            _singletonCache[_solver.Full] = _anyChar.Id;
         }
 
         /// <summary>
@@ -220,23 +319,25 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             // If this is equivalent to any*, return that.
-            if (!isLazy && lower == 0 && upper == int.MaxValue && node._kind == SymbolicRegexNodeKind.Singleton)
+            SymbolicRegexNodeContext<TSet> nodeContext = GetNodeContext(node);
+
+            if (!isLazy && lower == 0 && upper == int.MaxValue && nodeContext._kind == SymbolicRegexNodeKind.Singleton)
             {
-                Debug.Assert(node._set is not null);
-                if (_solver.IsFull(node._set))
+                Debug.Assert(nodeContext._set is not null);
+                if (_solver.IsFull(nodeContext._set))
                 {
                     return _anyStar;
                 }
             }
 
             // Flip X? into X?? or X?? into X?
-            if (node.Kind == SymbolicRegexNodeKind.Loop && node._lower == 0 && node._upper == 1 && lower == 0 && upper == 1)
+            if (nodeContext.Kind == SymbolicRegexNodeKind.Loop && nodeContext._lower == 0 && nodeContext._upper == 1 && lower == 0 && upper == 1)
             {
-                Debug.Assert(node._left is not null);
-                if (node.IsLazy != isLazy)
+                Debug.Assert(!nodeContext._left.IsNull);
+                if (nodeContext.IsLazy != isLazy)
                 {
                     // flip lazyness
-                    return SymbolicRegexNode<TSet>.CreateLoop(this, node._left, 0, 1, isLazy);
+                    return SymbolicRegexNode<TSet>.CreateLoop(this, nodeContext._left, 0, 1, isLazy);
                 }
                 // otherwise there is no change (X??)?? = X?? and (X?)? = X?
                 return node;
@@ -251,8 +352,14 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             // We maintain a cache of singletons, under the assumption that it's likely the same one/notone/set appears
             // multiple times in the same pattern.  First consult the cache, and then create a new singleton if one didn't exist.
-            ref SymbolicRegexNode<TSet>? result = ref CollectionsMarshal.GetValueRefOrAddDefault(_singletonCache, set, out _);
-            return result ??= SymbolicRegexNode<TSet>.CreateSingleton(this, set);
+            if (!_singletonCache.TryGetValue(set, out int id))
+            {
+                SymbolicRegexNode<TSet> node = SymbolicRegexNode<TSet>.CreateSingleton(this, set);
+                _singletonCache.Add(set, node.Id);
+                return node;
+            }
+
+            return GetNode(id);
         }
 
         /// <summary>Creates a fixed length marker for the end of a sequence.</summary>
@@ -279,7 +386,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 return StackHelper.CallOnEmptyStack(Transform, node, builder, setTransformer);
             }
 
-            switch (node._kind)
+            SymbolicRegexNodeContext<TSet> nodeContext = GetNodeContext(node);
+            switch (nodeContext._kind)
             {
                 case SymbolicRegexNodeKind.BeginningAnchor:
                     return builder.BeginningAnchor;
@@ -306,35 +414,35 @@ namespace System.Text.RegularExpressions.Symbolic
                     return builder.NonBoundaryAnchor;
 
                 case SymbolicRegexNodeKind.FixedLengthMarker:
-                    return builder.CreateFixedLengthMarker(node._lower);
+                    return builder.CreateFixedLengthMarker(nodeContext._lower);
 
                 case SymbolicRegexNodeKind.Epsilon:
                     return builder.Epsilon;
 
                 case SymbolicRegexNodeKind.Singleton:
-                    Debug.Assert(node._set is not null);
-                    return builder.CreateSingleton(setTransformer(builder, node._set));
+                    Debug.Assert(nodeContext._set is not null);
+                    return builder.CreateSingleton(setTransformer(builder, nodeContext._set));
 
                 case SymbolicRegexNodeKind.Loop:
-                    Debug.Assert(node._left is not null);
-                    return builder.CreateLoop(Transform(node._left, builder, setTransformer), node.IsLazy, node._lower, node._upper);
+                    Debug.Assert(!nodeContext._left.IsNull);
+                    return builder.CreateLoop(Transform(nodeContext._left, builder, setTransformer), nodeContext.IsLazy, nodeContext._lower, nodeContext._upper);
 
                 case SymbolicRegexNodeKind.Alternate:
-                    Debug.Assert(node._left is not null && node._right is not null);
+                    Debug.Assert(!nodeContext._left.IsNull && !nodeContext._right.IsNull);
                     return SymbolicRegexNode<TNewSet>.CreateAlternate(builder,
-                        Transform(node._left, builder, setTransformer),
-                        Transform(node._right, builder, setTransformer),
+                        Transform(nodeContext._left, builder, setTransformer),
+                        Transform(nodeContext._right, builder, setTransformer),
                         deduplicated: true);
 
                 case SymbolicRegexNodeKind.CaptureStart:
-                    return builder.CreateCaptureStart(node._lower);
+                    return builder.CreateCaptureStart(nodeContext._lower);
 
                 case SymbolicRegexNodeKind.CaptureEnd:
-                    return builder.CreateCaptureEnd(node._lower);
+                    return builder.CreateCaptureEnd(nodeContext._lower);
 
                 case SymbolicRegexNodeKind.Concat:
                     {
-                        List<SymbolicRegexNode<TSet>> concatElements = node.ToList();
+                        List<SymbolicRegexNode<TSet>> concatElements = nodeContext.ToList();
                         SymbolicRegexNode<TNewSet>[] reverseTransformed = new SymbolicRegexNode<TNewSet>[concatElements.Count];
                         for (int i = 0; i < reverseTransformed.Length; i++)
                         {
@@ -344,12 +452,12 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
-                    Debug.Assert(node._left is not null);
-                    return builder.CreateDisableBacktrackingSimulation(Transform(node._left, builder, setTransformer));
+                    Debug.Assert(!nodeContext._left.IsNull);
+                    return builder.CreateDisableBacktrackingSimulation(Transform(nodeContext._left, builder, setTransformer));
 
                 default:
-                    Debug.Fail($"{nameof(Transform)}:{node._kind}");
-                    return null;
+                    Debug.Fail($"{nameof(Transform)}:{nodeContext._kind}");
+                    return default;
             }
         }
     }
