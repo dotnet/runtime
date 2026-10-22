@@ -60,23 +60,14 @@ extends:
               postBuildSteps:
                 - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
                   parameters:
-                    osGroup: android
-                    archType: x64
-                    buildConfig: Release
                     testBuildArgs: test JIT/Directed/Directed_r.csproj
                 - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
                   parameters:
                     displayName: Run CoreCLR JIT tests in the Android container
-                    osGroup: android
-                    archType: x64
-                    buildConfig: Release
-                    runtimeFlavor: CoreCLR
                     creator: $(Build.DefinitionName)
                     helixBuild: $(Build.BuildNumber)
                     helixSource: ci/dotnet/runtime/$(Build.SourceBranch)
                     helixType: test/functional/cli/
-                    helixQueues:
-                      - $(androidContainerHelixQueue)
                     publishTestResults: true
                     useHelixMonitor: true
                     scenarios:
