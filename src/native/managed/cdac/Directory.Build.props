@@ -2,8 +2,6 @@
     <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..\'))" />
 
     <PropertyGroup>
-      <LangVersion>14.0</LangVersion>
-
       <!-- Source-build and bootstrap NativeAOT publishing on community platforms require toolchain assets that are not in the released SDK. -->
       <CDacTfm Condition="
         '$(CDacTfm)' == '' and
