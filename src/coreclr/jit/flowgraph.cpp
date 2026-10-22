@@ -83,6 +83,10 @@ PhaseStatus Compiler::fgInsertGCPolls()
         return result;
     }
 
+#ifdef TARGET_WASM
+    fgWasmMarkCyclesForPolls();
+#endif
+
     bool createdPollBlocks = false;
 
     // Walk through the blocks and hunt for a block that needs a GC Poll
@@ -4239,7 +4243,7 @@ class GCSafePointSuccessorEnumerator
 public:
     // Constructs an enumerator of successors to be used for checking for GC
     // safe point cycles.
-    GCSafePointSuccessorEnumerator(Compiler* comp, BasicBlock* block)
+    GCSafePointSuccessorEnumerator(Compiler* comp, BasicBlock* block, bool useProfile = false)
         : m_block(block)
     {
         m_numSuccs = 0;
@@ -4308,6 +4312,39 @@ public:
         return m_pSuccessors[m_curSucc];
     }
 };
+
+void Compiler::fgWasmMarkCyclesForPolls()
+{
+    auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
+        block->bbPreorderNum  = preorderNum;
+        block->bbPostorderNum = UINT_MAX;
+    };
+
+    auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
+        block->bbPostorderNum = postorderNum;
+        assert(postorderNum < fgBBcount);
+    };
+
+    auto visitEdge = [](BasicBlock* block, BasicBlock* succ) {
+        if (succ->bbPreorderNum <= block->bbPreorderNum && (succ->bbPostorderNum == UINT_MAX))
+        {
+            // We have a back-edge; mark the target of the back-edge (which is the cycle "header") as needing a poll
+            succ->SetFlags(BBF_NEEDS_GCPOLL);
+            JITDUMP("Marking block " FMT_BB " as needing a GC poll due to back-edge from " FMT_BB "\n", succ->bbNum, block->bbNum);
+        }
+    };
+
+    jitstd::vector<BasicBlock*> entryBlocks(getAllocator(CMK_DepthFirstSearch));
+    for (BasicBlock* block : Blocks())
+    {
+        entryBlocks.push_back(block);
+    }
+
+    // We want to use the GCSafePointSuccessorEnumerator here, as it will create
+    // pseudo-edges from tail call -> entry block so we can detect implicit cycles
+    // which may be formed through tail calls.
+    fgRunDfs<GCSafePointSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge)>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
+}
 
 //------------------------------------------------------------------------------
 // fgHasCycleWithoutGCSafePoint: Check if the flow graph has a cycle in it that

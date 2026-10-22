@@ -366,6 +366,7 @@ GTNODE(SWIFT_ERROR_RET  , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE) // Retu
 
 GTNODE(WASM_JEXCEPT     , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // Special jump for Wasm exception handling
 GTNODE(WASM_THROW_REF   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // Wasm rethrow host exception (exception is an implicit operand)
+GTNODE(FRAME_SIZE       , GenTree            ,0,0,GTK_LEAF|DBK_NOTHIR)              // compLclFrameSize; resolved by wasm codegen
 
 //-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes
@@ -379,9 +380,6 @@ GTNODE(SWITCH_TABLE     , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 //-----------------------------------------------------------------------------
 
 GTNODE(PHYSREG          , GenTreePhysReg     ,0,0,GTK_LEAF|DBK_NOTHIR)              // read from a physical register
-#ifdef TARGET_WASM
-GTNODE(FRAME_SIZE       , GenTree            ,0,0,GTK_LEAF|DBK_NOTHIR)              // compLclFrameSize; resolved by wasm codegen
-#endif // TARGET_WASM
 GTNODE(RETURNTRAP       , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // a conditional call to wait on gc
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in register
 GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // operator that places outgoing arg in stack

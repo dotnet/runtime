@@ -7019,6 +7019,8 @@ public:
 
     PhaseStatus fgFindOperOrder();
 
+
+    void fgWasmMarkCyclesForPolls();
 #ifdef TARGET_WASM
     PhaseStatus fgWasmEhFlow();
     void fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks, unsigned regionIndex, unsigned catchRetIndexLocalNum);

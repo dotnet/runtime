@@ -14459,6 +14459,9 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_JTEST:
             printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
             break;
+        case GT_FRAME_SIZE:
+            printf(" ");
+            break;
 
         default:
             assert(!"don't know how to display tree leaf node");
