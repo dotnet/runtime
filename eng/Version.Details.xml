@@ -1,9 +1,9 @@
 <Dependencies>
   <Source Uri="https://github.com/dotnet/dotnet" Mapping="runtime" Sha="fba04ffe869680486931c78fd815b3f694087f91" BarId="337533" />
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="11.0.0-alpha.1.26505.3">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="11.0.0-alpha.1.26517.3">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>bbfd5321d1c6897f0b38581e45ba4e8d370d62a3</Sha>
+      <Sha>cc0636e50d30b71ebf043284bb66cc77a4289446</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="23.1.0-alpha.1.26505.4">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
@@ -291,17 +291,17 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>fba04ffe869680486931c78fd815b3f694087f91</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="11.0.0-prerelease.26506.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="11.0.0-prerelease.26517.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>91708f0daf7d7ffc3b5d61da591c3e598c1d600e</Sha>
+      <Sha>38ed2081279c3f4dee81c933aaa9721b50a44adb</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="11.0.0-prerelease.26506.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="11.0.0-prerelease.26517.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>91708f0daf7d7ffc3b5d61da591c3e598c1d600e</Sha>
+      <Sha>38ed2081279c3f4dee81c933aaa9721b50a44adb</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="11.0.0-prerelease.26506.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="11.0.0-prerelease.26517.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>91708f0daf7d7ffc3b5d61da591c3e598c1d600e</Sha>
+      <Sha>38ed2081279c3f4dee81c933aaa9721b50a44adb</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="11.0.0-beta.26520.139">
       <Uri>https://github.com/dotnet/dotnet</Uri>
