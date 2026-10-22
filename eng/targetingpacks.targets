@@ -123,8 +123,7 @@
                              Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == '$(LocalFrameworkOverrideName)'" />
       <ResolvedRuntimePack PackageDirectory="$(LocalRuntimePackDir)"
                            Condition="'$(LocalRuntimePackDir)' != '' and
-                                      '%(ResolvedRuntimePack.FrameworkName)' == '$(LocalFrameworkOverrideName)' and
-                                      '%(ResolvedRuntimePack.RuntimeIdentifier)' == '$(TargetRid)'" />
+                                      '%(ResolvedRuntimePack.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
       <ResolvedFrameworkReference TargetingPackPath="$(LocalRefPackDir.TrimEnd('/\'))"
                                   TargetingPackVersion="$(ProductVersion)"
                                   Condition="'%(Identity)' == '$(LocalFrameworkOverrideName)'">
