@@ -614,7 +614,7 @@ internal static partial class Program
             NativeLibrary.GetExport(module, "GC_LxrPrototype_ArmLifetimeProbe"));
         Collect collect = Marshal.GetDelegateForFunctionPointer<Collect>(
             NativeLibrary.GetExport(module, "GC_LxrPrototype_Collect"));
-        Check(metric(0) == 1 && !GCSettings.IsServerGC, "The lifetime control did not select the owning LXR collector.");
+        Check(metric(0) == 1, "The lifetime control did not select the owning LXR collector.");
         nint watched = CreateWatchedLargeGarbage(address, arm);
         Check(collect(0) == 0 && collect(0) == 0, "The lifetime control's two real full collections failed.");
         Check(metric(47) == 1, "The watched allocation must retire exactly once before address reuse.");
@@ -1017,7 +1017,7 @@ internal static partial class Program
             NativeLibrary.GetExport(module, "GC_LxrPrototype_GetOwnedStart"));
         NativeSize ownedBytes = Marshal.GetDelegateForFunctionPointer<NativeSize>(
             NativeLibrary.GetExport(module, "GC_LxrPrototype_GetOwnedBytes"));
-        Check(metric(0) == 1 && !GCSettings.IsServerGC, "The retention input did not select owned LXR.");
+        Check(metric(0) == 1, "The retention input did not select owned LXR.");
         ForceFull();
         Check(enable() == 0, "The retention accounting window did not start quiescently.");
         ulong reclaimedBefore = metric(4);
@@ -1816,7 +1816,7 @@ internal static partial class Program
                 NativeLibrary.GetExport(module, "GC_LxrPrototype_GetMetric"));
             collect = Marshal.GetDelegateForFunctionPointer<Collect>(
                 NativeLibrary.GetExport(module, "GC_LxrPrototype_Collect"));
-            Check(metric(0) == 1 && metric(1) > 0 && !GCSettings.IsServerGC,
+            Check(metric(0) == 1 && metric(1) > 0,
                 "Lifecycle qualification requires the initialized owning LXR collector.");
             Check(metric(78) == (Environment.GetEnvironmentVariable("DOTNET_LXREvacuateNursery") == "1" ? 1ul : 0ul) &&
                 metric(90) == (Environment.GetEnvironmentVariable("DOTNET_LXREvacuateMature") == "1" ? 1ul : 0ul),
@@ -1914,6 +1914,13 @@ internal static partial class Program
                 break;
             case "pin-finalizers-weak":
                 VerifyPinnedFinalizersAndWeak();
+                break;
+            case "r2r-stores":
+                if (collect is null || metric is null)
+                {
+                    throw new InvalidOperationException("The framework store scenario requires LXR collection controls.");
+                }
+                VerifyFrameworkOldValueStores(metric, collect);
                 break;
             case "pin-concurrent-trace":
                 if (collect is null)
@@ -2480,7 +2487,7 @@ internal static partial class Program
         Check(metric(0) == 1, "The collector was not initialized through GCPath.");
         Check(metric(1) > 0 && metric(2) > 0, "The selected collector did not own startup allocations.");
         string collectorIdentity = Marshal.PtrToStringUTF8(identity())!;
-        Check(!GCSettings.IsServerGC, "The owning LXR collector unexpectedly reports Server GC.");
+        // LXR is a custom collector (GC_HEAP_CUSTOM); the runtime reports a custom collector as Server GC, as for Satori.
         if (collectorIdentity.Contains("P6 nursery+mature", StringComparison.Ordinal))
         {
             string? nurseryMode = Environment.GetEnvironmentVariable("DOTNET_LXREvacuateNursery");

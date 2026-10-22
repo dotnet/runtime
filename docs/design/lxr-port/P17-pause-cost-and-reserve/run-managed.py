@@ -27,6 +27,8 @@ S6_HEAP = dict(DOTNET_LXRImmixInitialMB="192", DOTNET_LXRLOSInitialMB="32", DOTN
 # P17 S7: pinning. Natural collections run while pinned handles, `fixed` locals and pinned-object-heap arrays live.
 S7_CASES = ("pin-handles-churn", "fixed-pressure", "poh-churn", "pin-finalizers-weak", "pin-concurrent-trace")
 S7_HEAP = dict(DOTNET_LXRImmixInitialMB="96", DOTNET_LXRLOSInitialMB="32", DOTNET_LXRManagedHeapHardLimitMB="128")
+# P21 (D1): references cleared by precompiled framework code are logged (the framework is ReadyToRun compiled).
+R2R_CASES = ("r2r-stores",)
 MODES = (("nonmoving", "0", "0"), ("nursery", "1", "0"), ("mature", "1", "1"))
 
 
@@ -47,7 +49,7 @@ def main():
     host = "corerun.exe" if windows else "corerun"
     args.output.mkdir(parents=True, exist_ok=True)
     base = {k: v for k, v in os.environ.items() if not k.upper().startswith(("DOTNET_", "COMPLUS_"))}
-    base.update(DOTNET_ReadyToRun="0", DOTNET_TieredCompilation="0", DOTNET_gcServer="0",
+    base.update(DOTNET_ReadyToRun=os.environ.get("LXR_READYTORUN", "1"), DOTNET_TieredCompilation="0", DOTNET_gcServer="0",
                 DOTNET_gcConcurrent="1", DOTNET_GCHeapCount="2", DOTNET_LXRLegacyCapacity="1")
     failures = 0
     with (args.output / "results.csv").open("w", newline="") as stream:
@@ -58,7 +60,7 @@ def main():
             module = modules[native]
             for managed in ("Release", "Debug"):
                 fixture = args.fixtures / f"fixture-scope5-{managed}" / "runtime-tests.dll"
-                cases = FULL_CASES + (EXTRA_CASES + S6_CASES + S7_CASES if managed == "Release" else ())
+                cases = FULL_CASES + (EXTRA_CASES + S6_CASES + S7_CASES + R2R_CASES if managed == "Release" else ())
                 for mode, nursery, mature in MODES:
                     for case in cases:
                         env = dict(base, DOTNET_GCPath=module, DOTNET_LXREvacuateNursery=nursery,
@@ -80,7 +82,9 @@ def main():
                         checks = match[1] if match else 0
                         ok = code == 0 and match is not None
                         if case == "full":
-                            ok = ok and int(checks) == 100632
+                            # P21 (D1): 100631 checks. The check "the collector is not the server collector" is gone,
+                            # because a custom collector reports IsServerGC as true (the PR sets the heap type to CUSTOM).
+                            ok = ok and int(checks) == 100631
                         failures += 0 if ok else 1
                         writer.writerow((native, managed, mode, case, code, checks))
                         stream.flush()
