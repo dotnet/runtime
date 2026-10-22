@@ -545,20 +545,24 @@ RtlpGetFunctionEndAddress (
 
 struct RUNTIME_FUNCTION_GROUP
 {
+    // Keep the virtual-IP fields in the first cache line and cluster sparse fields for compression.
     uint32_t VirtualIPBase;
-    uint8_t VirtualIPOffsets[32];
     uint32_t IsFuncletBits;
     uint8_t HighBitsOfUnwindOffset[16];
+    uint8_t Padding[8];
+    uint8_t VirtualIPOffsets[32];
     uint8_t MidBitsOfUnwindOffset[32];
     uint8_t LowBitsOfUnwindOffset[32];
-    uint8_t Padding[8];
 };
 
 static_assert(sizeof(RUNTIME_FUNCTION_GROUP) == 128);
-static_assert(offsetof(RUNTIME_FUNCTION_GROUP, IsFuncletBits) == 36);
-static_assert(offsetof(RUNTIME_FUNCTION_GROUP, HighBitsOfUnwindOffset) == 40);
-static_assert(offsetof(RUNTIME_FUNCTION_GROUP, MidBitsOfUnwindOffset) == 56);
-static_assert(offsetof(RUNTIME_FUNCTION_GROUP, LowBitsOfUnwindOffset) == 88);
+static_assert(offsetof(RUNTIME_FUNCTION_GROUP, VirtualIPBase) == 0);
+static_assert(offsetof(RUNTIME_FUNCTION_GROUP, IsFuncletBits) == 4);
+static_assert(offsetof(RUNTIME_FUNCTION_GROUP, HighBitsOfUnwindOffset) == 8);
+static_assert(offsetof(RUNTIME_FUNCTION_GROUP, Padding) == 24);
+static_assert(offsetof(RUNTIME_FUNCTION_GROUP, VirtualIPOffsets) == 32);
+static_assert(offsetof(RUNTIME_FUNCTION_GROUP, MidBitsOfUnwindOffset) == 64);
+static_assert(offsetof(RUNTIME_FUNCTION_GROUP, LowBitsOfUnwindOffset) == 96);
 static_assert(sizeof(T_RUNTIME_FUNCTION) == 4);
 
 inline DPTR(RUNTIME_FUNCTION_GROUP) GetRUNTIME_FUNCTION_GROUP_AND_INDEX(

@@ -859,22 +859,22 @@ namespace ILCompiler.Reflection.ReadyToRun
             int index = ordinal & 31;
             beginAddress = 0;
             unwindRva = 0;
-            isFunclet = (BinaryPrimitives.ReadUInt32LittleEndian(group.Slice(36)) & (1u << index)) != 0;
-            if (group[4 + index] == byte.MaxValue)
+            isFunclet = (BinaryPrimitives.ReadUInt32LittleEndian(group.Slice(4)) & (1u << index)) != 0;
+            if (group[32 + index] == byte.MaxValue)
             {
                 return false;
             }
 
-            beginAddress = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(group) + group[4 + index] + index * 4);
-            uint high = (uint)(group[40 + index / 2] >> ((index & 1) * 4)) & 0xF;
-            uint unwindOffset = ((uint)group[56 + index] << 8) | group[88 + index];
+            beginAddress = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(group) + group[32 + index] + index * 4);
+            uint high = (uint)(group[8 + index / 2] >> ((index & 1) * 4)) & 0xF;
+            uint unwindOffset = ((uint)group[64 + index] << 8) | group[96 + index];
             if (high == 0xF)
             {
-                if (index == 31 || group[4 + 31] != byte.MaxValue)
+                if (index == 31 || group[32 + 31] != byte.MaxValue)
                 {
                     throw new BadImageFormatException("Invalid Wasm runtime function unwind escape.");
                 }
-                unwindOffset |= ((uint)group[56 + 31] << 24) | ((uint)group[88 + 31] << 16);
+                unwindOffset |= ((uint)group[64 + 31] << 24) | ((uint)group[96 + 31] << 16);
             }
             else
             {

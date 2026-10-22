@@ -325,7 +325,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 for (int index = 0; index < WasmGroupEntryCount; index++)
                 {
                     WasmRuntimeFunction function = _wasmRuntimeFunctions[start + index];
-                    group[4 + index] = function.IsSkip ? byte.MaxValue :
+                    group[32 + index] = function.IsSkip ? byte.MaxValue :
                         checked((byte)(function.VirtualIP - virtualIPBase - (uint)index * 4));
                     if (function.IsFunclet)
                     {
@@ -340,15 +340,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (function.UnwindOffset >= WasmUnwindEscapeStart)
                     {
                         Debug.Assert(_wasmRuntimeFunctions[start + WasmGroupEntryCount - 1].IsSkip);
-                        group[56 + WasmGroupEntryCount - 1] = (byte)(function.UnwindOffset >> 24);
-                        group[88 + WasmGroupEntryCount - 1] = (byte)(function.UnwindOffset >> 16);
+                        group[64 + WasmGroupEntryCount - 1] = (byte)(function.UnwindOffset >> 24);
+                        group[96 + WasmGroupEntryCount - 1] = (byte)(function.UnwindOffset >> 16);
                         high = 0xF;
                     }
-                    group[40 + index / 2] |= (byte)(high << ((index & 1) * 4));
-                    group[56 + index] = (byte)(function.UnwindOffset >> 8);
-                    group[88 + index] = (byte)function.UnwindOffset;
+                    group[8 + index / 2] |= (byte)(high << ((index & 1) * 4));
+                    group[64 + index] = (byte)(function.UnwindOffset >> 8);
+                    group[96 + index] = (byte)function.UnwindOffset;
                 }
-                BinaryPrimitives.WriteUInt32LittleEndian(group.AsSpan(36), funcletBits);
+                BinaryPrimitives.WriteUInt32LittleEndian(group.AsSpan(4), funcletBits);
                 builder.EmitBytes(group);
             }
 

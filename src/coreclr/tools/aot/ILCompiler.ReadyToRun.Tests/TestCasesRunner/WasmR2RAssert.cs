@@ -36,15 +36,15 @@ internal static class WasmR2RAssert
         for (int offset = 0; offset < section.Size; offset += 128)
         {
             ReadOnlySpan<byte> group = image.Slice(tableOffset + offset, 128);
-            Assert.True(group.Slice(120, 8).SequenceEqual(new byte[8]));
+            Assert.True(group.Slice(24, 8).SequenceEqual(new byte[8]));
             uint baseIP = BinaryPrimitives.ReadUInt32LittleEndian(group);
-            uint funcletBits = BinaryPrimitives.ReadUInt32LittleEndian(group.Slice(36));
+            uint funcletBits = BinaryPrimitives.ReadUInt32LittleEndian(group.Slice(4));
             bool seenSkip = false;
             bool previousIsFunclet = false;
             for (int index = 0; index < 32; index++)
             {
                 bool isFunclet = (funcletBits & (1u << index)) != 0;
-                if (group[4 + index] == byte.MaxValue)
+                if (group[32 + index] == byte.MaxValue)
                 {
                     Assert.NotEqual(0, index);
                     Assert.Equal(previousIsFunclet, isFunclet);
@@ -53,20 +53,20 @@ internal static class WasmR2RAssert
                 }
 
                 Assert.False(seenSkip);
-                uint begin = checked(baseIP + group[4 + index] + (uint)index * 4);
+                uint begin = checked(baseIP + group[32 + index] + (uint)index * 4);
                 if (previousBegin.HasValue)
                 {
                     Assert.True(begin >= previousBegin.Value + 4);
                 }
                 previousBegin = begin;
                 previousIsFunclet = isFunclet;
-                uint high = (uint)(group[40 + index / 2] >> ((index & 1) * 4)) & 0xF;
-                uint unwind = ((uint)group[56 + index] << 8) | group[88 + index];
+                uint high = (uint)(group[8 + index / 2] >> ((index & 1) * 4)) & 0xF;
+                uint unwind = ((uint)group[64 + index] << 8) | group[96 + index];
                 if (high == 0xF)
                 {
                     Assert.NotEqual(31, index);
-                    Assert.Equal(byte.MaxValue, group[4 + 31]);
-                    unwind |= ((uint)group[56 + 31] << 24) | ((uint)group[88 + 31] << 16);
+                    Assert.Equal(byte.MaxValue, group[32 + 31]);
+                    unwind |= ((uint)group[64 + 31] << 24) | ((uint)group[96 + 31] << 16);
                     Assert.True(unwind >= 0xF0000);
                 }
                 else
@@ -105,17 +105,17 @@ internal static class WasmR2RAssert
                     Span<byte> group = reader.Image.AsSpan(tableOffset, 128);
                     group.Clear();
                     BinaryPrimitives.WriteUInt32LittleEndian(group, 0x100);
-                    BinaryPrimitives.WriteUInt32LittleEndian(group.Slice(36), 1u << index);
+                    BinaryPrimitives.WriteUInt32LittleEndian(group.Slice(4), 1u << index);
                     bool escaped = unwind >= 0xF0000;
                     uint high = escaped ? 0xF : unwind >> 16;
-                    group[40 + index / 2] = (byte)(high << ((index & 1) * 4));
-                    group[56 + index] = (byte)(unwind >> 8);
-                    group[88 + index] = (byte)unwind;
+                    group[8 + index / 2] = (byte)(high << ((index & 1) * 4));
+                    group[64 + index] = (byte)(unwind >> 8);
+                    group[96 + index] = (byte)unwind;
                     if (escaped && index != 31)
                     {
-                        group[4 + 31] = byte.MaxValue;
-                        group[56 + 31] = (byte)(unwind >> 24);
-                        group[88 + 31] = (byte)(unwind >> 16);
+                        group[32 + 31] = byte.MaxValue;
+                        group[64 + 31] = (byte)(unwind >> 24);
+                        group[96 + 31] = (byte)(unwind >> 16);
                     }
 
                     if (escaped && index == 31)
@@ -129,7 +129,7 @@ internal static class WasmR2RAssert
                     Assert.Equal(0x100 + index * 4, begin);
                     Assert.Equal(reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.WasmGCInfo].RelativeVirtualAddress + (int)unwind, unwindRva);
                     Assert.True(isFunclet);
-                    group[4 + index] = byte.MaxValue;
+                    group[32 + index] = byte.MaxValue;
                     Assert.False(reader.TryReadWasmRuntimeFunction(index, out _, out _, out _));
                 }
             }
