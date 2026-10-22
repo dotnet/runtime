@@ -199,9 +199,10 @@ void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const vo
     uintptr_t end = reinterpret_cast<uintptr_t>(rangeEnd);
     if (rangeStart == nullptr && rangeEnd == nullptr)
     {
-        end = SIZE_MAX;
+        return ReserveMemory(size);
     }
-    else if (end <= start)
+
+    if (end <= start)
     {
         errno = EINVAL;
         return nullptr;
@@ -222,6 +223,11 @@ void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const vo
     }
 
     return memory;
+}
+
+void* VMToOSInterface::ReserveMemory(size_t size)
+{
+    return AllocateMemory(nullptr, size, MemoryProtection::NoAccess);
 }
 
 void* VMToOSInterface::CommitReservedMemory(void* address, size_t size, MemoryProtection protection)

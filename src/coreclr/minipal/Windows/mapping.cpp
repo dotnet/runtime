@@ -33,7 +33,7 @@ static MapViewOfFile3Fn s_mapViewOfFile3 = nullptr;
 
 static BOOL CALLBACK InitializePlaceholderMapping(PINIT_ONCE, void*, void**)
 {
-    HMODULE module = LoadLibraryExW(L"api-ms-win-core-memory-l1-1-6.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    HMODULE module = GetModuleHandleW(L"kernel32.dll");
     if (module != nullptr)
     {
         s_virtualAlloc2 = reinterpret_cast<VirtualAlloc2Fn>(GetProcAddress(module, "VirtualAlloc2"));
@@ -245,13 +245,20 @@ bool VMToOSInterface::ReleaseMemoryReservation(void* address, size_t)
     return VirtualFree(address, 0, MEM_RELEASE) != FALSE;
 }
 
+void* VMToOSInterface::ReserveMemory(size_t size)
+{
+    assert(size != 0);
+
+    return VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
+}
+
 void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size)
 {
     assert(size != 0);
 
     if (rangeStart == nullptr && rangeEnd == nullptr)
     {
-        return VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
+        return ReserveMemory(size);
     }
 
     assert(rangeEnd > rangeStart);

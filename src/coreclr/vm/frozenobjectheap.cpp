@@ -129,7 +129,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     _ASSERT(m_Size % FOH_COMMIT_SIZE == 0);
 
     void* alloc;
-    alloc = VMToOSInterface::ReserveMemoryWithinRange(nullptr, nullptr, m_Size);
+    alloc = VMToOSInterface::ReserveMemory(m_Size);
     if (alloc == nullptr)
     {
         // Try again with the default FOH size
@@ -138,7 +138,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
             m_Size = FOH_SEGMENT_DEFAULT_SIZE;
             _ASSERT(m_Size > FOH_COMMIT_SIZE);
             _ASSERT(m_Size % FOH_COMMIT_SIZE == 0);
-            alloc = VMToOSInterface::ReserveMemoryWithinRange(nullptr, nullptr, m_Size);
+            alloc = VMToOSInterface::ReserveMemory(m_Size);
         }
 
         if (alloc == nullptr)

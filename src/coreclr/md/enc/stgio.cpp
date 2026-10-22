@@ -883,7 +883,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
             memset(m_rgPageMap, 0, sizeof(BYTE) * (iMaxSize / m_iPageSize));
 
             // Allocate space for the file contents.
-            if ((m_pBaseData = m_pData = VMToOSInterface::ReserveMemoryWithinRange(nullptr, nullptr, iMaxSize)) == 0)
+            if ((m_pBaseData = m_pData = VMToOSInterface::ReserveMemory(iMaxSize)) == 0)
             {
                 hr = PostError(OutOfMemory());
                 goto ErrExit;

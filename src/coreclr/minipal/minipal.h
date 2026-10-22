@@ -63,17 +63,19 @@ public:
     // NoAccess denotes a logical reservation, not inaccessible pages.
     static void* AllocateMemory(void* address, size_t size, MemoryProtection protection);
 
-    // Allocate a page-aligned, nonzero-sized reservation whose starting address lies
-    // within [rangeStart, rangeEnd), when a range is specified. Passing both rangeStart
-    // and rangeEnd as nullptr requests an allocation anywhere in the address space, and
-    // is equivalent to calling ReserveMemoryPlaceholder(nullptr, size).
+    // Allocate a page-aligned, nonzero-sized reservation anywhere in the address space.
     // Release the allocation with ReleaseMemoryReservation and its original size.
+    static void* ReserveMemory(size_t size);
+
+    // Allocate a page-aligned, nonzero-sized reservation whose starting address lies
+    // within [rangeStart, rangeEnd). Passing both rangeStart and rangeEnd as nullptr is
+    // equivalent to calling ReserveMemory(size).
     static void* ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size);
 
     // Commit a page-aligned, nonzero-sized range previously returned by
-    // ReserveMemoryWithinRange. Unlike CommitMemoryPlaceholder, the reservation does not
-    // need placeholder support and is not split or replaced; the existing address range
-    // simply becomes accessible with the requested protection.
+    // ReserveMemory or ReserveMemoryWithinRange. Unlike CommitMemoryPlaceholder, the
+    // reservation does not need placeholder support and is not split or replaced; the
+    // existing address range simply becomes accessible with the requested protection.
     // WASM reservations are already accessible; committing ReadWrite preserves their contents.
     static void* CommitReservedMemory(void* address, size_t size, MemoryProtection protection);
 

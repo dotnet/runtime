@@ -370,6 +370,11 @@ bool VMToOSInterface::ReleaseMemoryReservation(void* address, size_t size)
     return IsValidPlaceholderRange(address, size) && munmap(address, size) == 0;
 }
 
+void* VMToOSInterface::ReserveMemory(size_t size)
+{
+    return AllocateMemory(nullptr, size, MemoryProtection::NoAccess);
+}
+
 void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size)
 {
     size_t pageSize = minipal_getpagesize();
@@ -381,7 +386,7 @@ void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const vo
 
     if (rangeStart == nullptr && rangeEnd == nullptr)
     {
-        return AllocateMemory(nullptr, size, MemoryProtection::NoAccess);
+        return ReserveMemory(size);
     }
 
     if (rangeEnd <= rangeStart)
@@ -448,8 +453,8 @@ void* VMToOSInterface::CommitReservedMemory(void* address, size_t size, MemoryPr
         return nullptr;
     }
 
-    // The reservation is already backed by anonymous pages from AllocateMemory/ReserveMemoryWithinRange;
-    // committing on Unix just means making those pages accessible with the requested protection.
+    // Anonymous reservations acquire physical pages on demand when accessed. Committing on Unix
+    // only makes the reservation accessible with the requested protection.
     return mprotect(address, size, GetNativeProtection(protection)) == 0 ? address : nullptr;
 }
 

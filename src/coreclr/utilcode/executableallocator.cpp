@@ -886,7 +886,7 @@ void* ExecutableAllocator::Reserve(size_t size)
         }
         else
         {
-            result = (BYTE*)VMToOSInterface::ReserveMemoryWithinRange(nullptr, nullptr, size);
+            result = static_cast<BYTE*>(VMToOSInterface::ReserveMemory(size));
         }
     }
 

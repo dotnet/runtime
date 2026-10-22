@@ -928,7 +928,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(PEImagePart* imageParts) const
     if (base == NULL)
         ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
-    // when loading by copying we have only one part to free.
+    // Copying creates one allocation; the next entry records its end for cleanup.
     imageParts[0] = PEImagePart::Allocated(base);
     imageParts[1] = PEImagePart::Mapped(static_cast<BYTE*>(base) + allocSize.Value());
 
