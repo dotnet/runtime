@@ -3,6 +3,7 @@
 //
 //
 
+#include <assert.h>
 #include <inttypes.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -225,16 +226,10 @@ void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const vo
 
 void* VMToOSInterface::CommitReservedMemory(void* address, size_t size, MemoryProtection protection)
 {
-    if (!IsValidMemoryRange(address, size))
-    {
-        return nullptr;
-    }
-
-    if (protection != MemoryProtection::ReadWrite)
-    {
-        errno = ENOTSUP;
-        return nullptr;
-    }
+    assert(IsValidMemoryRange(address, size));
+    assert(protection == MemoryProtection::ReadWrite);
+    (void)size;
+    (void)protection;
 
     return address;
 }

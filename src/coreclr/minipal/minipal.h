@@ -204,7 +204,7 @@ public:
     static void JitWriteProtect(bool) {}
 #endif // HOST_OSX && HOST_ARM64
 
-#ifndef TARGET_WASM
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     // Create double mapped memory mapper
     // Parameters:
     //  pHandle                - receives handle of the double mapped memory mapper
@@ -307,7 +307,7 @@ public:
     // Return:
     //  true if it succeeded, false if it failed
     static bool FreeThunksFromTemplate(void* thunks, size_t templateSize);
-#endif // !TARGET_WASM
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // Allocate aligned memory block
     // Parameters:

@@ -38,7 +38,6 @@ static BOOL CALLBACK InitializePlaceholderMapping(PINIT_ONCE, void*, void**)
     {
         s_virtualAlloc2 = reinterpret_cast<VirtualAlloc2Fn>(GetProcAddress(module, "VirtualAlloc2"));
         s_mapViewOfFile3 = reinterpret_cast<MapViewOfFile3Fn>(GetProcAddress(module, "MapViewOfFile3"));
-        FreeLibrary(module);
     }
 
     // Cache unavailable APIs as well, rather than retrying initialization on each call.
