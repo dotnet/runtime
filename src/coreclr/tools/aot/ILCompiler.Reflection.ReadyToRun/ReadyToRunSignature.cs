@@ -1772,6 +1772,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("BULK_WRITE_BARRIER_SMALL");
                     break;
 
+                case ReadyToRunHelper.BulkWriteBarrierWithLayout:
+                    builder.Append("BULK_WRITE_BARRIER_WITH_LAYOUT");
+                    break;
+
+                case ReadyToRunHelper.BulkWriteBarrierClearWithLayout:
+                    builder.Append("BULK_WRITE_BARRIER_CLEAR_WITH_LAYOUT");
+                    break;
+
                 // Array helpers
                 case ReadyToRunHelper.Stelem_Ref:
                     builder.Append("STELEM_REF");

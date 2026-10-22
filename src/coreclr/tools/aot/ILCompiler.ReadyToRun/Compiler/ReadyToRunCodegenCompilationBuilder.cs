@@ -58,6 +58,7 @@ namespace ILCompiler
         private bool _verifyTypeAndFieldLayout;
         private bool _hotColdSplitting;
         private bool _verifyGCModeTransitions;
+        private bool _oldValueWriteBarriers;
         private WasmDebugInfo _wasmDebugInfo = WasmDebugInfo.NameSection;
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
@@ -216,6 +217,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseOldValueWriteBarriers(bool oldValueWriteBarriers)
+        {
+            _oldValueWriteBarriers = oldValueWriteBarriers;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseWasmDebugInfo(WasmDebugInfo wasmDebugInfo)
         {
             _wasmDebugInfo = wasmDebugInfo;
@@ -304,6 +311,10 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SingleThreaded;
             }
+            if (_oldValueWriteBarriers)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_OldValueWriteBarriers;
+            }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             NodeFactory factory = new NodeFactory(
@@ -338,6 +349,11 @@ namespace ILCompiler
             if (_verifyGCModeTransitions)
             {
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS);
+            }
+
+            if (_oldValueWriteBarriers)
+            {
+                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE);
             }
 
             switch (_optimizationMode)

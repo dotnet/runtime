@@ -584,6 +584,7 @@ RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_CrashReportMaxFileCount, W("CrashReportMaxF
 ///
 RETAIL_CONFIG_STRING_INFO(INTERNAL_NativeImageSearchPaths, W("NativeImageSearchPaths"), "Extra search paths for native composite R2R images")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ReadyToRun, W("ReadyToRun"), 1, "Enable/disable use of ReadyToRun native code") // On by default for CoreCLR
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ReadyToRunAcceptUnmarkedImages, W("ReadyToRunAcceptUnmarkedImages"), 0, "Test only: also use ReadyToRun images that do not keep a barrier for every reference store when the collector needs the old value of every overwritten reference. Unsound; it exists for the negative control of the ReadyToRun store test")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunExcludeList, W("ReadyToRunExcludeList"), "List of assemblies that cannot use Ready to Run images")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunLogFile, W("ReadyToRunLogFile"), "Name of file to log success/failure of using Ready to Run images")
 

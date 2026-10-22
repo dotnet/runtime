@@ -539,7 +539,7 @@ namespace ILCompiler
             }
 
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
-            flags |= _nodeFactory.Header.Flags & (ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions | ReadyToRunFlags.READYTORUN_FLAG_SingleThreaded);
+            flags |= _nodeFactory.Header.Flags & (ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions | ReadyToRunFlags.READYTORUN_FLAG_SingleThreaded | ReadyToRunFlags.READYTORUN_FLAG_OldValueWriteBarriers);
 
             bool isNativeCompositeImage = false;
             if (NodeFactory.Target.IsWindows && NodeFactory.Format == ReadyToRunContainerFormat.PE)

@@ -709,6 +709,7 @@ namespace ILCompiler
                         .UseVerifyTypeAndFieldLayout(Get(_command.VerifyTypeAndFieldLayout))
                         .UseHotColdSplitting(Get(_command.HotColdSplitting))
                         .UseVerifyGCModeTransitions(Get(_command.VerifyGCModeTransitions))
+                        .UseOldValueWriteBarriers(Get(_command.OldValueWriteBarriers))
                         .GenerateOutputFile(outFile)
                         .UseImageBase(_imageBase)
                         .UseContainerFormat(format)

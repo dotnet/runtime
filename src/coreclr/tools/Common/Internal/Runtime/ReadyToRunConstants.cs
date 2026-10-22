@@ -25,6 +25,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_StrippedDebugInfo = 0x00000800,        // Debug info has been stripped from the image
         READYTORUN_FLAG_VerifyGCModeTransitions = 0x00001000,  // Code in this image verifies that GC mode transitions are legal. Catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
         READYTORUN_FLAG_SingleThreaded = 0x00002000,           // The image targets a single-threaded runtime and lays out [ThreadStatic] fields as regular statics.
+        READYTORUN_FLAG_OldValueWriteBarriers = 0x00004000,    // Code in this image keeps a write barrier for every reference store, also for null, frozen and provably non-heap values, and uses the old-value copy, clear and fill paths of CoreLib.
     }
 
     public enum ReadyToRunImportSectionType : byte
@@ -259,7 +260,8 @@ namespace Internal.ReadyToRunConstants
         ByRefWriteBarrier           = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
         BulkWriteBarrier            = 0x33,
         BulkWriteBarrierSmall       = 0x34,
-
+        BulkWriteBarrierWithLayout      = 0x35,
+        BulkWriteBarrierClearWithLayout = 0x36,
         // Array helpers
         Stelem_Ref                  = 0x38,
         Ldelema_Ref                 = 0x39,

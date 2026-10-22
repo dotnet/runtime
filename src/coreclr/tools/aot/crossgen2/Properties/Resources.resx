@@ -363,6 +363,9 @@
   <data name="VerifyGCModeTransitionsOption" xml:space="preserve">
     <value>Emit the diagnostic helpers that verify GC mode transitions are legal, and mark the image as using them. WebAssembly only; has no effect on other targets. Use only for diagnostic purposes.</value>
   </data>
+  <data name="OldValueWriteBarriersOption" xml:space="preserve">
+    <value>Keep a write barrier for every reference store, also for null, frozen and provably non-heap values, and mark the image. A runtime whose garbage collector needs the old value of every overwritten reference (for example LXR) only uses images that carry this mark.</value>
+  </data>
   <data name="TargetSingleThreadedOption" xml:space="preserve">
     <value>Override whether the target runtime is single-threaded. Single-threaded runtimes lay out [ThreadStatic] fields as regular statics. Defaults to true for WebAssembly targets.</value>
   </data>

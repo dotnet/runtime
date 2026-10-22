@@ -197,6 +197,9 @@
 
       <_CoreLibCrossgen2ExtraArgs Include="--strip-inlining-info"
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripInliningInfo)' != 'false'" />
+      <!-- A runtime with an LXR-style collector (old value of every overwritten reference) only uses images with this mark. -->
+      <_CoreLibCrossgen2ExtraArgs Include="--old-value-write-barriers"
+        Condition="'$(CrossgenOldValueWriteBarriers)' == 'true'" />
       <_CoreLibCrossgen2ExtraArgs Include="--strip-debug-info"
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripDebugInfo)' != 'false'" />
       <!-- wasm: enable cross-module inlining/optimization across the whole shared framework (the -r IL closure). -->

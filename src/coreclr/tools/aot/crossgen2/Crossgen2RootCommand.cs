@@ -154,6 +154,8 @@ namespace ILCompiler
             new("--hot-cold-splitting") { Description = SR.HotColdSplittingOption };
         public Option<bool> VerifyGCModeTransitions { get; } =
             new("--verify-gc-mode-transitions") { Description = SR.VerifyGCModeTransitionsOption };
+        public Option<bool> OldValueWriteBarriers { get; } =
+            new("--old-value-write-barriers") { Description = SR.OldValueWriteBarriersOption };
         public Option<bool?> TargetSingleThreaded { get; } =
             new("--target-single-threaded") { Description = SR.TargetSingleThreadedOption };
         public Option<bool> StripInliningInfo { get; } =
@@ -240,6 +242,7 @@ namespace ILCompiler
             Options.Add(FileLayout);
             Options.Add(VerifyTypeAndFieldLayout);
             Options.Add(VerifyGCModeTransitions);
+            Options.Add(OldValueWriteBarriers);
             Options.Add(TargetSingleThreaded);
             Options.Add(CallChainProfileFile);
             Options.Add(MakeReproPath);

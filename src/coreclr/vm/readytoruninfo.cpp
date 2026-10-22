@@ -664,6 +664,17 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
 #endif // FEATURE_MULTITHREADING
 
+    // A collector that needs the old value of every overwritten reference can only run code that keeps the barrier for
+    // every reference store (also null, frozen and provably non-heap values). Fail closed for other images: the
+    // methods are compiled by the JIT, which follows the collector.
+    if (GCHeapUtilities::RequiresOldValueWriteBarrier() &&
+        (pHeader->CoreHeader.Flags & READYTORUN_FLAG_OLD_VALUE_WRITE_BARRIERS) == 0 &&
+        !CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunAcceptUnmarkedImages))
+    {
+        DoLog("Ready to Run disabled - image was not compiled with old-value write barriers");
+        return NULL;
+    }
+
     // Ignore the content if the image major version is higher or lower than the major version currently supported by the runtime
     if (pHeader->MajorVersion < MINIMUM_READYTORUN_MAJOR_VERSION || pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
     {
