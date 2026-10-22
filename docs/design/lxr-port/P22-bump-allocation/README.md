@@ -428,14 +428,14 @@ The identifier `small` is a macro in the Windows headers; the test code does not
 
 ## 12. Commits
 
-On top of `74dc9e84445` (the D1 tip), in this order. The first commit has the collector part, the interior lookup and
+On top of `2ec130c10af` (the D1 tip), in this order. The first commit has the collector part, the interior lookup and
 the walkers (they are in the engine, so they are not separate).
 
 | Commit | Content |
 |---|---|
-| `3bae86b3156` | The collector: buffers, spans, bulk initialization, the interior lookup over spans, the ValidObject bit at promotion, finalizable registration in `Alloc`, the engine test hooks. |
-| `30b7f281ee4` | Removal of the notifying helpers and of the allocation-notification interface (VM, NativeAOT, CMake, interface minors). |
-| `981c623b26c` | Tests: `--d2-spans`, the controls, the managed cells, the changes of the existing native tests. |
-| `befbe7182c9` | Fix: a nursery copy source gets its ValidObject bit before the claim (decision 7). |
-| `e771f8d7323` | The Windows macro `small` in the tests; the version string of the collector. |
+| `ac5a4ddba28` | The collector: buffers, spans, bulk initialization, the interior lookup over spans, the ValidObject bit at promotion, finalizable registration in `Alloc`, the engine test hooks. |
+| `e7fb4127151` | Removal of the notifying helpers and of the allocation-notification interface (VM, NativeAOT, CMake, interface minors). |
+| `db83cf7f91b` | Tests: `--d2-spans`, the controls, the managed cells, the changes of the existing native tests. |
+| `2322a693bd6` | Fix: a nursery copy source gets its ValidObject bit before the claim (decision 7). |
+| `5091da271b4` | The Windows macro `small` in the tests; the version string of the collector. |
 | (the commit with this document) | Documents and scripts. |
