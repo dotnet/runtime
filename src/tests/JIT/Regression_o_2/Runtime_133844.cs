@@ -28,6 +28,14 @@ public class Runtime_133844
         Assert.Throws<OverflowException>(new Runtime_133844().Overflow);
     }
 
+    [Fact]
+    public static void UnsignedDivisionPreservesExceptions()
+    {
+        Vector<uint> dividend = Vector.Create(0x80000000u);
+        Assert.Throws<DivideByZeroException>(() => UnsignedDivision(dividend, Vector<uint>.Zero));
+        Assert.Equal(Vector<uint>.Zero, UnsignedDivision(dividend, Vector.Create(uint.MaxValue)));
+    }
+
     [Theory]
     [InlineData(-1)]
     [InlineData(1)]
@@ -61,5 +69,11 @@ public class Runtime_133844
     private static Vector<int> ConstantDividend(Vector<int> divisor)
     {
         return Vector.Create(42) / divisor;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static Vector<uint> UnsignedDivision(Vector<uint> dividend, Vector<uint> divisor)
+    {
+        return (dividend ^ dividend) * (dividend / divisor);
     }
 }
