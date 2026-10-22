@@ -565,6 +565,10 @@ if(NOT DISABLE_EXECUTABLES)
       set_target_properties(mono-sgen PROPERTIES INSTALL_RPATH "$ORIGIN")
     endif()
   endif()
+
+  if(HOST_OSX AND NOT HOST_MACCAT AND NOT MONO_CROSS_COMPILE_EXECUTABLE_NAME)
+    set_macos_bundle_identifier(mono-sgen com.microsoft.dotnet.mono-sgen)
+  endif()
   
   set(MONOSGEN_LINKABLE_LIBS "")
   list(APPEND MONOSGEN_LINKABLE_LIBS monoapi eglib_api monosgen-static dn-containers)

@@ -2018,6 +2018,27 @@ namespace System.Tests
               "DateTime parsing expected to throw with any dates greater than DateTime.MaxValue");
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [InlineData("\u6642")] // CJK hour suffix 時
+        [InlineData("\u5206")] // CJK minute suffix 分
+        [InlineData("\u79D2")] // CJK second suffix 秒
+        public static void TryParse_TooManyNumbersViaHebrewLexer_FailsWithoutOverflow(string timeSuffix)
+        {
+            // Any letter in the Hebrew Unicode block (U+0590-U+05FF) is lexed as a "Hebrew number"
+            // under every non-invariant culture -- this does NOT require a Hebrew calendar or a Hebrew
+            // culture. The CJK hour/minute/second suffixes are likewise recognized everywhere. Using
+            // spaces as separators (a separator in every culture) makes the repro culture-independent:
+            //   "1" and "2" fill two of DateTimeRawInfo's three number slots;
+            //   "3<suffix>" is consumed as a time-suffixed number without taking a slot;
+            //   the Hebrew numerals are then lexed as additional day numbers, and the second one
+            //   attempts a fourth push into the three-slot buffer.
+            // Previously that fourth push overflowed the buffer and corrupted adjacent memory; ensure
+            // the input now fails to parse cleanly instead.
+            // Example (hour suffix): "1 2 3時 א' ב' ג'"  (\u05D0='א', \u05D1='ב', \u05D2='ג', \u0027=geresh)
+            string input = $"1 2 3{timeSuffix} \u05D0\u0027 \u05D1\u0027 \u05D2\u0027";
+            Assert.False(DateTime.TryParse(input, CultureInfo.InvariantCulture, DateTimeStyles.None, out _), $"Input '{input}' should fail to parse.");
+        }
+
         public static IEnumerable<object[]> Parse_ValidInput_Succeeds_MemberData()
         {
             yield return new object[] { "1234 12", CultureInfo.InvariantCulture, new DateTime(1234, 12, 1, 0, 0, 0) };
