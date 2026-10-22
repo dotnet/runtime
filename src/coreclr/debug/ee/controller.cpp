@@ -332,35 +332,34 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatch(DebuggerPatchKey key)
 
     // Allocate the index before taking a slot so OOM leaves the table unchanged.
     EnsureList(key);
-    const DebuggerPatchListEntry *list = m_patchLists.LookupPtr(key);
     ULONG index = m_iFree;
     DebuggerControllerPatch *patch = reinterpret_cast<DebuggerControllerPatch *>(EntryPtr(index));
     m_iFree = patch->entry.iFree;
     memset(patch, 0, sizeof(*patch));
     patch->entry.iPrev = DPT_INVALID_SLOT;
-    patch->entry.iNext = list->first;
-    if (list->first != DPT_INVALID_SLOT)
-        EntryPtr(list->first)->iPrev = index;
-
-    DebuggerPatchListEntry updated = *list;
-    updated.first = index;
-    m_patchLists.ReplacePtr(list, updated, false /* invokeCleanupAction */);
+    bool updated = m_patchLists.Update(key, [&](DebuggerPatchListEntry &list)
+    {
+        patch->entry.iNext = list.first;
+        if (list.first != DPT_INVALID_SLOT)
+            EntryPtr(list.first)->iPrev = index;
+        list.first = index;
+    });
+    _ASSERTE(updated);
     return patch;
 }
 
 void DebuggerPatchTable::LinkPatch(DebuggerControllerPatch *patch)
 {
-    const DebuggerPatchListEntry *list = m_patchLists.LookupPtr(Key(patch));
-    _ASSERTE(list != nullptr);
     ULONG index = ItemIndex(reinterpret_cast<HASHENTRY *>(patch));
     patch->entry.iPrev = DPT_INVALID_SLOT;
-    patch->entry.iNext = list->first;
-    if (list->first != DPT_INVALID_SLOT)
-        EntryPtr(list->first)->iPrev = index;
-
-    DebuggerPatchListEntry updated = *list;
-    updated.first = index;
-    m_patchLists.ReplacePtr(list, updated, false /* invokeCleanupAction */);
+    bool updated = m_patchLists.Update(Key(patch), [&](DebuggerPatchListEntry &list)
+    {
+        patch->entry.iNext = list.first;
+        if (list.first != DPT_INVALID_SLOT)
+            EntryPtr(list.first)->iPrev = index;
+        list.first = index;
+    });
+    _ASSERTE(updated);
 }
 #endif // DACCESS_COMPILE
 
@@ -428,8 +427,7 @@ void DebuggerPatchTable::SortPatchIntoPatchList(DebuggerControllerPatch **ppPatc
 void DebuggerPatchTable::SpliceOutOfList(DebuggerControllerPatch *patch)
 {
     DebuggerPatchKey key = Key(patch);
-    const DebuggerPatchListEntry *list = m_patchLists.LookupPtr(key);
-    _ASSERTE(list != nullptr);
+    _ASSERTE(m_patchLists.LookupPtr(key) != nullptr);
 
     // Fix up pointers to chain
     if (patch->entry.iPrev == DPT_INVALID_SLOT)
@@ -443,9 +441,11 @@ void DebuggerPatchTable::SpliceOutOfList(DebuggerControllerPatch *patch)
         }
         else
         {
-            DebuggerPatchListEntry updated = *list;
-            updated.first = patch->entry.iNext;
-            m_patchLists.ReplacePtr(list, updated, false /* invokeCleanupAction */);
+            bool updated = m_patchLists.Update(key, [&](DebuggerPatchListEntry &entry)
+            {
+                entry.first = patch->entry.iNext;
+            });
+            _ASSERTE(updated);
         }
     }
 

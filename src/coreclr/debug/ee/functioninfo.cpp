@@ -2159,19 +2159,18 @@ HRESULT DebuggerMethodInfoTable::OverwriteMethodInfo(Module *pModule,
     dmik.pModule = pModule;
     dmik.token = token;
 
-    const DebuggerMethodInfoEntry *entry = m_table.LookupPtr(dmik);
-    if (entry == nullptr || (fOnlyIfNull && entry->mi != nullptr))
+    HRESULT hr = E_FAIL;
+    m_table.Update(dmik, [&](DebuggerMethodInfoEntry &entry)
     {
-        return E_FAIL;
-    }
+        if (fOnlyIfNull && entry.mi != nullptr)
+            return;
 
-    DebuggerMethodInfoEntry updated = *entry;
-    updated.mi = mi;
-    m_table.ReplacePtr(entry, updated, false /* invokeCleanupAction */);
-
-    LOG((LF_CORDB, LL_INFO1000, "DMIT::OMI: mod:%p tok:0x%08x remap nVer:0x%zx\n",
-        pModule, token, updated.nVersionLastRemapped));
-    return S_OK;
+        entry.mi = mi;
+        hr = S_OK;
+        LOG((LF_CORDB, LL_INFO1000, "DMIT::OMI: mod:%p tok:0x%08x remap nVer:0x%zx\n",
+            pModule, token, entry.nVersionLastRemapped));
+    });
+    return hr;
 }
 
 // pModule is being destroyed - remove any entries that belong to it.  Why?
@@ -2194,12 +2193,16 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
         Module *pMod = entry->key.pModule ;
         if (pMod == pModule)
         {
-            // This method actually got mitted, at least
+            // This method actually got emitted, at least
             // once - remove all version info.
-            while(entry->mi != NULL)
+            bool updated = m_table.Update(entry->key, [&](DebuggerMethodInfoEntry &current)
             {
-                DeleteEntryDMI(entry);
-            }
+                while (current.mi != NULL)
+                {
+                    DeleteEntryDMI(current);
+                }
+            });
+            _ASSERTE(updated);
 
             m_table.Remove(entry->key);
         }
@@ -2228,7 +2231,7 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
     }
 }
 
-void DebuggerMethodInfoTable::DeleteEntryDMI(const DebuggerMethodInfoEntry *entry)
+void DebuggerMethodInfoTable::DeleteEntryDMI(DebuggerMethodInfoEntry &entry)
 {
     CONTRACTL
     {
@@ -2240,12 +2243,10 @@ void DebuggerMethodInfoTable::DeleteEntryDMI(const DebuggerMethodInfoEntry *entr
     }
     CONTRACTL_END;
 
-    DebuggerMethodInfoEntry updated = *entry;
-    DebuggerMethodInfo *dmiPrev = updated.mi->m_prevMethodInfo;
-    TRACE_FREE(updated.mi);
-    DeleteInteropSafe(updated.mi);
-    updated.mi = dmiPrev;
-    m_table.ReplacePtr(entry, updated, false /* invokeCleanupAction */);
+    DebuggerMethodInfo *dmiPrev = entry.mi->m_prevMethodInfo;
+    TRACE_FREE(entry.mi);
+    DeleteInteropSafe(entry.mi);
+    entry.mi = dmiPrev;
     if (dmiPrev != nullptr)
         dmiPrev->m_nextMethodInfo = nullptr;
 }

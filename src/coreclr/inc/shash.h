@@ -80,7 +80,7 @@
 //                                              s_DestructPerEntryCleanupAction must be set to true if implemented.
 // static void OnRemovePerEntryCleanupAction(ELEMENT& e) Called when an element is removed from the hashtable, including when
 //                                              the hashtable is destructed. Set s_RemovePerEntryCleanupAction to true for
-//                                              automatic cleanup. ReplacePtr can explicitly override this policy.
+//                                              automatic cleanup. Update does not invoke this action.
 //
 // s_growth_factor_numerator
 // s_growth_factor_denominator                  Factor to grow allocation (numerator/denominator).
@@ -195,16 +195,18 @@ class EMPTY_BASES SHash : public TRAITS
 
     element_t Lookup(key_t key) const;
 
-    // Pointer-based flavor of Lookup (allows efficient access to tables of structures)
+    // Read-only pointer-based lookup. Use Update to modify an existing element.
 
     const element_t* LookupPtr(key_t key) const;
 
-    // Pointer-based flavor to replace an existing element (allows efficient access to tables of structures)
-
-    void ReplacePtr(const element_t *elementPtr, const element_t &newElement);
-
-    // The explicit bool overrides the traits' removal-cleanup policy for this replacement.
-    void ReplacePtr(const element_t *elementPtr, const element_t &newElement, bool invokeCleanupAction);
+    // Update the first matching element in place, returning false if no match exists.
+    // The callback must preserve the key and sentinel state, and must not structurally modify the table.
+    // It must not retain a mutable pointer or reference to the element.
+    // Callers must synchronize updates with other access to the affected element.
+    // No removal cleanup is performed; the callback manages ownership of any replaced value.
+    // Callback exceptions propagate; changes already made are not rolled back.
+    template <typename Functor>
+    bool Update(key_t key, Functor &&functor);
 
     // Add an element to the hash table.  This will never replace an element; multiple
     // elements may be stored with the same key.
@@ -341,7 +343,7 @@ class EMPTY_BASES SHash : public TRAITS
     // Utility function to find the first element with the given key in
     // the hash table.
 
-    const element_t* Lookup(PTR_element_t table, count_t tableSize, key_t key) const;
+    element_t* Lookup(PTR_element_t table, count_t tableSize, key_t key) const;
 
     // Utility function to remove the first element with the given key
     // in the hash table.

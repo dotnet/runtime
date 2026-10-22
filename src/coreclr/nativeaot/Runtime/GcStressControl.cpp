@@ -95,25 +95,21 @@ private:
 
         CrstHolder lh(&s_lock);
 
-        const CallsiteCountEntry * pEntry = s_callsites.LookupPtr(CallsiteIP);
-        size_t hits;
-
-        if (pEntry == NULL)
+        bool found = s_callsites.Update(CallsiteIP, [&](CallsiteCountEntry &entry)
         {
-            hits = 1;
+            entry.countHit++;
+            if (bForceGC)
+            {
+                entry.countForced++;
+            }
+        });
+        if (!found)
+        {
             CallsiteCountEntry e = {CallsiteIP, 1, 1, ht};
             s_callsites.AddOrReplace(e);
         }
-        else
-        {
-            hits = ++(const_cast<CallsiteCountEntry*>(pEntry)->countHit);
-            if (bForceGC)
-            {
-                ++(const_cast<CallsiteCountEntry*>(pEntry)->countForced);
-            }
-        }
 
-        return pEntry == NULL;
+        return !found;
     }
 
     static bool GcStressTriggerFirstHit(uintptr_t CallsiteIP, HijackType ht)
@@ -176,5 +172,4 @@ bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht)
 }
 
 #endif // FEATURE_GC_STRESS & !DACCESS_COMPILE
-
 

@@ -1100,14 +1100,13 @@ HRESULT DebuggerPendingFuncEvalTable::AddPendingEval(Thread *pThread, DebuggerEv
     _ASSERTE(pThread != nullptr && pDE != nullptr);
     _ASSERTE(pDE->m_nextPendingEval == nullptr);
 
-    const DebuggerPendingFuncEval *entry = m_table.LookupPtr(pThread);
-    if (entry != nullptr)
+    if (m_table.Update(pThread, [&](DebuggerPendingFuncEval &entry)
+        {
+            // Keep newest-first order independently of SHash rehashing.
+            pDE->m_nextPendingEval = entry.pDE;
+            entry.pDE = pDE;
+        }))
     {
-        DebuggerPendingFuncEval updated = *entry;
-        // Keep newest-first order independently of SHash rehashing.
-        pDE->m_nextPendingEval = entry->pDE;
-        updated.pDE = pDE;
-        m_table.ReplacePtr(entry, updated, false /* invokeCleanupAction */);
         return S_OK;
     }
 
@@ -1128,22 +1127,23 @@ void DebuggerPendingFuncEvalTable::RemovePendingEval(Thread *pThread)
 
     _ASSERTE(pThread != nullptr);
 
-    const DebuggerPendingFuncEval *entry = m_table.LookupPtr(pThread);
-    if (entry == nullptr)
+    DebuggerEval *pDE = nullptr;
+    bool removeEntry = false;
+    if (!m_table.Update(pThread, [&](DebuggerPendingFuncEval &entry)
+        {
+            pDE = entry.pDE;
+            if (pDE->m_nextPendingEval == nullptr)
+                removeEntry = true;
+            else
+                entry.pDE = pDE->m_nextPendingEval;
+        }))
     {
         return;
     }
 
-    DebuggerEval *pDE = entry->pDE;
-    if (pDE->m_nextPendingEval == nullptr)
+    if (removeEntry)
     {
         m_table.Remove(pThread);
-    }
-    else
-    {
-        DebuggerPendingFuncEval updated = *entry;
-        updated.pDE = pDE->m_nextPendingEval;
-        m_table.ReplacePtr(entry, updated, false /* invokeCleanupAction */);
     }
     pDE->m_nextPendingEval = nullptr;
 }

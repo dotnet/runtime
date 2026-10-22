@@ -40,17 +40,16 @@ HRESULT CordbHashTable::UnsafeSwapBase(CordbBase *pOldBase, CordbBase *pNewBase)
 
     ULONG_PTR id = (ULONG_PTR)pOldBase->m_id;
 
-    CordbBase *const *entry = m_table.LookupPtr(id);
-
-    if (entry == NULL)
+    if (!m_table.Update(id, [&](CordbBase *&entry)
+        {
+            _ASSERTE(entry == pOldBase);
+            _ASSERTE(pOldBase->m_id == pNewBase->m_id);
+            pNewBase->InternalAddRef();
+            entry = pNewBase;
+        }))
     {
         return E_FAIL;
     }
-
-    _ASSERTE(*entry == pOldBase);
-    _ASSERTE(pOldBase->m_id == pNewBase->m_id);
-    pNewBase->InternalAddRef();
-    m_table.ReplacePtr(entry, pNewBase);
 
     // release the hash table's reference to the old base and transfer it
     // to the new one.

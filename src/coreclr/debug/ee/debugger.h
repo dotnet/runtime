@@ -3202,7 +3202,7 @@ public:
     //      {Module*,mdMethodDef}
     // (b) Perf: don't waste the memory!
     void ClearMethodsOfModule(Module *pModule);
-    void DeleteEntryDMI(const DebuggerMethodInfoEntry *entry);
+    void DeleteEntryDMI(DebuggerMethodInfoEntry &entry);
 
 #endif // #ifndef DACCESS_COMPILE
 
