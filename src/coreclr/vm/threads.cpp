@@ -1219,7 +1219,7 @@ void InitThreadManager()
 
         if (ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true) == NULL)
         {
-            _ASSERTE(!"Allocation of GC barrier code page failed");
+            _ASSERTE(!"Commit of GC barrier code page failed");
             COMPlusThrowWin32();
         }
 
