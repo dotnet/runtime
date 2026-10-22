@@ -434,9 +434,10 @@ I did not push, and I did not open a pull request. You decide.
 
 | File | Content |
 |---|---|
-| `kkokosa-lxr-root-capture-fix.bundle` | `git bundle` of `a485c819c17..kkokosa-lxr-root-capture-fix` (the integrated branch, the S7 commits and the root capture fix). The receiver needs `dotnet/runtime` at `a485c819c17` (fetch `upstream/main`). |
-| `patches\*.patch` | `git format-patch` series of the same range (one file per commit). |
+| `kkokosa-lxr-d1-specialized-barrier.bundle` | `git bundle` of `a485c819c17..kkokosa-lxr-d1-specialized-barrier` (the integrated branch, S7, the root capture fix and the D1 commits). The receiver needs `dotnet/runtime` at `a485c819c17` (fetch `upstream/main`). |
+| `patches\*.patch` | `git format-patch` series of the same range (one file per commit, 34 files). |
 | `SHA256SUMS.txt` | Hashes of the files above. |
+| `previous\kkokosa-lxr-root-capture-fix\` | The bundle, the patch series and the hashes of the branch before D1. |
 | `previous\kkokosa-lxr-s7-pin-list\` | The bundle, the patch series and the hashes of the S7 branch before the root capture fix. |
 | `previous\` | Also the bundle, the patch series and the hashes of the integrated branch before S7. |
 
@@ -445,11 +446,11 @@ Use of the bundle:
 ```bash
 git clone https://github.com/dotnet/runtime.git && cd runtime
 git checkout a485c819c17
-git fetch ../kkokosa-lxr-root-capture-fix.bundle kkokosa-lxr-root-capture-fix:kkokosa-lxr-root-capture-fix
-git switch kkokosa-lxr-root-capture-fix
+git fetch ../kkokosa-lxr-d1-specialized-barrier.bundle kkokosa-lxr-d1-specialized-barrier:kkokosa-lxr-d1-specialized-barrier
+git switch kkokosa-lxr-d1-specialized-barrier
 ```
 
-To publish it later: `git push <remote> kkokosa-lxr-root-capture-fix`. I advise a branch name that tells people that it is an experiment, for example `lxr-experiment`. The PR commits keep the authorship of `janvorli`. Say in the description that they come from PR #3316 and that they are not yet in `dotnet/runtime`.
+To publish it later: `git push <remote> kkokosa-lxr-d1-specialized-barrier`. I advise a branch name that tells people that it is an experiment, for example `lxr-experiment`. The PR commits keep the authorship of `janvorli`. Say in the description that they come from PR #3316 and that they are not yet in `dotnet/runtime`.
 
 ## 14. Not checked
 
