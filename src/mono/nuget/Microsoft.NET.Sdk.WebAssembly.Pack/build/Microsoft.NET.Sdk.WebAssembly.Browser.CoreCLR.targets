@@ -11,12 +11,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
-  <!-- Default OFF for now. Flipping to true belongs to the codegen-quality / crossgen2-resolution work
-       stream (dotnet/runtime#132466), not here. Consumers opt in with -p:PublishReadyToRun=true. -->
-  <PropertyGroup>
-    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">false</PublishReadyToRun>
-  </PropertyGroup>
-
+  <!-- PublishReadyToRun remains an explicit publish opt-in. Select the default Debug build's prebuilt
+       framework images separately below, so even a direct MSBuild Publish target does not crossgen the app. -->
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
     <!-- Override only the incompatible SDK default: net11+ defaults ContainerFormat=pe (unloadable on wasm).
          An explicit unsupported value is left as-is and rejected by _WasmCoreClrValidateReadyToRun. -->
@@ -46,6 +42,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishPrebuiltR2RDirectory>$(_WasmPublishR2RDir)</_WasmPublishPrebuiltR2RDirectory>
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(PublishReadyToRun)' == '' and '$(Configuration)' == 'Debug' and
+                              '$(_WasmCoreClrUnderPublish)' != 'true' and '$(DeployOnBuild)' != 'true' and
+                              '$(_WasmEnableWebcil)' == 'true' and '$(WasmPerformanceInstrumentation)' == ''">
+      <_WasmBuildPrebuiltR2RDirectory>$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
     </PropertyGroup>
   </Target>
 

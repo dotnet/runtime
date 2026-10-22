@@ -6,6 +6,7 @@ This guide provides instructions for building, running, and debugging CoreCLR on
 
 - [Prerequisites](#prerequisites)
 - [Building CoreCLR for WebAssembly](#building-coreclr-for-webassembly)
+- [ReadyToRun in browser applications](#readytorun-in-browser-applications)
 - [Testing the Runtime](#testing-the-runtime)
 - [Debugging](#debugging)
   - [Chrome DevTools with DWARF Support](#chrome-devtools-with-dwarf-support)
@@ -35,6 +36,28 @@ This command will:
 - Build the required libraries
 
 **Note:** The first build may take longer as it downloads and sets up the Emscripten toolchain.
+
+## ReadyToRun in browser applications
+
+For SDK browser-wasm applications using CoreCLR (`UseMonoRuntime=false`), ordinary
+`Debug` builds, including `dotnet run` and `dotnet watch`, use the runtime pack's
+prebuilt ReadyToRun framework assemblies by default. The application and dependencies
+without prebuilt images remain IL/interpreted. This does not run crossgen2 for the
+application or change managed Debug compilation, symbols, or Hot Reload settings.
+This build-time selection does not enable `PublishReadyToRun`; that property
+remains an explicit publish opt-in.
+
+Set `PublishReadyToRun=false` to use IL-only framework assemblies, for example when
+debugging framework code or collecting interpreter PGO for the entire framework.
+Builds with `WasmPerformanceInstrumentation` set or `WasmEnableWebcil=false` remain
+IL-only by default. An explicit `PublishReadyToRun` value takes precedence; explicitly
+combining ReadyToRun with performance instrumentation remains unsupported.
+
+Publishing, including nested publish builds, still requires an explicit
+`PublishReadyToRun=true` to enable ReadyToRun. Publishing with that setting compiles
+the eligible application and framework closure and requires a wasm-capable crossgen2;
+it does not reuse the untrimmed runtime-pack images. Release defaults, Mono, WASI,
+and desktop CoreCLR configurations are unchanged.
 
 ## Testing the Runtime
 
