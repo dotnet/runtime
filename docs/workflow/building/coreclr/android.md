@@ -179,9 +179,11 @@ To build and run the test on Android with CoreCLR, run the following command fro
 ### Testing in a container
 
 The `runtime-androidemulator` pipeline has an opt-in `runAndroidContainerTests`
-parameter. It builds CoreCLR and the `JIT/Directed/Directed_r.csproj` merged test
-assembly, then sends the APK to the KVM-enabled Helix queue using a pinned Android
-API 29 container image. The default emulator and device jobs are unchanged.
+parameter. It builds CoreCLR, the `JIT/Directed/Directed_r.csproj` merged test
+assembly and `System.Numerics.Vectors.Tests`. The runtime and library test APKs
+are submitted through their respective Helix paths to the same KVM-enabled queue
+using a pinned Android API 29 container image. Each work item starts its own
+container and emulator. The default emulator and device jobs are unchanged.
 
 The container image supplies the Android SDK, system image and AVD.
 `eng/testing/Android/start-emulator.sh` and `stop-emulator.sh` own the work-item
