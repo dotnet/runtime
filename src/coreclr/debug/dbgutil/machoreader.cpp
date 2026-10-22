@@ -32,8 +32,7 @@ private:
     bool ReadMemory(void* address, void* buffer, size_t size) override
     {
         uint32_t read = 0;
-        return size <= UINT32_MAX &&
-            SUCCEEDED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), (uint32_t)size, &read)) &&
+        return SUCCEEDED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), (uint32_t)size, &read)) &&
             read == size;
     }
 };

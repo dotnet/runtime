@@ -36,8 +36,7 @@ private:
     bool ReadMemory(void* address, void* buffer, size_t size) override
     {
         uint32_t read = 0;
-        return size <= UINT32_MAX &&
-            SUCCEEDED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), (uint32_t)size, &read)) &&
+        return SUCCEEDED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), (uint32_t)size, &read)) &&
             read == size;
     }
 };
@@ -47,8 +46,7 @@ bool TryGetElfSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, cons
 {
     ElfReaderExport<Types> reader(dataTarget);
     uint64_t symbolOffset = 0;
-    if (!reader.PopulateForSymbolLookup(baseAddress) || !reader.TryLookupSymbol(symbolName, &symbolOffset) ||
-        symbolOffset > UINT64_MAX - baseAddress)
+    if (!reader.PopulateForSymbolLookup(baseAddress) || !reader.TryLookupSymbol(symbolName, &symbolOffset))
     {
         return false;
     }
@@ -61,8 +59,7 @@ TryGetElfSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const cha
 {
     BYTE elfClass = 0;
     ULONG32 read = 0;
-    if (baseAddress > UINT64_MAX - EI_CLASS ||
-        FAILED(dataTarget->ReadVirtual(baseAddress + EI_CLASS, &elfClass, sizeof(elfClass), &read)) ||
+    if (FAILED(dataTarget->ReadVirtual(baseAddress + EI_CLASS, &elfClass, sizeof(elfClass), &read)) ||
         read != sizeof(elfClass))
     {
         return false;
@@ -149,11 +146,6 @@ ElfReader<Types>::PopulateForSymbolLookup(uint64_t baseAddress)
             terminated = true;
             break;
         }
-        if ((dyn.d_tag == DT_GNU_HASH || dyn.d_tag == DT_STRTAB || dyn.d_tag == DT_SYMTAB) &&
-            dyn.d_un.d_ptr > UINT64_MAX - loadbias) {
-            Trace("ERROR: dynamic pointer plus load bias overflows\n");
-            return false;
-        }
         else if (dyn.d_tag == DT_GNU_HASH) {
             m_gnuHashTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
         }
@@ -161,7 +153,7 @@ ElfReader<Types>::PopulateForSymbolLookup(uint64_t baseAddress)
             m_stringTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
         }
         else if (dyn.d_tag == DT_STRSZ) {
-            m_stringTableSize = dyn.d_un.d_val;
+            m_stringTableSize = (int)dyn.d_un.d_ptr;
         }
         else if (dyn.d_tag == DT_SYMTAB) {
             m_symbolTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
@@ -209,10 +201,6 @@ ElfReader<Types>::NeedsLoadBias(uint64_t baseAddress, bool* needsLoadBias)
         return true;
     }
 
-    if (header.e_phoff > UINT64_MAX - baseAddress ||
-        (uint64_t)header.e_phnum * sizeof(Elf_Phdr) > UINT64_MAX - (baseAddress + header.e_phoff)) {
-        return false;
-    }
     Elf_Phdr* phdrAddr = (Elf_Phdr*)(baseAddress + header.e_phoff);
     for (int i = 0; i < header.e_phnum; i++)
     {
@@ -332,11 +320,8 @@ ElfReader<Types>::HasMuslDependency(uint64_t loadbias, Elf_Dyn* dynamicAddr, uin
         if (!ReadMemory(phdrAddr + i, &ph, sizeof(ph))) {
             return false;
         }
-        if (ph.p_type != PT_LOAD) {
+        if (ph.p_type != PT_LOAD || ph.p_vaddr > UINT64_MAX - loadbias) {
             continue;
-        }
-        if (ph.p_vaddr > UINT64_MAX - loadbias) {
-            return false;
         }
         uint64_t segmentAddress = loadbias + ph.p_vaddr;
         if (stringAddress >= segmentAddress && stringAddress - segmentAddress <= ph.p_memsz &&
@@ -428,12 +413,8 @@ template <typename Types>
 bool
 ElfReader<Types>::GetSymbol(int32_t index, Elf_Sym* symbol)
 {
-    if (index < 0) {
-        return false;
-    }
-    uint64_t offset = (uint64_t)index * sizeof(Elf_Sym);
-    if (offset > UINT64_MAX - (uint64_t)m_symbolTableAddr ||
-        !ReadMemory((void*)((uint64_t)m_symbolTableAddr + offset), symbol, sizeof(Elf_Sym))) {
+    int symSize = sizeof(Elf_Sym);
+    if (!ReadMemory((char*)m_symbolTableAddr + (index * symSize), symbol, symSize)) {
         return false;
     }
     return true;
@@ -451,27 +432,20 @@ ElfReader<Types>::InitializeGnuHashTable()
         Trace("ERROR: InitializeGnuHashTable hashtable ReadMemory(%p) FAILED\n", m_gnuHashTableAddr);
         return false;
     }
-    if (m_hashTable.BucketCount <= 0 || m_hashTable.SymbolOffset <= 0 || m_hashTable.BloomSize <= 0) {
-        Trace("ERROR: InitializeGnuHashTable invalid BucketCount, SymbolOffset or BloomSize\n");
+    if (m_hashTable.BucketCount <= 0 || m_hashTable.SymbolOffset == 0) {
+        Trace("ERROR: InitializeGnuHashTable invalid BucketCount or SymbolOffset\n");
         return false;
     }
-    uint64_t bucketsOffset = sizeof(GnuHashTable) + ((uint64_t)m_hashTable.BloomSize * sizeof(Elf_Word));
-    uint64_t bucketsSize = (uint64_t)m_hashTable.BucketCount * sizeof(int32_t);
-    if (bucketsOffset > UINT64_MAX - (uint64_t)m_gnuHashTableAddr ||
-        bucketsSize > UINT64_MAX - ((uint64_t)m_gnuHashTableAddr + bucketsOffset) ||
-        bucketsSize > SIZE_MAX || bucketsSize > UINT32_MAX) {
-        return false;
-    }
-    m_buckets = (int32_t*)malloc((size_t)bucketsSize);
+    m_buckets = (int32_t*)malloc(m_hashTable.BucketCount * sizeof(int32_t));
     if (m_buckets == nullptr) {
         return false;
     }
-    void* bucketsAddress = (void*)((uint64_t)m_gnuHashTableAddr + bucketsOffset);
-    if (!ReadMemory(bucketsAddress, m_buckets, (size_t)bucketsSize)) {
+    void* bucketsAddress = (char*)m_gnuHashTableAddr + sizeof(GnuHashTable) + (m_hashTable.BloomSize * sizeof(Elf_Word));
+    if (!ReadMemory(bucketsAddress, m_buckets, m_hashTable.BucketCount * sizeof(int32_t))) {
         Trace("ERROR: InitializeGnuHashTable buckets ReadMemory(%p) FAILED\n", bucketsAddress);
         return false;
     }
-    m_chainsAddress = (void*)((uint64_t)bucketsAddress + bucketsSize);
+    m_chainsAddress = (char*)bucketsAddress + (m_hashTable.BucketCount * sizeof(int32_t));
     return true;
 }
 
@@ -480,17 +454,10 @@ bool
 ElfReader<Types>::GetPossibleSymbolIndex(const std::string& symbolName, std::vector<int32_t>& symbolIndexes)
 {
     uint32_t hash = Hash(symbolName);
-    int32_t bucket = m_buckets[hash % m_hashTable.BucketCount];
-    if (bucket < m_hashTable.SymbolOffset) {
-        return false;
-    }
-    int i = bucket - m_hashTable.SymbolOffset;
+    int i = m_buckets[hash % m_hashTable.BucketCount] - m_hashTable.SymbolOffset;
     Trace("GetPossibleSymbolIndex hash %08x index: %d BucketCount %d SymbolOffset %08x\n", hash, i, m_hashTable.BucketCount, m_hashTable.SymbolOffset);
     for (;; i++)
     {
-        if (i > INT32_MAX - m_hashTable.SymbolOffset) {
-            return false;
-        }
         int32_t chainVal;
         if (!GetChain(i, &chainVal)) {
             Trace("ERROR: GetPossibleSymbolIndex GetChain FAILED\n");
@@ -524,12 +491,7 @@ template <typename Types>
 bool
 ElfReader<Types>::GetChain(int index, int32_t* chain)
 {
-    if (index < 0) {
-        return false;
-    }
-    uint64_t offset = (uint64_t)index * sizeof(int32_t);
-    return offset <= UINT64_MAX - (uint64_t)m_chainsAddress &&
-        ReadMemory((void*)((uint64_t)m_chainsAddress + offset), chain, sizeof(int32_t));
+    return ReadMemory((char*)m_chainsAddress + (index * sizeof(int32_t)), chain, sizeof(int32_t));
 }
 
 //
@@ -538,16 +500,16 @@ ElfReader<Types>::GetChain(int index, int32_t* chain)
 
 template <typename Types>
 bool
-ElfReader<Types>::GetStringAtIndex(uint64_t index, std::string& result)
+ElfReader<Types>::GetStringAtIndex(int index, std::string& result)
 {
     while(true)
     {
-        if (index >= m_stringTableSize || index > UINT64_MAX - (uint64_t)m_stringTableAddr) {
-            Trace("ERROR: GetStringAtIndex invalid index %" PRIu64 "\n", index);
+        if (index > m_stringTableSize) {
+            Trace("ERROR: GetStringAtIndex index %d > string table size\n", index);
             return false;
         }
         char ch;
-        void* address = (void*)((uint64_t)m_stringTableAddr + index);
+        void* address = (char*)m_stringTableAddr + index;
         if (!ReadMemory(address, &ch, sizeof(ch))) {
             Trace("ERROR: GetStringAtIndex ReadMemory(%p) FAILED\n", address);
             return false;
@@ -573,7 +535,7 @@ ElfReader<Types>::EnumerateElfInfo(Elf_Phdr* phdrAddr, int phnum)
 {
     Trace("EnumerateElfInfo: phdr %p phnum %d\n", phdrAddr, phnum);
 
-    if ((uint64_t)phdrAddr < sizeof(Elf_Ehdr) || phnum <= 0) {
+    if (phdrAddr == nullptr || phnum <= 0) {
         return false;
     }
     uint64_t baseAddress = (uint64_t)phdrAddr - sizeof(Elf_Ehdr);
@@ -699,17 +661,14 @@ ElfReader<Types>::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadb
         Trace("ERROR: EnumerateProgramHeaders Invalid elf header signature\n");
         return false;
     }
-    if (ehdr.e_phentsize != sizeof(Elf_Phdr) || ehdr.e_ident[EI_CLASS] != Types::Class ||
-        ehdr.e_ident[EI_DATA] != ELFDATA2LSB) {
-        return false;
-    }
+    _ASSERTE(ehdr.e_phentsize == sizeof(Elf_Phdr));
+    _ASSERTE(ehdr.e_ident[EI_CLASS] == Types::Class);
+    _ASSERTE(ehdr.e_ident[EI_DATA] == ELFDATA2LSB);
     int phnum = ehdr.e_phnum;
 #ifdef PN_XNUM
-    if (phnum == PN_XNUM) {
-        return false;
-    }
+     _ASSERTE(phnum != PN_XNUM);
 #endif
-    if (ehdr.e_phoff == 0 || phnum <= 0 || ehdr.e_phoff > UINT64_MAX - baseAddress) {
+    if (ehdr.e_phoff == 0 || phnum <= 0) {
         return false;
     }
     Trace("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %016" PRIx64 " phentsize 0x%02x shnum %d shoff %016" PRIx64 " shentsize 0x%02x shstrndx %d\n",
@@ -726,9 +685,6 @@ template <typename Types>
 bool
 ElfReader<Types>::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr, uint64_t* pdynamicSize)
 {
-    if (phnum <= 0 || (uint64_t)phnum * sizeof(Elf_Phdr) > UINT64_MAX - (uint64_t)phdrAddr) {
-        return false;
-    }
     uint64_t loadbias = baseAddress;
 
     // Calculate the load bias from the PT_LOAD program headers
@@ -740,9 +696,6 @@ ElfReader<Types>::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_
             return false;
         }
         if (ph.p_type == PT_LOAD && ph.p_offset == 0) {
-            if (ph.p_vaddr > loadbias) {
-                return false;
-            }
             loadbias -= ph.p_vaddr;
             Trace("PHDR: loadbias %016" PRIx64 "\n", loadbias);
             break;
@@ -767,9 +720,6 @@ ElfReader<Types>::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_
         switch (ph.p_type)
         {
         case PT_DYNAMIC:
-            if (ph.p_vaddr > UINT64_MAX - loadbias || ph.p_memsz > UINT64_MAX - (loadbias + ph.p_vaddr)) {
-                return false;
-            }
             if (pdynamicAddr != nullptr) {
                 *pdynamicAddr = reinterpret_cast<Elf_Dyn*>(loadbias + ph.p_vaddr);
             }

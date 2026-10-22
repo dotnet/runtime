@@ -53,7 +53,7 @@ private:
 
     void* m_gnuHashTableAddr;               // DT_GNU_HASH
     void* m_stringTableAddr;                // DT_STRTAB
-    uint64_t m_stringTableSize;             // DT_STRSZ
+    int m_stringTableSize;                  // DT_STRSIZ
     void* m_symbolTableAddr;                // DT_SYMTAB
 
     GnuHashTable m_hashTable;               // gnu hash table info
@@ -76,7 +76,7 @@ private:
     bool GetPossibleSymbolIndex(const std::string& symbolName, std::vector<int32_t>& symbolIndexes);
     uint32_t Hash(const std::string& symbolName);
     bool GetChain(int index, int32_t* chain);
-    bool GetStringAtIndex(uint64_t index, std::string& result);
+    bool GetStringAtIndex(int index, std::string& result);
     // Detection helpers return success separately from the detected result.
     bool NeedsLoadBias(uint64_t baseAddress, bool* needsLoadBias);
     bool HasAndroidNote(uint64_t loadbias, const Elf_Phdr& header, bool* hasAndroidNote);
