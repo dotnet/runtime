@@ -4845,9 +4845,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
     uint32_t elemSize = genTypeSize(simdBaseType);
     uint32_t count    = simdSize / elemSize;
 
-    // Folding the index into the indir moves the load after op2, so op2 mustn't write the memory it reads.
-    // The indir's own exception is handled below.
-    if (op1->OperIs(GT_IND) && IsInvariantInRange(op1, node, GTF_EXCEPT))
+    if (op1->OperIs(GT_IND) && IsInvariantInRange(op1, node))
     {
         // We want to optimize GetElement down to an Indir where possible as
         // this unlocks additional containment opportunities for various nodes
@@ -4860,40 +4858,8 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         // Normally we'd evaluate op1 (indir), then op2 (element index).
         // We like to be able to reorder these to fold op2 into the indir.
 
-        GenTreeIndir* indir                = op1->AsIndir();
-        GenTree*      addr                 = indir->Addr();
-        bool const    canMoveTheIndirLater = IsInvariantInRange(indir, node);
-
-        // If we can't move the indir, force evaluation of its side effects.
-        //
-        if (!canMoveTheIndirLater)
-        {
-            // Force evaluation of the address, if it is complex
-            //
-            if (!(addr->IsInvariant() || addr->OperIsLocal()))
-            {
-                addr->ClearContained();
-                LIR::Use addrUse(BlockRange(), &indir->Addr(), indir);
-                addrUse.ReplaceWithLclVar(m_compiler);
-                addr = indir->Addr();
-            }
-
-            // If the indir can fault, do a null check.
-            //
-            if (indir->OperMayThrow(m_compiler))
-            {
-                GenTree* addrClone = m_compiler->gtCloneExpr(addr);
-                GenTree* nullcheck = m_compiler->gtNewNullCheck(addrClone);
-                BlockRange().InsertBefore(indir, addrClone, nullcheck);
-                LowerNode(nullcheck);
-
-                indir->gtFlags |= GTF_IND_NONFAULTING;
-            }
-
-            // We should now be able to move the indir
-            //
-            indir->gtFlags &= ~GTF_EXCEPT;
-        }
+        GenTreeIndir* indir = op1->AsIndir();
+        GenTree*      addr  = indir->Addr();
 
         if (addr->OperIsAddrMode())
         {
