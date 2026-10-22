@@ -33,7 +33,27 @@ tar -xzf "$WORK/sdk.tar.gz" -C "$SDK_ROOT"
 rm -rf "$SDK_ROOT/windows"
 cd "$OHOS_NDK_HOME"
 for archive in native-linux-x64-*.zip; do
-    python3 -m zipfile -e "$archive" .
+    # python3 -m zipfile drops the symlinks stored in the SDK; recreate them.
+    python3 - "$archive" <<'PY'
+import os
+import stat
+import sys
+import zipfile
+
+with zipfile.ZipFile(sys.argv[1]) as zf:
+    for info in zf.infolist():
+        mode = info.external_attr >> 16
+        if stat.S_ISLNK(mode):
+            target = zf.read(info).decode()
+            parent = os.path.dirname(info.filename)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
+            if os.path.lexists(info.filename):
+                os.remove(info.filename)
+            os.symlink(target, info.filename)
+        else:
+            zf.extract(info)
+PY
 done
 chmod -R +x native/llvm/bin
 chmod -R +x native/build-tools 2>/dev/null || true
