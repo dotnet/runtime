@@ -10061,8 +10061,7 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     BlockRange().InsertBefore(data, size);
 
     const bool requiresOldValue =
-        m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
-        m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+        m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE);
 
     // CORINFO_HELP_BULK_WRITEBARRIER is a managed wrapper that splits the copy into chunks and polls
     // for GC after each of them, so that a huge copy cannot starve the GC. When the size is a small
@@ -12371,8 +12370,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
     if (blkNode->OperIsInitBlkOp())
     {
         const bool requiresOldValue =
-            m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
-            m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+            m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE);
         if (requiresOldValue && blkNode->IsOnHeapAndContainsReferences())
         {
             if (ShouldUseLayoutBulkHelper(blkNode))
@@ -12422,8 +12420,7 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
     assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
 
     const bool requiresOldValue =
-        m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
-        m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+        m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE);
 
     if (requiresOldValue && ShouldUseLayoutBulkHelper(blkNode))
     {
@@ -13400,8 +13397,7 @@ void Lowering::FinalizeOutgoingArgSpace()
     {
         if (m_compiler->opts.compDbgCode || m_compiler->compUsesThrowHelper || m_compiler->compIsProfilerHookNeeded() ||
             (m_compiler->compMethodRequiresPInvokeFrame() && !m_compiler->opts.ShouldUsePInvokeHelpers()) ||
-            m_compiler->getNeedsGSSecurityCookie() ||
-            m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI))
+            m_compiler->getNeedsGSSecurityCookie())
         {
             m_outgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
             JITDUMP("Bumping outgoing arg space size to %u for possible helper or profile hook call",

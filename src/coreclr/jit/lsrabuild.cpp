@@ -4542,7 +4542,7 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
     BuildUse(src, srcCandidates);
 
     regMaskTP killMask = getKillSetForStoreInd(tree->AsStoreInd());
-    BuildKills(tree, killMask);
+    buildKillPositionsForNode(tree, currentLoc + 1, killMask);
     return 2;
 }
 

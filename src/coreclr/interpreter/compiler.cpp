@@ -4127,8 +4127,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_RequiresOldValueWriteBarrier:
         {
             int32_t result =
-                (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
-                 m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI))
+                (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE))
                     ? 1
                     : 0;
 

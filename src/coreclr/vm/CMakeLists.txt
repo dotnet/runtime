@@ -791,7 +791,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/patchedcode.asm
             ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
             ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
-            ${ARCH_SOURCES_DIR}/SlotLogWriteBarrier.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
             ${ARCH_SOURCES_DIR}/ThePreStubAMD64.asm
             ${ARCH_SOURCES_DIR}/thunktemplates.asm
@@ -861,7 +860,6 @@ else()
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/redirectedhandledjitcase.S
-            ${ARCH_SOURCES_DIR}/slotlogwritebarrier.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
             ${ARCH_SOURCES_DIR}/theprestubamd64.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
@@ -1129,21 +1127,6 @@ list(APPEND VM_SOURCES_WKS
      ${GC_SOURCES_WKS}
 )
 
-if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
-    list(APPEND VM_SOURCES_WKS
-        ../gc/standardwritebarriertest.cpp
-    )
-    if(CLR_CMAKE_TARGET_WIN32)
-        list(APPEND VM_SOURCES_WKS_ARCH_ASM
-            ../gc/amd64/standardwritebarriertest.asm
-        )
-    else()
-        list(APPEND VM_SOURCES_WKS_ARCH_ASM
-            ../gc/amd64/standardwritebarriertest.S
-        )
-    endif()
-endif()
-
 if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
     list(APPEND VM_SOURCES_WKS
         ../gc/allocationnotificationtest.cpp
@@ -1248,13 +1231,6 @@ if(FEATURE_SVR_GC)
     target_compile_definitions(vm_gc_svr PRIVATE GC_DESCRIPTOR SERVER_GC)
     add_dependencies(vm_gc_svr eventing_headers)
     add_pgo(vm_gc_svr)
-endif()
-
-if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
-    target_compile_definitions(vm_gc_wks PRIVATE FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST)
-    if(FEATURE_SVR_GC)
-        target_compile_definitions(vm_gc_svr PRIVATE FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST)
-    endif()
 endif()
 
 if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)

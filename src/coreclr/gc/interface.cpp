@@ -120,15 +120,15 @@ void GCHeap::ValidateObjectMember (Object* obj)
 // init the instance heap
 HRESULT GCHeap::Init(size_t hn)
 {
-    HRESULT hres = E_OUTOFMEMORY;
+    HRESULT hres = S_OK;
 
 #ifdef MULTIPLE_HEAPS
-    if ((pGenGCHeap = gc_heap::make_gc_heap(this, (int)hn, &hres)) != 0)
-        hres = S_OK;
+    if ((pGenGCHeap = gc_heap::make_gc_heap(this, (int)hn)) == 0)
+        hres = E_OUTOFMEMORY;
 #else
     UNREFERENCED_PARAMETER(hn);
-    if (gc_heap::make_gc_heap(&hres))
-        hres = S_OK;
+    if (!gc_heap::make_gc_heap())
+        hres = E_OUTOFMEMORY;
 #endif //MULTIPLE_HEAPS
 
     // Failed.

@@ -933,14 +933,6 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         //
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
-#if defined(TARGET_AMD64)
-            if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI))
-            {
-                return RBM_CALLEE_TRASH;
-            }
-#else
-            assert(!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI));
-#endif
             return RBM_CALLEE_TRASH_WRITEBARRIER;
 
         case CORINFO_HELP_PROF_FCN_ENTER:

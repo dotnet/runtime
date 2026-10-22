@@ -67,10 +67,6 @@ target_compile_definitions(cee_wks_mergeable PUBLIC CORECLR_EMBEDDED)
 
 target_compile_definitions(cee_wks_core PRIVATE GC_DESCRIPTOR)
 
-if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
-  target_compile_definitions(cee_wks_core PRIVATE FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST)
-endif()
-
 if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
   target_compile_definitions(cee_wks_core PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
 endif()

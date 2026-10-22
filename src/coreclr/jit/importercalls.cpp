@@ -3665,8 +3665,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_RequiresOldValueWriteBarrier)
     {
-        const bool requiresOldValue = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
-                                      opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+        const bool requiresOldValue = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE);
         JITDUMP("\nExpanding RuntimeHelpers.RequiresOldValueWriteBarrier to %s early\n",
                 requiresOldValue ? "true" : "false");
         return requiresOldValue ? gtNewTrue() : gtNewFalse();
@@ -4569,8 +4568,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 }
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
-                bool requiresOldValue = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
-                                        opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+                bool requiresOldValue = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE);
                 if (!requiresOldValue && (retType == TYP_REF) &&
                     (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
@@ -4613,8 +4611,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 }
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
-                bool requiresOldValue = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
-                                        opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+                bool requiresOldValue = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE);
                 if (!requiresOldValue && (retType == TYP_REF) &&
                     (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {

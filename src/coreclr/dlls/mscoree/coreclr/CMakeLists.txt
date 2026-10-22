@@ -47,26 +47,6 @@ if (NOT CLR_CMAKE_HOST_ARCH_WASM)
         ${CLR_SOURCES}
     )
 
-    if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST AND CLR_CMAKE_TARGET_WIN32)
-        target_link_options(coreclr PRIVATE
-            "/EXPORT:GC_WriteBarrierTest_GetCallCount"
-            "/EXPORT:GC_WriteBarrierTest_GetClobberMask"
-            "/EXPORT:GC_WriteBarrierTest_GetRangeCallCount"
-            "/EXPORT:GC_WriteBarrierTest_GetClearRangeCallCount"
-            "/EXPORT:GC_WriteBarrierTest_GetDependentEdgeCallCount"
-            "/EXPORT:GC_WriteBarrierTest_Reset"
-            "/EXPORT:GC_WriteBarrierTest_ResetRange"
-            "/EXPORT:GC_WriteBarrierTest_SetRequiresWork"
-            "/EXPORT:GC_WriteBarrierTest_GetAttemptCount"
-            "/EXPORT:GC_WriteBarrierTest_GetWinCount"
-            "/EXPORT:GC_WriteBarrierTest_GetArgumentErrorCount"
-            "/EXPORT:GC_WriteBarrierTest_GetLastDestination"
-            "/EXPORT:GC_WriteBarrierTest_GetSyntheticDestination"
-            "/EXPORT:GC_WriteBarrierTest_ClaimSynthetic"
-            "/EXPORT:GC_WriteBarrierTest_InvokeEmptyRange"
-        )
-    endif()
-
     if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST AND CLR_CMAKE_TARGET_WIN32)
         target_link_options(coreclr PRIVATE
             "/EXPORT:GC_AllocationNotificationTest_Reset"

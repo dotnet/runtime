@@ -17,33 +17,12 @@
 //
 
 #include "gcinternal.h"
-#include "standardwritebarriertest.h"
 
 #ifdef SERVER_GC
 namespace SVR {
 #else // SERVER_GC
 namespace WKS {
 #endif // SERVER_GC
-
-#if defined(FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST) && defined(FEATURE_NATIVEAOT)
-static uint8_t s_write_barrier_test_metadata;
-
-static void write_barrier_test_slow_path(Object**, Object*, Object*)
-{
-}
-
-static void write_barrier_test_range_slow_path(Object**, Object**, size_t)
-{
-}
-
-static void write_barrier_test_dependent_edge_slow_path(void*, Object*, Object*)
-{
-}
-
-static void write_barrier_test_epoch_reset()
-{
-}
-#endif
 
 uint64_t gc_rand::x = 0;
 
@@ -626,7 +605,7 @@ void stomp_write_barrier_ephemeral (uint8_t* ephemeral_low, uint8_t* ephemeral_h
     GCToEEInterface::StompWriteBarrier(&args);
 }
 
-HRESULT stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemeral_high
+void stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemeral_high
 #ifdef USE_REGIONS
                                    , gc_heap::region_info* map_region_to_generation_skewed
                                    , uint8_t region_shr
@@ -647,83 +626,12 @@ HRESULT stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemera
     args.highest_address = g_gc_highest_address;
     args.ephemeral_low = ephemeral_low;
     args.ephemeral_high = ephemeral_high;
-#ifdef FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST
-    args.write_barrier_shape = static_cast<WriteBarrierShape>(GCConfig::GetWriteBarrierTestShape());
-#ifdef FEATURE_NATIVEAOT
-    constexpr uint8_t writeBarrierTestGranularityShift = 40;
-    args.write_barrier_side_metadata.metadata_base = reinterpret_cast<uint8_t*>(
-        reinterpret_cast<uintptr_t>(&s_write_barrier_test_metadata) -
-        (reinterpret_cast<uintptr_t>(g_gc_lowest_address) >> (writeBarrierTestGranularityShift + 3)));
-    args.write_barrier_side_metadata.slow_path = write_barrier_test_slow_path;
-    args.write_barrier_range_slow_path = write_barrier_test_range_slow_path;
-    args.write_barrier_dependent_edge_slow_path = write_barrier_test_dependent_edge_slow_path;
-    args.write_barrier_epoch_reset = write_barrier_test_epoch_reset;
-#else
-    constexpr uint8_t writeBarrierTestGranularityShift = 3;
-    args.write_barrier_side_metadata.metadata_base = GetWriteBarrierTestMetadataBase(
-        g_gc_lowest_address,
-        g_gc_highest_address,
-        writeBarrierTestGranularityShift);
-    args.write_barrier_side_metadata.slow_path = GetWriteBarrierTestSlowPath();
-    args.write_barrier_range_slow_path = GetWriteBarrierTestRangeSlowPath();
-    args.write_barrier_dependent_edge_slow_path = GetWriteBarrierTestDependentEdgeSlowPath();
-    args.write_barrier_epoch_reset = GetWriteBarrierTestEpochReset();
-    args.write_barrier_bulk_scan.metadata_start = GetWriteBarrierTestMetadataStart();
-    args.write_barrier_bulk_scan.metadata_size = GetWriteBarrierTestMetadataSize();
-#endif
-    args.write_barrier_side_metadata.granularity_shift = writeBarrierTestGranularityShift;
-    args.write_barrier_side_metadata.bit_meaning =
-        static_cast<WriteBarrierMetadataBitMeaning>(GCConfig::GetWriteBarrierTestBitMeaning());
-
-    switch (GCConfig::GetWriteBarrierTestMalformed())
-    {
-        case 1:
-            args.write_barrier_side_metadata.metadata_base = nullptr;
-            break;
-        case 2:
-            args.write_barrier_side_metadata.slow_path = nullptr;
-            break;
-        case 3:
-            args.write_barrier_side_metadata.granularity_shift = static_cast<uint8_t>((sizeof(uintptr_t) * 8) - 3);
-            break;
-        case 4:
-            args.write_barrier_side_metadata.bit_meaning = static_cast<WriteBarrierMetadataBitMeaning>(2);
-            break;
-        case 5:
-            args.write_barrier_bulk_scan.metadata_start = nullptr;
-            break;
-        case 6:
-            args.write_barrier_bulk_scan.metadata_size--;
-            break;
-    }
-#else
-    args.write_barrier_shape = WriteBarrierShape::CardTable;
-#endif
-    args.write_barrier_request_status = WriteBarrierRequestStatus::NotProcessed;
 
 #ifdef USE_REGIONS
     region_write_barrier_settings (&args, map_region_to_generation_skewed, region_shr);
 #endif //USE_REGIONS
 
     GCToEEInterface::StompWriteBarrier(&args);
-
-    if (args.write_barrier_request_status == WriteBarrierRequestStatus::Accepted)
-    {
-        return S_OK;
-    }
-
-    // Runtimes predating the 6.1 tail implement the historical card-table
-    // behavior and leave the acknowledgment untouched.
-    if ((args.write_barrier_shape == WriteBarrierShape::CardTable) &&
-        (args.write_barrier_request_status == WriteBarrierRequestStatus::NotProcessed))
-    {
-        return S_OK;
-    }
-
-    return (args.write_barrier_request_status == WriteBarrierRequestStatus::Unsupported) ||
-           (args.write_barrier_request_status == WriteBarrierRequestStatus::NotProcessed)
-        ? E_NOTIMPL
-        : E_FAIL;
 }
 
 class mark;
@@ -3367,10 +3275,8 @@ GCEvent gc_heap::gc_done_event;
 VOLATILE(bool) gc_heap::internal_gc_done;
 
 int
-gc_heap::init_gc_heap (int h_number, HRESULT* failure_result)
+gc_heap::init_gc_heap (int h_number)
 {
-    assert(failure_result != nullptr);
-
 #ifdef MULTIPLE_HEAPS
 #ifdef _DEBUG
     memset (committed_by_oh_per_heap, 0, sizeof (committed_by_oh_per_heap));
@@ -3720,7 +3626,7 @@ gc_heap::init_gc_heap (int h_number, HRESULT* failure_result)
 
     if (heap_number == 0)
     {
-        HRESULT write_barrier_result = stomp_write_barrier_initialize(
+        stomp_write_barrier_initialize(
 #if defined(USE_REGIONS)
             ephemeral_low, ephemeral_high,
             map_region_to_generation_skewed, (uint8_t)min_segment_size_shr
@@ -3730,11 +3636,6 @@ gc_heap::init_gc_heap (int h_number, HRESULT* failure_result)
             ephemeral_low, ephemeral_high
 #endif //MULTIPLE_HEAPS || USE_REGIONS
         );
-        if (FAILED(write_barrier_result))
-        {
-            *failure_result = write_barrier_result;
-            return 0;
-        }
     }
 
 #ifdef MULTIPLE_HEAPS

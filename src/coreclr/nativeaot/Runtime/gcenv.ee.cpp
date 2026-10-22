@@ -437,20 +437,6 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_ephemeral_high = args->ephemeral_high;
         return;
     case WriteBarrierOp::Initialize:
-        if (g_write_barrier_parameters_include_shape)
-        {
-            assert(args->write_barrier_request_status == WriteBarrierRequestStatus::NotProcessed);
-
-            if ((args->write_barrier_request_status != WriteBarrierRequestStatus::NotProcessed) ||
-                (args->write_barrier_shape != WriteBarrierShape::CardTable))
-            {
-                args->write_barrier_request_status = WriteBarrierRequestStatus::Unsupported;
-                return;
-            }
-
-            args->write_barrier_request_status = WriteBarrierRequestStatus::Accepted;
-        }
-
         // This operation should only be invoked once, upon initialization.
         assert(g_card_table == nullptr);
         assert(g_lowest_address == nullptr);

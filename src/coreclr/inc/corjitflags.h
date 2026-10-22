@@ -66,8 +66,7 @@ public:
         CORJIT_FLAG_USE_DISPATCH_HELPERS    = 31, // The JIT should use helpers for interface dispatch instead of virtual stub dispatch
         CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = 32, // The JIT should emit the diagnostic helpers that verify GC mode transitions are legal
         CORJIT_FLAG_WASM_MANAGED_HELPER    = 33, // Store a constant CoreLib frame identity instead of the incoming portable entrypoint
-        CORJIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI = 34, // Write barrier helpers use the platform ABI volatile register contract
-        CORJIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE = 35, // Write barriers observe the overwritten reference
+        CORJIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE = 34, // Write barriers observe the overwritten reference (also null, frozen and provably non-heap values)
     };
 
     CORJIT_FLAGS()

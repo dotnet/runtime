@@ -5450,8 +5450,7 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
         return ValueNumStore::VNVisit::Abort;
     };
 
-    bool requiresOldValue = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE) ||
-                            opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_STANDARD_WRITE_BARRIER_ABI);
+    bool requiresOldValue = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WRITE_BARRIER_REQUIRES_OLD_VALUE);
     if (!requiresOldValue &&
         (vnStore->VNVisitReachingVNs(optConservativeNormalVN(value), vnVisitor) == ValueNumStore::VNVisit::Continue))
     {

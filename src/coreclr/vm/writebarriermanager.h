@@ -41,19 +41,11 @@ public:
         WRITE_BARRIER_WRITE_WATCH_BYTE_REGIONS64,
         WRITE_BARRIER_WRITE_WATCH_BIT_REGIONS64,
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-#ifdef TARGET_AMD64
-        WRITE_BARRIER_SLOT_LOG64,
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        WRITE_BARRIER_WRITE_WATCH_SLOT_LOG64,
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-#endif // TARGET_AMD64
         WRITE_BARRIER_BUFFER
     };
 
     WriteBarrierManager();
     void Initialize();
-    void ConfigureWriteBarrier(const WriteBarrierParameters* parameters);
-    bool IsSlotLogWriteBarrierEnabled() const;
 
     int UpdateEphemeralBounds(bool isRuntimeSuspended);
     int UpdateWriteWatchAndCardTableLocations(bool isRuntimeSuspended, bool bReqUpperBoundsCheck);
@@ -79,8 +71,6 @@ private:
 
 
     WriteBarrierType    m_currentWriteBarrier;
-    WriteBarrierShape   m_writeBarrierShape;
-    WriteBarrierSideMetadataParameters m_sideMetadata;
 
     PBYTE   m_pWriteWatchTableImmediate;    // PREGROW | POSTGROW | SVR | WRITE_WATCH | REGION
     PBYTE   m_pLowerBoundImmediate;         // PREGROW | POSTGROW |     | WRITE_WATCH | REGION
@@ -90,13 +80,6 @@ private:
     PBYTE   m_pRegionToGenTableImmediate;   //         |          |     | WRITE_WATCH | REGION
     PBYTE   m_pRegionShrDest;               //         |          |     | WRITE_WATCH | REGION
     PBYTE   m_pRegionShrSrc;                //         |          |     | WRITE_WATCH | RETION
-#if defined(TARGET_AMD64)
-    PBYTE   m_pSlotLogMetadataBaseImmediate;
-    PBYTE   m_pSlotLogSlowPathTargetImmediate;
-    PBYTE   m_pSlotLogMetadataByteShift;
-    PBYTE   m_pSlotLogMetadataBitShift;
-    PBYTE   m_pSlotLogPolarity;
-#endif // TARGET_AMD64
 
 #if defined(TARGET_ARM64)
     PBYTE   m_lowestAddress;
@@ -110,13 +93,6 @@ private:
 };
 
 extern WriteBarrierManager g_WriteBarrierManager;
-
-extern "C" WriteBarrierSlowPath g_SlotLogWriteBarrierSlowPath;
-extern WriteBarrierRangeSlowPath g_SlotLogWriteBarrierRangeSlowPath;
-extern WriteBarrierDependentEdgeSlowPath g_SlotLogWriteBarrierDependentEdgeSlowPath;
-extern WriteBarrierEpochReset g_SlotLogWriteBarrierEpochReset;
-extern WriteBarrierSideMetadataParameters g_SlotLogWriteBarrierMetadata;
-extern WriteBarrierBulkScanParameters g_SlotLogWriteBarrierBulkScan;
 
 #endif // TARGET_AMD64 || TARGET_ARM64
 
