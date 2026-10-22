@@ -4,6 +4,9 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- Crossgen2 does not support managed C++ assemblies. -->
+    <CrossGenTest>false</CrossGenTest>
+    <R2RIncompatible>true</R2RIncompatible>
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/92129 -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
     <!-- https://github.com/dotnet/runtime/issues/123946 -->
