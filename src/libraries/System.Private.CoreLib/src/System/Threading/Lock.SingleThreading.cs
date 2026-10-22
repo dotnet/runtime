@@ -125,6 +125,7 @@ public sealed partial class Lock
         uint recursionCount = ExitAll();
         try
         {
+            // Call into WaitSubsystem.Sleep to ensure we recognize a thread interrupt.
             WaitSubsystem.Sleep(millisecondsTimeout);
             return false;
         }

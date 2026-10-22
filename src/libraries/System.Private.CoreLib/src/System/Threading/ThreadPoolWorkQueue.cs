@@ -1395,7 +1395,11 @@ namespace System.Threading
             if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
 
+#if !FEATURE_MULTITHREADING
+            throw new PlatformNotSupportedException();
+#else
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, true);
+#endif
         }
 
 #if !FEATURE_WASM_MANAGED_THREADS
@@ -1413,7 +1417,11 @@ namespace System.Threading
             if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
+#if !FEATURE_MULTITHREADING
+            throw new PlatformNotSupportedException();
+#else
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
+#endif
         }
 
 #if !FEATURE_WASM_MANAGED_THREADS
@@ -1428,7 +1436,11 @@ namespace System.Threading
              )
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
+#if !FEATURE_MULTITHREADING
+            throw new PlatformNotSupportedException();
+#else
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
+#endif
         }
 
 #if !FEATURE_WASM_MANAGED_THREADS
@@ -1460,8 +1472,11 @@ namespace System.Threading
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(millisecondsTimeOutInterval, int.MaxValue);
-
+#if !FEATURE_MULTITHREADING
+            throw new PlatformNotSupportedException();
+#else
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
+#endif
         }
 
 #if !FEATURE_WASM_MANAGED_THREADS
@@ -1477,8 +1492,11 @@ namespace System.Threading
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(millisecondsTimeOutInterval, int.MaxValue);
-
+#if !FEATURE_MULTITHREADING
+            throw new PlatformNotSupportedException();
+#else
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
+#endif
         }
 
 #if !FEATURE_WASM_MANAGED_THREADS
@@ -1497,7 +1515,11 @@ namespace System.Threading
             ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, nameof(timeout));
             ArgumentOutOfRangeException.ThrowIfGreaterThan(tm, int.MaxValue, nameof(timeout));
 
+#if !FEATURE_MULTITHREADING
+            throw new PlatformNotSupportedException();
+#else
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, true);
+#endif
         }
 
 #if !FEATURE_WASM_MANAGED_THREADS
@@ -1515,8 +1537,11 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, nameof(timeout));
             ArgumentOutOfRangeException.ThrowIfGreaterThan(tm, int.MaxValue, nameof(timeout));
-
+#if !FEATURE_MULTITHREADING
+            throw new PlatformNotSupportedException();
+#else
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, false);
+#endif
         }
 
         public static bool QueueUserWorkItem(WaitCallback callBack) =>
