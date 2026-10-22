@@ -1,0 +1,7 @@
+After the Windows build fix (commit 98a3b54484c): Linux Release and Debug collectors rebuilt (exit 0); selectors --f4-scheduler, --f1-trace, --f5-policy in Release pass (3547/3547, 79477/79477, 16272/16272); one run of the six LXR cells:
+binarytrees lxr-nonmoving wall=0.57 gc=0.09 cpu=0.66 pauses=17 full=0 checksum=14985972
+binarytrees lxr-nursery wall=0.54 gc=0.12 cpu=0.79 pauses=18 full=0 checksum=14985972
+requests lxr-nonmoving wall=4.03 gc=0.36 cpu=5.85 pauses=58 full=0 checksum=317308156512
+requests lxr-nursery wall=4.24 gc=0.98 cpu=8.90 pauses=68 full=0 checksum=317308156512
+listsuffix lxr-nonmoving wall=3.81 gc=0.92 cpu=10.96 pauses=53 full=0 checksum=301262627042
+listsuffix lxr-nursery wall=4.52 gc=1.51 cpu=13.37 pauses=51 full=0 checksum=301262627042

@@ -1,0 +1,7 @@
+RhpNewFastAlign8                              MISSING
+JIT_NewS_MP_FastPortable                      MISSING
+JIT_NewArr1VC_MP_FastPortable                 MISSING
+JIT_NewArr1OBJ_MP_FastPortable                MISSING
+JIT_Patchpoint                                bytes=112   insns=33   c70b8298f441424d
+TOTAL 46cee8bd87fd6252f5265267148d0a34
+baseline TOTAL 46cee8bd87fd6252f5265267148d0a34

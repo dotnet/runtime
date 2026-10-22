@@ -1,0 +1,94 @@
+== f4 listsuffix-lxr-nursery
+== RefCount: 50 pauses
+suspend_prepare_us                  0.8         45
+stw_pause_us                       26.4       1466
+post_drain_us                      13.4        654
+inc_wall_us                        20.8       1161
+dec_wall_us                         9.9        671
+prepare_trace_wall_us               1.6         80
+incs_d                           308326   15814437
+inc_packets                          10        687
+dec_packets                           9        508
+== f4 listsuffix-lxr-nonmoving
+== RefCount: 55 pauses
+suspend_prepare_us                  0.4         29
+stw_pause_us                       19.1       1051
+post_drain_us                      13.9        750
+inc_wall_us                        15.5        844
+dec_wall_us                        10.5        561
+incs_d                           278630   16040689
+inc_packets                          10        741
+dec_packets                           9        533
+== f4 requests-lxr-nursery
+== RefCount: 65 pauses
+suspend_prepare_us                  0.3         44
+stw_pause_us                       12.4        897
+post_drain_us                       5.3        304
+publish_trace_us                    0.0         22
+inc_wall_us                         7.7        528
+dec_wall_us                         1.5         89
+prepare_trace_wall_us               0.4         37
+incs_d                             9732    1028602
+inc_packets                           7        569
+dec_packets                           6        450
+== f4 requests-lxr-nonmoving
+== RefCount: 55 pauses
+suspend_prepare_us                  0.6         44
+stw_pause_us                        5.7        342
+post_drain_us                       9.3        500
+publish_trace_us                    0.0          9
+inc_wall_us                         2.3        130
+dec_wall_us                         1.5         81
+incs_d                            11203    1015177
+inc_packets                           7        394
+dec_packets                          10        532
+== f4 binarytrees-lxr-nursery
+== RefCount: 18 pauses
+stw_pause_us                        4.1        153
+post_drain_us                       0.7         28
+inc_wall_us                         0.9         79
+dec_wall_us                         0.2         15
+prepare_trace_wall_us               0.3          7
+incs_d                             1909     483808
+inc_packets                           3        484
+dec_packets                           2        239
+== f1 listsuffix-lxr-nursery
+== RefCount: 50 pauses
+suspend_prepare_us                  0.4         25
+stw_pause_us                       53.8       2750
+post_drain_us                      30.9       1435
+inc_wall_us                        49.5       2499
+dec_wall_us                        27.2       1295
+prepare_trace_wall_us               1.7        103
+incs_d                           306642   14601999
+inc_packets                         516      25206
+dec_packets                         514      22707
+== f1 listsuffix-lxr-nonmoving
+== RefCount: 55 pauses
+suspend_prepare_us                  0.3         19
+stw_pause_us                       39.9       2238
+post_drain_us                      29.7       1463
+publish_trace_us                    0.0          1
+inc_wall_us                        37.6       2113
+dec_wall_us                        25.8       1272
+incs_d                           284438   15938051
+inc_packets                         515      27861
+dec_packets                         514      23931
+== f1 requests-lxr-nursery
+== RefCount: 63 pauses
+suspend_prepare_us                  0.5         66
+stw_pause_us                       13.4        948
+post_drain_us                       6.1        305
+publish_trace_us                    0.0          5
+inc_wall_us                         8.9        614
+dec_wall_us                         2.0        108
+prepare_trace_wall_us               0.5         48
+incs_d                             9606    1012369
+inc_packets                          27       1925
+dec_packets                          26       1333
+== f1 requests-lxr-nonmoving
+== RefCount: 3 pauses
+suspend_prepare_us                  3.0          7
+stw_pause_us                        9.1         26
+post_drain_us                       0.0         13
+inc_wall_us                         3.8         11

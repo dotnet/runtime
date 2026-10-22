@@ -5,6 +5,21 @@
 **Branch:** `kkokosa-lxr-integrated` (local). It is one linear series on top of `dotnet/runtime` main.
 **Source of the work:** the stack that ends at P17 S6 (`kkokosa-lxr-s6-finalizer-registry`, `69e02a55607`).
 
+## Update P25 (branch `kkokosa-lxr-parity-fixes-f1-f5-f4`)
+
+This update is on top of the D2 branch and the P24 investigation (`c16710a2c1c`). Four local commits. The details are in `P25-parity-fixes-f1-f5-f4/README.md`.
+
+- **F1 (code).** A pause no longer queues one trace packet for each counted object. A packet is queued only inside the window of a concurrent trace and only
+  for an unmarked object. The roots of InitialMark and Full come from `PrepareTrace`, as in the Java LXR. **Measured:** list suffix 20.4 s and 28.8 s become 5.8 s and 6.9 s.
+- **F5 (code).** The emergency rule counts the pages that hold data (blocks minus free lines), not whole blocks. **Measured:** requests nonmoving 10.9 s and 52 Full
+  pauses become 4.0 s and 0 Full pauses.
+- **F4 (code).** Workers follow the Java rule (13 on 16 processors), increments and decrements recurse inside the packet, idle workers wake one at a time.
+  **Measured:** list suffix 5.6 s and 6.4 s become 3.7 s and 4.6 s (WKS 3.6 s). CPU of requests is higher (5.9 s and 8.8 s). The concurrent trace limit exists but its default is all workers.
+- **Tests (Measured).** Three new native selectors (`--f1-trace`, `--f5-policy`, `--f4-scheduler`) with 9 controls; 37 native selectors pass on Linux Debug and Release
+  and on Windows Release; 90 managed cells pass with the Debug collector. The stock helper hash is unchanged (`46cee8bd87fd6252f5265267148d0a34`).
+- **Not changed:** the runtime, the JIT, the GC interface and the barrier. Everything is in `libclrlxrgc`.
+- **Open:** lock-free queues, the rest of F2, a parallel Full pause, and a flaky check in P3.4 that was already flaky (section 7 of the P25 report).
+- **Share files:** `C:\Users\konradkokosa\lxr-integrated-share\kkokosa-lxr-parity-fixes-f1-f5-f4.bundle` and `patches\` (the range `a485c819c17..kkokosa-lxr-parity-fixes-f1-f5-f4`). The D2 set is in `previous\kkokosa-lxr-d2-bump-allocation\`.
 ## Update D2 (step P18-D2, branch `kkokosa-lxr-d2-bump-allocation`)
 
 This update is on top of `kkokosa-lxr-d1-specialized-barrier` (`74dc9e84445`). The details are in `P22-bump-allocation/README.md`.
