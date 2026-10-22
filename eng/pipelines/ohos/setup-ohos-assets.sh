@@ -20,7 +20,7 @@ SDK_ROOT="$(dirname "$OHOS_NDK_HOME")"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-for tool in curl unzip make perl cmake ninja; do
+for tool in curl python3 make perl cmake ninja; do
     command -v "$tool" >/dev/null || { echo "missing required tool: $tool" >&2; exit 1; }
 done
 
@@ -32,7 +32,9 @@ echo "$OHOS_SDK_SHA  $WORK/sdk.tar.gz" | sha256sum -c -
 tar -xzf "$WORK/sdk.tar.gz" -C "$SDK_ROOT"
 rm -rf "$SDK_ROOT/windows"
 cd "$OHOS_NDK_HOME"
-unzip -q native-linux-x64-*.zip
+for archive in native-linux-x64-*.zip; do
+    python3 -m zipfile -e "$archive" .
+done
 rm -f native-linux-x64-*.zip
 test -f "$OHOS_NDK_HOME/native/build/cmake/ohos.toolchain.cmake"
 
