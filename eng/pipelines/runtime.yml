@@ -93,11 +93,20 @@ extends:
           - linux_arm
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR_ReleaseRuntimeLibs
-            buildArgs: -s clr+libs+host+packs -rc Release -lc Release -c $(_BuildConfig)
+            buildArgs: -s clr+libs+host+packs+tools.cdac -rc Release -lc Release -c $(_BuildConfig)
             timeoutInMinutes: 120
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/packages
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Runtime product packages
               - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition: >-
               or(
@@ -113,11 +122,20 @@ extends:
           - linux_musl_x64
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr+libs+host+packs -rc Release -c Release -lc $(_BuildConfig)
+            buildArgs: -s clr+libs+host+packs+tools.cdac -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/packages
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Runtime product packages
               - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition: >-
               or(
@@ -357,11 +375,21 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'] ]
           jobParameters:
             nameSuffix: CoreCLR_AllSubsets
-            buildArgs: -s clr+libs+libs.tests+host+packs -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
+            buildArgs: -s clr+libs+libs.tests+host+packs+tools.cdac -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 180
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/packages
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Runtime product packages
+                  condition: and(succeeded(), ne(variables['osSubgroup'], '_musl'))
               - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
@@ -430,6 +458,15 @@ extends:
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/packages
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Runtime product packages
               - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
@@ -471,11 +508,20 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'] ]
           jobParameters:
             nameSuffix: CoreCLR_AllSubsets
-            buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
+            buildArgs: -s clr+libs+host+packs+tools.cdac -c $(_BuildConfig)
             timeoutInMinutes: 180
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/packages
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Runtime product packages
               - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/installer/helix-queues-setup.yml
                 parameters:
@@ -518,6 +564,15 @@ extends:
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+                  includeRootFolder: true
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Checked runtime products
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   helixBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -644,6 +699,15 @@ extends:
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+                  includeRootFolder: true
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Checked runtime products
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -686,6 +750,16 @@ extends:
                   artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Build Assets
                   condition: and(succeeded(), eq(variables['osGroup'], 'linux'), eq(variables['archType'], 'arm'))
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+                  includeRootFolder: true
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Checked runtime products
+                  condition: and(succeeded(), eq(variables['archType'], 'arm64'))
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -1295,6 +1369,16 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/packages
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: RuntimeArtifacts_Mono_$(osGroup)_$(archType)_$(_BuildConfig)
+                  displayName: Runtime product packages
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1514,6 +1598,15 @@ extends:
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
             postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/packages
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Runtime product packages
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -1531,6 +1624,32 @@ extends:
                     or(
                     eq(variables['System.TeamProject'], 'public'),
                     eq(variables['_archParameter'], '-arch x64')))
+
+      #
+      # iOS Simulator CoreCLR products for diagnostic tests
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Release
+          runtimeFlavor: coreclr
+          platforms:
+            - iossimulator_arm64
+          jobParameters:
+            nameSuffix: AllSubsets_CoreCLR
+            buildArgs: -s clr+clr.runtime+libs+packs -c $(_BuildConfig) /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:UsePortableRuntimePack=false
+            timeoutInMinutes: 300
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/packages
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Runtime product packages
+            condition: eq(variables['Build.Reason'], 'Manual')
 
       #
       # iOS devices
