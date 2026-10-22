@@ -419,6 +419,43 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WasmStructGCFieldsArePinned(bool optimize)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(WasmStructGCFieldsArePinned),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmStructGCFieldsArePinned),
+            [
+                new(nameof(WasmStructGCFieldsArePinned), [new CrossgenAssembly(input)])
+                {
+                    Options = optimize ? [Crossgen2Option.Optimize] : [],
+                    AdditionalArgs = optimize ? [] : ["--optimize-disabled"],
+                    OutputFileExtension = ".wasm",
+                    Validate = reader =>
+                    {
+                        ReadyToRunMethod method = Assert.Single(R2RAssert.GetAllMethods(reader),
+                            method => method.SignatureString.Contains(".StructGCFields(", StringComparison.Ordinal));
+                        ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo =
+                            Assert.IsType<ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo>(method.GcInfo);
+                        Assert.True(gcInfo.SlotTable.NumUntracked >= 2);
+                        Assert.Contains(gcInfo.SlotTable.GcSlots,
+                            slot => (slot.Flags & GcSlotFlags.GC_SLOT_INTERIOR) != 0);
+                        Assert.Contains(gcInfo.SlotTable.GcSlots,
+                            slot => (slot.Flags & GcSlotFlags.GC_SLOT_INTERIOR) == 0);
+                        Assert.All(gcInfo.SlotTable.GcSlots, slot =>
+                            Assert.Equal(GcSlotFlags.GC_SLOT_PINNED, slot.Flags & GcSlotFlags.GC_SLOT_PINNED));
+                    },
+                },
+            ]));
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmWebcilModule()
     {
