@@ -2576,6 +2576,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkDir.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MkDir.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkDirAt.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.MkDirAt.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkdTemp.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MkdTemp.cs</Link>
     </Compile>
@@ -2595,6 +2598,9 @@
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs" Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Open.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenAt.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.OpenAt.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.OpenFlags.cs</Link>
@@ -2670,6 +2676,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Unlink.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnlinkAt.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.UnlinkAt.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UTimensat.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.UTimensat.cs</Link>
@@ -2996,6 +3005,9 @@
   <ItemGroup Condition="'$(TargetsWasi)' == 'true' and '$(FeatureMultithreading)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Wasi.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Wasi.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true' and '$(FeatureMultithreading)' != 'true' and '$(FeaturePerfTracing)' == 'true' and '$(FeatureMono)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiEventPipeJobs.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureMultithreading)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Browser.Threads.cs" />

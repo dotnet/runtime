@@ -529,6 +529,7 @@ namespace Internal.JitInterface
                                                // e.g. in R2R scenarios, encoding an offset from $imageBase
         WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
         WASM_METHOD_RELATIVE_VIRTUAL_IP_I32, // Wasm: the current method's virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
+        WASM_METHOD_FRAME_IDENTITY_SLEB, // Wasm: negative odd CoreLib runtime-function identity, encoded as a signed varint32.
     }
 
     public enum CorInfoGCType
@@ -1560,6 +1561,7 @@ namespace Internal.JitInterface
 
         CORJIT_FLAG_USE_DISPATCH_HELPERS    = 31, // The JIT should use helpers for interface dispatch instead of virtual stub dispatch
         CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = 32, // The JIT should emit the diagnostic helpers that verify GC mode transitions are legal
+        CORJIT_FLAG_WASM_MANAGED_HELPER    = 33, // Store a constant CoreLib frame identity instead of the incoming portable entrypoint
     }
 
     public struct CORJIT_FLAGS

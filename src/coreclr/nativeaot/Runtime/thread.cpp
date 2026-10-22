@@ -1232,8 +1232,21 @@ EXTERN_C uint32_t QCALLTYPE RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, 
 }
 #endif // TARGET_UNIX
 
+#ifdef TARGET_UNIX
+bool InitGSCookie();
+#endif
+
 EXTERN_C void RhSetRuntimeInitializationCallback(int (*fPtr)())
 {
+#ifdef TARGET_UNIX
+    // In a DLL, GSCookies are read before reverse p/invoke transition (and runtime initialization) so we need to initialize them earlier than runtime.
+    if (!InitGSCookie())
+    {
+        PalPrintFatalError("\nFatal error. .NET runtime failed to initialize.\n");
+        RhFailFast();
+    }
+#endif
+
     g_RuntimeInitializationCallback = fPtr;
 }
 
@@ -1440,23 +1453,23 @@ FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 }
 FCIMPLEND
 
-#ifdef FEATURE_PORTABLE_HELPERS
+#if defined(FEATURE_PORTABLE_HELPERS) && !defined(HOST_WASM)
 
-FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, RhpPInvoke, PInvokeTransitionFrame* pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pCurThread->InlinePInvoke(pFrame);
 }
 FCIMPLEND
 
-FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, RhpPInvokeReturn, PInvokeTransitionFrame* pFrame)
 {
     //reenter cooperative mode
     pFrame->m_pThread->InlinePInvokeReturn(pFrame);
 }
 FCIMPLEND
 
-#endif //FEATURE_PORTABLE_HELPERS
+#endif // FEATURE_PORTABLE_HELPERS && !HOST_WASM
 
 #endif // !DACCESS_COMPILE
 
