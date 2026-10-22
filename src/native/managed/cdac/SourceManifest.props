@@ -1,6 +1,6 @@
 <Project>
   <ItemGroup>
-    <!-- Sources mirrored into dotnet/diagnostics. Paths are relative to the repository root. -->
+    <!-- Manifest of source paths needed to compile cDAC. Used when building out of tree. -->
     <CDacSourceManifestSource Include="src/native/managed/cdac" />
     <CDacSourceManifestSource Include="eng/generatorProjects.targets" />
     <CDacSourceManifestSource Include="src/libraries/Common/src/System/HResults.cs" />
