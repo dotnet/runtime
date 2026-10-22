@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
 // util.hpp
 //
-
-//
 // Miscellaneous useful functions
-//
 
 #ifndef _H_UTIL
 #define _H_UTIL
@@ -712,7 +709,6 @@ public:
     static void DoJITNotification(MethodDesc *MethodDescPtr, TADDR NativeCodeLocation);
     static void DoModuleLoadNotification(Module *Module);
     static void DoModuleUnloadNotification(Module *Module);
-    static void DoExceptionNotification(class Thread* ThreadPtr);
     static void DoGCNotification(const GcEvtArgs& evtargs);
     static void DoExceptionCatcherEnterNotification(MethodDesc *MethodDescPtr, DWORD nativeOffset);
 

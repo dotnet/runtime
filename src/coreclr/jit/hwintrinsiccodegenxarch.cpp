@@ -1801,8 +1801,16 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
 
     genDefineTempLabel(switchTableBeg);
 
+    bool pendingJmpToEnd = false;
+
     for (unsigned i = 0; i <= maxByte; i++)
     {
+        if (pendingJmpToEnd)
+        {
+            emit->emitIns_J(INS_jmp, switchTableEnd);
+            pendingJmpToEnd = false;
+        }
+
         genDefineTempLabel(jmpTable[i]);
 
         if ((i & mask) != i)
@@ -1814,7 +1822,10 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
         }
 
         emitSwCase((int8_t)i);
-        emit->emitIns_J(INS_jmp, switchTableEnd);
+
+        // The jump is emitted by the next iteration so that the last case falls through
+        // to switchTableEnd rather than jumping to the very next instruction.
+        pendingJmpToEnd = true;
     }
 
     genDefineTempLabel(switchTableEnd);

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS;SYSTEM_SECURITY_CRYPTOGRAPHY</DefineConstants>
     <NoWarn>$(NoWarn);CA5350;CA5351;CA5379;CA5384;SYSLIB0026</NoWarn>
@@ -861,8 +861,9 @@
     </Compile>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
-    <!-- GetRandomBytes is identical on Unix and Browser -->
+  <!-- Browser and WASI use managed hash implementations and System.Native for random bytes. -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
+    <!-- GetRandomBytes is identical on Unix, Browser and WASI -->
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Libraries.cs"
@@ -2120,7 +2121,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.X500DistinguishedName.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == '' and '$(TargetPlatformIdentifier)' != 'browser'">
+  <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == '' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'">
     <Compile Include="System\Security\Cryptography\HpkeAeadMetadata.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HpkeECDiffieHellmanKemAdapter.cs" />
     <Compile Include="System\Security\Cryptography\HpkeImplementation.Managed.cs" />
@@ -2149,7 +2150,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Console\src\System.Console.csproj" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
 

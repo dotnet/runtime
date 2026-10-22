@@ -260,17 +260,17 @@ namespace System.Runtime.Serialization
                 case TypeCode.DBNull:
                 case TypeCode.Object:
                 default:
-                    if (valueType == Globals.TypeOfByteArray)
+                    if (valueType == typeof(byte[]))
                         return ReadContentAsBase64();
-                    else if (valueType == Globals.TypeOfObject)
+                    else if (valueType == typeof(object))
                         return new object();
-                    else if (valueType == Globals.TypeOfTimeSpan)
+                    else if (valueType == typeof(TimeSpan))
                         return ReadContentAsTimeSpan();
-                    else if (valueType == Globals.TypeOfGuid)
+                    else if (valueType == typeof(Guid))
                         return ReadContentAsGuid();
-                    else if (valueType == Globals.TypeOfUri)
+                    else if (valueType == typeof(Uri))
                         return ReadContentAsUri();
-                    else if (valueType == Globals.TypeOfXmlQualifiedName)
+                    else if (valueType == typeof(XmlQualifiedName))
                         return ReadContentAsQName();
                     break;
             }
@@ -315,17 +315,17 @@ namespace System.Runtime.Serialization
                 case TypeCode.DBNull:
                 case TypeCode.Object:
                 default:
-                    if (valueType == Globals.TypeOfByteArray)
+                    if (valueType == typeof(byte[]))
                         return new DataNode<byte[]>(ReadContentAsBase64());
-                    else if (valueType == Globals.TypeOfObject)
+                    else if (valueType == typeof(object))
                         return new DataNode<object>(new object());
-                    else if (valueType == Globals.TypeOfTimeSpan)
+                    else if (valueType == typeof(TimeSpan))
                         return new DataNode<TimeSpan>(ReadContentAsTimeSpan());
-                    else if (valueType == Globals.TypeOfGuid)
+                    else if (valueType == typeof(Guid))
                         return new DataNode<Guid>(ReadContentAsGuid());
-                    else if (valueType == Globals.TypeOfUri)
+                    else if (valueType == typeof(Uri))
                         return new DataNode<Uri>(ReadContentAsUri());
-                    else if (valueType == Globals.TypeOfXmlQualifiedName)
+                    else if (valueType == typeof(XmlQualifiedName))
                         return new DataNode<XmlQualifiedName>(ReadContentAsQName());
                     break;
             }

@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // StgIO.h
-//
-
 //
 // This module handles disk/memory i/o for a generic set of storage solutions,
 // including:
@@ -33,6 +32,7 @@
 //      only the portion of the file with the .clb in it.
 //</TODO>
 //*****************************************************************************
+
 #ifndef __STGIO_H_
 #define __STGIO_H_
 
@@ -151,12 +151,6 @@ public:
         void        *&ptr,                  // Return pointer to file data.
         ULONG       *pcbSize,               // Return size of data.
         LPSECURITY_ATTRIBUTES pAttributes=0); // Security token.
-
-//*****************************************************************************
-// Free the mapping object for shared memory but keep the rest of the internal
-// state intact.
-//*****************************************************************************
-    HRESULT ReleaseMappingObject();         // Return code.
 
 //*****************************************************************************
 // Resets the logical base address and size to the value given.  This is for

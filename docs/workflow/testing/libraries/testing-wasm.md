@@ -166,7 +166,7 @@ XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test \
   /p:Scenario=WasmTestOnChrome /p:InstallChromeForTests=true
 ```
 
-`TestWasmReadyToRun` enables `PublishReadyToRun` only in browser CoreCLR library test projects.
+`TestWasmReadyToRun` enables `PublishReadyToRun` only in browser or WASI CoreCLR library test projects.
 Do not pass `PublishReadyToRun=true` globally to `build.sh`: that also attempts to publish
 host-side build tools with ReadyToRun.
 `EnableAggressiveTrimming` selects the shared mobile test trimming configuration, including
@@ -194,6 +194,21 @@ stale staged assets can otherwise cause assembly-loading failures before tests s
 The `LibraryTestsCoreCLR_R2R` CI jobs use the same configuration and archive the published
 tests for execution on Helix. The existing interpreter jobs remain separate.
 
+To run a library suite with a single composite ReadyToRun image instead of per-assembly
+images, add `PublishReadyToRunComposite=true`:
+
+```bash
+XHARNESS_COMMAND=test-browser ./build.sh libs.tests -test -os browser -c Release \
+  --projects $PWD/src/libraries/System.Memory/tests/System.Memory.Tests.csproj \
+  /p:RuntimeFlavor=CoreCLR /p:TestWasmReadyToRun=true /p:PublishReadyToRunComposite=true \
+  /p:EnableAggressiveTrimming=true /p:Scenario=WasmTestOnChrome /p:InstallChromeForTests=true
+```
+
+The composite image (`<test assembly>.r2r.wasm`) is staged into `wwwroot/_framework` beside
+the component WebCIL stubs and listed in the boot config. As with other mode switches, clean
+the project-specific `bin` and `obj` outputs when switching between composite and per-assembly
+images.
+
 For CoreCLR browser applications, set `PublishReadyToRun=true` and
 `PublishReadyToRunComposite=true` to publish a single composite ReadyToRun image and
 component WebCIL stubs instead of per-assembly images. Publishing requires a wasm-capable
@@ -201,6 +216,25 @@ crossgen2 and WebCIL enabled; the composite is loaded before the runtime starts.
 `ReadyToRunTests.PublishRunAllPagesComposite` exercises trimmed, untrimmed, and
 native-relinked publishes in a browser, including asset fingerprinting when
 `USE_FINGERPRINTING_FOR_TESTS=true`.
+
+For WASI, build the CoreCLR runtime, libraries, packs, and host crossgen2 first:
+
+```bash
+./build.sh clr+libs+host+packs -os wasi -arch wasm -c Release \
+  -rc Release -lc Release -hc Release /p:TestAssemblies=false
+```
+
+Then run the focused WASI smoke suite with trimmed composite ReadyToRun images:
+
+```bash
+XHARNESS_COMMAND=test ./build.sh libs.tests -test -os wasi -c Release \
+  /p:RuntimeFlavor=CoreCLR /p:TestWasmReadyToRun=true /p:EnableAggressiveTrimming=true \
+  /p:RunSmokeTestsOnly=true /p:Scenario=WasmTestOnWasmtime
+```
+
+The `LibraryTestsCoreCLR_WASI_R2R` CI job uses this configuration to run
+`System.Collections.Tests`; the existing interpreter smoke job continues to run the broader
+`System.Runtime.Tests` suite separately.
 
 ## AOT library tests
 

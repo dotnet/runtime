@@ -41,6 +41,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly NodeFactory _codegenNodeFactory;
         private readonly bool _verifyTypeAndFieldLayout;
+        private readonly bool _compilesCoreLib;
 
         public bool VerifyTypeAndFieldLayout => _verifyTypeAndFieldLayout;
 
@@ -48,6 +49,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             _codegenNodeFactory = codegenNodeFactory;
             _verifyTypeAndFieldLayout = verifyTypeAndFieldLayout;
+            foreach (EcmaModule module in codegenNodeFactory.CompilationModuleGroup.CompilationModuleSet)
+            {
+                if (module == codegenNodeFactory.TypeSystemContext.SystemModule)
+                {
+                    _compilesCoreLib = true;
+                    break;
+                }
+            }
             CreateNodeCaches();
         }
 
@@ -59,6 +68,21 @@ namespace ILCompiler.DependencyAnalysis
             });
 
             _r2rHelpers = new NodeCache<ReadyToRunHelperKey, Import>(CreateReadyToRunHelper);
+
+            _eagerReadyToRunMethodEntries = new NodeCache<MethodWithToken, Import>(method =>
+            {
+                // These fixups must be sorted last: running one permanently commits the
+                // target method to using R2R code. Every other eager fixup in the module must
+                // run first, since those are what establish whether it is even legal to use any
+                // R2R code in the module at all.
+                return new Import(
+                    _codegenNodeFactory.EagerImports,
+                    _codegenNodeFactory.MethodSignature(
+                        ReadyToRunFixupKind.MethodEntry_ReadyToRun,
+                        method,
+                        isInstantiatingStub: false),
+                    sortLast: true);
+            });
 
             _instructionSetSupportFixups = new NodeCache<string, Import>(key =>
             {
@@ -304,8 +328,14 @@ namespace ILCompiler.DependencyAnalysis
             return _r2rHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target));
         }
 
+        private NodeCache<MethodWithToken, Import> _eagerReadyToRunMethodEntries;
         private NodeCache<string, Import> _instructionSetSupportFixups;
         private NodeCache<MethodWithGCInfo, Import> _resumptionStubEntryPointFixups;
+
+        public Import EagerReadyToRunMethodEntry(MethodWithToken method)
+        {
+            return _eagerReadyToRunMethodEntries.GetOrAdd(method);
+        }
 
         public Import PerMethodInstructionSetSupportFixup(InstructionSetSupport instructionSetSupport)
         {
@@ -387,9 +417,23 @@ namespace ILCompiler.DependencyAnalysis
 
         private Import CreateTypeHandleHelper(TypeDesc type)
         {
+            TypeDesc elementType = type;
+            // Other modules forbid type loading during eager fixups, and array types may not exist yet.
+            if (_compilesCoreLib && type is ArrayType { IsSzArray: true } arrayType)
+            {
+                elementType = arrayType.ElementType;
+            }
+
+            TypeFixupSignature signature = _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type);
+            if (elementType.IsPrimitive || elementType.IsString || elementType.IsObject ||
+                elementType.IsWellKnownType(WellKnownType.TypedReference))
+            {
+                return new Import(_codegenNodeFactory.EagerImports, signature);
+            }
+
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type));
+                signature);
         }
 
         private Import CreateDeclaringTypeHandleHelper(MethodWithToken method)

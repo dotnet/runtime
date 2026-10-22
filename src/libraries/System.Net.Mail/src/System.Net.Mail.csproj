@@ -106,6 +106,8 @@
     <Compile Include="System\Net\Mail\NetEventSource.Mail.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SslClientAuthenticationOptionsExtensions.cs"
+             Link="Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

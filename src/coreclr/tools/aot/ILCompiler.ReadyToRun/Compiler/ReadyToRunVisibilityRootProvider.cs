@@ -57,9 +57,13 @@ namespace ILCompiler
                 if (method.IsInternalCall)
                     continue;
 
+                // String factories implement InternalCall constructors and are invoked by the runtime.
+                bool isStringConstructorFactory = type.IsString && method.Signature.IsStatic && method.Name == "Ctor"u8;
+
                 // If the method is not visible outside the assembly, then do not root the method.
                 // It will be rooted by any callers that require it and do not inline it.
                 if (!method.IsStaticConstructor
+                    && !isStringConstructorFactory
                     && method.GetTypicalMethodDefinition() is EcmaMethod ecma
                     && !ecma.GetEffectiveVisibility().IsExposedOutsideOfThisAssembly(anyInternalsVisibleTo))
                 {

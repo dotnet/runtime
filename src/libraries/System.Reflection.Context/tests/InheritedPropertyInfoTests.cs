@@ -82,5 +82,37 @@ namespace System.Reflection.Context.Tests
         {
             Assert.False(_propertyInfo.Equals(null));
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GetAccessors_ReturnsInheritedMethodInfos(bool nonPublic)
+        {
+            MethodInfo[] accessors = _propertyInfo.GetAccessors(nonPublic);
+
+            Assert.Equal([_propertyInfo.GetGetMethod(), _propertyInfo.GetSetMethod()], accessors);
+            Assert.All(accessors, accessor => Assert.Equal<Type>(_customTypeInfo, accessor.ReflectedType));
+        }
+
+        [Theory]
+        [InlineData("number2")]
+        [InlineData("number3")]
+        public void GetAccessors_OneAccessor_ReturnsInheritedMethodInfo(string name)
+        {
+            PropertyInfo property = _customTypeInfo.GetProperty(name);
+
+            MethodInfo accessor = Assert.Single(property.GetAccessors());
+            Assert.Equal(property.GetGetMethod() ?? property.GetSetMethod(), accessor);
+            Assert.Equal<Type>(_customTypeInfo, accessor.ReflectedType);
+        }
+
+        [Fact]
+        public void GetMethods_ReturnsInheritedAccessors()
+        {
+            MethodInfo getter = _customTypeInfo.GetMethods().Single(m => m.Name == "get_number");
+
+            Assert.Equal(_customTypeInfo.GetMethod("get_number"), getter);
+            Assert.Equal<Type>(_customTypeInfo, getter.ReflectedType);
+        }
     }
 }
