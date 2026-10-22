@@ -43,8 +43,8 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/zstd/build/cmake" "${CMAKE_BINARY_DI
 
 set(BUILD_SHARED_LIBS ${__CURRENT_BUILD_SHARED_LIBS})
 
-if (ANDROID)
-    # qsort_r is not available during android build and zstd's autodetection does not seem
+if (ANDROID OR CLR_CMAKE_TARGET_OPENHARMONY)
+    # qsort_r is not available during android/openharmony build and zstd's autodetection does not seem
     # to handle this case correctly
     # This should no longer be needed once we update to zstd 1.5.8 in the future
     set_property(TARGET libzstd_static APPEND PROPERTY COMPILE_DEFINITIONS "ZSTD_USE_C90_QSORT=1")
