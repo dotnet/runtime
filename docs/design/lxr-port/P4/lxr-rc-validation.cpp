@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
+#include <random>
+#include <set>
 #include <thread>
 #include <vector>
 #if defined(__linux__)
@@ -1883,13 +1885,6 @@ namespace
                 }
                 Object* object = reinterpret_cast<Object*>(cursor + sizeof(ObjHeader));
                 object->RawSetMethodTable(type.table);
-                bool fast;
-                if (engine.RecordFastAllocation(mutator, object, 24, &fast) != LxrRcResult::Success ||
-                    !fast || engine.CompleteAllocation(object, 24, AllocationCompleteFlags::None, mutator) !=
-                        LxrRcResult::Success)
-                {
-                    return 1;
-                }
                 cursor += 24;
             }
             uint64_t elapsed = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -1923,33 +1918,46 @@ namespace
         Check(engine.GetAllocationSpan(mutator, &cursor, &limit) == LxrRcResult::Success &&
             cursor != 0 && limit > cursor, "real Immix hole is exported without allocating a second arena");
         slow->RawSetMethodTable(type.table);
-        bool fast = true;
-        Check(engine.RecordFastAllocation(mutator, slow, 24, &fast) == LxrRcResult::Success && !fast,
-            "refill object is not counted as a helper hit");
-        Check(engine.CompleteAllocation(slow, 24, AllocationCompleteFlags::None) == LxrRcResult::Success,
-            "refill birth is exact");
         std::vector<Object*> roots{slow};
         for (size_t index = 0; index < 512; index++)
         {
             Object* object = reinterpret_cast<Object*>(cursor + sizeof(ObjHeader));
-            Check(engine.GetObjectExtent(object) == 0 && object->GetHeader()->GetBits() == 0,
-                "unconsumed span has no registered object and a zero header");
+            Check(engine.GetObjectExtent(object) == 0 && object->GetHeader()->GetBits() == 0 &&
+                !engine.IsObjectStart(object), "unconsumed span has no registered object and a zero header");
             object->RawSetMethodTable(type.table);
-            Check(engine.RecordFastAllocation(mutator, object, 24, &fast) == LxrRcResult::Success && fast,
-                "helper consumption is contiguous, aligned and owned");
-            Check(engine.CompleteAllocation(object, 24, AllocationCompleteFlags::None, mutator) == LxrRcResult::Success &&
-                engine.GetObjectExtent(object) == 24, "every helper birth publishes its extent");
+            engine.RecordHelperObjectForTest(object, 24);
             cursor += 24;
             roots.push_back(object);
         }
         Check(engine.RetireAllocationSpan(mutator, cursor) == LxrRcResult::Success,
-            "unused tail is reconciled before collection");
-        Check(engine.GetMetrics().allocations == 513 && engine.GetMetrics().allocatedBytes == 513 * 24,
-            "fast and slow accounting counts births, not whole spans");
+            "the used point of the buffer is accepted");
+        Check(engine.GetMetrics().allocations == 1,
+            "only the object of the slow path is a call to the engine; the objects of the buffer are not");
+        for (Object* object : roots)
+        {
+            Check(!engine.IsObjectStart(object), "a young object has no ValidObject bit");
+        }
         Epoch(engine, roots);
-        Check(engine.GetLiveBytes() == 513 * 24, "collection retains all fast-born roots");
+        Check(engine.GetMetrics().allocatedBytes == 513 * 24, "the span counts the exact used bytes");
+        auto count = [&](Object* object)
+        {
+            uintptr_t value = UINTPTR_MAX;
+            engine.LoadCount(object, &value);
+            return value;
+        };
+        bool promoted = true;
+        for (Object* object : roots)
+        {
+            promoted = promoted && engine.IsObjectStart(object) && count(object) == 1;
+        }
+        Check(promoted, "a survivor gets its ValidObject bit and its count at the pause");
         Epoch(engine, {});
-        Check(engine.GetLiveBytes() == 0, "fast-born objects and span holes reclaim normally");
+        bool dead = true;
+        for (Object* object : roots)
+        {
+            dead = dead && !engine.IsObjectStart(object) && count(object) == 0;
+        }
+        Check(dead, "an object that lost its last root dies and loses its bit");
     }
 
     void ValidateGrowth()
@@ -1992,8 +2000,6 @@ namespace
                     return;
                 }
                 object->RawSetMethodTable(type.table);
-                Check(engine.CompleteAllocation(object, bytes, AllocationCompleteFlags::None) == LxrRcResult::Success,
-                    "newly admitted planes cover the complete birth");
                 roots.push_back(object);
             }
             Epoch(engine, roots);
@@ -2216,8 +2222,6 @@ namespace
             Check(engine.Allocate(mutator, 24, &object) == LxrRcResult::Success,
                 "preexisting object allocates before growth failure");
             object->RawSetMethodTable(type.table);
-            Check(engine.CompleteAllocation(object, 24, AllocationCompleteFlags::None) == LxrRcResult::Success,
-                "preexisting birth completes before growth failure");
             std::vector<Object*> values{object};
             Roots roots{&values};
             size_t capacity = engine.GetAdmittedBytes();
@@ -2269,8 +2273,6 @@ namespace
         Check(engine.Allocate(mutator, type.table->GetBaseSize(), &object) == LxrRcResult::Success,
             "coalesced initial and added tail admit the entire extent");
         object->RawSetMethodTable(type.table);
-        Check(engine.CompleteAllocation(object, type.table->GetBaseSize(), AllocationCompleteFlags::None) ==
-            LxrRcResult::Success, "coalesced extent has complete metadata");
         values.push_back(object);
         Epoch(engine, values);
         Check(engine.GetLiveBytes() == type.table->GetBaseSize(), "large coalesced survivor remains live");
@@ -2417,13 +2419,6 @@ namespace
             return nullptr;
         }
         object->RawSetMethodTable(type.table);
-        AllocationCompleteFlags flags = type.table->ContainsGCPointers()
-            ? AllocationCompleteFlags::ContainsReferences : AllocationCompleteFlags::None;
-        if (!Check(engine.CompleteAllocation(object, type.table->GetBaseSize(), flags) ==
-                LxrRcResult::Success, "allocation completion registers exact physical start"))
-        {
-            return nullptr;
-        }
         return object;
     }
 
@@ -3702,8 +3697,7 @@ namespace
         object->RawSetMethodTable(type.table);
         *reinterpret_cast<uint32_t*>(
             reinterpret_cast<uint8_t*>(object) + ArrayBase::GetOffsetOfNumComponents()) = length;
-        return Check(engine.CompleteAllocation(object, size, AllocationCompleteFlags::None) ==
-                LxrRcResult::Success, "array allocation completes") ? object : nullptr;
+        return object;
     }
 
     // A forwarded source loses its first field to the forwarding pointer, and an array keeps its length there.
@@ -3911,8 +3905,7 @@ namespace
             return nullptr;
         }
         object->RawSetMethodTable(type.table);
-        return Check(engine.CompleteAllocation(object, type.table->GetBaseSize(), AllocationCompleteFlags::None) ==
-                LxrRcResult::Success, "random allocation completes") ? object : nullptr;
+        return object;
     }
 
     // Random allocation, death and reuse of holes and blocks. After every pause the ValidObject plane, the counts and
@@ -4086,8 +4079,8 @@ namespace
             return;
         }
         Object* containing = nullptr;
-        Check(engine.IsObjectStart(dead) && engine.GetObjectExtent(dead) == 0 && Count(engine, dead) == 0,
-            "a dead young object keeps a stale ValidObject bit while the oracle has reclaimed it");
+        Check(!engine.IsObjectStart(dead) && engine.GetObjectExtent(dead) == 0 && Count(engine, dead) == 0,
+            "a dead young object never had a ValidObject bit, and the oracle has reclaimed it");
         Check(!engine.IsMarked(dead) && engine.GetLiveObjectSize(dead) == 0 && engine.GetLiveObjectSize(kept) == 24,
             "a stale bit is neither marked nor live, and the live size comes from the object");
         Check(engine.FindContainingObject(StartOf(kept) + 16, &containing) == LxrRcResult::Success && containing == kept,
@@ -5809,17 +5802,6 @@ namespace
             return nullptr;
         }
         object->RawSetMethodTable(type.table);
-        uint32_t flags = static_cast<uint32_t>(AllocationCompleteFlags::PinnedObjectHeap);
-        if (type.table->ContainsGCPointers())
-        {
-            flags |= static_cast<uint32_t>(AllocationCompleteFlags::ContainsReferences);
-        }
-        if (!Check(engine.CompleteAllocation(object, type.table->GetBaseSize(),
-                static_cast<AllocationCompleteFlags>(flags)) == LxrRcResult::Success,
-                "pinned-object-heap allocation completes"))
-        {
-            return nullptr;
-        }
         return object;
     }
 
@@ -6299,10 +6281,914 @@ namespace
         metadata.Shutdown();
         GCToOSInterface::VirtualRelease(arena, ArenaSize);
     }
+
+    // ---- P22 (D2): the stock bump-pointer helpers. The engine hands out a buffer after it has prepared the whole
+    // range, and learns about the objects of the buffer only as spans when the buffer is retired. ----
+
+    // The test plays the stock allocation helper and the slow path of GCHeap::Alloc: it bumps inside the published
+    // buffer, and calls the engine when the buffer cannot hold the object.
+    struct Helper
+    {
+        LxrReferenceCounting* engine = nullptr;
+        LxrRcMutator* mutator = nullptr;
+        uintptr_t cursor = 0;
+        uintptr_t limit = 0;
+        size_t slowCalls = 0;
+
+        Object* New(MethodTable* table, size_t size, uint32_t length = UINT32_MAX)
+        {
+            Object* object = nullptr;
+            if (limit - cursor >= size)
+            {
+                object = reinterpret_cast<Object*>(cursor + sizeof(ObjHeader));
+                cursor += size;
+                engine->RecordHelperObjectForTest(object, size);
+            }
+            else
+            {
+                Retire();
+                if (engine->Allocate(mutator, size, &object) != LxrRcResult::Success ||
+                    engine->GetAllocationSpan(mutator, &cursor, &limit) != LxrRcResult::Success)
+                {
+                    return nullptr;
+                }
+                slowCalls++;
+            }
+            object->RawSetMethodTable(table);
+            if (length != UINT32_MAX)
+            {
+                *reinterpret_cast<uint32_t*>(
+                    reinterpret_cast<uint8_t*>(object) + ArrayBase::GetOffsetOfNumComponents()) = length;
+            }
+            return object;
+        }
+
+        Object* NewObject(Type& type) { return New(type.table, type.table->GetBaseSize()); }
+
+        // What the pause does for every thread (GcEnumAllocContexts): the buffer ends at the used point.
+        void Retire()
+        {
+            if (limit != 0)
+            {
+                engine->RetireAllocationSpan(mutator, cursor);
+                cursor = 0;
+                limit = 0;
+            }
+        }
+    };
+
+    // An array-like type with any component size (a string has 2).
+    class ComponentType final
+    {
+    public:
+        explicit ComponentType(uint16_t componentSize, uint32_t baseSize = 24)
+            : m_bytes(sizeof(MethodTable), 0), table(reinterpret_cast<MethodTable*>(m_bytes.data()))
+        {
+            table->m_baseSize = baseSize;
+            table->m_flags = MTFlag_HasComponentSize | MTFlag_IsArray;
+            table->m_componentSize = componentSize;
+        }
+
+    private:
+        std::vector<uint8_t> m_bytes;
+
+    public:
+        MethodTable* table;
+    };
+
+    size_t SizeOf(Object* object)
+    {
+        return (object->GetSize() + sizeof(uintptr_t) - 1) & ~(sizeof(uintptr_t) - 1);
+    }
+
+    constexpr uintptr_t BlockOf(uintptr_t address) { return address & ~ImmixBlockGeometry::BlockMask; }
+
+    // Refill: the whole range of a buffer is made clean before the first object is allocated, so no later step
+    // clears anything per object. The planes of every block are poisoned first, so a plane that the refill does not
+    // clear shows up. With a trace running, the range is also marked in bulk.
+    void ValidateD2Refill()
+    {
+        for (bool marking : {false, true})
+        {
+            LxrReferenceCounting engine;
+            LxrRcMutator* mutator;
+            int identity;
+            if (!Initialize(engine, 8, &mutator, &identity))
+            {
+                return;
+            }
+            std::vector<Object*> none;
+            if (marking && !Check(engine.HoldTrace(true) == LxrRcResult::Success &&
+                    TracePause(engine, none, LxrPauseKind::InitialMark) && engine.IsMarkingForTest(),
+                    "a trace is running"))
+            {
+                return;
+            }
+            uintptr_t arena = engine.GetReservationStart();
+            size_t blocks = engine.GetImmixCapacityBytes() / ImmixBlockGeometry::BlockBytes;
+            Check(engine.PoisonRangeForTest(arena, blocks * ImmixBlockGeometry::BlockBytes) == LxrRcResult::Success,
+                "the planes of every block are poisoned");
+            Type type(24, 0);
+            Helper helper{&engine, mutator};
+            Object* first = helper.NewObject(type);
+            if (first == nullptr)
+            {
+                return;
+            }
+            uintptr_t block = BlockOf(StartOf(first));
+            LxrReferenceCounting::RangeStateForTest state;
+            Check(engine.GetRangeStateForTest(block, ImmixBlockGeometry::BlockBytes, &state) == LxrRcResult::Success &&
+                state.validSlots == 0 && state.countedSlots == 0 && state.unloggedSlots == 0 &&
+                state.straddleLines == 0,
+                "the refill clears the ValidObject, count, unlog and straddle planes of the whole range");
+            constexpr size_t SlotsPerBlock = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
+            Check(state.markedSlots == (marking ? SlotsPerBlock : 0),
+                marking ? "a refill during a trace marks the whole range" : "a refill outside a trace leaves no mark");
+            uintptr_t other = block == arena ? arena + 5 * ImmixBlockGeometry::BlockBytes : arena;
+            LxrReferenceCounting::RangeStateForTest untouched;
+            engine.GetRangeStateForTest(other, ImmixBlockGeometry::BlockBytes, &untouched);
+            Check(engine.GetRangeStateForTest(other, ImmixBlockGeometry::BlockBytes, &untouched) ==
+                    LxrRcResult::Success && untouched.validSlots == SlotsPerBlock,
+                "a block that no buffer took keeps its poison");
+            // The helper allocates 100 objects with no call into the engine, and nothing changes in the planes.
+            size_t calls = helper.slowCalls;
+            for (size_t index = 0; index < 100; index++)
+            {
+                helper.NewObject(type);
+            }
+            LxrReferenceCounting::RangeStateForTest after;
+            Check(helper.slowCalls == calls && engine.GetRangeStateForTest(
+                    block, ImmixBlockGeometry::BlockBytes, &after) == LxrRcResult::Success &&
+                    after.validSlots == 0 && after.countedSlots == 0 && after.markedSlots == state.markedSlots,
+                "allocation in the buffer touches no plane");
+            if (marking)
+            {
+                helper.Retire();
+                Check(engine.HoldTrace(false) == LxrRcResult::Success, "the trace is released");
+            }
+        }
+    }
+
+    // A recycled hole is prepared like a fresh block, and its neighbours keep their state.
+    void ValidateD2RecycledHole()
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator;
+        int identity;
+        if (!Initialize(engine, 8, &mutator, &identity))
+        {
+            return;
+        }
+        Type small(24, 0);
+        Type wide(512, 0);
+        Helper helper{&engine, mutator};
+        std::vector<Object*> keep;
+        for (size_t index = 0; index < 120; index++)
+        {
+            Object* object = helper.New(index % 3 == 0 ? wide.table : small.table, index % 3 == 0 ? 512 : 24);
+            if (object == nullptr)
+            {
+                return;
+            }
+            if (index % 3 == 0)
+            {
+                keep.push_back(object);
+            }
+        }
+        helper.Retire();
+        if (!Epoch(engine, keep))
+        {
+            return;
+        }
+        uintptr_t counted = 0;
+        for (Object* object : keep)
+        {
+            uintptr_t count = 0;
+            engine.LoadCount(object, &count);
+            counted += count;
+        }
+        Check(counted == keep.size() && engine.IsObjectStart(keep[0]), "the survivors of the block are promoted");
+        // The block is reusable now. A buffer in it comes from a hole between the survivors.
+        helper = Helper{&engine, mutator};
+        std::vector<Object*> fresh;
+        for (size_t index = 0; index < 200; index++)
+        {
+            Object* object = helper.NewObject(small);
+            if (object == nullptr)
+            {
+                return;
+            }
+            fresh.push_back(object);
+        }
+        helper.Retire();
+        size_t inRecycled = 0;
+        for (Object* object : fresh)
+        {
+            LxrReferenceCounting::RangeStateForTest state;
+            engine.GetRangeStateForTest(StartOf(object), 24, &state);
+            inRecycled += BlockOf(StartOf(object)) == BlockOf(StartOf(keep[0])) &&
+                state.validSlots == 0 && state.countedSlots == 0 && state.unloggedSlots == 0;
+        }
+        Check(inRecycled != 0, "new objects take holes of the reusable block, and their range is clean");
+        bool intact = true;
+        for (Object* object : keep)
+        {
+            uintptr_t count = 0;
+            engine.LoadCount(object, &count);
+            intact = intact && count == 1 && engine.IsObjectStart(object);
+        }
+        Check(intact, "the refill of a hole leaves the counts and start bits of its neighbours alone");
+    }
+
+    struct SpanProbe
+    {
+        std::vector<std::pair<uintptr_t, uintptr_t>> spans;
+        std::vector<uintptr_t> lookups;
+        std::vector<Object*> expected;
+        std::vector<Object*> found;
+        std::vector<LxrRcResult> results;
+        std::vector<Object*> roots;
+    };
+
+    LxrRcResult CaptureSpans(LxrReferenceCounting* engine, void* context)
+    {
+        SpanProbe* probe = static_cast<SpanProbe*>(context);
+        probe->spans.clear();
+        for (size_t index = 0; index < engine->GetYoungSpanCount(); index++)
+        {
+            uintptr_t start;
+            uintptr_t end;
+            engine->GetYoungSpan(index, &start, &end);
+            probe->spans.emplace_back(start, end);
+        }
+        probe->found.assign(probe->lookups.size(), nullptr);
+        probe->results.assign(probe->lookups.size(), LxrRcResult::Success);
+        for (size_t index = 0; index < probe->lookups.size(); index++)
+        {
+            probe->results[index] = engine->FindContainingObject(probe->lookups[index], &probe->found[index]);
+        }
+        for (Object* object : probe->roots)
+        {
+            LxrRcResult result = engine->AddRoot(object);
+            if (result != LxrRcResult::Success)
+            {
+                return result;
+            }
+        }
+        return LxrRcResult::Success;
+    }
+
+    // Spans are recorded per thread, merged and sorted at the pause, cut at the used point, and the memory
+    // after the cut is not parsed. A thread that has left (FixAllocContext) keeps its spans until the pause.
+    void ValidateD2Spans()
+    {
+        LxrReferenceCounting engine;
+        LxrRcConfiguration configuration{
+            16 * ImmixBlockGeometry::BlockBytes, 8 * LxrLargeObjectSpace::MinimumObjectBytes, 16, 1024, 4, 8,
+        };
+        LxrPauseRuntimeAdapter adapter{Suspend, Resume, nullptr, false};
+        int identities[4];
+        LxrRcMutator* mutators[4] = {};
+        if (!Check(engine.Initialize(configuration, adapter) == LxrRcResult::Success, "span engine initializes"))
+        {
+            return;
+        }
+        for (int index = 0; index < 4; index++)
+        {
+            if (!Check(engine.AttachMutator(&identities[index], &mutators[index]) == LxrRcResult::Success,
+                    "span mutator attaches"))
+            {
+                return;
+            }
+        }
+        Type type(24, 0);
+        Type big(256, 0);
+        Helper helpers[4];
+        std::vector<Object*> objects[4];
+        for (int index = 0; index < 4; index++)
+        {
+            helpers[index] = Helper{&engine, mutators[index]};
+            for (size_t count = 0; count < 20 + 7 * static_cast<size_t>(index); count++)
+            {
+                Object* object = count % 5 == 4 ? helpers[index].NewObject(big) : helpers[index].NewObject(type);
+                if (object == nullptr)
+                {
+                    return;
+                }
+                objects[index].push_back(object);
+            }
+        }
+        // Mutator 1 stops with a buffer that is only partly used. The tail holds a well-formed object that the
+        // collector must not see, because it lies after the used point.
+        Object* ghost = reinterpret_cast<Object*>(helpers[1].cursor + sizeof(ObjHeader));
+        ghost->RawSetMethodTable(type.table);
+        uintptr_t ghostStart = StartOf(ghost);
+        uintptr_t usedEnd1 = helpers[1].cursor;
+        // Mutator 3 leaves before the pause, as a thread does that exits.
+        helpers[3].Retire();
+        uintptr_t usedEnd3 = StartOf(objects[3].back()) + SizeOf(objects[3].back());
+        Check(engine.DetachMutator(mutators[3]) == LxrRcResult::Success, "a thread detaches with an open span");
+        // The runtime enumerates the allocation contexts of the other threads at the pause.
+        for (int index = 0; index < 3; index++)
+        {
+            helpers[index].Retire();
+        }
+        SpanProbe probe;
+        probe.lookups = {
+            reinterpret_cast<uintptr_t>(objects[0].back()) + 8,
+            reinterpret_cast<uintptr_t>(objects[1].back()) + 8,
+            reinterpret_cast<uintptr_t>(objects[3].back()) + 8,
+            ghostStart + 16,
+        };
+        probe.roots = {objects[0].back(), objects[1].back(), objects[2].back(), objects[3].back()};
+        Check(engine.Collect(CaptureSpans, &probe, Timeout) == LxrRcResult::Success &&
+            engine.Drain(Timeout) == LxrRcResult::Success, "the pause completes");
+        Check(probe.spans.size() == 4, "one span per thread is merged, the detached thread included");
+        bool sorted = std::is_sorted(probe.spans.begin(), probe.spans.end());
+        Check(sorted, "the merged spans are sorted by address");
+        auto spanOf = [&](Object* first) -> std::pair<uintptr_t, uintptr_t>
+        {
+            for (auto& span : probe.spans)
+            {
+                if (span.first == StartOf(first))
+                {
+                    return span;
+                }
+            }
+            return {0, 0};
+        };
+        for (int index = 0; index < 4; index++)
+        {
+            uintptr_t used = StartOf(objects[index].back()) + SizeOf(objects[index].back());
+            size_t bytes = 0;
+            for (Object* object : objects[index])
+            {
+                bytes += SizeOf(object);
+            }
+            auto span = spanOf(objects[index].front());
+            Check(span.second == used && span.second - span.first == bytes,
+                "the span of a thread covers exactly the used part of its buffers");
+        }
+        Check(spanOf(objects[1].front()).second == usedEnd1, "the span of a partly used buffer ends at the cut");
+        Check(spanOf(objects[3].front()).second == usedEnd3, "the span of a detached thread ends at its used point");
+        Check(probe.results[0] == LxrRcResult::Success && probe.found[0] == objects[0].back(),
+            "an interior address in the last object of a span is found");
+        Check(probe.results[1] == LxrRcResult::Success && probe.found[1] == objects[1].back(),
+            "an interior address in the last object before the cut is found");
+        Check(probe.results[2] == LxrRcResult::Success && probe.found[2] == objects[3].back(),
+            "an interior address of a detached thread's object is found");
+        Check(probe.results[3] == LxrRcResult::InvalidArgument && probe.found[3] == nullptr,
+            "an address after the cut is not an object, although the memory there parses");
+        size_t totalBytes = 0;
+        for (int index = 0; index < 4; index++)
+        {
+            for (Object* object : objects[index])
+            {
+                totalBytes += SizeOf(object);
+            }
+        }
+        Check(engine.GetMetrics().allocatedBytes == totalBytes && engine.GetYoungSpanCount() == 0,
+            "the used bytes of the spans are counted, and the spans are dropped when the pause ends");
+    }
+
+    // Interior addresses inside young objects of many sizes are found through the spans: random addresses, many
+    // objects, objects that cross lines, arrays, strings, the last object of a buffer, and holes that are reused.
+    void ValidateD2InteriorLookup()
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator;
+        int identity;
+        if (!Initialize(engine, 8, &mutator, &identity))
+        {
+            return;
+        }
+        ArrayType pointers;
+        ComponentType strings(2, 22);
+        ComponentType bytes(1, 24);
+        Type small(24, 0);
+        Type medium(96, 0);
+        Type wide(1000, 0);
+        std::mt19937_64 random(0x5eed);
+        Helper helper{&engine, mutator};
+        size_t lookups = 0;
+        size_t wrong = 0;
+        std::vector<Object*> survivors;
+        for (size_t round = 0; round < 6; round++)
+        {
+            std::vector<Object*> objects;
+            std::vector<size_t> sizes;
+            for (size_t index = 0; index < 1500; index++)
+            {
+                Object* object = nullptr;
+                switch (random() % 6)
+                {
+                    case 0: object = helper.NewObject(small); break;
+                    case 1: object = helper.NewObject(medium); break;
+                    case 2: object = helper.NewObject(wide); break;
+                    case 3:
+                    {
+                        uint32_t length = static_cast<uint32_t>(random() % 200);
+                        object = helper.New(pointers.table, 24 + length * 8u, length);
+                        break;
+                    }
+                    case 4:
+                    {
+                        uint32_t length = static_cast<uint32_t>(random() % 300);
+                        object = helper.New(strings.table, (22 + length * 2u + 7) & ~7u, length);
+                        break;
+                    }
+                    default:
+                    {
+                        uint32_t length = static_cast<uint32_t>(random() % 500);
+                        object = helper.New(bytes.table, (24 + length + 7) & ~7u, length);
+                        break;
+                    }
+                }
+                if (object == nullptr)
+                {
+                    return;
+                }
+                objects.push_back(object);
+                sizes.push_back(SizeOf(object));
+            }
+            helper.Retire();
+            SpanProbe probe;
+            for (size_t index = 0; index < objects.size(); index++)
+            {
+                for (int sample = 0; sample < 3; sample++)
+                {
+                    size_t offset = sizeof(uintptr_t) + random() % (sizes[index] - sizeof(ObjHeader) - 1);
+                    probe.lookups.push_back(reinterpret_cast<uintptr_t>(objects[index]) + offset);
+                    probe.expected.push_back(objects[index]);
+                }
+            }
+            // The last object of every span, at its last byte.
+            for (size_t index = 0; index < objects.size(); index++)
+            {
+                uintptr_t end = StartOf(objects[index]) + sizes[index];
+                if (index + 1 == objects.size() || StartOf(objects[index + 1]) != end)
+                {
+                    probe.lookups.push_back(end - 1);
+                    probe.expected.push_back(objects[index]);
+                }
+            }
+            // A survivor of every round: some are kept, so that the next round reuses holes between them.
+            probe.roots.clear();
+            for (size_t index = 0; index < objects.size(); index += 17)
+            {
+                probe.roots.push_back(objects[index]);
+            }
+            if (!Check(engine.Collect(CaptureSpans, &probe, Timeout) == LxrRcResult::Success &&
+                    engine.Drain(Timeout) == LxrRcResult::Success, "the interior lookup pause completes"))
+            {
+                return;
+            }
+            for (size_t index = 0; index < probe.lookups.size(); index++)
+            {
+                lookups++;
+                wrong += probe.results[index] != LxrRcResult::Success || probe.found[index] != probe.expected[index];
+            }
+            survivors.insert(survivors.end(), probe.roots.begin(), probe.roots.end());
+            helper = Helper{&engine, mutator};
+        }
+        Check(lookups > 20000 && wrong == 0, "every random interior address finds the object that contains it");
+        // The holes between the survivors were reused in the rounds after the first.
+        std::set<uintptr_t> blocks;
+        for (Object* object : survivors)
+        {
+            blocks.insert(BlockOf(StartOf(object)));
+        }
+        Check(blocks.size() < survivors.size() / 8, "survivors of different rounds share blocks, so holes were reused");
+    }
+
+    // Objects that are allocated while a trace runs are marked in bulk, and no pause sees them one by one. They
+    // survive the cycle sweep even when the pause counts them without tracing them.
+    struct FinalRoots
+    {
+        std::vector<Object*> traced;
+        std::vector<Object*> untraced;
+    };
+
+    LxrRcResult CaptureFinal(LxrReferenceCounting* engine, void* context)
+    {
+        FinalRoots* roots = static_cast<FinalRoots*>(context);
+        for (Object* object : roots->traced)
+        {
+            LxrRcResult result = engine->AddRoot(object, false, true);
+            if (result != LxrRcResult::Success)
+            {
+                return result;
+            }
+        }
+        for (Object* object : roots->untraced)
+        {
+            LxrRcResult result = engine->AddRoot(object, false, false);
+            if (result != LxrRcResult::Success)
+            {
+                return result;
+            }
+        }
+        return LxrRcResult::Success;
+    }
+
+    void ValidateD2ConcurrentMarking()
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator;
+        int identity;
+        if (!Initialize(engine, 8, &mutator, &identity))
+        {
+            return;
+        }
+        Type holder(24, 1);
+        Type leaf(24, 0);
+        Helper helper{&engine, mutator};
+        Object* old = helper.NewObject(holder);
+        helper.Retire();
+        if (old == nullptr || !Epoch(engine, {old}))
+        {
+            return;
+        }
+        std::vector<Object*> oldRoot{old};
+        if (!Check(engine.HoldTrace(true) == LxrRcResult::Success &&
+                TracePause(engine, oldRoot, LxrPauseKind::InitialMark) && engine.IsMarkingForTest(),
+                "a concurrent trace starts"))
+        {
+            return;
+        }
+        helper = Helper{&engine, mutator};
+        std::vector<Object*> born;
+        for (size_t index = 0; index < 300; index++)
+        {
+            Object* object = helper.NewObject(index % 2 == 0 ? leaf : holder);
+            if (object == nullptr)
+            {
+                return;
+            }
+            born.push_back(object);
+        }
+        helper.Retire();
+        // born[0] is stored into an object that the trace has scanned already. Every third object is known to the
+        // final pause only as a counted root that the trace does not follow. The others are dead.
+        Check(Store(engine, mutator, Field(old), born[0]), "a newborn object is stored into a scanned mature object");
+        FinalRoots final;
+        final.traced = {old};
+        for (size_t index = 1; index < born.size(); index += 3)
+        {
+            final.untraced.push_back(born[index]);
+        }
+        Check(engine.HoldTrace(false) == LxrRcResult::Success, "the trace may go on");
+        Check(engine.FinishTrace(CaptureFinal, &final, Timeout) == LxrRcResult::Success &&
+            engine.Drain(Timeout) == LxrRcResult::Success, "the trace completes with a final pause");
+        auto count = [&](Object* object)
+        {
+            uintptr_t value = UINTPTR_MAX;
+            engine.LoadCount(object, &value);
+            return value;
+        };
+        size_t kept = 0;
+        size_t marked = 0;
+        for (Object* object : final.untraced)
+        {
+            kept += count(object) == 1;
+            marked += engine.IsMarked(object);
+        }
+        Check(count(born[0]) == 1 && engine.IsMarked(born[0]),
+            "an object that was stored into a scanned object survives the trace");
+        Check(kept == final.untraced.size() && marked == final.untraced.size(),
+            "objects that were allocated during the trace are marked and are not swept as dead cycles");
+        Check(engine.GetTraceMetrics().cycleObjects == 0, "the cycle sweep reclaims nothing that is live");
+        size_t dead = 0;
+        for (size_t index = 2; index < born.size(); index += 3)
+        {
+            dead += count(born[index]) == 0;
+        }
+        Check(dead == (born.size() - 2 + 2) / 3, "the objects that nothing referred to are dead");
+    }
+
+    // A pinned-object-heap object and a large object are allocated one by one, so they get their ValidObject bit
+    // at the allocation and need no span. A small object of the ordinary heap does not.
+    void ValidateD2SlowCategories()
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator;
+        int identity;
+        if (!Initialize(engine, 8, &mutator, &identity))
+        {
+            return;
+        }
+        Type pinnedType(96, 1);
+        Type largeType(static_cast<uint32_t>(LxrLargeObjectSpace::MinimumObjectBytes + 4096), 0);
+        Type small(24, 0);
+        Object* pinned = AllocatePinnedObject(engine, mutator, pinnedType);
+        Object* large = Allocate(engine, mutator, largeType);
+        Object* young = Allocate(engine, mutator, small);
+        if (pinned == nullptr || large == nullptr || young == nullptr)
+        {
+            return;
+        }
+        Check(engine.IsObjectStart(pinned) && engine.IsPinnedBlock(StartOf(pinned)),
+            "a small pinned-object-heap object has its bit at once, in a pinned block");
+        Check(engine.IsObjectStart(large) && engine.IsLargeObject(large),
+            "a large object has its bit at once");
+        Check(!engine.IsObjectStart(young) && engine.IsOwnedObject(young),
+            "a small object of the ordinary heap has no bit, and is still an owned object");
+        Object* found = nullptr;
+        Check(engine.FindContainingObject(reinterpret_cast<uintptr_t>(pinned) + 40, &found) == LxrRcResult::Success &&
+                found == pinned,
+            "an interior address in a pinned-object-heap object is found outside a pause");
+        found = nullptr;
+        Check(engine.FindContainingObject(reinterpret_cast<uintptr_t>(large) + 3000, &found) == LxrRcResult::Success &&
+                found == large,
+            "an interior address in a large object is found outside a pause");
+        found = nullptr;
+        Check(engine.FindContainingObject(reinterpret_cast<uintptr_t>(young) + 8, &found) ==
+                LxrRcResult::InvalidArgument,
+            "an interior address in a young object is not found outside a pause");
+    }
+
+    // Interior roots into young objects that a pause copies: the source objects have lost their first field, and
+    // the walk over the span takes their sizes from the copies.
+    void ValidateD2MovingInterior()
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        MovingRoots roots;
+        int identity;
+        if (!InitializeMoving(engine, &roots, 16, &mutator, &identity, 8))
+        {
+            return;
+        }
+        ArrayType pointers;
+        std::mt19937_64 random(77);
+        Helper helper{&engine, mutator};
+        std::vector<Object*> objects;
+        for (uint32_t index = 0; index < 300; index++)
+        {
+            uint32_t length = 1 + static_cast<uint32_t>(random() % 60);
+            Object* object = helper.New(pointers.table, 24 + length * 8u, length);
+            if (object == nullptr)
+            {
+                return;
+            }
+            uintptr_t* payload = reinterpret_cast<uintptr_t*>(reinterpret_cast<uint8_t*>(object) + 16);
+            for (uint32_t element = 0; element < length; element++)
+            {
+                payload[element] = index * 1000u + element;
+            }
+            objects.push_back(object);
+            if (index % 4 == 0)
+            {
+                roots.objects.push_back(object);
+            }
+        }
+        helper.Retire();
+        Object* last = objects.back();
+        uint32_t lastLength = ArrayLength(last);
+        size_t offset = 16 + (lastLength / 2) * sizeof(uintptr_t);
+        roots.interior = reinterpret_cast<Object*>(reinterpret_cast<uint8_t*>(last) + offset);
+        Check(engine.Collect(CaptureMoving, &roots, Timeout) == LxrRcResult::Success &&
+            engine.Drain(Timeout) == LxrRcResult::Success, "the copying pause with interior roots completes");
+        Object* copy = reinterpret_cast<Object*>(reinterpret_cast<uint8_t*>(roots.interior) - offset);
+        Check(copy != last && engine.IsObjectStart(copy) && ArrayLength(copy) == lastLength &&
+                reinterpret_cast<uintptr_t*>(reinterpret_cast<uint8_t*>(copy) + 16)[lastLength / 2] ==
+                    299u * 1000u + lastLength / 2,
+            "an interior root into a young object behind many copied sources follows the copy");
+        bool intact = true;
+        for (size_t index = 0; index < roots.objects.size(); index++)
+        {
+            Object* object = roots.objects[index];
+            uint32_t length = ArrayLength(object);
+            intact = intact && engine.IsObjectStart(object) && length > 0 &&
+                reinterpret_cast<uintptr_t*>(reinterpret_cast<uint8_t*>(object) + 16)[length - 1] ==
+                    index * 4u * 1000u + length - 1;
+        }
+        Check(intact, "the copies keep their payload");
+        Check(engine.GetNurseryMetrics().copiedObjects == roots.objects.size() + 1,
+            "the young objects behind the walk and the interior target are copied");
+    }
+
+    struct StressContext
+    {
+        std::vector<Object*> exact;
+        std::vector<uintptr_t> interior;
+        std::vector<Object*> interiorExpected;
+        size_t bad = 0;
+        size_t lookups = 0;
+    };
+
+    LxrRcResult CaptureStress(LxrReferenceCounting* engine, void* context)
+    {
+        StressContext* stress = static_cast<StressContext*>(context);
+        for (Object* object : stress->exact)
+        {
+            LxrRcResult result = engine->AddRoot(object);
+            if (result != LxrRcResult::Success)
+            {
+                return result;
+            }
+        }
+        for (size_t index = 0; index < stress->interior.size(); index++)
+        {
+            Object* found = nullptr;
+            stress->lookups++;
+            if (engine->FindContainingObject(stress->interior[index], &found) != LxrRcResult::Success ||
+                found != stress->interiorExpected[index])
+            {
+                stress->bad++;
+                continue;
+            }
+            LxrRcResult result = engine->AddRoot(reinterpret_cast<Object*>(stress->interior[index]), true);
+            if (result != LxrRcResult::Success)
+            {
+                return result;
+            }
+        }
+        return LxrRcResult::Success;
+    }
+
+    // Threads allocate in a tight loop through the helper protocol. The controller stops them between two
+    // allocations, retires their buffers as the runtime does, and runs a pause whose roots are the newest objects of
+    // each thread: exact roots and interior addresses. Every one of them must survive with its payload.
+    // (A thread cannot be suspended inside the helper in the runtime; the managed cells cover that with the real
+    // suspension.)
+    void ValidateD2Suspension()
+    {
+        constexpr int Threads = 4;
+        LxrReferenceCounting engine;
+        LxrRcConfiguration configuration{
+            96 * ImmixBlockGeometry::BlockBytes, 8 * LxrLargeObjectSpace::MinimumObjectBytes, 16, 4096, 4, 8,
+        };
+        LxrPauseRuntimeAdapter adapter{Suspend, Resume, nullptr, false};
+        if (!Check(engine.Initialize(configuration, adapter) == LxrRcResult::Success, "stress engine initializes"))
+        {
+            return;
+        }
+        int identities[Threads];
+        LxrRcMutator* mutators[Threads] = {};
+        for (int index = 0; index < Threads; index++)
+        {
+            if (!Check(engine.AttachMutator(&identities[index], &mutators[index]) == LxrRcResult::Success,
+                    "stress mutator attaches"))
+            {
+                return;
+            }
+        }
+        struct Newest
+        {
+            std::atomic<Object*> exact{nullptr};
+            std::atomic<Object*> inner{nullptr};
+            std::atomic<size_t> innerSize{0};
+            std::atomic<uintptr_t> tag{0};
+            std::atomic<uint64_t> exactGeneration{0};
+            std::atomic<uint64_t> innerGeneration{0};
+        };
+        Newest newest[Threads];
+        std::atomic<uint64_t> generation{1};
+        Helper helpers[Threads];
+        std::atomic<bool> stop{false};
+        std::atomic<bool> pause{false};
+        std::atomic<int> parked{0};
+        ArrayType pointers;
+        Type small(24, 0);
+        Type medium(120, 0);
+        std::vector<std::thread> workers;
+        for (int index = 0; index < Threads; index++)
+        {
+            helpers[index] = Helper{&engine, mutators[index]};
+            workers.emplace_back([&, index]()
+            {
+                std::mt19937_64 random(1000 + index);
+                uintptr_t tag = 1;
+                while (!stop.load())
+                {
+                    if (pause.load())
+                    {
+                        parked.fetch_add(1);
+                        while (pause.load())
+                        {
+                            std::this_thread::yield();
+                        }
+                        parked.fetch_sub(1);
+                        continue;
+                    }
+                    Object* object;
+                    size_t size;
+                    switch (random() % 3)
+                    {
+                        case 0: size = 24; object = helpers[index].New(small.table, size); break;
+                        case 1: size = 120; object = helpers[index].New(medium.table, size); break;
+                        default:
+                        {
+                            uint32_t length = static_cast<uint32_t>(random() % 40);
+                            size = 24 + length * 8u;
+                            object = helpers[index].New(pointers.table, size, length);
+                            break;
+                        }
+                    }
+                    if (object == nullptr)
+                    {
+                        std::this_thread::yield();
+                        continue;
+                    }
+                    tag++;
+                    if (size >= 32)
+                    {
+                        *reinterpret_cast<uintptr_t*>(reinterpret_cast<uint8_t*>(object) + 16) = tag * 7919 + index;
+                    }
+                    Object* previous = newest[index].exact.load();
+                    newest[index].inner.store(previous);
+                    newest[index].innerSize.store(previous == nullptr ? 0 : SizeOf(previous));
+                    newest[index].innerGeneration.store(newest[index].exactGeneration.load());
+                    newest[index].exact.store(object);
+                    newest[index].exactGeneration.store(generation.load());
+                    newest[index].tag.store(tag);
+                }
+            });
+        }
+        std::mt19937_64 controller(5);
+        size_t failures = 0;
+        size_t interiorChecks = 0;
+        size_t pauses = 0;
+        for (int round = 0; round < 300; round++)
+        {
+            std::this_thread::sleep_for(std::chrono::microseconds(controller() % 1500));
+            pause.store(true);
+            while (parked.load() != Threads)
+            {
+                std::this_thread::yield();
+            }
+            StressContext stress;
+            std::vector<Object*> rooted;
+            for (int index = 0; index < Threads; index++)
+            {
+                helpers[index].Retire();
+                Object* exact = newest[index].exact.load();
+                Object* inner = newest[index].inner.load();
+                size_t innerSize = newest[index].innerSize.load();
+                if (exact != nullptr)
+                {
+                    stress.exact.push_back(exact);
+                    rooted.push_back(exact);
+                }
+                // The inner object is looked up only when the thread allocated it in this window: an older one is
+                // dead or promoted, and its memory may be reused.
+                if (inner != nullptr && newest[index].innerGeneration.load() == generation.load() && innerSize > 24)
+                {
+                    stress.interior.push_back(reinterpret_cast<uintptr_t>(inner) + innerSize / 2 - 8);
+                    stress.interiorExpected.push_back(inner);
+                    rooted.push_back(inner);
+                }
+            }
+            bool collected = engine.Collect(CaptureStress, &stress, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success;
+            Check(collected, "a pause with threads stopped between allocations completes");
+            pauses++;
+            failures += stress.bad;
+            interiorChecks += stress.lookups;
+            for (Object* object : rooted)
+            {
+                uintptr_t count = 0;
+                engine.LoadCount(object, &count);
+                if (count == 0 || !engine.IsObjectStart(object) || object->GetGCSafeMethodTable() == nullptr)
+                {
+                    failures++;
+                }
+            }
+            pause.store(false);
+            generation.fetch_add(1);
+            if (!collected)
+            {
+                break;
+            }
+        }
+        stop.store(true);
+        for (std::thread& worker : workers)
+        {
+            worker.join();
+        }
+        Check(pauses == 300 && failures == 0 && interiorChecks > 300,
+            "every object that a root named in a pause survives, and every interior address finds its object");
+    }
 }
 
 int main(int argc, char** argv)
 {
+    if (argc == 2 && strcmp(argv[1], "--d2-spans") == 0)
+    {
+        ValidateFastSpan();
+        ValidateD2Refill();
+        ValidateD2RecycledHole();
+        ValidateD2Spans();
+        ValidateD2InteriorLookup();
+        ValidateD2ConcurrentMarking();
+        ValidateD2SlowCategories();
+        ValidateD2MovingInterior();
+        ValidateD2Suspension();
+        std::printf("%s: %d/%d D2 bump-allocation checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
     if (argc == 2 && strcmp(argv[1], "--fresh-block-race") == 0)
     {
         ValidateFreshBlockRace();

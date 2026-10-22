@@ -29,6 +29,10 @@ S7_CASES = ("pin-handles-churn", "fixed-pressure", "poh-churn", "pin-finalizers-
 S7_HEAP = dict(DOTNET_LXRImmixInitialMB="96", DOTNET_LXRLOSInitialMB="32", DOTNET_LXRManagedHeapHardLimitMB="128")
 # P21 (D1): references cleared by precompiled framework code are logged (the framework is ReadyToRun compiled).
 R2R_CASES = ("r2r-stores",)
+# P22 (D2): the stock bump-pointer helpers. Interior roots into young objects, allocation from many threads while pauses
+# stop them, and sizes around a line and a block.
+D2_CASES = ("young-interior", "alloc-storm", "alloc-sizes")
+D2_HEAP = dict(DOTNET_LXRImmixInitialMB="192", DOTNET_LXRLOSInitialMB="64", DOTNET_LXRManagedHeapHardLimitMB="256")
 MODES = (("nonmoving", "0", "0"), ("nursery", "1", "0"), ("mature", "1", "1"))
 
 
@@ -60,7 +64,7 @@ def main():
             module = modules[native]
             for managed in ("Release", "Debug"):
                 fixture = args.fixtures / f"fixture-scope5-{managed}" / "runtime-tests.dll"
-                cases = FULL_CASES + (EXTRA_CASES + S6_CASES + S7_CASES + R2R_CASES if managed == "Release" else ())
+                cases = FULL_CASES + (EXTRA_CASES + S6_CASES + S7_CASES + R2R_CASES + D2_CASES if managed == "Release" else ())
                 for mode, nursery, mature in MODES:
                     for case in cases:
                         env = dict(base, DOTNET_GCPath=module, DOTNET_LXREvacuateNursery=nursery,
@@ -69,6 +73,8 @@ def main():
                             env.update(S6_HEAP)
                         if case in S7_CASES:
                             env.update(S7_HEAP)
+                        if case in D2_CASES:
+                            env.update(D2_HEAP)
                         command = [str(frame / host), str(fixture)]
                         command += [module] if case == "full" else ["--p7-lifecycle", case, module]
                         log = args.output / f"{native}-{managed}-{mode}-{case}.log"

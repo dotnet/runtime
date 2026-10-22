@@ -1922,6 +1922,27 @@ internal static partial class Program
                 }
                 VerifyFrameworkOldValueStores(metric, collect);
                 break;
+            case "young-interior":
+                if (collect is null)
+                {
+                    throw new InvalidOperationException("The young interior scenario requires LXR collection controls.");
+                }
+                VerifyYoungInteriorRoots(collect);
+                break;
+            case "alloc-storm":
+                if (collect is null)
+                {
+                    throw new InvalidOperationException("The allocation storm requires LXR collection controls.");
+                }
+                VerifyAllocationStorm(collect);
+                break;
+            case "alloc-sizes":
+                if (collect is null)
+                {
+                    throw new InvalidOperationException("The allocation size scenario requires LXR collection controls.");
+                }
+                VerifyAllocationSizes(collect);
+                break;
             case "pin-concurrent-trace":
                 if (collect is null)
                 {
