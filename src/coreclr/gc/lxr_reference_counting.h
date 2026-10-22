@@ -650,10 +650,15 @@ private:
     void DeleteWork();
     void ReleaseWork(Work* work);
     void RetireCompletedWork();
-    LxrRcResult ProcessIncrementWork(Work* work, size_t worker, TraceBatch* targets);
-    LxrRcResult ProcessFullIncrementWork(Work* work, size_t worker);
+    LxrRcResult ProcessIncrementWork(Work* work, size_t worker);
     LxrRcResult ProcessIncrement(
-        Object** object, bool trace, ReferenceBatch* children, size_t worker, TraceBatch* targets);
+        Object** object, bool trace, ReferenceBatch* children, size_t worker);
+    // P25 (F1). True while a pause or the mutators run in the window of a concurrent trace after its snapshot (the trace
+    // phase is Concurrent or FinalMark). Allocation is black in this window.
+    bool IsIncrementTraceWindow() const;
+    // P25 (F1). Whether a counted object needs a trace packet: the window is open and no mark bit is set. A marked object
+    // (black allocation, or already traced) is skipped, as in the Java LXR.
+    bool NeedsIncrementTrace(uintptr_t start) const;
     LxrRcResult TryCopyNursery(
         Object* source, Object** destination, size_t worker, bool* copied,
         bool* incrementedInPlace, uintptr_t* previous);
@@ -812,6 +817,8 @@ private:
     std::atomic<uint64_t> m_probe_reclaims{0};
     std::atomic<uint64_t> m_storage_metrics[9]{};
     std::atomic<uint64_t> m_trace_batch_metrics[5]{};
+    // P25 (F1). Number of trace packets that a pause queued for a counted object (metric 57 of GetStorageMetric).
+    std::atomic<uint64_t> m_increment_traces{0};
     std::atomic<bool> m_storage_diagnostics{false};
     static constexpr size_t TraceLockCount = 16384;
     static constexpr size_t TraceScanBucketCount = 4096;

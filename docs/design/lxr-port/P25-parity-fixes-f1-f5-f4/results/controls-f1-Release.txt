@@ -1,0 +1,5 @@
+Release baseline exit=0 :: PASS: 79477/79477 F1 trace packet checks :: 
+Release LXR_F1_QUEUE_ALL_CONTROL exit=1 :: FAIL: 79473/79477 F1 trace packet checks :: 79473/79477 F1 trace packet checks|InitialMark queues no trace packet for a counted object (the roots are queued by the pause)|a black newborn that a pause counts gets no trace packet (only the root of the pause may get one)|
+Release LXR_F1_SKIP_ALL_CONTROL exit=1 :: FAIL: 79476/79477 F1 trace packet checks :: 79476/79477 F1 trace packet checks|allocation-marked newborn cannot hide an unmarked reachable child|
+Release LXR_F1_NO_ROOT_TRACE_CONTROL exit=1 :: FAIL: 48473/48479 F1 trace packet checks :: 48473/48479 F1 trace packet checks|F1 stress: every reachable object is counted, owned and linked after the pause|the concurrent trace marks an object that only a root of InitialMark holds|
+Release LXR_D2_NO_MARK_CONTROL exit=1 :: FAIL: 78873/78877 F1 trace packet checks :: 78873/78877 F1 trace packet checks|a black newborn that a pause counts gets no trace packet (only the root of the pause may get one)|every newborn is counted and marked after the RefCount pause|

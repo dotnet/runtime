@@ -3782,7 +3782,7 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
 }
 
 LxrRcResult LxrReferenceCounting::ProcessIncrement(
-    Object** reference, bool trace, ReferenceBatch* children, size_t worker, TraceBatch* targets)
+    Object** reference, bool trace, ReferenceBatch* children, size_t worker)
 {
     Object* object = *reference;
     if (object == nullptr)
@@ -3832,15 +3832,25 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
         }
         result = FromMetadata(m_counts.IncrementFast(start, &previous, &status));
     }
-    if (result == LxrRcResult::Success && trace && GetTracePhase() != LxrTracePhase::Inactive)
+    if (result == LxrRcResult::Success && trace && NeedsIncrementTrace(start))
     {
         uintptr_t target = reinterpret_cast<uintptr_t>(object);
-        result = targets == nullptr ? QueueTrace(&target, 1) : targets->Append(target);
+        m_increment_traces.fetch_add(1, std::memory_order_relaxed);
+        result = QueueTrace(&target, 1);
     }
     if (result != LxrRcResult::Success || previous != 0)
     {
         return result;
     }
+#ifdef _DEBUG
+    // P25 (F1). Black allocation, checked as in the Java LXR (rc.rs: promote, debug_assert is_marked): an object that is
+    // counted for the first time inside the window of a trace was allocated or copied after the snapshot, so its mark
+    // bit is set. If it is not, a trace packet is the only thing that can still mark it.
+    if (IsIncrementTraceWindow() && m_mark_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0)
+    {
+        return Fail(LxrRcResult::InvariantViolation);
+    }
+#endif // _DEBUG
     size_t size;
     result = GetObjectSize(object, &size, worker);
     if (result != LxrRcResult::Success)
@@ -3920,7 +3930,33 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
     {
         m_nursery_metrics[2].fetch_add(size, std::memory_order_relaxed);
     }
-    return ScanIncrements(object, trace || IsMarked(object), children, worker);
+    // The children of a black object are traced when they have no mark: an unmarked old object can hide behind it
+    // (a weak target that a program stored into the newborn). The test of the child's own mark bit keeps the common
+    // case, a black child, free of any packet.
+    bool childrenTrace = trace ||
+        (IsIncrementTraceWindow() && m_mark_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) != 0);
+    return ScanIncrements(object, childrenTrace, children, worker);
+}
+
+bool LxrReferenceCounting::IsIncrementTraceWindow() const
+{
+    LxrTracePhase phase = GetTracePhase();
+    return phase == LxrTracePhase::Concurrent || phase == LxrTracePhase::FinalMark;
+}
+
+bool LxrReferenceCounting::NeedsIncrementTrace(uintptr_t start) const
+{
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F1_QUEUE_ALL_CONTROL)
+    // Control: the behaviour before P25 (F1). Every counted object gets a packet while a trace is active.
+    (void)start;
+    return GetTracePhase() != LxrTracePhase::Inactive;
+#elif defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F1_SKIP_ALL_CONTROL)
+    // Control: the skip is too wide. An unmarked object is skipped as well.
+    (void)start;
+    return false;
+#else
+    return IsIncrementTraceWindow() && m_mark_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F1_QUEUE_ALL_CONTROL
 }
 
 LxrRcResult LxrReferenceCounting::ScanIncrements(
@@ -4680,14 +4716,7 @@ void LxrReferenceCounting::Execute(LxrWorkPacket* packet, size_t worker, void* c
         case WorkKind::Roots:
         case WorkKind::Targets:
         {
-            if (engine->GetTracePhase() == LxrTracePhase::Full)
-            {
-                engine->ProcessFullIncrementWork(work, worker);
-            }
-            else
-            {
-                engine->ProcessIncrementWork(work, worker, nullptr);
-            }
+            engine->ProcessIncrementWork(work, worker);
             break;
         }
         case WorkKind::Satb:
@@ -4812,7 +4841,7 @@ void LxrReferenceCounting::Execute(LxrWorkPacket* packet, size_t worker, void* c
     }
 }
 
-LxrRcResult LxrReferenceCounting::ProcessIncrementWork(Work* work, size_t worker, TraceBatch* targets)
+LxrRcResult LxrReferenceCounting::ProcessIncrementWork(Work* work, size_t worker)
 {
     ReferenceBatch children{this, WorkKind::NurserySlots, nullptr, {}};
     for (size_t index = 0; index < work->packet.GetReferenceCount(); index++)
@@ -4846,7 +4875,7 @@ LxrRcResult LxrReferenceCounting::ProcessIncrementWork(Work* work, size_t worker
             }
             CountWorker(worker, IncrementEntries, 1);
         }
-        LxrRcResult result = ProcessIncrement(&object, trace, &children, worker, targets);
+        LxrRcResult result = ProcessIncrement(&object, trace, &children, worker);
         if (result != LxrRcResult::Success)
         {
             return result;
@@ -4864,15 +4893,7 @@ LxrRcResult LxrReferenceCounting::ProcessIncrementWork(Work* work, size_t worker
             *ownedSlot = object;
         }
     }
-    LxrRcResult result = children.Flush();
-    return result == LxrRcResult::Success && targets != nullptr ? targets->Flush() : result;
-}
-
-NOINLINE LxrRcResult LxrReferenceCounting::ProcessFullIncrementWork(Work* work, size_t worker)
-{
-    TraceBatch targets(this);
-    return GetFailure() == LxrRcResult::Success
-        ? ProcessIncrementWork(work, worker, &targets) : GetFailure();
+    return children.Flush();
 }
 
 LxrCompletionCallbackResult LxrReferenceCounting::DecrementsDrained(
@@ -5170,6 +5191,10 @@ uint64_t LxrReferenceCounting::GetLifetimeProbeReclaims() const
 
 uint64_t LxrReferenceCounting::GetStorageMetric(size_t metric) const
 {
+    if (metric == 57)
+    {
+        return m_increment_traces.load(std::memory_order_acquire);
+    }
     if (metric >= 52 && metric < 57)
     {
         return m_storage_diagnostics.load(std::memory_order_acquire)
@@ -6289,7 +6314,9 @@ LxrRcResult LxrReferenceCounting::PublishTraceWork()
     {
         return enabled;
     }
-    for (Work* work = m_work.load(std::memory_order_acquire); work != nullptr; work = work->next)
+    // P25 (F1). Only the packets that are not processed yet are visited (the list m_trace_todo), not every packet of the
+    // epoch. The cost of the walk follows the trace backlog, not the number of packets that the epoch created.
+    for (Work* work = m_trace_todo.load(std::memory_order_acquire); work != nullptr; work = work->traceNext)
     {
         if ((work->kind != WorkKind::TraceObjects && work->kind != WorkKind::TraceScan) ||
             work->traceProcessed.load(std::memory_order_acquire))
@@ -6810,6 +6837,10 @@ LxrRcResult LxrReferenceCounting::DrainTraceInsidePause()
 LxrRcResult LxrReferenceCounting::PrepareTrace()
 {
     CostScope cost(this, 7);
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F1_NO_ROOT_TRACE_CONTROL)
+    // Control: the roots of the pause are not queued. A pause that does not queue increment targets then marks nothing.
+    return m_pause_kind == LxrPauseKind::InitialMark ? LxrRcResult::Success : DrainTraceInsidePause();
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F1_NO_ROOT_TRACE_CONTROL
     uintptr_t roots[BufferCapacity];
     size_t count = 0;
     for (size_t offset = 0; offset < m_root_counts[m_current_roots]; offset++)

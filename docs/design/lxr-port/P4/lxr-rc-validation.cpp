@@ -10,6 +10,7 @@
 
 #include <atomic>
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstdio>
 #include <random>
@@ -1668,8 +1669,8 @@ namespace
             Roots roots{&values};
             Check(engine.CollectFull(Capture, &roots, Timeout) == LxrRcResult::Success &&
                 engine.Drain(Timeout) == LxrRcResult::Success, "batched full root tracing completes");
-            Check(engine.GetStorageMetric(3) == 3 * count * sizeof(uintptr_t),
-                "each root is copied once for RC, once for its increment trace and once for the batched trace seed");
+            Check(engine.GetStorageMetric(3) == 2 * count * sizeof(uintptr_t),
+                "each root is copied once for RC and once for the batched trace seed (P25 F1: no copy for an increment trace)");
             Check(engine.GetLiveBytes() == count * 24 && engine.GetStorageMetric(1) == 0,
                 "exact root batching preserves all payload and retires its packets");
         }
@@ -1740,8 +1741,8 @@ namespace
                     static_cast<unsigned long long>(engine.GetStorageMetric(56)));
                 Check(packets <= packetBound,
                     "actual trace packet count is bounded by batches, not individual objects");
-                Check(engine.GetStorageMetric(53) >= count * 16 && engine.GetStorageMetric(54) != 0,
-                    "increments and small-object descendants use the trace target accumulator");
+                Check(engine.GetStorageMetric(53) >= count * 8 && engine.GetStorageMetric(54) != 0,
+                    "small-object descendants of a traced parent use the trace target accumulator");
                 Check(engine.GetStorageMetric(55) == 0 && engine.GetStorageMetric(56) >=
                         LxrReferenceCounting::FullTraceBatchCapacity * sizeof(uintptr_t) &&
                         engine.GetStorageMetric(2) >= engine.GetStorageMetric(56) &&
@@ -3359,6 +3360,437 @@ namespace
         Check(engine.GetObjectExtent(old) == 24 && engine.IsMarked(old) && *Field(newborn) == old,
             "allocation-marked newborn cannot hide an unmarked reachable child");
         Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "black-newborn owner detaches");
+    }
+
+    // P25 (F1) fixtures. A moving root set drives every pause. In mode "nursery" the pauses copy young objects, so a test
+    // follows an object from the roots and never keeps its address.
+    struct F1Fixture
+    {
+        LxrReferenceCounting engine;
+        MovingRoots roots;
+        LxrRcObjectModel model{};
+        LxrRcMutator* mutator = nullptr;
+        int identity = 0;
+    };
+
+    bool InitializeF1(F1Fixture& fixture, bool nursery)
+    {
+        LxrRcConfiguration configuration{
+            64 * ImmixBlockGeometry::BlockBytes, 8 * LxrLargeObjectSpace::MinimumObjectBytes, 4, 2048, 4, 8,
+        };
+        configuration.evacuateNursery = nursery;
+        fixture.model.context = &fixture.roots;
+        fixture.model.finishRelocation = RelocateMoving;
+        LxrPauseRuntimeAdapter runtime{Suspend, Resume, nullptr, false};
+        return Check(fixture.engine.Initialize(configuration, runtime, &fixture.model) == LxrRcResult::Success &&
+                fixture.engine.AttachMutator(&fixture.identity, &fixture.mutator) == LxrRcResult::Success,
+            "F1 fixture engine and mutator initialize");
+    }
+
+    bool F1Pause(F1Fixture& fixture, LxrPauseKind kind)
+    {
+        LxrReferenceCounting& engine = fixture.engine;
+        LxrRcResult result = kind == LxrPauseKind::InitialMark
+            ? engine.BeginTrace(CaptureMoving, &fixture.roots, Timeout)
+            : kind == LxrPauseKind::FinalMark
+                ? engine.FinishTrace(CaptureMoving, &fixture.roots, Timeout)
+                : kind == LxrPauseKind::Full
+                    ? engine.CollectFull(CaptureMoving, &fixture.roots, Timeout)
+                    : engine.Collect(CaptureMoving, &fixture.roots, Timeout);
+        if (!Check(result == LxrRcResult::Success, "F1 pause completes"))
+        {
+            std::fprintf(stderr, "F1 pause failure=%u\n", static_cast<unsigned>(engine.GetFailure()));
+            return false;
+        }
+        return kind == LxrPauseKind::InitialMark ||
+            Check(engine.Drain(Timeout) == LxrRcResult::Success, "F1 lazy work drains");
+    }
+
+    // A pause counts a black newborn without a trace packet. The newborns are allocated after the snapshot, while the
+    // trace is held, and a RefCount pause promotes them. Only the root of the pause may get a packet. The trace then
+    // ends and every newborn is still there, because allocation marked it (Java LXR: rc.rs promote).
+    void ValidateF1BlackAllocation(bool nursery)
+    {
+        F1Fixture fixture;
+        if (!InitializeF1(fixture, nursery))
+        {
+            return;
+        }
+        LxrReferenceCounting& engine = fixture.engine;
+        Type link(24, 1);
+        Type leaf(24, 0);
+        Object* anchor = Allocate(engine, fixture.mutator, link);
+        Object* old = Allocate(engine, fixture.mutator, leaf);
+        if (anchor == nullptr || old == nullptr ||
+            !Check(Store(engine, fixture.mutator, Field(anchor), old), "F1 anchor points to an old target"))
+        {
+            return;
+        }
+        fixture.roots.objects = {anchor};
+        if (!F1Pause(fixture, LxrPauseKind::RefCount) ||
+            !Check(engine.HoldTrace(true) == LxrRcResult::Success, "F1 trace gate arms") ||
+            !F1Pause(fixture, LxrPauseKind::InitialMark))
+        {
+            return;
+        }
+        Check(engine.GetTracePhase() == LxrTracePhase::Concurrent, "F1 trace is concurrent");
+        anchor = fixture.roots.objects[0];
+        constexpr size_t Chain = 300;
+        Object* previous = nullptr;
+        Object* first = nullptr;
+        for (size_t index = 0; index < Chain; index++)
+        {
+            Object* node = Allocate(engine, fixture.mutator, link);
+            if (node == nullptr)
+            {
+                return;
+            }
+            if (previous != nullptr && !Check(Store(engine, fixture.mutator, Field(previous), node),
+                    "F1 newborn chain link stores"))
+            {
+                return;
+            }
+            first = first == nullptr ? node : first;
+            previous = node;
+        }
+        if (!Check(Store(engine, fixture.mutator, Field(anchor), first), "F1 anchor points to the newborn chain"))
+        {
+            return;
+        }
+        uint64_t before = engine.GetStorageMetric(57);
+        if (!F1Pause(fixture, LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        uint64_t queued = engine.GetStorageMetric(57) - before;
+        std::printf("f1_black nursery=%d chain=%zu increment_packets=%llu\n", nursery ? 1 : 0, Chain,
+            static_cast<unsigned long long>(queued));
+        Check(queued <= fixture.roots.objects.size(),
+            "a black newborn that a pause counts gets no trace packet (only the root of the pause may get one)");
+        anchor = fixture.roots.objects[0];
+        size_t walked = 0;
+        size_t marked = 0;
+        for (Object* node = *Field(anchor); node != nullptr && walked < Chain + 1; node = *Field(node))
+        {
+            walked++;
+            marked += engine.IsMarked(node) && Count(engine, node) != 0 ? 1 : 0;
+        }
+        Check(walked == Chain && marked == Chain, "every newborn is counted and marked after the RefCount pause");
+        if (!Check(engine.HoldTrace(false) == LxrRcResult::Success, "F1 trace gate opens") ||
+            !F1Pause(fixture, LxrPauseKind::FinalMark))
+        {
+            return;
+        }
+        anchor = fixture.roots.objects[0];
+        walked = 0;
+        size_t alive = 0;
+        for (Object* node = *Field(anchor); node != nullptr && walked < Chain + 1; node = *Field(node))
+        {
+            walked++;
+            alive += engine.GetObjectExtent(node) == 24 && Count(engine, node) != 0 ? 1 : 0;
+        }
+        Check(walked == Chain && alive == Chain && engine.GetTraceMetrics().cycleObjects == 0,
+            "no newborn is swept as a dead cycle when the trace ends");
+        Check(engine.DetachMutator(fixture.mutator) == LxrRcResult::Success, "F1 black fixture detaches");
+    }
+
+    // The InitialMark pause counts young objects that are not marked, and it queues no packet for them. The trace must
+    // still mark them, from the roots, and the cycle sweep must free only the dead cycle (Java LXR: only roots are queued).
+    void ValidateF1RootsOnly(bool nursery)
+    {
+        F1Fixture fixture;
+        if (!InitializeF1(fixture, nursery))
+        {
+            return;
+        }
+        LxrReferenceCounting& engine = fixture.engine;
+        Type pair(32, 2);
+        Object* anchor = Allocate(engine, fixture.mutator, pair);
+        Object* a = Allocate(engine, fixture.mutator, pair);
+        Object* b = Allocate(engine, fixture.mutator, pair);
+        Object* x = Allocate(engine, fixture.mutator, pair);
+        Object* y = Allocate(engine, fixture.mutator, pair);
+        if (anchor == nullptr || a == nullptr || b == nullptr || x == nullptr || y == nullptr ||
+            !Check(Store(engine, fixture.mutator, Field(anchor, 0), a) &&
+                    Store(engine, fixture.mutator, Field(a, 0), b) &&
+                    Store(engine, fixture.mutator, Field(x, 0), y) &&
+                    Store(engine, fixture.mutator, Field(y, 0), x),
+                "F1 root graph and dead-cycle candidates initialize"))
+        {
+            return;
+        }
+        fixture.roots.objects = {anchor, x};
+        if (!F1Pause(fixture, LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        fixture.roots.objects = {fixture.roots.objects[0]};
+        if (!F1Pause(fixture, LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        anchor = fixture.roots.objects[0];
+        Object* p = Allocate(engine, fixture.mutator, pair);
+        Object* q = Allocate(engine, fixture.mutator, pair);
+        if (p == nullptr || q == nullptr ||
+            !Check(Store(engine, fixture.mutator, Field(p, 0), q) &&
+                    Store(engine, fixture.mutator, Field(anchor, 1), p),
+                "F1 young pair hangs on a mature slot"))
+        {
+            return;
+        }
+        if (!Check(engine.HoldTrace(true) == LxrRcResult::Success, "F1 root-only gate arms"))
+        {
+            return;
+        }
+        uint64_t before = engine.GetStorageMetric(57);
+        if (!F1Pause(fixture, LxrPauseKind::InitialMark))
+        {
+            return;
+        }
+        uint64_t queued = engine.GetStorageMetric(57) - before;
+        std::printf("f1_roots nursery=%d increment_packets=%llu\n", nursery ? 1 : 0,
+            static_cast<unsigned long long>(queued));
+        Check(queued == 0, "InitialMark queues no trace packet for a counted object (the roots are queued by the pause)");
+        if (!Check(engine.HoldTrace(false) == LxrRcResult::Success, "F1 root-only gate opens") ||
+            !F1Pause(fixture, LxrPauseKind::FinalMark))
+        {
+            return;
+        }
+        anchor = fixture.roots.objects[0];
+        Object* childA = *Field(anchor, 0);
+        Object* childP = *Field(anchor, 1);
+        Object* childB = childA == nullptr ? nullptr : *Field(childA, 0);
+        Object* childQ = childP == nullptr ? nullptr : *Field(childP, 0);
+        Check(childA != nullptr && childB != nullptr && childP != nullptr && childQ != nullptr &&
+                engine.IsMarked(childA) && engine.IsMarked(childB) && engine.IsMarked(childP) &&
+                engine.IsMarked(childQ) &&
+                engine.GetObjectExtent(childB) == 32 && engine.GetObjectExtent(childQ) == 32,
+            "objects that were counted unmarked at InitialMark are marked by the trace from the roots");
+        Check(engine.GetTraceMetrics().cycleObjects == 2,
+            "the cycle sweep frees exactly the dead cycle and no object that is reachable only through a skipped packet");
+        Check(engine.DetachMutator(fixture.mutator) == LxrRcResult::Success, "F1 roots fixture detaches");
+    }
+
+    // The trace from the roots of InitialMark is what protects an object that only a root holds at the snapshot (Java LXR:
+    // rc.rs ProcessIncs, the roots of InitialMark go to LXRConcurrentTraceObjects). The program then stores that object into
+    // a mature object that the trace has already scanned. The store is not a deletion, so only the first trace can have
+    // marked the object. FinalMark must find it live.
+    void ValidateF1SnapshotRoot()
+    {
+        F1Fixture fixture;
+        if (!InitializeF1(fixture, false))
+        {
+            return;
+        }
+        LxrReferenceCounting& engine = fixture.engine;
+        Type pair(32, 2);
+        Type leaf(24, 0);
+        Object* anchor = Allocate(engine, fixture.mutator, pair);
+        Object* mature = Allocate(engine, fixture.mutator, pair);
+        if (anchor == nullptr || mature == nullptr ||
+            !Check(Store(engine, fixture.mutator, Field(anchor, 0), mature), "F1 snapshot graph initializes"))
+        {
+            return;
+        }
+        fixture.roots.objects = {anchor};
+        if (!F1Pause(fixture, LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        Object* held = Allocate(engine, fixture.mutator, leaf);
+        if (held == nullptr)
+        {
+            return;
+        }
+        fixture.roots.objects = {anchor, held};
+        if (!F1Pause(fixture, LxrPauseKind::InitialMark))
+        {
+            return;
+        }
+        auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+        while (!engine.IsTraceExhausted() && std::chrono::steady_clock::now() < deadline)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        Check(engine.IsTraceExhausted() && engine.IsMarked(held),
+            "the concurrent trace marks an object that only a root of InitialMark holds");
+        Check(Store(engine, fixture.mutator, Field(mature, 1), held), "F1 root object moves into a scanned mature object");
+        fixture.roots.objects = {anchor};
+        if (!F1Pause(fixture, LxrPauseKind::FinalMark))
+        {
+            return;
+        }
+        Check(engine.GetObjectExtent(held) == 24 && Count(engine, held) != 0 && *Field(mature, 1) == held &&
+                engine.GetTraceMetrics().cycleObjects == 0,
+            "the object that moved from a snapshot root into a scanned object survives the cycle sweep");
+        Check(engine.DetachMutator(fixture.mutator) == LxrRcResult::Success, "F1 snapshot fixture detaches");
+    }
+
+    // Random graph with interleaved RefCount, InitialMark, FinalMark and Full pauses and a running trace. The model knows
+    // what is reachable. After every pause each reachable object must be counted, owned and still linked as in the model.
+    void ValidateF1Stress(uint32_t seed)
+    {
+        F1Fixture fixture;
+        if (!InitializeF1(fixture, false))
+        {
+            return;
+        }
+        LxrReferenceCounting& engine = fixture.engine;
+        Type node(32, 2);
+        std::mt19937 random(seed);
+        std::vector<Object*> object;
+        std::vector<std::array<int, 2>> field;
+        std::vector<int> root;
+        auto reach = [&]()
+        {
+            std::vector<bool> seen(object.size(), false);
+            std::vector<int> stack(root.begin(), root.end());
+            while (!stack.empty())
+            {
+                int index = stack.back();
+                stack.pop_back();
+                if (index < 0 || seen[index])
+                {
+                    continue;
+                }
+                seen[index] = true;
+                for (int target : field[index])
+                {
+                    stack.push_back(target);
+                }
+            }
+            return seen;
+        };
+        auto pick = [&](const std::vector<int>& from) { return from[random() % from.size()]; };
+        auto liveList = [&](const std::vector<bool>& seen)
+        {
+            std::vector<int> list;
+            for (size_t index = 0; index < seen.size(); index++)
+            {
+                if (seen[index])
+                {
+                    list.push_back(static_cast<int>(index));
+                }
+            }
+            return list;
+        };
+        auto link = [&](int source, size_t slot, int target)
+        {
+            field[source][slot] = target;
+            return Store(engine, fixture.mutator, Field(object[source], slot), target < 0 ? nullptr : object[target]);
+        };
+        Object* first = Allocate(engine, fixture.mutator, node);
+        if (first == nullptr)
+        {
+            return;
+        }
+        object.push_back(first);
+        field.push_back({-1, -1});
+        root.push_back(0);
+        size_t traces = 0;
+        size_t fulls = 0;
+        for (size_t round = 0; round < 60; round++)
+        {
+            std::vector<int> live = liveList(reach());
+            size_t newborn = 20 + random() % 40;
+            for (size_t count = 0; count < newborn; count++)
+            {
+                Object* created = Allocate(engine, fixture.mutator, node);
+                if (created == nullptr)
+                {
+                    return;
+                }
+                int index = static_cast<int>(object.size());
+                object.push_back(created);
+                field.push_back({-1, -1});
+                int parent = pick(live);
+                if (!Check(link(parent, random() % 2, index), "F1 stress newborn links"))
+                {
+                    return;
+                }
+                if (random() % 2 == 0 && !Check(link(index, random() % 2, pick(live)), "F1 stress newborn points back"))
+                {
+                    return;
+                }
+                live.push_back(index);
+            }
+            size_t changes = 20 + random() % 40;
+            for (size_t count = 0; count < changes; count++)
+            {
+                int source = pick(live);
+                int target = random() % 4 == 0 ? -1 : pick(live);
+                if (!Check(link(source, random() % 2, target), "F1 stress store"))
+                {
+                    return;
+                }
+            }
+            std::vector<bool> seen = reach();
+            std::vector<int> reachable = liveList(seen);
+            root.clear();
+            size_t roots = 1 + random() % 5;
+            for (size_t count = 0; count < roots; count++)
+            {
+                root.push_back(pick(reachable));
+            }
+            seen = reach();
+            for (size_t index = 0; index < object.size(); index++)
+            {
+                if (!seen[index])
+                {
+                    object[index] = nullptr;
+                    field[index] = {-1, -1};
+                }
+            }
+            fixture.roots.objects.clear();
+            for (int index : root)
+            {
+                fixture.roots.objects.push_back(object[index]);
+            }
+            LxrTracePhase phase = engine.GetTracePhase();
+            uint32_t choice = random() % 10;
+            LxrPauseKind kind = LxrPauseKind::RefCount;
+            if (phase == LxrTracePhase::Inactive)
+            {
+                kind = choice < 4 ? LxrPauseKind::RefCount : choice < 8 ? LxrPauseKind::InitialMark
+                    : choice < 9 ? LxrPauseKind::RefCount : LxrPauseKind::Full;
+            }
+            else if (phase == LxrTracePhase::Concurrent)
+            {
+                kind = choice < 5 ? LxrPauseKind::RefCount : LxrPauseKind::FinalMark;
+            }
+            traces += kind == LxrPauseKind::InitialMark ? 1 : 0;
+            fulls += kind == LxrPauseKind::Full || kind == LxrPauseKind::FinalMark ? 1 : 0;
+            if (!F1Pause(fixture, kind))
+            {
+                return;
+            }
+            size_t wrong = 0;
+            for (size_t index = 0; index < object.size(); index++)
+            {
+                if (object[index] == nullptr)
+                {
+                    continue;
+                }
+                bool ok = Count(engine, object[index]) != 0 && engine.GetObjectExtent(object[index]) == 32 &&
+                    engine.IsObjectStart(object[index]);
+                for (size_t slot = 0; slot < 2; slot++)
+                {
+                    int target = field[index][slot];
+                    ok = ok && *Field(object[index], slot) == (target < 0 ? nullptr : object[target]);
+                }
+                wrong += ok ? 0 : 1;
+            }
+            if (!Check(wrong == 0, "F1 stress: every reachable object is counted, owned and linked after the pause"))
+            {
+                std::fprintf(stderr, "seed %u round %zu kind %u wrong %zu\n", seed, round,
+                    static_cast<unsigned>(kind), wrong);
+                return;
+            }
+        }
+        std::printf("f1_stress seed=%u initial_marks=%zu final_or_full=%zu\n", seed, traces, fulls);
+        Check(traces >= 3 && fulls >= 3, "F1 stress runs complete trace cycles");
+        Check(engine.DetachMutator(fixture.mutator) == LxrRcResult::Success, "F1 stress fixture detaches");
     }
 
     // A large object that dies in a RefCount pause while a concurrent trace is active is released by the lazy
@@ -7464,6 +7896,23 @@ int main(int argc, char** argv)
         ValidateFirstStoreBeforeAllocation();
         ValidateFirstStoreBeforeAllocation(true);
         std::printf("%s: %d/%d first-store engine checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
+    if (argc == 2 && strcmp(argv[1], "--f1-trace") == 0)
+    {
+        for (bool nursery : {false, true})
+        {
+            ValidateF1BlackAllocation(nursery);
+            ValidateF1RootsOnly(nursery);
+        }
+        ValidateBlackNewbornClosure();
+        ValidateF1SnapshotRoot();
+        for (uint32_t seed = 1; seed <= 8; seed++)
+        {
+            ValidateF1Stress(seed);
+        }
+        std::printf("%s: %d/%d F1 trace packet checks\n",
             Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
         return Failures == 0 ? 0 : 1;
     }

@@ -1,0 +1,34 @@
+#!/bin/bash
+# P25: compile the native validation program from the synced tree (/root/p25/main) and run the given selectors.
+# EXTRA holds extra compiler flags (for example -DLXR_F1_QUEUE_ALL_CONTROL); OUTNAME selects the output name.
+# usage: one.sh <Debug|Release> <selector...>
+REPO=/root/p25/main
+CFG=$1
+shift
+OUT=/root/p25/out/one-$CFG${OUTNAME:+-$OUTNAME}
+mkdir -p $OUT
+case "$CFG" in
+  Debug) FLAGS=(-O0 -g -DDEBUG -D_DEBUG);;
+  *) FLAGS=(-O2 -DNDEBUG);;
+esac
+GC="$REPO/src/coreclr/gc"
+SOURCES=(side_metadata.cpp immix_block.cpp immix_allocation.cpp reference_count.cpp large_object_space.cpp
+  lxr_work_packet.cpp lxr_work_scheduler.cpp lxr_pause_schedule.cpp lxr_pause_coordinator.cpp
+  lxr_completion_counter.cpp lxr_reference_counting.cpp)
+FILES=()
+for s in "${SOURCES[@]}"; do FILES+=("$GC/$s"); done
+FILES+=("$REPO/docs/design/lxr-port/P2.5/large-object-space-test-platform.cpp" "$REPO/docs/design/lxr-port/P4/lxr-rc-validation.cpp")
+rm -f $OUT/lxr-rc-validation
+clang++ -std=c++17 -pthread -Wall -Wextra -Werror -Wno-unused-parameter -Wno-invalid-offsetof "${FLAGS[@]}" \
+  -DBUILD_AS_STANDALONE -DTARGET_UNIX -DHOST_UNIX -DTARGET_LINUX -DTARGET_AMD64 -DHOST_AMD64 -DTARGET_64BIT -DHOST_64BIT \
+  -DLXR_SIDE_METADATA_TEST_PLATFORM -DLXR_ENABLE_LAZY_COMPLETION_COUNTER $EXTRA \
+  "-I$GC" "-I$GC/env" "-I$REPO/src/native" "-I$REPO/src/native/inc" "${FILES[@]}" -o "$OUT/lxr-rc-validation" 2>&1 | head -40
+[ -x $OUT/lxr-rc-validation ] || { echo "build failed"; exit 2; }
+for sel in "$@"; do
+  [ "$sel" = "default" ] && sel=""
+  echo "== ${sel:-default}"
+  timeout 900 $OUT/lxr-rc-validation $sel > $OUT/run.log 2>&1
+  echo "exit=$?"
+  grep -E '^(PASS|FAIL):|^f1_' $OUT/run.log | tail -${TAILN:-20}
+  grep -E '^FAIL: ' $OUT/run.log | sort | uniq -c | head -8
+done
