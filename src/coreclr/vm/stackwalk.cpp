@@ -2606,47 +2606,6 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // Can the caller handle skipped frames;
     fHandleSkippedFrames = (m_flags & HANDLESKIPPEDFRAMES);
 
-#if defined(TARGET_64BIT)
-    // GC-only negative fast path: avoid obtaining caller SP when the next explicit
-    // Frame cannot belong to this managed activation. Frames are stack-allocated
-    // in the activation that links them, so a Frame at/above current SP with a
-    // different owner belongs to an older activation. Returning FALSE leaves the
-    // Frame chain intact; it will be checked again after the managed walk advances.
-    //
-    // Conservatively limit this to the 64-bit InlinedCallFrame protocol: the JIT
-    // records SP/FP before linking the Frame (see InsertPInvokeMethodProlog).
-    // Keep 32-bit targets on the full ordering path: x86's call-site SP varies with
-    // pushed arguments, and ARM32 has a separate post-prolog SP for localloc.
-    if ((m_flags & GC_ROOT_SCAN) && !m_crawl.pRD->IsCallerContextValid && !fHandleSkippedFrames && m_crawl.isFrameless)
-    {
-        TADDR frameAddr = dac_cast<TADDR>(m_crawl.pFrame);
-        TADDR currentSP = GetRegdisplaySP(m_crawl.pRD);
-        // Younger Frames below current SP, such as a FaultingExceptionFrame linked
-        // after the interrupted activation started, still need the full check.
-        if (frameAddr >= currentSP)
-        {
-            if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame)
-            {
-                // STOP_FOR_GC can change ControlPC while the ICF remains active.
-                // Its saved SP or FP identifies the owning managed activation.
-                PTR_InlinedCallFrame pICF = dac_cast<PTR_InlinedCallFrame>(m_crawl.pFrame);
-                if (currentSP != dac_cast<TADDR>(pICF->GetCallSiteSP()) &&
-                    GetFP(m_crawl.pRD->pCurrentContext) != pICF->GetCalleeSavedFP())
-                {
-                    return FALSE;
-                }
-            }
-            // Other Frames can correspond to this managed context only if they
-            // restore its return PC. NextRaw asserts the same ownership condition.
-            else if (!m_crawl.pFrame->NeedsUpdateRegDisplay() ||
-                     GetControlPC(m_crawl.pRD) != m_crawl.pFrame->GetReturnAddress())
-            {
-                return FALSE;
-            }
-        }
-    }
-#endif // TARGET_64BIT
-
     // Order the Frames relative to the caller SP of the methods
     // this makes it so that any Frame that is in a managed call
     // frame will be reported before its containing method.
