@@ -23,6 +23,7 @@
 #include "ecall.h"
 #include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
+#include "exinfo.h"
 
 #include "CachedInterfaceDispatchPal.h"
 #ifdef FEATURE_INTERPRETER
@@ -2006,6 +2007,9 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
             {
                 StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             }
+            // Remove explicit frames upto the current prestub frame
+            UnwindFrameChain(CURRENT_THREAD, (LPVOID)pPFrame);
+            // Pop the prestub frame so that the destructor on Unix won't try to pop it again.
             pPFrame->Pop(CURRENT_THREAD);
             EX_RETHROW;
         }
