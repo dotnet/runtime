@@ -162,14 +162,7 @@ namespace System.Text.Json.Nodes
         {
             List<JsonNode?> list = new(items.Length);
 
-#if NET
             list.AddRange(items);
-#else
-            foreach (JsonNode? item in items)
-            {
-                list.Add(item);
-            }
-#endif
 
             for (int i = 0; i < list.Count; i++)
             {
