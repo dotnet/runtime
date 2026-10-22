@@ -11,7 +11,6 @@ enum class CDacCodePointerFlags : uint8_t
 {
     None = 0,
     HasArm32ThumbBit = 0x1,
-    HasArm64PtrAuth = 0x2,
 };
 
 

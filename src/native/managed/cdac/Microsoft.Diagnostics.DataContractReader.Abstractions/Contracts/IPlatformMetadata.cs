@@ -8,7 +8,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public enum CodePointerFlags : byte
 {
     HasArm32ThumbBit = 0x1,
-    HasArm64PtrAuth = 0x2,
 }
 
 public interface IPlatformMetadata : IContract

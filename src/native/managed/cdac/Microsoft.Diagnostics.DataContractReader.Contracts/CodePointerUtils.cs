@@ -24,7 +24,7 @@ internal static class CodePointerUtils
         {
             return new TargetCodePointer(address.Value | Arm32ThumbBit);
         }
-        Debug.Assert((flags & ~CodePointerFlags.HasArm64PtrAuth) == 0);
+        Debug.Assert(flags == default);
         return new TargetCodePointer(address.Value);
     }
 
@@ -36,7 +36,7 @@ internal static class CodePointerUtils
         {
             return new TargetPointer(code.Value & ~Arm32ThumbBit);
         }
-        Debug.Assert((flags & ~CodePointerFlags.HasArm64PtrAuth) == 0);
+        Debug.Assert(flags == default);
         return new TargetPointer(code.Value);
     }
 

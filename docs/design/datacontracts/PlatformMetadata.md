@@ -9,17 +9,20 @@ This contract exposes properties that describe the target platform
     {
         // Set if the target process is executing on arm32
         HasArm32ThumbBit = 0x1,
-        // Set if arm64e pointer authentication is used in the target process
-        HasArm64PtrAuth = 0x2,
     }
     // Returns a pointer to a structure describing platform-specific precode stubs properties
     TargetPointer GetPrecodeMachineDescriptor();
 
     // Returns flags describing the behavior of code pointers
     CodePointerFlags GetCodePointerFlags();
+
+    // Returns bits to clear from pointer-authenticated return addresses
+    ulong GetPointerAuthenticationMask();
 ```
 
 ## Version 1
+
+`PointerAuthenticationMask` is optional; if absent, the mask is zero and return addresses are left unchanged.
 
 <!-- BEGIN GENERATED: usage contract=PlatformMetadata version=c1 -->
 ### Data descriptors used
