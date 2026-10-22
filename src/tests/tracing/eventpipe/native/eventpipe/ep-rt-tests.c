@@ -232,6 +232,15 @@ test_rt_teardown (void)
 	return NULL;
 }
 
+#ifdef TARGET_LINUX
+static RESULT
+test_rt_current_processor (void)
+{
+	return ep_rt_current_processor_get_number () != UINT32_MAX ?
+		NULL : FAILED ("Current processor number is unavailable");
+}
+#endif
+
 static Test ep_rt_tests [] = {
 	{"test_rt_setup", test_rt_setup},
 	{"test_rt_perf_frequency", test_rt_perf_frequency},
@@ -240,6 +249,9 @@ static Test ep_rt_tests [] = {
 	{"test_rt_system_timestamp", test_rt_system_timestamp},
 	{"test_rt_temp_path_get", test_rt_temp_path_get},
 	{"test_rt_spin_lock", test_rt_spin_lock},
+#ifdef TARGET_LINUX
+	{"test_rt_current_processor", test_rt_current_processor},
+#endif
 	{"test_rt_teardown", test_rt_teardown},
 	{NULL, NULL}
 };
