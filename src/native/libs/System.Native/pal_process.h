@@ -243,3 +243,15 @@ PALEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
  * resolving symbolic links. The caller is responsible for releasing the buffer.
  */
 PALEXPORT char* SystemNative_GetProcessPath(void);
+
+/**
+ * Returns the command line arguments of the current process as a NULL-terminated array of strings,
+ * or NULL if they cannot be obtained. The caller is responsible for releasing the buffer by calling
+ * SystemNative_FreeCommandLine.
+ */
+PALEXPORT char** SystemNative_GetCommandLine(int32_t* argc);
+
+/**
+ * Releases the command line buffer returned by SystemNative_GetCommandLine.
+ */
+PALEXPORT void SystemNative_FreeCommandLine(char** buffer);
