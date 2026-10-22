@@ -229,7 +229,7 @@ function libCoreRunFactory() {
             const sp = stackSave();
             try {
                 const ptrPtr = stackAlloc(4);
-                if (_posix_memalign(ptrPtr, 16, payloadSize)) {
+                if (_posix_memalign(ptrPtr, 128, payloadSize)) {
                     throw new Error("posix_memalign failed for Webcil payload");
                 }
                 if (typeof (wasmExports.__stack_pointer) === "undefined") {

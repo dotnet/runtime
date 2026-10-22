@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 
 using ILCompiler.ObjectWriter;
@@ -19,6 +20,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private Dictionary<(MethodWithGCInfo method, int funcletIdx), uint> _methodToVirtualIP;
         private readonly NodeFactory _nodeFactory;
         private int _tableSize = -1;
+        private const int WasmGroupSize = 128;
+        private const int WasmGroupEntryCount = 32;
+        private const uint WasmUnwindEscapeStart = 0xF0000;
+        private readonly List<WasmRuntimeFunction> _wasmRuntimeFunctions = new();
+        private readonly Dictionary<(MethodWithGCInfo, int), int> _wasmFrameIndices = new();
+
+        private readonly struct WasmRuntimeFunction
+        {
+            public WasmRuntimeFunction(uint virtualIP, uint unwindOffset, bool isFunclet, bool isSkip = false)
+            {
+                VirtualIP = virtualIP;
+                UnwindOffset = unwindOffset;
+                IsFunclet = isFunclet;
+                IsSkip = isSkip;
+            }
+
+            public readonly uint VirtualIP;
+            public readonly uint UnwindOffset;
+            public readonly bool IsFunclet;
+            public readonly bool IsSkip;
+        }
+
+        public int WasmSkipCount { get; private set; }
+        public int WasmAlignmentSkipCount { get; private set; }
+        public int WasmRuntimeFunctionCount => _wasmRuntimeFunctions.Count;
 
         public RuntimeFunctionsTableNode(NodeFactory nodeFactory)
         {
@@ -50,6 +76,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private void LayoutRuntimeFunctions()
         {
+            if (_nodeFactory.Target.IsWasm)
+            {
+                _nodeFactory.RuntimeFunctionsGCInfo.GetData(_nodeFactory, relocsOnly: false);
+            }
             _methodNodes = new List<MethodWithGCInfo>();
             _insertedMethodNodes = new Dictionary<MethodWithGCInfo, int>();
 
@@ -61,6 +91,96 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _insertedMethodNodes[method] = runtimeFunctionIndex;
                 runtimeFunctionIndex += method.FrameInfos.Length;
             }
+
+            if (_nodeFactory.Target.IsWasm)
+            {
+                LayoutWasmRuntimeFunctions();
+            }
+        }
+
+        private void LayoutWasmRuntimeFunctions()
+        {
+            _methodToVirtualIP = new();
+            uint virtualIP = 0;
+            uint groupBase = 0;
+            uint? unwindPrefix = null;
+            bool precedingIsFunclet = false;
+
+            foreach (MethodWithGCInfo method in _methodNodes)
+            {
+                Debug.Assert(method.ColdCodeNode is null);
+                int[] unwindOffsets = method.GCInfoNode.CalculateFuncletOffsets(_nodeFactory);
+                for (int frame = 0; frame < method.FrameInfos.Length; frame++)
+                {
+                    uint unwindOffset = checked((uint)unwindOffsets[frame]);
+                    int index = _wasmRuntimeFunctions.Count % WasmGroupEntryCount;
+                    if (index == 0)
+                    {
+                        groupBase = virtualIP;
+                        unwindPrefix = null;
+                    }
+
+                    bool escapes = unwindOffset >= WasmUnwindEscapeStart;
+                    long residual = (long)virtualIP - groupBase - index * 4;
+                    Debug.Assert(residual >= 0);
+                    if (residual < 0)
+                    {
+                        throw new InvalidOperationException("Wasm runtime functions must have at least four virtual IP units.");
+                    }
+                    if (residual >= byte.MaxValue ||
+                        (index == WasmGroupEntryCount - 1 && (escapes || unwindPrefix.HasValue)) ||
+                        (escapes && unwindPrefix.HasValue && unwindPrefix.Value != (unwindOffset >> 16)))
+                    {
+                        PadGroup();
+                        groupBase = virtualIP;
+                        unwindPrefix = null;
+                    }
+
+                    if (escapes)
+                    {
+                        unwindPrefix = unwindOffset >> 16;
+                    }
+
+                    int ordinal = _wasmRuntimeFunctions.Count;
+                    if (frame == 0)
+                    {
+                        _insertedMethodNodes[method] = ordinal;
+                    }
+                    _wasmFrameIndices.Add((method, frame), ordinal);
+                    _methodToVirtualIP.Add((method, frame), virtualIP);
+                    precedingIsFunclet = frame != 0;
+                    _wasmRuntimeFunctions.Add(new WasmRuntimeFunction(virtualIP, unwindOffset, precedingIsFunclet));
+                    virtualIP = checked(virtualIP + GetFunctionLocalVirtualIPCountFromUnwindBlob(method.FrameInfos[frame].BlobData));
+                }
+            }
+
+            int skipsBeforeFinalPadding = WasmSkipCount;
+            PadGroup();
+            WasmAlignmentSkipCount = WasmSkipCount - skipsBeforeFinalPadding;
+
+            void PadGroup()
+            {
+                while (_wasmRuntimeFunctions.Count % WasmGroupEntryCount != 0)
+                {
+                    _wasmRuntimeFunctions.Add(new WasmRuntimeFunction(0, 0, precedingIsFunclet, isSkip: true));
+                    WasmSkipCount++;
+                }
+            }
+        }
+
+        public int GetWasmPaddingAfter(MethodWithGCInfo method, int frame, out int ordinal)
+        {
+            GetIndex(method);
+            ordinal = _wasmFrameIndices[(method, frame)];
+            int next = ordinal + 1;
+            int count = 0;
+            while (next < _wasmRuntimeFunctions.Count && _wasmRuntimeFunctions[next].IsSkip)
+            {
+                count++;
+                next++;
+            }
+
+            return count;
         }
 
         public uint GetWasmVirtualIP(MethodWithGCInfo lookupMethod, int lookupFrameIndex)
@@ -78,30 +198,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return _methodToVirtualIP[(lookupMethod, lookupFrameIndex)];
             }
 
-            if (_methodNodes == null)
-            {
-                LayoutRuntimeFunctions();
-            }
-
-            Dictionary<(MethodWithGCInfo method, int funcletIdx), uint> methodToVirtualIP = new ();
-
-            // For WASM, track virtual IP index for each RUNTIME_FUNCTION entry
-            uint currentVirtualIP = 0;
-
-            foreach (MethodWithGCInfo method in _methodNodes)
-            {
-                for (int frameIndex = 0; frameIndex < method.FrameInfos.Length; frameIndex++)
-                {
-                    FrameInfo frameInfo = method.FrameInfos[frameIndex];
-                    methodToVirtualIP.Add((method, frameIndex), currentVirtualIP);
-
-                    // Advance the virtual IP by the number of virtual IPs for this frame
-                    uint virtualIPCount = GetFunctionLocalVirtualIPCountFromUnwindBlob(frameInfo.BlobData);
-                    currentVirtualIP += virtualIPCount;
-                }
-            }
-
-            _methodToVirtualIP = methodToVirtualIP;
+            LayoutRuntimeFunctions();
             return _methodToVirtualIP[(lookupMethod, lookupFrameIndex)];
         }
 
@@ -123,6 +220,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (_methodNodes == null)
                 LayoutRuntimeFunctions();
 
+            if (factory.Target.IsWasm)
+            {
+                return GetWasmData(factory);
+            }
+
             ObjectDataBuilder runtimeFunctionsBuilder = new ObjectDataBuilder(factory, relocsOnly);
             runtimeFunctionsBuilder.RequireInitialAlignment(4);
 
@@ -131,8 +233,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             uint runtimeFunctionIndex = 0;
             List<uint> mapping = new List<uint>();
-
-            bool isWasm = _nodeFactory.Target.Architecture == TargetArchitecture.Wasm32;
 
             for (int cold = 0; cold < 2; cold++)
             {
@@ -180,20 +280,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             symbol = method;
                         }
 
-                        if (isWasm)
+                        runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, frameInfo.StartOffset);
+                        if (!relocsOnly && _nodeFactory.Target.Architecture == TargetArchitecture.X64)
                         {
-                            // Set high bit for frame indices greater than 0 to indicate that the RUNTIME_FUNCTION is a funclet
-                            runtimeFunctionsBuilder.EmitUInt(GetWasmVirtualIP(method, frameIndex) | (frameIndex != 0 ? 0x80000000 : 0));
-                        }
-                        else
-                        {
-                            runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, frameInfo.StartOffset);
-                            if (!relocsOnly && _nodeFactory.Target.Architecture == TargetArchitecture.X64)
-                            {
-                                // On Amd64, the 2nd word contains the EndOffset of the runtime function
-                                Debug.Assert(frameInfo.StartOffset != frameInfo.EndOffset);
-                                runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.EndOffset);
-                            }
+                            // On Amd64, the 2nd word contains the EndOffset of the runtime function
+                            Debug.Assert(frameInfo.StartOffset != frameInfo.EndOffset);
+                            runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.EndOffset);
                         }
                         runtimeFunctionsBuilder.EmitReloc(factory.RuntimeFunctionsGCInfo, RelocType.IMAGE_REL_BASED_ADDR32NB, funcletOffsets[frameIndex]);
                         runtimeFunctionIndex++;
@@ -214,23 +306,63 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Emit sentinel entry
             runtimeFunctionsBuilder.EmitUInt(~0u);
 
-            if (isWasm)
-            {
-                // After sentinel, emit a WASM_TABLE_INDEX_I32 reloc pointing to the first
-                // compiled method. This records the min function table index in the file.
-                if (_methodNodes.Count > 0)
-                {
-                    runtimeFunctionsBuilder.EmitReloc(_methodNodes[0], RelocType.WASM_TABLE_INDEX_I32, delta: 0);
-                }
-                else
-                {
-                    // If there are no compiled methods, emit a 0 for the min table index.
-                    runtimeFunctionsBuilder.EmitUInt(0);
-                }
-            }
-
             _tableSize = runtimeFunctionsBuilder.CountBytes;
             return runtimeFunctionsBuilder.ToObjectData();
+        }
+
+        private ObjectData GetWasmData(NodeFactory factory)
+        {
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly: false);
+            builder.RequireInitialAlignment(WasmGroupSize);
+            builder.AddSymbol(this);
+
+            for (int start = 0; start < _wasmRuntimeFunctions.Count; start += WasmGroupEntryCount)
+            {
+                byte[] group = new byte[WasmGroupSize];
+                uint virtualIPBase = _wasmRuntimeFunctions[start].VirtualIP;
+                BinaryPrimitives.WriteUInt32LittleEndian(group, virtualIPBase);
+                uint funcletBits = 0;
+                for (int index = 0; index < WasmGroupEntryCount; index++)
+                {
+                    WasmRuntimeFunction function = _wasmRuntimeFunctions[start + index];
+                    group[4 + index] = function.IsSkip ? byte.MaxValue :
+                        checked((byte)(function.VirtualIP - virtualIPBase - (uint)index * 4));
+                    if (function.IsFunclet)
+                    {
+                        funcletBits |= 1u << index;
+                    }
+                    if (function.IsSkip)
+                    {
+                        continue;
+                    }
+
+                    uint high = function.UnwindOffset >> 16;
+                    if (function.UnwindOffset >= WasmUnwindEscapeStart)
+                    {
+                        Debug.Assert(_wasmRuntimeFunctions[start + WasmGroupEntryCount - 1].IsSkip);
+                        group[56 + WasmGroupEntryCount - 1] = (byte)(function.UnwindOffset >> 24);
+                        group[88 + WasmGroupEntryCount - 1] = (byte)(function.UnwindOffset >> 16);
+                        high = 0xF;
+                    }
+                    group[40 + index / 2] |= (byte)(high << ((index & 1) * 4));
+                    group[56 + index] = (byte)(function.UnwindOffset >> 8);
+                    group[88 + index] = (byte)function.UnwindOffset;
+                }
+                BinaryPrimitives.WriteUInt32LittleEndian(group.AsSpan(36), funcletBits);
+                builder.EmitBytes(group);
+            }
+
+            builder.EmitUInt(uint.MaxValue);
+            if (_methodNodes.Count != 0)
+            {
+                builder.EmitReloc(_methodNodes[0], RelocType.WASM_TABLE_INDEX_I32);
+            }
+            else
+            {
+                builder.EmitUInt(0);
+            }
+            _tableSize = builder.CountBytes;
+            return builder.ToObjectData();
         }
 
         /// <summary>

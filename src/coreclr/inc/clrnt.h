@@ -513,6 +513,8 @@ RtlVirtualUnwind(
 #endif // TARGET_RISCV64
 
 #ifdef TARGET_WASM
+#include "daccess.h"
+
 //
 // Define unwind information flags.
 //
@@ -524,7 +526,7 @@ RtlVirtualUnwind(
 PEXCEPTION_ROUTINE
 RtlVirtualUnwind (
     _In_ DWORD HandlerType,
-    _In_ DWORD ImageBase,
+    _In_ DWORD GCInfoBase,
     _In_ DWORD ControlPc,
     _In_ PRUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
@@ -538,16 +540,81 @@ UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData);
 ULONG
 RtlpGetFunctionEndAddress (
     _In_ PT_RUNTIME_FUNCTION FunctionEntry,
-    _In_ TADDR ImageBase
+    _In_ TADDR GCInfoBase
     );
 
-#define RUNTIME_FUNCTION__IsFunclet(FunctionEntry) ((FunctionEntry)->BeginAddress & 0x80000000)
-#define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress & 0x7FFFFFFF)
-#define RUNTIME_FUNCTION__SetBeginAddress(FunctionEntry,address)    ((FunctionEntry)->BeginAddress = (address))
+struct RUNTIME_FUNCTION_GROUP
+{
+    uint32_t VirtualIPBase;
+    uint8_t VirtualIPOffsets[32];
+    uint32_t IsFuncletBits;
+    uint8_t HighBitsOfUnwindOffset[16];
+    uint8_t MidBitsOfUnwindOffset[32];
+    uint8_t LowBitsOfUnwindOffset[32];
+    uint8_t Padding[8];
+};
 
-#define RUNTIME_FUNCTION__EndAddress(FunctionEntry, ImageBase)      (RtlpGetFunctionEndAddress(FunctionEntry, (ULONG64)(ImageBase)))
+static_assert(sizeof(RUNTIME_FUNCTION_GROUP) == 128);
+static_assert(offsetof(RUNTIME_FUNCTION_GROUP, IsFuncletBits) == 36);
+static_assert(offsetof(RUNTIME_FUNCTION_GROUP, HighBitsOfUnwindOffset) == 40);
+static_assert(offsetof(RUNTIME_FUNCTION_GROUP, MidBitsOfUnwindOffset) == 56);
+static_assert(offsetof(RUNTIME_FUNCTION_GROUP, LowBitsOfUnwindOffset) == 88);
+static_assert(sizeof(T_RUNTIME_FUNCTION) == 4);
 
-#define RUNTIME_FUNCTION__SetUnwindInfoAddress(prf,address)         do { (prf)->UnwindData = (address); } while (0)
+inline DPTR(RUNTIME_FUNCTION_GROUP) GetRUNTIME_FUNCTION_GROUP_AND_INDEX(
+    DPTR(T_RUNTIME_FUNCTION) function, uint32_t* index)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    TADDR address = dac_cast<TADDR>(function);
+    *index = static_cast<uint32_t>((address & 0x7F) >> 2);
+    return dac_cast<DPTR(RUNTIME_FUNCTION_GROUP)>(address & ~static_cast<TADDR>(0x7F));
+}
+
+inline bool RUNTIME_FUNCTION__Skip(DPTR(T_RUNTIME_FUNCTION) function)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    uint32_t index;
+    DPTR(RUNTIME_FUNCTION_GROUP) group = GetRUNTIME_FUNCTION_GROUP_AND_INDEX(function, &index);
+    return group->VirtualIPOffsets[index] == 0xFF;
+}
+
+inline bool RUNTIME_FUNCTION__IsFunclet(DPTR(T_RUNTIME_FUNCTION) function)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    uint32_t index;
+    DPTR(RUNTIME_FUNCTION_GROUP) group = GetRUNTIME_FUNCTION_GROUP_AND_INDEX(function, &index);
+    return (group->IsFuncletBits & (uint32_t(1) << index)) != 0;
+}
+
+inline uint32_t RUNTIME_FUNCTION__BeginAddress(DPTR(T_RUNTIME_FUNCTION) function)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    uint32_t index;
+    DPTR(RUNTIME_FUNCTION_GROUP) group = GetRUNTIME_FUNCTION_GROUP_AND_INDEX(function, &index);
+    _ASSERTE(group->VirtualIPOffsets[index] != 0xFF);
+    return group->VirtualIPBase + group->VirtualIPOffsets[index] + index * 4;
+}
+
+inline uint32_t RUNTIME_FUNCTION__GetUnwindDataOffset(DPTR(T_RUNTIME_FUNCTION) function)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    uint32_t index;
+    DPTR(RUNTIME_FUNCTION_GROUP) group = GetRUNTIME_FUNCTION_GROUP_AND_INDEX(function, &index);
+    _ASSERTE(group->VirtualIPOffsets[index] != 0xFF);
+    uint32_t high = (group->HighBitsOfUnwindOffset[index / 2] >> ((index & 1) * 4)) & 0xF;
+    uint32_t offset = (uint32_t(group->MidBitsOfUnwindOffset[index]) << 8) |
+        uint32_t(group->LowBitsOfUnwindOffset[index]);
+    if (high == 0xF)
+    {
+        _ASSERTE(index < 31 && group->VirtualIPOffsets[31] == 0xFF);
+        return (uint32_t(group->MidBitsOfUnwindOffset[31]) << 24) |
+            (uint32_t(group->LowBitsOfUnwindOffset[31]) << 16) | offset;
+    }
+
+    return (high << 16) | offset;
+}
+
+#define RUNTIME_FUNCTION__EndAddress(FunctionEntry, GCInfoBase)     (RtlpGetFunctionEndAddress(FunctionEntry, (TADDR)(GCInfoBase)))
 
 typedef struct _UNWIND_INFO {
     // dummy

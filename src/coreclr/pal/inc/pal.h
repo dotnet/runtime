@@ -2488,11 +2488,15 @@ enum {
 typedef IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 #else // HOST_ARM64
 typedef struct _RUNTIME_FUNCTION {
+#ifdef HOST_WASM
+    DWORD Opaque;
+#else // HOST_WASM
     DWORD BeginAddress;
 #ifdef HOST_AMD64
     DWORD EndAddress;
 #endif
     DWORD UnwindData;
+#endif // HOST_WASM
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 #endif // HOST_ARM64
 
