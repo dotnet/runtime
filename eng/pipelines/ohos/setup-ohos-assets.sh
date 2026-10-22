@@ -41,6 +41,7 @@ rm -f native-linux-x64-*.zip
 test -f "$OHOS_NDK_HOME/native/build/cmake/ohos.toolchain.cmake"
 
 NDK_BIN="$OHOS_NDK_HOME/native/llvm/bin"
+export PATH="$NDK_BIN:$PATH"
 SYSROOT="$OHOS_NDK_HOME/native/sysroot"
 TOOLCHAIN="$WORK/toolchain"
 mkdir -p "$TOOLCHAIN"
