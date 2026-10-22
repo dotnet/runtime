@@ -19,4 +19,7 @@
     <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
     <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>
