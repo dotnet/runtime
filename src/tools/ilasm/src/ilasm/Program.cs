@@ -248,20 +248,17 @@ internal sealed class Program
 
             // Report diagnostics
             bool hasErrors = false;
-            foreach (var diagnostic in diagnostics)
+            if (!errorTolerant)
             {
-                hasErrors |= diagnostic.Severity == DiagnosticSeverity.Error;
-                WriteDiagnostic(diagnostic, errorTolerant, Console.Out, Console.Error);
+                foreach (var diagnostic in diagnostics)
+                {
+                    hasErrors |= diagnostic.Severity == DiagnosticSeverity.Error;
+                    Console.WriteLine($"{diagnostic.Severity}: {diagnostic.Location}: {diagnostic.Message}");
+                }
             }
 
             // In error-tolerant mode, continue even with errors
-            if (compilationResult is null)
-            {
-                Console.Error.WriteLine("***** FAILURE *****");
-                return 1;
-            }
-
-            if (hasErrors && !errorTolerant)
+            if (compilationResult is null || hasErrors)
             {
                 Console.Error.WriteLine("***** FAILURE *****");
                 return 1;
@@ -309,24 +306,6 @@ internal sealed class Program
         }
 
         return exitCode;
-    }
-
-    internal static void WriteDiagnostic(Diagnostic diagnostic, bool errorTolerant, TextWriter output, TextWriter error)
-    {
-        if (errorTolerant)
-        {
-            // MSBuild treats error-prefixed output as a failure even when -ERR returns zero.
-            // When /warnaserror is specified, warning-prefixed output is also treated as an error.
-            error.WriteLine($"Note: {diagnostic.Location}: {diagnostic.Message}");
-        }
-        else if (diagnostic.Severity == DiagnosticSeverity.Error)
-        {
-            output.WriteLine($"Error: {diagnostic.Location}: {diagnostic.Message}");
-        }
-        else if (diagnostic.Severity == DiagnosticSeverity.Warning && !errorTolerant)
-        {
-            output.WriteLine($"Warning: {diagnostic.Location}: {diagnostic.Message}");
-        }
     }
 
     private T Get<T>(Argument<T> argument) => _result.GetValue(argument)!;

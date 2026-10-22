@@ -10,35 +10,6 @@ namespace ILAssembler.Tests;
 
 public class CommandLineTests
 {
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ErrorTolerantDiagnostics_DoNotReportBuildErrors(bool errorTolerant)
-    {
-        var diagnostic = new Diagnostic(
-            DiagnosticIds.InvalidExceptionRegion,
-            DiagnosticSeverity.Error,
-            "Invalid exception region",
-            new Location(new SourceSpan(0, 0), new SourceText("", "test.il")));
-        using StringWriter output = new();
-        using StringWriter error = new();
-
-        Program.WriteDiagnostic(diagnostic, errorTolerant, output, error);
-
-        if (errorTolerant)
-        {
-            Assert.Empty(error.ToString());
-            Assert.StartsWith("Warning: ", output.ToString());
-            Assert.Contains(diagnostic.Message, output.ToString());
-        }
-        else
-        {
-            Assert.Empty(output.ToString());
-            Assert.StartsWith("Error: ", error.ToString());
-            Assert.Contains(diagnostic.Message, error.ToString());
-        }
-    }
-
     [Fact]
     public void Pseudoattributes_ModernOptionIsOptIn()
     {
