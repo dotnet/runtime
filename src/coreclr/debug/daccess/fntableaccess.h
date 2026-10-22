@@ -98,7 +98,7 @@ class CheckDuplicatedStructLayouts
     static_assert(offsetof(HeapList, endAddress) == 0x18);
     static_assert(offsetof(HeapList, mapBase) == 0x20);
     static_assert(offsetof(HeapList, pHdrMap) == 0x28);
-    static_assert(offsetof(HeapList, CLRPersonalityRoutine) == 0x48);
+    static_assert(offsetof(HeapList, CLRPersonalityRoutine) == 0x40);
     static_assert(offsetof(RealCodeHeader, nUnwindInfos) == 0x20);
     static_assert(offsetof(RealCodeHeader, unwindInfos) == 0x24);
     static_assert(sizeof(CodeHeader) == sizeof(uint64_t));
