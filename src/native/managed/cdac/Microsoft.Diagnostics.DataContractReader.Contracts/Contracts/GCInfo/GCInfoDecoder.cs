@@ -205,9 +205,13 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private GcSlotFlags ReadSlotFlags(GcSlotFlags previousFlags, bool first)
     {
-        return first || previousFlags != 0
+        GcSlotFlags flagsXor = TTraits.USES_COMPACT_WASM_HEADER ? GcSlotFlags.GC_SLOT_PINNED : 0;
+        previousFlags ^= flagsXor;
+        GcSlotFlags flags = first || previousFlags != 0
             ? (GcSlotFlags)_reader.ReadBits(first || (previousFlags & GcSlotFlags.GC_SLOT_PINNED) != 0 ? 2 : 1, ref _bitOffset)
             : 0;
+
+        return flags ^ flagsXor;
     }
 
     private IEnumerable<DecodePoints> DecodeSlotTable()

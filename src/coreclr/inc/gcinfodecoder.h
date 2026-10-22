@@ -522,9 +522,12 @@ private:
 
     static GcSlotFlags ReadSlotFlags(BitStreamReader& reader, GcSlotFlags previousFlags, bool first)
     {
-        return first || previousFlags != GC_SLOT_BASE
+        constexpr int flagsXor = GcInfoEncoding::USES_COMPACT_WASM_HEADER ? GC_SLOT_PINNED : GC_SLOT_BASE;
+        previousFlags = static_cast<GcSlotFlags>(previousFlags ^ flagsXor);
+        GcSlotFlags flags = first || previousFlags != GC_SLOT_BASE
             ? static_cast<GcSlotFlags>(reader.Read(first || (previousFlags & GC_SLOT_PINNED) != 0 ? 2 : 1))
             : GC_SLOT_BASE;
+        return static_cast<GcSlotFlags>(flags ^ flagsXor);
     }
 
     UINT32 ReadRegisterSlot(BitStreamReader& reader, GcSlotFlags& flags, UINT32 previousRegister, bool first)

@@ -168,11 +168,15 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             return value;
         }
 
-        private static GcSlotFlags ReadSlotFlags(NativeReader imageReader, GcSlotFlags previousFlags, bool first, ref int bitOffset)
+        private GcSlotFlags ReadSlotFlags(NativeReader imageReader, GcSlotFlags previousFlags, bool first, ref int bitOffset)
         {
-            return first || previousFlags != 0
+            GcSlotFlags flagsXor = _machine == WasmMachine.Wasm32 ? GcSlotFlags.GC_SLOT_PINNED : 0;
+            previousFlags ^= flagsXor;
+            GcSlotFlags flags = first || previousFlags != 0
                 ? (GcSlotFlags)imageReader.ReadBits(first || (previousFlags & GcSlotFlags.GC_SLOT_PINNED) != 0 ? 2 : 1, ref bitOffset)
                 : 0;
+
+            return flags ^ flagsXor;
         }
 
         private void DecodeRegisters(NativeReader imageReader, GcInfoTypes gcInfoTypes, ref int bitOffset, int version)

@@ -21,21 +21,44 @@ public class GCInfoTests
     [InlineData(RuntimeInfoArchitecture.RiscV64, false, new byte[] { 0x0A, 0x00, 0xA1, 0x36, 0xC4, 0x71, 0x42, 0x18, 0x17, 0xC4, 0x38, 0x10, 0x71 })]
     [InlineData(RuntimeInfoArchitecture.Wasm, false, new byte[] { 0x84, 0x00, 0xC2, 0x78, 0x87, 0x78, 0x46, 0x78, 0x03, 0x5E, 0x00 })]
     [InlineData(RuntimeInfoArchitecture.X64, true, new byte[] { 0x0A, 0x40, 0xA8, 0x0D, 0x71, 0x9C, 0x10, 0xC6, 0x05, 0x31, 0x0E, 0x44, 0x1C })]
+    [InlineData(RuntimeInfoArchitecture.Wasm, true, new byte[] { 0x0A, 0x40, 0xA8, 0x0D, 0x71, 0x9C, 0x10, 0xC6, 0x05, 0x31, 0x0E, 0x44, 0x1C })]
     public void StackSlotsUseFlagsThenBaseThenOffset(RuntimeInfoArchitecture architecture, bool interpreter, byte[] encoded)
     {
         IGCInfoDecoder decoder = CreateDecoder(architecture, interpreter, encoded, 6);
         IReadOnlyList<GCSlotLifetime> slots = decoder.GetSlotLifetimes();
         Assert.Equal(8, slots.Count);
+        bool wasm = architecture == RuntimeInfoArchitecture.Wasm && !interpreter;
         int slotSize = interpreter ? 1 : architecture is RuntimeInfoArchitecture.Arm or RuntimeInfoArchitecture.Wasm ? 4 : 8;
         for (int i = 0; i < slots.Count; i++)
         {
             Assert.False(slots[i].IsRegister);
-            int offset = architecture == RuntimeInfoArchitecture.Wasm ? -8 + i % 2 : i % 2 == 0 ? 8 : -8;
+            int offset = wasm ? -8 + i % 2 : i % 2 == 0 ? 8 : -8;
             Assert.Equal(offset * slotSize, slots[i].SpOffset);
-            Assert.Equal(architecture == RuntimeInfoArchitecture.Wasm ? 2u : (uint)(1 + i % 2), slots[i].BaseRegister);
-            Assert.Equal((uint)(3 - i / 2) | 4u, slots[i].GcFlags);
+            Assert.Equal(wasm ? 2u : (uint)(1 + i % 2), slots[i].BaseRegister);
+            uint flags = (uint)(3 - i / 2) ^ (wasm ? 2u : 0u);
+            Assert.Equal(flags | 4u, slots[i].GcFlags);
             Assert.Equal(0u, slots[i].BeginOffset);
             Assert.Equal(decoder.GetCodeLength(), slots[i].EndOffset);
+        }
+    }
+
+    [Theory]
+    [InlineData(1, new byte[] { 0x84, 0x40, 0x00, 0x78 })]
+    [InlineData(2, new byte[] { 0x84, 0x80, 0x00, 0x78, 0x01 })]
+    [InlineData(3, new byte[] { 0x84, 0xC0, 0x00, 0x78, 0x11 })]
+    public void WasmPinnedObjectRunsOmitRepeatedFlags(int count, byte[] encoded)
+    {
+        IGCInfoDecoder decoder = CreateDecoder(RuntimeInfoArchitecture.Wasm, false, encoded, 6);
+        IReadOnlyList<GCSlotLifetime> slots = decoder.GetSlotLifetimes();
+        Assert.Equal(count, slots.Count);
+        for (int i = 0; i < slots.Count; i++)
+        {
+            Assert.False(slots[i].IsRegister);
+            Assert.Equal(6u, slots[i].GcFlags);
+            Assert.Equal(4 * (-8 + i), slots[i].SpOffset);
+            Assert.Equal(2u, slots[i].BaseRegister);
+            Assert.Equal(0u, slots[i].BeginOffset);
+            Assert.Equal(2u, slots[i].EndOffset);
         }
     }
 

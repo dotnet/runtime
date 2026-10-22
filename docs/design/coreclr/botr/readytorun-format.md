@@ -489,7 +489,7 @@ IPs or PortableEntryPoint structures.
 
 ### GC info
 
-ReadyToRun format 33.0 uses GCInfo v6. On every platform using the shared GCInfo encoding,
+ReadyToRun format 33.0 uses GCInfo v6. On non-Wasm platforms using the shared GCInfo encoding,
 tracked and untracked stack slots are each sorted in descending flag order:
 pinned interior pointers, pinned object references, interior pointers, then ordinary object
 references.
@@ -532,7 +532,13 @@ frame-relative, with offsets stored in 4-byte pointer units. Both header forms i
 normalized zero for the default frame register: neither its presence bit nor its register
 number is encoded. Fat headers therefore contain nine flag bits instead of ten. The prolog
 size is also implicit at one virtual-IP unit; its encoded size-minus-one field is omitted.
-Stack slot flags use the platform-independent shrinking bits described above.
+Wasm XORs the pinned flag (`0x2`) before sorting and encoding stack slot flags. The descending
+encoded order is therefore interior pointers (`11`), ordinary object references (`10`),
+pinned interior pointers (`01`), then pinned object references (`00`). Pinned object references
+are the most common Wasm roots. The first slot carries two flag bits; subsequent slots carry
+two bits after an unpinned slot, one bit after a pinned interior pointer, and no flag bits after
+a pinned object reference. Decoders XOR `0x2` back to recover the semantic flags.
+Offset grouping and tracked/untracked state resets are unchanged.
 
 Wasm slim headers imply zero safe points and omit the count. Methods with nonzero safe-point
 counts must use fat headers, which retain the count and safe-point data. Non-Wasm slim headers

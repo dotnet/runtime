@@ -780,6 +780,7 @@ struct GcSlotDescAndId
     UINT32 m_SlotId;
 };
 
+template <typename GcInfoEncoding>
 struct CompareSlotDescAndIdBySlotDesc
 {
     bool operator()(const GcSlotDescAndId& first, const GcSlotDescAndId& second)
@@ -787,14 +788,17 @@ struct CompareSlotDescAndIdBySlotDesc
         const GcSlotDesc* pFirst = &first.m_SlotDesc;
         const GcSlotDesc* pSecond = &second.m_SlotDesc;
 
-        int firstFlags = pFirst->Flags ^ GC_SLOT_UNTRACKED;
-        int secondFlags = pSecond->Flags ^ GC_SLOT_UNTRACKED;
+        constexpr int flagsXor = GC_SLOT_UNTRACKED |
+            (GcInfoEncoding::USES_COMPACT_WASM_HEADER ? GC_SLOT_PINNED : GC_SLOT_BASE);
+        int firstFlags = pFirst->Flags ^ flagsXor;
+        int secondFlags = pSecond->Flags ^ flagsXor;
 
         // All registers come before all stack slots
         // All untracked come last
         // Then sort them by flags, ensuring that the least-frequent interior/pinned flag combinations are first
         // This is accomplished in the comparison of flags, since we encode IsRegister in the highest flag bit
         // And we XOR the UNTRACKED flag to place them last in the second highest flag bit
+        // Wasm also inverts PINNED so its common pinned object roots come last.
         if( firstFlags != secondFlags )
             return firstFlags > secondFlags;
 
@@ -1253,7 +1257,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             sortedSlots[i].m_SlotId = i;
         }
 
-        jitstd::sort(sortedSlots, sortedSlots + m_NumSlots, CompareSlotDescAndIdBySlotDesc());
+        jitstd::sort(sortedSlots, sortedSlots + m_NumSlots, CompareSlotDescAndIdBySlotDesc<GcInfoEncoding>());
 
         for(UINT32 i = 0; i < m_NumSlots; i++)
         {
@@ -1566,6 +1570,10 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             _ASSERTE((slot.IsUntracked() != FALSE) == (section != 0));
 
             GcSlotFlags flags = static_cast<GcSlotFlags>(slot.Flags & (GC_SLOT_INTERIOR | GC_SLOT_PINNED));
+            if constexpr (GcInfoEncoding::USES_COMPACT_WASM_HEADER)
+            {
+                flags = static_cast<GcSlotFlags>(flags ^ GC_SLOT_PINNED);
+            }
             if (i == 0 || previousFlags != GC_SLOT_BASE)
             {
                 m_Info1.Write(flags, i == 0 || (previousFlags & GC_SLOT_PINNED) != 0 ? 2 : 1);

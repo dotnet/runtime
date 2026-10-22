@@ -151,8 +151,9 @@ public class GcInfoDecoderTests
         Assert.Equal((writer.BitCount + 7) / 8, info.Size);
 
         int slotIndex = 0;
-        for (int flags = 3; flags >= 0; flags--)
+        for (int encodedFlags = 3; encodedFlags >= 0; encodedFlags--)
         {
+            int flags = encodedFlags ^ (machine == WasmMachine.Wasm32 ? 2 : 0);
             for (int i = 0; i < counts[flags]; i++)
             {
                 GcSlotTable.GcSlot slot = info.SlotTable.GcSlots[slotIndex++];
@@ -161,6 +162,33 @@ public class GcInfoDecoderTests
                 Assert.Equal((GcSlotFlags)flags | (tracked ? 0 : GcSlotFlags.GC_SLOT_UNTRACKED), slot.Flags);
             }
         }
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(32)]
+    [InlineData(65)]
+    public void WasmPinnedObjectRunsOmitRepeatedFlags(int count)
+    {
+        SlotTableWriter writer = new(WasmMachine.Wasm32);
+        writer.WriteCounts(0, count);
+        writer.WriteStackSlots([0, 0, count, 0]);
+        Assert.Equal(28 + 4 * count, writer.BitCount);
+
+        using MemoryStream stream = new(writer.ToArray());
+        GcInfo info = new(new NativeReader(stream), 0, WasmMachine.Wasm32, 6);
+        Assert.Equal((uint)count, info.SlotTable.NumUntracked);
+        Assert.Equal(count, info.SlotTable.GcSlots.Count);
+        for (int i = 0; i < count; i++)
+        {
+            GcSlotTable.GcSlot slot = info.SlotTable.GcSlots[i];
+            Assert.Equal(GcSlotFlags.GC_SLOT_PINNED | GcSlotFlags.GC_SLOT_UNTRACKED, slot.Flags);
+            Assert.Equal(4 * (-8 + i), slot.StackSlot.SpOffset);
+            Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, slot.StackSlot.Base);
+        }
+        Assert.Equal((writer.BitCount + 7) / 8, info.Size);
     }
 
     [Theory]
@@ -194,14 +222,22 @@ public class GcInfoDecoderTests
     }
 
     [Theory]
-    [InlineData(Machine.Amd64)]
-    [InlineData(WasmMachine.Wasm32)]
-    public void StackSlotFlagsAndBasesResetAtTrackedUntrackedBoundary(Machine machine)
+    [InlineData(Machine.Amd64, 0)]
+    [InlineData(Machine.Amd64, 1)]
+    [InlineData(Machine.Amd64, 2)]
+    [InlineData(Machine.Amd64, 3)]
+    [InlineData(WasmMachine.Wasm32, 0)]
+    [InlineData(WasmMachine.Wasm32, 1)]
+    [InlineData(WasmMachine.Wasm32, 2)]
+    [InlineData(WasmMachine.Wasm32, 3)]
+    public void StackSlotFlagsAndBasesResetAtTrackedUntrackedBoundary(Machine machine, int flags)
     {
         SlotTableWriter writer = new(machine);
         writer.WriteCounts(2, 2);
-        writer.WriteStackSlots([0, 2, 0, 0]);
-        writer.WriteStackSlots([0, 2, 0, 0]);
+        int[] counts = new int[4];
+        counts[flags] = 2;
+        writer.WriteStackSlots(counts);
+        writer.WriteStackSlots(counts);
         writer.WriteUnsigned(0, 3);
 
         using MemoryStream stream = new(writer.ToArray());
@@ -211,7 +247,7 @@ public class GcInfoDecoderTests
         {
             Assert.Equal(writer.DenormalizeOffset(writer.GetStackOffset(i % 2, 2)), info.SlotTable.GcSlots[i].StackSlot.SpOffset);
             Assert.Equal(writer.GetStackBase(i % 2, 2), info.SlotTable.GcSlots[i].StackSlot.Base);
-            Assert.Equal(GcSlotFlags.GC_SLOT_INTERIOR | (i < 2 ? 0 : GcSlotFlags.GC_SLOT_UNTRACKED), info.SlotTable.GcSlots[i].Flags);
+            Assert.Equal((GcSlotFlags)flags | (i < 2 ? 0 : GcSlotFlags.GC_SLOT_UNTRACKED), info.SlotTable.GcSlots[i].Flags);
         }
         Assert.Equal((writer.BitCount + 7) / 8, info.Size);
     }
@@ -464,22 +500,23 @@ public class GcInfoDecoderTests
             int previousFlags = -1;
             GcStackSlotBase previousBase = GcStackSlotBase.GC_FRAMEREG_REL;
             int previousOffset = 0;
-            for (int flags = 3; flags >= 0; flags--)
+            for (int encodedFlags = 3; encodedFlags >= 0; encodedFlags--)
             {
+                int flags = encodedFlags ^ (_machine == WasmMachine.Wasm32 ? 2 : 0);
                 int count = counts[flags];
                 for (int i = 0; i < count; i++)
                 {
                     if (previousFlags != 0)
-                        Write(flags, previousFlags < 0 || (previousFlags & 2) != 0 ? 2 : 1);
+                        Write(encodedFlags, previousFlags < 0 || (previousFlags & 2) != 0 ? 2 : 1);
                     GcStackSlotBase slotBase = GetStackBase(i, count);
                     if (_machine != WasmMachine.Wasm32)
                         Write(slotBase == GcStackSlotBase.GC_FRAMEREG_REL ? 1 : 0, 1);
                     int offset = offsets is null ? GetStackOffset(i, count) : offsets[i];
-                    if (flags != previousFlags || slotBase != previousBase)
+                    if (encodedFlags != previousFlags || slotBase != previousBase)
                         WriteSigned(offset, _machine == WasmMachine.Wasm32 ? 3 : 6);
                     else
                         WriteUnsigned(offset - previousOffset, _machine == WasmMachine.Wasm32 ? 3 : 4);
-                    previousFlags = flags;
+                    previousFlags = encodedFlags;
                     previousBase = slotBase;
                     previousOffset = offset;
                 }

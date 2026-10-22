@@ -14,6 +14,11 @@ implicitly using normalized register zero (physical register 2). The prolog-size
 field is omitted and its normalized prolog size is implicitly one when needed for
 GS-cookie or generic-context validity. Slim headers imply zero safe points and omit the
 count; nonzero safe-point counts require fat headers and remain explicitly encoded.
+Wasm stack-slot flags are sorted and encoded after XOR with the pinned bit (`0x2`):
+interior, ordinary object, pinned interior, then pinned object. The first slot has two
+flag bits; later slots have two after an unpinned root, one after a pinned interior root,
+and none after a pinned object root. Decoding restores the semantic pinned bit with
+the same XOR. Tracked and untracked sections reset their flag and offset state independently.
 `DecodeInterpreterGCInfo` uses the separate interpreter traits even on
 WebAssembly, including its code-length encoding base of 8 and its
 interruptible-range count field.
