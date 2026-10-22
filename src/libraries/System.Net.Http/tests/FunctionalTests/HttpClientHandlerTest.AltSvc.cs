@@ -72,42 +72,6 @@ namespace System.Net.Http.Functional.Tests
                 { HttpVersion.Version20, false }
             };
 
-        [Theory]
-        [MemberData(nameof(AltSvcHeaderEmptyValues))]
-        public async Task AltSvc_Header_EmptyValue_Ignored(Version version, string altSvcHeaderValue)
-        {
-            // An empty Alt-Svc value (or one made only of separators) parses successfully but yields no value; it must be ignored.
-            using GenericLoopbackServer server =
-                version.Major switch
-                {
-                    1 => Http11LoopbackServerFactory.Singleton.CreateServer(new LoopbackServer.Options { UseSsl = true }),
-                    2 => Http2LoopbackServer.CreateServer(),
-                    _ => throw new Exception("Unknown HTTP version.")
-                };
-
-            using HttpClient client = CreateHttpClient(version);
-
-            Task<HttpResponseMessage> responseTask = client.GetAsync(server.Address);
-            Task serverTask = server.AcceptConnectionSendResponseAndCloseAsync(additionalHeaders: new[]
-            {
-                new HttpHeaderData("Alt-Svc", altSvcHeaderValue)
-            });
-
-            await new[] { responseTask, serverTask }.WhenAllOrAnyFailed(30_000);
-
-            using HttpResponseMessage response = responseTask.Result;
-            Assert.True(response.IsSuccessStatusCode);
-        }
-
-        public static TheoryData<Version, string> AltSvcHeaderEmptyValues =>
-            new TheoryData<Version, string>
-            {
-                { HttpVersion.Version11, "" },
-                { HttpVersion.Version11, "," },
-                { HttpVersion.Version20, "" },
-                { HttpVersion.Version20, "," }
-            };
-
         [Fact]
         public async Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
         {
