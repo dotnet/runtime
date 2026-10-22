@@ -1,0 +1,2 @@
+P3.4 with the scheduler of /mnt/c/Users/KONRAD~1/AppData/Local/Temp/p25base: 5 failures in 30 runs
+P3.4 with the scheduler of /root/p25/main/src/coreclr/gc: 6 failures in 30 runs

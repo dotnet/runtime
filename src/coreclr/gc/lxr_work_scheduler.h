@@ -65,6 +65,8 @@ struct LxrWorkSchedulerMetrics
     uint64_t deferredExecuted;
     uint64_t deferredFlips;
     uint64_t deferredEmptyFlips;
+    // P25 (F4). Number of times the scheduler woke sleeping threads (one per notify call).
+    uint64_t signals;
 #ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
     uint64_t completionRegistrations;
     uint64_t completionCompletions;
@@ -112,6 +114,9 @@ public:
 #endif
         );
     LxrWorkSchedulerResult Shutdown();
+    // P25 (F4). The most workers that may run the packets of the concurrent trace stages while the program runs (1 to the
+    // number of workers). The other workers still run all other packets. The default is every worker.
+    LxrWorkSchedulerResult ConfigureConcurrentTraceWorkers(size_t limit);
 
     LxrWorkSchedulerResult Submit(
         LxrWorkPacket* packet,

@@ -371,8 +371,8 @@ namespace
             scheduler.Submit(prepare.get()) == LxrWorkSchedulerResult::Success,
             "submit later prepare");
         success &= Check(
-            WaitForParks(scheduler, parksBeforeSubmissions + 4),
-            "workers repark after closed-stage submissions");
+            WaitForParks(scheduler, parksBeforeSubmissions + 1),
+            "a worker wakes for a closed-stage submission and reparks (P25 F4: a submission wakes one worker, not all four)");
         uint64_t parksBeforeCycle = scheduler.GetMetrics().parks;
         success &= Check(
             scheduler.BeginStwCycle() == LxrWorkSchedulerResult::Success,

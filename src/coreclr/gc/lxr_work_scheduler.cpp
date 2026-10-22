@@ -326,7 +326,7 @@ public:
                     }
                 }
             }
-            condition.notify_all();
+            NotifyAllLocked();
         }
 
 #ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
@@ -433,6 +433,20 @@ public:
         return stage == LxrWorkBucketStage::Unconstrained || stage == currentStwStage;
     }
 
+    // P25 (F4). Eligible, and not a trace packet beyond the limit of concurrent trace workers.
+    bool IsRunnableLocked(LxrWorkBucketStage stage) const
+    {
+        if (!IsEligibleLocked(stage))
+        {
+            return false;
+        }
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NO_CONC_LIMIT_CONTROL)
+        return true;
+#else
+        return !(IsTraceStage(stage) && !cycleActive && concurrentTraceRunning >= concurrentTraceLimit);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4_NO_CONC_LIMIT_CONTROL
+    }
+
     LxrWorkPacket* TakeLocalLocked(size_t workerIndex, bool fromBack)
     {
         std::deque<LxrWorkPacket*>& local = workers[workerIndex].local;
@@ -443,7 +457,7 @@ public:
                 iterator != local.rend();
                 iterator++)
             {
-                if (IsEligibleLocked((*iterator)->GetStage()))
+                if (IsRunnableLocked((*iterator)->GetStage()))
                 {
                     LxrWorkPacket* packet = *iterator;
                     local.erase(std::next(iterator).base());
@@ -458,7 +472,7 @@ public:
                 iterator != local.end();
                 iterator++)
             {
-                if (IsEligibleLocked((*iterator)->GetStage()))
+                if (IsRunnableLocked((*iterator)->GetStage()))
                 {
                     LxrWorkPacket* packet = *iterator;
                     local.erase(iterator);
@@ -476,7 +490,7 @@ public:
         {
             LxrWorkBucketStage stage = static_cast<LxrWorkBucketStage>(stageIndex);
             Bucket& bucket = buckets[stageIndex];
-            if (!IsEligibleLocked(stage))
+            if (!IsRunnableLocked(stage))
             {
                 continue;
             }
@@ -583,6 +597,14 @@ public:
             stolen++;
         }
         buckets[StageIndex(packet->GetStage())].executing++;
+        if (!packet->IsDeferred() && queuedPackets != 0)
+        {
+            queuedPackets--;
+        }
+        if (IsTraceStage(packet->GetStage()))
+        {
+            concurrentTraceRunning++;
+        }
         return true;
     }
 
@@ -710,12 +732,12 @@ public:
                 {
                     cycleActive = false;
                     cycleCompleted = true;
-                    condition.notify_all();
+                    NotifyAllLocked();
                     break;
                 }
                 cycleActive = false;
                 cycleCompleted = true;
-                condition.notify_all();
+                NotifyAllLocked();
                 break;
             }
 
@@ -742,6 +764,11 @@ public:
             if (worker.parked)
             {
                 worker.parked = false;
+                parkedWorkers--;
+                if (wakeupsInFlight != 0)
+                {
+                    wakeupsInFlight--;
+                }
                 wakes++;
             }
 
@@ -758,6 +785,10 @@ public:
 
                 Bucket& bucket = buckets[StageIndex(packet->GetStage())];
                 bucket.executing--;
+                if (IsTraceStage(packet->GetStage()))
+                {
+                    concurrentTraceRunning--;
+                }
                 if (packet->TryTransition(
                     LxrWorkPacketState::Executing,
                     LxrWorkPacketState::Completed))
@@ -788,20 +819,44 @@ public:
                     completionFailure = true;
                 }
 #endif
-                condition.notify_all();
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NOTIFY_ALL_CONTROL)
+                NotifyAllLocked();
+#else
+                // P25 (F4). A completed packet wakes only the threads that wait for the scheduler, and only if there are any.
+                // A worker finds the next packet by itself; the last worker that parks opens the next stage.
+                if (externalWaiters != 0)
+                {
+                    condition.notify_all();
+                }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4_NOTIFY_ALL_CONTROL
                 continue;
             }
 
             worker.parked = true;
+            parkedWorkers++;
             parks++;
             bool openedWork = AdvanceBucketsLocked();
             if (openedWork)
             {
-                condition.notify_all();
+                // P25 (F4). A stage opened: wake as many workers as the stage has packets, not all of them.
+                size_t packets = static_cast<size_t>(buckets[StageIndex(currentStwStage)].outstanding);
+                if (packets >= parkedWorkers)
+                {
+                    NotifyAllLocked();
+                }
+                else
+                {
+                    for (size_t index = 0; index < packets; index++)
+                    {
+                        signals++;
+                        wakeupsInFlight++;
+                        workCondition.notify_one();
+                    }
+                }
                 continue;
             }
 
-            condition.wait(guard);
+            workCondition.wait(guard);
         }
     }
 
@@ -809,6 +864,58 @@ public:
     std::vector<Worker> workers;
     mutable std::mutex lock;
     std::condition_variable condition;
+    // P25 (F4). Idle workers sleep on their own condition variable, so that a packet wakes one worker and a packet that
+    // completes wakes nobody. The condition variable above is for the threads that wait for the scheduler (WaitFor...).
+    std::condition_variable workCondition;
+    size_t parkedWorkers = 0;
+    // Workers that a submit has woken and that have not run yet, and packets that wait in a queue (not deferred ones).
+    size_t wakeupsInFlight = 0;
+    size_t queuedPackets = 0;
+    size_t externalWaiters = 0;
+    uint64_t signals = 0;
+    // P25 (F4). At most this many workers run the packets of the concurrent trace while the program runs. The Java LXR
+    // uses ConcGCThreads of its ParallelGCThreads workers for the concurrent trace. Default: all workers.
+    size_t concurrentTraceLimit = SIZE_MAX;
+    size_t concurrentTraceRunning = 0;
+
+    static bool IsTraceStage(LxrWorkBucketStage stage)
+    {
+        return stage == LxrWorkBucketStage::Concurrent || stage == LxrWorkBucketStage::ConcurrentResumable;
+    }
+
+    // Wakes every worker and every waiting thread. For changes of state: a stage opens or closes, a pause starts, shutdown.
+    void NotifyAllLocked()
+    {
+        signals++;
+        condition.notify_all();
+        workCondition.notify_all();
+    }
+
+    // Wakes one idle worker for one new packet, but only if the workers that are on their way (woken, not yet running) do
+    // not already cover the packets that wait. This is "wake as many workers as there is work".
+    void NotifyNewPacketLocked()
+    {
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NOTIFY_ALL_CONTROL)
+        // Control: the behaviour before P25 (F4). Every packet wakes everybody.
+        NotifyAllLocked();
+#else
+        if (parkedWorkers > wakeupsInFlight && queuedPackets > wakeupsInFlight)
+        {
+            signals++;
+            wakeupsInFlight++;
+            workCondition.notify_one();
+        }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4_NOTIFY_ALL_CONTROL
+    }
+
+    template <typename Predicate>
+    bool WaitFor(std::unique_lock<std::mutex>& guard, std::chrono::milliseconds timeout, Predicate predicate)
+    {
+        externalWaiters++;
+        bool result = condition.wait_for(guard, timeout, predicate);
+        externalWaiters--;
+        return result;
+    }
     bool shuttingDown;
     bool cycleActive;
     bool cycleCompleted;
@@ -929,6 +1036,21 @@ LxrWorkSchedulerResult LxrWorkScheduler::Shutdown()
     return LxrWorkSchedulerResult::Success;
 }
 
+LxrWorkSchedulerResult LxrWorkScheduler::ConfigureConcurrentTraceWorkers(size_t limit)
+{
+    if (m_impl == nullptr)
+    {
+        return LxrWorkSchedulerResult::NotInitialized;
+    }
+    std::lock_guard<std::mutex> guard(m_impl->lock);
+    if (limit == 0 || limit > m_impl->workers.size())
+    {
+        return LxrWorkSchedulerResult::InvalidArgument;
+    }
+    m_impl->concurrentTraceLimit = limit;
+    return LxrWorkSchedulerResult::Success;
+}
+
 LxrWorkSchedulerResult LxrWorkScheduler::Submit(
     LxrWorkPacket* packet,
     size_t preferredWorker)
@@ -1019,7 +1141,8 @@ LxrWorkSchedulerResult LxrWorkScheduler::Submit(
         bucket.queue.push_back(packet);
     }
 
-    m_impl->condition.notify_all();
+    m_impl->queuedPackets++;
+    m_impl->NotifyNewPacketLocked();
     return LxrWorkSchedulerResult::Success;
 }
 
@@ -1232,7 +1355,8 @@ LxrWorkSchedulerResult LxrWorkScheduler::SubmitTracked(
     bucket.outstanding++;
     m_impl->submitted++;
     bucket.queue.push_back(packet);
-    m_impl->condition.notify_all();
+    m_impl->queuedPackets++;
+    m_impl->NotifyNewPacketLocked();
     return LxrWorkSchedulerResult::Success;
 }
 
@@ -1461,7 +1585,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::EnableConcurrentStage(LxrWorkBucketStag
     bucket.enabled = true;
     bucket.accepting = true;
     bucket.state = BucketState::Open;
-    m_impl->condition.notify_all();
+    m_impl->NotifyAllLocked();
     return LxrWorkSchedulerResult::Success;
 }
 
@@ -1497,10 +1621,10 @@ LxrWorkSchedulerResult LxrWorkScheduler::InterruptConcurrentWork(uint32_t timeou
         resumable.enabled = false;
         resumable.state = BucketState::Closed;
         m_impl->interruptionRequested = true;
-        m_impl->condition.notify_all();
+        m_impl->NotifyAllLocked();
     }
 
-    bool ready = m_impl->condition.wait_for(
+    bool ready = m_impl->WaitFor(
         guard,
         std::chrono::milliseconds(timeoutMilliseconds),
         [this]()
@@ -1552,7 +1676,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::CancelConcurrentInterruption()
     }
     m_impl->interruptionRequested = false;
     m_impl->concurrentInterrupted = false;
-    m_impl->condition.notify_all();
+    m_impl->NotifyAllLocked();
     return LxrWorkSchedulerResult::Success;
 }
 
@@ -1603,7 +1727,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::BeginStwCycle()
     Impl::Bucket& first = m_impl->buckets[FirstStwIndex];
     first.state = BucketState::Open;
     m_impl->RecordOpenLocked(LxrFirstStwStage);
-    m_impl->condition.notify_all();
+    m_impl->NotifyAllLocked();
     return LxrWorkSchedulerResult::Success;
 }
 
@@ -1638,7 +1762,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::ResumeConcurrentWork()
         bucket.accepting = true;
         bucket.state = BucketState::Open;
     }
-    m_impl->condition.notify_all();
+    m_impl->NotifyAllLocked();
     return LxrWorkSchedulerResult::Success;
 }
 
@@ -1703,7 +1827,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::PublishDeferredConcurrentWork(
     }
     else
     {
-        m_impl->condition.notify_all();
+        m_impl->NotifyAllLocked();
     }
 #ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
     LxrLazyCompletionRegistration completionSeed;
@@ -1726,7 +1850,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::PublishDeferredConcurrentWork(
         m_impl->completionFailure = true;
         m_impl->ownershipViolations++;
     }
-    m_impl->condition.notify_all();
+    m_impl->NotifyAllLocked();
     if (completionResult == LxrCompletionResult::CallbackFailed)
     {
         return LxrWorkSchedulerResult::CompletionFailed;
@@ -1789,7 +1913,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::ResumeInterruptedConcurrentWork()
     }
     m_impl->interruptionRequested = false;
     m_impl->concurrentInterrupted = false;
-    m_impl->condition.notify_all();
+    m_impl->NotifyAllLocked();
     return LxrWorkSchedulerResult::Success;
 }
 
@@ -1896,7 +2020,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::WaitForPacket(
     }
 
     std::unique_lock<std::mutex> guard(m_impl->lock);
-    bool completed = m_impl->condition.wait_for(
+    bool completed = m_impl->WaitFor(
         guard,
         std::chrono::milliseconds(timeoutMilliseconds),
         [packet]() { return packet->GetState() == LxrWorkPacketState::Completed; });
@@ -1911,7 +2035,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::WaitForCycleCompletion(uint32_t timeout
     }
 
     std::unique_lock<std::mutex> guard(m_impl->lock);
-    bool completed = m_impl->condition.wait_for(
+    bool completed = m_impl->WaitFor(
         guard,
         std::chrono::milliseconds(timeoutMilliseconds),
         [this]() { return m_impl->cycleCompleted; });
@@ -1926,7 +2050,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::WaitForIdle(uint32_t timeoutMillisecond
     }
 
     std::unique_lock<std::mutex> guard(m_impl->lock);
-    bool idle = m_impl->condition.wait_for(
+    bool idle = m_impl->WaitFor(
         guard,
         std::chrono::milliseconds(timeoutMilliseconds),
         [this]()
@@ -1955,7 +2079,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::WaitForBucketIdle(
         return LxrWorkSchedulerResult::InvalidStage;
     }
     std::unique_lock<std::mutex> guard(m_impl->lock);
-    bool idle = m_impl->condition.wait_for(
+    bool idle = m_impl->WaitFor(
         guard, std::chrono::milliseconds(timeoutMilliseconds),
         [this, stage]() { return m_impl->IsBucketDrainedLocked(stage); });
     return idle ? LxrWorkSchedulerResult::Success : LxrWorkSchedulerResult::Timeout;
@@ -1976,7 +2100,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::WaitForCompletion(
     }
 
     std::unique_lock<std::mutex> guard(m_impl->lock);
-    bool completed = m_impl->condition.wait_for(
+    bool completed = m_impl->WaitFor(
         guard,
         std::chrono::milliseconds(timeoutMilliseconds),
         [this, expectedGeneration]()
@@ -2142,6 +2266,7 @@ LxrWorkSchedulerMetrics LxrWorkScheduler::GetMetrics() const
     metrics.deferredExecuted = m_impl->deferredExecuted;
     metrics.deferredFlips = m_impl->deferredFlips;
     metrics.deferredEmptyFlips = m_impl->deferredEmptyFlips;
+    metrics.signals = m_impl->signals;
 #ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
     if (m_impl->completionEnabled)
     {

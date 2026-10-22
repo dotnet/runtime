@@ -1,0 +1,11 @@
+== concurrent trace limit (list suffix, nursery arm; workers, concurrent trace workers)
+threads=4 conc=4
+listsuffix lxr-nursery wall=5.29 gc=2.18 cpu=11.48 pauses=52 full=0 checksum=301262627042
+threads=4 conc=1
+listsuffix lxr-nursery wall=16.00 gc=13.10 cpu=26.79 pauses=64 full=0 checksum=301262627042
+threads=13 conc=13
+listsuffix lxr-nursery wall=4.67 gc=1.55 cpu=14.05 pauses=51 full=0 checksum=301262627042
+threads=13 conc=3
+listsuffix lxr-nursery wall=10.23 gc=6.95 cpu=29.08 pauses=68 full=0 checksum=301262627042
+threads=13 conc=13
+listsuffix lxr-nursery wall=4.53 gc=1.52 cpu=13.35 pauses=51 full=0 checksum=301262627042

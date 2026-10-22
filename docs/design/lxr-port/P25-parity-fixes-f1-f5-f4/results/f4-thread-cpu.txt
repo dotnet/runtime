@@ -1,0 +1,8 @@
+== thread CPU, requests nursery, 13 and 4 workers
+cpu_ms 9004.238 elapsed_ms 3991.435 gc_ms 994
+user+sys per thread: [(2830, 200), (320, 170), (320, 140), (250, 160), (290, 190), (320, 150), (290, 210), (320, 190), (280, 210), (300, 180), (280, 160), (290, 180), (290, 160), (310, 190)]
+sum user 6690 sum sys 2490
+cpu_ms 5734.826 elapsed_ms 3752.881 gc_ms 940
+user+sys per thread: [(2680, 150), (620, 170), (560, 170), (630, 130), (730, 120)]
+sum user 5220 sum sys 740
+finished

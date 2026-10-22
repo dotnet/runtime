@@ -1,0 +1,5 @@
+run-lxr-work-packet-validation: 0 failures in 20 runs
+run-lxr-pause-validation: 0 failures in 20 runs
+run-lxr-deferred-bucket-validation: 0 failures in 20 runs
+run-lxr-completion-counter-validation: 7 failures in 20 runs
+      7 FAIL: child registration blocks decrement zero and release

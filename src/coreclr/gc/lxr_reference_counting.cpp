@@ -746,6 +746,12 @@ LxrRcResult LxrReferenceCounting::Initialize(
     {
         return Fail(LxrRcResult::SchedulerFailure);
     }
+    if (configuration.concurrentTraceWorkers != 0 &&
+        m_scheduler.ConfigureConcurrentTraceWorkers(
+            std::min(configuration.concurrentTraceWorkers, configuration.workers)) != LxrWorkSchedulerResult::Success)
+    {
+        return Fail(LxrRcResult::SchedulerFailure);
+    }
     m_allocation.SetAcquireNotes(
         {m_allocated_block_storage.Get(), m_allocated_list, &m_allocated_count, m_mature_candidates, m_block_flags});
     for (size_t index = 0; index < configuration.maximumMutators; index++)
@@ -4113,53 +4119,97 @@ LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* p
     for (size_t index = 0; index < packet->GetReferenceCount(); index++)
     {
         uintptr_t reference = work->GetReference(index);
-        if (work->kind == WorkKind::PreviousRoots)
+        bool previousRoot = work->kind == WorkKind::PreviousRoots;
+        if (previousRoot)
         {
             reference &= ~static_cast<uintptr_t>(1);
         }
-        Object* object = reinterpret_cast<Object*>(reference);
-        if (object == nullptr)
-        {
-            continue;
-        }
-        if (!OwnsAddress(Start(object)))
-        {
-            if (IsReturnedImmix(Start(object)) || (m_object_model.isImmortal != nullptr &&
-                m_object_model.isImmortal(object, m_object_model.context)))
-            {
-                continue;
-            }
-            return Fail(LxrRcResult::UnsupportedLifetime);
-        }
-        if (m_cycle_sweep.load(std::memory_order_acquire) && !IsMarked(object))
-        {
-            continue;
-        }
-        uintptr_t start = Start(object);
-        uintptr_t count = m_rc_metadata.Load(start, SideMetadataMemoryOrder::Relaxed);
-        CountWorker(worker, DecrementEntries, 1);
-        if (work->kind == WorkKind::PreviousRoots)
-        {
-            CountWorker(worker, RootDecrements, 1);
-        }
-        if (count == 0 || count == m_counts.GetMaximumCount())
-        {
-            continue;
-        }
-        uintptr_t previous;
-        SideMetadataUpdateStatus status;
-        LxrRcResult result = FromMetadata(m_counts.DecrementWithDeathFast(
-            start, Death, &death, &previous, &status));
+        LxrRcResult result = ProcessDecrementEntry(reference, previousRoot, &death, worker);
         if (result != LxrRcResult::Success)
         {
             return result;
         }
-        if (status == SideMetadataUpdateStatus::Updated && previous == 1)
+    }
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NO_RECURSION_CONTROL)
+    // Control: the behaviour before P25 (F4). The children of dead objects become a new packet.
+    return children.Flush();
+#else
+    // P25 (F4). The children of the dead objects are processed in this packet, one level after the other, as the Java LXR
+    // does (rc.rs ProcessDecs::do_work). A full buffer still becomes a new packet (ReferenceBatch::Append), so that other
+    // workers can take it.
+    uintptr_t objects[BufferCapacity];
+    while (children.count != 0)
+    {
+        size_t count = children.count;
+        if (m_marking.load(std::memory_order_acquire))
         {
-            CountWorker(worker, Deaths, 1);
+            // The children of a dead object are part of the snapshot (SATB), as in ReferenceBatch::Flush.
+            LxrRcResult queued = QueueTrace(children.references, count);
+            if (queued != LxrRcResult::Success)
+            {
+                return queued;
+            }
+        }
+        memcpy(objects, children.references, count * sizeof(uintptr_t));
+        children.count = 0;
+        for (size_t index = 0; index < count; index++)
+        {
+            LxrRcResult result = ProcessDecrementEntry(objects[index], false, &death, worker);
+            if (result != LxrRcResult::Success)
+            {
+                return result;
+            }
         }
     }
-    return children.Flush();
+    return LxrRcResult::Success;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4_NO_RECURSION_CONTROL
+}
+
+LxrRcResult LxrReferenceCounting::ProcessDecrementEntry(
+    uintptr_t reference, bool previousRoot, DeathContext* death, size_t worker)
+{
+    Object* object = reinterpret_cast<Object*>(reference);
+    if (object == nullptr)
+    {
+        return LxrRcResult::Success;
+    }
+    if (!OwnsAddress(Start(object)))
+    {
+        if (IsReturnedImmix(Start(object)) || (m_object_model.isImmortal != nullptr &&
+            m_object_model.isImmortal(object, m_object_model.context)))
+        {
+            return LxrRcResult::Success;
+        }
+        return Fail(LxrRcResult::UnsupportedLifetime);
+    }
+    if (m_cycle_sweep.load(std::memory_order_acquire) && !IsMarked(object))
+    {
+        return LxrRcResult::Success;
+    }
+    uintptr_t start = Start(object);
+    uintptr_t count = m_rc_metadata.Load(start, SideMetadataMemoryOrder::Relaxed);
+    CountWorker(worker, DecrementEntries, 1);
+    if (previousRoot)
+    {
+        CountWorker(worker, RootDecrements, 1);
+    }
+    if (count == 0 || count == m_counts.GetMaximumCount())
+    {
+        return LxrRcResult::Success;
+    }
+    uintptr_t previous;
+    SideMetadataUpdateStatus status;
+    LxrRcResult result = FromMetadata(m_counts.DecrementWithDeathFast(
+        start, Death, death, &previous, &status));
+    if (result != LxrRcResult::Success)
+    {
+        return result;
+    }
+    if (status == SideMetadataUpdateStatus::Updated && previous == 1)
+    {
+        CountWorker(worker, Deaths, 1);
+    }
+    return LxrRcResult::Success;
 }
 
 LxrRcResult LxrReferenceCounting::ReleaseBlockIfDead(
@@ -4893,7 +4943,49 @@ LxrRcResult LxrReferenceCounting::ProcessIncrementWork(Work* work, size_t worker
             *ownedSlot = object;
         }
     }
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NO_RECURSION_CONTROL)
+    // Control: the behaviour before P25 (F4). The children of the packet become a new packet: one packet for each level.
     return children.Flush();
+#else
+    return ProcessChildIncrements(&children, worker);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4_NO_RECURSION_CONTROL
+}
+
+// P25 (F4). The increments of the children of the counted objects run in the packet that counted their parents, one level
+// after the other (Java LXR: rc.rs ProcessIncs::do_work, the loop over new_incs). A chain of 63 young nodes costs one packet
+// and no hand-off. A buffer that fills up (1 024 slots) still becomes a new packet (ReferenceBatch::Append), so a wide
+// object gives work to the other workers.
+LxrRcResult LxrReferenceCounting::ProcessChildIncrements(ReferenceBatch* children, size_t worker)
+{
+    uintptr_t slots[BufferCapacity];
+    while (children->count != 0)
+    {
+        size_t count = children->count;
+        bool trace = children->trace;
+        memcpy(slots, children->references, count * sizeof(uintptr_t));
+        children->count = 0;
+        for (size_t index = 0; index < count; index++)
+        {
+            Object** slot = reinterpret_cast<Object**>(slots[index]);
+            Object* object = *slot;
+            CountWorker(worker, IncrementEntries, 1);
+            LxrRcResult result = ProcessIncrement(&object, trace, children, worker);
+            if (result != LxrRcResult::Success)
+            {
+                return result;
+            }
+            if (object != nullptr)
+            {
+                result = RememberMatureSlot(slot, object);
+                if (result != LxrRcResult::Success)
+                {
+                    return result;
+                }
+            }
+            *slot = object;
+        }
+    }
+    return LxrRcResult::Success;
 }
 
 LxrCompletionCallbackResult LxrReferenceCounting::DecrementsDrained(

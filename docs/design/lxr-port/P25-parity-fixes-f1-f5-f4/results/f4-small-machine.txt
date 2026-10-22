@@ -1,0 +1,19 @@
+taskset 0
+binarytrees lxr-nonmoving wall=0.56 gc=0.14 cpu=0.43 pauses=17 full=0 checksum=14985972
+binarytrees lxr-nursery wall=0.53 gc=0.15 cpu=0.41 pauses=19 full=0 checksum=14985972
+requests lxr-nonmoving wall=4.14 gc=0.42 cpu=3.74 pauses=58 full=0 checksum=317308156512
+requests lxr-nursery wall=4.34 gc=1.02 cpu=3.99 pauses=67 full=0 checksum=317308156512
+taskset 0,1
+binarytrees lxr-nonmoving wall=0.49 gc=0.10 cpu=0.44 pauses=17 full=0 checksum=14985972
+binarytrees lxr-nursery wall=0.65 gc=0.21 cpu=0.67 pauses=19 full=0 checksum=14985972
+requests lxr-nonmoving wall=3.82 gc=0.36 cpu=3.80 pauses=58 full=0 checksum=317308156512
+requests lxr-nursery wall=3.81 gc=0.87 cpu=4.40 pauses=68 full=0 checksum=317308156512
+taskset 0-3
+binarytrees lxr-nonmoving wall=0.47 gc=0.08 cpu=0.49 pauses=17 full=0 checksum=14985972
+binarytrees lxr-nursery wall=0.60 gc=0.20 cpu=0.81 pauses=19 full=0 checksum=14985972
+requests lxr-nonmoving wall=3.77 gc=0.34 cpu=4.22 pauses=58 full=0 checksum=317308156512
+requests lxr-nursery wall=3.87 gc=0.90 cpu=5.37 pauses=68 full=0 checksum=317308156512
+one worker
+threads=1 conc=1
+binarytrees lxr-nonmoving wall=0.56 gc=0.17 cpu=0.46 pauses=17 full=0 checksum=14985972
+binarytrees lxr-nursery wall=0.56 gc=0.17 cpu=0.44 pauses=19 full=0 checksum=14985972

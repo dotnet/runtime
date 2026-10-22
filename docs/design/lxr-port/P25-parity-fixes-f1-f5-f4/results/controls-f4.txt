@@ -1,0 +1,10 @@
+Release --f4-scheduler baseline exit=0 :: PASS: 3547/3547 F4 scheduler and recursion checks :: 
+Release --f4-scheduler LXR_F4_NOTIFY_ALL_CONTROL exit=1 :: FAIL: 3546/3547 F4 scheduler and recursion checks :: the scheduler wakes at most one worker for a packet and nobody when a packet completes|
+Release --f4-scheduler LXR_F4_NO_CONC_LIMIT_CONTROL exit=1 :: FAIL: 3546/3547 F4 scheduler and recursion checks :: no more than 2 workers run concurrent trace packets at once|
+Release --f4-scheduler LXR_F4_WORKERS_CONTROL exit=1 :: FAIL: 3546/3547 F4 scheduler and recursion checks :: the worker counts follow the Java LXR rule (16 processors: 13 workers, 3 concurrent)|
+Release --f4-scheduler LXR_F4_NO_RECURSION_CONTROL exit=1 :: FAIL: 3545/3547 F4 scheduler and recursion checks :: the decrements of a dead chain run in one packet (every node is reclaimed)|the increments of a chain of young objects run in one packet (every node is counted)|
+Debug --f4-scheduler baseline exit=0 :: PASS: 3547/3547 F4 scheduler and recursion checks :: 
+Debug --f4-scheduler LXR_F4_NOTIFY_ALL_CONTROL exit=1 :: FAIL: 3546/3547 F4 scheduler and recursion checks :: the scheduler wakes at most one worker for a packet and nobody when a packet completes|
+Debug --f4-scheduler LXR_F4_NO_CONC_LIMIT_CONTROL exit=1 :: FAIL: 3546/3547 F4 scheduler and recursion checks :: no more than 2 workers run concurrent trace packets at once|
+Debug --f4-scheduler LXR_F4_WORKERS_CONTROL exit=1 :: FAIL: 3546/3547 F4 scheduler and recursion checks :: the worker counts follow the Java LXR rule (16 processors: 13 workers, 3 concurrent)|
+Debug --f4-scheduler LXR_F4_NO_RECURSION_CONTROL exit=1 :: FAIL: 3545/3547 F4 scheduler and recursion checks :: the decrements of a dead chain run in one packet (every node is reclaimed)|the increments of a chain of young objects run in one packet (every node is counted)|

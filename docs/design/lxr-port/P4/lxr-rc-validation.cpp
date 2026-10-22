@@ -7,12 +7,15 @@
 #include "../../../../src/coreclr/gc/lxr_reference_counting.h"
 #include "../../../../src/coreclr/gc/lxr_finalizer_pause.h"
 #include "../../../../src/coreclr/gc/lxr_collection_policy.h"
+#include "../../../../src/coreclr/gc/lxr_worker_policy.h"
+#include "../../../../src/coreclr/gc/lxr_work_scheduler.h"
 
 #include <atomic>
 #include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdio>
+#include <memory>
 #include <random>
 #include <set>
 #include <thread>
@@ -3860,6 +3863,187 @@ namespace
             Check(!occupiedPolicy.EmergencyHint(), "the count of occupied pages does not call a sparse heap full");
         }
         Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "F5 mutator detaches");
+    }
+
+    // P25 (F4). The number of workers follows the Java LXR rule (ParallelGCThreads, ConcGCThreads). The table is the rule of
+    // OpenJDK: one worker per processor up to 8, then 5 for every 8 more; the concurrent workers are (workers + 2) / 4.
+    void ValidateF4WorkerPolicy()
+    {
+        struct Row
+        {
+            size_t processors;
+            size_t parallel;
+            size_t concurrent;
+        };
+        constexpr Row Rows[] = {
+            {1, 1, 1}, {2, 2, 1}, {4, 4, 1}, {8, 8, 2}, {9, 8, 2}, {12, 10, 3}, {16, 13, 3}, {24, 18, 5},
+            {32, 23, 6}, {64, 43, 11}, {256, 64, 16},
+        };
+        size_t wrong = 0;
+        for (const Row& row : Rows)
+        {
+            size_t parallel = LxrWorkerPolicy::ParallelThreads(row.processors);
+            size_t concurrent = LxrWorkerPolicy::ConcurrentThreads(parallel);
+            if (parallel != row.parallel || concurrent != row.concurrent)
+            {
+                std::fprintf(stderr, "processors %zu: %zu/%zu, expected %zu/%zu\n", row.processors, parallel,
+                    concurrent, row.parallel, row.concurrent);
+                wrong++;
+            }
+        }
+        Check(wrong == 0, "the worker counts follow the Java LXR rule (16 processors: 13 workers, 3 concurrent)");
+    }
+
+    struct F4Sleeper
+    {
+        std::atomic<int> running{0};
+        std::atomic<int> peak{0};
+        std::atomic<int> done{0};
+        int sleepMilliseconds = 0;
+    };
+
+    void F4Run(LxrWorkPacket*, size_t, void* context)
+    {
+        F4Sleeper* state = static_cast<F4Sleeper*>(context);
+        int now = state->running.fetch_add(1) + 1;
+        int seen = state->peak.load();
+        while (now > seen && !state->peak.compare_exchange_weak(seen, now))
+        {
+        }
+        if (state->sleepMilliseconds != 0)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(state->sleepMilliseconds));
+        }
+        state->running.fetch_sub(1);
+        state->done.fetch_add(1);
+    }
+
+    // A packet that is submitted wakes at most one worker, and a packet that completes wakes none. The count of wake-up calls
+    // (metrics.signals) is bounded by the number of packets. The old scheduler woke everybody twice for each packet.
+    void ValidateF4Wakeups()
+    {
+        constexpr size_t Packets = 2000;
+        LxrWorkScheduler scheduler;
+        if (!Check(scheduler.Initialize(8) == LxrWorkSchedulerResult::Success, "F4 scheduler starts 8 workers"))
+        {
+            return;
+        }
+        F4Sleeper state;
+        std::vector<std::unique_ptr<LxrWorkPacket>> packets;
+        for (size_t index = 0; index < Packets; index++)
+        {
+            packets.push_back(std::make_unique<LxrWorkPacket>(
+                index + 1, LxrWorkBucketStage::Unconstrained, nullptr, 0, F4Run, &state));
+            if (!Check(scheduler.Submit(packets.back().get()) == LxrWorkSchedulerResult::Success, "F4 packet submits"))
+            {
+                return;
+            }
+        }
+        Check(scheduler.WaitForBucketIdle(LxrWorkBucketStage::Unconstrained, Timeout) == LxrWorkSchedulerResult::Success &&
+                state.done.load() == static_cast<int>(Packets), "every packet runs once");
+        LxrWorkSchedulerMetrics metrics = scheduler.GetMetrics();
+        std::printf("f4_wakeups packets=%zu signals=%llu parks=%llu wakes=%llu\n", Packets,
+            static_cast<unsigned long long>(metrics.signals), static_cast<unsigned long long>(metrics.parks),
+            static_cast<unsigned long long>(metrics.wakes));
+        Check(metrics.executed == Packets && metrics.ownershipViolations == 0, "F4 scheduler accounting is exact");
+        Check(metrics.signals <= Packets + 64,
+            "the scheduler wakes at most one worker for a packet and nobody when a packet completes");
+        Check(scheduler.Shutdown() == LxrWorkSchedulerResult::Success, "F4 scheduler stops");
+    }
+
+    // At most ConcGCThreads workers run the packets of the concurrent trace while the program runs. The other packets use
+    // every worker.
+    void ValidateF4ConcurrentLimit()
+    {
+        LxrWorkScheduler scheduler;
+        if (!Check(scheduler.Initialize(6) == LxrWorkSchedulerResult::Success &&
+                scheduler.ConfigureConcurrentTraceWorkers(2) == LxrWorkSchedulerResult::Success &&
+                scheduler.ConfigureConcurrentTraceWorkers(7) == LxrWorkSchedulerResult::InvalidArgument &&
+                scheduler.EnableConcurrentStage(LxrWorkBucketStage::ConcurrentResumable) == LxrWorkSchedulerResult::Success,
+                "F4 scheduler with a limit of 2 concurrent trace workers starts"))
+        {
+            return;
+        }
+        for (LxrWorkBucketStage stage : {LxrWorkBucketStage::ConcurrentResumable, LxrWorkBucketStage::Unconstrained})
+        {
+            F4Sleeper state;
+            state.sleepMilliseconds = 30;
+            std::vector<std::unique_ptr<LxrWorkPacket>> packets;
+            for (size_t index = 0; index < 12; index++)
+            {
+                packets.push_back(std::make_unique<LxrWorkPacket>(index + 1, stage, nullptr, 0, F4Run, &state));
+                if (!Check(scheduler.Submit(packets.back().get()) == LxrWorkSchedulerResult::Success, "F4 packet submits"))
+                {
+                    return;
+                }
+            }
+            Check(scheduler.WaitForBucketIdle(stage, Timeout) == LxrWorkSchedulerResult::Success &&
+                    state.done.load() == 12, "all packets of the stage run");
+            std::printf("f4_limit stage=%s peak=%d\n", LxrGetWorkBucketStageName(stage), state.peak.load());
+            if (stage == LxrWorkBucketStage::Unconstrained)
+            {
+                Check(state.peak.load() >= 3, "packets of other stages use more than the concurrent trace limit");
+            }
+            else
+            {
+                Check(state.peak.load() >= 1 && state.peak.load() <= 2,
+                    "no more than 2 workers run concurrent trace packets at once");
+            }
+        }
+        Check(scheduler.Shutdown() == LxrWorkSchedulerResult::Success, "F4 limit scheduler stops");
+    }
+
+    // The increments and the decrements of a chain run in one packet, not in one packet for each level.
+    void ValidateF4Recursion()
+    {
+        constexpr size_t Chain = 500;
+        Type link(24, 1);
+        LxrReferenceCounting engine;
+        int identity;
+        LxrRcMutator* mutator;
+        if (!Initialize(engine, 8, &mutator, &identity) ||
+            !Check(engine.EnableStorageDiagnostics(Timeout) == LxrRcResult::Success, "F4 storage accounting starts"))
+        {
+            return;
+        }
+        std::vector<Object*> nodes;
+        for (size_t index = 0; index < Chain; index++)
+        {
+            Object* node = Allocate(engine, mutator, link);
+            if (node == nullptr)
+            {
+                return;
+            }
+            if (!nodes.empty() && !Check(Store(engine, mutator, Field(nodes.back()), node), "F4 chain link stores"))
+            {
+                return;
+            }
+            nodes.push_back(node);
+        }
+        uint64_t before = engine.GetStorageMetric(0);
+        if (!Epoch(engine, {nodes[0]}))
+        {
+            return;
+        }
+        uint64_t created = engine.GetStorageMetric(0) - before;
+        size_t counted = 0;
+        for (Object* node : nodes)
+        {
+            counted += Count(engine, node) != 0 ? 1 : 0;
+        }
+        std::printf("f4_recursion chain=%zu increment_pause_packets=%llu\n", Chain, static_cast<unsigned long long>(created));
+        Check(counted == Chain && created <= 12,
+            "the increments of a chain of young objects run in one packet (every node is counted)");
+        before = engine.GetStorageMetric(0);
+        if (!Epoch(engine, {}) || !Epoch(engine, {}))
+        {
+            return;
+        }
+        created = engine.GetStorageMetric(0) - before;
+        std::printf("f4_recursion chain=%zu decrement_pause_packets=%llu\n", Chain, static_cast<unsigned long long>(created));
+        Check(engine.GetLiveBytes() == 0 && created <= 24,
+            "the decrements of a dead chain run in one packet (every node is reclaimed)");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "F4 recursion mutator detaches");
     }
 
     // A large object that dies in a RefCount pause while a concurrent trace is active is released by the lazy
@@ -7982,6 +8166,16 @@ int main(int argc, char** argv)
             ValidateF1Stress(seed);
         }
         std::printf("%s: %d/%d F1 trace packet checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
+    if (argc == 2 && strcmp(argv[1], "--f4-scheduler") == 0)
+    {
+        ValidateF4WorkerPolicy();
+        ValidateF4Wakeups();
+        ValidateF4ConcurrentLimit();
+        ValidateF4Recursion();
+        std::printf("%s: %d/%d F4 scheduler and recursion checks\n",
             Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
         return Failures == 0 ? 0 : 1;
     }

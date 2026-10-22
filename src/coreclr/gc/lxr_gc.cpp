@@ -5,6 +5,7 @@
 #include "gcenv.h"
 #include "lxr_gc.h"
 #include "lxr_write_barrier.h"
+#include "lxr_worker_policy.h"
 #include "gcscan.h"
 #include "gcref.h"
 #include "gceventstatus.h"
@@ -346,6 +347,23 @@ HRESULT LxrGcHeap::Initialize()
     {
         return E_FAIL;
     }
+    size_t gcThreads = 0;
+    size_t concurrentThreads = 0;
+    if (!ReadSetting("LXRGCThreads", &gcThreads, 10, LxrWorkerPolicy::MaximumWorkers) ||
+        !ReadSetting("LXRConcGCThreads", &concurrentThreads, 10, LxrWorkerPolicy::MaximumWorkers))
+    {
+        return E_FAIL;
+    }
+    // P25 (F4). The worker count of the Java LXR (ParallelGCThreads) from the number of processors. A setting of 0 or no
+    // setting selects the rule. The Java LXR runs the concurrent trace on ConcGCThreads of these workers (LxrWorkerPolicy::
+    // ConcurrentThreads, 3 of 13). That default is NOT used here: the cost of our pause still follows the trace backlog (F2 is
+    // open), and with 3 trace workers the trace of list suffix does not end (Measured: 12.8 s against 4.4 s). So the trace
+    // may use every worker unless LXRConcGCThreads is set.
+    configuration.workers = gcThreads != 0
+        ? gcThreads : LxrWorkerPolicy::ParallelThreads(GCToEEInterface::GetCurrentProcessCpuCount());
+    configuration.concurrentTraceWorkers = concurrentThreads != 0
+        ? (concurrentThreads < configuration.workers ? concurrentThreads : configuration.workers)
+        : configuration.workers;
     m_engine.GetPauseTimers().Configure(phaseTimers);
     for (const char* unsupported : {
             "LXRMaxPauseMillis", "LXRTransparentHugepage",
@@ -1931,6 +1949,10 @@ void LxrGcHeap::EnumerateConfigurationValues(void* context, ConfigurationValueFu
     callback(context, "LXROvershootToSpace", "System.GC.LXROvershootToSpace", GCConfigurationType::Boolean,
         m_engine.IsOvershootEnabled());
     callback(context, "LXRMaxMutators", "System.GC.LXRMaxMutators", GCConfigurationType::Int64, MaximumMutators);
+    callback(context, "LXRGCThreads", "System.GC.LXRGCThreads", GCConfigurationType::Int64,
+        static_cast<int64_t>(m_heap_configuration.workers));
+    callback(context, "LXRConcGCThreads", "System.GC.LXRConcGCThreads", GCConfigurationType::Int64,
+        static_cast<int64_t>(m_heap_configuration.concurrentTraceWorkers));
     callback(context, "GCConcurrent", "System.GC.Concurrent", GCConfigurationType::Boolean, IsConcurrentGCEnabled());
 }
 

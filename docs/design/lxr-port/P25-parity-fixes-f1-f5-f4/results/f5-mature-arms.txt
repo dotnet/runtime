@@ -1,0 +1,6 @@
+One run each, F5 build, Linux Release, ReadyToRun on, heap 4x, natural collections (scripts/quick.sh). Arms: lxr-defrag = no nursery copy + mature evacuation; lxr-mature = nursery copy + mature evacuation (the defaults of the collector).
+requests lxr-defrag wall=4.22 gc=0.49 cpu=4.99 pauses=59 full=0 checksum=317308156512
+requests lxr-mature wall=4.28 gc=1.19 cpu=6.30 pauses=67 full=0 checksum=317308156512
+binarytrees lxr-mature wall=0.64 gc=0.22 cpu=0.93 pauses=19 full=0 checksum=14985972
+listsuffix lxr-mature wall=7.36 gc=3.40 cpu=15.91 pauses=61 full=0 checksum=301262627042
+P24 (before F1 and F5, three-run medians): requests defrag 16.56 s (52 Full), requests mature 4.41 s, binary trees mature n/a (0.82 nursery), list suffix mature 29.95 s.

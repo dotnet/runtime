@@ -58,6 +58,8 @@ struct LxrRcConfiguration
     // the whole hole (a block is 32 KiB, so a buffer never crosses a block). A smaller value is rounded down to a
     // multiple of the line size and must be at least one line.
     size_t allocationBufferBytes = 0;
+    // P25 (F4). Workers that may run the packets of the concurrent trace while the program runs. 0 means all workers.
+    size_t concurrentTraceWorkers = 0;
     bool lazyDecrements = true;
     bool lineRecycling = true;
     bool copyLineRecycling = true;
@@ -656,6 +658,8 @@ private:
     void ReleaseWork(Work* work);
     void RetireCompletedWork();
     LxrRcResult ProcessIncrementWork(Work* work, size_t worker);
+    LxrRcResult ProcessChildIncrements(ReferenceBatch* children, size_t worker);
+    LxrRcResult ProcessDecrementEntry(uintptr_t reference, bool previousRoot, DeathContext* death, size_t worker);
     LxrRcResult ProcessIncrement(
         Object** object, bool trace, ReferenceBatch* children, size_t worker);
     // P25 (F1). True while a pause or the mutators run in the window of a concurrent trace after its snapshot (the trace
