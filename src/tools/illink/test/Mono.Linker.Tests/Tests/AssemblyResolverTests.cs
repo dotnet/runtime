@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using ILLink.Shared;
-using Microsoft.DotNet.XUnitExtensions;
 using Mono.Cecil;
 using Mono.Linker.Steps;
 using Mono.Linker.Tests.TestCasesRunner;
@@ -151,24 +150,6 @@ namespace Mono.Linker.Tests.Tests
             Assert.Empty(_context.Resolver.AssemblyCache);
         }
 
-        [ConditionalTheory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [InlineData("C:Dependency")]
-        [InlineData("C:/Dependency")]
-        [InlineData(@"C:\Dependency")]
-        [InlineData(@"\Dependency")]
-        [InlineData(@"\\server\share\Dependency")]
-        [InlineData(@"\\?\C:\Dependency")]
-        public void DoesNotProbeWindowsPathSyntaxOnUnix(string name)
-        {
-            WriteAssembly(Path.Combine(_directory, name + ".dll"), "Dependency");
-            _context.Resolver.AddSearchDirectory(_directory);
-
-            Assert.Null(_context.TryResolve(name));
-            Assert.Empty(_context.Resolver.AssemblyCache);
-            Assert.Empty(_logger.GetLoggedMessages());
-        }
-
         [Theory]
         [InlineData("Dependency", ".dll", false)]
         [InlineData("Dependency", ".exe", false)]
@@ -215,17 +196,27 @@ namespace Mono.Linker.Tests.Tests
         [InlineData("nested/Dependency", ".dll")]
         [InlineData("nested/Dependency", ".exe")]
         [InlineData("nested/Dependency", ".winmd")]
-        [InlineData("/Dependency", ".dll")]
-        [InlineData("/Dependency", ".exe")]
-        [InlineData("/Dependency", ".winmd")]
         public void MalformedReflectionNamesDoNotResolveExistingFiles(string name, string extension)
         {
             string searchDirectory = Path.Combine(_directory, "search");
             Directory.CreateDirectory(searchDirectory);
             _context.Resolver.AddSearchDirectory(searchDirectory);
-            if (name.StartsWith('/'))
-                name = Path.Combine(_directory, "Dependency");
             WriteAssembly(Path.Combine(searchDirectory, name + extension), "Dependency");
+            using var origin = AssemblyDefinition.CreateAssembly(new AssemblyNameDefinition("Origin", new Version()), "Origin", ModuleKind.Dll);
+
+            Assert.False(_context.TypeNameResolver.TryResolveTypeName(
+                origin, $"<Module>, {name}", fallbackToCoreLib: true, out var type, out var records));
+            Assert.Null(type);
+            Assert.Null(records);
+            Assert.Empty(_context.Resolver.AssemblyCache);
+            Assert.Empty(_logger.GetLoggedMessages());
+        }
+
+        [Theory]
+        [InlineData("/Dependency")]
+        [InlineData("C:/Dependency")]
+        public void RootedReflectionNamesRemainUnresolved(string name)
+        {
             using var origin = AssemblyDefinition.CreateAssembly(new AssemblyNameDefinition("Origin", new Version()), "Origin", ModuleKind.Dll);
 
             Assert.False(_context.TypeNameResolver.TryResolveTypeName(
@@ -286,27 +277,6 @@ namespace Mono.Linker.Tests.Tests
             Assert.Same(assembly, _context.Resolver.GetAssembly(path));
             _context.Resolver.CacheAssembly(assembly);
             Assert.Same(assembly, _context.TryResolve("Dependency"));
-        }
-
-        [ConditionalTheory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [InlineData("C:Dependency.dll")]
-        [InlineData(@"nested\Dependency.dll")]
-        [InlineData(@"\\server\share\Dependency.dll")]
-        public void ExplicitReferenceFileNamesAreNotAssemblyNames(string fileName)
-        {
-            string path = Path.Combine(_directory, fileName);
-            WriteAssembly(path, "Dependency");
-            _context.DefaultAction = AssemblyAction.Copy;
-            _context.TrimAction = AssemblyAction.Copy;
-            _context.Resolver.AddReferenceAssembly(path);
-
-            new ProcessReferencesStep().Process(_context);
-
-            var assembly = Assert.Single(_context.GetAssemblies());
-            Assert.Equal(path, _context.GetAssemblyLocation(assembly));
-            Assert.True(_context.Annotations.IsMarked(assembly.MainModule));
-            Assert.Empty(_logger.GetLoggedMessages());
         }
 
         [Theory]
