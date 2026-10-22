@@ -133,14 +133,13 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-        [InlineData(Configuration.Debug, "<PublishReadyToRun>false</PublishReadyToRun>")]
-        [InlineData(Configuration.Release, "<PublishReadyToRun>false</PublishReadyToRun>")]
-        [InlineData(Configuration.Release, "")]
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
         [TestCategory("no-workload")]
-        public void FrameworkAssembliesAreNotReadyToRunWhenDisabled(Configuration config, string extraProperties)
+        public void FrameworkAssembliesAreNotReadyToRunWhenDisabled(Configuration config)
         {
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_off",
-                extraProperties: extraProperties);
+                extraProperties: "<PublishReadyToRun>false</PublishReadyToRun>");
             BlazorBuild(info, config);
 
             AssertCoreLibReadyToRun(GetBuildWebcilDir(config), expectReadyToRun: false);
