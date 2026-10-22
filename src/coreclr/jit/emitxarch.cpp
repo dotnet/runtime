@@ -8588,6 +8588,7 @@ void emitter::emitIns_R_R_S(
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
+    SetEvexNfIfNeeded(id, instOptions);
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
@@ -14413,20 +14414,15 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 {
                     dst += emitOutputByte(dst, 0x66);
                 }
-
-                if (IsCFCMOV(ins))
-                {
-                    // The opcode for CFCMOV does not follow the rule of "|= 0x01" to handle 16b/32b/64b operands.
-                    break;
-                }
                 FALLTHROUGH;
             }
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
             case EA_8BYTE:
-                // EVEX.MOVBE is assigned with RM opcode that does not follow the following rule.
-                if (ins != INS_movbe_apx)
+                // EVEX.MOVBE is assigned with RM opcode that does not follow the following rule, and
+                // the opcode for CFCMOV encodes the condition in its low bits.
+                if ((ins != INS_movbe_apx) && !IsCFCMOV(ins))
 #endif
                 {
                     /* Set the 'w' bit to get the large version */
@@ -15299,7 +15295,11 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 FALLTHROUGH;
 
             case EA_4BYTE:
-                code |= 0x01;
+                // The opcode for CFCMOV encodes the condition in its low bits.
+                if (!IsCFCMOV(ins))
+                {
+                    code |= 0x01;
+                }
                 break;
 
 #ifdef TARGET_AMD64
@@ -15314,7 +15314,8 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                         assert(hasEvexPrefix(code));
                         code = AddRexWPrefix(id, code);
                     }
-                    if ((ins != INS_lzcnt_apx) && (ins != INS_tzcnt_apx) && (ins != INS_popcnt_apx))
+                    if ((ins != INS_lzcnt_apx) && (ins != INS_tzcnt_apx) && (ins != INS_popcnt_apx) &&
+                        !IsCFCMOV(ins))
                     // These instructions do not support 1-byte inputs and the opcode is exact.
                     {
                         code |= 0x01;
@@ -15861,8 +15862,12 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 #ifdef TARGET_AMD64
             case EA_8BYTE:
 #endif
-                // Set the 'w' bit to get the large version
-                code |= 0x1;
+                // Set the 'w' bit to get the large version. The opcode for CFCMOV encodes the
+                // condition in its low bits instead.
+                if (!IsCFCMOV(ins))
+                {
+                    code |= 0x1;
+                }
                 break;
 
 #ifdef TARGET_X86

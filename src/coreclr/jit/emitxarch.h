@@ -1328,6 +1328,14 @@ inline bool HasEmbeddedMask(const instrDesc* id) const
 inline bool HasCompressedDisplacement(const instrDesc* id) const
 {
     assert(id->idHasMem());
+
+    // APX-promoted non-SIMD instructions have no tuple type, so their displacement is never
+    // compressed, and they reuse the EVEX.b context bits for NDD/NF, which would alias INS_OPTS_EVEX_cd.
+    if (IsApxExtendedEvexInstruction(id->idIns()) && !IsSimdInstruction(id->idIns()))
+    {
+        return false;
+    }
+
     return (id->idGetEvexbContext() & INS_OPTS_EVEX_cd) != 0;
 }
 
