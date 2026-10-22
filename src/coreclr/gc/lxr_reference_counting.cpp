@@ -2972,10 +2972,12 @@ Object* LxrReferenceCounting::ResolveForwarded(Object* object) const
         return object;
     }
     uintptr_t start = Start(object);
-    // P22 (D2). The value is the address of an object that the runtime or the engine holds, so it is the start of
-    // an object even when the object is young and has no ValidObject bit. Only a source that is being copied, or has
-    // been copied, carries a forwarding state. The guard keeps the read of the header inside the Immix space.
-    if (!IsImmix(start) || start % sizeof(uintptr_t) != 0)
+    // P22 (D2). A young object has no ValidObject bit, but a source that the pause copies gets the bit before the
+    // claim (TryCopyNursery) and keeps it until RetireForwardedSources. So the bit tells a source from an arbitrary
+    // or stale address (the trace queue and the decrement stream can name a dead object, and the memory may now hold
+    // part of a new object) without a per-object size table.
+    if (!IsImmix(start) || start % sizeof(uintptr_t) != 0 ||
+        m_valid_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0)
     {
         return object;
     }
@@ -3666,6 +3668,9 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
         return result;
     }
     ObjHeader* header = source->GetHeader();
+    // P22 (D2). The source gets its ValidObject bit before the claim, so that every reader that sees the forwarding
+    // state also sees the bit (ResolveForwarded). RetireForwardedSources clears the bit.
+    MarkPromotedStart(start);
     uint32_t observed = header->CompareExchangeGCReservedBits(
         m_configuration.forwardingMask, m_configuration.forwardingShift, 2, 0);
     if (observed != 0)
