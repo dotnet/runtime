@@ -3392,11 +3392,8 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            ParentScopeOrNamespace = visitor.Visit(this, ParentScopeOrNamespace);
+            Scope = visitor.Visit(this, Scope);
             Name = visitor.Visit(this, Name);
-            TypeDefinitions = visitor.Visit(this, TypeDefinitions);
-            TypeForwarders = visitor.Visit(this, TypeForwarders);
-            NamespaceDefinitions = visitor.Visit(this, NamespaceDefinitions);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3404,7 +3401,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as NamespaceDefinition;
             if (other == null) return false;
-            if (!Object.Equals(ParentScopeOrNamespace, other.ParentScopeOrNamespace)) return false;
+            if (!Object.Equals(Scope, other.Scope)) return false;
             if (!Object.Equals(Name, other.Name)) return false;
             return true;
         } // Equals
@@ -3415,7 +3412,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = 633688634;
-            hash = ((hash << 13) - (hash >> 19)) ^ (ParentScopeOrNamespace == null ? 0 : ParentScopeOrNamespace.GetHashCode());
+            hash = ((hash << 13) - (hash >> 19)) ^ (Scope == null ? 0 : Scope.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -3424,14 +3421,8 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Save(NativeWriter writer)
         {
-            Debug.Assert(ParentScopeOrNamespace == null ||
-                ParentScopeOrNamespace.HandleType == HandleType.NamespaceDefinition ||
-                ParentScopeOrNamespace.HandleType == HandleType.ScopeDefinition);
-            writer.Write(ParentScopeOrNamespace);
+            writer.Write(Scope);
             writer.Write(Name);
-            writer.Write(TypeDefinitions);
-            writer.Write(TypeForwarders);
-            writer.Write(NamespaceDefinitions);
         } // Save
 
         internal static NamespaceDefinitionHandle AsHandle(NamespaceDefinition record)
@@ -3454,11 +3445,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public MetadataRecord ParentScopeOrNamespace;
+        public ScopeDefinition Scope;
         public ConstantStringValue Name;
-        public List<TypeDefinition> TypeDefinitions = new List<TypeDefinition>();
-        public List<TypeForwarder> TypeForwarders = new List<TypeForwarder>();
-        public List<NamespaceDefinition> NamespaceDefinitions = new List<NamespaceDefinition>();
     } // NamespaceDefinition
 
     public partial class NamespaceReference : MetadataRecord
@@ -3473,7 +3461,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            ParentScopeOrNamespace = visitor.Visit(this, ParentScopeOrNamespace);
+            Scope = visitor.Visit(this, Scope);
             Name = visitor.Visit(this, Name);
         } // Visit
 
@@ -3482,7 +3470,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as NamespaceReference;
             if (other == null) return false;
-            if (!Object.Equals(ParentScopeOrNamespace, other.ParentScopeOrNamespace)) return false;
+            if (!Object.Equals(Scope, other.Scope)) return false;
             if (!Object.Equals(Name, other.Name)) return false;
             return true;
         } // Equals
@@ -3493,7 +3481,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = 1563382231;
-            hash = ((hash << 13) - (hash >> 19)) ^ (ParentScopeOrNamespace == null ? 0 : ParentScopeOrNamespace.GetHashCode());
+            hash = ((hash << 13) - (hash >> 19)) ^ (Scope == null ? 0 : Scope.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -3502,10 +3490,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Save(NativeWriter writer)
         {
-            Debug.Assert(ParentScopeOrNamespace == null ||
-                ParentScopeOrNamespace.HandleType == HandleType.NamespaceReference ||
-                ParentScopeOrNamespace.HandleType == HandleType.ScopeReference);
-            writer.Write(ParentScopeOrNamespace);
+            writer.Write(Scope);
             writer.Write(Name);
         } // Save
 
@@ -3529,7 +3514,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public MetadataRecord ParentScopeOrNamespace;
+        public ScopeReference Scope;
         public ConstantStringValue Name;
     } // NamespaceReference
 
@@ -4152,7 +4137,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             Name = visitor.Visit(this, Name);
             Culture = visitor.Visit(this, Culture);
-            RootNamespaceDefinition = visitor.Visit(this, RootNamespaceDefinition);
+            TypeDefinitions = visitor.Visit(this, TypeDefinitions);
+            TypeForwarders = visitor.Visit(this, TypeForwarders);
             EntryPoint = visitor.Visit(this, EntryPoint);
             GlobalModuleType = visitor.Visit(this, GlobalModuleType);
             CustomAttributes = visitor.Visit(this, CustomAttributes);
@@ -4207,6 +4193,26 @@ namespace Internal.Metadata.NativeFormat.Writer
             return _hash;
         } // GetHashCode
 
+        internal override void PlaceHashtables(Section section)
+        {
+            Debug.Assert(_typeDefinitionsHashtable is null);
+            _typeDefinitionsHashtable = new VertexHashtable();
+
+            foreach (TypeDefinition record in TypeDefinitions)
+            {
+                _typeDefinitionsHashtable.Append((uint)record.GetLookupHashCode(), record);
+            }
+            section.Place(_typeDefinitionsHashtable);
+            Debug.Assert(_typeForwardersHashtable is null);
+            _typeForwardersHashtable = new VertexHashtable();
+
+            foreach (TypeForwarder record in TypeForwarders)
+            {
+                _typeForwardersHashtable.Append((uint)record.GetLookupHashCode(), record);
+            }
+            section.Place(_typeForwardersHashtable);
+        } // PlaceHashtables
+
         internal override void Save(NativeWriter writer)
         {
             writer.Write(Flags);
@@ -4218,7 +4224,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.Write(RevisionNumber);
             writer.Write(PublicKey);
             writer.Write(Culture);
-            writer.Write(RootNamespaceDefinition);
+            writer.WriteRelativeOffset(_typeDefinitionsHashtable);
+            writer.WriteRelativeOffset(_typeForwardersHashtable);
             writer.Write(EntryPoint);
             writer.Write(GlobalModuleType);
             writer.Write(CustomAttributes);
@@ -4256,7 +4263,10 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ushort RevisionNumber;
         public Byte[] PublicKey;
         public ConstantStringValue Culture;
-        public NamespaceDefinition RootNamespaceDefinition;
+        public List<TypeDefinition> TypeDefinitions = new List<TypeDefinition>();
+        private VertexHashtable _typeDefinitionsHashtable;
+        public List<TypeForwarder> TypeForwarders = new List<TypeForwarder>();
+        private VertexHashtable _typeForwardersHashtable;
         public QualifiedMethod EntryPoint;
         public TypeDefinition GlobalModuleType;
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
@@ -4486,7 +4496,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Scope = visitor.Visit(this, Scope);
+            Namespace = visitor.Visit(this, Namespace);
             Name = visitor.Visit(this, Name);
             NestedTypes = visitor.Visit(this, NestedTypes);
         } // Visit
@@ -4496,7 +4506,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as TypeForwarder;
             if (other == null) return false;
-            if (!Object.Equals(Scope, other.Scope)) return false;
+            if (!Object.Equals(Namespace, other.Namespace)) return false;
             if (!Object.Equals(Name, other.Name)) return false;
             if (!NestedTypes.SequenceEqual(other.NestedTypes)) return false;
             return true;
@@ -4508,7 +4518,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = 467167184;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Scope == null ? 0 : Scope.GetHashCode());
+            hash = ((hash << 13) - (hash >> 19)) ^ (Namespace == null ? 0 : Namespace.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -4517,7 +4527,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Save(NativeWriter writer)
         {
-            writer.Write(Scope);
+            writer.Write(Namespace);
             writer.Write(Name);
             writer.Write(NestedTypes);
         } // Save
@@ -4542,7 +4552,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public ScopeReference Scope;
+        public NamespaceReference Namespace;
         public ConstantStringValue Name;
         public List<TypeForwarder> NestedTypes = new List<TypeForwarder>();
     } // TypeForwarder

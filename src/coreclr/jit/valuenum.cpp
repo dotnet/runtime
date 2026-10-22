@@ -15489,6 +15489,10 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_GVMLookupForSlot;
             break;
 
+        case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+            vnf = VNF_InterfaceLookupForSlot;
+            break;
+
         case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
             vnf = VNF_ReadyToRunVirtualFuncPtr;
             break;
@@ -15668,6 +15672,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
             case CORINFO_HELP_VIRTUAL_FUNC_PTR:
             case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+            case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
                 vnpExc = fgValueNumberIndirNullCheckExceptions(call->gtArgs.GetThisArg()->GetNode());
                 break;
 

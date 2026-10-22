@@ -480,3 +480,136 @@
 		IL_0007: ret
 	}
 }
+
+// Family access to the members of an interface from the types that implement it (the ECMA-335 augments for
+// default interface methods). Like the runtime, any instantiation of a generic interface counts.
+
+.class interface public auto ansi abstract IFamilyMembers`1<T>
+{
+    .method family hidebysig newslot abstract virtual static void StaticMethod() cil managed
+    {
+    }
+
+    .method family hidebysig newslot virtual instance void InstanceMethod() cil managed
+    {
+        ret
+    }
+}
+
+.class interface public auto ansi abstract IFamilyMembersDerived`1<T>
+       implements class IFamilyMembers`1<!T>
+{
+    .method public hidebysig newslot virtual instance void Call.FamilyInstanceOfBaseInterface_Valid() cil managed
+    {
+        ldarg.0
+        callvirt    instance void class IFamilyMembers`1<!T>::InstanceMethod()
+        ret
+    }
+}
+
+.class interface public auto ansi abstract IOtherInterface
+{
+}
+
+// The shape of Int32.CreateChecked<TOther> calling INumberBase<TOther>.TryConvertToChecked
+.class public sequential ansi sealed beforefieldinit FamilyMembersStruct
+       extends [System.Runtime]System.ValueType
+       implements class IFamilyMembers`1<valuetype FamilyMembersStruct>
+{
+    .pack 0
+    .size 1
+
+    .method private hidebysig static void StaticMethod() cil managed
+    {
+        .override method void class IFamilyMembers`1<valuetype FamilyMembersStruct>::StaticMethod()
+        ret
+    }
+
+    .method public hidebysig static void Call.FamilyStaticOfOtherInstantiation_Valid<(class IFamilyMembers`1<!!0>) T>() cil managed
+    {
+        constrained. !!T
+        call        void class IFamilyMembers`1<!!T>::StaticMethod()
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit FamilyMembersBase
+       extends [System.Runtime]System.Object
+       implements class IFamilyMembers`1<class FamilyMembersBase>
+{
+    .method private hidebysig static void StaticMethod() cil managed
+    {
+        .override method void class IFamilyMembers`1<class FamilyMembersBase>::StaticMethod()
+        ret
+    }
+
+    .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+    {
+        ldarg.0
+        call        instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+
+    .method public hidebysig instance void Call.FamilyInstanceThroughOtherImplementer_Invalid_MethodAccess(class FamilyMembersSibling other) cil managed
+    {
+        ldarg.1
+        callvirt    instance void class IFamilyMembers`1<class FamilyMembersSibling>::InstanceMethod()
+        ret
+    }
+
+    .class nested public auto ansi beforefieldinit Nested
+           extends [System.Runtime]System.Object
+    {
+        .method public hidebysig static void Call.FamilyStaticFromNestedType_Valid<(class IFamilyMembers`1<!!0>) T>() cil managed
+        {
+            constrained. !!T
+            call        void class IFamilyMembers`1<!!T>::StaticMethod()
+            ret
+        }
+    }
+}
+
+.class public auto ansi beforefieldinit FamilyMembersDerived
+       extends FamilyMembersBase
+{
+    .method public hidebysig static void Call.FamilyStaticOfInterfaceOfBaseClass_Valid<(class IFamilyMembers`1<!!0>) T>() cil managed
+    {
+        constrained. !!T
+        call        void class IFamilyMembers`1<!!T>::StaticMethod()
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit FamilyMembersSibling
+       extends [System.Runtime]System.Object
+       implements class IFamilyMembers`1<class FamilyMembersSibling>
+{
+    .method private hidebysig static void StaticMethod() cil managed
+    {
+        .override method void class IFamilyMembers`1<class FamilyMembersSibling>::StaticMethod()
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit FamilyMembersOtherInterface
+       extends [System.Runtime]System.Object
+       implements IOtherInterface
+{
+    .method public hidebysig static void Call.FamilyStaticFromOtherInterface_Invalid_MethodAccess<(class IFamilyMembers`1<!!0>) T>() cil managed
+    {
+        constrained. !!T
+        call        void class IFamilyMembers`1<!!T>::StaticMethod()
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit FamilyMembersUnrelated
+       extends [System.Runtime]System.Object
+{
+    .method public hidebysig static void Call.FamilyStaticFromUnrelatedType_Invalid_MethodAccess<(class IFamilyMembers`1<!!0>) T>() cil managed
+    {
+        constrained. !!T
+        call        void class IFamilyMembers`1<!!T>::StaticMethod()
+        ret
+    }
+}

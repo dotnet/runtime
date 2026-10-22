@@ -193,11 +193,11 @@ STDAPI DLLEXPORT OpenVirtualProcessImpl2(
         return hrInit;
     }
 #endif
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     HMODULE hDac = WszLoadLibrary(pDacModulePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 #else
     HMODULE hDac = WszLoadLibrary(pDacModulePath);
-#endif // !TARGET_WINDOWS
+#endif // !HOST_WINDOWS
     if (hDac == NULL)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -678,6 +678,35 @@ IDacDbiInterface * CordbProcess::GetDAC()
     return m_pDacPrimitives;
 }
 
+HRESULT CordbProcess::GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo)
+{
+    CONTRACTL
+    {
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    if (pTargetInfo == NULL)
+        return E_INVALIDARG;
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        RSLockHolder lockHolder(GetProcessLock());
+
+        if (!m_fHasCachedTargetInfo)
+        {
+            IfFailThrow(GetDAC()->GetTargetInfo(&m_cachedTargetInfo));
+            m_fHasCachedTargetInfo = true;
+        }
+
+        *pTargetInfo = m_cachedTargetInfo;
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+
 //---------------------------------------------------------------------------------------
 // Get the Data-Target
 //
@@ -878,6 +907,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_hDacModule(hDacModule),
     m_pDacPrimitives(NULL),
     m_pLegacyDac(NULL),
+    m_fHasCachedTargetInfo(false),
     m_pEventChannel(NULL),
     m_fAssertOnTargetInconsistency(false),
     m_runtimeOffsetsInitialized(false),
@@ -7091,7 +7121,7 @@ HRESULT CordbProcess::GetRuntimeOffsets()
 
 
     {
-#if TARGET_UNIX
+#if HOST_UNIX
         m_hHelperThread = NULL; //RS is supposed to be able to live without a helper thread handle.
 #else
         m_hHelperThread = OpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
@@ -8122,6 +8152,41 @@ HRESULT CordbProcess::SafeReadBuffer(TargetBuffer tb, BYTE * pLocalBuffer, BOOL 
         else
             return HRESULT_FROM_WIN32(ERROR_PARTIAL_COPY);
     }
+    return S_OK;
+}
+
+HRESULT CordbProcess::GetStackwalkControlPCAdjustOffset(ULONG32 * pcbOffset)
+{
+    _ASSERTE(pcbOffset != NULL);
+
+    IDacDbiInterface::TargetInfo targetInfo;
+    HRESULT hr = GetTargetInfo(&targetInfo);
+    if (FAILED(hr))
+        return hr;
+
+    switch (targetInfo.arch)
+    {
+        case IDacDbiInterface::kArchX86:
+        case IDacDbiInterface::kArchAMD64:
+            *pcbOffset = 1;
+            break;
+
+        case IDacDbiInterface::kArchArm:
+        case IDacDbiInterface::kArchWasm:
+            *pcbOffset = 2;
+            break;
+
+        case IDacDbiInterface::kArchArm64:
+        case IDacDbiInterface::kArchLoongArch64:
+        case IDacDbiInterface::kArchRiscV64:
+            *pcbOffset = 4;
+            break;
+
+        default:
+            _ASSERTE(!"NYI: stackwalk control PC adjust offset for this target architecture");
+            return E_NOTIMPL;
+    }
+
     return S_OK;
 }
 
@@ -10304,7 +10369,7 @@ bool CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 {
     LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded\n"));
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(HOST_WINDOWS) && defined(HOST_AMD64)
     // Before we can read the left side context information, we must:
     // 1. obtain the thread handle
     // 2. suspened the thread
@@ -12405,6 +12470,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         tempDebugContext.ContextFlags = DT_CONTEXT_FULL;
         DbiGetThreadContext(pUnmanagedThread->m_handle, &tempDebugContext);
         CordbUnmanagedThread::LogContext(&tempDebugContext);
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         const ULONG_PTR breakpointOpcodeSize = 1;
 #elif defined(TARGET_ARM64)
@@ -12608,10 +12674,13 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
 
                 // Because hijacks don't return normally they might have pushed handlers without poping them
                 // back off. To take care of that we explicitly restore the old SEH chain.
-    #ifdef TARGET_X86
-                hr = pUnmanagedThread->RestoreLeafSeh();
-                _ASSERTE(SUCCEEDED(hr));
-    #endif
+                IDacDbiInterface::TargetInfo targetInfo;
+                IfFailThrow(GetTargetInfo(&targetInfo));
+                if (targetInfo.arch == IDacDbiInterface::kArchX86)
+                {
+                    hr = pUnmanagedThread->RestoreLeafSeh();
+                    _ASSERTE(SUCCEEDED(hr));
+                }
             }
             else
             {
@@ -12970,6 +13039,7 @@ bool CordbProcess::IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread)
 // this here. We have a check such that if we do get headers, the value won't change underneath us.
 #define MY_DBG_FORCE_CONTINUE               ((DWORD   )0x00010003L)
 #ifndef DBG_FORCE_CONTINUE
+
 #define DBG_FORCE_CONTINUE MY_DBG_FORCE_CONTINUE
 #else
 static_assert(DBG_FORCE_CONTINUE == MY_DBG_FORCE_CONTINUE);
@@ -13005,7 +13075,7 @@ void EnableDebugTrace(CordbUnmanagedThread *ut)
         return;
 
     // Give us a nop so that we can setip in the optimized case.
-#ifdef TARGET_X86
+#if defined(HOST_X86)
     __asm {
         nop
     }

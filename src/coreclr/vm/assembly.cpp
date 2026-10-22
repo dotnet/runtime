@@ -1586,6 +1586,7 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1934,6 +1935,7 @@ void Assembly::RequireLoadLevel(FileLoadLevel targetLevel)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1953,6 +1955,7 @@ void Assembly::SetError(Exception *ex)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
