@@ -439,3 +439,83 @@ the walkers (they are in the engine, so they are not separate).
 | `2322a693bd6` | Fix: a nursery copy source gets its ValidObject bit before the claim (decision 7). |
 | `5091da271b4` | The Windows macro `small` in the tests; the version string of the collector. |
 | (the commit with this document) | Documents and scripts. |
+
+## 13. Direct comparison with Workstation and Server GC (step P23)
+
+**Measured.** Method of P20 (`scripts/compare.sh`, a copy of the P20 script). One frame (`d2-Release-linux`, built from
+tip `9bc7e46428d`: Release runtime, CoreLib compiled with `--old-value-write-barriers`), four arms (`wks`, `server` with
+2 heaps, `lxr-nonmoving`, `lxr-nursery`), heap 4 times the smallest Workstation heap (binary trees 40 MiB, requests
+84 MiB, list suffix 40 MiB, hard limit), 3 repetitions in a rotated order, one run at a time, natural collections only.
+WSL Ubuntu, 16 cores, nothing else running. **One change from P20:** ReadyToRun is **on** for all arms (P20: off for all
+arms, because the old frame needed it). Raw rows: `p23-d2-direct.jsonl` (share folder). Cells show the median of 3 runs.
+"x WKS" is the ratio of the median wall time (or CPU time) to Workstation GC in the same table.
+
+All 36 runs finished, no failures. The checksums are equal in all arms of each program (binary trees 14985972, requests
+317308156512, list suffix 301262627042).
+
+### 13.1 D2 (tip `9bc7e46428d`, ReadyToRun on)
+
+| program | arm | wall s | cpu s | gc s | rss MiB | wall x WKS | cpu x WKS |
+|---|---|---|---|---|---|---|---|
+| binary trees | wks | 0.32 | 0.24 | 0.08 | 55 | 1.0 | 1.0 |
+| binary trees | server | 0.33 | 0.28 | 0.06 | 65 | 1.0 | 1.1 |
+| binary trees | lxr-nonmoving | 0.75 | 1.34 | 0.37 | 147 | 2.3 | 5.5 |
+| binary trees | lxr-nursery | 0.86 | 1.58 | 0.45 | 146 | 2.7 | 6.5 |
+| requests | wks | 1.71 | 1.58 | 0.21 | 85 | 1.0 | 1.0 |
+| requests | server | 1.64 | 1.73 | 0.27 | 89 | 1.0 | 1.1 |
+| requests | lxr-nonmoving | 10.57 | 11.42 | 5.91 | 206 | 6.2 | 7.2 |
+| requests | lxr-nursery | 4.20 | 6.68 | 1.15 | 157 | 2.5 | 4.2 |
+| list suffix | wks | 3.41 | 3.41 | 1.91 | 69 | 1.0 | 1.0 |
+| list suffix | server | 1.52 | 1.90 | 0.63 | 77 | 0.4 | 0.6 |
+| list suffix | lxr-nonmoving | 21.62 | 57.32 | 18.78 | 225 | 6.3 | 16.8 |
+| list suffix | lxr-nursery | 30.42 | 71.29 | 27.34 | 222 | 8.9 | 20.9 |
+
+### 13.2 P20 numbers for `a1ddb3fd4a1` (before D1 and D2; ReadyToRun off; from `p20-final-direct.jsonl`, same summary code)
+
+| program | arm | wall s | cpu s | gc s | rss MiB | wall x WKS | cpu x WKS |
+|---|---|---|---|---|---|---|---|
+| binary trees | wks | 0.59 | 0.32 | 0.09 | 50 | 1.0 | 1.0 |
+| binary trees | server | 0.57 | 0.36 | 0.06 | 62 | 1.0 | 1.1 |
+| binary trees | lxr-nonmoving | 2.25 | 2.96 | 0.41 | 135 | 3.8 | 9.1 |
+| binary trees | lxr-nursery | 2.27 | 2.94 | 0.40 | 139 | 3.8 | 9.1 |
+| requests | wks | 2.06 | 1.73 | 0.22 | 78 | 1.0 | 1.0 |
+| requests | server | 2.16 | 2.09 | 0.24 | 83 | 1.1 | 1.2 |
+| requests | lxr-nonmoving | 15.94 | 15.84 | 6.06 | 175 | 7.7 | 9.1 |
+| requests | lxr-nursery | 7.57 | 9.69 | 1.07 | 160 | 3.7 | 5.6 |
+| list suffix | wks | 4.22 | 4.14 | 2.20 | 63 | 1.0 | 1.0 |
+| list suffix | server | 1.75 | 1.86 | 0.57 | 64 | 0.4 | 0.4 |
+| list suffix | lxr-nonmoving | 11.02 | 21.44 | 4.37 | 224 | 2.6 | 5.2 |
+| list suffix | lxr-nursery | 27.07 | 68.10 | 20.66 | 200 | 6.4 | 16.5 |
+
+The Workstation and Server rows differ between the two tables (for example binary trees 0.32 s against 0.59 s) because
+ReadyToRun is on in the new run and off in P20. So compare the ratios, not the seconds, between the tables.
+
+### 13.3 What the numbers say
+
+- **Measured.** Against the P20 numbers, the LXR wall ratio to WKS is lower in 4 of 6 cells: binary trees 3.8 to 2.3
+  (non-moving) and 3.8 to 2.7 (nursery), requests non-moving 7.7 to 6.2, requests nursery 3.7 to 2.5. It is higher in both
+  list suffix cells: non-moving 2.6 to 6.3, nursery 6.4 to 8.9. The CPU ratio is lower in binary trees and requests, and
+  higher in both list suffix cells.
+- **Measured.** LXR is slower than WKS in all 6 cells (2.3 to 8.9 times). Server GC is the fastest arm in list suffix
+  (0.4 times WKS).
+- **Measured.** Memory: LXR uses 1.8 to 3.3 times the resident memory of WKS (146 to 225 MiB against 55 to 85 MiB).
+
+Slowest cells now (wall x WKS), with the cause that I know:
+
+1. **List suffix, nursery: 8.9 x WKS (30.4 s).** **Measured:** GC time is 27.3 s of 30.4 s, in 60 pauses (no full
+   collection). **Inferred:** each pause is about 450 ms
+   because the survivor set of a list suffix is large (every pause copies or counts a big part of it); the pause cost
+   is the problem, not the allocation. D2 does not change pause work.
+2. **List suffix, non-moving: 6.3 x WKS (21.6 s; CPU 16.8 x).** **Measured:** GC 18.8 s in 62 pauses, no full collection.
+   **Measured, limit:** this cell is unstable. P20 had 11.0 s; today the a1ddb3fd4a1 frame needs 17.6 and 18.1 s, the D1
+   frame 16.7 and 17.7 s, and the D2 frame 15.2 and 15.4 s, when run alone with a slightly different heap split
+   (35 + 5 MiB). So D2 is not slower than the earlier builds on the same day. **Open:** why the cell was 11 s in P20.
+3. **Requests, non-moving: 6.2 x WKS (10.6 s).** **Measured:** 52 of 58 pauses are full collections (about 118 ms each,
+   about 6 s together); the nursery mode of the same program has no full collection and needs 4.2 s. **Inferred:** in the
+   non-moving mode the 84 MiB heap runs out of reusable space (fragmentation), so each cycle ends in a full collection.
+4. **Binary trees, nursery: 2.7 x WKS (CPU 6.5 x).** **Measured:** GC 0.45 s of 0.86 s, and one of three runs was fast
+   (0.52 s, GC 0.14 s) while two took 0.86 and 0.89 s. **Inferred:** one or two long pauses of the concurrent trace
+   decide the result; the same cell in the D1 and D2 lean benchmark also varied (491 to 786 ms).
+
+Not done: no run of the Debug collector, no Windows numbers, and no trace of the pauses of this run (the pause counts are from
+the `lxr_pauses` and `lxr_full` fields of the program output).
