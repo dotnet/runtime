@@ -44,6 +44,8 @@ namespace ILVerify
             new("--tokens", "-t") { Description = "Include metadata tokens in error messages" };
         public Option<bool> MetadataReferencesOnly { get; } =
             new("--metadata-references-only") { Description = "Only validate metadata references" };
+        public Option<bool> AllowIgnoresAccessChecks { get; } =
+            new("--allow-ignores-access-checks") { Description = "Respect IgnoresAccessChecksToAttribute" };
 
         public ParseResult Result;
 
@@ -65,6 +67,7 @@ namespace ILVerify
             Options.Add(Verbose);
             Options.Add(Tokens);
             Options.Add(MetadataReferencesOnly);
+            Options.Add(AllowIgnoresAccessChecks);
 
             this.SetAction(result =>
             {
