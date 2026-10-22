@@ -94,7 +94,7 @@ public static class ConversionExtensions
         {
             return new TargetPointer(code.Value & ~Arm32ThumbBit);
         }
-        Debug.Assert((flags & ~CodePointerFlags.HasArm64PtrAuth) == 0);
+        Debug.Assert(flags == default);
         return new TargetPointer(code.Value);
     }
 }

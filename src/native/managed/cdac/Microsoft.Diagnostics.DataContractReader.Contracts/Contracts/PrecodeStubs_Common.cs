@@ -107,7 +107,7 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation> : IPrecodeStubs w
         {
             return codePointer.AsTargetPointer & ~1ul;
         }
-        Debug.Assert((_codePointerFlags & ~CodePointerFlags.HasArm64PtrAuth) == 0);
+        Debug.Assert(_codePointerFlags == 0);
         return codePointer.AsTargetPointer;
     }
 
