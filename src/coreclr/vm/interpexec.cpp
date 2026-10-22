@@ -15,10 +15,6 @@
 #include "gchelpers.inl"
 #include "arraynative.inl"
 
-#ifdef TARGET_AMD64
-#include "writebarriermanager.h"
-#endif
-
 #ifdef TARGET_WASM
 extern "C" void SamplingProfiler_OnSamplepoint();
 #endif
@@ -4846,77 +4842,23 @@ do                                                                      \
                     uint8_t *pContinuationData = pContinuationDataStart;
                     size_t bytesTotal = 0;
                     InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
-                    while (pCopyEntry->countBytes != 0)
+                    if (pCopyEntry->countBytes > 0)
                     {
-                        bytesTotal += pCopyEntry->countBytes;
-                        pCopyEntry++;
-                    }
-
-                    if (bytesTotal != 0)
-                    {
-                        GCHeapMemoryBarrier();
-                        WriteBarrierBulkAction bulkAction =
-                            ClassifyWriteBarrierBulk(pContinuationDataStart, bytesTotal);
-                        bool useSlotLog = bulkAction != WriteBarrierBulkAction::CardTable;
-#ifdef TARGET_AMD64
-                        if (bulkAction == WriteBarrierBulkAction::NeedsSlowPath)
+                        for (InterpIntervalMapEntry *pSizeEntry = pCopyEntry; pSizeEntry->countBytes != 0; pSizeEntry++)
                         {
-                            MethodTable* continuationType = continuation->GetMethodTable();
-                            if (continuationType->ContainsGCPointers())
-                            {
-                                uint8_t* continuationDataEnd = pContinuationDataStart + bytesTotal;
-                                CGCDesc* map = CGCDesc::GetCGCDescFromMT(continuationType);
-                                CGCDescSeries* series = map->GetHighestSeries();
-                                const size_t seriesCount = map->GetNumSeries();
-                                InterpIntervalMapEntry* sourceEntry = pAsyncSuspendData->liveLocalsIntervals;
-                                size_t sourceStreamOffset = 0;
-
-                                for (size_t seriesIndex = 0;
-                                     seriesIndex < seriesCount;
-                                     seriesIndex++, series--)
-                                {
-                                    uint8_t* seriesStart =
-                                        reinterpret_cast<uint8_t*>(OBJECTREFToObject(continuation)) +
-                                        series->GetSeriesOffset();
-                                    size_t seriesSize =
-                                        series->GetSeriesSize() + continuationType->GetBaseSize();
-
-                                    for (size_t seriesOffset = 0;
-                                         seriesOffset < seriesSize;
-                                         seriesOffset += sizeof(Object*))
-                                    {
-                                        uint8_t* destination = seriesStart + seriesOffset;
-                                        if ((destination < pContinuationDataStart) ||
-                                            ((destination + sizeof(Object*)) > continuationDataEnd))
-                                        {
-                                            continue;
-                                        }
-
-                                        size_t relativeOffset = destination - pContinuationDataStart;
-                                        while (relativeOffset >=
-                                               (sourceStreamOffset + sourceEntry->countBytes))
-                                        {
-                                            sourceStreamOffset += sourceEntry->countBytes;
-                                            sourceEntry++;
-                                            _ASSERTE(sourceEntry->countBytes != 0);
-                                        }
-
-                                        size_t sourceOffset = relativeOffset - sourceStreamOffset;
-                                        _ASSERTE((sourceOffset + sizeof(Object*)) <= sourceEntry->countBytes);
-                                        Object** source = reinterpret_cast<Object**>(
-                                            LOCAL_VAR_ADDR(sourceEntry->startOffset + sourceOffset, uint8_t));
-                                        ErectWriteBarrierPre(
-                                            reinterpret_cast<Object**>(destination), VolatileLoad(source));
-                                    }
-                                }
-                            }
+                            bytesTotal += pSizeEntry->countBytes;
                         }
-#endif // TARGET_AMD64
 
-                        pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
+                        GCHeapMemoryBarrier();
+
+                        // A collector that needs old values logs exactly the reference fields of the continuation that
+                        // the copy overwrites; the copied locals are not whole reference ranges, so the bulk-move hook
+                        // must not see them.
+                        bool oldValuesLogged = ErectWriteBarrierObjectRangePre(
+                            OBJECTREFToObject(continuation), pContinuationDataStart, bytesTotal);
                         while (pCopyEntry->countBytes != 0)
                         {
-                            if (g_heap_type != GC_HEAP_CUSTOM)
+                            if ((g_heap_type != GC_HEAP_CUSTOM) || oldValuesLogged)
                             {
                             InlinedForwardGCSafeCopyHelper(pContinuationData, LOCAL_VAR_ADDR(pCopyEntry->startOffset, uint8_t), pCopyEntry->countBytes);
                             }
@@ -4927,9 +4869,9 @@ do                                                                      \
                             pContinuationData += pCopyEntry->countBytes;
                             pCopyEntry++;
                         }
-                        if (!useSlotLog && (g_heap_type != GC_HEAP_CUSTOM))
+                        if (g_heap_type != GC_HEAP_CUSTOM)
                         {
-                            InlinedSetCardsAfterBulkCopyHelper((Object**)pContinuationDataStart, bytesTotal);
+                        InlinedSetCardsAfterBulkCopyHelper((Object**)pContinuationDataStart, bytesTotal);
                         }
                     }
 

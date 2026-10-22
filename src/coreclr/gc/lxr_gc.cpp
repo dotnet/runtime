@@ -4,6 +4,7 @@
 #include "common.h"
 #include "gcenv.h"
 #include "lxr_gc.h"
+#include "lxr_write_barrier.h"
 #include "gcscan.h"
 #include "gcref.h"
 #include "gceventstatus.h"
@@ -14,6 +15,9 @@
 #ifndef TARGET_WINDOWS
 #include <time.h>
 #endif // !TARGET_WINDOWS
+
+// Entry of the assembly write barrier slow path (defined below).
+extern "C" void LxrBarrierSlowPath(Object** slot);
 
 namespace
 {
@@ -266,7 +270,7 @@ HRESULT LxrGcHeap::Initialize()
         m_header_bits.clear_state != 0 || m_header_bits.transition_state != 2 ||
         m_header_bits.published_state != 3)
     {
-        Unsupported("LXR requires accepted allocation/reference-enumeration contracts and ReadyToRun disabled.");
+        Unsupported("LXR requires accepted allocation/reference-enumeration contracts.");
         return E_NOTIMPL;
     }
     if (!m_collection_lock.Initialize() || !m_gc_done.CreateManualEventNoThrow(true) ||
@@ -457,25 +461,15 @@ HRESULT LxrGcHeap::Initialize()
     parameters.highest_address = g_gc_highest_address;
     parameters.ephemeral_low = g_gc_lowest_address;
     parameters.ephemeral_high = g_gc_highest_address;
-    parameters.write_barrier_shape = WriteBarrierShape::SideMetadataFieldLog;
-    parameters.write_barrier_side_metadata.metadata_base =
-        reinterpret_cast<uint8_t*>(m_engine.GetFieldMetadataBase());
-    parameters.write_barrier_side_metadata.slow_path = WriteBarrier;
-    parameters.write_barrier_side_metadata.granularity_shift = 3;
-    parameters.write_barrier_side_metadata.bit_meaning = WriteBarrierMetadataBitMeaning::WorkWhenBitIsSet;
-    parameters.write_barrier_range_slow_path = RangeBarrier;
-    parameters.write_barrier_dependent_edge_slow_path = DependentBarrier;
-    parameters.write_barrier_epoch_reset = EpochReset;
-    parameters.write_barrier_bulk_scan.metadata_start = reinterpret_cast<uint8_t*>(
-        m_engine.GetFieldMetadataBase() + (m_engine.GetReservationStart() >> 6));
-    parameters.write_barrier_bulk_scan.metadata_size = m_engine.GetReservationBytes() >> 6;
+    // The runtime builds the barrier from GetAssignRefFunctions and keeps its patchable slots in sync with these
+    // values; they must be set before the runtime installs the helpers.
+    LxrWriteBarrierSetGlobals(
+        m_engine.GetFieldMetadataBase(),
+        m_engine.GetReservationStart(),
+        m_engine.GetReservationBytes(),
+        reinterpret_cast<void*>(&LxrBarrierSlowPath),
+        LxrWriteBarrierComputeXsaveMask());
     GCToEEInterface::StompWriteBarrier(&parameters);
-    if (parameters.write_barrier_request_status != WriteBarrierRequestStatus::Accepted)
-    {
-        m_engine.Shutdown();
-        Unsupported("LXR could not negotiate the immutable generic slot-log barrier.");
-        return E_NOTIMPL;
-    }
     gc_alloc_context* context = GCToEEInterface::GetAllocContext();
     if (context != nullptr && FindOrAttach(context, false) == nullptr)
     {
@@ -751,9 +745,13 @@ void LOCALGC_CALLCONV LxrGcHeap::AllocationComplete(
     }
 }
 
-void LOCALGC_CALLCONV LxrGcHeap::WriteBarrier(Object** slot, Object* oldTarget, Object*)
+// Logs the old value of a field that has not been logged in this epoch. The old value is read BEFORE the claim in
+// LogBeforeWrite: a racing writer that loses the claim stores only after the winner claimed, and the winner has
+// read the field by then.
+void LxrGcHeap::LogOldValue(Object** slot)
 {
     LxrGcHeap* heap = s_heap;
+    Object* oldTarget = VolatileLoad(slot);
     LxrRcMutator* mutator = heap->FindOrAttach(GCToEEInterface::GetAllocContext(), true);
     if (heap->m_engine.LogBeforeWrite(mutator, slot, oldTarget) != LxrRcResult::Success)
     {
@@ -761,33 +759,106 @@ void LOCALGC_CALLCONV LxrGcHeap::WriteBarrier(Object** slot, Object* oldTarget, 
     }
 }
 
-void LOCALGC_CALLCONV LxrGcHeap::RangeBarrier(Object** destination, Object**, size_t count)
+void LxrGcHeap::BarrierSlowPath(Object** slot)
 {
-    for (size_t index = 0; index < count; index++)
+    LogOldValue(slot);
+}
+
+// Logs every field of the range whose unlog bit is set. The side metadata has one bit for every 8-byte slot, so a
+// metadata byte covers eight fields; a range of fields that are all logged costs one byte load for eight slots.
+void LxrGcHeap::LogOldValues(Object** destination, size_t count)
+{
+    const uint8_t* metadata = reinterpret_cast<const uint8_t*>(g_lxr_write_barrier_globals.metadata_base);
+    uintptr_t first = reinterpret_cast<uintptr_t>(destination) >> 3;
+    uintptr_t end = first + count;
+    for (uintptr_t index = first; index < end;)
     {
-        Object** slot = destination + index;
-        Object* old = Interlocked::CompareExchangePointer(slot, static_cast<Object*>(nullptr), nullptr);
-        WriteBarrier(slot, old, nullptr);
+        uintptr_t byteIndex = index >> 3;
+        unsigned startBit = static_cast<unsigned>(index & 7);
+        unsigned endBit = (byteIndex == ((end - 1) >> 3)) ? static_cast<unsigned>(((end - 1) & 7) + 1) : 8;
+        unsigned bits = VolatileLoad(metadata + byteIndex);
+        bits &= (0xFFu << startBit) & ((1u << endBit) - 1);
+        for (unsigned bit = startBit; bits != 0 && bit < endBit; bit++)
+        {
+            if ((bits & (1u << bit)) != 0)
+            {
+                LogOldValue(reinterpret_cast<Object**>(((byteIndex << 3) + bit) << 3));
+            }
+        }
+        index = (byteIndex + 1) << 3;
     }
 }
 
-void LOCALGC_CALLCONV LxrGcHeap::DependentBarrier(void* destination, Object* oldTarget, Object*)
+bool LxrGcHeap::IsInHeap(void*, void* address)
 {
-    if (!s_heap->m_engine.OwnsAddress(reinterpret_cast<uintptr_t>(destination)) || oldTarget != nullptr)
-    {
-        s_heap->Fatal("LXR does not admit replacement of a native collectible metadata edge.");
-    }
-    // The only EE producer initializes a newborn UOH MethodTable. Its LoaderAllocator edge is scanned separately.
-    s_heap->FindOrAttach(GCToEEInterface::GetAllocContext(), true);
+    return reinterpret_cast<uintptr_t>(address) - g_lxr_write_barrier_globals.heap_low <
+        g_lxr_write_barrier_globals.heap_size;
 }
 
-void LOCALGC_CALLCONV LxrGcHeap::EpochReset()
+// The pre-store hook of the PR (check_escape), used by the runtime sites that store a reference without the JIT
+// barrier. It is called BEFORE the store and reads the old value of *destination.
+void LxrGcHeap::CheckEscape(Object** destination, Object*)
 {
-    if (s_heap->m_engine.GetPhase() != LxrRcPhase::Mutator ||
-        s_heap->m_engine.GetFailure() != LxrRcResult::Success)
+    if (!IsInHeap(nullptr, destination))
     {
-        s_heap->Fatal("LXR epoch publication did not precede the runtime barrier reset.");
+        return;
     }
+    const uint8_t* metadata = reinterpret_cast<const uint8_t*>(g_lxr_write_barrier_globals.metadata_base);
+    uintptr_t address = reinterpret_cast<uintptr_t>(destination);
+    if ((VolatileLoad(metadata + (address >> 6)) >> ((address >> 3) & 7) & 1) != 0)
+    {
+        LogOldValue(destination);
+    }
+}
+
+// LXR logs before the store, so the post-store hook of the PR has nothing to do.
+void LxrGcHeap::NoPostStoreBarrier(void*, Object**, Object*)
+{
+}
+
+void LxrGcHeap::PreStoreRange(void*, Object** destination, Object**, size_t count)
+{
+    if (count != 0 && IsInHeap(nullptr, destination))
+    {
+        LogOldValues(destination, count);
+    }
+}
+
+// The bulk-move hook of the PR, for ranges that hold only references. Old values are logged first, then the
+// references are copied one pointer at a time (a concurrent reader never sees a torn reference).
+void LxrGcHeap::BulkMoveWithWriteBarrier(void*, void* destination, const void* source, size_t length)
+{
+    if (destination == source || length == 0)
+    {
+        return;
+    }
+    if (IsInHeap(nullptr, destination))
+    {
+        LogOldValues(static_cast<Object**>(destination), length / sizeof(Object*));
+    }
+    size_t count = length / sizeof(uintptr_t);
+    uintptr_t* to = static_cast<uintptr_t*>(destination);
+    const uintptr_t* from = static_cast<const uintptr_t*>(source);
+    if (reinterpret_cast<uintptr_t>(destination) - reinterpret_cast<uintptr_t>(source) >= length)
+    {
+        for (size_t index = 0; index < count; index++)
+        {
+            VolatileStore(to + index, VolatileLoad(from + index));
+        }
+    }
+    else
+    {
+        for (size_t index = count; index != 0; index--)
+        {
+            VolatileStore(to + index - 1, VolatileLoad(from + index - 1));
+        }
+    }
+}
+
+// Entry of the assembly write barrier slow path. The assembly saves the whole vector state around this call.
+extern "C" void LxrBarrierSlowPath(Object** slot)
+{
+    LxrGcHeap::BarrierSlowPath(slot);
 }
 
 void LxrGcHeap::FixAllocContext(gc_alloc_context* context, void*, void*)
@@ -2225,24 +2296,40 @@ uintptr_t* LxrGcHeap::GetPendingBridgeHandles(size_t* count)
     return nullptr;
 }
 
-// LXR is a standalone collector that keeps the stock heap type and the runtime's own barrier code.
+// LXR uses the barrier mechanism of PR #3316: it is a custom collector. The runtime asks for the barrier helpers in
+// GetAssignRefFunctions and calls the hooks below. Because LXR needs the old value of every overwritten field, it
+// also sets FASTGC_REQUIRES_OLD_VALUE and provides the pre-store range hook (interface 6.1).
 void LxrGcHeap::GetFastGCFunctions(FastGCFunctions* functions)
 {
     *functions = {};
+    functions->context = this;
+    functions->write_barrier = &LxrGcHeap::NoPostStoreBarrier;
+    functions->is_in_gc_heap = &LxrGcHeap::IsInHeap;
+    functions->check_escape = &LxrGcHeap::CheckEscape;
+    functions->bulk_move_with_write_barrier = &LxrGcHeap::BulkMoveWithWriteBarrier;
+    functions->pre_store_range = &LxrGcHeap::PreStoreRange;
+    functions->flags = FASTGC_REQUIRES_OLD_VALUE;
 }
 
-GCHeapType LxrGcHeap::GetGCHeapType() { return GC_HEAP_WKS; }
+GCHeapType LxrGcHeap::GetGCHeapType() { return GC_HEAP_CUSTOM; }
 
 uint64_t LxrGcHeap::GetTotalAllocatedBytesPrecise() { return GetTotalAllocatedBytes(); }
 
+static_assert(sizeof(LxrWriteBarrierPatchable) == sizeof(GCWriteBarrierPatchableValue) &&
+                  offsetof(LxrWriteBarrierPatchable, slot) == offsetof(GCWriteBarrierPatchableValue, Slot) &&
+                  offsetof(LxrWriteBarrierPatchable, source) == offsetof(GCWriteBarrierPatchableValue, Source),
+              "LxrWriteBarrierPatchable must match GCWriteBarrierPatchableValue");
+
 void LxrGcHeap::GetAssignRefFunctions(void** assignRef, size_t* assignRefSize, void** assignRefChecked, size_t* assignRefCheckedSize, uintptr_t** avLocationsList, GCWriteBarrierPatchableValue** patchableValues)
 {
-    *assignRef = nullptr;
-    *assignRefSize = 0;
-    *assignRefChecked = nullptr;
-    *assignRefCheckedSize = 0;
-    *avLocationsList = nullptr;
-    *patchableValues = nullptr;
+    LxrWriteBarrierBlockInfo block;
+    LxrWriteBarrierGetBlockInfo(&block);
+    *assignRef = block.assign_ref;
+    *assignRefSize = block.assign_ref_size;
+    *assignRefChecked = block.checked_assign_ref;
+    *assignRefCheckedSize = block.checked_assign_ref_size;
+    *avLocationsList = block.av_locations;
+    *patchableValues = reinterpret_cast<GCWriteBarrierPatchableValue*>(block.patchable);
 }
 
 AllocationNotificationParameters* LxrGcHeap::GetAllocationNotificationParameters() { return &m_notification; }

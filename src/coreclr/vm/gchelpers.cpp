@@ -16,7 +16,6 @@
 #include "eetwain.h"
 #include "eeconfig.h"
 #include "gcheaputilities.h"
-#include "writebarriermanager.h"
 #include "corhost.h"
 #include "threads.h"
 #include "fieldmarshaler.h"
@@ -1470,162 +1469,59 @@ HCIMPLEND_RAW
 
 #include <optsmallperfcritical.h>
 
-WriteBarrierBulkAction ClassifyWriteBarrierBulk(void* destination, size_t byteCount)
+// The old-value store hooks of a collector that needs the old value of every overwritten reference (LXR, see
+// FASTGC_REQUIRES_OLD_VALUE). They are the "LXR extension" on top of the PR #3316 hooks: check_escape and
+// bulk_move_with_write_barrier cover a single store and a copy of a whole reference range; these functions cover the
+// copies, clears and fills where only some words of the destination are references (a struct with a GC layout), and
+// clears and fills of reference ranges. Each one returns true when the collector has been told about the old values,
+// so the caller must now overwrite the destination WITHOUT the stock card marking. It returns false when the caller
+// uses the stock path (InlinedMemmoveGCRefsHelper), which for a custom collector calls bulk_move_with_write_barrier.
+
+static void PreStoreRangeOfReferences(Object** dst, Object** src, size_t referenceCount)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef TARGET_AMD64
-    if (g_SlotLogWriteBarrierSlowPath == nullptr)
+    if (referenceCount != 0)
     {
-        return WriteBarrierBulkAction::CardTable;
+        const FastGCFunctions& functions = GCHeapUtilities::GetFastGCFunctions();
+        functions.pre_store_range(functions.context, dst, src, referenceCount);
     }
-
-    if (byteCount == 0)
-    {
-        return WriteBarrierBulkAction::AllClaimed;
-    }
-
-    uintptr_t start = reinterpret_cast<uintptr_t>(destination);
-    uintptr_t heapStart = reinterpret_cast<uintptr_t>(g_lowest_address);
-    uintptr_t heapEnd = reinterpret_cast<uintptr_t>(g_highest_address);
-    if ((start < heapStart) || (start >= heapEnd))
-    {
-        return WriteBarrierBulkAction::CardTable;
-    }
-
-    _ASSERTE(byteCount <= (heapEnd - start));
-    if (byteCount > (heapEnd - start))
-    {
-        return WriteBarrierBulkAction::NeedsSlowPath;
-    }
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    if (GCHeapUtilities::SoftwareWriteWatchIsEnabled())
-    {
-        GCHeapUtilities::SoftwareWriteWatchSetDirtyRegion(destination, byteCount);
-    }
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-    const WriteBarrierSideMetadataParameters& metadata = g_SlotLogWriteBarrierMetadata;
-    const WriteBarrierBulkScanParameters& bulkScan = g_SlotLogWriteBarrierBulkScan;
-    const uintptr_t WordBytes = sizeof(uintptr_t);
-    const uintptr_t WordBits = WordBytes * 8;
-    const uintptr_t WordMask = WordBytes - 1;
-    uintptr_t end = start + byteCount - 1;
-    uint8_t metadataByteShift = static_cast<uint8_t>(metadata.granularity_shift + 3);
-    uintptr_t metadataBase = reinterpret_cast<uintptr_t>(metadata.metadata_base);
-    uintptr_t firstMetadataByte = metadataBase + (start >> metadataByteShift);
-    uintptr_t lastMetadataByte = metadataBase + (end >> metadataByteShift);
-    uintptr_t firstMetadataWord = firstMetadataByte & ~WordMask;
-    uintptr_t lastMetadataWord = lastMetadataByte & ~WordMask;
-    uintptr_t metadataStorageStart = reinterpret_cast<uintptr_t>(bulkScan.metadata_start);
-    uintptr_t metadataStorageEnd = metadataStorageStart + bulkScan.metadata_size;
-
-    _ASSERTE((firstMetadataWord >= metadataStorageStart) &&
-             (lastMetadataWord < metadataStorageEnd));
-    if ((firstMetadataWord < metadataStorageStart) ||
-        (lastMetadataWord >= metadataStorageEnd))
-    {
-        return WriteBarrierBulkAction::NeedsSlowPath;
-    }
-
-    uintptr_t firstBit =
-        ((firstMetadataByte & WordMask) * 8) +
-        ((start >> metadata.granularity_shift) & 7);
-    uintptr_t lastBit =
-        ((lastMetadataByte & WordMask) * 8) +
-        ((end >> metadata.granularity_shift) & 7);
-
-    for (uintptr_t metadataWord = firstMetadataWord;
-         metadataWord <= lastMetadataWord;
-         metadataWord += WordBytes)
-    {
-        uintptr_t activeMask = UINTPTR_MAX;
-        if (metadataWord == firstMetadataWord)
-        {
-            activeMask <<= firstBit;
-        }
-        if ((metadataWord == lastMetadataWord) && (lastBit != (WordBits - 1)))
-        {
-            activeMask &= (static_cast<uintptr_t>(1) << (lastBit + 1)) - 1;
-        }
-
-        uintptr_t workBits =
-            VolatileLoad(reinterpret_cast<uintptr_t const volatile*>(metadataWord));
-        if (metadata.bit_meaning == WriteBarrierMetadataBitMeaning::WorkWhenBitIsClear)
-        {
-            workBits = ~workBits;
-        }
-
-        if ((workBits & activeMask) != 0)
-        {
-            return WriteBarrierBulkAction::NeedsSlowPath;
-        }
-
-        firstBit = 0;
-    }
-
-    return WriteBarrierBulkAction::AllClaimed;
-#else
-    UNREFERENCED_PARAMETER(destination);
-    UNREFERENCED_PARAMETER(byteCount);
-    return WriteBarrierBulkAction::CardTable;
-#endif // TARGET_AMD64
 }
 
-bool ErectWriteBarrierPre(Object** dst, Object* ref)
+// Calls the hook for every run of references of the layout of `type` inside [chunkStart, chunkEnd) of one element
+// (offsets are relative to the start of the GC layout; `dst` and `src` point to layout offset `dstLayoutOffset`).
+static void PreStoreLayoutRuns(
+    uint8_t* dst, const uint8_t* src, MethodTable* type, size_t dstLayoutOffset, size_t chunkStart, size_t chunkEnd)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef TARGET_AMD64
-    WriteBarrierBulkAction action = ClassifyWriteBarrierBulk(dst, sizeof(*dst));
-    if (action != WriteBarrierBulkAction::CardTable)
+    CGCDesc* map = CGCDesc::GetCGCDescFromMT(type);
+    const ptrdiff_t seriesCount = static_cast<ptrdiff_t>(map->GetNumSeries());
+    _ASSERTE(seriesCount > 0);
+    CGCDescSeries* series = map->GetLowestSeries();
+
+    for (ptrdiff_t seriesIndex = 0; seriesIndex < seriesCount; seriesIndex++, series++)
     {
-        if (action == WriteBarrierBulkAction::NeedsSlowPath)
+        const size_t seriesOffset = series->GetSeriesOffset() - OBJECT_SIZE;
+        const size_t seriesSize = series->GetSeriesSize() + type->GetBaseSize();
+        _ASSERTE(IS_ALIGNED(seriesOffset, sizeof(Object*)));
+        _ASSERTE(IS_ALIGNED(seriesSize, sizeof(Object*)));
+
+        size_t start = (seriesOffset > chunkStart) ? seriesOffset : chunkStart;
+        size_t seriesEnd = seriesOffset + seriesSize;
+        size_t end = (seriesEnd < chunkEnd) ? seriesEnd : chunkEnd;
+        if (start >= end)
         {
-            g_SlotLogWriteBarrierSlowPath(dst, VolatileLoad(dst), ref);
+            continue;
         }
-        return true;
+
+        size_t relative = start - dstLayoutOffset;
+        PreStoreRangeOfReferences(
+            reinterpret_cast<Object**>(dst + relative),
+            (src == nullptr) ? nullptr : reinterpret_cast<Object**>(const_cast<uint8_t*>(src) + relative),
+            (end - start) / sizeof(Object*));
     }
-    return false;
-#else
-    UNREFERENCED_PARAMETER(dst);
-    UNREFERENCED_PARAMETER(ref);
-    return false;
-#endif // TARGET_AMD64
 }
-
-bool ErectWriteBarrierRangePre(Object** dst, Object** src, size_t referenceCount)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef TARGET_AMD64
-    _ASSERTE(referenceCount <= (SIZE_T_MAX / sizeof(Object*)));
-    WriteBarrierBulkAction action =
-        ClassifyWriteBarrierBulk(dst, referenceCount * sizeof(Object*));
-    if (action != WriteBarrierBulkAction::CardTable)
-    {
-        if (action == WriteBarrierBulkAction::NeedsSlowPath)
-        {
-            g_SlotLogWriteBarrierRangeSlowPath(dst, src, referenceCount);
-        }
-        return true;
-    }
-    return false;
-#else
-    UNREFERENCED_PARAMETER(dst);
-    UNREFERENCED_PARAMETER(src);
-    UNREFERENCED_PARAMETER(referenceCount);
-    return false;
-#endif // TARGET_AMD64
-}
-
-#ifdef FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST
-extern "C" DLLEXPORT bool GC_WriteBarrierTest_InvokeEmptyRange(uintptr_t destination)
-{
-    return ErectWriteBarrierRangePre(reinterpret_cast<Object**>(destination), nullptr, 0);
-}
-#endif
 
 static bool ErectWriteBarrierLayoutRangePreCore(
     void* dst,
@@ -1637,98 +1533,79 @@ static bool ErectWriteBarrierLayoutRangePreCore(
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef TARGET_AMD64
+    if (!GCHeapUtilities::RequiresOldValueWriteBarrier())
+    {
+        return false;
+    }
+
     _ASSERTE(elementSize != 0);
     _ASSERTE(elementCount <= (SIZE_T_MAX / elementSize));
 
     if (type == nullptr)
     {
         _ASSERTE(elementSize == sizeof(Object*));
-        if (repeatSource)
+        if (src != nullptr && !repeatSource)
         {
-            WriteBarrierBulkAction action =
-                ClassifyWriteBarrierBulk(dst, elementSize * elementCount);
-            if (action == WriteBarrierBulkAction::CardTable)
-            {
-                return false;
-            }
-            if (action == WriteBarrierBulkAction::NeedsSlowPath)
-            {
-                Object* newReference =
-                    VolatileLoad(reinterpret_cast<Object* const*>(src));
-                Object** destination = reinterpret_cast<Object**>(dst);
-                for (size_t element = 0; element < elementCount; element++)
-                {
-                    ErectWriteBarrierPre(destination + element, newReference);
-                }
-            }
-            return true;
+            // A copy of a whole reference range: the bulk-move hook of the PR does it (the caller falls back to
+            // InlinedMemmoveGCRefsHelper).
+            return false;
         }
 
-        return ErectWriteBarrierRangePre(
-            reinterpret_cast<Object**>(dst),
-            reinterpret_cast<Object**>(const_cast<void*>(src)),
-            elementCount);
-    }
-
-    WriteBarrierBulkAction action =
-        ClassifyWriteBarrierBulk(dst, elementSize * elementCount);
-    if (action == WriteBarrierBulkAction::CardTable)
-    {
-        return false;
-    }
-    if (action == WriteBarrierBulkAction::AllClaimed)
-    {
+        // Clear, or fill with one value: the new values do not matter, only the old ones.
+        PreStoreRangeOfReferences(reinterpret_cast<Object**>(dst), nullptr, elementCount);
         return true;
     }
 
     _ASSERTE(type->ContainsGCPointers());
     _ASSERTE(IS_ALIGNED(elementSize, sizeof(Object*)));
 
-    CGCDesc* map = CGCDesc::GetCGCDescFromMT(type);
-    const ptrdiff_t seriesCount = static_cast<ptrdiff_t>(map->GetNumSeries());
-    _ASSERTE(seriesCount > 0);
-
     for (size_t element = 0; element < elementCount; element++)
     {
-        uint8_t* destinationElement =
-            reinterpret_cast<uint8_t*>(dst) + (element * elementSize);
+        uint8_t* destinationElement = reinterpret_cast<uint8_t*>(dst) + (element * elementSize);
         const uint8_t* sourceElement =
-            (src == nullptr)
+            (src == nullptr || repeatSource)
                 ? nullptr
-                : reinterpret_cast<const uint8_t*>(src) + (repeatSource ? 0 : (element * elementSize));
-        CGCDescSeries* series = map->GetLowestSeries();
+                : reinterpret_cast<const uint8_t*>(src) + (element * elementSize);
+        PreStoreLayoutRuns(destinationElement, sourceElement, type, 0, 0, elementSize);
+    }
 
-        for (ptrdiff_t seriesIndex = 0; seriesIndex < seriesCount; seriesIndex++, series++)
+    return true;
+}
+
+// Calls the hook for the references of `object` (by its own GC layout) that lie in [start, start + byteCount).
+bool ErectWriteBarrierObjectRangePre(Object* object, uint8_t* start, size_t byteCount)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (!GCHeapUtilities::RequiresOldValueWriteBarrier())
+    {
+        return false;
+    }
+
+    MethodTable* type = object->GetMethodTable();
+    _ASSERTE(!type->IsArray());
+    if (!type->ContainsGCPointers())
+    {
+        return true;
+    }
+
+    uint8_t* end = start + byteCount;
+    CGCDesc* map = CGCDesc::GetCGCDescFromMT(type);
+    CGCDescSeries* series = map->GetHighestSeries();
+    for (size_t seriesIndex = 0; seriesIndex < map->GetNumSeries(); seriesIndex++, series--)
+    {
+        uint8_t* seriesStart = reinterpret_cast<uint8_t*>(object) + series->GetSeriesOffset();
+        uint8_t* seriesEnd = seriesStart + series->GetSeriesSize() + type->GetBaseSize();
+        uint8_t* from = (seriesStart > start) ? seriesStart : start;
+        uint8_t* to = (seriesEnd < end) ? seriesEnd : end;
+        if (from < to)
         {
-            const size_t seriesOffset = series->GetSeriesOffset() - OBJECT_SIZE;
-            const size_t seriesSize = series->GetSeriesSize() + type->GetBaseSize();
-            _ASSERTE(IS_ALIGNED(seriesOffset, sizeof(Object*)));
-            _ASSERTE(IS_ALIGNED(seriesSize, sizeof(Object*)));
-            _ASSERTE((seriesOffset + seriesSize) <= elementSize);
-
-            for (size_t offset = 0; offset < seriesSize; offset += sizeof(Object*))
-            {
-                Object** destinationSlot =
-                    reinterpret_cast<Object**>(destinationElement + seriesOffset + offset);
-                Object* newReference = (sourceElement == nullptr)
-                    ? nullptr
-                    : VolatileLoad(reinterpret_cast<Object* const*>(sourceElement + seriesOffset + offset));
-                ErectWriteBarrierPre(destinationSlot, newReference);
-            }
+            PreStoreRangeOfReferences(
+                reinterpret_cast<Object**>(from), nullptr, static_cast<size_t>(to - from) / sizeof(Object*));
         }
     }
 
     return true;
-#else
-    UNREFERENCED_PARAMETER(dst);
-    UNREFERENCED_PARAMETER(src);
-    UNREFERENCED_PARAMETER(type);
-    UNREFERENCED_PARAMETER(elementSize);
-    UNREFERENCED_PARAMETER(elementCount);
-    UNREFERENCED_PARAMETER(repeatSource);
-    return false;
-#endif // TARGET_AMD64
 }
 
 bool ErectWriteBarrierLayoutRangePre(
@@ -1761,7 +1638,11 @@ bool ErectWriteBarrierLayoutChunkPre(
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef TARGET_AMD64
+    if (!GCHeapUtilities::RequiresOldValueWriteBarrier())
+    {
+        return false;
+    }
+
     _ASSERTE(type != nullptr);
     _ASSERTE(!type->IsArray());
     _ASSERTE(type->ContainsGCPointers());
@@ -1775,111 +1656,15 @@ bool ErectWriteBarrierLayoutChunkPre(
     _ASSERTE(IS_ALIGNED(chunkOffset, sizeof(Object*)));
     _ASSERTE(IS_ALIGNED(chunkSize, sizeof(Object*)));
 
-    WriteBarrierBulkAction action = ClassifyWriteBarrierBulk(dst, chunkSize);
-    if (action == WriteBarrierBulkAction::CardTable)
-    {
-        return false;
-    }
-    if (action == WriteBarrierBulkAction::AllClaimed)
-    {
-        return true;
-    }
-
     size_t chunkLayoutOffset = gcLayoutOffset + chunkOffset;
-    size_t chunkEnd = chunkLayoutOffset + chunkSize;
-    CGCDesc* map = CGCDesc::GetCGCDescFromMT(type);
-    const ptrdiff_t seriesCount = static_cast<ptrdiff_t>(map->GetNumSeries());
-    _ASSERTE(seriesCount > 0);
-    CGCDescSeries* lowestOffsetSeries = map->GetHighestSeries();
-
-    // GC series are sorted by descending offset in memory. Search through them
-    // in ascending-offset order so one native chunk never scans the full layout.
-    ptrdiff_t low = 0;
-    ptrdiff_t high = seriesCount;
-    while (low < high)
-    {
-        ptrdiff_t middle = low + ((high - low) / 2);
-        size_t middleOffset = lowestOffsetSeries[-middle].GetSeriesOffset() - OBJECT_SIZE;
-        if (middleOffset < chunkLayoutOffset)
-        {
-            low = middle + 1;
-        }
-        else
-        {
-            high = middle;
-        }
-    }
-
-    ptrdiff_t seriesIndex = low;
-    if (seriesIndex > 0)
-    {
-        CGCDescSeries* previous = lowestOffsetSeries - (seriesIndex - 1);
-        size_t previousOffset = previous->GetSeriesOffset() - OBJECT_SIZE;
-        size_t previousSize = previous->GetSeriesSize() + type->GetBaseSize();
-        if ((previousOffset + previousSize) > chunkLayoutOffset)
-        {
-            seriesIndex--;
-        }
-    }
-
-    for (; seriesIndex < seriesCount; seriesIndex++)
-    {
-        CGCDescSeries* series = lowestOffsetSeries - seriesIndex;
-        const size_t seriesOffset = series->GetSeriesOffset() - OBJECT_SIZE;
-        const size_t seriesSize = series->GetSeriesSize() + type->GetBaseSize();
-        _ASSERTE(IS_ALIGNED(seriesOffset, sizeof(Object*)));
-        _ASSERTE(IS_ALIGNED(seriesSize, sizeof(Object*)));
-        _ASSERTE((seriesOffset + seriesSize) <=
-            type->GetNumInstanceFieldBytesIfContainsGCPointers());
-        if (seriesOffset >= chunkEnd)
-        {
-            break;
-        }
-
-        size_t start = (seriesOffset > chunkLayoutOffset) ? seriesOffset : chunkLayoutOffset;
-        size_t seriesEnd = seriesOffset + seriesSize;
-        size_t end = (seriesEnd < chunkEnd) ? seriesEnd : chunkEnd;
-        for (size_t offset = start; offset < end; offset += sizeof(Object*))
-        {
-            size_t chunkRelativeOffset = offset - chunkLayoutOffset;
-            Object** destinationSlot =
-                reinterpret_cast<Object**>(reinterpret_cast<uint8_t*>(dst) + chunkRelativeOffset);
-            Object* newReference = (src == nullptr)
-                ? nullptr
-                : VolatileLoad(reinterpret_cast<Object* const*>(
-                      reinterpret_cast<const uint8_t*>(src) + chunkRelativeOffset));
-            ErectWriteBarrierPre(destinationSlot, newReference);
-        }
-    }
-
+    PreStoreLayoutRuns(
+        reinterpret_cast<uint8_t*>(dst),
+        reinterpret_cast<const uint8_t*>(src),
+        type,
+        chunkLayoutOffset,
+        chunkLayoutOffset,
+        chunkLayoutOffset + chunkSize);
     return true;
-#else
-    UNREFERENCED_PARAMETER(dst);
-    UNREFERENCED_PARAMETER(src);
-    UNREFERENCED_PARAMETER(type);
-    UNREFERENCED_PARAMETER(gcLayoutOffset);
-    UNREFERENCED_PARAMETER(elementSize);
-    UNREFERENCED_PARAMETER(chunkOffset);
-    UNREFERENCED_PARAMETER(chunkSize);
-    return false;
-#endif // TARGET_AMD64
-}
-
-void ErectWriteBarrierDependentEdgePre(void* dst, Object* oldRef, Object* newRef)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef TARGET_AMD64
-    WriteBarrierDependentEdgeSlowPath slowPath = g_SlotLogWriteBarrierDependentEdgeSlowPath;
-    if (slowPath != nullptr)
-    {
-        slowPath(dst, oldRef, newRef);
-    }
-#else
-    UNREFERENCED_PARAMETER(dst);
-    UNREFERENCED_PARAMETER(oldRef);
-    UNREFERENCED_PARAMETER(newRef);
-#endif // TARGET_AMD64
 }
 
 void ErectWriteBarrier(OBJECTREF *dst, OBJECTREF ref)
@@ -1936,14 +1721,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
 
     if (g_heap_type != GC_HEAP_CUSTOM)
     {
-        if (ref->Collectible())
-        {
-            Object* newLoaderAllocator = reinterpret_cast<Object*>(ref->GetLoaderAllocatorObjectForGC());
-
-            // This is the first MethodTable store into a newly allocated UOH object.
-            // GC_ALLOC_ZEROING_OPTIONAL permits the slot to contain stale bytes.
-            ErectWriteBarrierDependentEdgePre(dst, nullptr, newLoaderAllocator);
-        }
     *dst = ref;
 
 #ifdef WRITE_BARRIER_CHECK

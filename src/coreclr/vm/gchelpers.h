@@ -89,16 +89,10 @@ extern void ThrowOutOfMemoryDimensionsExceeded();
 
 void ErectWriteBarrier(OBJECTREF* dst, OBJECTREF ref);
 
-enum class WriteBarrierBulkAction
-{
-    CardTable,
-    AllClaimed,
-    NeedsSlowPath,
-};
-
-WriteBarrierBulkAction ClassifyWriteBarrierBulk(void* destination, size_t byteCount);
-bool ErectWriteBarrierPre(Object** dst, Object* ref);
-bool ErectWriteBarrierRangePre(Object** dst, Object** src, size_t referenceCount);
+// Old-value store hooks for a collector that needs the old value of every overwritten reference (LXR). See the
+// comment in gchelpers.cpp. They return true when the collector has been told about the old values and the caller
+// must overwrite the destination without the stock card marking; false for the stock path.
+bool ErectWriteBarrierObjectRangePre(Object* object, uint8_t* start, size_t byteCount);
 bool ErectWriteBarrierLayoutRangePre(
     void* dst, const void* src, MethodTable* type, size_t elementSize, size_t elementCount);
 bool ErectWriteBarrierLayoutFillPre(
@@ -111,7 +105,6 @@ bool ErectWriteBarrierLayoutChunkPre(
     size_t elementSize,
     size_t chunkOffset,
     size_t chunkSize);
-void ErectWriteBarrierDependentEdgePre(void* dst, Object* oldRef, Object* newRef);
 
 void PublishFrozenObject(Object*& orObject);
 

@@ -12,18 +12,6 @@
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
 
-// Whether the loaded collector's WriteBarrierParameters contains the 6.1 tail.
-extern bool g_write_barrier_parameters_include_shape;
-
-// Whether the loaded collector's WriteBarrierParameters contains the 6.2 tail.
-extern bool g_write_barrier_parameters_include_complete_store;
-
-// Whether the loaded collector's WriteBarrierParameters contains the 6.3 tail.
-extern bool g_write_barrier_parameters_include_epoch_reset;
-
-// Whether the loaded collector's WriteBarrierParameters contains the 6.4 tail.
-extern bool g_write_barrier_parameters_include_bulk_scan;
-
 // Immutable after GC startup.
 extern AllocationCompleteCallback g_allocation_complete_callback;
 
@@ -381,17 +369,26 @@ public:
         size_t alignedObjectSize,
         AllocationCompleteFlags flags);
 
-    // Reserves the process-wide write-barrier calling convention. The standard
-    // ABI cannot be selected after any compilation observed the specialized ABI.
-    static bool TryPrepareWriteBarrierCodegenMode(bool useStandardAbi, bool tracksOldValue);
+    // Returns whether the collector needs the old value of every overwritten reference field (an LXR-style
+    // collector, see FASTGC_REQUIRES_OLD_VALUE). Immutable after GC startup; the JIT, ReadyToRun and the runtime
+    // store sites all follow it.
+    inline static bool RequiresOldValueWriteBarrier()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (s_fastGCFunctions.flags & FASTGC_REQUIRES_OLD_VALUE) != 0;
+    }
 
-    // Publishes the standard ABI after its helper targets have been installed.
-    static void CompleteStandardWriteBarrierCodegenMode();
-
-    // Returns the immutable write-barrier settings for a JIT compilation.
-    // Observing an uninitialized mode commits that compilation to the
-    // specialized convention.
-    static void GetWriteBarrierCodegenModeForJit(bool* useStandardAbi, bool* tracksOldValue);
+    // The pre-store hook of the PR (check_escape). Call it BEFORE a store of a reference into a heap object that
+    // does not go through the JIT write barrier. The collector may read *dst, so the destination must still hold the
+    // old value. A no-op for the default collector.
+    inline static void PreStoreCheck(Object** dst, Object* ref)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (g_heap_type == GC_HEAP_CUSTOM)
+        {
+            s_fastGCFunctions.check_escape(dst, ref);
+        }
+    }
 
     // Records a change in eventing state. This ultimately will inform the GC that it needs to be aware
     // of new events being enabled.

@@ -14,10 +14,9 @@
 #define GC_INTERFACE_MINOR_VERSION 7
 
 // Minor versions above the 6.0 base (custom GC support) that the LXR port adds.
-#define GC_WRITE_BARRIER_SHAPE_INTERFACE_MINOR_VERSION 1
-#define GC_WRITE_BARRIER_COMPLETE_STORE_INTERFACE_MINOR_VERSION 2
-#define GC_WRITE_BARRIER_EPOCH_RESET_INTERFACE_MINOR_VERSION 3
-#define GC_WRITE_BARRIER_BULK_SCAN_INTERFACE_MINOR_VERSION 4
+// 6.1 adds the old-value store hooks at the end of FastGCFunctions. Minors 6.2 to 6.4 (the slot-log barrier shape
+// negotiation) were removed when LXR moved to the PR #3316 barrier mechanism.
+#define GC_OLD_VALUE_STORE_HOOKS_INTERFACE_MINOR_VERSION 1
 #define GC_ALLOCATION_NOTIFICATION_INTERFACE_MINOR_VERSION 5
 #define GC_OBJECT_REFERENCE_ENUMERATION_INTERFACE_MINOR_VERSION 6
 #define GC_OBJECT_HEADER_BITS_INTERFACE_MINOR_VERSION 7
@@ -90,76 +89,6 @@ enum class WriteBarrierParametersMask
     RegionShr = 1 << 10,
     RegionUseBitwiseWriteBarrier = 1 << 11,
     WriteWatchTable = 1 << 12,
-};
-
-enum class WriteBarrierShape : uint32_t
-{
-    CardTable = 0,
-    SideMetadataFieldLog = 1,
-};
-
-enum class WriteBarrierRequestStatus : uint32_t
-{
-    NotProcessed = 0,
-    Accepted = 1,
-    Unsupported = 2,
-};
-
-enum class WriteBarrierMetadataBitMeaning : uint8_t
-{
-    WorkWhenBitIsClear = 0,
-    WorkWhenBitIsSet = 1,
-};
-
-// Called before the field is overwritten. For conditional atomic writes,
-// new_reference is the proposed value and is not guaranteed to be committed.
-// The helper must not trigger a garbage collection, block, switch GC mode, or
-// throw across the callback.
-typedef void (LOCALGC_CALLCONV *WriteBarrierSlowPath)(
-    Object** destination,
-    Object* old_reference,
-    Object* new_reference);
-
-// Called before a contiguous range of reference fields is overwritten. The
-// helper must observe the complete source and destination ranges before any
-// destination field is changed. A null source means every proposed new
-// reference in the range is null.
-typedef void (LOCALGC_CALLCONV *WriteBarrierRangeSlowPath)(
-    Object** destination,
-    Object** source,
-    size_t reference_count);
-
-// Called before a native slot changes a logical managed-object edge.
-typedef void (LOCALGC_CALLCONV *WriteBarrierDependentEdgeSlowPath)(
-    void* destination,
-    Object* old_reference,
-    Object* new_reference);
-
-// Called while mutators are suspended before they resume after a finished GC.
-typedef void (LOCALGC_CALLCONV *WriteBarrierEpochReset)();
-
-struct WriteBarrierSideMetadataParameters
-{
-    // A biased base address. For destination address D, the metadata byte is
-    // metadata_base + (D >> (granularity_shift + 3)). The bit within that byte
-    // is (D >> granularity_shift) & 7.
-    uint8_t* metadata_base;
-
-    WriteBarrierSlowPath slow_path;
-
-    // The base-2 logarithm of destination bytes represented by one metadata bit.
-    uint8_t granularity_shift;
-
-    WriteBarrierMetadataBitMeaning bit_meaning;
-};
-
-struct WriteBarrierBulkScanParameters
-{
-    // The native-word-aligned storage that backs metadata_base for the entire
-    // managed heap. Claims must transition atomically from work to claimed,
-    // and resets must occur only while mutators are suspended.
-    uint8_t* metadata_start;
-    size_t metadata_size;
 };
 
 enum class AllocationNotificationRequestStatus : uint32_t
@@ -376,50 +305,27 @@ struct WriteBarrierParameters
 
     // bitmask indicating which parameters are valid in this structure. Used for custom GCs
     WriteBarrierParametersMask parameters_mask;
-
-    // The write-barrier mechanics requested by the collector. Used only for
-    // WriteBarrierOp::Initialize. CardTable is the compatibility default. The
-    // explicit pointer alignment keeps the tail beyond the complete 6.0
-    // parameter block, including its trailing padding.
-    alignas(void*) WriteBarrierShape write_barrier_shape;
-
-    // Set to NotProcessed by the collector before the Initialize request. A
-    // runtime that understands this tail replaces it with Accepted or Unsupported.
-    WriteBarrierRequestStatus write_barrier_request_status;
-
-    // Used only when write_barrier_shape is SideMetadataFieldLog.
-    WriteBarrierSideMetadataParameters write_barrier_side_metadata;
-
-    // Used only when write_barrier_shape is SideMetadataFieldLog. This tail is
-    // present when the collector reports interface version 6.2 or later.
-    alignas(void*) WriteBarrierRangeSlowPath write_barrier_range_slow_path;
-    WriteBarrierDependentEdgeSlowPath write_barrier_dependent_edge_slow_path;
-
-    // Present when the collector reports interface version 6.3 or later.
-    WriteBarrierEpochReset write_barrier_epoch_reset;
-
-    // Used only when write_barrier_shape is SideMetadataFieldLog. This tail is
-    // present when the collector reports interface version 6.4 or later.
-    alignas(void*) WriteBarrierBulkScanParameters write_barrier_bulk_scan;
 };
-
-// The 6.0 block (custom GC support) ends with parameters_mask. The tail that the LXR port adds must start
-// after it and keep its order, so that a collector built against 6.0 (for example Satori) and a runtime
-// that knows the tail agree on every offset the collector provides.
-static_assert(offsetof(WriteBarrierParameters, write_barrier_shape) >=
-              (offsetof(WriteBarrierParameters, parameters_mask) + sizeof(WriteBarrierParametersMask)),
-              "The LXR tail of WriteBarrierParameters must follow the 6.0 block");
-static_assert(offsetof(WriteBarrierParameters, write_barrier_shape) < offsetof(WriteBarrierParameters, write_barrier_request_status) &&
-              offsetof(WriteBarrierParameters, write_barrier_request_status) < offsetof(WriteBarrierParameters, write_barrier_side_metadata) &&
-              offsetof(WriteBarrierParameters, write_barrier_side_metadata) < offsetof(WriteBarrierParameters, write_barrier_range_slow_path) &&
-              offsetof(WriteBarrierParameters, write_barrier_range_slow_path) < offsetof(WriteBarrierParameters, write_barrier_epoch_reset) &&
-              offsetof(WriteBarrierParameters, write_barrier_epoch_reset) < offsetof(WriteBarrierParameters, write_barrier_bulk_scan),
-              "The LXR tail of WriteBarrierParameters must keep its order");
 
 using WriteBarrierFunction = void (*)(void* context, Object** dst, Object* ref);
 using IsInGCHeapFunction = bool (*)(void* context, void* address);
 using BulkMoveWithWriteBarrierFunction = void (*)(void* context, void* destination, const void* source, size_t length);
 using CheckEscapeFunction = void (*)(Object** dst, Object* ref);
+
+// LXR extension (interface 6.1). Called before `count` consecutive reference slots at `dst` are overwritten by a
+// copy (src is the first source slot), a clear or a fill (src is null). The collector may read the old values in the
+// destination slots. The runtime calls it for exact-layout struct copies, Clear and Fill, which the bulk-move hook
+// cannot express because they do not copy whole reference ranges.
+using PreStoreRangeFunction = void (*)(void* context, Object** dst, Object** src, size_t count);
+
+// FastGCFunctions.flags
+enum FastGCFunctionsFlags : uint32_t
+{
+    // The collector needs the OLD value of every overwritten reference field, also when the new value is null, a frozen
+    // object or provably not in the heap. The JIT then keeps the barrier for those stores, and CoreLib uses the
+    // old-value copy, clear and fill paths. check_escape is called before every runtime store (it may read *dst).
+    FASTGC_REQUIRES_OLD_VALUE = 1,
+};
 
 struct FastGCFunctions
 {
@@ -429,6 +335,11 @@ struct FastGCFunctions
     IsInGCHeapFunction is_in_gc_heap;
     CheckEscapeFunction check_escape;
     BulkMoveWithWriteBarrierFunction bulk_move_with_write_barrier;
+
+    // The fields below exist since interface 6.1. The runtime zeroes the structure before the call and ignores
+    // them for a collector that reports a lower minor version.
+    PreStoreRangeFunction pre_store_range;
+    uint32_t flags;
 };
 
 // Describes a patchable, pointer-sized data slot embedded directly in a custom assign-reference

@@ -586,13 +586,14 @@ FCIMPL5(
     _ASSERTE(IS_ALIGNED(value, sizeof(size_t)));
     _ASSERTE(IS_ALIGNED(elementSize, sizeof(size_t)));
 
-    bool useSlotLog =
+    // True when the collector logged the old values before the stores: the copy then needs no further barrier.
+    bool oldValuesLogged =
         ErectWriteBarrierLayoutFillPre(dst, value, type, elementSize, elementCount);
     for (size_t element = 0; element < elementCount; element++)
     {
         void* destination =
             reinterpret_cast<uint8_t*>(dst) + (element * elementSize);
-        if (useSlotLog)
+        if (oldValuesLogged)
         {
             InlinedForwardGCSafeCopyHelper(destination, value, elementSize);
         }
@@ -1881,16 +1882,11 @@ FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
         GCHeapUtilities::GetFastGCFunctions().check_escape((Object**)location, (Object*)value);
     }
 
-    bool useSlotLog =
-        ErectWriteBarrierPre(reinterpret_cast<Object**>(location), reinterpret_cast<Object*>(value));
     LPVOID ret = InterlockedExchangeT(location, value);
 #ifdef _DEBUG
     Thread::ObjectRefAssign((OBJECTREF *)location);
 #endif
-    if (!useSlotLog)
-    {
-        ErectWriteBarrier((OBJECTREF*) location, ObjectToOBJECTREF((Object*) value));
-    }
+    ErectWriteBarrier((OBJECTREF*) location, ObjectToOBJECTREF((Object*) value));
     return ret;
 }
 FCIMPLEND
@@ -1905,18 +1901,13 @@ FCIMPL3(LPVOID,COMInterlocked::CompareExchangeObject, LPVOID *location, LPVOID v
         GCHeapUtilities::GetFastGCFunctions().check_escape((Object**)location, (Object*)value);
     }
 
-    bool useSlotLog =
-        ErectWriteBarrierPre(reinterpret_cast<Object**>(location), reinterpret_cast<Object*>(value));
     // <TODO>@todo: only set ref if is updated</TODO>
     LPVOID ret = InterlockedCompareExchangeT(location, value, comparand);
     if (ret == comparand) {
 #ifdef _DEBUG
         Thread::ObjectRefAssign((OBJECTREF *)location);
 #endif
-        if (!useSlotLog)
-        {
-            ErectWriteBarrier((OBJECTREF*) location, ObjectToOBJECTREF((Object*) value));
-        }
+        ErectWriteBarrier((OBJECTREF*) location, ObjectToOBJECTREF((Object*) value));
     }
     return ret;
 }

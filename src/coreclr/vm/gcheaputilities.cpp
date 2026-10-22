@@ -65,10 +65,6 @@ GC_LOAD_STATUS g_gc_load_status = GC_LOAD_STATUS_BEFORE_START;
 
 // The version of the GC that we have loaded.
 VersionInfo g_gc_version_info;
-bool g_write_barrier_parameters_include_shape;
-bool g_write_barrier_parameters_include_complete_store;
-bool g_write_barrier_parameters_include_epoch_reset;
-bool g_write_barrier_parameters_include_bulk_scan;
 AllocationCompleteCallback g_allocation_complete_callback = nullptr;
 void* g_allocation_complete_context = nullptr;
 
@@ -78,7 +74,17 @@ PTR_VOID g_gc_module_base;
 FastGCFunctions GCHeapUtilities::s_fastGCFunctions = {};
 void GCHeapUtilities::InitializeFastGCFunctions(IGCHeap* gcHeap)
 {
+    s_fastGCFunctions = {};
     gcHeap->GetFastGCFunctions(&s_fastGCFunctions);
+
+    // The fields after bulk_move_with_write_barrier exist since interface 6.1. A collector that was built against 6.0
+    // does not know them, so they stay zero for it.
+    if ((g_gc_version_info.MajorVersion != GC_INTERFACE_MAJOR_VERSION) ||
+        (g_gc_version_info.MinorVersion < GC_OLD_VALUE_STORE_HOOKS_INTERFACE_MINOR_VERSION))
+    {
+        s_fastGCFunctions.pre_store_range = nullptr;
+        s_fastGCFunctions.flags = 0;
+    }
 }
 
 // GC entrypoints for the linked-in GC. These symbols are invoked
@@ -97,119 +103,6 @@ PTR_VOID GCHeapUtilities::GetGCModuleBase()
 {
     assert(g_gc_module_base);
     return g_gc_module_base;
-}
-
-namespace
-{
-enum WriteBarrierCodegenMode : LONG
-{
-    WriteBarrierCodegenModeUninitialized,
-    WriteBarrierCodegenModeSpecialized,
-    WriteBarrierCodegenModeStandardInitializing,
-    WriteBarrierCodegenModeStandard,
-    WriteBarrierCodegenModeSpecializedObserved,
-};
-
-LONG g_write_barrier_codegen_mode;
-bool g_write_barrier_tracks_old_value;
-}
-
-bool GCHeapUtilities::TryPrepareWriteBarrierCodegenMode(bool useStandardAbi, bool tracksOldValue)
-{
-    assert(!tracksOldValue || useStandardAbi);
-
-    LONG desiredMode =
-        useStandardAbi ? WriteBarrierCodegenModeStandardInitializing : WriteBarrierCodegenModeSpecialized;
-
-    while (true)
-    {
-        LONG currentMode = VolatileLoad(&g_write_barrier_codegen_mode);
-
-        if (currentMode == WriteBarrierCodegenModeUninitialized)
-        {
-            if (InterlockedCompareExchange(
-                    &g_write_barrier_codegen_mode,
-                    desiredMode,
-                    WriteBarrierCodegenModeUninitialized) == WriteBarrierCodegenModeUninitialized)
-            {
-                if (useStandardAbi)
-                {
-                    VolatileStore(&g_write_barrier_tracks_old_value, tracksOldValue);
-                }
-
-                return true;
-            }
-
-            continue;
-        }
-
-        if (!useStandardAbi && (currentMode == WriteBarrierCodegenModeSpecializedObserved))
-        {
-            if (InterlockedCompareExchange(
-                    &g_write_barrier_codegen_mode,
-                    WriteBarrierCodegenModeSpecialized,
-                    WriteBarrierCodegenModeSpecializedObserved) == WriteBarrierCodegenModeSpecializedObserved)
-            {
-                return true;
-            }
-
-            continue;
-        }
-
-        return false;
-    }
-}
-
-void GCHeapUtilities::CompleteStandardWriteBarrierCodegenMode()
-{
-    if (InterlockedCompareExchange(
-            &g_write_barrier_codegen_mode,
-            WriteBarrierCodegenModeStandard,
-            WriteBarrierCodegenModeStandardInitializing) != WriteBarrierCodegenModeStandardInitializing)
-    {
-        _ASSERTE(!"Unexpected write-barrier codegen mode");
-    }
-}
-
-void GCHeapUtilities::GetWriteBarrierCodegenModeForJit(bool* useStandardAbi, bool* tracksOldValue)
-{
-    assert(useStandardAbi != nullptr);
-    assert(tracksOldValue != nullptr);
-
-    while (true)
-    {
-        LONG currentMode = VolatileLoad(&g_write_barrier_codegen_mode);
-
-        if (currentMode == WriteBarrierCodegenModeStandard)
-        {
-            *useStandardAbi = true;
-            *tracksOldValue = VolatileLoad(&g_write_barrier_tracks_old_value);
-            return;
-        }
-
-        if (currentMode == WriteBarrierCodegenModeStandardInitializing)
-        {
-            YieldProcessor();
-            continue;
-        }
-
-        if (currentMode != WriteBarrierCodegenModeUninitialized)
-        {
-            *useStandardAbi = false;
-            *tracksOldValue = false;
-            return;
-        }
-
-        if (InterlockedCompareExchange(
-                &g_write_barrier_codegen_mode,
-                WriteBarrierCodegenModeSpecializedObserved,
-                WriteBarrierCodegenModeUninitialized) == WriteBarrierCodegenModeUninitialized)
-        {
-            *useStandardAbi = false;
-            *tracksOldValue = false;
-            return;
-        }
-    }
 }
 
 HRESULT GCHeapUtilities::ConfigureAllocationNotification(IGCHeap* gcHeap, const VersionInfo& version)
@@ -252,13 +145,6 @@ HRESULT GCHeapUtilities::ConfigureAllocationNotification(IGCHeap* gcHeap, const 
     parameters->request_status = AllocationNotificationRequestStatus::Unsupported;
     return E_NOTIMPL;
 #else
-    if (g_pConfig->ReadyToRun())
-    {
-        LogErrorToHost("GC allocation notification requires ReadyToRun to be disabled.");
-        parameters->request_status = AllocationNotificationRequestStatus::Unsupported;
-        return E_NOTIMPL;
-    }
-
     g_allocation_complete_callback = parameters->callback;
     g_allocation_complete_context = parameters->context;
     parameters->request_status = AllocationNotificationRequestStatus::Accepted;
@@ -730,18 +616,6 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGCName, LPCWSTR standaloneGCPath)
     g_gc_load_status = GC_LOAD_STATUS_GET_INITIALIZE;
     IGCHeap* heap;
     IGCHandleManager* manager;
-    g_write_barrier_parameters_include_shape =
-        (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
-        (g_gc_version_info.MinorVersion >= GC_WRITE_BARRIER_SHAPE_INTERFACE_MINOR_VERSION);
-    g_write_barrier_parameters_include_complete_store =
-        (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
-        (g_gc_version_info.MinorVersion >= GC_WRITE_BARRIER_COMPLETE_STORE_INTERFACE_MINOR_VERSION);
-    g_write_barrier_parameters_include_epoch_reset =
-        (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
-        (g_gc_version_info.MinorVersion >= GC_WRITE_BARRIER_EPOCH_RESET_INTERFACE_MINOR_VERSION);
-    g_write_barrier_parameters_include_bulk_scan =
-        (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
-        (g_gc_version_info.MinorVersion >= GC_WRITE_BARRIER_BULK_SCAN_INTERFACE_MINOR_VERSION);
     HRESULT initResult = initFunc(gcToClr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {
@@ -789,10 +663,6 @@ HRESULT InitializeDefaultGC()
 
     IGCHeap* heap;
     IGCHandleManager* manager;
-    g_write_barrier_parameters_include_shape = true;
-    g_write_barrier_parameters_include_complete_store = true;
-    g_write_barrier_parameters_include_epoch_reset = true;
-    g_write_barrier_parameters_include_bulk_scan = true;
     HRESULT initResult = GC_Initialize(nullptr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {

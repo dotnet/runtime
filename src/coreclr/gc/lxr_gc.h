@@ -123,6 +123,9 @@ public:
     uint64_t GetTotalAllocatedBytesPrecise() override;
     void GetAssignRefFunctions(void** assignRef, size_t* assignRefSize, void** assignRefChecked, size_t* assignRefCheckedSize, uintptr_t** avLocationsList, GCWriteBarrierPatchableValue** patchableValues) override;
 
+    // Called by the assembly write barrier (through LxrBarrierSlowPath) when the unlog bit of a field is set.
+    static void BarrierSlowPath(Object** slot);
+
     AllocationNotificationParameters* GetAllocationNotificationParameters() override;
     ObjectReferenceEnumerationParameters* GetObjectReferenceEnumerationParameters() override;
     ObjectHeaderBitsParameters* GetObjectHeaderBitsParameters() override;
@@ -185,10 +188,17 @@ private:
     static bool WalkHeapObject(Object* object, size_t size, void* context);
     static bool IsImmortal(Object* object, void* context);
     static void LOCALGC_CALLCONV AllocationComplete(Object* object, size_t size, AllocationCompleteFlags flags, void* context);
-    static void LOCALGC_CALLCONV WriteBarrier(Object** slot, Object* oldTarget, Object* newTarget);
-    static void LOCALGC_CALLCONV RangeBarrier(Object** destination, Object** source, size_t count);
-    static void LOCALGC_CALLCONV DependentBarrier(void* destination, Object* oldTarget, Object* newTarget);
-    static void LOCALGC_CALLCONV EpochReset();
+
+    // The hooks that LXR hands to the runtime in FastGCFunctions (PR #3316 interface plus the 6.1 extension), and the
+    // function that the assembly write barrier calls. All of them log the OLD value of a field before it is
+    // overwritten; none of them changes the field.
+    static void LogOldValue(Object** slot);
+    static void LogOldValues(Object** destination, size_t count);
+    static void CheckEscape(Object** destination, Object* newReference);
+    static bool IsInHeap(void* context, void* address);
+    static void NoPostStoreBarrier(void* context, Object** destination, Object* newReference);
+    static void PreStoreRange(void* context, Object** destination, Object** source, size_t count);
+    static void BulkMoveWithWriteBarrier(void* context, void* destination, const void* source, size_t length);
 
     void Fatal(const char* message) const;
     void Unsupported(const char* operation) const;
