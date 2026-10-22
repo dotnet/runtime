@@ -6,114 +6,6 @@ using System.Threading;
 
 namespace System.Transactions
 {
-    internal sealed class CheapUnfairReaderWriterLock
-    {
-        private ManualResetEvent? _writerFinishedEvent;
-
-        private int _readersIn;
-        private int _readersOut;
-        private bool _writerPresent;
-
-        private readonly Lock _writerLock = new Lock();
-
-        // Spin lock params
-        private const int MAX_SPIN_COUNT = 100;
-        private const int SLEEP_TIME = 500;
-
-        public CheapUnfairReaderWriterLock()
-        {
-        }
-
-        // Acquire on _readersOut: once a reader's exit is seen, its writes inside the lock must be too.
-        private bool ReadersPresent => _readersIn != Volatile.Read(ref _readersOut);
-
-        private ManualResetEvent WriterFinishedEvent
-        {
-            get
-            {
-                if (_writerFinishedEvent == null)
-                {
-                    var newEvent = new ManualResetEvent(true);
-
-                    if (Interlocked.CompareExchange(ref _writerFinishedEvent, newEvent, null) is not null)
-                    {
-                        newEvent.Dispose();
-                    }
-                }
-                return _writerFinishedEvent;
-            }
-        }
-
-        public int EnterReadLock()
-        {
-            int readerIndex;
-            do
-            {
-                if (Volatile.Read(ref _writerPresent))
-                {
-                    WriterFinishedEvent.WaitOne();
-                }
-
-                readerIndex = Interlocked.Increment(ref _readersIn);
-
-                if (!Volatile.Read(ref _writerPresent))
-                {
-                    break;
-                }
-
-                Interlocked.Decrement(ref _readersIn);
-            }
-            while (true);
-
-            return readerIndex;
-        }
-
-        public void EnterWriteLock()
-        {
-            _writerLock.Enter();
-
-            _writerPresent = true;
-            // Pairs with EnterReadLock: publish _writerPresent before reading the reader counts.
-            Interlocked.MemoryBarrier();
-            WriterFinishedEvent.Reset();
-
-            do
-            {
-                int i = 0;
-                while (ReadersPresent && i < MAX_SPIN_COUNT)
-                {
-                    Thread.Sleep(0);
-                    i++;
-                }
-
-                if (ReadersPresent)
-                {
-                    Thread.Sleep(SLEEP_TIME);
-                }
-            }
-            while (ReadersPresent);
-        }
-
-        public void ExitReadLock()
-        {
-            Interlocked.Increment(ref _readersOut);
-        }
-
-        public void ExitWriteLock()
-        {
-            try
-            {
-                Volatile.Write(ref _writerPresent, false);
-                WriterFinishedEvent.Set();
-            }
-            finally
-            {
-                _writerLock.Exit();
-            }
-        }
-    }
-
-
     // This transaction table implementation uses an array of lists to avoid contention.  The list for a
     // transaction is decided by its hashcode.
     internal sealed class TransactionTable
@@ -133,11 +25,13 @@ namespace System.Transactions
         private long _ticks;
         private long _lastTimerTime;
 
+        private int _nextTransactionId;
+
         // Sets of arrays of transactions.
         private readonly BucketSet _headBucketSet;
 
         // Synchronize adding transactions with shutting off the timer and started events.
-        private readonly CheapUnfairReaderWriterLock _rwLock;
+        private readonly ReaderWriterLockSlim _rwLock;
 
         internal TransactionTable()
         {
@@ -158,7 +52,7 @@ namespace System.Transactions
             _headBucketSet = new BucketSet(this, long.MaxValue);
 
             // Allocate the lock
-            _rwLock = new CheapUnfairReaderWriterLock();
+            _rwLock = new ReaderWriterLockSlim();
         }
 
 
@@ -218,10 +112,10 @@ namespace System.Transactions
         // absolute timeout.
         internal int Add(InternalTransaction txNew)
         {
-            // Tell the runtime that we are modifying global state.
-            int readerIndex;
+            int transactionHash = Interlocked.Increment(ref _nextTransactionId);
 
-            readerIndex = _rwLock.EnterReadLock();
+            _rwLock.EnterReadLock();
+
             try
             {
                 // Start the timer if needed before checking the current time since the current
@@ -251,7 +145,7 @@ namespace System.Transactions
                 _rwLock.ExitReadLock();
             }
 
-            return readerIndex;
+            return transactionHash;
         }
 
 
