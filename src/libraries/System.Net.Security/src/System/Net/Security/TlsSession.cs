@@ -1017,7 +1017,7 @@ namespace System.Net.Security
                 {
                     EnsureCredentialsAcquired();
 
-                    // SecureTransport does not pick up a certificate set after its CertificateRequest stop.
+                    // SecureTransport does not request credentials again after CertificateRequested.
                     if (isCredentialResume && _securityContext is not null && _options.CertificateContext is not null)
                     {
                         SslStreamPal.TryUpdateClintCertificate(ActiveCredentialsRef(), _securityContext, _options);
@@ -1032,8 +1032,7 @@ namespace System.Net.Security
                         out bytesConsumed,
                         _options);
 
-                    // SecureTransport stops at the CertificateRequest even when a client certificate is
-                    // configured; install it and continue, as SslStream does.
+                    // SecureTransport still stops at CertificateRequest with a configured certificate.
                     if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded &&
                         _options.CertificateContext is not null &&
                         SslStreamPal.TryUpdateClintCertificate(ActiveCredentialsRef(), _securityContext, _options))
