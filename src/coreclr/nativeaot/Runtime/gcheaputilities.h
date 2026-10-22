@@ -98,10 +98,6 @@ public:
     // Initializes a standalone GC.
     static HRESULT InitializeStandaloneGC();
 
-    // Accepts the disabled descriptor and rejects enabled allocation
-    // notification for precompiled NativeAOT images.
-    static HRESULT ConfigureAllocationNotification(IGCHeap* gcHeap);
-
     // Accepts object-reference enumeration. NativeAOT MethodTables are not collectible.
     static HRESULT ConfigureObjectReferenceEnumeration(IGCHeap* gcHeap);
 

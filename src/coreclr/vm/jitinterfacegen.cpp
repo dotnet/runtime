@@ -11,13 +11,6 @@
 #include "ecall.h"
 #include "writebarriermanager.h"
 
-#ifdef TARGET_AMD64
-extern "C" void RhpNewFast_Notify();
-extern "C" void RhpNewArrayFast_Notify();
-extern "C" void RhpNewPtrArrayFast_Notify();
-extern "C" void RhNewString_Notify();
-#endif
-
 static void SetJitHelperAuxiliarySymbol(CorInfoHelpFunc ftnNum, const char* name)
 {
     LIMITED_METHOD_CONTRACT;
@@ -43,22 +36,9 @@ void InitJITAllocationHelpers()
     // Allocation helpers, faster but non-logging
     if (!(TrackAllocationsEnabled() || LoggingOn(LF_GCALLOC, LL_INFO10)))
     {
-#ifdef TARGET_AMD64
-        if (GCHeapUtilities::IsAllocationNotificationEnabled())
-        {
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast_Notify);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast_Notify);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, RhpNewPtrArrayFast_Notify);
-            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString_Notify), ECall::FastAllocateString);
-        }
-        else
-#endif // TARGET_AMD64
-        {
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, RhpNewPtrArrayFast);
-            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString), ECall::FastAllocateString);
-        }
+        SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast);
+        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast);
+        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, RhpNewPtrArrayFast);
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, RhpNewFastAlign8);
@@ -66,6 +46,7 @@ void InitJITAllocationHelpers()
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, RhpNewArrayFastAlign8);
 #endif
 
+        ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString), ECall::FastAllocateString);
     }
 
 // Debugger depends on new helper names starting with CORINFO_HELP_NEW

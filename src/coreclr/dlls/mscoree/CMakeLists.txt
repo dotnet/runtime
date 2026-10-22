@@ -17,15 +17,9 @@ set (DEF_SOURCES
   mscorwks_ntdef.src
 )
 else()
-if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
-  set (DEF_SOURCES
-    mscorwks_allocationnotificationtest_unixexports.src
-  )
-else()
-  set (DEF_SOURCES
-    mscorwks_unixexports.src
-  )
-endif()
+set (DEF_SOURCES
+  mscorwks_unixexports.src
+)
 if(CLR_CMAKE_ENABLE_OBJECT_HEADER_BITS_TEST)
   list(APPEND DEF_SOURCES
     mscorwks_objectheaderbitstest_unixexports.src

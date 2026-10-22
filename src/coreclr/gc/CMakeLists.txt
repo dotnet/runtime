@@ -1,9 +1,7 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if(CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
-  add_compile_definitions(
-    FEATURE_LXR_RC_VERTICAL
-    FEATURE_ALLOCATION_NOTIFICATION_TEST)
+  add_compile_definitions(FEATURE_LXR_RC_VERTICAL)
 endif()
 
 if(FEATURE_STANDALONE_GC)
@@ -134,10 +132,6 @@ set(GC_WKS_SVR_SOURCES
   plan_phase.cpp
   regions_segments.cpp)
 
-if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
-  list(APPEND GC_SOURCES allocationnotificationtest.cpp)
-endif()
-
 if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST)
   list(APPEND GC_SOURCES objectreferenceenumerationtest.cpp)
 endif()
@@ -254,9 +248,6 @@ if(FEATURE_STANDALONE_GC)
 
   add_library_clr(clrgc_gc_wks OBJECT ${GC_WKS_SVR_SOURCES})
   add_dependencies(clrgc_gc_wks eventing_headers)
-  if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
-    target_compile_definitions(clrgc_gc_wks PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
-  endif()
   if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST)
     target_compile_definitions(clrgc_gc_wks PRIVATE FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST)
   endif()
@@ -269,9 +260,6 @@ if(FEATURE_STANDALONE_GC)
     add_library_clr(clrgc_gc_svr OBJECT ${GC_WKS_SVR_SOURCES})
     add_dependencies(clrgc_gc_svr eventing_headers)
     target_compile_definitions(clrgc_gc_svr PRIVATE SERVER_GC)
-    if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
-      target_compile_definitions(clrgc_gc_svr PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
-    endif()
     if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST)
       target_compile_definitions(clrgc_gc_svr PRIVATE FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST)
     endif()
@@ -285,9 +273,6 @@ if(FEATURE_STANDALONE_GC)
   # clrgc is build with standalone+segments
   add_library_clr(clrgc SHARED ${GC_SOURCES} ${CLRGC_OBJECTS})
   add_dependencies(clrgc eventing_headers)
-  if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
-    target_compile_definitions(clrgc PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
-  endif()
   if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST)
     target_compile_definitions(clrgc PRIVATE FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST)
   endif()
@@ -344,7 +329,7 @@ if(FEATURE_STANDALONE_GC)
       side_metadata.cpp immix_block.cpp reference_count.cpp immix_allocation.cpp
       large_object_space.cpp lxr_work_packet.cpp lxr_work_scheduler.cpp
       lxr_completion_counter.cpp lxr_pause_schedule.cpp lxr_pause_coordinator.cpp
-      lxr_reference_counting.cpp lxr_finalizer_registry.h lxr_finalizer_pause.h lxr_pin_list.h lxr_gc.cpp lxr_gc.h lxr_gcload.cpp
+      lxr_reference_counting.cpp lxr_finalizer_registry.h lxr_finalizer_pause.h lxr_pin_list.h lxr_young_spans.h lxr_gc.cpp lxr_gc.h lxr_gcload.cpp
       lxr_write_barrier.cpp lxr_write_barrier.h
       $<TARGET_OBJECTS:lxr_writebarrier>)
     add_dependencies(clrlxrgc eventing_headers)

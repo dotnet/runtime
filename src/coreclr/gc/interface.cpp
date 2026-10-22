@@ -3,7 +3,6 @@
 
 #include "gcinternal.h"
 #include "gcbridge.h"
-#include "allocationnotificationtest.h"
 #ifdef FEATURE_LXR_RC_VERTICAL
 #include "lxrrcverticaltest.h"
 #endif
@@ -142,17 +141,6 @@ HRESULT GCHeap::Initialize()
     STRESS_LOG0 (LF_GC, LL_ALWAYS, "TraceGC is not turned on");
 #endif
     HRESULT hr = S_OK;
-
-    AllocationNotificationParameters* allocationNotification = GetAllocationNotificationParameters();
-    if (allocationNotification == nullptr)
-    {
-        return E_FAIL;
-    }
-    if ((allocationNotification->callback != nullptr) &&
-        (allocationNotification->request_status != AllocationNotificationRequestStatus::Accepted))
-    {
-        return E_NOTIMPL;
-    }
 
     ObjectReferenceEnumerationParameters* objectReferenceEnumeration =
         GetObjectReferenceEnumerationParameters();
@@ -2606,7 +2594,7 @@ void ValidateObjectReferenceRanges(Object* obj)
     _ASSERTE(range.start == nullptr);
     _ASSERTE(range.count == 0);
 
-#if defined(FEATURE_ALLOCATION_NOTIFICATION_TEST) && !defined(FEATURE_NATIVEAOT)
+#if defined(FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST) && !defined(FEATURE_NATIVEAOT)
     if (GCConfig::GetObjectReferenceEnumerationTest() &&
         header(object)->GetMethodTable()->Collectible())
     {
@@ -2624,7 +2612,7 @@ void ValidateObjectReferenceRanges(Object* obj)
             reinterpret_cast<uint8_t*>(*loaderAllocatorSlot) ==
             get_class_object(object));
     }
-#endif // FEATURE_ALLOCATION_NOTIFICATION_TEST && !FEATURE_NATIVEAOT
+#endif // FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST && !FEATURE_NATIVEAOT
 }
 #endif // _DEBUG
 
@@ -2797,38 +2785,7 @@ uintptr_t* GCHeap::GetPendingBridgeHandles(size_t* count)
 #endif
 }
 
-AllocationNotificationParameters* GCHeap::GetAllocationNotificationParameters()
-{
-    static AllocationNotificationParameters parameters = {};
-    static bool initialized;
-
-#ifdef FEATURE_ALLOCATION_NOTIFICATION_TEST
-    if (!initialized && GCConfig::GetAllocationNotificationTest())
-    {
-        parameters.callback = GetAllocationNotificationTestCallback();
-        parameters.context = GetAllocationNotificationTestContext();
-
-        switch (GCConfig::GetAllocationNotificationTestMalformed())
-        {
-            case 1:
-                parameters.callback = nullptr;
-                break;
-            case 2:
-                parameters.request_status = AllocationNotificationRequestStatus::Accepted;
-                break;
-            case 3:
-                return nullptr;
-            default:
-                break;
-        }
-    }
-#endif // FEATURE_ALLOCATION_NOTIFICATION_TEST
-
-    initialized = true;
-    return &parameters;
-}
-
-#ifdef FEATURE_ALLOCATION_NOTIFICATION_TEST
+#ifdef FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST
 namespace
 {
 Object** LOCALGC_CALLCONV InvalidLoaderAllocatorObjectSlot(MethodTable* methodTable)
@@ -2837,14 +2794,14 @@ Object** LOCALGC_CALLCONV InvalidLoaderAllocatorObjectSlot(MethodTable* methodTa
     return nullptr;
 }
 }
-#endif // FEATURE_ALLOCATION_NOTIFICATION_TEST
+#endif // FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST
 
 ObjectReferenceEnumerationParameters* GCHeap::GetObjectReferenceEnumerationParameters()
 {
     static ObjectReferenceEnumerationParameters parameters = {};
     static bool initialized;
 
-#ifdef FEATURE_ALLOCATION_NOTIFICATION_TEST
+#ifdef FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST
     if (!initialized && GCConfig::GetObjectReferenceEnumerationTest())
     {
         parameters.request = ObjectReferenceEnumerationRequest::Enabled;
@@ -2869,7 +2826,7 @@ ObjectReferenceEnumerationParameters* GCHeap::GetObjectReferenceEnumerationParam
                 break;
         }
     }
-#endif // FEATURE_ALLOCATION_NOTIFICATION_TEST
+#endif // FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST
 
     initialized = true;
     return &parameters;

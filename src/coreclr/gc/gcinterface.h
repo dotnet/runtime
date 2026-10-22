@@ -11,15 +11,16 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 7
+#define GC_INTERFACE_MINOR_VERSION 3
 
 // Minor versions above the 6.0 base (custom GC support) that the LXR port adds.
-// 6.1 adds the old-value store hooks at the end of FastGCFunctions. Minors 6.2 to 6.4 (the slot-log barrier shape
-// negotiation) were removed when LXR moved to the PR #3316 barrier mechanism.
+// 6.1 adds the old-value store hooks at the end of FastGCFunctions.
+// 6.2 adds IGCHeap::GetObjectReferenceEnumerationParameters.
+// 6.3 adds IGCHeap::GetObjectHeaderBitsParameters.
+// See the comment block above the tail methods of IGCHeap for the history of these numbers.
 #define GC_OLD_VALUE_STORE_HOOKS_INTERFACE_MINOR_VERSION 1
-#define GC_ALLOCATION_NOTIFICATION_INTERFACE_MINOR_VERSION 5
-#define GC_OBJECT_REFERENCE_ENUMERATION_INTERFACE_MINOR_VERSION 6
-#define GC_OBJECT_HEADER_BITS_INTERFACE_MINOR_VERSION 7
+#define GC_OBJECT_REFERENCE_ENUMERATION_INTERFACE_MINOR_VERSION 2
+#define GC_OBJECT_HEADER_BITS_INTERFACE_MINOR_VERSION 3
 #define GC_OBJECT_HEADER_BITS_PARAMETERS_VERSION 1
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
@@ -89,56 +90,6 @@ enum class WriteBarrierParametersMask
     RegionShr = 1 << 10,
     RegionUseBitwiseWriteBarrier = 1 << 11,
     WriteWatchTable = 1 << 12,
-};
-
-enum class AllocationNotificationRequestStatus : uint32_t
-{
-    NotProcessed = 0,
-    Accepted = 1,
-    Unsupported = 2,
-};
-
-enum class AllocationCompleteFlags : uint32_t
-{
-    None = 0,
-    ContainsReferences = 1 << 0,
-    Finalizable = 1 << 1,
-    LargeObjectHeap = 1 << 2,
-    PinnedObjectHeap = 1 << 3,
-    Array = 1 << 4,
-    String = 1 << 5,
-    BoxedValueType = 1 << 6,
-    Collectible = 1 << 7,
-    PayloadMayBeUninitialized = 1 << 8,
-    FrozenObjectHeap = 1 << 9,
-};
-
-// Called after the runtime object shape is initialized and before the object
-// escapes to managed code. aligned_object_size includes the object header,
-// payload, and trailing alignment, but excludes preceding alignment filler.
-// The callback runs in cooperative mode for GC-heap objects. Frozen-object-heap
-// births are the sole exception: they run in preemptive mode while serialized,
-// before their segment is registered with the GC. The callback must not trigger
-// a collection, throw, block, allocate, switch GC mode, enter managed code, take
-// a GC-dependent lock, or recursively allocate. The raw object pointer is stable
-// only for the duration of the call.
-typedef void (LOCALGC_CALLCONV *AllocationCompleteCallback)(
-    Object* object,
-    size_t aligned_object_size,
-    AllocationCompleteFlags flags,
-    void* context);
-
-struct AllocationNotificationParameters
-{
-    // The collector initializes this to NotProcessed. The EE writes Accepted
-    // or Unsupported before IGCHeap::Initialize.
-    AllocationNotificationRequestStatus request_status;
-
-    // A null callback is the backwards-compatible disabled request.
-    alignas(void*) AllocationCompleteCallback callback;
-
-    // Immutable process-lifetime state passed to every callback.
-    void* context;
 };
 
 enum class ObjectReferenceEnumerationRequestStatus : uint32_t
@@ -1339,17 +1290,27 @@ public:
     // listed in patchableValues (and read from the patched slot) so the helper remains correct no
     // matter where the EE copies it to.
     virtual void GetAssignRefFunctions(void** assignRef, size_t* assignRefSize, void** assignRefChecked, size_t* assignRefCheckedSize, uintptr_t** avLocationsList, GCWriteBarrierPatchableValue** patchableValues) PURE_VIRTUAL
-    // Returns the immutable allocation-complete notification request. The EE
-    // calls this only for GC interface version 6.5 or later. Collectors built
-    // from older source inherit a process-lifetime disabled request.
-    virtual AllocationNotificationParameters* GetAllocationNotificationParameters()
-    {
-        static AllocationNotificationParameters parameters = {};
-        return &parameters;
-    }
+
+    // ---- Tail methods added by the LXR port (interface minors 6.2 and 6.3) ----
+    //
+    // The two methods below carry default implementations, so a collector built from older source still
+    // produces a valid vtable slot for them. Their minor numbers were renumbered once, when the allocation-complete
+    // callback request (formerly 6.5, between the old-value hooks and the two methods below) was removed:
+    //
+    //                                         before   now
+    //   old-value store hooks (FastGCFunctions)   6.1    6.1
+    //   allocation-complete callback              6.5    removed
+    //   object reference enumeration              6.6    6.2
+    //   object header bits                        6.7    6.3
+    //
+    // Removing the allocation-complete request moved the two methods that followed it up by one vtable slot,
+    // so a collector or runtime built against the old 6.5 - 6.7 layout is NOT binary compatible with this one,
+    // even though the major version is unchanged. Rebuild the runtime and the collector together.
+    // The slot-log barrier shape negotiation (once 6.2 to 6.4) was removed earlier, when LXR moved to the
+    // PR #3316 barrier mechanism.
 
     // Returns the object-reference enumeration request. The EE calls this only
-    // for GC interface version 6.6 or later. Collectors built from older
+    // for GC interface version 6.2 or later. Collectors built from older
     // source inherit a process-lifetime disabled request.
     virtual ObjectReferenceEnumerationParameters* GetObjectReferenceEnumerationParameters()
     {
@@ -1358,7 +1319,7 @@ public:
     }
 
     // Returns the object-header bit request. The EE calls this only for GC
-    // interface version 6.7 or later. Collectors built from older source
+    // interface version 6.3 or later. Collectors built from older source
     // inherit a process-lifetime disabled request.
     virtual ObjectHeaderBitsParameters* GetObjectHeaderBitsParameters()
     {

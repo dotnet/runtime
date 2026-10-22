@@ -270,18 +270,7 @@ void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBud
 #endif //FEATURE_EVENT_TRACE
 }
 
-struct AllocationSampledInfo
-{
-    bool isSampled;
-    size_t alignedSize;
-    size_t samplingBudget;
-};
-
-inline Object* Alloc(
-    ee_alloc_context* pEEAllocContext,
-    size_t size,
-    GC_ALLOC_FLAGS flags,
-    AllocationSampledInfo* sampledInfo)
+inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL {
         THROWS;
@@ -342,19 +331,11 @@ inline Object* Alloc(
 
     if (isSampled)
     {
-        if (GCHeapUtilities::IsAllocationNotificationEnabled())
-        {
-            _ASSERTE(sampledInfo != nullptr);
-            sampledInfo->isSampled = true;
-            sampledInfo->alignedSize = aligned_size;
-            sampledInfo->samplingBudget = samplingBudget;
-        }
-        else
-        {
-            // The historical unregistered path emits the sampling event before
-            // the MethodTable is initialized.
-            FireAllocationSampled(flags, aligned_size, samplingBudget, retVal);
-        }
+        // At this point the object methodtable isn't initialized yet but it doesn't matter when we are
+        // just emitting an ETW/EventPipe event. If we want this event to be more useful from ICorProfiler
+        // in the future we probably want to pass the isSampled flag back to callers so that the event
+        // can be raised after the MethodTable is initialized.
+        FireAllocationSampled(flags, aligned_size, samplingBudget, retVal);
     }
 
     // There are a variety of conditions that may have invalidated the previous combined_limit value
@@ -382,7 +363,7 @@ inline Object* Alloc(
 //
 // You can get an exhaustive list of code sites that allocate GC objects by finding all calls to
 // code:ProfilerObjectAllocatedCallback (since the profiler has to hook them all).
-inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags, AllocationSampledInfo* sampledInfo)
+inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL {
         THROWS;
@@ -399,7 +380,7 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags, AllocationSampledInfo* s
     ee_alloc_context *threadContext = GetThreadEEAllocContext();
     CdacStress<cdac_on_alloc>::MaybeVerify();
     GCStress<gc_on_alloc>::MaybeTrigger(&threadContext->m_GCAllocContext);
-    retVal = Alloc(threadContext, size, flags, sampledInfo);
+    retVal = Alloc(threadContext, size, flags);
 
 
     if (!retVal)
@@ -473,84 +454,8 @@ inline void LogAlloc(Object* object)
 #endif
 
 // signals completion of the object to GC and sends events if necessary
-static AllocationCompleteFlags GetAllocationCompleteFlags(
-    Object* object,
-    GC_ALLOC_FLAGS gcFlags,
-    AllocationCompleteFlags additionalFlags = AllocationCompleteFlags::None)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    MethodTable* methodTable = object->GetMethodTable();
-    uint32_t flags = static_cast<uint32_t>(additionalFlags);
-
-    if (methodTable->ContainsGCPointers())
-        flags |= static_cast<uint32_t>(AllocationCompleteFlags::ContainsReferences);
-    if (methodTable->HasFinalizer())
-        flags |= static_cast<uint32_t>(AllocationCompleteFlags::Finalizable);
-    if ((gcFlags & GC_ALLOC_LARGE_OBJECT_HEAP) != 0)
-        flags |= static_cast<uint32_t>(AllocationCompleteFlags::LargeObjectHeap);
-    if ((gcFlags & GC_ALLOC_PINNED_OBJECT_HEAP) != 0)
-        flags |= static_cast<uint32_t>(AllocationCompleteFlags::PinnedObjectHeap);
-    if (methodTable->IsArray())
-        flags |= static_cast<uint32_t>(AllocationCompleteFlags::Array);
-    if (methodTable == g_pStringClass)
-        flags |= static_cast<uint32_t>(AllocationCompleteFlags::String);
-    if (methodTable->IsValueType())
-        flags |= static_cast<uint32_t>(AllocationCompleteFlags::BoxedValueType);
-    if (methodTable->Collectible())
-        flags |= static_cast<uint32_t>(AllocationCompleteFlags::Collectible);
-    if (((gcFlags & GC_ALLOC_ZEROING_OPTIONAL) != 0) &&
-        ((gcFlags & GC_ALLOC_CONTAINS_REF) == 0))
-    {
-        flags |= static_cast<uint32_t>(AllocationCompleteFlags::PayloadMayBeUninitialized);
-    }
-
-    return static_cast<AllocationCompleteFlags>(flags);
-}
-
-extern "C" void RhpAllocationComplete(Object* object, size_t alignedObjectSize)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    GCHeapUtilities::InvokeAllocationCompleteCallback(
-        object,
-        alignedObjectSize,
-        GetAllocationCompleteFlags(object, GC_ALLOC_NO_FLAGS));
-}
-
-extern "C" void RhpAllocationCompleteFrozen(Object* object, size_t alignedObjectSize)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    GCHeapUtilities::InvokeAllocationCompleteCallback(
-        object,
-        alignedObjectSize,
-        GetAllocationCompleteFlags(
-            object,
-            GC_ALLOC_NO_FLAGS,
-            AllocationCompleteFlags::FrozenObjectHeap));
-}
-
 template <class TObj>
-void PublishObjectAndNotify(
-    TObj*& orObject,
-    GC_ALLOC_FLAGS flags,
-    size_t alignedObjectSize,
-    const AllocationSampledInfo& sampledInfo,
-    AllocationCompleteFlags additionalFlags = AllocationCompleteFlags::None,
-    bool notifyAllocationComplete = true)
+void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
 {
 	if (g_heap_type != GC_HEAP_CUSTOM)
 	{
@@ -561,26 +466,9 @@ void PublishObjectAndNotify(
 		_ASSERTE(orObject->HasEmptySyncBlockInfo() || (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP)));
 	}
 
-    if (notifyAllocationComplete && GCHeapUtilities::IsAllocationNotificationEnabled())
-    {
-        GCHeapUtilities::InvokeAllocationCompleteCallback(
-            orObject,
-            alignedObjectSize,
-            GetAllocationCompleteFlags(orObject, flags, additionalFlags));
-    }
-
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
-    }
-
-    if (sampledInfo.isSampled)
-    {
-        FireAllocationSampled(
-            flags,
-            sampledInfo.alignedSize,
-            sampledInfo.samplingBudget,
-            orObject);
     }
 
 #ifdef  _LOGALLOC
@@ -611,14 +499,7 @@ void PublishObjectAndNotify(
 
 void PublishFrozenObject(Object*& orObject)
 {
-    AllocationSampledInfo sampledInfo = {};
-    PublishObjectAndNotify(
-        orObject,
-        GC_ALLOC_NO_FLAGS,
-        0,
-        sampledInfo,
-        AllocationCompleteFlags::FrozenObjectHeap,
-        false);
+    PublishObjectAndNotify(orObject, GC_ALLOC_NO_FLAGS);
 }
 
 inline SIZE_T MaxArrayLength()
@@ -681,11 +562,10 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     if (pArrayMT->ContainsGCPointers())
         flags |= GC_ALLOC_CONTAINS_REF;
 
-    AllocationSampledInfo sampledInfo = {};
     ArrayBase* orArray = NULL;
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
-        orArray = (ArrayBase*)Alloc(totalSize, flags, &sampledInfo);
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetMethodTableForUOHObject(pArrayMT);
     }
     else
@@ -703,14 +583,14 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
             flags |= GC_ALLOC_ALIGN8;
         }
 #endif
-        orArray = (ArrayBase*)Alloc(totalSize, flags, &sampledInfo);
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetMethodTable(pArrayMT);
     }
 
     // Initialize Object
     orArray->SetNumComponents(cElements);
 
-    PublishObjectAndNotify(orArray, flags, PtrAlign(totalSize), sampledInfo);
+    PublishObjectAndNotify(orArray, flags);
     return ObjectToOBJECTREF((Object*)orArray);
 }
 
@@ -926,11 +806,10 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     if (pArrayMT->ContainsGCPointers())
         flags |= GC_ALLOC_CONTAINS_REF;
 
-    AllocationSampledInfo sampledInfo = {};
     ArrayBase* orArray = NULL;
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
-        orArray = (ArrayBase*)Alloc(totalSize, flags, &sampledInfo);
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetMethodTableForUOHObject(pArrayMT);
     }
     else
@@ -948,7 +827,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
             flags |= GC_ALLOC_ALIGN8;
         }
 #endif
-        orArray = (ArrayBase*)Alloc(totalSize, flags, &sampledInfo);
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetMethodTable(pArrayMT);
     }
 
@@ -966,7 +845,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         }
     }
 
-    PublishObjectAndNotify(orArray, flags, PtrAlign(totalSize), sampledInfo);
+    PublishObjectAndNotify(orArray, flags);
 
     if (kind != ELEMENT_TYPE_ARRAY)
     {
@@ -1122,14 +1001,13 @@ STRINGREF AllocateString( DWORD cchStringLength )
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-    AllocationSampledInfo sampledInfo = {};
-    StringObject* orString = (StringObject*)Alloc(totalSize, flags, &sampledInfo);
+    StringObject* orString = (StringObject*)Alloc(totalSize, flags);
 
     // Initialize Object
     orString->SetMethodTable(g_pStringClass);
     orString->SetStringLength(cchStringLength);
 
-    PublishObjectAndNotify(orString, flags, totalSize, sampledInfo);
+    PublishObjectAndNotify(orString, flags);
     return ObjectToSTRINGREF(orString);
 
 }
@@ -1289,8 +1167,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
         }
 #endif // FEATURE_64BIT_ALIGNMENT
 
-        AllocationSampledInfo sampledInfo = {};
-        Object* orObject = (Object*)Alloc(totalSize, flags, &sampledInfo);
+        Object* orObject = (Object*)Alloc(totalSize, flags);
 
         if (flags & GC_ALLOC_USER_OLD_HEAP)
         {
@@ -1301,7 +1178,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
             orObject->SetMethodTable(pMT);
         }
 
-        PublishObjectAndNotify(orObject, flags, PtrAlign(totalSize), sampledInfo);
+        PublishObjectAndNotify(orObject, flags);
         oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(orObject);
     }
 

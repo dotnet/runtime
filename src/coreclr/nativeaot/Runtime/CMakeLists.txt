@@ -76,12 +76,6 @@ set(COMMON_RUNTIME_SOURCES
     ${CLR_SRC_NATIVE_DIR}/minipal/xoshiro128pp.c
 )
 
-if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
-    list(APPEND COMMON_RUNTIME_SOURCES
-        ${GC_DIR}/allocationnotificationtest.cpp
-    )
-endif()
-
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND COMMON_RUNTIME_SOURCES
         ${RUNTIME_DIR}/SignalSafeThreadMap.cpp

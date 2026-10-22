@@ -12,9 +12,6 @@
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
 
-// Immutable after GC startup.
-extern AllocationCompleteCallback g_allocation_complete_callback;
-
 #ifndef DACCESS_COMPILE
 extern "C" {
 #endif // !DACCESS_COMPILE
@@ -345,29 +342,11 @@ public:
     // Loads (if using a standalone GC) and initializes the GC.
     static HRESULT LoadAndInitialize();
 
-    // Validates and freezes the collector's allocation notification request.
-    static HRESULT ConfigureAllocationNotification(IGCHeap* gcHeap, const VersionInfo& version);
-
     // Validates and completes the collector's object-reference enumeration request.
     static HRESULT ConfigureObjectReferenceEnumeration(IGCHeap* gcHeap, const VersionInfo& version);
 
     // Validates and completes the collector's object-header bit request.
     static HRESULT ConfigureObjectHeaderBits(IGCHeap* gcHeap, const VersionInfo& version);
-
-    // Returns whether the collector requested exact allocation-complete
-    // notifications during startup.
-    inline static bool IsAllocationNotificationEnabled()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return g_allocation_complete_callback != nullptr;
-    }
-
-    // Invokes the immutable collector callback. The caller must provide a
-    // fully initialized object and must not permit a GC during the call.
-    static void InvokeAllocationCompleteCallback(
-        Object* object,
-        size_t alignedObjectSize,
-        AllocationCompleteFlags flags);
 
     // Returns whether the collector needs the old value of every overwritten reference field (an LXR-style
     // collector, see FASTGC_REQUIRES_OLD_VALUE). Immutable after GC startup; the JIT, ReadyToRun and the runtime

@@ -800,7 +800,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFastNotification.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
         )
 
@@ -868,7 +867,6 @@ else()
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
-            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFastNotification.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
         )
@@ -1127,12 +1125,6 @@ list(APPEND VM_SOURCES_WKS
      ${GC_SOURCES_WKS}
 )
 
-if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
-    list(APPEND VM_SOURCES_WKS
-        ../gc/allocationnotificationtest.cpp
-    )
-endif()
-
 if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST)
     list(APPEND VM_SOURCES_WKS
         ../gc/objectreferenceenumerationtest.cpp
@@ -1231,13 +1223,6 @@ if(FEATURE_SVR_GC)
     target_compile_definitions(vm_gc_svr PRIVATE GC_DESCRIPTOR SERVER_GC)
     add_dependencies(vm_gc_svr eventing_headers)
     add_pgo(vm_gc_svr)
-endif()
-
-if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
-    target_compile_definitions(vm_gc_wks PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
-    if(FEATURE_SVR_GC)
-        target_compile_definitions(vm_gc_svr PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
-    endif()
 endif()
 
 if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST)

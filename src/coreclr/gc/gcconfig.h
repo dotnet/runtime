@@ -62,20 +62,10 @@ public:
 
 // Each one of these keys produces a method on GCConfig with the name "Get{name}", where {name}
 // is the first parameter of the *_CONFIG macros below.
-#ifdef FEATURE_ALLOCATION_NOTIFICATION_TEST
-#define ALLOCATION_NOTIFICATION_TEST_CONFIG \
-    BOOL_CONFIG  (AllocationNotificationTest,          "GCAllocationNotificationTest",          NULL, false, "Enable the allocation-complete validation callback") \
-    BOOL_CONFIG  (AllocationNotificationTestUncounted, "GCAllocationNotificationTestUncounted", NULL, false, "Use an empty allocation-complete validation callback") \
-    BOOL_CONFIG  (AllocationNotificationTestCountOnly, "GCAllocationNotificationTestCountOnly", NULL, false, "Count allocation-complete callbacks without recording arguments") \
-    INT_CONFIG   (AllocationNotificationTestMalformed, "GCAllocationNotificationTestMalformed", NULL, 0,     "Request malformed allocation notification parameters") \
-    BOOL_CONFIG  (ObjectReferenceEnumerationTest,          "GCObjectReferenceEnumerationTest",          NULL, false, "Enable object-reference enumeration validation") \
-    INT_CONFIG   (ObjectReferenceEnumerationTestMalformed, "GCObjectReferenceEnumerationTestMalformed", NULL, 0,     "Request malformed object-reference enumeration parameters")
-#else
-#define ALLOCATION_NOTIFICATION_TEST_CONFIG
-#endif
-
 #ifdef FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST
 #define OBJECT_REFERENCE_ENUMERATION_TEST_CONFIG \
+    BOOL_CONFIG  (ObjectReferenceEnumerationTest,          "GCObjectReferenceEnumerationTest",          NULL, false, "Enable object-reference enumeration validation") \
+    INT_CONFIG   (ObjectReferenceEnumerationTestMalformed, "GCObjectReferenceEnumerationTestMalformed", NULL, 0,     "Request malformed object-reference enumeration parameters") \
     INT_CONFIG (ObjectReferenceEnumerationTestMode, "GCObjectReferenceEnumerationTestMode", NULL, 0, "Object-reference enumeration scan mode")
 #else
 #define OBJECT_REFERENCE_ENUMERATION_TEST_CONFIG
@@ -115,7 +105,6 @@ public:
 #else
 
 #define GC_CONFIGURATION_KEYS \
-    ALLOCATION_NOTIFICATION_TEST_CONFIG \
     OBJECT_REFERENCE_ENUMERATION_TEST_CONFIG \
     OBJECT_HEADER_BITS_TEST_CONFIG \
     BOOL_CONFIG  (ServerGC,                  "gcServer",                  "System.GC.Server",                  false,              "Whether we should be using Server GC")                                                   \

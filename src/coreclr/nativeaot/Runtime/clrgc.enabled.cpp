@@ -220,13 +220,6 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
     if (initResult == S_OK)
     {
         if ((g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
-            (g_gc_version_info.MinorVersion >= GC_ALLOCATION_NOTIFICATION_INTERFACE_MINOR_VERSION))
-        {
-            initResult = GCHeapUtilities::ConfigureAllocationNotification(heap);
-        }
-
-        if ((initResult == S_OK) &&
-            (g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
             (g_gc_version_info.MinorVersion >= GC_OBJECT_REFERENCE_ENUMERATION_INTERFACE_MINOR_VERSION))
         {
             initResult = GCHeapUtilities::ConfigureObjectReferenceEnumeration(heap);

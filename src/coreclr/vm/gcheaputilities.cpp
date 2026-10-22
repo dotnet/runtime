@@ -65,8 +65,6 @@ GC_LOAD_STATUS g_gc_load_status = GC_LOAD_STATUS_BEFORE_START;
 
 // The version of the GC that we have loaded.
 VersionInfo g_gc_version_info;
-AllocationCompleteCallback g_allocation_complete_callback = nullptr;
-void* g_allocation_complete_context = nullptr;
 
 // The module that contains the GC.
 PTR_VOID g_gc_module_base;
@@ -103,53 +101,6 @@ PTR_VOID GCHeapUtilities::GetGCModuleBase()
 {
     assert(g_gc_module_base);
     return g_gc_module_base;
-}
-
-HRESULT GCHeapUtilities::ConfigureAllocationNotification(IGCHeap* gcHeap, const VersionInfo& version)
-{
-    if ((version.MajorVersion != GC_INTERFACE_MAJOR_VERSION) ||
-        (version.MinorVersion < GC_ALLOCATION_NOTIFICATION_INTERFACE_MINOR_VERSION))
-    {
-        return S_OK;
-    }
-
-    AllocationNotificationParameters* parameters = gcHeap->GetAllocationNotificationParameters();
-    if (parameters == nullptr)
-    {
-        LogErrorToHost("GC allocation notification descriptor is null.");
-        return E_FAIL;
-    }
-
-    if (parameters->request_status != AllocationNotificationRequestStatus::NotProcessed)
-    {
-        LogErrorToHost("GC allocation notification descriptor was not initialized to NotProcessed.");
-        parameters->request_status = AllocationNotificationRequestStatus::Unsupported;
-        return E_FAIL;
-    }
-
-    if (parameters->callback == nullptr)
-    {
-        if (parameters->context != nullptr)
-        {
-            LogErrorToHost("GC allocation notification context requires a callback.");
-            parameters->request_status = AllocationNotificationRequestStatus::Unsupported;
-            return E_INVALIDARG;
-        }
-
-        parameters->request_status = AllocationNotificationRequestStatus::Accepted;
-        return S_OK;
-    }
-
-#if !defined(TARGET_AMD64)
-    LogErrorToHost("GC allocation notification is supported only on AMD64.");
-    parameters->request_status = AllocationNotificationRequestStatus::Unsupported;
-    return E_NOTIMPL;
-#else
-    g_allocation_complete_callback = parameters->callback;
-    g_allocation_complete_context = parameters->context;
-    parameters->request_status = AllocationNotificationRequestStatus::Accepted;
-    return S_OK;
-#endif
 }
 
 namespace
@@ -394,12 +345,6 @@ HRESULT FinalizeLoad(
     PTR_VOID pGcModuleBase,
     const VersionInfo& version)
 {
-    HRESULT notificationResult = GCHeapUtilities::ConfigureAllocationNotification(gcHeap, version);
-    if (FAILED(notificationResult))
-    {
-        return notificationResult;
-    }
-
     HRESULT enumerationResult =
         GCHeapUtilities::ConfigureObjectReferenceEnumeration(gcHeap, version);
     if (FAILED(enumerationResult))
@@ -678,20 +623,6 @@ HRESULT InitializeDefaultGC()
 }
 
 } // anonymous namespace
-
-void GCHeapUtilities::InvokeAllocationCompleteCallback(
-    Object* object,
-    size_t alignedObjectSize,
-    AllocationCompleteFlags flags)
-{
-    LIMITED_METHOD_CONTRACT;
-    assert(g_allocation_complete_callback != nullptr);
-    g_allocation_complete_callback(
-        object,
-        alignedObjectSize,
-        flags,
-        g_allocation_complete_context);
-}
 
 // Loads (if necessary) and initializes the GC. If using a standalone GC,
 // it loads the library containing it and dynamically loads the GC entry point.

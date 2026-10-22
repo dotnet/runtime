@@ -340,7 +340,6 @@ public:
     uint64_t GetTotalAllocatedBytesPrecise();
 
     void GetAssignRefFunctions(void** assignRef, size_t* assignRefSize, void** assignRefChecked, size_t* assignRefCheckedSize, uintptr_t** avLocationsList, GCWriteBarrierPatchableValue** patchableValues);
-    virtual AllocationNotificationParameters* GetAllocationNotificationParameters();
     virtual ObjectReferenceEnumerationParameters* GetObjectReferenceEnumerationParameters();
     virtual ObjectHeaderBitsParameters* GetObjectHeaderBitsParameters();
 };
