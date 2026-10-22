@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Covariant returns of Task-derived types in runtime async methods are not yet supported on NativeAOT. -->
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/136339: Covariant returns of Task-derived types in runtime async methods are not yet supported on NativeAOT. -->
     <DisableProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
