@@ -61,16 +61,19 @@ public:
     // Release the allocation with ReleaseMemoryReservation and its original size.
     // WASM uses aligned heap storage and supports only ReadWrite and NoAccess;
     // NoAccess denotes a logical reservation, not inaccessible pages.
-    static void* AllocateMemory(void* address, size_t size, MemoryProtection protection);
+    // executableBacking preserves the ability to make the memory executable later.
+    static void* AllocateMemory(void* address, size_t size, MemoryProtection protection, bool executableBacking = false);
 
     // Allocate a page-aligned, nonzero-sized reservation anywhere in the address space.
     // Release the allocation with ReleaseMemoryReservation and its original size.
-    static void* ReserveMemory(size_t size);
+    // executableBacking preserves the ability to make the memory executable later.
+    static void* ReserveMemory(size_t size, bool executableBacking = false);
 
     // Allocate a page-aligned, nonzero-sized reservation whose starting address lies
     // within [rangeStart, rangeEnd). Passing both rangeStart and rangeEnd as nullptr is
-    // equivalent to calling ReserveMemory(size).
-    static void* ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size);
+    // equivalent to calling ReserveMemory(size, executable). Executable reservations
+    // retain platform-specific backing required to commit executable pages later.
+    static void* ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size, bool executable);
 
     // Commit a page-aligned, nonzero-sized range previously returned by
     // ReserveMemory or ReserveMemoryWithinRange. Unlike CommitMemoryPlaceholder, the
@@ -93,7 +96,8 @@ public:
     // Replacing parts of the reservation preserves ownership of those addresses, avoiding races with other
     // allocations and allowing unmodified file-backed pages to stay shared instead of copying the image.
     static bool SupportsPlaceholderMapping();
-    static void* ReserveMemoryPlaceholder(void* address, size_t size);
+    // executableBacking preserves the ability to map executable sections into the reservation.
+    static void* ReserveMemoryPlaceholder(void* address, size_t size, bool executableBacking);
     static bool SplitMemoryPlaceholder(void* address, size_t size);
     static void* CommitMemoryPlaceholder(void* address, size_t size, MemoryProtection protection);
     static bool ProtectMemory(void* address, size_t size, MemoryProtection protection);

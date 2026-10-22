@@ -36,7 +36,7 @@ bool VMToOSInterface::GetFileSize(MemoryMapHandle fileHandle, uint64_t* size)
     return true;
 }
 
-void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtection protection)
+void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtection protection, bool)
 {
     DWORD nativeProtection;
     switch (protection)

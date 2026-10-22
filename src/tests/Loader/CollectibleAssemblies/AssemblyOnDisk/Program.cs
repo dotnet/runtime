@@ -102,7 +102,8 @@ public class Program
     }
 
     public static bool CanRunParallelFileLoads =>
-        TestLibrary.PlatformDetection.IsNotWindows
+        TestLibrary.Utilities.HasAssemblyFiles
+        && TestLibrary.PlatformDetection.IsNotWindows
         && TestLibrary.PlatformDetection.IsMultithreadingSupported
         && !TestLibrary.PlatformDetection.IsWasm;
 

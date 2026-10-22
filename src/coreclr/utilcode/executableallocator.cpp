@@ -803,7 +803,7 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
     }
     else
     {
-        return VMToOSInterface::ReserveMemoryWithinRange(loAddress, hiAddress, size);
+        return VMToOSInterface::ReserveMemoryWithinRange(loAddress, hiAddress, size, true);
     }
 }
 
@@ -886,7 +886,7 @@ void* ExecutableAllocator::Reserve(size_t size)
         }
         else
         {
-            result = static_cast<BYTE*>(VMToOSInterface::ReserveMemory(size));
+            result = static_cast<BYTE*>(VMToOSInterface::ReserveMemory(size, true));
         }
     }
 

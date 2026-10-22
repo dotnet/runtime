@@ -33,7 +33,8 @@ static MapViewOfFile3Fn s_mapViewOfFile3 = nullptr;
 
 static BOOL CALLBACK InitializePlaceholderMapping(PINIT_ONCE, void*, void**)
 {
-    HMODULE module = GetModuleHandleW(L"kernel32.dll");
+    // Use the API-set contract because kernel32.dll does not directly export these APIs on all supported systems.
+    HMODULE module = LoadLibraryExW(L"api-ms-win-core-memory-l1-1-6.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (module != nullptr)
     {
         s_virtualAlloc2 = reinterpret_cast<VirtualAlloc2Fn>(GetProcAddress(module, "VirtualAlloc2"));
@@ -207,7 +208,7 @@ int VMToOSInterface::UnmapMemory(void* address, size_t)
     return UnmapViewOfFile(address) ? 0 : -1;
 }
 
-void* VMToOSInterface::ReserveMemoryPlaceholder(void* address, size_t size)
+void* VMToOSInterface::ReserveMemoryPlaceholder(void* address, size_t size, bool)
 {
     assert(SupportsPlaceholderMapping());
 
@@ -245,29 +246,35 @@ bool VMToOSInterface::ReleaseMemoryReservation(void* address, size_t)
     return VirtualFree(address, 0, MEM_RELEASE) != FALSE;
 }
 
-void* VMToOSInterface::ReserveMemory(size_t size)
+void* VMToOSInterface::ReserveMemory(size_t size, bool)
 {
     assert(size != 0);
 
     return VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
 }
 
-void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size)
+void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size, bool executable)
 {
     assert(size != 0);
 
     if (rangeStart == nullptr && rangeEnd == nullptr)
     {
-        return ReserveMemory(size);
+        return ReserveMemory(size, executable);
     }
 
-    assert(rangeEnd > rangeStart);
-
     constexpr uintptr_t granularity = 64 * 1024;
-    uintptr_t tryAddress = reinterpret_cast<uintptr_t>(rangeStart) & ~(granularity - 1);
+    uintptr_t start = reinterpret_cast<uintptr_t>(rangeStart);
     uintptr_t end = reinterpret_cast<uintptr_t>(rangeEnd);
+    assert(end > start);
+    if (start > UINTPTR_MAX - (granularity - 1))
+    {
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        return nullptr;
+    }
 
-    while (tryAddress + size <= end)
+    uintptr_t tryAddress = (start + granularity - 1) & ~(granularity - 1);
+
+    while (tryAddress <= end && size <= end - tryAddress)
     {
         MEMORY_BASIC_INFORMATION mbInfo;
         if (VirtualQuery(reinterpret_cast<LPCVOID>(tryAddress), &mbInfo, sizeof(mbInfo)) == 0)
@@ -284,13 +291,24 @@ void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const vo
             }
 
             // Another thread may have raced us for this region; keep scanning forward.
+            if (tryAddress > UINTPTR_MAX - granularity)
+            {
+                break;
+            }
             tryAddress += granularity;
         }
         else
         {
-            tryAddress = (tryAddress + granularity > reinterpret_cast<uintptr_t>(mbInfo.BaseAddress) + mbInfo.RegionSize)
-                ? tryAddress + granularity
-                : reinterpret_cast<uintptr_t>(mbInfo.BaseAddress) + mbInfo.RegionSize;
+            uintptr_t regionBase = reinterpret_cast<uintptr_t>(mbInfo.BaseAddress);
+            uintptr_t regionEnd = mbInfo.RegionSize > UINTPTR_MAX - regionBase
+                ? UINTPTR_MAX
+                : regionBase + mbInfo.RegionSize;
+            if (tryAddress > UINTPTR_MAX - granularity)
+            {
+                break;
+            }
+            uintptr_t nextAddress = tryAddress + granularity;
+            tryAddress = nextAddress > regionEnd ? nextAddress : regionEnd;
         }
     }
 

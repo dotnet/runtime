@@ -159,8 +159,8 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     m_pCurrent = m_pStart + sizeof(ObjHeader);
     m_SizeCommitted = FOH_COMMIT_SIZE;
 
-    // VMToOSInterface memory is expected to be PageSize-aligned so we can expect
-    // DATA_ALIGNMENT alignment as well
+    // Memory allocated by VMToOSInterface is expected to be PageSize-aligned,
+    // so we can expect DATA_ALIGNMENT alignment as well.
     _ASSERT(IS_ALIGNED(committedAlloc, DATA_ALIGNMENT));
 }
 

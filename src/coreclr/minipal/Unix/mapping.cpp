@@ -101,6 +101,13 @@ static int GetNativeProtection(VMToOSInterface::MemoryProtection protection)
     return nativeProtection;
 }
 
+static void IncludeMemoryInCoreDump(void* address, size_t size)
+{
+#if defined(MADV_DONTDUMP) && defined(MADV_DODUMP)
+    madvise(address, size, MADV_DODUMP);
+#endif // MADV_DONTDUMP && MADV_DODUMP
+}
+
 static void CopyMemoryToPlaceholder(void* address, const void* source, size_t size, bool executable)
 {
 #if defined(HOST_OSX) && defined(HOST_ARM64)
@@ -152,7 +159,7 @@ void* VMToOSInterface::MapAnonymousMemory(size_t size, MemoryProtection protecti
     return MapMemory(InvalidMemoryMapHandle, 0, nullptr, size, protection, false);
 }
 
-void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtection protection)
+void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtection protection, bool executableBacking)
 {
     size_t pageSize = minipal_getpagesize();
     if (size % pageSize != 0 || !IsValidMemoryRange(address, size, pageSize))
@@ -162,16 +169,17 @@ void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtecti
     }
 
     int nativeProtection = GetNativeProtection(protection);
+    bool executable = (nativeProtection & PROT_EXEC) != 0;
     int flags = MAP_ANON | MAP_PRIVATE;
 #ifdef TARGET_APPLE
-    bool jitMapping = IsJitMappingRequired();
+    bool jitMapping = (executable || executableBacking) && IsJitMappingRequired();
     if (jitMapping)
     {
         flags |= MAP_JIT;
     }
 #endif // TARGET_APPLE
 
-    if (address == nullptr)
+    if (address == nullptr && executable)
     {
         constexpr size_t allocationGranularity = 64 * 1024;
         if (size > SIZE_MAX - (allocationGranularity - 1))
@@ -210,6 +218,11 @@ void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtecti
                 if (mmap(allocation, size, nativeProtection, flags | MAP_FIXED, -1, 0) == MAP_FAILED)
                 {
                     error = errno;
+                }
+
+                if (error == 0)
+                {
+                    IncludeMemoryInCoreDump(allocation, size);
                 }
             }
 
@@ -336,9 +349,9 @@ bool VMToOSInterface::SupportsPlaceholderMapping()
     return true;
 }
 
-void* VMToOSInterface::ReserveMemoryPlaceholder(void* address, size_t size)
+void* VMToOSInterface::ReserveMemoryPlaceholder(void* address, size_t size, bool executableBacking)
 {
-    return AllocateMemory(address, size, MemoryProtection::NoAccess);
+    return AllocateMemory(address, size, MemoryProtection::NoAccess, executableBacking);
 }
 
 bool VMToOSInterface::SplitMemoryPlaceholder(void* address, size_t size)
@@ -358,7 +371,12 @@ void* VMToOSInterface::CommitMemoryPlaceholder(void* address, size_t size, Memor
     if (IsJitMappingRequired())
     {
         // Replacing the reservation would lose MAP_JIT, even for initially non-executable pages.
-        return mprotect(address, size, GetNativeProtection(protection)) == 0 ? address : nullptr;
+        if (mprotect(address, size, GetNativeProtection(protection)) != 0)
+        {
+            return nullptr;
+        }
+
+        return address;
     }
 #endif // TARGET_APPLE
 
@@ -370,12 +388,12 @@ bool VMToOSInterface::ReleaseMemoryReservation(void* address, size_t size)
     return IsValidPlaceholderRange(address, size) && munmap(address, size) == 0;
 }
 
-void* VMToOSInterface::ReserveMemory(size_t size)
+void* VMToOSInterface::ReserveMemory(size_t size, bool executableBacking)
 {
-    return AllocateMemory(nullptr, size, MemoryProtection::NoAccess);
+    return AllocateMemory(nullptr, size, MemoryProtection::NoAccess, executableBacking);
 }
 
-void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size)
+void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size, bool executable)
 {
     size_t pageSize = minipal_getpagesize();
     if (size == 0 || size % pageSize != 0)
@@ -386,10 +404,12 @@ void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const vo
 
     if (rangeStart == nullptr && rangeEnd == nullptr)
     {
-        return ReserveMemory(size);
+        return ReserveMemory(size, executable);
     }
 
-    if (rangeEnd <= rangeStart)
+    uintptr_t start = reinterpret_cast<uintptr_t>(rangeStart);
+    uintptr_t end = reinterpret_cast<uintptr_t>(rangeEnd);
+    if (end <= start)
     {
         errno = EINVAL;
         return nullptr;
@@ -403,31 +423,45 @@ void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const vo
     }
 
     size_t reservationSize = (size + granularity - 1) & ~(granularity - 1);
-    // Prefer the executable near-code allocator; it already understands range requests.
-    void* allocation = VMToOSInterface::ReserveMemoryFromExecutableAllocatorWithinRange(rangeStart, rangeEnd, reservationSize);
-    if (allocation != nullptr)
+    if (executable)
     {
-        if (reservationSize != size && munmap(static_cast<char*>(allocation) + size, reservationSize - size) != 0)
+        void* allocation = VMToOSInterface::ReserveMemoryFromExecutableAllocatorWithinRange(rangeStart, rangeEnd, reservationSize);
+        if (allocation != nullptr)
         {
-            int error = errno;
-            if (munmap(allocation, reservationSize) != 0)
-                minipal_log_print_error("Releasing failed memory reservation failed with error %d.\n", errno);
-            errno = error;
-            return nullptr;
-        }
+            if (reservationSize != size && munmap(static_cast<char*>(allocation) + size, reservationSize - size) != 0)
+            {
+                int error = errno;
+                if (munmap(allocation, reservationSize) != 0)
+                    minipal_log_print_error("Releasing failed memory reservation failed with error %d.\n", errno);
+                errno = error;
+                return nullptr;
+            }
 
-        return allocation;
+            return allocation;
+        }
     }
 
-    uintptr_t tryAddress = reinterpret_cast<uintptr_t>(rangeStart) & ~(granularity - 1);
-    uintptr_t end = reinterpret_cast<uintptr_t>(rangeEnd);
+    if (start > UINTPTR_MAX - (granularity - 1))
+    {
+        errno = ENOMEM;
+        return nullptr;
+    }
 
-    while (tryAddress + size <= end)
+    uintptr_t tryAddress = (start + granularity - 1) & ~(granularity - 1);
+    int flags = MAP_ANON | MAP_PRIVATE;
+#ifdef TARGET_APPLE
+    if (executable && IsJitMappingRequired())
+    {
+        flags |= MAP_JIT;
+    }
+#endif // TARGET_APPLE
+
+    while (tryAddress <= end && size <= end - tryAddress)
     {
         // A non-fixed mmap hint is honored only when the kernel can satisfy it exactly;
         // otherwise it silently returns a different address, which we treat as "unavailable"
         // and release rather than risk clobbering memory outside the requested range.
-        void* result = mmap(reinterpret_cast<void*>(tryAddress), size, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
+        void* result = mmap(reinterpret_cast<void*>(tryAddress), size, PROT_NONE, flags, -1, 0);
         if (result == MAP_FAILED)
         {
             break;
@@ -439,6 +473,10 @@ void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const vo
         }
 
         munmap(result, size);
+        if (tryAddress > UINTPTR_MAX - granularity)
+        {
+            break;
+        }
         tryAddress += granularity;
     }
 
@@ -455,7 +493,13 @@ void* VMToOSInterface::CommitReservedMemory(void* address, size_t size, MemoryPr
 
     // Anonymous reservations acquire physical pages on demand when accessed. Committing on Unix
     // only makes the reservation accessible with the requested protection.
-    return mprotect(address, size, GetNativeProtection(protection)) == 0 ? address : nullptr;
+    if (mprotect(address, size, GetNativeProtection(protection)) != 0)
+    {
+        return nullptr;
+    }
+
+    IncludeMemoryInCoreDump(address, size);
+    return address;
 }
 
 bool VMToOSInterface::DecommitMemory(void* address, size_t size)

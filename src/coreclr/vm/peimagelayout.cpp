@@ -921,9 +921,9 @@ void* FlatImageLayout::LoadImageByCopyingParts(PEImagePart* imageParts) const
     initialProtection = VMToOSInterface::MemoryProtection::NoAccess;
 #endif
 
-    void* base = VMToOSInterface::AllocateMemory(preferredBase, allocSize.Value(), initialProtection);
+    void* base = VMToOSInterface::AllocateMemory(preferredBase, allocSize.Value(), initialProtection, true);
     if (base == NULL && preferredBase != NULL)
-        base = VMToOSInterface::AllocateMemory(nullptr, allocSize.Value(), initialProtection);
+        base = VMToOSInterface::AllocateMemory(nullptr, allocSize.Value(), initialProtection, true);
 
     if (base == NULL)
         ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
@@ -1109,9 +1109,9 @@ void* FlatImageLayout::LoadImageByMappingParts(PEImagePart* imageParts) const
         usedBaseAddr = const_cast<void*>(GetPreferredBase());
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
-    void* reserved = VMToOSInterface::ReserveMemoryPlaceholder(usedBaseAddr, reserveSize.Value());
+    void* reserved = VMToOSInterface::ReserveMemoryPlaceholder(usedBaseAddr, reserveSize.Value(), true);
     if (reserved == nullptr && usedBaseAddr != nullptr)
-        reserved = VMToOSInterface::ReserveMemoryPlaceholder(nullptr, reserveSize.Value());
+        reserved = VMToOSInterface::ReserveMemoryPlaceholder(nullptr, reserveSize.Value(), true);
     if (reserved == nullptr)
         ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 

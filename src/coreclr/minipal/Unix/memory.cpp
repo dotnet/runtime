@@ -164,7 +164,7 @@ static bool IsValidMemoryRange(void* address, size_t size)
     return true;
 }
 
-void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtection protection)
+void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtection protection, bool executableBacking)
 {
     size_t pageSize = minipal_getpagesize();
     if (size == 0 || size % pageSize != 0)
@@ -181,6 +181,7 @@ void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtecti
 
     // WASM cannot honor address hints or enforce page protections.
     (void)address;
+    (void)executableBacking;
     void* memory = nullptr;
     int error = posix_memalign(&memory, pageSize, size);
     if (error != 0)
@@ -193,8 +194,10 @@ void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtecti
     return memory;
 }
 
-void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size)
+void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size, bool executable)
 {
+    (void)executable;
+
     uintptr_t start = reinterpret_cast<uintptr_t>(rangeStart);
     uintptr_t end = reinterpret_cast<uintptr_t>(rangeEnd);
     if (rangeStart == nullptr && rangeEnd == nullptr)
@@ -225,8 +228,10 @@ void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const vo
     return memory;
 }
 
-void* VMToOSInterface::ReserveMemory(size_t size)
+void* VMToOSInterface::ReserveMemory(size_t size, bool executableBacking)
 {
+    (void)executableBacking;
+
     return AllocateMemory(nullptr, size, MemoryProtection::NoAccess);
 }
 

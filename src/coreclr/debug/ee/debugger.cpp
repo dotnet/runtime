@@ -15158,7 +15158,7 @@ DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewP
 #endif
     if (newPageAddr == NULL)
     {
-        ThrowOutOfMemory();
+        return NULL;
     }
 
     DebuggerHeapExecutableMemoryPage *newPage = new (newPageAddr) DebuggerHeapExecutableMemoryPage;
