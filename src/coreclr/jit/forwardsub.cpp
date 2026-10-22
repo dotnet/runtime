@@ -281,7 +281,7 @@ PhaseStatus Compiler::fgForwardSub()
         changed |= fgForwardSubBlock(block);
     }
 
-    // Global morph consumes the DFS tree computed before early liveness.
+    // fgForwardSubCond may call fgSplitEdge, invalidating the dfsTree
     if (m_dfsTree == nullptr)
     {
         m_dfsTree = fgComputeDfs();
@@ -342,9 +342,26 @@ bool Compiler::fgForwardSubBlock(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// fgForwardSubCond: forward a materialized compare into its branch when its
-//   result is live into only one successor. Preserve the result as a constant
-//   on that edge, rather than materializing it before the branch.
+// fgForwardSubCond: forward a comparison into its conditional branch when the
+//   result local is live into only one successor. Sink the local's definition
+//   onto that edge as the constant implied by the branch outcome, avoiding
+//   materializing the comparison result in the head block.
+//
+// Example:
+//   BB01:
+//     V01 = (V00 != null);
+//     JTRUE(V01 == 0) -> BB08
+//   BB08:
+//     ... use V01 ...
+//
+// Becomes:
+//   BB01:
+//     JTRUE(V00 == null) -> BB09
+//   BB09:
+//     V01 = 0;
+//     JMP -> BB08
+//   BB08:
+//     ... use V01 ...
 //
 // Arguments:
 //   block - conditional block containing the store and branch
@@ -425,6 +442,8 @@ bool Compiler::fgForwardSubCond(BasicBlock* block, Statement* stmt)
         assert(reversed);
     }
 
+    // Replace the branch's zero test with the original compare. Moving it is safe because the store
+    // immediately precedes the branch, whose condition only reads the stored local and tests it against zero.
     compare->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
     jump->AsOp()->gtOp1 = compare;
     gtUpdateStmtSideEffects(jumpStmt);
