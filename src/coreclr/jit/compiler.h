@@ -5220,7 +5220,7 @@ public:
 #endif // defined(DEBUG)
     );
 
-    bool impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
+    void impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
 
     enum class GDVProbeType
     {
