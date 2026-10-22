@@ -130,7 +130,7 @@ public static unsafe partial class FunctionTableCallbacks
                 [nameof(DataType.EEJitManager)] = Type(("AllCodeHeaps", 0x10)),
                 [nameof(DataType.CodeHeapListNode)] = Type(
                     ("Next", 0), ("StartAddress", 0x10), ("EndAddress", 0x18),
-                    ("MapBase", 0x20), ("HeaderMap", 0x28), ("CLRPersonalityRoutine", 0x48)),
+                    ("MapBase", 0x20), ("HeaderMap", 0x28), ("CLRPersonalityRoutine", 0x40)),
                 [nameof(DataType.RealCodeHeader)] = Type(("NumUnwindInfos", 0x20), ("UnwindInfos", 0x24)),
                 [nameof(DataType.RuntimeFunction)] = new()
                 {
