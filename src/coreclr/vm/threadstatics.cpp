@@ -327,13 +327,7 @@ void TLSIndexToMethodTableMap::MarkReusable(TLSIndex index)
 
 void InitializeThreadStaticData()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     g_pThreadStaticCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::Collectible);
     g_pThreadStaticNonCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
@@ -781,8 +775,8 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
                 {
                     g_directThreadLocalTLSBytesAvailable = newBytesAvailable - alignmentAdjust;
                     newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, actualIndexOffset);
+                    usedDirectOnThreadLocalDataPath = true;
                 }
-                usedDirectOnThreadLocalDataPath = true;
             }
             if (usedDirectOnThreadLocalDataPath)
                 VolatileStore(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(newTLSIndex.GetIndexOffset())], pMT);

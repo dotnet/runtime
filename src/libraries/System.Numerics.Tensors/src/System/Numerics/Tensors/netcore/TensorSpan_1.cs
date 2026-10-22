@@ -91,10 +91,10 @@ namespace System.Numerics.Tensors
         }
 
         /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(Array)"/>
-        /// <exception cref="ArrayTypeMismatchException"><paramref name="array"/> is covariant and its type is not exactly T[].</exception>
+        /// <exception cref="ArrayTypeMismatchException"><paramref name="array"/> is not compatible with an array of <typeparamref name="T"/>, or is covariant.</exception>
         public TensorSpan(Array? array)
         {
-            ThrowHelper.ThrowIfArrayTypeMismatch<T>(array);
+            ThrowHelper.ThrowIfArrayTypeMismatch<T>(array, isReadOnly: false);
 
             _shape = TensorShape.Create(array);
             _reference = ref (array is not null)
@@ -103,10 +103,10 @@ namespace System.Numerics.Tensors
         }
 
         /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(Array, ReadOnlySpan{int}, ReadOnlySpan{nint}, ReadOnlySpan{nint})" />
-        /// <exception cref="ArrayTypeMismatchException"><paramref name="array"/> is covariant and its type is not exactly T[].</exception>
+        /// <exception cref="ArrayTypeMismatchException"><paramref name="array"/> is not compatible with an array of <typeparamref name="T"/>, or is covariant.</exception>
         public TensorSpan(Array? array, scoped ReadOnlySpan<int> start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
-            ThrowHelper.ThrowIfArrayTypeMismatch<T>(array);
+            ThrowHelper.ThrowIfArrayTypeMismatch<T>(array, isReadOnly: false);
 
             _shape = TensorShape.Create(array, start, lengths, strides, out nint linearOffset);
             _reference = ref (array is not null)
@@ -137,7 +137,7 @@ namespace System.Numerics.Tensors
 
         internal TensorSpan(ref T data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
-            _shape = TensorShape.Create(ref data, dataLength, lengths, strides, pinned);
+            _shape = TensorShape.CreateForView(dataLength, lengths, strides, pinned);
             _reference = ref data;
         }
 
@@ -298,7 +298,7 @@ namespace System.Numerics.Tensors
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Slice(ReadOnlySpan{nint})" />
         public TensorSpan<T> Slice(params scoped ReadOnlySpan<nint> startIndexes)
         {
-            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNInt, nint>(startIndexes, out nint linearOffset);
+            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForSlice, nint>(startIndexes, out nint linearOffset);
             return new TensorSpan<T>(
                 ref Unsafe.Add(ref _reference, linearOffset),
                 shape
@@ -464,46 +464,55 @@ namespace System.Numerics.Tensors
         public ref struct Enumerator : IEnumerator<T>
         {
             private readonly TensorSpan<T> _span;
-            private readonly nint[] _indexes;
             private nint _linearOffset;
             private nint _itemsEnumerated;
+            private bool _hasCurrent;
 
             internal Enumerator(TensorSpan<T> span)
             {
                 _span = span;
-                _indexes = new nint[span.Rank];
-
-                _indexes[^1] = -1;
-
-                _linearOffset = 0 - (!span.IsEmpty ? span.Strides[^1] : 0);
+                _linearOffset = 0;
                 _itemsEnumerated = 0;
+                _hasCurrent = false;
             }
 
             /// <summary>Gets the element at the current position of the enumerator.</summary>
-            public readonly ref T Current => ref Unsafe.Add(ref _span._reference, _linearOffset);
+            public readonly ref T Current
+            {
+                get
+                {
+                    if (!_hasCurrent)
+                    {
+                        ThrowHelper.ThrowInvalidOperation_EnumerationNotPositioned();
+                    }
+                    return ref Unsafe.Add(ref _span._reference, _linearOffset);
+                }
+            }
 
             /// <summary>Advances the enumerator to the next element of the span.</summary>
             public bool MoveNext()
             {
                 if (_itemsEnumerated == _span._shape.FlattenedLength)
                 {
+                    _hasCurrent = false;
                     return false;
                 }
 
-                _linearOffset = _span._shape.AdjustToNextIndex(_span._shape, _linearOffset, _indexes);
+                _linearOffset = _span.IsDense
+                    ? _itemsEnumerated
+                    : _span._shape.GetLinearOffsetForDimension(_itemsEnumerated, _span.Rank);
 
                 _itemsEnumerated++;
+                _hasCurrent = true;
                 return true;
             }
 
             /// <summary>Sets the enumerator to its initial position, which is before the first element in the tensor span.</summary>
             public void Reset()
             {
-                Array.Clear(_indexes);
-                _indexes[^1] = -1;
-
-                _linearOffset = 0 - (!_span.IsEmpty ? _span.Strides[^1] : 0);
+                _linearOffset = 0;
                 _itemsEnumerated = 0;
+                _hasCurrent = false;
             }
 
             //

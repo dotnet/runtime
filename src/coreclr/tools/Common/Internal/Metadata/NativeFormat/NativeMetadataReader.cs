@@ -153,7 +153,7 @@ namespace Internal.Metadata.NativeFormat
 
     public readonly partial struct ConstantStringValueHandle
     {
-        public bool StringEquals(string value, MetadataReader reader)
+        public bool StringEquals(ReadOnlySpan<char> value, MetadataReader reader)
         {
             return reader.StringEquals(this, value);
         }
@@ -216,7 +216,7 @@ namespace Internal.Metadata.NativeFormat
             return handle;
         }
 
-        internal bool StringEquals(ConstantStringValueHandle handle, string value)
+        internal bool StringEquals(ConstantStringValueHandle handle, ReadOnlySpan<char> value)
         {
             return _streamReader.StringEquals((uint)handle.Offset, value);
         }

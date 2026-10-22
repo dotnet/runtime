@@ -929,35 +929,12 @@ void Compiler::ehUpdateForDeletedBlock(BasicBlock* block)
 /*****************************************************************************
  * Determine if an empty block can be deleted, and still preserve the EH normalization
  * rules on blocks.
- *
- * We only consider the case where the block to be deleted is the last block of a region,
- * and the region is being contracted such that the previous block will become the new
- * 'last' block. If this previous block is already a 'last' block, then we can't do the
- * delete, as that would cause a single block to be the 'last' block of multiple regions.
  */
 bool Compiler::ehCanDeleteEmptyBlock(BasicBlock* block)
 {
     assert(block->isEmpty());
 
     return true;
-
-#if 0  // This is disabled while the "multiple last block" normalization is disabled
-    if (!fgNormalizeEHDone)
-    {
-        return true;
-    }
-
-    if (ehIsBlockEHLast(block))
-    {
-        BasicBlock* bPrev = block->Prev();
-        if ((bPrev != nullptr) && ehIsBlockEHLast(bPrev))
-        {
-            return false;
-        }
-    }
-
-    return true;
-#endif // 0
 }
 
 /*****************************************************************************
@@ -2126,39 +2103,8 @@ void Compiler::fgSortEHTable()
 //      entries must keep the same "try" region begin/last block pointers. A block in this "try" region has a try index
 //      of the first ("most nested") EH table entry.
 //
-//   3. No block is the last block of more than one try or handler region. Again, as described above,
-//      filters need not be considered.
-//
-//      For example, we will transform this:
-//
-//               try3 ----------------- BB01
-//               |      try2 ---------- BB02
-//               |      |      handler1 BB03
-//               |      |      |        BB04
-//               |----- |----- |------- BB05
-//
-//      (where all three try regions end at BB05) to this:
-//
-//               try3 ----------------- BB01
-//               |      try2 ---------- BB02
-//               |      |      handler1 BB03
-//               |      |      |        BB04
-//               |      |      |------- BB05
-//               |      |-------------- BB06 // empty BBJ_ALWAYS block
-//               |--------------------- BB07 // empty BBJ_ALWAYS block
-//
-//      No branches need to change: if something branched to BB05, it will still branch to BB05. If BB05 is a
-//      BBJ_ALWAYS block to the next block, then control flow will fall through the newly added blocks as well.
-//      If it is anything else, it will retain that block branch type and BB06 and BB07 will be unreachable.
-//
-//      The benefit of this is, once again, to remove the need to consider every EH region when adding new blocks.
-//
-// Overall, a block can appear in the EH table exactly once: as the begin or last block of a single try, filter, or
-// handler. There is one exception: for a single-block EH region, the block can appear as both the "begin" and "last"
-// block of the try, or the "begin" and "last" block of the handler (note that filters don't have a "last" block stored,
-// so this case doesn't apply.)
-// (Note: we could remove this special case if we wanted, and if it helps anything, but it doesn't appear that it will
-// help.)
+// A block begins at most one EH region, except for mutually protecting try regions.
+// Multiple EH regions may still share their last block.
 //
 // These invariants simplify a number of things. When inserting a new block into a region, it is not necessary to
 // traverse the entire EH table looking to see if any EH region needs to be updated. You only ever need to update a
@@ -2195,26 +2141,12 @@ void Compiler::fgNormalizeEH()
         modified = true;
     }
 
-    // Case #2: Prevent any two EH regions from starting with the same block (after case #3, we only need to worry about
+    // Case #2: Prevent any two EH regions from starting with the same block (after case #1, we only need to worry about
     // 'try' blocks).
     if (fgNormalizeEHCase2())
     {
         modified = true;
     }
-
-#if 0
-    // Case 3 normalization is disabled. The JIT really doesn't like having extra empty blocks around, especially
-    // blocks that are unreachable. There are lots of asserts when such things occur. We will re-evaluate whether we
-    // can do this normalization.
-    // Note: there are cases in fgVerifyHandlerTab() that are also disabled to match this.
-
-    // Case #3: Prevent any two EH regions from ending with the same block.
-    if (fgNormalizeEHCase3())
-    {
-        modified = true;
-    }
-
-#endif // 0
 
     INDEBUG(fgNormalizeEHDone = true;)
 
@@ -2681,421 +2613,6 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
     return madeChanges;
 }
 
-bool Compiler::fgNormalizeEHCase3()
-{
-    bool modified = false;
-
-    //
-    // Case #3: Make sure no two 'try' or handler regions have the same 'last' block (except for mutually protect 'try'
-    // regions). As above, there has to be EH region nesting for this to occur. However, since we need to consider
-    // handlers, there are more cases.
-    //
-    // There are four cases to consider:
-    //      (1) try     nested in try
-    //      (2) handler nested in try
-    //      (3) try     nested in handler
-    //      (4) handler nested in handler
-    //
-    // Note that, before funclet generation, it would be unusual, though legal IL, for a 'try' to come at the end
-    // of an EH region (either 'try' or handler region), since that implies that its corresponding handler precedes it.
-    // That will never happen in C#, but is legal in IL.
-    //
-    // Only one of these cases can happen. For example, if we have case (2), where a try/catch is nested in a 'try' and
-    // the nested handler has the same 'last' block as the outer handler, then, due to nesting rules, the nested 'try'
-    // must also be within the outer handler, and obviously cannot share the same 'last' block.
-    //
-
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
-    {
-        EHblkDsc* eh = ehGetDsc(XTnum);
-
-        // Find the EH region 'eh' is most nested within, either 'try' or handler or none.
-        bool     outerIsTryRegion;
-        unsigned ehOuterIndex = eh->ebdGetEnclosingRegionIndex(&outerIsTryRegion);
-
-        if (ehOuterIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            EHblkDsc* ehInner      = eh;    // This gets updated as we loop outwards in the EH nesting
-            unsigned  ehInnerIndex = XTnum; // This gets updated as we loop outwards in the EH nesting
-            bool      innerIsTryRegion;
-
-            EHblkDsc* ehOuter = ehGetDsc(ehOuterIndex);
-
-            // Debugging: say what type of block we're updating.
-            INDEBUG(const char* outerType = ""; const char* innerType = "";)
-
-            // 'insertAfterBlk' is the place we will insert new "normalization" blocks. We don't know yet if we will
-            // insert them after the innermost 'try' or handler's "last" block, so we set it to nullptr. Once we
-            // determine the innermost region that is equivalent, we set this, and then update it incrementally as we
-            // loop outwards.
-            BasicBlock* insertAfterBlk = nullptr;
-
-            bool foundMatchingLastBlock = false;
-
-            // This is set to 'false' for mutual protect regions for which we will not insert a normalization block.
-            bool insertNormalizationBlock = true;
-
-            // Keep track of what the 'try' index and handler index should be for any new normalization block that we
-            // insert. If we have a sequence of alternating nested 'try' and handlers with the same 'last' block, we'll
-            // need to update these as we go. For example:
-            //      try { // EH#5
-            //          ...
-            //          catch { // EH#4
-            //              ...
-            //              try { // EH#3
-            //                  ...
-            //                  catch { // EH#2
-            //                      ...
-            //                      try { // EH#1
-            //                          BB01 // try=1, hnd=2
-            //      }   }   }   }   } // all the 'last' blocks are the same
-            //
-            // after normalization:
-            //
-            //      try { // EH#5
-            //          ...
-            //          catch { // EH#4
-            //              ...
-            //              try { // EH#3
-            //                  ...
-            //                  catch { // EH#2
-            //                      ...
-            //                      try { // EH#1
-            //                          BB01 // try=1, hnd=2
-            //                      }
-            //                      BB02 // try=3, hnd=2
-            //                  }
-            //                  BB03 // try=3, hnd=4
-            //              }
-            //              BB04 // try=5, hnd=4
-            //          }
-            //          BB05 // try=5, hnd=0 (no enclosing hnd)
-            //      }
-            //
-            unsigned nextTryIndex = EHblkDsc::NO_ENCLOSING_INDEX; // Initialization only needed to quell compiler
-                                                                  // warnings.
-            unsigned nextHndIndex = EHblkDsc::NO_ENCLOSING_INDEX;
-
-            // We compare the outer region against the inner region's 'try' or handler, determined by the
-            // 'outerIsTryRegion' variable. Once we decide that, we know exactly the 'last' pointer that we will use to
-            // compare against all enclosing EH regions.
-            //
-            // For example, if we have these nested EH regions (omitting some corresponding try/catch clauses for each
-            // nesting level):
-            //
-            //      try {
-            //          ...
-            //          catch {
-            //              ...
-            //              try {
-            //      }   }   } // all the 'last' blocks are the same
-            //
-            // then we determine that the innermost region we are going to compare against is the 'try' region. There's
-            // no reason to compare against its handler region for any enclosing region (since it couldn't possibly
-            // share a 'last' block with the enclosing region). However, there's no harm, either (and it simplifies
-            // the code for the first set of comparisons to be the same as subsequent, more enclosing cases).
-            BasicBlock* lastBlockPtrToCompare = nullptr;
-
-            // We need to keep track of the last "mutual protect" region so we can properly not add additional blocks
-            // to the second and subsequent mutual protect try blocks. We can't just keep track of the EH region
-            // pointer, because we're updating the last blocks as we go. So, we need to keep track of the
-            // pre-update 'try' begin/last blocks themselves. These only matter if the "last" blocks that match are
-            // from two (or more) nested 'try' regions.
-            BasicBlock* mutualTryBeg  = nullptr;
-            BasicBlock* mutualTryLast = nullptr;
-
-            if (outerIsTryRegion)
-            {
-                nextTryIndex = EHblkDsc::NO_ENCLOSING_INDEX; // unused, since the outer block is a 'try' region.
-
-                // The outer (enclosing) region is a 'try'
-                if (ehOuter->ebdTryLast == ehInner->ebdTryLast)
-                {
-                    // Case (1) try nested in try.
-                    foundMatchingLastBlock = true;
-                    INDEBUG(innerType = "try"; outerType = "try";)
-                    insertAfterBlk        = ehOuter->ebdTryLast;
-                    lastBlockPtrToCompare = insertAfterBlk;
-
-                    if (EHblkDsc::ebdIsSameTry(ehOuter, ehInner))
-                    {
-                        // We can't touch this 'try', since it's mutual protect.
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            printf("Mutual protect regions EH#%u and EH#%u; leaving identical 'try' last blocks.\n",
-                                   ehOuterIndex, ehInnerIndex);
-                        }
-#endif // DEBUG
-
-                        insertNormalizationBlock = false;
-                    }
-                    else
-                    {
-                        nextHndIndex = ehInner->ebdTryLast->hasHndIndex() ? ehInner->ebdTryLast->getHndIndex()
-                                                                          : EHblkDsc::NO_ENCLOSING_INDEX;
-                    }
-                }
-                else if (ehOuter->ebdTryLast == ehInner->ebdHndLast)
-                {
-                    // Case (2) handler nested in try.
-                    foundMatchingLastBlock = true;
-                    INDEBUG(innerType = "handler"; outerType = "try";)
-                    insertAfterBlk        = ehOuter->ebdTryLast;
-                    lastBlockPtrToCompare = insertAfterBlk;
-
-                    assert(ehInner->ebdHndLast->getHndIndex() == ehInnerIndex);
-                    nextHndIndex = ehInner->ebdEnclosingHndIndex;
-                }
-                else
-                {
-                    // No "last" pointers match!
-                }
-
-                if (foundMatchingLastBlock)
-                {
-                    // The outer might be part of a new set of mutual protect regions (if it isn't part of one already).
-                    mutualTryBeg  = ehOuter->ebdTryBeg;
-                    mutualTryLast = ehOuter->ebdTryLast;
-                }
-            }
-            else
-            {
-                nextHndIndex = EHblkDsc::NO_ENCLOSING_INDEX; // unused, since the outer block is a handler region.
-
-                // The outer (enclosing) region is a handler (note that it can't be a filter; there is no nesting
-                // within a filter).
-                if (ehOuter->ebdHndLast == ehInner->ebdTryLast)
-                {
-                    // Case (3) try nested in handler.
-                    foundMatchingLastBlock = true;
-                    INDEBUG(innerType = "try"; outerType = "handler";)
-                    insertAfterBlk        = ehOuter->ebdHndLast;
-                    lastBlockPtrToCompare = insertAfterBlk;
-
-                    assert(ehInner->ebdTryLast->getTryIndex() == ehInnerIndex);
-                    nextTryIndex = ehInner->ebdEnclosingTryIndex;
-                }
-                else if (ehOuter->ebdHndLast == ehInner->ebdHndLast)
-                {
-                    // Case (4) handler nested in handler.
-                    foundMatchingLastBlock = true;
-                    INDEBUG(innerType = "handler"; outerType = "handler";)
-                    insertAfterBlk        = ehOuter->ebdHndLast;
-                    lastBlockPtrToCompare = insertAfterBlk;
-
-                    nextTryIndex = ehInner->ebdTryLast->hasTryIndex() ? ehInner->ebdTryLast->getTryIndex()
-                                                                      : EHblkDsc::NO_ENCLOSING_INDEX;
-                }
-                else
-                {
-                    // No "last" pointers match!
-                }
-            }
-
-            while (foundMatchingLastBlock)
-            {
-                assert(lastBlockPtrToCompare != nullptr);
-                assert(insertAfterBlk != nullptr);
-                assert(ehOuterIndex != EHblkDsc::NO_ENCLOSING_INDEX);
-                assert(ehOuter != nullptr);
-
-                // Add a normalization block
-
-                if (insertNormalizationBlock)
-                {
-                    // Add a new last block for 'ehOuter' that will be outside the EH region with which it encloses and
-                    // shares a 'last' pointer
-
-                    BasicBlock* newLast = BasicBlock::New(this);
-                    newLast->bbRefs     = 0;
-                    assert(insertAfterBlk != nullptr);
-                    fgInsertBBafter(insertAfterBlk, newLast);
-
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf(
-                            "last %s block for EH#%u and last %s block for EH#%u are same block; inserted new " FMT_BB
-                            " after " FMT_BB " as new last %s block for EH#%u.\n",
-                            outerType, ehOuterIndex, innerType, ehInnerIndex, newLast->bbNum, insertAfterBlk->bbNum,
-                            outerType, ehOuterIndex);
-                    }
-#endif // DEBUG
-
-                    if (outerIsTryRegion)
-                    {
-                        ehOuter->ebdTryLast = newLast;
-                        newLast->setTryIndex(ehOuterIndex);
-                        if (nextHndIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-                        {
-                            newLast->clearHndIndex();
-                        }
-                        else
-                        {
-                            newLast->setHndIndex(nextHndIndex);
-                        }
-                    }
-                    else
-                    {
-                        ehOuter->ebdHndLast = newLast;
-                        if (nextTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-                        {
-                            newLast->clearTryIndex();
-                        }
-                        else
-                        {
-                            newLast->setTryIndex(nextTryIndex);
-                        }
-                        newLast->setHndIndex(ehOuterIndex);
-                    }
-
-                    newLast->SetCatchType(BBCT_NONE); // bbCatchType is only set on the first block of a handler, which
-                                                      // is this not
-                    newLast->bbCodeOffs    = insertAfterBlk->bbCodeOffsEnd;
-                    newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
-                    newLast->inheritWeight(insertAfterBlk);
-                    newLast->SetFlags(BBF_INTERNAL);
-                    FlowEdge* const newEdge = fgAddRefPred(newLast, insertAfterBlk);
-                    insertAfterBlk->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
-
-                    // Move the insert pointer. More enclosing equivalent 'last' blocks will be inserted after this.
-                    insertAfterBlk = newLast;
-
-                    modified = true;
-
-#ifdef DEBUG
-                    if (verbose) // Normally this is way too verbose, but it is useful for debugging
-                    {
-                        printf("*************** fgNormalizeEH() made a change\n");
-                        fgDispBasicBlocks();
-                        fgDispHandlerTab();
-                    }
-#endif // DEBUG
-                }
-
-                // Now find the next outer enclosing EH region and see if it also shares the last block.
-                foundMatchingLastBlock = false; // assume nothing will match
-                ehInner                = ehOuter;
-                ehInnerIndex           = ehOuterIndex;
-                innerIsTryRegion       = outerIsTryRegion;
-
-                ehOuterIndex =
-                    ehOuter->ebdGetEnclosingRegionIndex(&outerIsTryRegion); // Loop outwards in the EH nesting.
-                if (ehOuterIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-                {
-                    // There are more enclosing regions; check for equivalent 'last' pointers.
-
-                    INDEBUG(innerType = outerType; outerType = "";)
-
-                    ehOuter = ehGetDsc(ehOuterIndex);
-
-                    insertNormalizationBlock = true; // assume it's not mutual protect
-
-                    if (outerIsTryRegion)
-                    {
-                        nextTryIndex = EHblkDsc::NO_ENCLOSING_INDEX; // unused, since the outer block is a 'try' region.
-
-                        // The outer (enclosing) region is a 'try'
-                        if (ehOuter->ebdTryLast == lastBlockPtrToCompare)
-                        {
-                            // Case (1) and (2): try or handler nested in try.
-                            foundMatchingLastBlock = true;
-                            INDEBUG(outerType = "try";)
-
-                            if (innerIsTryRegion && ehOuter->ebdIsSameTry(mutualTryBeg, mutualTryLast))
-                            {
-                                // We can't touch this 'try', since it's mutual protect.
-
-#ifdef DEBUG
-                                if (verbose)
-                                {
-                                    printf("Mutual protect regions EH#%u and EH#%u; leaving identical 'try' last "
-                                           "blocks.\n",
-                                           ehOuterIndex, ehInnerIndex);
-                                }
-#endif // DEBUG
-
-                                insertNormalizationBlock = false;
-
-                                // We still need to update the 'last' pointer, in case someone inserted a normalization
-                                // block before the start of the mutual protect 'try' region.
-                                ehOuter->ebdTryLast = insertAfterBlk;
-                            }
-                            else
-                            {
-                                if (innerIsTryRegion)
-                                {
-                                    // Case (1) try nested in try.
-                                    nextHndIndex = ehInner->ebdTryLast->hasHndIndex()
-                                                       ? ehInner->ebdTryLast->getHndIndex()
-                                                       : EHblkDsc::NO_ENCLOSING_INDEX;
-                                }
-                                else
-                                {
-                                    // Case (2) handler nested in try.
-                                    assert(ehInner->ebdHndLast->getHndIndex() == ehInnerIndex);
-                                    nextHndIndex = ehInner->ebdEnclosingHndIndex;
-                                }
-                            }
-
-                            // The outer might be part of a new set of mutual protect regions (if it isn't part of one
-                            // already).
-                            mutualTryBeg  = ehOuter->ebdTryBeg;
-                            mutualTryLast = ehOuter->ebdTryLast;
-                        }
-                    }
-                    else
-                    {
-                        nextHndIndex =
-                            EHblkDsc::NO_ENCLOSING_INDEX; // unused, since the outer block is a handler region.
-
-                        // The outer (enclosing) region is a handler (note that it can't be a filter; there is no
-                        // nesting within a filter).
-                        if (ehOuter->ebdHndLast == lastBlockPtrToCompare)
-                        {
-                            // Case (3) and (4): try nested in try or handler.
-                            foundMatchingLastBlock = true;
-                            INDEBUG(outerType = "handler";)
-
-                            if (innerIsTryRegion)
-                            {
-                                // Case (3) try nested in handler.
-                                assert(ehInner->ebdTryLast->getTryIndex() == ehInnerIndex);
-                                nextTryIndex = ehInner->ebdEnclosingTryIndex;
-                            }
-                            else
-                            {
-                                // Case (4) handler nested in handler.
-                                nextTryIndex = ehInner->ebdTryLast->hasTryIndex() ? ehInner->ebdTryLast->getTryIndex()
-                                                                                  : EHblkDsc::NO_ENCLOSING_INDEX;
-                            }
-                        }
-                    }
-                }
-
-                // If we get to here and foundMatchingLastBlock is false, then the inner and outer region don't share
-                // any 'last' blocks, so we're done. Note that we could have a situation like this:
-                //
-                //        try4   try3   try2   try1
-                //        |----  |      |      |      BB01
-                //        |      |----  |      |      BB02
-                //        |      |      |----  |      BB03
-                //        |      |      |      |----- BB04
-                //        |      |      |----- |----- BB05
-                //        |----  |------------------- BB06
-                //
-                // (Thus, try1 & try2 end at BB05, and are nested inside try3 & try4, which both end at BB06.)
-                // In this case, we'll process try1 and try2, then break out. Later, as we iterate through the EH table,
-                // we'll get to try3 and process it and try4.
-
-            } // end while (foundMatchingLastBlock)
-        }     // if (ehOuterIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-    }         // EH table iteration
-
-    return modified;
-}
-
 /*****************************************************************************/
 #ifdef DEBUG
 
@@ -3220,10 +2737,6 @@ void Compiler::fgVerifyHandlerTab()
     // Did we do the normalization that prevents multiple EH regions (namely, 'try' blocks) from starting on the same
     // block (case 2)?
     bool multipleBegBlockNormalizationDone = fgNormalizeEHDone;
-
-    // Did we do the normalization that prevents multiple EH regions ('try' or handler blocks) from ending on the same
-    // block (case 3)?
-    bool multipleLastBlockNormalizationDone = false; // Currently disabled
 
     BitVecTraits traits(impInlineRoot()->compEHID, this);
     BitVec       ids(BitVecOps::MakeEmpty(&traits));
@@ -3478,16 +2991,7 @@ void Compiler::fgVerifyHandlerTab()
                                 assert(bbNumOuterTryBeg <= bbNumTryBeg);
                             }
 
-                            if (multipleLastBlockNormalizationDone)
-                            {
-                                // Two 'try' regions can't end at the same block
-                                // (by EH normalization).
-                                assert(bbNumTryLast < bbNumOuterTryLast);
-                            }
-                            else
-                            {
-                                assert(bbNumTryLast <= bbNumOuterTryLast);
-                            }
+                            assert(bbNumTryLast <= bbNumOuterTryLast);
                         }
                     }
                     else
@@ -3518,17 +3022,8 @@ void Compiler::fgVerifyHandlerTab()
                     // An inner handler can never start at the same
                     // block as an outer 'try' (by IL rules).
                     assert(bbNumOuterTryBeg < bbNumHndBeg);
-                    if (multipleLastBlockNormalizationDone)
-                    {
-                        // An inner EH region can't share a 'last' block with the outer 'try' (by EH normalization).
-                        assert(bbNumTryLast < bbNumOuterTryLast);
-                        assert(bbNumHndLast < bbNumOuterTryLast);
-                    }
-                    else
-                    {
-                        assert(bbNumTryLast <= bbNumOuterTryLast);
-                        assert(bbNumHndLast <= bbNumOuterTryLast);
-                    }
+                    assert(bbNumTryLast <= bbNumOuterTryLast);
+                    assert(bbNumHndLast <= bbNumOuterTryLast);
                 }
             }
         }
@@ -3564,15 +3059,7 @@ void Compiler::fgVerifyHandlerTab()
                 {
                     assert(bbNumOuterHndBeg <= bbNumTryBeg);
                 }
-                if (multipleLastBlockNormalizationDone)
-                {
-                    assert(bbNumTryLast < bbNumOuterHndLast); // An inner 'try' can't end at the same block as an
-                                                              // outer handler (by EH normalization).
-                }
-                else
-                {
-                    assert(bbNumTryLast <= bbNumOuterHndLast);
-                }
+                assert(bbNumTryLast <= bbNumOuterHndLast);
 
                 // With funclets, all we can say about the handler blocks is that they are disjoint from the enclosing
                 // handler.
@@ -3591,17 +3078,8 @@ void Compiler::fgVerifyHandlerTab()
                 }
                 assert(bbNumOuterHndBeg < bbNumHndBeg); // An inner handler can never start at the same block
                                                         // as an outer handler (by IL rules).
-                if (multipleLastBlockNormalizationDone)
-                {
-                    // An inner EH region can't share a 'last' block with the outer handler (by EH normalization).
-                    assert(bbNumTryLast < bbNumOuterHndLast);
-                    assert(bbNumHndLast < bbNumOuterHndLast);
-                }
-                else
-                {
-                    assert(bbNumTryLast <= bbNumOuterHndLast);
-                    assert(bbNumHndLast <= bbNumOuterHndLast);
-                }
+                assert(bbNumTryLast <= bbNumOuterHndLast);
+                assert(bbNumHndLast <= bbNumOuterHndLast);
             }
         }
 

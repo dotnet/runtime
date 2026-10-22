@@ -1007,9 +1007,12 @@ namespace System.Net.Security.Tests
                 {
                     byte[] pt = "blocked"u8.ToArray();
                     byte[] ct = new byte[CipherBufSize];
-                    Assert.Throws<AuthenticationException>(() => session.Write(pt, ct, out _, out _));
+                    serverFault = Assert.Throws<AuthenticationException>(() => session.Write(pt, ct, out _, out _));
                 }
 
+                // The fault message carries the caller's verdict, like SslStream's.
+                Assert.Contains(nameof(SslPolicyErrors.RemoteCertificateChainErrors), serverFault.Message);
+                Assert.DoesNotContain("{0}", serverFault.Message);
             }
         }
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
@@ -1802,6 +1805,112 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false, null)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(true, null)]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        public async Task AcceptWithDefaultValidation_CertificateContextTrust_HonorsChainPolicy(bool isServer, bool? chainPolicyTrustsPeer)
+        {
+            const string serverName = "localhost";
+            using TestCertificates.PkiHolder localPki = TestCertificates.GenerateCertificates(
+                serverName,
+                testName: $"{nameof(AcceptWithDefaultValidation_CertificateContextTrust_HonorsChainPolicy)}_local",
+                serverCertificate: isServer);
+            using TestCertificates.PkiHolder peerPki = TestCertificates.GenerateCertificates(
+                serverName,
+                testName: $"{nameof(AcceptWithDefaultValidation_CertificateContextTrust_HonorsChainPolicy)}_peer",
+                serverCertificate: !isServer);
+
+            X509Certificate2 peerRoot = peerPki.IssuerChain[peerPki.IssuerChain.Count - 1];
+            SslCertificateTrust trust = SslCertificateTrust.CreateForX509Collection(
+                new X509Certificate2Collection(peerRoot));
+            SslStreamCertificateContext certificateContext = SslStreamCertificateContext.Create(
+                localPki.EndEntity, localPki.IssuerChain, offline: true, trust: trust);
+            SslStreamCertificateContext peerCertificateContext = SslStreamCertificateContext.Create(
+                peerPki.EndEntity, peerPki.IssuerChain, offline: true);
+
+            X509ChainPolicy? chainPolicy = null;
+            if (chainPolicyTrustsPeer is bool trustsPeer)
+            {
+                chainPolicy = new X509ChainPolicy
+                {
+                    TrustMode = trustsPeer ? X509ChainTrustMode.CustomRootTrust : X509ChainTrustMode.System,
+                    RevocationMode = X509RevocationMode.NoCheck,
+                    DisableCertificateDownloads = true,
+                };
+                if (trustsPeer)
+                {
+                    chainPolicy.CustomTrustStore.Add(peerRoot);
+                }
+            }
+
+            // Accept policy errors so the untrusted-policy cases can finish the handshake.
+            RemoteCertificateValidationCallback? validationCallback =
+                chainPolicyTrustsPeer is false ? TestHelper.AllowAnyServerCertificate : null;
+            using TlsContext ctx = isServer
+                ? TlsContext.CreateServer(new SslServerAuthenticationOptions
+                {
+                    ServerCertificateContext = certificateContext,
+                    ClientCertificateRequired = true,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    AllowTlsResume = false,
+                    CertificateChainPolicy = chainPolicy,
+                    RemoteCertificateValidationCallback = validationCallback,
+                })
+                : TlsContext.CreateClient(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    ClientCertificateContext = certificateContext,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    AllowTlsResume = false,
+                    CertificateChainPolicy = chainPolicy,
+                    RemoteCertificateValidationCallback = validationCallback,
+                });
+            using TlsBufferSession session = NewBufferSession(ctx);
+
+            (Stream sessionStream, Stream peerStream) = TestHelper.GetConnectedStreams();
+            using (sessionStream)
+            using (peerStream)
+            using (SslStream peer = new SslStream(peerStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                Task peerHandshake = isServer
+                    ? peer.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                    {
+                        TargetHost = serverName,
+                        ClientCertificateContext = peerCertificateContext,
+                        EnabledSslProtocols = SslProtocols.Tls12,
+                        AllowTlsResume = false,
+                    })
+                    : peer.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                    {
+                        ServerCertificateContext = peerCertificateContext,
+                        EnabledSslProtocols = SslProtocols.Tls12,
+                        AllowTlsResume = false,
+                    });
+
+                int validationCalls = 0;
+                SslPolicyErrors observedErrors = SslPolicyErrors.RemoteCertificateNotAvailable;
+                Task sessionHandshake = DriveHandshakeWithExternalValidationAsync(
+                    session, sessionStream,
+                    onSuspend: () =>
+                    {
+                        validationCalls++;
+                        observedErrors = session.AcceptWithDefaultValidation();
+                    });
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(peerHandshake, sessionHandshake);
+
+                Assert.Equal(1, validationCalls);
+                Assert.Equal(
+                    chainPolicyTrustsPeer is false ? SslPolicyErrors.RemoteCertificateChainErrors : SslPolicyErrors.None,
+                    observedErrors);
+                Assert.True(session.IsHandshakeComplete);
+                Assert.True(peer.IsAuthenticated);
+            }
+        }
+
         [Fact]
         public async Task ClientSession_ExternalCertificateValidation_AcceptWithDefaultValidation_FailsOnUntrustedCert()
         {
@@ -2576,6 +2685,60 @@ namespace System.Net.Security.Tests
             }
         }
 
+        // A TLS 1.3 client that sets no certificate doesn't offer post-handshake authentication,
+        // so RequestClientCertificate on a buffered server has nothing to request: it writes no
+        // bytes, completes without re-arming the handshake, and the session stays usable in both
+        // directions. Buffered analog of SocketBoundSession_RequestClientCertificate_Tls13PhaNotOffered_Completes.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task ServerSession_RequestClientCertificate_Tls13PhaNotOffered_Completes()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls13,
+                    ClientCertificateRequired = false,
+                });
+                using TlsBufferSession session = NewBufferSession(ctx);
+
+                Task clientAuth = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream);
+                await Task.WhenAll(clientAuth, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                byte[] pingBuf = new byte[TestHelper.s_ping.Length];
+                Task<int> clientRead = clientSsl.ReadAsync(pingBuf).AsTask();
+
+                byte[] request = new byte[CipherBufSize];
+                Assert.Equal(TlsOperationStatus.Complete, session.RequestClientCertificate(request, out int written));
+                Assert.Equal(0, written);
+                Assert.True(session.IsHandshakeComplete);
+                Assert.Null(session.GetRemoteCertificate());
+
+                await WritePlaintextAsync(session, serverStream, TestHelper.s_ping).WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.Equal(TestHelper.s_ping.Length, await clientRead.WaitAsync(TimeSpan.FromSeconds(30)));
+                Assert.Equal(TestHelper.s_ping, pingBuf);
+
+                Task clientWrite = clientSsl.WriteAsync(TestHelper.s_pong).AsTask();
+                byte[] serverGot = await ReadOnePlaintextRecordAsync(session, serverStream, TestHelper.s_pong.Length)
+                    .WaitAsync(TimeSpan.FromSeconds(30));
+                await clientWrite.WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.Equal(TestHelper.s_pong, serverGot);
+            }
+        }
+
         // Server-side counterpart to SslStream.NegotiateClientCertificateAsync for a standalone
         // TlsBufferSession. Stages the post-handshake client-certificate request and flushes it,
         // then drives the second handshake to completion through Handshake() exactly like the
@@ -3215,6 +3378,60 @@ namespace System.Net.Security.Tests
             Assert.Equal(clientCert.Thumbprint, observedInCallbackThumbprint);
 
             // Prove the session is still usable: unblock the client's parked read.
+            await WriteAllOverSocketAsync(session, TestHelper.s_ping).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(TestHelper.s_ping.Length, await clientRead.WaitAsync(TimeSpan.FromSeconds(30)));
+            Assert.Equal(TestHelper.s_ping, appBuf);
+        }
+
+        // A TLS 1.3 client that sets no certificate doesn't offer post-handshake authentication,
+        // so RequestClientCertificate() on a socket-bound server has nothing to request: it
+        // completes without re-arming the handshake and the session stays usable.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task SocketBoundSession_RequestClientCertificate_Tls13PhaNotOffered_Completes()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            using Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            serverSocket.Blocking = false;
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls13,
+                ClientCertificateRequired = false,
+            });
+            using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
+
+            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+            Task clientAuth = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls13,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            Task serverHandshake = Task.Run(() => DriveSocketHandshakeToCompletionAsync(session));
+            await Task.WhenAll(clientAuth, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+            byte[] appBuf = new byte[TestHelper.s_ping.Length];
+            Task<int> clientRead = clientSsl.ReadAsync(appBuf).AsTask();
+
+            Assert.Equal(TlsOperationStatus.Complete, session.RequestClientCertificate());
+            Assert.True(session.IsHandshakeComplete);
+            Assert.Null(session.GetRemoteCertificate());
+
             await WriteAllOverSocketAsync(session, TestHelper.s_ping).WaitAsync(TimeSpan.FromSeconds(30));
             Assert.Equal(TestHelper.s_ping.Length, await clientRead.WaitAsync(TimeSpan.FromSeconds(30)));
             Assert.Equal(TestHelper.s_ping, appBuf);
@@ -4177,6 +4394,73 @@ namespace System.Net.Security.Tests
             Assert.NotNull(session.ClientHelloInfo);
             Assert.Equal(serverName, session.ClientHelloInfo!.Value.ServerName);
             Assert.Equal(serverName, session.TargetHostName);
+        }
+
+        public enum ClientHelloPeekFailure
+        {
+            PeerClosed,
+            PeerReset,
+            OversizedRecord,
+        }
+
+        // A socket-bound server session peeks the ClientHello off the socket before OpenSSL
+        // takes it over. When the peer closes or resets the connection before a full record
+        // arrives, or announces a record larger than the peek buffer, the peek fails with an
+        // IOException whose message must be complete (no unformatted placeholder).
+        [Theory]
+        [InlineData(ClientHelloPeekFailure.PeerClosed)]
+        [InlineData(ClientHelloPeekFailure.PeerReset)]
+        [InlineData(ClientHelloPeekFailure.OversizedRecord)]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task SocketBoundServerSession_ClientHelloPeekFails_ThrowsIOExceptionWithMessage(ClientHelloPeekFailure failure)
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            using Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+            serverSocket.Blocking = false;
+
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+            });
+            using TlsSocketSession session = NewSocketSession(ctx, serverSocket.SafeHandle);
+
+            switch (failure)
+            {
+                case ClientHelloPeekFailure.PeerClosed:
+                    clientUnderlying.Shutdown(SocketShutdown.Send);
+                    break;
+                case ClientHelloPeekFailure.PeerReset:
+                    clientUnderlying.LingerState = new LingerOption(true, 0);
+                    clientUnderlying.Close();
+                    break;
+                case ClientHelloPeekFailure.OversizedRecord:
+                    // Handshake record header announcing a 65535-byte fragment.
+                    clientUnderlying.Send(new byte[] { 0x16, 0x03, 0x01, 0xFF, 0xFF });
+                    break;
+            }
+
+            IOException ex = Assert.Throws<IOException>(() =>
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    Assert.Equal(TlsOperationStatus.NeedMoreData, session.Handshake());
+                    Assert.True(serverSocket.Poll(30_000_000, SelectMode.SelectRead));
+                }
+            });
+
+            // No OpenSSL call failed, so the message must not claim an OpenSSL error.
+            Assert.DoesNotContain("{0}", ex.Message);
+            Assert.DoesNotContain("OpenSSL", ex.Message);
         }
 
         [Fact]

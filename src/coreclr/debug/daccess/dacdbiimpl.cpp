@@ -991,8 +991,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     TADDR pTargetIL = pModule->GetDynamicIL(mdMethodToken);
 
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
-    // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
-    // implemented for DAC.
+    // Dynamic modules have no PE-backed fallback.
     if (pTargetIL == 0 && !pModule->IsReflectionEmit())
     {
         pTargetIL = (TADDR)pModule->GetIL(methodRVA);
@@ -7787,6 +7786,52 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_Met
     {
         *pIndex = ICorDebugInfo::TYPECTXT_ILNUM;
     }
+
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetInfo(OUT TargetInfo * pTargetInfo)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pTargetInfo == NULL)
+        return E_INVALIDARG;
+
+#if defined(TARGET_X86)
+    pTargetInfo->arch = kArchX86;
+#elif defined(TARGET_AMD64)
+    pTargetInfo->arch = kArchAMD64;
+#elif defined(TARGET_ARM)
+    pTargetInfo->arch = kArchArm;
+#elif defined(TARGET_ARM64)
+    pTargetInfo->arch = kArchArm64;
+#elif defined(TARGET_LOONGARCH64)
+    pTargetInfo->arch = kArchLoongArch64;
+#elif defined(TARGET_RISCV64)
+    pTargetInfo->arch = kArchRiscV64;
+#elif defined(TARGET_WASM)
+    pTargetInfo->arch = kArchWasm;
+#else
+    pTargetInfo->arch = kArchUnknown;
+#endif
+
+#if defined(TARGET_BROWSER)
+    pTargetInfo->os = kOSBrowser;
+#elif defined(TARGET_APPLE)
+    pTargetInfo->os = kOSApple;
+#elif defined(TARGET_UNIX)
+    pTargetInfo->os = kOSUnix;
+#elif defined(TARGET_WINDOWS)
+    pTargetInfo->os = kOSWindows;
+#else
+    pTargetInfo->os = kOSUnknown;
+#endif
+
+#if defined(TARGET_64BIT)
+    pTargetInfo->pointerSize = 8;
+#else
+    pTargetInfo->pointerSize = 4;
+#endif
 
     return S_OK;
 }

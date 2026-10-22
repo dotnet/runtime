@@ -671,7 +671,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 }
 
                 GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
-                assert(fptr != nullptr);
+                if (fptr == nullptr)
+                {
+                    assert(compDonotInline());
+                    return TYP_UNDEF;
+                }
 
                 call->AsCall()
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
@@ -1151,11 +1155,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
 DEVIRT:
 
-    bool probing;
-    probing = impConsiderCallProbe(call->AsCall(), rawILOffset);
-
-    // See if we can devirt if we aren't probing.
-    if (!probing && opts.OptimizationEnabled())
+    // See if we can devirt. This is done before considering whether the call needs a probe,
+    // since a call we manage to devirtualize is no longer virtual and so needs no probe.
+    if (opts.OptimizationEnabled())
     {
         if (call->AsCall()->IsDevirtualizationCandidate(this))
         {
@@ -1202,6 +1204,8 @@ DEVIRT:
                                             NO_CLASS_HANDLE, nullptr);
         }
     }
+
+    impConsiderCallProbe(call->AsCall(), rawILOffset);
 
     //-------------------------------------------------------------------------
     // The "this" pointer for "newobj"
@@ -1822,12 +1826,12 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
     // Case 1b: value-type (non-nullable) boxed via CORINFO_HELP_BOX helper.
     // In Tier0 (and other size-constrained modes) struct boxes are emitted as a
     // direct helper call rather than GT_BOX. The helper always returns non-null,
-    // so the ThrowIfNull is a no-op aside from the side effects of computing the
-    // helper's address argument and the valueName.
+    // so the ThrowIfNull is a no-op aside from argument evaluation and the null
+    // check performed when reading the boxed value.
     //
     //  ArgumentNullException_ThrowIfNull(CORINFO_HELP_BOX(clsHnd, addr), valueName)
     //    ->
-    //  NOP (with side-effects of addr and valueName preserved)
+    //  NOP (with argument side effects and the addr null check preserved)
     //
     if (value->IsHelperCall(CORINFO_HELP_BOX))
     {
@@ -1844,6 +1848,11 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
         unsigned boxedAddrTmp    = lvaGrabTemp(true DEBUGARG("boxedAddr spilled"));
         unsigned boxedArgNameTmp = lvaGrabTemp(true DEBUGARG("boxedArg spilled"));
         impStoreToTemp(boxedAddrTmp, boxHelperAddrArg, CHECK_SPILL_ALL);
+        if (fgAddrCouldBeNull(boxHelperAddrArg))
+        {
+            GenTree* addr = gtNewLclvNode(boxedAddrTmp, boxHelperAddrArg->TypeGet());
+            impAppendTree(gtNewNullCheck(addr), CHECK_SPILL_ALL, impCurStmtDI);
+        }
         impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
         return gtNewNothingNode();
     }
@@ -1999,14 +2008,26 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
                 }
             }
 
-            // Prefer the profiled fast path over inlining the variable-length implementation.
+            InlineCandidateInfo* inlineInfo = nullptr;
             if (call->IsInlineCandidate())
             {
-                assert(call->GetSingleInlineCandidateInfo()->retExpr == nullptr);
+                inlineInfo = call->GetSingleInlineCandidateInfo();
+                assert(inlineInfo->retExpr == nullptr);
                 call->ClearInlineInfo();
             }
 
-            GenTree* fallbackCall      = gtCloneExpr(call);
+            GenTree* fallbackCall = gtCloneExpr(call);
+            if (inlineInfo != nullptr)
+            {
+                fallbackCall->AsCall()->SetSingleInlineCandidateInfo(inlineInfo);
+                if (!call->TypeIs(TYP_VOID))
+                {
+                    GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(fallbackCall->AsCall(), call->TypeGet());
+                    inlineInfo->retExpr     = retExpr;
+                    fallbackCall            = gtNewOperNode(GT_COMMA, call->TypeGet(), fallbackCall, retExpr);
+                }
+            }
+
             GenTree* profiledValueNode = gtNewIconNode(profiledValue, argClone->TypeGet());
             *argRef                    = profiledValueNode;
 
@@ -2014,6 +2035,12 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
             GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(call->TypeGet(), call, fallbackCall);
             GenTreeOp*    cond  = gtNewOperNode(GT_EQ, TYP_INT, argClone, gtCloneExpr(profiledValueNode));
             GenTreeQmark* qmark = gtNewQmarkNode(call->TypeGet(), cond, colon);
+            if (inlineInfo != nullptr)
+            {
+                // Expose the fallback as a top-level call before inlining.
+                optMethodFlags |= OMF_HAS_EARLY_QMARKS;
+                qmark->SetEarlyExpandableQmark();
+            }
 
             JITDUMP("\n\nResulting tree:\n")
             DISPTREE(qmark)
@@ -4843,7 +4870,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Half_ReciprocalSqrtEstimate:
             {
 #if defined(TARGET_XARCH)
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                // An estimate's result can depend on AVX10v1 support, so preserve its negative
+                // ISA dependency in ReadyToRun. Sqrt is precise and needs no such dependency.
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1, ni != NI_System_Half_Sqrt))
                 {
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
@@ -4858,7 +4887,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     retNode      = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #elif defined(TARGET_ARM64)
-                if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                if (compOpportunisticallyDependsOn(InstructionSet_Fp16, ni != NI_System_Half_Sqrt))
                 {
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
@@ -6673,7 +6702,7 @@ GenTree* Compiler::impRotateHelper(var_types baseType, genTreeOps rotateOper)
             uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
             uint32_t res =
                 (rotateOper == GT_ROL) ? BitOperations::RotateLeft(cns1, cns2) : BitOperations::RotateRight(cns1, cns2);
-            return gtNewIconNode(res, baseType);
+            return gtNewIconNode(static_cast<int32_t>(res), baseType);
         }
     }
 
@@ -7153,7 +7182,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 GenTree* fallback =
                     new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1Dup, intrinsic, method R2RARG(*entryPoint));
-                fallback->gtFlags |= GTF_CALL;
+                fallback->gtFlags |= GTF_CALL | GTF_EXCEPT;
                 GenTree*      cond  = gtNewOperNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
                 GenTreeColon* colon = gtNewColonNode(retType, fallback, result);
                 GenTreeQmark* qmark = gtNewQmarkNode(retType, cond, colon);
@@ -7162,7 +7191,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 qmark->SetThenNodeLikelihood(0);
 
                 unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Log2 Qmark"));
-                impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
+                impStoreToTemp(tmp, qmark, CHECK_SPILL_ALL);
                 result = gtNewLclvNode(tmp, retType);
             }
 #endif // FEATURE_HW_INTRINSICS
@@ -8773,6 +8802,15 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                                                CORINFO_CONTEXT_HANDLE* pContextHandle)
 {
     JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
+
+    // The probe info and the candidate info share storage in the call node, so a
+    // call that is going to be probed can't also be a candidate.
+    //
+    if (compClassifyGDVProbeType(call) != GDVProbeType::None)
+    {
+        JITDUMP("Call will be probed for instrumentation, no guarded devirtualization.\n");
+        return;
+    }
 
     if (call->IsGenericVirtual(this))
     {
@@ -10693,19 +10731,17 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
 //     call - The call
 //     ilOffset - The precise IL offset of the call
 //
-// Returns:
-//     True if the call was marked such that we will add a class or method probe for it.
+// Notes:
+//     When optimizing this is done after the importer has tried to devirtualize the call.
+//     Calls that were devirtualized are no longer virtual and so are not probed.
 //
-bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
+void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 {
-    // Possibly instrument. Note for OSR+PGO we will instrument when
-    // optimizing and (currently) won't devirtualize. We may want
-    // to revisit -- if we can devirtualize we should be able to
-    // suppress the probe.
+    // Possibly instrument.
     //
     if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
-        return false;
+        return;
     }
 
     assert(opts.OptimizationDisabled() || opts.IsInstrumentedAndOptimized());
@@ -10717,7 +10753,7 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
     //
     if (compClassifyGDVProbeType(call) == GDVProbeType::None)
     {
-        return false;
+        return;
     }
 
     JITDUMP("\n ... marking [%06u] in " FMT_BB " for method/class profile instrumentation\n", dspTreeID(call),
@@ -10733,7 +10769,6 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
     // Flag block as needing scrutiny
     //
     compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
-    return true;
 }
 
 //------------------------------------------------------------------------
@@ -13673,7 +13708,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     if (intrinsicName == NI_Array_Set)
     {
         // The array checks in the store's address must happen after the value is evaluated.
-        if ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) != 0)
+        if ((impStackTop().val->gtFlags & GTF_OBS_EFFECT) != 0)
         {
             impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("Strict ordering of exceptions for MD Array store"));
         }

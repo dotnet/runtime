@@ -331,7 +331,7 @@ void Debugger::ReleaseDebuggerLockAndBlockForShutdownIfNotSpecialThread(Thread *
         GCX_ASSERT_PREEMP();
 
         WaitForEndOfShutdown();
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+        minipal_sleep(INFINITE);
         _ASSERTE(!"Can not reach here");
     }
 }
@@ -366,7 +366,8 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     //
     if (m_fDisabled)
     {
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+        GCX_ASSERT_PREEMP();
+        minipal_sleep(INFINITE);
         _ASSERTE (!"Can not reach here");
     }
 
@@ -379,7 +380,8 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     if (m_fDisabled)
     {
         m_mutex.Leave();
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+        GCX_ASSERT_PREEMP();
+        minipal_sleep(INFINITE);
         _ASSERTE (!"Can not reach here");
     }
 
@@ -476,7 +478,8 @@ void Debugger::DoNotCallDirectlyPrivateUnlock(void)
         //
         if (m_fDisabled)
         {
-            __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+            GCX_ASSERT_PREEMP();
+            minipal_sleep(INFINITE);
             _ASSERTE (!"Can not reach here");
         }
 
@@ -715,54 +718,6 @@ CONTEXT * GetManagedLiveCtx(Thread * pThread)
 
     return pCtx;
 }
-
-// Attempt to validate a GC handle.
-HRESULT ValidateGCHandle(OBJECTHANDLE oh)
-{
-    // The only real way to do this is to Enumerate all GC handles in the handle table.
-    // That's too expensive. So we'll use a similar workaround that we use in ValidateObject.
-    // This will err on the side off returning True for invalid handles.
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    EX_TRY
-    {
-        // Use AVInRuntimeImplOkHolder.
-        AVInRuntimeImplOkayHolder AVOkay;
-
-        // This may throw if the Object Handle is invalid.
-        Object * objPtr = *((Object**) oh);
-
-        // NULL is certinally valid...
-        if (objPtr != NULL)
-        {
-            if (!objPtr->ValidateObjectWithPossibleAV())
-            {
-                LOG((LF_CORDB, LL_INFO10000, "GAV: object methodtable-class invariant doesn't hold.\n"));
-                hr = E_INVALIDARG;
-                goto LExit;
-            }
-        }
-
-    LExit: ;
-    }
-    EX_CATCH
-    {
-        LOG((LF_CORDB, LL_INFO10000, "GAV: exception indicated ref is bad.\n"));
-        hr = E_INVALIDARG;
-    }
-    EX_END_CATCH
-
-    return hr;
-}
-
 
 // Validate an object. Returns E_INVALIDARG or S_OK.
 HRESULT ValidateObject(Object *objPtr)
@@ -1836,12 +1791,7 @@ void DebuggerStartUp::WaitForContinueNotification()
 //---------------------------------------------------------------------------------------
 HRESULT Debugger::Startup(void)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     HRESULT hr = S_OK;
 
@@ -2001,12 +1951,7 @@ HRESULT Debugger::Startup(void)
 //---------------------------------------------------------------------------------------
 HRESULT Debugger::StartupPhase2(Thread * pThread)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     HRESULT hr = S_OK;
 
@@ -2039,35 +1984,6 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
 
     return hr;
 }
-
-
-//---------------------------------------------------------------------------------------
-//
-// Public entrypoint into the debugger to force the lazy data to be initialized at a
-// controlled point in time. This is useful for those callers into the debugger (e.g.,
-// ETW rundown) that know they will need the lazy data initialized but cannot afford to
-// have it initialized unpredictably or inside a lock.
-//
-// This may be called more than once, and will know to initialize the lazy data only
-// once.
-//
-
-void Debugger::InitializeLazyDataIfNecessary()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if (!HasLazyData())
-    {
-        DebuggerLockHolder lockHolder(this);
-        LazyInit(); // throws
-    }
-}
-
 
 /******************************************************************************
 Lazy initialize stuff once we know we are debugging.
@@ -2925,8 +2841,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
 //
 // Notes:
 //     * This function assumes lazy data has already been initialized (in order to
-//         ensure that this doesn't trigger or take the large debugger mutex).  So
-//         callers must guarantee they call InitializeLazyDataIfNecessary() first.
+//         ensure that this doesn't trigger or take the large debugger mutex).
 //     * Either this function fails, and (*prguiILOffset) & (*prguiNativeOffset) will be
 //         untouched OR this function succeeds and (*prguiILOffset) & (*prguiNativeOffset)
 //         will both be non-NULL, set to the parallel arrays this function allocated.
@@ -2963,8 +2878,6 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     _ASSERTE(prguiNativeOffset != NULL);
     _ASSERTE(pNativeCodeStartAddress != (PCODE)NULL);
 
-    // Any caller of GetILToNativeMappingIntoArrays had better call
-    // InitializeLazyDataIfNecessary first!
     _ASSERTE(HasLazyData());
 
     // Get the JIT info by functionId.
@@ -3223,6 +3136,7 @@ void Debugger::getBoundaries(MethodDesc * md,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -8337,31 +8251,6 @@ void Debugger::ExceptionHandle(MethodDesc *fd, TADDR pMethodAddr, SIZE_T offset,
                                        fd, pDJI, offset, handlerFP, STEP_EXCEPTION_HANDLER);
 }
 
-BOOL Debugger::ShouldAutoAttach()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!CORDebuggerAttached());
-
-    // We're relying on the caller to determine the
-
-    LOG((LF_CORDB, LL_INFO1000000, "D::SAD\n"));
-
-    // Check if the user has specified a setting in the registry about what he
-    // wants done when an unhandled exception occurs.
-    DebuggerLaunchSetting dls = GetDbgJITDebugLaunchSetting();
-
-    return dls == DLS_ATTACH_DEBUGGER;
-
-    // @TODO cache the debugger launch setting.
-
-}
-
 BOOL Debugger::FallbackJITAttachPrompt()
 {
     _ASSERTE(!CORDebuggerAttached());
@@ -8775,9 +8664,7 @@ void Debugger::SendUserBreakpoint(Thread * thread)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(thread != NULL);
         PRECONDITION(thread == ::GetThreadNULLOk());
@@ -10018,6 +9905,7 @@ BYTE* Debugger::SerializeModuleMetaData(Module * pModule, DWORD * countBytes)
 
     LOG((LF_CORDB, LL_INFO10000, "Debugger::SMMD called\n"));
 
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
     // Do not release the emitter. This is a weak reference.
     IMetaDataEmit *pEmitter = pModule->GetEmitter();
     _ASSERTE(pEmitter != NULL);
@@ -10076,6 +9964,11 @@ BYTE* Debugger::SerializeModuleMetaData(Module * pModule, DWORD * countBytes)
     pInternalEmitter->SetMDUpdateMode(originalUpdateMode, NULL);
     LOG((LF_CORDB, LL_INFO10000, "Debugger::SMMD exiting\n"));
     return metadataBuffer;
+#else
+    (void)pModule;
+    *countBytes = 0;
+    ThrowHR(E_NOTIMPL);
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 }
 
 //---------------------------------------------------------------------------------------
@@ -11789,6 +11682,7 @@ TypeHandle Debugger::TypeDataWalk::ReadTypeHandle()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -12131,6 +12025,7 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
         }
     }
 
+#ifdef FEATURE_REJIT
     // Next any JIT methods
     MethodDesc *pMethodDesc = pModule->LookupMethodDef(methodDef);
     if (pMethodDesc != NULL && pModule->HasJitInlineTrackingMap())
@@ -12160,6 +12055,7 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
             DeoptimizeMethodHelper(inlinerModule, inlinerMethodDef);
         }
     }
+#endif // FEATURE_REJIT
 
     return hr;
 }
@@ -12169,35 +12065,6 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
     return E_NOTIMPL;
 }
 #endif //FEATURE_CODE_VERSIONING && !DACCESS_COMPILE
-
-HRESULT Debugger::IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        CAN_TAKE_LOCK;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (pModule == NULL || pResult == NULL || TypeFromToken(methodDef) != mdtMethodDef)
-    {
-        return E_INVALIDARG;
-    }
-
-#ifdef FEATURE_CODE_VERSIONING
-    {
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
-        CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
-        ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodDef);
-        *pResult = activeILVersion.IsDeoptimized();
-    }
-#else
-    *pResult = FALSE;
-#endif // FEATURE_CODE_VERSIONING
-
-    return S_OK;
-}
 
 HRESULT Debugger::UpdateCustomNotificationTable(Module *pModule, mdTypeDef classToken, BOOL enabled)
 {
@@ -12436,37 +12303,6 @@ bool Debugger::IsThreadAtSafePlace(Thread *thread)
     {
         return IsThreadAtSafePlaceWorker(thread);
     }
-}
-
-//-----------------------------------------------------------------------------
-// Get the complete user state flags.
-// This will collect flags both from the EE and from the LS.
-// This is the real implementation of the RS's ICorDebugThread::GetUserState().
-//
-// Parameters:
-//    pThread - non-null thread to get state for.
-//
-// Returns: a CorDebugUserState flags enum describing state.
-//-----------------------------------------------------------------------------
-CorDebugUserState Debugger::GetFullUserState(Thread *pThread)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pThread));
-    }
-    CONTRACTL_END;
-
-    CorDebugUserState state = g_pEEInterface->GetPartialUserState(pThread);
-
-    bool fSafe = IsThreadAtSafePlace(pThread);
-    if (!fSafe)
-    {
-        state = (CorDebugUserState) (state | USER_UNSAFE_POINT);
-    }
-
-    return state;
 }
 
 /******************************************************************************
@@ -14023,8 +13859,9 @@ void Debugger::SendLogMessage(int iLevel,
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -14114,8 +13951,9 @@ void Debugger::SendCustomDebuggerNotification(Thread * pThread,
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -14747,40 +14585,6 @@ void Debugger::LockDebuggerForShutdown(void)
 #endif
 }
 
-
-/*
- * DisableDebugger
- *
- * This routine is used by the EE to inform the debugger that it should block all
- * threads from executing as soon as it can.  Any thread entering the debugger can
- * block infinitely, as well.
- *
- * This is accomplished by transitioning the debugger lock into a mode where it will
- * block all threads infinitely rather than taking the lock.
- *
- */
-void Debugger::DisableDebugger(void)
-{
-#ifndef DACCESS_COMPILE
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(ThisMaybeHelperThread());
-    }
-    CONTRACTL_END;
-
-    m_fDisabled = true;
-
-    CORDBDebuggerSetUnrecoverableError(this, CORDBG_E_DEBUGGING_DISABLED, false);
-
-#else
-    DacNotImpl();
-#endif
-}
-
-
 /****************************************************************************
  * This will perform the duties of the helper thread if none already exists.
  * This is called in the case that the loader lock is held and so no new
@@ -14995,29 +14799,6 @@ BOOL Debugger::SendCtrlCToDebugger(DWORD dwCtrlType)
     GetCtrlCMutex().Wait(INFINITE);
 
     return GetDebuggerHandlingCtrlC();
-}
-
-// Allows the debugger to keep an up to date list of special threads
-HRESULT Debugger::UpdateSpecialThreadList(DWORD cThreadArrayLength,
-                                        DWORD *rgdwThreadIDArray)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(g_pRCThread != NULL);
-
-    DebuggerIPCControlBlock *pIPC = g_pRCThread->GetDCB();
-    _ASSERTE(pIPC);
-
-    if (!pIPC)
-        return E_FAIL;
-
-    // Save the thread list information, and mark the dirty bit so
-    // the right side knows.
-    pIPC->m_specialThreadList = rgdwThreadIDArray;
-    pIPC->m_specialThreadListLength = cThreadArrayLength;
-    pIPC->m_specialThreadListDirty = true;
-
-    return S_OK;
 }
 
 //

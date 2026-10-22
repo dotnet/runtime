@@ -1,11 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// --------------------------------------------------------------------------------
-// PEImage.h
-//
-
-// --------------------------------------------------------------------------------
-
 
 #ifndef PEIMAGE_H_
 #define PEIMAGE_H_
@@ -167,7 +161,6 @@ public:
     void GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
 
     BOOL IsILOnly();
-    BOOL IsReferenceAssembly();
     BOOL IsComponentAssembly();
 
     PTR_CVOID GetNativeManifestMetadata(COUNT_T* pSize = NULL);
