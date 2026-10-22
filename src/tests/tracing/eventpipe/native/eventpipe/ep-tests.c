@@ -1432,7 +1432,7 @@ static Test ep_tests [] = {
 	{"test_create_delete_provider_with_callback", test_create_delete_provider_with_callback},
 	{"test_build_event_metadata", test_build_event_metadata},
 	{"test_session_start_streaming", test_session_start_streaming},
-	{"test_session_write_event", test_session_write_event_seq_point},
+	{"test_session_write_event", test_session_write_event},
 	{"test_session_write_event_seq_point", test_session_write_event_seq_point},
 	{"test_session_write_get_next_event", test_session_write_get_next_event},
 	{"test_session_write_wait_get_next_event", test_session_write_wait_get_next_event},

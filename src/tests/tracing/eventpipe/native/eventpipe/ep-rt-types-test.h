@@ -5,6 +5,7 @@
 #define EP_RT_TYPES_TEST_H
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <minipal/mutex.h>
 

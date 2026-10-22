@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if defined(TARGET_LINUX) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
 #include <eventpipe/ep.h>
 #include <minipal/conditionvariable.h>
 #include <minipal/ospagesize.h>
@@ -10,7 +14,7 @@
 #ifndef HOST_WINDOWS
 #include <minipal/thread.h>
 #include <sys/mman.h>
-#ifdef HOST_LINUX
+#ifdef TARGET_LINUX
 #include <sched.h>
 #endif
 extern char **environ;
@@ -322,7 +326,7 @@ uint32_t ep_rt_test_current_processor(void)
 {
 #ifdef HOST_WINDOWS
     return GetCurrentProcessorNumber();
-#elif defined(HOST_LINUX)
+#elif defined(TARGET_LINUX)
     int processor = sched_getcpu();
     return processor < 0 ? UINT32_MAX : (uint32_t)processor;
 #else
