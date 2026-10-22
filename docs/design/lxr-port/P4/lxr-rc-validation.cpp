@@ -3793,6 +3793,75 @@ namespace
         Check(engine.DetachMutator(fixture.mutator) == LxrRcResult::Success, "F1 stress fixture detaches");
     }
 
+    // P25 (F5). The emergency rule needs the pages that hold data. Where survivors stay in place, the blocks of a heap that
+    // holds little live data are all non-free, and a count of blocks says "full". The occupied figure (blocks minus the free
+    // lines of the reusable blocks) says how much data there is. For a dense heap both figures agree, so a heap that really
+    // is full still gets its emergency pause.
+    void ValidateF5OccupiedPages(bool dense)
+    {
+        Type link(24, 1);
+        LxrReferenceCounting engine;
+        int identity;
+        LxrRcMutator* mutator;
+        if (!Initialize(engine, 8, &mutator, &identity))
+        {
+            return;
+        }
+        constexpr size_t Total = 5400;
+        Object* head = nullptr;
+        Object* tail = nullptr;
+        for (size_t index = 0; index < Total; index++)
+        {
+            Object* object = Allocate(engine, mutator, link);
+            if (object == nullptr)
+            {
+                return;
+            }
+            if (dense || index % 100 == 0)
+            {
+                if (tail != nullptr && !Check(Store(engine, mutator, Field(tail), object), "F5 survivor chain links"))
+                {
+                    return;
+                }
+                head = head == nullptr ? object : head;
+                tail = object;
+            }
+        }
+        if (!Epoch(engine, {head}))
+        {
+            return;
+        }
+        size_t pages = 0;
+        size_t occupied = 0;
+        if (!Check(engine.GetMaturePages(&pages) == LxrRcResult::Success &&
+                engine.GetOccupiedPages(&occupied) == LxrRcResult::Success, "F5 page figures are readable"))
+        {
+            return;
+        }
+        size_t total = dense ? occupied + occupied / 10 : pages + pages / 10;
+        LxrCollectionPolicy blockPolicy;
+        LxrCollectionPolicy occupiedPolicy;
+        Check(blockPolicy.FinishLazySweep(LxrPauseKind::RefCount, total, pages, false, true, true) &&
+                occupiedPolicy.FinishLazySweep(LxrPauseKind::RefCount, total, occupied, false, true, true),
+            "F5 policy accepts both figures");
+        std::printf("f5_pages dense=%d blocks=%zu block_pages=%zu occupied_pages=%zu total_pages=%zu\n",
+            dense ? 1 : 0, engine.GetNonFreeBlocks(), pages, occupied, total);
+        Check(occupied <= pages, "F5 occupied pages never exceed block pages");
+        if (dense)
+        {
+            Check(blockPolicy.EmergencyHint() && occupiedPolicy.EmergencyHint(),
+                "a heap that holds that much data is full by both figures and gets its emergency pause");
+        }
+        else
+        {
+            Check(engine.GetNonFreeBlocks() >= 3 && occupied * 4 < pages,
+                "survivors that stay in place hold a fraction of the pages of their blocks");
+            Check(blockPolicy.EmergencyHint(), "the count of whole blocks calls the sparse heap full");
+            Check(!occupiedPolicy.EmergencyHint(), "the count of occupied pages does not call a sparse heap full");
+        }
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "F5 mutator detaches");
+    }
+
     // A large object that dies in a RefCount pause while a concurrent trace is active is released by the lazy
     // sweep after the pause. The large-object space is in its ConcurrentMark phase then, and the release must
     // be accepted (P17 fix). Before the fix the lazy sweep failed with MetadataFailure and the engine faulted.
@@ -7913,6 +7982,14 @@ int main(int argc, char** argv)
             ValidateF1Stress(seed);
         }
         std::printf("%s: %d/%d F1 trace packet checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
+    if (argc == 2 && strcmp(argv[1], "--f5-policy") == 0)
+    {
+        ValidateF5OccupiedPages(false);
+        ValidateF5OccupiedPages(true);
+        std::printf("%s: %d/%d F5 emergency accounting checks\n",
             Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
         return Failures == 0 ? 0 : 1;
     }

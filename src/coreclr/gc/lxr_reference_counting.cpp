@@ -5700,6 +5700,29 @@ LxrRcResult LxrReferenceCounting::GetMaturePages(size_t* pages) const
     return LxrRcResult::Success;
 }
 
+LxrRcResult LxrReferenceCounting::GetOccupiedPages(size_t* pages) const
+{
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F5_BLOCK_PAGES_CONTROL)
+    // Control: count whole blocks again (the behaviour before P25 F5).
+    return GetMaturePages(pages);
+#else
+    if (pages == nullptr)
+    {
+        return LxrRcResult::InvalidArgument;
+    }
+    size_t bytes;
+    if (m_large.GetMatureCommittedBytes(&bytes) != LxrLargeObjectResult::Success)
+    {
+        return LxrRcResult::MetadataFailure;
+    }
+    size_t blockBytes = GetNonFreeBlocks() * ImmixBlockGeometry::BlockBytes;
+    size_t freeBytes = m_blocks.GetReusableFreeLines() * ImmixBlockGeometry::LineBytes;
+    bytes += blockBytes > freeBytes ? blockBytes - freeBytes : 0;
+    *pages = bytes / LxrLargeObjectSpace::PageBytes;
+    return LxrRcResult::Success;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F5_BLOCK_PAGES_CONTROL
+}
+
 size_t LxrReferenceCounting::GetNonFreeBlocks() const
 {
     return m_blocks.GetNonFreeBlocks();

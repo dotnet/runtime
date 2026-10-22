@@ -1,0 +1,13 @@
+workload     arm            extra                   n  wall s   cpu s   gc s pauses full rss MiB wall xWKS cpu xWKS
+binarytrees  wks                                    3    0.38    0.27   0.09     87    0      54       1.0      1.0
+binarytrees  server                                 3    0.36    0.29   0.06     68    0      67       0.9      1.1
+binarytrees  lxr-nonmoving                          3    0.53    0.58   0.10     17    0      92       1.4      2.2
+binarytrees  lxr-nursery                            3    0.63    0.94   0.20     19    0      94       1.7      3.5
+requests     wks                                    3    1.73    1.57   0.20    277    0      83       1.0      1.0
+requests     server                                 3    1.82    1.90   0.29    274    0      87       1.1      1.2
+requests     lxr-nonmoving                          3    3.99    4.65   0.40     58    0     152       2.3      3.0
+requests     lxr-nursery                            3    4.07    5.87   0.98     68    0     151       2.4      3.7
+listsuffix   wks                                    3    3.59    3.63   2.02    190    0      67       1.0      1.0
+listsuffix   server                                 3    1.64    2.02   0.66     51    0      74       0.5      0.6
+listsuffix   lxr-nonmoving                          3    5.57   12.58   2.10     52    0     102       1.6      3.5
+listsuffix   lxr-nursery                            3    6.38   14.88   2.78     51    0     100       1.8      4.1

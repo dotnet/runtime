@@ -5,6 +5,7 @@ CFG=$1
 R=/root/p25
 mkdir -p $R/out
 if [ "$CFG" = legacy ]; then
+  rm -rf $R/out/legacy
   bash $R/main/docs/design/lxr-port/P17-pause-cost-and-reserve/legacy-linux.sh $R/main $R/out/legacy > $R/out/legacy.txt 2>&1
   echo "exit=$?" >> $R/out/legacy.txt
   tail -12 $R/out/legacy.txt

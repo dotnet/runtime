@@ -1027,7 +1027,7 @@ LxrRcResult LxrGcHeap::FinishLazy(LxrReferenceCounting* engine, void* context)
         GCToEEInterface::EnableFinalization(heap->m_registry.GetPendingCount() != 0);
     }
     size_t mature;
-    LxrRcResult result = engine->GetMaturePages(&mature);
+    LxrRcResult result = engine->GetOccupiedPages(&mature);
     if (result != LxrRcResult::Success)
     {
         return result;

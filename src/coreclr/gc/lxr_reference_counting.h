@@ -523,6 +523,11 @@ public:
         return true;
     }
     LxrRcResult GetMaturePages(size_t* pages) const;
+    // P25 (F5). Pages that hold data: the pages of the non-free blocks minus the free lines of the reusable blocks, plus
+    // the mature large-object pages. The Java LXR counts whole blocks (GetMaturePages); it can, because a pause copies
+    // the young survivors into dense blocks. Where survivors stay in place, a block with one live object is still one
+    // block, and only the lines tell how much data the heap holds. The two figures are equal for dense blocks.
+    LxrRcResult GetOccupiedPages(size_t* pages) const;
     LxrRcResult DrainLazySweep(uint32_t timeout);
     // Block counts and the estimate that the .NET memory APIs report. All of them are read from counters that block
     // state transitions maintain, so the call neither walks the heap nor touches a block.

@@ -1,0 +1,7 @@
+FAIL: survivors that stay in place hold a fraction of the pages of their blocks
+FAIL: the count of occupied pages does not call a sparse heap full
+FAIL: 16270/16272 F5 emergency accounting checks
+PASS: 16272/16272 F5 emergency accounting checks
+FAIL: survivors that stay in place hold a fraction of the pages of their blocks
+FAIL: the count of occupied pages does not call a sparse heap full
+FAIL: 16270/16272 F5 emergency accounting checks

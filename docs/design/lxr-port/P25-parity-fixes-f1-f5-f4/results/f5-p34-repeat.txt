@@ -1,0 +1,13 @@
+run 1 exit 0
+run 2 exit 0
+run 3 exit 0
+run 4 exit 0
+run 5 exit 0
+run 6 exit 0
+run 7 exit 0
+run 8 exit 0
+run 9 exit 1
+run 10 exit 0
+      1 FAIL: 56/57 P3.4 validation checks passed
+      1 FAIL: child registration blocks decrement zero and release
+PASS: 57/57 P3.4 validation checks
