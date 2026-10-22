@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime;
@@ -17,17 +18,24 @@ namespace System.Diagnostics
             internal struct Context
             {
                 internal IntPtr Evaluation;
-#pragma warning disable CS8500
-                internal object?* Objects;
-#pragma warning restore CS8500
-                internal void** Interiors;
-                internal void** Homes;
+                internal NativeArgument* Arguments;
+                // Native array of possibly-interior pointers (conceptually a native array of elements of type 'object' or 'ref byte').
+                // SAFETY: Must be GC protected.
+                internal IntPtr* Interiors;
+                // Native array of possibly-refs-to-possibly-interior pointers (conceptually a native array of elements of type 'ref object' or 'ref ref byte').
+                // SAFETY: Must be GC protected.
+                internal byte** Homes;
+                // Native array of captured argument values.
+                // Contains literal values and GC handles.
                 internal ulong* CapturedArguments;
                 internal void** ResultOwner;
                 internal void** TemporaryResultHandle;
                 internal void** ResultByRefs;
+                // Unboxed result data.
+                // SAFETY: Rooted by either ResultOwner or TemporaryResultHandle depending on whether or not the final result is boxed.
                 internal void* ResultData;
-                internal void* ResultHandle;
+                // GC Handle to result (if boxed).
+                internal IntPtr ResultHandle;
                 internal uint ArgumentCount;
                 internal uint ParameterCount;
                 internal EvaluationFlags Flags;
@@ -48,7 +56,7 @@ namespace System.Diagnostics
             }
 
             [Flags]
-            private enum ArgumentFlags : uint
+            internal enum ArgumentFlags : uint
             {
                 Literal = 1,
                 Handle = 2,
@@ -56,7 +64,7 @@ namespace System.Diagnostics
                 Register = 8,
             }
 
-            private struct NativeArgument
+            internal struct NativeArgument
             {
                 internal byte* Literal;
                 internal uint ElementType;
@@ -90,6 +98,7 @@ namespace System.Diagnostics
             private readonly bool _hasThis;
             private readonly Argument[] _arguments;
             private readonly object?[] _objects;
+            private readonly Dictionary<GCHandle, int> _handleAliasMap = [];
             private readonly InvokerEmitUtil.InvokeFunc_Debugger _invoke;
             internal bool IsNewObject() => (_context->Flags & EvaluationFlags.NewObject) != 0;
 
@@ -115,7 +124,15 @@ namespace System.Diagnostics
                     try
                     {
                         GCFrameRegistration.RegisterForGCReporting(&registration);
-                        new FunctionEvaluation(context, (void**)address).Invoke();
+                        FunctionEvaluation funcEval = new(context, (void**)address);
+                        try
+                        {
+                            funcEval.Invoke();
+                        }
+                        finally
+                        {
+                            funcEval.CopyBackHandles();
+                        }
                     }
                     finally
                     {
@@ -157,7 +174,7 @@ namespace System.Diagnostics
                         throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_Enum);
                     }
 
-                    PrepareArgument(0, declaringType, isByRef: false, isReceiver: true);
+                    PrepareArgument(0, declaringType, isByRef: false);
                     ValidateReceiver(declaringType);
                 }
                 PrepareResult(context);
@@ -168,7 +185,7 @@ namespace System.Diagnostics
                     RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
                     bool isByRef = parameterType.IsByRef;
                     PrepareArgument(i + (_hasThis ? 1 : 0),
-                        isByRef ? (RuntimeType)parameterType.GetElementType()! : parameterType, isByRef, isReceiver: false);
+                        isByRef ? (RuntimeType)parameterType.GetElementType()! : parameterType, isByRef);
                 }
 
                 CorElementType returnElementType = (CorElementType)context->ReturnElementType;
@@ -227,15 +244,14 @@ namespace System.Diagnostics
                     (IsNewObject() || returnType == CorElementType.ELEMENT_TYPE_VALUETYPE);
                 if (boxed || IsObject(returnType))
                 {
-                    // The strong handle is what crosses back into native code; once allocated it is
-                    // a stable, self-rooting reference, so resultObject needs no further protection.
-                    _context->ResultHandle = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(resultObject));
+                    // Allocate a GC handle for the boxed result object.
+                    _context->ResultHandle = GCHandle.ToIntPtr(GCHandle.Alloc(resultObject));
                 }
 
                 GC.KeepAlive(_method);
             }
 
-            private void PrepareArgument(int index, RuntimeType type, bool isByRef, bool isReceiver)
+            private void PrepareArgument(int index, RuntimeType type, bool isByRef)
             {
                 ref Argument argument = ref _arguments[index];
                 NativeArgument input = argument.Input;
@@ -245,6 +261,7 @@ namespace System.Diagnostics
                     ? ((RuntimeType)type.GetEnumUnderlyingType()).GetCorElementType()
                     : type.GetCorElementType();
                 int slot = index + (_hasThis ? 0 : 1);
+                bool isThis = index == 0 && _hasThis;
 
                 // input.Type describes the debugger's transport representation, not the signature type.
                 // Boxed value types arrive as objects; Nullable<T> specifically arrives as null or boxed T,
@@ -253,12 +270,12 @@ namespace System.Diagnostics
                 // and are not copied back to the handle's target.
                 if (IsObject(input.Type))
                 {
-                    object? value = ReadObject(index, interior: false);
+                    object? value = ReadObject(index);
                     if (type.IsValueType)
                     {
                         if (type.IsNullableOfT)
                         {
-                            if (!isReceiver || value is null || value.GetType() != type)
+                            if (!isThis || value is null || value.GetType() != type)
                             {
                                 if (value is not null)
                                 {
@@ -288,11 +305,21 @@ namespace System.Diagnostics
                     else
                     {
                         _objects[index] = value;
-                        if (input.IsHandle)
+                        if (input.IsHandle && isByRef)
                         {
-#pragma warning disable CS8500
-                            SetStorage(slot, ref *(object?*)(nuint)_context->CapturedArguments[index]);
-#pragma warning restore CS8500
+                            // Ensure that we are correctly preserving aliasing for by-ref object handle arguments
+                            // where the same handle is passed as different arguments.
+                            // COMPAT: This is only for reference-type object handles, not value type object handles.
+                            // Value-type object handles mutate the underlying box directly.
+                            nuint handleValue = checked((nuint)_context->CapturedArguments[index]);
+                            GCHandle handle = GCHandle.FromIntPtr((nint)handleValue);
+                            if (!_handleAliasMap.TryGetValue(handle, out int aliasIndex))
+                            {
+                                aliasIndex = index;
+                                _handleAliasMap[handle] = aliasIndex;
+                            }
+                            Debug.Assert(ReferenceEquals(_objects[aliasIndex], value), "The same GC handle passed in two parameters should point to the same object when read from both parameters.");
+                            SetStorage(slot, ref _objects[aliasIndex]);
                         }
                         else
                         {
@@ -305,7 +332,7 @@ namespace System.Diagnostics
 
                 if (input.Type == CorElementType.ELEMENT_TYPE_VALUETYPE)
                 {
-                    if (!type.IsValueType && (isReceiver || !isByRef))
+                    if (!type.IsValueType && (isThis || !isByRef))
                     {
                         RuntimeType? actualType = null;
                         GetArgumentType(_context, (uint)index, ObjectHandleOnStack.Create(ref actualType));
@@ -317,7 +344,7 @@ namespace System.Diagnostics
                         object? value;
                         if (input.HasMemory)
                         {
-                            value = actualType.Box(ref ((ByReference*)(_context->Interiors + index))->Value);
+                            value = actualType.Box(ref (ReadByteRef(index)));
                         }
                         else
                         {
@@ -329,7 +356,7 @@ namespace System.Diagnostics
                             value = actualType.Box(ref *(byte*)(_context->CapturedArguments + index));
                         }
 
-                        if (isReceiver && value is null)
+                        if (isThis && value is null)
                         {
                             throw new ArgumentNullException();
                         }
@@ -339,7 +366,7 @@ namespace System.Diagnostics
                     }
                     else if (input.HasMemory)
                     {
-                        if (type.IsByRefLike && !isByRef && !isReceiver)
+                        if (type.IsByRefLike && !isByRef && !isThis)
                         {
                             // Copy by-value ref structs into an exact managed local so their byrefs
                             // are reported by normal JIT GC info throughout the evaluated call.
@@ -347,7 +374,7 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            SetStorage(slot, ref ((ByReference*)(_context->Interiors + index))->Value);
+                            SetStorage(slot, ref ReadByteRef(index));
                         }
                     }
                     else
@@ -391,11 +418,11 @@ namespace System.Diagnostics
                     input.Type == argument.SignatureType)
                 {
                     argument.UsesDirectHome = true;
-                    SetStorage(slot, ref ((ByReference*)(_context->Homes + index))->Value);
+                    SetStorage(slot, ref *_context->Homes[index]);
                 }
                 else if (pointerSizedInteger && IsObject(argument.SignatureType))
                 {
-                    _objects[index] = ReadObject(index, interior: true);
+                    _objects[index] = ReadObject(index);
                     argument.UsesInterior = true;
                     SetStorage(slot, ref _objects[index]);
                 }
@@ -467,7 +494,7 @@ namespace System.Diagnostics
                 Debug.Assert(argument.IsTypedLocal);
                 Debug.Assert(argument.Input.HasMemory || sizeof(T) <= sizeof(ulong));
                 ref byte source = ref (argument.Input.HasMemory
-                    ? ref ((ByReference*)(_context->Interiors + index))->Value
+                    ? ref ReadByteRef(index)
                     : ref *(byte*)(_context->CapturedArguments + index));
                 storage = Unsafe.As<byte, T>(ref source);
                 SetStorage(slot, ref storage);
@@ -497,6 +524,8 @@ namespace System.Diagnostics
 
                 if (input.IsHandle)
                 {
+                    // COMPAT: We copy handle-backed reference types in a finally in case the invoke throws
+                    // an exception during the func-eval.
                     return false;
                 }
 
@@ -542,19 +571,27 @@ namespace System.Diagnostics
                 }
             }
 
+            private void CopyBackHandles()
+            {
+                foreach (KeyValuePair<GCHandle, int> entry in _handleAliasMap)
+                {
+                    GCHandle handle = entry.Key;
+                    handle.Target = _objects[entry.Value];
+                }
+            }
+
             private void SetStorage<T>(int slot, [UnscopedRef] ref T value)
                 where T : allows ref struct =>
                 *(ByReference*)(_storage + slot) = new(ref Unsafe.As<T, byte>(ref value));
 
-            private object? ReadObject(int index, bool interior)
+            private ref byte ReadByteRef(int index)
             {
-                object? value = null;
-                if (GetObject(_context, (uint)index, interior ? 1 : 0, ObjectHandleOnStack.Create(ref value)) < 0)
-                {
-                    throw new ArgumentException(SR.Argument_BadObjRef);
-                }
+                return ref *(byte*)_context->Interiors[index];
+            }
 
-                return value;
+            private object? ReadObject(int index)
+            {
+                return Unsafe.As<IntPtr, object>(ref _context->Interiors[index]);
             }
 
             private void CapturePrimitiveArguments()
@@ -562,7 +599,7 @@ namespace System.Diagnostics
                 // Resolve the target only after capturing values; resolution can run its class initializer.
                 for (int i = 0; i < _arguments.Length; i++)
                 {
-                    GetArgument(_context, (uint)i, out _arguments[i].Input);
+                    _arguments[i].Input = _context->Arguments[i];
                     NativeArgument input = _arguments[i].Input;
                     if (!IsObject(input.Type) && input.Type != CorElementType.ELEMENT_TYPE_VALUETYPE)
                     {
@@ -596,7 +633,7 @@ namespace System.Diagnostics
 
                 ref byte source = ref (input.IsLiteral
                     ? ref *input.Literal
-                    : ref ((ByReference*)(_context->Homes + index))->Value);
+                    : ref *_context->Homes[index]);
                 return ReadPrimitive(ref source, size);
             }
 
@@ -693,7 +730,7 @@ namespace System.Diagnostics
                 {
                     bits = NormalizeBoolValue(bits);
                 }
-                ref byte destination = ref ((ByReference*)(_context->Homes + index))->Value;
+                ref byte destination = ref *_context->Homes[index];
                 WritePrimitive(MemoryMarshal.CreateSpan(ref destination, GetPrimitiveSize(input.Type)), bits);
             }
 
@@ -725,7 +762,7 @@ namespace System.Diagnostics
                     return;
                 }
 
-                ref byte destination = ref ((ByReference*)(_context->Homes + index))->Value;
+                ref byte destination = ref *_context->Homes[index];
                 Unsafe.As<byte, object?>(ref destination) = value;
             }
 
@@ -737,17 +774,9 @@ namespace System.Diagnostics
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_PrepareFuncEvalResult")]
             private static partial void PrepareResult(Context* context);
 
-            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_GetFuncEvalArgument")]
-            [SuppressGCTransition]
-            private static partial void GetArgument(Context* context, uint index, out NativeArgument argument);
-
             [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_GetFuncEvalArgumentType")]
             private static partial void GetArgumentType(Context* context, uint index, ObjectHandleOnStack type);
-
-            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_GetFuncEvalObject")]
-            [SuppressGCTransition]
-            private static partial int GetObject(Context* context, uint index, int interior, ObjectHandleOnStack value);
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_ReadFuncEvalPrimitiveRegister")]
             [SuppressGCTransition]

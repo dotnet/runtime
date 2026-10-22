@@ -1025,35 +1025,6 @@ extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached()
 }
 
 #ifdef DEBUGGING_SUPPORTED
-HRESULT ValidateObject(Object* objPtr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        AVInRuntimeImplOkayHolder AVOkay;
-        if (objPtr != nullptr && !objPtr->ValidateObjectWithPossibleAV())
-        {
-            LOG((LF_CORDB, LL_INFO10000, "GAV: object methodtable-class invariant doesn't hold.\n"));
-            hr = E_INVALIDARG;
-        }
-    }
-    EX_CATCH
-    {
-        LOG((LF_CORDB, LL_INFO10000, "GAV: exception indicated ref is bad.\n"));
-        hr = E_INVALIDARG;
-    }
-    EX_END_CATCH
-
-    return hr;
-}
-
 void FreeFuncEvalTemporaryResult(DebuggerFuncEvalContext* pContext)
 {
     WRAPPER_NO_CONTRACT;
@@ -1278,14 +1249,6 @@ extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgument(
-    DebuggerFuncEvalContext* pContext, UINT32 index, DebuggerFuncEvalArgument* pArgument)
-{
-    QCALL_CONTRACT_NO_GC_TRANSITION;
-    _ASSERTE(g_pDebugInterface != nullptr);
-    g_pDebugInterface->GetFuncEvalArgument(pContext, index, pArgument);
-}
-
 extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
     DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack type,
     QCallExceptionStatus* qcallError)
@@ -1303,34 +1266,6 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
         type.Set(th.GetManagedClassObject());
     }
     END_QCALL;
-}
-
-extern "C" HRESULT QCALLTYPE DebugDebugger_GetFuncEvalObject(
-    DebuggerFuncEvalContext* pContext, UINT32 index, BOOL interior, QCall::ObjectHandleOnStack value)
-{
-    QCALL_CONTRACT_NO_GC_TRANSITION;
-    _ASSERTE(g_pDebugInterface != nullptr);
-    _ASSERTE(index < pContext->argumentCount);
-    Object* pObject;
-    if (interior)
-    {
-        pObject = static_cast<Object*>(pContext->pInteriors[index]);
-    }
-    else if (g_pDebugInterface->IsFuncEvalArgumentPassedAsHandleValue(pContext->pEval, index))
-    {
-        pObject = OBJECTREFToObject(ObjectFromHandle(
-            reinterpret_cast<OBJECTHANDLE>(static_cast<SIZE_T>(pContext->pCapturedArguments[index]))));
-    }
-    else
-    {
-        pObject = OBJECTREFToObject(pContext->pObjects[index]);
-    }
-    HRESULT hr = ValidateObject(pObject);
-    if (SUCCEEDED(hr))
-    {
-        value.Set(ObjectToOBJECTREF(pObject));
-    }
-    return hr;
 }
 
 extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
@@ -1371,8 +1306,7 @@ extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
         _ASSERTE(index < pContext->argumentCount);
         _ASSERTE(size <= sizeof(UINT64));
 #ifdef _DEBUG
-        DebuggerFuncEvalArgument argument;
-        g_pDebugInterface->GetFuncEvalArgument(pContext, index, &argument);
+        const DebuggerFuncEvalArgument& argument = pContext->pArguments[index];
         _ASSERTE(argument.elementType != ELEMENT_TYPE_CLASS && argument.elementType != ELEMENT_TYPE_OBJECT &&
             argument.elementType != ELEMENT_TYPE_STRING && argument.elementType != ELEMENT_TYPE_ARRAY &&
             argument.elementType != ELEMENT_TYPE_SZARRAY);

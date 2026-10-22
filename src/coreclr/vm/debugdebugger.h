@@ -24,6 +24,7 @@ extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();
 class DebuggerEval;
 class DebuggerFuncEvalResult;
 class ExternalMemoryHandle;
+struct DebuggerFuncEvalArgument;
 
 void ValidateFuncEvalReturnType(bool isNewObject, MethodTable* pMT);
 HRESULT ValidateObject(Object* objPtr);
@@ -43,7 +44,7 @@ struct DebuggerFuncEvalData
 struct DebuggerFuncEvalContext
 {
     DebuggerEval* pEval;
-    OBJECTREF* pObjects;
+    DebuggerFuncEvalArgument* pArguments;
     void** pInteriors;
     void** pHomes;
     INT64* pCapturedArguments;
@@ -93,12 +94,8 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
     QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
     DebuggerFuncEvalContext* pContext, QCallExceptionStatus* qcallError);
-extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgument(
-    DebuggerFuncEvalContext* pContext, UINT32 index, DebuggerFuncEvalArgument* pArgument);
 extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
     DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack type, QCallExceptionStatus* qcallError);
-extern "C" HRESULT QCALLTYPE DebugDebugger_GetFuncEvalObject(
-    DebuggerFuncEvalContext* pContext, UINT32 index, BOOL interior, QCall::ObjectHandleOnStack value);
 extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
     DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue);
 extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalObjectRegister(
