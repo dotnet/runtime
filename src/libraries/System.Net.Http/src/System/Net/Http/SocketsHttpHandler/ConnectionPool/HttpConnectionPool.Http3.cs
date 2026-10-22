@@ -657,12 +657,9 @@ namespace System.Net.Http
             {
                 int parseIdx = 0;
 
-                if (AltSvcHeaderParser.Parser.TryParseValue(altSvcHeaderValue, null, ref parseIdx, out object? parsedValue))
+                if (AltSvcHeaderParser.Parser.TryParseValue(altSvcHeaderValue, null, ref parseIdx, out object? parsedValue) &&
+                    parsedValue is AltSvcHeaderValue value)
                 {
-                    Debug.Assert(parsedValue is not null);
-
-                    var value = (AltSvcHeaderValue)parsedValue;
-
                     // 'clear' should be the only value present.
                     if (ReferenceEquals(AltSvcHeaderValue.Clear, value))
                     {
