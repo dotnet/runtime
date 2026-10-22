@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #if defined(_MSC_VER) && defined(_DEBUG)
 #include "ep-tests-debug.h"
 #endif
@@ -11,13 +14,11 @@
 #include <eventpipe/ep-buffer-manager.h>
 #include <eventpipe/ep-file.h>
 #include <eventpipe/ep-thread.h>
-#include <eglib/test/test.h>
+#include "test.h"
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 #define TEST_FILE "./ep_test_create_file.txt"
 #define TEST_EVENT_DATA "Dummy data for perf test."
-
-//#define TEST_PERF
 
 #ifdef _CRTDBG_MAP_ALLOC
 static _CrtMemState eventpipe_memory_start_snapshot;
@@ -62,6 +63,8 @@ buffer_manager_fini (
 
 	// buffer_manager owned by session.
 	EP_ASSERT (buffer_manager == NULL || buffer_manager == ep_session_get_buffer_manager (session));
+	if (session)
+		ep_session_close (session);
 	ep_session_dec_ref (session);
 }
 
@@ -308,7 +311,7 @@ test_buffer_manager_write_event (void)
 	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 1, NULL) == true);
 
 	EP_LOCK_ENTER (section1)
-		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
+		ep_session_wait_for_inflight_thread_ops (session);
 	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
@@ -347,7 +350,7 @@ test_buffer_manager_read_event (void)
 	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 1, NULL) == true);
 
 	EP_LOCK_ENTER (section1)
-		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
+		ep_session_wait_for_inflight_thread_ops (session);
 	EP_LOCK_EXIT (section1)
 
 	ep_event_instance = ep_buffer_manager_get_next_event (buffer_manager);
@@ -400,10 +403,10 @@ test_buffer_manager_deallocate_buffers (void)
 	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 1, NULL) == true);
 
 	EP_LOCK_ENTER (section1)
-		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
+		ep_session_wait_for_inflight_thread_ops (session);
 	EP_LOCK_EXIT (section1)
 
-	ep_buffer_manager_deallocate_buffers (buffer_manager);
+	ep_buffer_manager_close (buffer_manager);
 
 ep_on_exit:
 	buffer_manager_fini (buffer_manager,thread, session, provider, ep_event);
@@ -501,7 +504,7 @@ test_buffer_manager_oom (void)
 	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 1000 * 1000, NULL) == false);
 
 	EP_LOCK_ENTER (section1)
-		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
+		ep_session_wait_for_inflight_thread_ops (session);
 	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
@@ -514,7 +517,8 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-static RESULT
+#if TEST_PERF
+RESULT
 test_buffer_manager_perf (void)
 {
 	RESULT result = NULL;
@@ -572,7 +576,7 @@ test_buffer_manager_perf (void)
 	}
 
 	EP_LOCK_ENTER (section1)
-		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
+		ep_session_wait_for_inflight_thread_ops (session);
 	EP_LOCK_EXIT (section1)
 
 	test_location = 4;
@@ -607,6 +611,7 @@ ep_on_error:
 		result = FAILED ("Failed at test location=%i", test_location);
 	ep_exit_error_handler ();
 }
+#endif
 
 static RESULT
 test_buffer_manager_block_mode_abort_and_disable (void)
@@ -664,7 +669,9 @@ test_buffer_manager_block_mode_abort_and_disable (void)
 	test_location = 5;
 
 	// Abort the blocked writers (the teardown step): the flag is raised so a parked producer gives up.
-	ep_buffer_manager_abort_blocked_writers (buffer_manager);
+	EP_LOCK_ENTER (section1)
+		ep_buffer_manager_abort_blocked_writers (buffer_manager);
+	EP_LOCK_EXIT (section1)
 	ep_raise_error_if_nok (ep_buffer_manager_is_aborting (buffer_manager));
 
 	test_location = 6;
@@ -697,8 +704,7 @@ test_buffer_manager_teardown (void)
 #ifdef _CRTDBG_MAP_ALLOC
 	// Need to emulate a thread exit to make sure TLS gets cleaned up for current thread
 	// or we will get memory leaks reported.
-	extern void ep_rt_mono_thread_exited (void);
-	ep_rt_mono_thread_exited ();
+	ep_rt_test_thread_exited ();
 
 	_CrtMemCheckpoint (&eventpipe_memory_end_snapshot);
 	if ( _CrtMemDifference( &eventpipe_memory_diff_snapshot, &eventpipe_memory_start_snapshot, &eventpipe_memory_end_snapshot) ) {
@@ -720,9 +726,6 @@ static Test ep_buffer_manager_tests [] = {
 	{"test_buffer_manager_write_events_to_file_v4", test_buffer_manager_write_events_to_file_v4},
 	{"test_buffer_manager_oom", test_buffer_manager_oom},
 	{"test_buffer_manager_block_mode_abort_and_disable", test_buffer_manager_block_mode_abort_and_disable},
-#ifdef TEST_PERF
-	{"test_buffer_manager_perf", test_buffer_manager_perf},
-#endif
 	{"test_buffer_manager_teardown", test_buffer_manager_teardown},
 	{NULL, NULL}
 };
