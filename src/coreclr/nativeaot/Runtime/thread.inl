@@ -91,13 +91,13 @@ inline void Thread::DeferTransitionFrame()
 
 inline bool Thread::IsWithinStackBounds(PTR_VOID p)
 {
-    ASSERT((m_pStackLow != 0) && (m_pStackHigh != 0));
+    ASSERT((m_pStackHigh != 0) && (m_pStackLow < m_pStackHigh));
     return (m_pStackLow <= p) && (p < m_pStackHigh);
 }
 
 inline void Thread::GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh)
 {
-    ASSERT((m_pStackLow != 0) && (m_pStackHigh != 0));
+    ASSERT((m_pStackHigh != 0) && (m_pStackLow < m_pStackHigh));
     *ppStackLow = m_pStackLow;
     *ppStackHigh = m_pStackHigh;
 }

@@ -2038,6 +2038,12 @@ namespace Internal.JitInterface
         {
             get
             {
+                if (_compilation.TypeSystemContext.Target.IsWasm)
+                {
+                    // m_RIP, m_pThread, m_Flags, m_ShadowSP.
+                    return 4 * PointerSize;
+                }
+
                 // struct PInvokeTransitionFrame:
                 //  m_RIP (1)
                 //  m_FramePointer (1)

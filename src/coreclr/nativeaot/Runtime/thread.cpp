@@ -164,9 +164,7 @@ void Thread::ResetCachedTransitionFrame()
 void Thread::EnablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
-#if !defined(HOST_WASM)
     ASSERT(m_pDeferredTransitionFrame != NULL);
-#endif
 
     // set preemptive mode
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, m_pDeferredTransitionFrame);
@@ -364,10 +362,8 @@ void Thread::GcScanRoots(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackDat
 {
     this->CrossThreadUnhijack();
 
-#ifndef HOST_WASM
     StackFrameIterator frameIterator(this, GetTransitionFrame());
     GcScanRootsWorker(pfnEnumCallback, pvCallbackData, frameIterator);
-#endif
 }
 
 #endif // !DACCESS_COMPILE
@@ -407,7 +403,6 @@ bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token
 }
 #endif //DACCESS_COMPILE
 
-#ifndef TARGET_WASM
 void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData, StackFrameIterator & frameIterator)
 {
     PTR_OBJECTREF    pHijackedReturnValue = NULL;
@@ -441,6 +436,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
             PInvokeTransitionFrame* pTransitionFrame = GetTransitionFrame();
             ASSERT(pTransitionFrame != NULL);
 
+#ifndef TARGET_WASM
             if (pTransitionFrame == INTERRUPTED_THREAD_MARKER)
             {
                 GetInterruptedContext()->ForEachPossibleObjectRef
@@ -451,6 +447,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
                     }
                 );
             }
+#endif // !TARGET_WASM
 
             if (pTransitionFrame < pLowerBound)
                 pLowerBound = pTransitionFrame;
@@ -530,7 +527,6 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
         }
     }
 }
-#endif // !TARGET_WASM
 
 #ifndef DACCESS_COMPILE
 

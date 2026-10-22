@@ -28,6 +28,10 @@
 
 #include "NativeContext.h"
 
+#ifdef TARGET_WASM
+#include "wasm/WasmCodeManager.h"
+#endif
+
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
 #pragma warning(disable:4061)
 
@@ -174,7 +178,13 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     // properly walk it in parallel.
     ResetNextExInfoForSP((uintptr_t)dac_cast<TADDR>(pFrame));
 
-#if !defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable version of regdisplay
+#ifdef TARGET_WASM
+    m_RegDisplay = {};
+    m_RegDisplay.SP = pFrame->m_ShadowSP;
+    m_RegDisplay.FP = WasmCodeManager::GetFramePointer(m_RegDisplay.SP);
+    m_RegDisplay.SetIP(WasmCodeManager::GetVirtualIP(m_RegDisplay.SP));
+    SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
+#elif !defined(FEATURE_PORTABLE_HELPERS)
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
     m_RegDisplay.SetIP(ReturnAddressToCanonicalPC(dac_cast<TADDR>(pFrame->m_RIP)));
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
