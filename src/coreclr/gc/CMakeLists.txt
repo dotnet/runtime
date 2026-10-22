@@ -3,7 +3,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 if(CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
   add_compile_definitions(
     FEATURE_LXR_RC_VERTICAL
-    FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST
     FEATURE_ALLOCATION_NOTIFICATION_TEST)
 endif()
 
@@ -135,17 +134,6 @@ set(GC_WKS_SVR_SOURCES
   plan_phase.cpp
   regions_segments.cpp)
 
-if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
-  if(CLR_CMAKE_TARGET_WIN32)
-    set(WRITE_BARRIER_STANDARD_ABI_TEST_ASM amd64/standardwritebarriertest.asm)
-  else()
-    set(WRITE_BARRIER_STANDARD_ABI_TEST_ASM amd64/standardwritebarriertest.S)
-  endif()
-  list(APPEND GC_SOURCES
-    standardwritebarriertest.cpp
-    ${WRITE_BARRIER_STANDARD_ABI_TEST_ASM})
-endif()
-
 if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
   list(APPEND GC_SOURCES allocationnotificationtest.cpp)
 endif()
@@ -266,9 +254,6 @@ if(FEATURE_STANDALONE_GC)
 
   add_library_clr(clrgc_gc_wks OBJECT ${GC_WKS_SVR_SOURCES})
   add_dependencies(clrgc_gc_wks eventing_headers)
-  if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
-    target_compile_definitions(clrgc_gc_wks PRIVATE FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST)
-  endif()
   if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
     target_compile_definitions(clrgc_gc_wks PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
   endif()
@@ -284,9 +269,6 @@ if(FEATURE_STANDALONE_GC)
     add_library_clr(clrgc_gc_svr OBJECT ${GC_WKS_SVR_SOURCES})
     add_dependencies(clrgc_gc_svr eventing_headers)
     target_compile_definitions(clrgc_gc_svr PRIVATE SERVER_GC)
-    if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
-      target_compile_definitions(clrgc_gc_svr PRIVATE FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST)
-    endif()
     if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
       target_compile_definitions(clrgc_gc_svr PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
     endif()
@@ -303,9 +285,6 @@ if(FEATURE_STANDALONE_GC)
   # clrgc is build with standalone+segments
   add_library_clr(clrgc SHARED ${GC_SOURCES} ${CLRGC_OBJECTS})
   add_dependencies(clrgc eventing_headers)
-  if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
-    target_compile_definitions(clrgc PRIVATE FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST)
-  endif()
   if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
     target_compile_definitions(clrgc PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
   endif()
@@ -343,6 +322,21 @@ if(FEATURE_STANDALONE_GC)
 
   install_clr(TARGETS clrgc DESTINATIONS . sharedFramework COMPONENT runtime)
   if(CLR_CMAKE_ENABLE_LXR_GC)
+    # The write barrier helpers (PR #3316 mechanism, GetAssignRefFunctions) are assembly.
+    if(CLR_CMAKE_TARGET_WIN32)
+      set(LXR_WRITE_BARRIER_ASM amd64/lxr_writebarrier.asm)
+    else()
+      set(LXR_WRITE_BARRIER_ASM amd64/lxr_writebarrier.S)
+    endif()
+    add_library_clr(lxr_writebarrier OBJECT ${LXR_WRITE_BARRIER_ASM})
+    target_include_directories(lxr_writebarrier PRIVATE
+      ${ARCH_SOURCES_DIR}
+      ../pal/inc
+      ../vm/${ARCH_SOURCES_DIR}
+      ${CMAKE_CURRENT_BINARY_DIR}/../vm/wks)
+    if(CLR_CMAKE_TARGET_WIN32)
+      add_dependencies(lxr_writebarrier asmconstants_inc)
+    endif()
     add_library_clr(clrlxrgc SHARED
       gceventstatus.cpp gcconfig.cpp gccommon.cpp gcscan.cpp
       handletable.cpp handletablecore.cpp handletablescan.cpp handletablecache.cpp
@@ -350,7 +344,9 @@ if(FEATURE_STANDALONE_GC)
       side_metadata.cpp immix_block.cpp reference_count.cpp immix_allocation.cpp
       large_object_space.cpp lxr_work_packet.cpp lxr_work_scheduler.cpp
       lxr_completion_counter.cpp lxr_pause_schedule.cpp lxr_pause_coordinator.cpp
-      lxr_reference_counting.cpp lxr_finalizer_registry.h lxr_finalizer_pause.h lxr_pin_list.h lxr_gc.cpp lxr_gc.h lxr_gcload.cpp)
+      lxr_reference_counting.cpp lxr_finalizer_registry.h lxr_finalizer_pause.h lxr_pin_list.h lxr_gc.cpp lxr_gc.h lxr_gcload.cpp
+      lxr_write_barrier.cpp lxr_write_barrier.h
+      $<TARGET_OBJECTS:lxr_writebarrier>)
     add_dependencies(clrlxrgc eventing_headers)
     target_link_libraries(clrlxrgc PRIVATE ${GC_LINK_LIBRARIES})
     install_clr(TARGETS clrlxrgc DESTINATIONS . sharedFramework COMPONENT runtime)
