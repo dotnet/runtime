@@ -21,7 +21,6 @@ namespace System.Net.Security
     /// <summary>
     /// Provides a stream that uses the Negotiate security protocol to authenticate the client, and optionally the server, in client-server communication.
     /// </summary>
-    [UnsupportedOSPlatform("wasi")]
     public partial class NegotiateStream : AuthenticatedStream
     {
         /// <summary>Set as the _exception when the instance is disposed.</summary>
@@ -100,24 +99,29 @@ namespace System.Net.Security
             }
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsClient(AsyncCallback? asyncCallback, object? asyncState) =>
             BeginAuthenticateAsClient((NetworkCredential)CredentialCache.DefaultCredentials, binding: null, string.Empty, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification,
                                       asyncCallback, asyncState);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsClient(NetworkCredential credential, string targetName, AsyncCallback? asyncCallback, object? asyncState) =>
             BeginAuthenticateAsClient(credential, binding: null, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification,
                                       asyncCallback, asyncState);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsClient(NetworkCredential credential, ChannelBinding? binding, string targetName, AsyncCallback? asyncCallback, object? asyncState) =>
             BeginAuthenticateAsClient(credential, binding, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification,
                                       asyncCallback, asyncState);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsClient(
             NetworkCredential credential, string targetName, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel allowedImpersonationLevel,
             AsyncCallback? asyncCallback, object? asyncState) =>
             BeginAuthenticateAsClient(credential, binding: null, targetName, requiredProtectionLevel, allowedImpersonationLevel,
                                       asyncCallback, asyncState);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsClient(
             NetworkCredential credential, ChannelBinding? binding, string targetName, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel allowedImpersonationLevel,
             AsyncCallback? asyncCallback, object? asyncState) =>
@@ -125,32 +129,40 @@ namespace System.Net.Security
 
         public virtual void EndAuthenticateAsClient(IAsyncResult asyncResult) => TaskToAsyncResult.End(asyncResult);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsServer() =>
             AuthenticateAsServer((NetworkCredential)CredentialCache.DefaultCredentials, policy: null, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsServer(ExtendedProtectionPolicy? policy) =>
             AuthenticateAsServer((NetworkCredential)CredentialCache.DefaultCredentials, policy, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsServer(NetworkCredential credential, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel) =>
             AuthenticateAsServer(credential, policy: null, requiredProtectionLevel, requiredImpersonationLevel);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsServer(NetworkCredential credential, ExtendedProtectionPolicy? policy, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel)
         {
             ValidateCreateContext(DefaultPackage, credential, string.Empty, policy, requiredProtectionLevel, requiredImpersonationLevel);
             AuthenticateAsync<SyncReadWriteAdapter>(default(CancellationToken)).GetAwaiter().GetResult();
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsServer(AsyncCallback? asyncCallback, object? asyncState) =>
             BeginAuthenticateAsServer((NetworkCredential)CredentialCache.DefaultCredentials, policy: null, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification, asyncCallback, asyncState);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsServer(ExtendedProtectionPolicy? policy, AsyncCallback? asyncCallback, object? asyncState) =>
             BeginAuthenticateAsServer((NetworkCredential)CredentialCache.DefaultCredentials, policy, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification, asyncCallback, asyncState);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsServer(
             NetworkCredential credential, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel,
             AsyncCallback? asyncCallback, object? asyncState) =>
             BeginAuthenticateAsServer(credential, policy: null, requiredProtectionLevel, requiredImpersonationLevel, asyncCallback, asyncState);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsServer(
             NetworkCredential credential, ExtendedProtectionPolicy? policy, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel,
             AsyncCallback? asyncCallback, object? asyncState) =>
@@ -158,19 +170,24 @@ namespace System.Net.Security
 
         public virtual void EndAuthenticateAsServer(IAsyncResult asyncResult) => TaskToAsyncResult.End(asyncResult);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsClient() =>
             AuthenticateAsClient((NetworkCredential)CredentialCache.DefaultCredentials, binding: null, string.Empty, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsClient(NetworkCredential credential, string targetName) =>
             AuthenticateAsClient(credential, binding: null, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsClient(NetworkCredential credential, ChannelBinding? binding, string targetName) =>
             AuthenticateAsClient(credential, binding, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsClient(
             NetworkCredential credential, string targetName, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel allowedImpersonationLevel) =>
             AuthenticateAsClient(credential, binding: null, targetName, requiredProtectionLevel, allowedImpersonationLevel);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsClient(
             NetworkCredential credential, ChannelBinding? binding, string targetName, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel allowedImpersonationLevel)
         {
@@ -178,21 +195,26 @@ namespace System.Net.Security
             AuthenticateAsync<SyncReadWriteAdapter>(default(CancellationToken)).GetAwaiter().GetResult();
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsClientAsync() =>
             AuthenticateAsClientAsync((NetworkCredential)CredentialCache.DefaultCredentials, binding: null, string.Empty, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsClientAsync(NetworkCredential credential, string targetName) =>
             AuthenticateAsClientAsync(credential, binding: null, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsClientAsync(
             NetworkCredential credential, string targetName,
             ProtectionLevel requiredProtectionLevel,
             TokenImpersonationLevel allowedImpersonationLevel) =>
             AuthenticateAsClientAsync(credential, binding: null, targetName, requiredProtectionLevel, allowedImpersonationLevel);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsClientAsync(NetworkCredential credential, ChannelBinding? binding, string targetName) =>
             AuthenticateAsClientAsync(credential, binding, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsClientAsync(
             NetworkCredential credential, ChannelBinding? binding, string targetName, ProtectionLevel requiredProtectionLevel,
             TokenImpersonationLevel allowedImpersonationLevel)
@@ -201,15 +223,19 @@ namespace System.Net.Security
             return AuthenticateAsync<AsyncReadWriteAdapter>(default(CancellationToken));
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsServerAsync() =>
             AuthenticateAsServerAsync((NetworkCredential)CredentialCache.DefaultCredentials, policy: null, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsServerAsync(ExtendedProtectionPolicy? policy) =>
             AuthenticateAsServerAsync((NetworkCredential)CredentialCache.DefaultCredentials, policy, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsServerAsync(NetworkCredential credential, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel) =>
             AuthenticateAsServerAsync(credential, policy: null, requiredProtectionLevel, requiredImpersonationLevel);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsServerAsync(
             NetworkCredential credential, ExtendedProtectionPolicy? policy, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel)
         {

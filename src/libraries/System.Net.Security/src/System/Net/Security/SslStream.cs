@@ -39,7 +39,6 @@ namespace System.Net.Security
 
     public delegate ValueTask<SslServerAuthenticationOptions> ServerOptionsSelectionCallback(SslStream stream, SslClientHelloInfo clientHelloInfo, object? state, CancellationToken cancellationToken);
 
-    [UnsupportedOSPlatform("wasi")]
     public partial class SslStream : AuthenticatedStream
     {
         /// <summary>Set as the _exception when the instance is disposed.</summary>
@@ -232,18 +231,21 @@ namespace System.Net.Security
         //
         // Client side auth.
         //
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsClient(string targetHost, AsyncCallback? asyncCallback, object? asyncState)
         {
             return BeginAuthenticateAsClient(targetHost, null, SslProtocols.None, false,
                                            asyncCallback, asyncState);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsClient(string targetHost, X509CertificateCollection? clientCertificates,
                                                             bool checkCertificateRevocation, AsyncCallback? asyncCallback, object? asyncState)
         {
             return BeginAuthenticateAsClient(targetHost, clientCertificates, SslProtocols.None, checkCertificateRevocation, asyncCallback, asyncState);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsClient(string targetHost, X509CertificateCollection? clientCertificates,
                                                             SslProtocols enabledSslProtocols, bool checkCertificateRevocation,
                                                             AsyncCallback? asyncCallback, object? asyncState)
@@ -260,6 +262,7 @@ namespace System.Net.Security
             return BeginAuthenticateAsClient(options, CancellationToken.None, asyncCallback, asyncState);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         internal IAsyncResult BeginAuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken, AsyncCallback? asyncCallback, object? asyncState) =>
             TaskToAsyncResult.Begin(AuthenticateAsClientAsync(sslClientAuthenticationOptions, cancellationToken)!, asyncCallback, asyncState);
 
@@ -268,6 +271,7 @@ namespace System.Net.Security
         //
         // Server side auth.
         //
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsServer(X509Certificate serverCertificate, AsyncCallback? asyncCallback, object? asyncState)
 
         {
@@ -276,12 +280,14 @@ namespace System.Net.Security
                                                           asyncState);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired,
                                                             bool checkCertificateRevocation, AsyncCallback? asyncCallback, object? asyncState)
         {
             return BeginAuthenticateAsServer(serverCertificate, clientCertificateRequired, SslProtocols.None, checkCertificateRevocation, asyncCallback, asyncState);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual IAsyncResult BeginAuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired,
                                                             SslProtocols enabledSslProtocols, bool checkCertificateRevocation,
                                                             AsyncCallback? asyncCallback,
@@ -299,6 +305,7 @@ namespace System.Net.Security
             return BeginAuthenticateAsServer(options, CancellationToken.None, asyncCallback, asyncState);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         private IAsyncResult BeginAuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken, AsyncCallback? asyncCallback, object? asyncState) =>
             TaskToAsyncResult.Begin(AuthenticateAsServerAsync(sslServerAuthenticationOptions, cancellationToken)!, asyncCallback, asyncState);
 
@@ -311,16 +318,19 @@ namespace System.Net.Security
         public TransportContext TransportContext => new SslStreamContext(this);
 
         #region Synchronous methods
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsClient(string targetHost)
         {
             AuthenticateAsClient(targetHost, null, SslProtocols.None, false);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsClient(string targetHost, X509CertificateCollection? clientCertificates, bool checkCertificateRevocation)
         {
             AuthenticateAsClient(targetHost, clientCertificates, SslProtocols.None, checkCertificateRevocation);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsClient(string targetHost, X509CertificateCollection? clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
         {
             SslClientAuthenticationOptions options = new SslClientAuthenticationOptions
@@ -335,6 +345,7 @@ namespace System.Net.Security
             AuthenticateAsClient(options);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
             ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions);
@@ -345,16 +356,19 @@ namespace System.Net.Security
             ProcessAuthenticationAsync().GetAwaiter().GetResult();
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate)
         {
             AuthenticateAsServer(serverCertificate, false, SslProtocols.None, false);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation)
         {
             AuthenticateAsServer(serverCertificate, clientCertificateRequired, SslProtocols.None, checkCertificateRevocation);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
         {
             SslServerAuthenticationOptions options = new SslServerAuthenticationOptions
@@ -369,6 +383,7 @@ namespace System.Net.Security
             AuthenticateAsServer(options);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public void AuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
             ArgumentNullException.ThrowIfNull(sslServerAuthenticationOptions);
@@ -379,10 +394,13 @@ namespace System.Net.Security
         #endregion
 
         #region Task-based async public methods
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsClientAsync(string targetHost) => AuthenticateAsClientAsync(targetHost, null, false);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsClientAsync(string targetHost, X509CertificateCollection? clientCertificates, bool checkCertificateRevocation) => AuthenticateAsClientAsync(targetHost, clientCertificates, SslProtocols.None, checkCertificateRevocation);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsClientAsync(string targetHost, X509CertificateCollection? clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
         {
             SslClientAuthenticationOptions options = new SslClientAuthenticationOptions()
@@ -397,6 +415,7 @@ namespace System.Net.Security
             return AuthenticateAsClientAsync(options);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public Task AuthenticateAsClientAsync(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions);
@@ -406,9 +425,11 @@ namespace System.Net.Security
             return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate) =>
             AuthenticateAsServerAsync(serverCertificate, false, SslProtocols.None, false);
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation)
         {
             SslServerAuthenticationOptions options = new SslServerAuthenticationOptions
@@ -422,6 +443,7 @@ namespace System.Net.Security
             return AuthenticateAsServerAsync(options);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
         {
             SslServerAuthenticationOptions options = new SslServerAuthenticationOptions
@@ -436,6 +458,7 @@ namespace System.Net.Security
             return AuthenticateAsServerAsync(options);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public Task AuthenticateAsServerAsync(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(sslServerAuthenticationOptions);
@@ -443,6 +466,7 @@ namespace System.Net.Security
             return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
+        [UnsupportedOSPlatform("wasi")]
         public Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionsCallback, object? state, CancellationToken cancellationToken = default)
         {
             _sslAuthenticationOptions.UpdateOptions(optionsCallback, state);

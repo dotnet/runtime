@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
-using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Threading;
 
@@ -314,7 +313,6 @@ namespace System.Net.Security
         }
 
         [NonEvent]
-        [UnsupportedOSPlatform("wasi")]
         public static Activity? StartActivity(SslStream stream)
         {
             using Activity? activity = s_activitySource.StartActivity(ActivityName);
@@ -330,7 +328,6 @@ namespace System.Net.Security
         }
 
         [NonEvent]
-        [UnsupportedOSPlatform("wasi")]
         public static void StopActivity(Activity? activity, Exception? exception, SslStream stream)
         {
             if (activity?.IsAllDataRequested != true) return;

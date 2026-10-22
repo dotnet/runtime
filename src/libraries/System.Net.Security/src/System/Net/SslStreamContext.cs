@@ -3,12 +3,10 @@
 
 using System.Diagnostics;
 using System.Net.Security;
-using System.Runtime.Versioning;
 using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
-    [UnsupportedOSPlatform("wasi")]
     internal sealed class SslStreamContext : TransportContext
     {
         private readonly SslStream _sslStream;

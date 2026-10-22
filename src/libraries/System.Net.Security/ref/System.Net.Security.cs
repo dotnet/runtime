@@ -101,7 +101,6 @@ namespace System.Net.Security
         TargetUnknown = 14,
         ImpersonationValidationFailed = 15,
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public partial class NegotiateStream : System.Net.Security.AuthenticatedStream
     {
         public NegotiateStream(System.IO.Stream innerStream) : base (default(System.IO.Stream), default(bool)) { }
@@ -121,32 +120,59 @@ namespace System.Net.Security
         public override int ReadTimeout { get { throw null; } set { } }
         public virtual System.Security.Principal.IIdentity RemoteIdentity { get { throw null; } }
         public override int WriteTimeout { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsClient() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsClient(System.Net.NetworkCredential credential, System.Security.Authentication.ExtendedProtection.ChannelBinding? binding, string targetName) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsClient(System.Net.NetworkCredential credential, System.Security.Authentication.ExtendedProtection.ChannelBinding? binding, string targetName, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel allowedImpersonationLevel) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsClient(System.Net.NetworkCredential credential, string targetName) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsClient(System.Net.NetworkCredential credential, string targetName, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel allowedImpersonationLevel) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsClientAsync() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsClientAsync(System.Net.NetworkCredential credential, System.Security.Authentication.ExtendedProtection.ChannelBinding? binding, string targetName) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsClientAsync(System.Net.NetworkCredential credential, System.Security.Authentication.ExtendedProtection.ChannelBinding? binding, string targetName, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel allowedImpersonationLevel) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsClientAsync(System.Net.NetworkCredential credential, string targetName) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsClientAsync(System.Net.NetworkCredential credential, string targetName, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel allowedImpersonationLevel) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsServer() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsServer(System.Net.NetworkCredential credential, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel requiredImpersonationLevel) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsServer(System.Net.NetworkCredential credential, System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy? policy, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel requiredImpersonationLevel) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsServer(System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy? policy) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsServerAsync() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsServerAsync(System.Net.NetworkCredential credential, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel requiredImpersonationLevel) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsServerAsync(System.Net.NetworkCredential credential, System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy? policy, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel requiredImpersonationLevel) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsServerAsync(System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy? policy) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsClient(System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsClient(System.Net.NetworkCredential credential, System.Security.Authentication.ExtendedProtection.ChannelBinding? binding, string targetName, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsClient(System.Net.NetworkCredential credential, System.Security.Authentication.ExtendedProtection.ChannelBinding? binding, string targetName, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel allowedImpersonationLevel, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsClient(System.Net.NetworkCredential credential, string targetName, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsClient(System.Net.NetworkCredential credential, string targetName, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel allowedImpersonationLevel, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsServer(System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsServer(System.Net.NetworkCredential credential, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel requiredImpersonationLevel, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsServer(System.Net.NetworkCredential credential, System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy? policy, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel requiredImpersonationLevel, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsServer(System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy? policy, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
@@ -245,7 +271,6 @@ namespace System.Net.Security
         public System.Net.Security.SslStreamCertificateContext? ServerCertificateContext { get { throw null; } set { } }
         public System.Net.Security.ServerCertificateSelectionCallback? ServerCertificateSelectionCallback { get { throw null; } set { } }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public partial class SslStream : System.Net.Security.AuthenticatedStream
     {
         public SslStream(System.IO.Stream innerStream) : base (default(System.IO.Stream), default(bool)) { }
@@ -287,28 +312,51 @@ namespace System.Net.Security
         public string TargetHostName { get { throw null; } }
         public System.Net.TransportContext TransportContext { get { throw null; } }
         public override int WriteTimeout { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public void AuthenticateAsClient(System.Net.Security.SslClientAuthenticationOptions sslClientAuthenticationOptions) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsClient(string targetHost) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsClient(string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection? clientCertificates, bool checkCertificateRevocation) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsClient(string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection? clientCertificates, System.Security.Authentication.SslProtocols enabledSslProtocols, bool checkCertificateRevocation) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public System.Threading.Tasks.Task AuthenticateAsClientAsync(System.Net.Security.SslClientAuthenticationOptions sslClientAuthenticationOptions, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsClientAsync(string targetHost) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsClientAsync(string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection? clientCertificates, bool checkCertificateRevocation) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsClientAsync(string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection? clientCertificates, System.Security.Authentication.SslProtocols enabledSslProtocols, bool checkCertificateRevocation) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public void AuthenticateAsServer(System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsServer(System.Security.Cryptography.X509Certificates.X509Certificate serverCertificate) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsServer(System.Security.Cryptography.X509Certificates.X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual void AuthenticateAsServer(System.Security.Cryptography.X509Certificates.X509Certificate serverCertificate, bool clientCertificateRequired, System.Security.Authentication.SslProtocols enabledSslProtocols, bool checkCertificateRevocation) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public System.Threading.Tasks.Task AuthenticateAsServerAsync(System.Net.Security.ServerOptionsSelectionCallback optionsCallback, object? state, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public System.Threading.Tasks.Task AuthenticateAsServerAsync(System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsServerAsync(System.Security.Cryptography.X509Certificates.X509Certificate serverCertificate) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsServerAsync(System.Security.Cryptography.X509Certificates.X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.Threading.Tasks.Task AuthenticateAsServerAsync(System.Security.Cryptography.X509Certificates.X509Certificate serverCertificate, bool clientCertificateRequired, System.Security.Authentication.SslProtocols enabledSslProtocols, bool checkCertificateRevocation) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsClient(string targetHost, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsClient(string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection? clientCertificates, bool checkCertificateRevocation, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsClient(string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection? clientCertificates, System.Security.Authentication.SslProtocols enabledSslProtocols, bool checkCertificateRevocation, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsServer(System.Security.Cryptography.X509Certificates.X509Certificate serverCertificate, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsServer(System.Security.Cryptography.X509Certificates.X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public virtual System.IAsyncResult BeginAuthenticateAsServer(System.Security.Cryptography.X509Certificates.X509Certificate serverCertificate, bool clientCertificateRequired, System.Security.Authentication.SslProtocols enabledSslProtocols, bool checkCertificateRevocation, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
