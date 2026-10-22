@@ -4845,7 +4845,9 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
     uint32_t elemSize = genTypeSize(simdBaseType);
     uint32_t count    = simdSize / elemSize;
 
-    if (op1->OperIs(GT_IND))
+    // Folding the index into the indir moves the load after op2, so op2 mustn't write the memory it reads.
+    // The indir's own exception is handled below.
+    if (op1->OperIs(GT_IND) && IsInvariantInRange(op1, node, GTF_EXCEPT))
     {
         // We want to optimize GetElement down to an Indir where possible as
         // this unlocks additional containment opportunities for various nodes
