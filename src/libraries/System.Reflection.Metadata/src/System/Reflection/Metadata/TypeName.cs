@@ -619,10 +619,11 @@ namespace System.Reflection.Metadata
         /// <param name="metadataName">The unescaped name of the type as it appears in metadata, including the namespace; e.g., "System.Int32".
         /// For a nested type, only the name of the nested type; e.g., "NestedType".</param>
         /// <param name="declaringType">The declaring type of a nested type, or null.</param>
-        /// <param name="assemblyInfo">The assembly name, or null.</param>
+        /// <param name="assemblyInfo">The assembly name, or null. A nested type has the assembly name of its declaring type, so this must be null when <paramref name="declaringType"/> is specified.</param>
         /// <returns>Created simple name.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="metadataName"/> is null.</exception>
-        /// <exception cref="ArgumentException"><paramref name="metadataName"/> is empty, or <paramref name="declaringType"/> is not a simple type name.</exception>
+        /// <exception cref="ArgumentException"><paramref name="metadataName"/> is empty, <paramref name="declaringType"/> is not a simple type name,
+        /// or both <paramref name="declaringType"/> and <paramref name="assemblyInfo"/> are specified.</exception>
         public static TypeName CreateSimpleTypeName(string metadataName, TypeName? declaringType = null, AssemblyNameInfo? assemblyInfo = null)
         {
             if (metadataName is null)
@@ -646,13 +647,18 @@ namespace System.Reflection.Metadata
                 throw new ArgumentException(SR.Format(SR.Arg_NotSimpleTypeName, declaringType.FullName), nameof(declaringType));
             }
 
+            if (assemblyInfo is not null)
+            {
+                throw new ArgumentException(SR.Arg_NestedTypeAssemblyInfo, nameof(assemblyInfo));
+            }
+
             string declaringFullName = declaringType.FullName;
             if (declaringType._nestedNameLength != declaringFullName.Length)
             {
                 declaringType = new TypeName(declaringFullName, declaringType.AssemblyName, declaringType: declaringType._declaringType, nestedNameLength: declaringFullName.Length);
             }
 
-            return new TypeName(declaringFullName + "+" + escapedName, assemblyInfo, declaringType: declaringType);
+            return new TypeName(declaringFullName + "+" + escapedName, declaringType.AssemblyName, declaringType: declaringType);
         }
 
         /// <summary>

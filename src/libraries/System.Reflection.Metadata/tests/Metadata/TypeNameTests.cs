@@ -762,9 +762,10 @@ namespace System.Reflection.Metadata.Tests
         public void CreateSimpleTypeName_NestedNames(string declaringTypeName)
         {
             TypeName declaringType = TypeName.Parse(declaringTypeName.AsSpan());
-            TypeName created = TypeName.CreateSimpleTypeName("Nested", declaringType, declaringType.AssemblyName);
+            TypeName created = TypeName.CreateSimpleTypeName("Nested", declaringType);
             TypeName parsed = TypeName.Parse($"{declaringType.FullName}+Nested".AsSpan());
 
+            Assert.Same(declaringType.AssemblyName, created.AssemblyName);
             Assert.True(created.IsNested);
             Assert.True(created.IsSimple);
             Assert.Equal(declaringType.GetNodeCount() + 1, created.GetNodeCount());
@@ -809,6 +810,17 @@ namespace System.Reflection.Metadata.Tests
             TypeName declaringType = TypeName.Parse(declaringTypeName.AsSpan());
 
             AssertExtensions.Throws<ArgumentException>("declaringType", () => TypeName.CreateSimpleTypeName("Nested", declaringType));
+        }
+
+        [Theory]
+        [InlineData("Ns.Declaring")]
+        [InlineData("Ns.Declaring, Lib")]
+        public void CreateSimpleTypeName_ThrowsForNestedWithAssemblyInfo(string declaringTypeName)
+        {
+            TypeName declaringType = TypeName.Parse(declaringTypeName.AsSpan());
+            AssemblyNameInfo assemblyInfo = AssemblyNameInfo.Parse("Lib".AsSpan());
+
+            AssertExtensions.Throws<ArgumentException>("assemblyInfo", () => TypeName.CreateSimpleTypeName("Nested", declaringType, assemblyInfo));
         }
 
         [Fact]
