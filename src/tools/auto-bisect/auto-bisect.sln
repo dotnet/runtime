@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "auto-bisect", "src\auto-bisect.csproj", "{F7379BEA-FDBD-4C00-A619-05A433BB813F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoBisect.Tests", "tests\AutoBisect.Tests.csproj", "{F77542B9-DBCC-4F17-B30C-3EBD7C91B3C3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F7379BEA-FDBD-4C00-A619-05A433BB813F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7379BEA-FDBD-4C00-A619-05A433BB813F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7379BEA-FDBD-4C00-A619-05A433BB813F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7379BEA-FDBD-4C00-A619-05A433BB813F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F77542B9-DBCC-4F17-B30C-3EBD7C91B3C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F77542B9-DBCC-4F17-B30C-3EBD7C91B3C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F77542B9-DBCC-4F17-B30C-3EBD7C91B3C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F77542B9-DBCC-4F17-B30C-3EBD7C91B3C3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
