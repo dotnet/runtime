@@ -86,7 +86,9 @@ extern "C" {
     int32_t SystemNative_FcntlSetFD (void *, int32_t);
     int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     void SystemNative_Free (void *);
+    void SystemNative_FreeCommandLine (void *);
     void SystemNative_FreeLibrary (void *);
+    void * SystemNative_GetCommandLine (void *);
     double SystemNative_GetCpuUtilization (void *);
     int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
     void * SystemNative_GetCwd (void *, int32_t);
@@ -231,7 +233,9 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_FcntlSetFD) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
+    DllImportEntry(SystemNative_FreeCommandLine) // System.Private.CoreLib
     DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
+    DllImportEntry(SystemNative_GetCommandLine) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression, System.Private.CoreLib, System.Security.Cryptography
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
@@ -323,7 +327,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
-    {"libSystem.Native", s_libSystem_Native, 93},
+    {"libSystem.Native", s_libSystem_Native, 95},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };
