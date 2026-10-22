@@ -438,8 +438,6 @@ public class Crossgen2CacheTests
     [InlineData("unreadable-profile")]
     [InlineData("bad-input")]
     [InlineData("invalid-root")]
-    [InlineData("outputs-in-cache")]
-    [InlineData("cache-in-output")]
     [InlineData("relative-reference")]
     [InlineData("path-injection")]
     public void UnsupportedAndUnreadableInvocationsBypass(string shape) => RemoteExecutor.Invoke(value =>
@@ -488,8 +486,6 @@ public class Crossgen2CacheTests
                 break;
             case "bad-input": File.WriteAllText(fixture.Input, "not a PE"); break;
             case "invalid-root": Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE_PATH", fixture.Profile); break;
-            case "outputs-in-cache": Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE_PATH", fixture.Root + Path.DirectorySeparatorChar); break;
-            case "cache-in-output": Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE_PATH", Path.Combine(fixture.Output, "cache")); break;
             case "relative-reference": task.ImplementationAssemblyReferences = new[] { new TaskItem("relative.dll") }; break;
             case "path-injection": task.ImplementationAssemblyReferences = new[] { new TaskItem(fixture.Reference + "\"\n--map") }; break;
         }
@@ -498,11 +494,38 @@ public class Crossgen2CacheTests
         string expectedDiagnostic = value switch
         {
             "invalid-root" => "Crossgen2 caching is disabled",
-            "outputs-in-cache" or "cache-in-output" or "unreadable-profile" => "Crossgen2 cache bypassed:",
+            "unreadable-profile" => "Crossgen2 cache bypassed:",
             _ => "Crossgen2 cache bypass:"
         };
         Assert.Contains(task.Engine.Messages, m => m.Contains(expectedDiagnostic, StringComparison.Ordinal));
     }, shape).Dispose();
+
+    [CachePlatformTheory]
+    [InlineData("outputs-in-cache")]
+    [InlineData("cache-in-output")]
+    public void OverlappingCacheAndOutputsFailBeforeExecution(string overlap) => RemoteExecutor.Invoke(value =>
+    {
+        using var fixture = new Fixture();
+        Assert.True(fixture.Create().Execute());
+        string entry = Assert.Single(Directory.GetDirectories(Path.Combine(fixture.Cache, InvocationCacheEntry.VersionDirectory)));
+        string manifest = Path.Combine(entry, "manifest");
+        byte[] cachedManifest = File.ReadAllBytes(manifest);
+        byte[] image = File.ReadAllBytes(fixture.Output);
+        byte[] symbols = File.ReadAllBytes(fixture.Map);
+        string cacheDirectory = value == "outputs-in-cache"
+            ? fixture.Root + Path.DirectorySeparatorChar : Path.Combine(fixture.Output, "cache");
+        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
+        MockCompiler task = fixture.Create();
+
+        Assert.False(task.Execute());
+
+        Assert.Equal(0, task.Executions);
+        Assert.Equal(image, File.ReadAllBytes(fixture.Output));
+        Assert.Equal(symbols, File.ReadAllBytes(fixture.Map));
+        Assert.Equal(cachedManifest, File.ReadAllBytes(manifest));
+        Assert.Contains(task.Engine.Errors, message =>
+            message.Contains("Cache outputs must be distinct files outside the cache.", StringComparison.Ordinal));
+    }, overlap).Dispose();
 
     [CachePlatformTheory]
     [InlineData("profile")]

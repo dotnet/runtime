@@ -65,15 +65,7 @@ internal sealed partial class InvocationCache
         if (invocation is null)
             return false;
 
-        try
-        {
-            cache.ValidateOutputs(invocation.Outputs);
-        }
-        catch (ArgumentException ex)
-        {
-            log.LogMessage(MessageImportance.Low, $"{configuration.ToolName} cache bypassed: invalid output declaration: {ex.Message}");
-            return false;
-        }
+        cache.ValidateOutputs(invocation.Outputs);
 
         DateTime outputTimestampUtc = DateTime.UtcNow;
         if (!TryComputeKey(log, configuration.ToolName, invocation, out string key))

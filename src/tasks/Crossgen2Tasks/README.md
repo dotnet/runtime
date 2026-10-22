@@ -189,6 +189,9 @@ to callers without replaying the warning messages. Normal execution resets this
 output before running the compiler, including after a failed restoration.
 External tool side effects are not replayed. Shared cache status/failure messages
 are low-importance diagnostics. Tool failures retain normal exit/error reporting.
+Invalid output declarations, including overlap between the cache directory and an
+owned output file, fail the task before output preparation rather than falling back
+to compilation.
 
 Entries live under `<cache>/v1/<lowercase-SHA-256>/` with indexed files in `outputs/`,
 a binary manifest containing the format version, output-contract kind, file count,
