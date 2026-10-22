@@ -767,7 +767,7 @@ namespace System.IO.Compression
                 {
                     bytesRead = await _payloadStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
                 }
-                catch
+                catch (InvalidDataException)
                 {
                     // The payload stream (e.g. CRC validation for AE-1 entries) can detect corruption and throw
                     // before this wrapper's own length bookkeeping runs. Still complete authentication first -
