@@ -67,7 +67,7 @@ LXR_EXPORT uint64_t GC_LxrPrototype_GetMetric(uint32_t metric)
 
 LXR_EXPORT const char* GC_LxrPrototype_GetIdentity()
 {
-    return "LXR nursery and mature prototype; GC interface 6.7; P6 nursery+mature engine; costs-v1; lifecycle-costs-v1; log-publication-v1; full-trace-batch-v1";
+    return "LXR nursery and mature prototype; GC interface 6.3; P6 nursery+mature engine; costs-v1; lifecycle-costs-v1; log-publication-v1; full-trace-batch-v1";
 }
 
 LXR_EXPORT uintptr_t GC_LxrPrototype_GetOwnedStart()

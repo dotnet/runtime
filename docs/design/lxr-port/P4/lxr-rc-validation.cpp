@@ -6439,13 +6439,13 @@ namespace
         {
             return;
         }
-        Type small(24, 0);
+        Type tiny(24, 0);
         Type wide(512, 0);
         Helper helper{&engine, mutator};
         std::vector<Object*> keep;
         for (size_t index = 0; index < 120; index++)
         {
-            Object* object = helper.New(index % 3 == 0 ? wide.table : small.table, index % 3 == 0 ? 512 : 24);
+            Object* object = helper.New(index % 3 == 0 ? wide.table : tiny.table, index % 3 == 0 ? 512 : 24);
             if (object == nullptr)
             {
                 return;
@@ -6473,7 +6473,7 @@ namespace
         std::vector<Object*> fresh;
         for (size_t index = 0; index < 200; index++)
         {
-            Object* object = helper.NewObject(small);
+            Object* object = helper.NewObject(tiny);
             if (object == nullptr)
             {
                 return;
@@ -6665,7 +6665,7 @@ namespace
         ArrayType pointers;
         ComponentType strings(2, 22);
         ComponentType bytes(1, 24);
-        Type small(24, 0);
+        Type tiny(24, 0);
         Type medium(96, 0);
         Type wide(1000, 0);
         std::mt19937_64 random(0x5eed);
@@ -6682,7 +6682,7 @@ namespace
                 Object* object = nullptr;
                 switch (random() % 6)
                 {
-                    case 0: object = helper.NewObject(small); break;
+                    case 0: object = helper.NewObject(tiny); break;
                     case 1: object = helper.NewObject(medium); break;
                     case 2: object = helper.NewObject(wide); break;
                     case 3:
@@ -6879,10 +6879,10 @@ namespace
         }
         Type pinnedType(96, 1);
         Type largeType(static_cast<uint32_t>(LxrLargeObjectSpace::MinimumObjectBytes + 4096), 0);
-        Type small(24, 0);
+        Type tiny(24, 0);
         Object* pinned = AllocatePinnedObject(engine, mutator, pinnedType);
         Object* large = Allocate(engine, mutator, largeType);
-        Object* young = Allocate(engine, mutator, small);
+        Object* young = Allocate(engine, mutator, tiny);
         if (pinned == nullptr || large == nullptr || young == nullptr)
         {
             return;
@@ -7050,7 +7050,7 @@ namespace
         std::atomic<bool> pause{false};
         std::atomic<int> parked{0};
         ArrayType pointers;
-        Type small(24, 0);
+        Type tiny(24, 0);
         Type medium(120, 0);
         std::vector<std::thread> workers;
         for (int index = 0; index < Threads; index++)
@@ -7076,7 +7076,7 @@ namespace
                     size_t size;
                     switch (random() % 3)
                     {
-                        case 0: size = 24; object = helpers[index].New(small.table, size); break;
+                        case 0: size = 24; object = helpers[index].New(tiny.table, size); break;
                         case 1: size = 120; object = helpers[index].New(medium.table, size); break;
                         default:
                         {
