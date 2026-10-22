@@ -33,13 +33,6 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(FEATURE_PORTABLE_HELPERS)
-#ifdef HOST_WASM
-// Runtime-async returns its continuation through a mutable WebAssembly global.
-asm(".globl __async_continuation\n"
-    ".globaltype __async_continuation, i32\n"
-    "__async_continuation:\n");
-#endif // HOST_WASM
-
 EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame);
 
 static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, intptr_t numElements)
