@@ -17,10 +17,13 @@ supported by managed ilasm.
 Overriding the metadata stream version with `-MSV` is not supported by
 managed ilasm.
 
-## -OPTIMIZE is a no-op
+## ARM32 target images are not supported
 
-Currently managed ilasm does not do any optimizations of the IL written by the user.
+Managed ilasm does not support generating ARM32 (AArch32) machine images. The native `/ARM`
+switch is rejected.
 
-## -FOLD is a no-op
+## Pseudo custom attributes are not lowered by default
 
-Currently managed ilasm does not fold identical IL bodies from different methods into the same blob.
+Managed ilasm leaves custom attributes unchanged by default. Use `--pseudoattributes`
+to lower recognized pseudo custom attributes into metadata flags and auxiliary tables.
+This opt-in switch has no legacy `/` or single-dash spelling.

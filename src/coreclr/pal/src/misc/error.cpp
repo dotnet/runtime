@@ -51,7 +51,7 @@ conditions under which the function sets the last-error code.
 DWORD
 PALAPI
 GetLastError(
-         VOID)
+         VOID) noexcept
 {
     return CPalThread::GetLastError();
 }
@@ -79,7 +79,7 @@ This function does not return a value.
 VOID
 PALAPI
 SetLastError(
-         IN DWORD dwErrCode)
+         IN DWORD dwErrCode) noexcept
 {
     CPalThread::SetLastError(dwErrCode);
 }

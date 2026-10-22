@@ -35,7 +35,11 @@ HRESULT STDMETHODCALLTYPE TiggerStream::Write(
     ULONG		cb,
     ULONG		*pcbWritten)
 {
+#ifdef FEATURE_METADATA_PERSISTENCE
 	return (m_pStorage->Write(m_rcStream, pv, cb, pcbWritten));
+#else
+    return E_NOTIMPL;
+#endif
 }
 
 

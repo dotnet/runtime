@@ -4499,7 +4499,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 
             // Copy src to dst, normalizing to a sign-extended 32-bit value so the
             // subsequent full-register bge compares against the (signed) clamp bounds
-            // are well-defined. `slli.w rd, rs, 0` sign-extends bits[31:0] into rd[63:0].
+            // are well-defined. `slli.w rd, rj, 0` sign-extends bits[31:0] into rd[63:0].
             emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, dst, src, 0);
 
             // Clamp lower bound: if dst < minVal, dst = minVal.
@@ -6272,7 +6272,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     // but we don't alter SP.
     target_size_t lastTouchDelta = 0;
 
-    assert(!m_compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
+    assert(!m_compiler->compHasSecretStubArgument() || (REG_SECRET_STUB_PARAM != initReg));
 
     if (frameSize < pageSize)
     {

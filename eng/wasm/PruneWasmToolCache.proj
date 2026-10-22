@@ -29,6 +29,7 @@
       <!-- Every sentinel this checkout can reference. Browser/JS-engine entries only exist on
            platforms where those versions are defined (see wasm-provisioning.targets). -->
       <_WasmToolInUseStamp Include="$(EmscriptenSdkStampFile);$(WasiSdkStampFile);$(WasmtimeStampFile)" />
+      <_WasmToolInUseStamp Include="$(BinaryenStampFile);$(WasmToolsStampFile)" />
       <_WasmToolInUseStamp Include="$(ChromeStampFile);$(ChromeDriverStampFile)" Condition="'$(ChromeVersion)' != ''" />
       <_WasmToolInUseStamp Include="$(V8StampFile)" Condition="'$(V8Version)' != ''" />
       <_WasmToolInUseStamp Include="$(FirefoxStampFile);$(GeckoDriverStampFile)" Condition="'$(FirefoxRevision)' != ''" />

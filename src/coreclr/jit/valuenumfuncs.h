@@ -13,7 +13,7 @@ ValueNumFuncDef(MapPhysicalStore, 3, false, false)   // Args: 0: map, 1: "physic
 ValueNumFuncDef(BitCast, 2, false, false)            // Args: 0: VN of the arg, 1: VN of the target type
 ValueNumFuncDef(ZeroObj, 1, false, false)            // Args: 0: VN of the class handle.
 
-ValueNumFuncDef(PtrToLoc, 2, false, true)            // Pointer (byref) to a local variable.  Args: VN's of: 0: local's number, 1: offset.
+ValueNumFuncDef(PtrToLoc, 3, false, true)            // Pointer (byref) to a local variable.  Args: VN's of: 0: local's number, 1: offset, 2: frame version.
 ValueNumFuncDef(PtrToArrElem, 4, false, true)        // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: offset.
 ValueNumFuncDef(PtrToStatic, 3, false, true)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
                                                                    // Args: 0: (VN of) the box's address if the static is "boxed",
@@ -35,12 +35,13 @@ ValueNumFuncDef(CastClass, 2, false, false)          // Args: 0: Handle of class
 ValueNumFuncDef(IsInstanceOf, 2, false, false)       // Args: 0: Handle of class being queried, 1: object being queried.
 ValueNumFuncDef(ReadyToRunCastClass, 2, false, false)          // Args: 0: Helper stub address, 1: object being cast.
 ValueNumFuncDef(ReadyToRunIsInstanceOf, 2, false, false)       // Args: 0: Helper stub address, 1: object being queried.
-ValueNumFuncDef(TypeHandleToRuntimeType, 1, false, false)      // Args: 0: TypeHandle to translate
+ValueNumFuncDef(TypeHandleToRuntimeType, 1, false, true)       // Args: 0: TypeHandle to translate
 ValueNumFuncDef(TypeHandleToRuntimeTypeHandle, 1, false, false)      // Args: 0: TypeHandle to translate
 
-ValueNumFuncDef(LdElemA, 3, false, false)            // Args: 0: array value; 1: index value; 2: type handle of element.
+ValueNumFuncDef(LdElemA, 3, false, true)             // Args: 0: array value; 1: index value; 2: type handle of element.
 
 ValueNumFuncDef(ByrefExposedLoad, 3, false, false)      // Args: 0: type handle/id, 1: pointer value; 2: ByrefExposed heap value
+ValueNumFuncDef(ByrefExposedLocalLoad, 4, false, false) // Args: 0: type handle/id, 1: local's number, 2: offset; 3: ByrefExposed heap value
 
 ValueNumFuncDef(GetRefanyVal, 2, false, false)       // Args: 0: type handle; 1: typedref value.  Returns the value (asserting that the type is right).
 
@@ -157,6 +158,7 @@ ValueNumFuncDef(GetStaticAddrTLS, 1, false, true)
 
 ValueNumFuncDef(VirtualFuncPtr, 3, false, true)
 ValueNumFuncDef(GVMLookupForSlot, 2, false, true)
+ValueNumFuncDef(InterfaceLookupForSlot, 2, false, true)
 ValueNumFuncDef(ReadyToRunVirtualFuncPtr, 2, false, true)
 
 ValueNumFuncDef(JitNew, 2, false, true)
