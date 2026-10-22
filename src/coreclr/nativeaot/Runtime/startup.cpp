@@ -292,7 +292,7 @@ void RuntimeThreadShutdown(void* thread)
 #endif
 }
 
-extern "C" bool RhInitialize(bool isDll)
+extern "C" bool RhInitialize(bool isLibrary)
 {
     if (!PalInit())
         return false;
@@ -310,15 +310,15 @@ extern "C" bool RhInitialize(bool isDll)
 #endif
 
 #if defined(HOST_WINDOWS) && defined(FEATURE_PERFTRACING)
-    g_safeToShutdownTracing = !isDll;
+    g_safeToShutdownTracing = !isLibrary;
 #endif
 
-    if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize, isDll)))
+    if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize, isLibrary)))
         return false;
 
 #ifdef TARGET_UNIX
-    // Shared libraries initialize the cookie before publishing the runtime initialization callback.
-    if (!isDll && !InitGSCookie())
+    // Libraries initialize the cookie before publishing the runtime initialization callback.
+    if (!isLibrary && !InitGSCookie())
         return false;
 #endif
 
