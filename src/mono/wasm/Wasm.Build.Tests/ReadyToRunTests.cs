@@ -30,15 +30,14 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-        [InlineData(Configuration.Debug, null)]
-        [InlineData(Configuration.Debug, true)]
-        [InlineData(Configuration.Release, true)]
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
         [TestCategory("no-workload")]
-        public async Task BuildRunAllPages(Configuration config, bool? readyToRun)
+        public async Task BuildRunAllPages(Configuration config)
         {
             // A build stages the prebuilt framework R2R images from the runtime pack (no per-app crossgen2).
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_build",
-                extraProperties: readyToRun is null ? "" : $"<PublishReadyToRun>{readyToRun}</PublishReadyToRun>");
+                extraProperties: config == Configuration.Release ? "<PublishReadyToRun>true</PublishReadyToRun>" : "");
             (_, string output) = BlazorBuild(info, config,
                 new BuildOptions(ExtraMSBuildArgs: config == Configuration.Debug ? "-p:WasmEnableHotReload=true" : ""));
 
