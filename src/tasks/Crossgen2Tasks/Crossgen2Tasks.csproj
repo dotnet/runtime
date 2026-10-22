@@ -20,6 +20,7 @@
     <PackageReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" />
     <PackageReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" />
     <PackageReference Include="NuGet.Versioning" Version="$(NugetVersioningVersion)" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="$(SystemSecurityCryptographyPkcsToolsetVersion)" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Microsoft.NET.CrossGen.targets">

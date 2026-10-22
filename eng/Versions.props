@@ -113,6 +113,7 @@
     <SystemBuffersToolsetVersion>4.5.1</SystemBuffersToolsetVersion>
     <SystemCollectionsImmutableToolsetVersion>8.0.0</SystemCollectionsImmutableToolsetVersion>
     <SystemMemoryToolsetVersion>4.5.5</SystemMemoryToolsetVersion>
+    <SystemSecurityCryptographyPkcsToolsetVersion>9.0.21</SystemSecurityCryptographyPkcsToolsetVersion>
     <SystemTextJsonToolsetVersion>8.0.5</SystemTextJsonToolsetVersion>
     <SystemReflectionMetadataLoadContextToolsetVersion>8.0.0</SystemReflectionMetadataLoadContextToolsetVersion>
     <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>
@@ -161,7 +162,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>10.0.0-preview-20251006.1</MicrosoftPrivateIntellisenseVersion>
     <!-- MsQuic -->
-    <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.11</MicrosoftNativeQuicMsQuicSchannelVersion>
+    <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.12</MicrosoftNativeQuicMsQuicSchannelVersion>
     <SystemNetMsQuicTransportVersion>9.0.0-alpha.1.24167.3</SystemNetMsQuicTransportVersion>
     <!-- emscripten / Node -->
     <!-- we're using MicrosoftDotNetApiCompatTaskPackageVersion since the emscripten workload package ID contains a changing version. This one uses sdk-style feature band version numbers. -->
