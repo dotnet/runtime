@@ -313,12 +313,15 @@ internal sealed class Program
 
     internal static void WriteDiagnostic(Diagnostic diagnostic, bool errorTolerant, TextWriter output, TextWriter error)
     {
-        if (diagnostic.Severity == DiagnosticSeverity.Error)
+        if (errorTolerant)
         {
             // MSBuild treats error-prefixed output as a failure even when -ERR returns zero.
-            TextWriter writer = errorTolerant ? output : error;
-            string severity = errorTolerant ? "Warning" : "Error";
-            writer.WriteLine($"{severity}: {diagnostic.Location}: {diagnostic.Message}");
+            // When /warnaserror is specified, warning-prefixed output is also treated as an error.
+            error.WriteLine($"Note: {diagnostic.Location}: {diagnostic.Message}");
+        }
+        else if (diagnostic.Severity == DiagnosticSeverity.Error)
+        {
+            output.WriteLine($"Error: {diagnostic.Location}: {diagnostic.Message}");
         }
         else if (diagnostic.Severity == DiagnosticSeverity.Warning && !errorTolerant)
         {
