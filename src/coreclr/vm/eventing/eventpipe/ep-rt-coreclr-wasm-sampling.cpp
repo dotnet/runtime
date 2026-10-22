@@ -159,15 +159,17 @@ extern "C" void SamplingProfiler_OnSamplepoint()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    if (++s_sampleSkipCounter < s_skipsPerPeriod)
-        return;
-
-    s_sampleSkipCounter = 0;
-
     if (s_currentSamplingEvent == nullptr || s_currentSamplingThread == nullptr)
         return;
 
-    UpdateSampleFrequency();
+    if (s_desiredSampleIntervalMs != 0.0)
+    {
+        if (++s_sampleSkipCounter < s_skipsPerPeriod)
+            return;
+
+        s_sampleSkipCounter = 0;
+        UpdateSampleFrequency();
+    }
 
     EventPipeStackContents stackContents;
     EventPipeStackContents *pStackContents = ep_stack_contents_init(&stackContents);

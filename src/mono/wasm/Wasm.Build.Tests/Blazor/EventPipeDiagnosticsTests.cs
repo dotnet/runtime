@@ -61,7 +61,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     private async Task BlazorEventPipeTestWithCpuSamplesCore(Configuration config, bool aot, bool readyToRun, bool exerciseRegressions = false)
     {
         string extraProperties = $@"
-                <WasmPerformanceInstrumentation>all,interval=0</WasmPerformanceInstrumentation>
+                <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
                 <EnableDiagnostics>true</EnableDiagnostics>
                 <WasmDebugLevel>0</WasmDebugLevel>
                 <PublishReadyToRun>{(readyToRun ? "true" : "false")}</PublishReadyToRun>
@@ -73,7 +73,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp,
             exerciseRegressions ? "blazor_cpu_samples_r2r_regressions" : readyToRun ? "blazor_cpu_samples_r2r" : "blazor_cpu_samples_interp",
-            extraProperties: extraProperties);
+            extraProperties: extraProperties,
+            extraItems: $"""<WasmEnvironmentVariable Include="DOTNET_EventPipeThreadSamplingRate" Value="{int.MaxValue}" />""");
 
         UpdateCounterPage(useCpuSamplingTarget: true);
         if (exerciseRegressions)
