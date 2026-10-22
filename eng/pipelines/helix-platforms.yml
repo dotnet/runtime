@@ -82,16 +82,18 @@ variables:
   # ===========================================
   # Linux Platforms
   # ===========================================
+  # EOL dates use standard/full support, not optional extended support.
+  # For container-backed queues, EOL refers to the target distro, not the host.
 
   # Linux x64
-  # Latest: Azure Linux 3.0
+  # Latest: Azure Linux 3.0 (EOL date unconfirmed)
   - name: helix_linux_x64_latest
     value: AzureLinux.3.Amd64.Open
 
   - name: helix_linux_x64_latest_internal
     value: AzureLinux.3.Amd64
 
-  # Oldest: Ubuntu 24.04
+  # Oldest: Ubuntu 24.04 (EOL: 2029-05)
   - name: helix_linux_x64_oldest
     value: Ubuntu.2404.Amd64.Open
 
@@ -99,59 +101,59 @@ variables:
     value: Ubuntu.2404.Amd64
 
   # Ubuntu x64
-  # Latest: 26.04
+  # Latest: 26.04 (EOL: 2031-05)
   - name: helix_linux_x64_ubuntu_latest
     value: Ubuntu.2604.Amd64.Open
 
-  # Oldest: 24.04
+  # Oldest: 24.04 (EOL: 2029-05)
   - name: helix_linux_x64_ubuntu_oldest
     value: Ubuntu.2404.Amd64.Open
 
   # Debian x64
-  # Latest: 13
+  # Latest: 13 (full support EOL: 2028-08-09)
   - name: helix_linux_x64_debian_latest
     value: (Debian.13.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
 
-  # Oldest: 13
+  # Oldest: 13 (full support EOL: 2028-08-09)
   - name: helix_linux_x64_debian_oldest
     value: (Debian.13.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
 
   # Fedora x64
-  # Latest: 44
+  # Latest: 45 (projected EOL: 2027-11)
   - name: helix_linux_x64_fedora_latest
-    value: (Fedora.44.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-44-helix-amd64
+    value: (Fedora.45.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-45-helix-amd64
 
-  # Oldest: 43
+  # Oldest: 45 (projected EOL: 2027-11)
   - name: helix_linux_x64_fedora_oldest
-    value: (Fedora.43.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-43-helix-amd64
+    value: (Fedora.45.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-45-helix-amd64
 
   # openSUSE x64
-  # Latest: 16.0
+  # Latest: 16.0 (EOL: 2027-10-31)
   - name: helix_linux_x64_opensuse_latest
     value: (openSUSE.16.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64
 
-  # Oldest: 16.0
+  # Oldest: 16.0 (EOL: 2027-10-31)
   - name: helix_linux_x64_opensuse_oldest
     value: (openSUSE.16.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64
 
   # CentOS Stream x64
-  # Latest: 10
+  # Latest: 10 (EOL: 2030-05-31)
   - name: helix_linux_x64_centos_latest
     value: (Centos.10.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64
 
-  # Oldest: 9
+  # Oldest: 10 (EOL: 2030-05-31)
   - name: helix_linux_x64_centos_oldest
-    value: (Centos.9.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-9-helix-amd64
+    value: (Centos.10.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64
 
   # Linux ARM32
-  # Latest: Debian 13
+  # Latest: Debian 13 (full support EOL: 2028-08-09)
   - name: helix_linux_arm32_latest
     value: (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   - name: helix_linux_arm32_latest_internal
     value: (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
-  # Oldest: Debian 13
+  # Oldest: Debian 13 (full support EOL: 2028-08-09)
   - name: helix_linux_arm32_oldest
     value: (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
@@ -159,32 +161,32 @@ variables:
     value: (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   # Linux ARM64
-  # Latest: Ubuntu 26.04
+  # Latest: Ubuntu 26.04 (EOL: 2031-05)
   - name: helix_linux_arm64_latest
     value: Ubuntu.2604.ArmArch.Open
 
-  # Oldest: Ubuntu 24.04
+  # Oldest: Ubuntu 24.04 (EOL: 2029-05)
   - name: helix_linux_arm64_oldest
     value: Ubuntu.2404.ArmArch.Open
 
   # Linux musl x64
-  # Latest: Alpine edge
+  # Latest: Alpine edge (rolling; no fixed EOL)
   - name: helix_linux_musl_x64_latest
     value: (Alpine.edge.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-edge-helix-amd64
 
-  # Oldest: Alpine 3.24
+  # Oldest: Alpine 3.24 (EOL: 2028-06-01)
   - name: helix_linux_musl_x64_oldest
     value: (Alpine.324.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64
 
   # Linux musl ARM32
-  # Latest: Alpine 3.24
+  # Latest: Alpine 3.24 (EOL: 2028-06-01)
   - name: helix_linux_musl_arm32_latest
     value: (Alpine.324.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
 
   - name: helix_linux_musl_arm32_latest_internal
     value: (Alpine.324.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
 
-  # Oldest: Alpine 3.24
+  # Oldest: Alpine 3.24 (EOL: 2028-06-01)
   - name: helix_linux_musl_arm32_oldest
     value: (Alpine.324.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
 
@@ -192,14 +194,14 @@ variables:
     value: (Alpine.324.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
 
   # Linux musl ARM64
-  # Latest: Alpine 3.24
+  # Latest: Alpine 3.24 (EOL: 2028-06-01)
   - name: helix_linux_musl_arm64_latest
     value: (Alpine.324.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8
 
   - name: helix_linux_musl_arm64_latest_internal
     value: (Alpine.324.Arm64)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8
 
-  # Oldest: Alpine 3.24
+  # Oldest: Alpine 3.24 (EOL: 2028-06-01)
   - name: helix_linux_musl_arm64_oldest
     value: (Alpine.324.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8
 
@@ -258,11 +260,11 @@ variables:
   # ===========================================
 
   # Browser WASM
-  # Latest: Ubuntu 26.04
+  # Latest: Ubuntu 26.04 (EOL: 2031-05)
   - name: helix_browser_wasm_latest
     value: (Ubuntu.2604.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64
 
-  # Oldest: Ubuntu 24.04
+  # Oldest: Ubuntu 24.04 (EOL: 2029-05)
   - name: helix_browser_wasm_oldest
     value: (Ubuntu.2404.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-webassembly-amd64
 
@@ -280,11 +282,11 @@ variables:
     value: Windows.10.Amd64.Android.Open
 
   # Android on Ubuntu (x86/x64)
-  # Latest: API 29
+  # Latest: API 29 (Ubuntu 22.04 host EOL: 2027-05)
   - name: helix_android_ubuntu_latest
     value: Ubuntu.2204.Amd64.Android.29.Open
 
-  # Oldest: API 24
+  # Oldest: API 24 (Ubuntu 22.04 host EOL: 2027-05)
   - name: helix_android_ubuntu_oldest
     value: Ubuntu.2204.Amd64.Android.24.Open
 
