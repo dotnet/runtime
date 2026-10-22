@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
 #endif
 
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // !!!!! This must be the first managed method called                       !!!!!
+    // !!!!!      This must be the first managed method called in this test      !!!!!
     // !!!!! Regression test for https://github.com/dotnet/runtime/issues/136201 !!!!!
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (!thisMethodMustBeCalledFirst || thisMethodMustBeCalledFirst() != 100)
