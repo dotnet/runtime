@@ -748,7 +748,8 @@ LxrRcResult LxrReferenceCounting::Initialize(
     }
     if (configuration.concurrentTraceWorkers != 0 &&
         m_scheduler.ConfigureConcurrentTraceWorkers(
-            std::min(configuration.concurrentTraceWorkers, configuration.workers)) != LxrWorkSchedulerResult::Success)
+            configuration.concurrentTraceWorkers < configuration.workers
+                ? configuration.concurrentTraceWorkers : configuration.workers) != LxrWorkSchedulerResult::Success)
     {
         return Fail(LxrRcResult::SchedulerFailure);
     }
