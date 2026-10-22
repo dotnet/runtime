@@ -124,16 +124,8 @@ namespace CollectibleThreadStaticShutdownRace
             return new WeakReference(context);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
-        public static void ReuseCollectibleThreadStaticIndex()
+        private static void CollectContext(WeakReference context)
         {
-            string assemblyPath = Path.Combine(AppContext.BaseDirectory, "StaticsUnloaded.dll");
-            WeakReference context = RunInCollectibleAlc(
-                assemblyPath,
-                nameof(ThreadStaticInFlightDataBeforeUnload),
-                nameof(ThreadStaticInFlightDataBeforeUnload.Touch));
-
             for (int i = 0; i < 100 && context.IsAlive; i++)
             {
                 GC.Collect();
@@ -148,11 +140,64 @@ namespace CollectibleThreadStaticShutdownRace
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
+        public static void ReuseCollectibleThreadStaticIndex()
+        {
+            string assemblyPath = Path.Combine(AppContext.BaseDirectory, "StaticsUnloaded.dll");
+            WeakReference context = RunInCollectibleAlc(
+                assemblyPath,
+                nameof(ThreadStaticInFlightDataBeforeUnload),
+                nameof(ThreadStaticInFlightDataBeforeUnload.Touch));
+
+            CollectContext(context);
 
             RunInCollectibleAlc(
                 assemblyPath,
                 nameof(ThreadStaticInFlightDataAfterUnload),
                 nameof(ThreadStaticInFlightDataAfterUnload.Set));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
+        public static void CleanupCollectibleThreadStaticsWhileStartingThreads()
+        {
+            using var stop = new ManualResetEventSlim();
+            using var started = new ManualResetEventSlim();
+            Thread thread = new Thread(() =>
+            {
+                do
+                {
+                    Thread worker = new Thread(static () => { });
+                    worker.Start();
+                    worker.Join();
+                    started.Set();
+                }
+                while (!stop.IsSet);
+            });
+
+            thread.Start();
+            started.Wait();
+
+            try
+            {
+                string assemblyPath = Path.Combine(AppContext.BaseDirectory, "StaticsUnloaded.dll");
+                for (int i = 0; i < 20; i++)
+                {
+                    WeakReference context = RunInCollectibleAlc(
+                        assemblyPath,
+                        nameof(ThreadStaticInFlightDataBeforeUnload),
+                        nameof(ThreadStaticInFlightDataBeforeUnload.Touch));
+
+                    CollectContext(context);
+                }
+            }
+            finally
+            {
+                stop.Set();
+                thread.Join();
+            }
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]

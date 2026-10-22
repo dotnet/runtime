@@ -333,7 +333,7 @@ void InitializeThreadStaticData()
     g_pThreadStaticNonCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
     CoreLibBinder::GetClass(CLASS__DIRECTONTHREADLOCALDATA);
     CoreLibBinder::GetClass(CLASS__THREADID);
-    g_TLSCrst.Init(CrstThreadLocalStorageLock, CRST_UNSAFE_ANYMODE);
+    g_TLSCrst.Init(CrstThreadLocalStorageLock, CRST_UNSAFE_COOPGC);
 }
 
 void InitializeCurrentThreadsStaticData(Thread* pThread)
@@ -861,13 +861,8 @@ void CleanupRetiredTLSIndices()
 
     _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
 
-    CrstHolder ch(&g_TLSCrst);
-
-    if (!g_hasRetiredTLSIndices.Load())
-    {
-        return;
-    }
-
+    // Map updates and loader-handle cleanup require cooperative mode, so EE suspension
+    // already excludes concurrent writers.
     for (const TLSIndexToMethodTableMap::entry& entry : *g_pThreadStaticCollectibleTypeIndices)
     {
         if (!entry.IsClearedValue || !entry.IsRetired)
@@ -880,7 +875,9 @@ void CleanupRetiredTLSIndices()
         while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != nullptr)
         {
             ThreadLocalData* pThreadLocalData = pThread->GetThreadLocalDataPtr();
-            if (pThreadLocalData == nullptr && indexOffset >= pThread->cLoaderHandles)
+            // Threads without storage for this index may not have initialized their TLS spin lock yet.
+            if (indexOffset >= pThread->cLoaderHandles &&
+                (pThreadLocalData == nullptr || indexOffset >= pThreadLocalData->cCollectibleTlsData))
             {
                 continue;
             }
