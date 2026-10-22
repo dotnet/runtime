@@ -873,8 +873,9 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddre
     int unixProtect = W32toUnixAccessControl(protect);
 
     // mprotect expects the address to be page-aligned
-    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, OS_PAGE_SIZE);
-    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, OS_PAGE_SIZE) - pPageStart;
+    size_t pageSize = (size_t)sysconf(_SC_PAGE_SIZE);
+    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, pageSize);
+    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, pageSize) - pPageStart;
 
     return mprotect(pPageStart, memSize, unixProtect) == 0;
 }
@@ -1296,4 +1297,3 @@ extern "C" uint64_t PalGetCurrentOSThreadId()
     return (uint64_t)pthread_self();
 #endif
 }
-
