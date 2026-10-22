@@ -35,6 +35,8 @@ cd "$OHOS_NDK_HOME"
 for archive in native-linux-x64-*.zip; do
     python3 -m zipfile -e "$archive" .
 done
+chmod -R +x native/llvm/bin
+chmod -R +x native/build-tools 2>/dev/null || true
 rm -f native-linux-x64-*.zip
 test -f "$OHOS_NDK_HOME/native/build/cmake/ohos.toolchain.cmake"
 
