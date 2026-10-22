@@ -88,6 +88,8 @@ bool InitializeGC()
     if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
         return false;
 
+    g_pGlobalHandleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
+
 #ifdef TARGET_WINDOWS
     // By now finalizer thread should have initialized FLS slot for thread cleanup notifications.
     // And ensured that COM is initialized (must happen before allocating FLS slot).
@@ -438,14 +440,13 @@ EXTERN_C void QCALLTYPE RhEnumerateConfigurationValues(void* configurationContex
 GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
 bool g_gcHeapHardLimitInfoSpecified = false;
 
-FCIMPL1(void, RhRefreshMemoryLimit, GCHeapHardLimitInfo heapHardLimitInfo)
+EXTERN_C int QCALLTYPE RhRefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     g_gcHeapHardLimitInfo = heapHardLimitInfo;
     g_gcHeapHardLimitInfoSpecified = true;
-    pHeap->RefreshMemoryLimit();
+    return pHeap->RefreshMemoryLimit();
 }
-FCIMPLEND
 
 EXTERN_C uint64_t QCALLTYPE RhGetGenerationBudget(int generation)
 {
@@ -453,10 +454,10 @@ EXTERN_C uint64_t QCALLTYPE RhGetGenerationBudget(int generation)
     return pHeap->GetGenerationBudget(generation);
 }
 
-EXTERN_C void QCALLTYPE RhEnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize)
+EXTERN_C enable_no_gc_region_callback_status QCALLTYPE RhEnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
-    pHeap->EnableNoGCRegionCallback(pCallback, totalSize);
+    return pHeap->EnableNoGCRegionCallback(pCallback, totalSize);
 }
 
 EXTERN_C int64_t QCALLTYPE RhGetTotalAllocatedBytesPrecise()

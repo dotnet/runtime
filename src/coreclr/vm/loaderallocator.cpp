@@ -196,7 +196,7 @@ BOOL LoaderAllocator::AddReferenceIfAlive()
 
 //---------------------------------------------------------------------------------------
 //
-BOOL LoaderAllocator::Release()
+BOOL LoaderAllocator::Release() noexcept
 {
     CONTRACTL
     {
@@ -377,13 +377,7 @@ void LoaderAllocator::Mark()
 //static
 LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain * pAppDomain)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
     // List of LoaderAllocators being deleted
     LoaderAllocator * pFirstDestroyedLoaderAllocator = NULL;
 
@@ -1960,11 +1954,13 @@ void AssemblyLoaderAllocator::CleanupHandles()
     CONTRACTL_END;
 
 
+#ifdef FEATURE_MULTITHREADING
     if (m_hLoaderAllocatorObjectHandle != NULL)
     {
         GCX_COOP();
         FreeTLSIndicesForLoaderAllocator(this);
     }
+#endif // FEATURE_MULTITHREADING
 
     // This method doesn't take a lock around RemoveHead because it's supposed to
     // be called only from Terminate
@@ -2024,7 +2020,9 @@ void AssemblyLoaderAllocator::CleanupDependentHandlesToNativeObjects()
     // Locks under which dependent handles may be used must all be taken here to ensure that a thread using a dependent handle
     // would either observe it cleared, or that the dependent object remains valid under those locks. In particular, any locks
     // used to synchronize uses of CrossLoaderAllocatorHash instances must also be taken here.
+#ifdef FEATURE_INLINE_TRACKING
     CrstHolder jitInlineTrackingMapLockHolder(JITInlineTrackingMap::GetMapCrst());
+#endif // FEATURE_INLINE_TRACKING
     MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
 
     CrstHolder setLockHolder(&m_dependentHandleToNativeObjectSetCrst);
@@ -2306,6 +2304,7 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -2379,6 +2378,7 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

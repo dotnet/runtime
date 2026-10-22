@@ -414,7 +414,7 @@ bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 // CanRemoveJumpToTarget: determine if jump to target can be omitted
 //
 // Arguments:
-//    target - target of the BBJ_ALWAYS or true/false target of the BBJ_COND block
+//    target - target of the BBJ_ALWAYS/BBJ_CALLFINALLYRET or true/false target of the BBJ_COND block
 //    compiler - current compiler instance
 //
 // Returns:
@@ -422,7 +422,7 @@ bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 //
 bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const
 {
-    assert((KindIs(BBJ_ALWAYS) && (GetTarget() == target)) ||
+    assert((KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && (GetTarget() == target)) ||
            (KindIs(BBJ_COND) && (TrueTargetIs(target) || FalseTargetIs(target))));
     if (!NextIs(target) || IsLastHotBlock(compiler))
     {

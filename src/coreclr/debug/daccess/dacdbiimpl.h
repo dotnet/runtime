@@ -156,6 +156,7 @@ public:
 
     HRESULT STDMETHODCALLTYPE GetReadWriteMetadataSize(VMPTR_Module vmModule, OUT ULONG32 * pSize);
     HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer);
+    HRESULT STDMETHODCALLTYPE GetTargetInfo(OUT TargetInfo * pTargetInfo);
 
 private:
     void SerializeReadWriteMetadata(Module * pModule, BYTE ** ppBlob, ULONG32 * pcbBlob);
@@ -944,6 +945,17 @@ protected:
 
 class DacRefWalker
 {
+    struct ExternalMemoryScanContext : public ScanContext
+    {
+        DacRefWalker *Walker;
+        HRESULT Result;
+
+        ExternalMemoryScanContext(DacRefWalker *walker)
+            : Walker(walker), Result(S_OK)
+        {
+        }
+    };
+
 public:
     DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers);
     ~DacRefWalker();
@@ -955,6 +967,9 @@ private:
     UINT32 GetHandleWalkerMask();
     void Clear();
     HRESULT NextThread();
+    HRESULT WalkExternalMemoryHandles();
+    static void ExternalMemoryHandleCallback(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags);
+    CLRDATA_ADDRESS ReadPointer(TADDR address);
 
 private:
     ClrDataAccess *mDac;
@@ -967,6 +982,12 @@ private:
 
     // Handles
     DacHandleWalker *mHandleWalker;
+
+    // External memory handles
+    DacReferenceList<DacGcReference> mExternalMemoryHandles;
+    unsigned int mExternalMemoryHandleIndex;
+    DacHeapWalker mExternalMemoryHeap;
+    bool mExternalMemoryHeapInitialized;
 };
 
 #endif // _DACDBI_IMPL_H_

@@ -35,6 +35,8 @@ struct CallDescrData
     bool                        hasThis;
     bool                        hasRetBuff;
     void*                       pRetBuffArg;
+    // TransitionBlock that pSrc follows, or NULL. Lets a PrestubMethodFrame report the arguments.
+    TransitionBlock*            pTransitionBlock;
 #endif // TARGET_WASM
 
 #ifdef CALLDESCR_RETBUFFARGREG
@@ -73,13 +75,6 @@ void CallDescrWorker(CallDescrData * pCallDescrData);
 void CallDescrWorkerWithHandler(
                 CallDescrData *   pCallDescrData,
                 BOOL              fCriticalCall = FALSE);
-
-// Helper for VM->managed calls with simple signatures.
-void* DispatchCallSimple(
-    SIZE_T *pSrc,
-    DWORD numStackSlotsToCopy,
-    PCODE pTargetAddress,
-    BOOL fCriticalCall);
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 // Copy structs returned according to floating-point calling convention from 'returnRegs' containing struct fields

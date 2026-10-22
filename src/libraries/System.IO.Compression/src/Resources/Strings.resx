@@ -396,6 +396,9 @@
   <data name="InvalidAesStrength" xml:space="preserve">
     <value>Invalid AES strength value.</value>
   </data>
+  <data name="InvalidAesExtraField" xml:space="preserve">
+    <value>The required WinZip AES extra data field is missing or invalid.</value>
+  </data>
   <data name="TruncatedZipCryptoHeader" xml:space="preserve">
     <value>The encryption header is truncated.</value>
   </data>

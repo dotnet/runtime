@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <CopyDebugCRTDllsToOutputDirectory>true</CopyDebugCRTDllsToOutputDirectory>
+    <!-- Loading IJW assemblies into an unloadable context is not allowed -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- IJW assemblies contain native code that cannot be round-tripped through ilasm -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Test-TLS.cs" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="..\..\..\Interop\IJW\ijwhostmock\CMakeLists.txt" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

@@ -2921,7 +2921,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetCodePointer nativeCode = rts.GetNativeCode(methodDescHandle);
                 if (nativeCode != TargetCodePointer.Null)
                 {
-                    nativeCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
+                    nativeCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(nativeCode);
                     pCodeInfo->hotRegion.pAddress = nativeCode.ToAddress(_target).ToClrDataAddress(_target);
 
                     IExecutionManager executionManager = _target.Contracts.ExecutionManager;
@@ -2975,7 +2975,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetCodePointer code = ((ClrDataAddress)codeAddress).ToTargetCodePointer(_target);
                 try
                 {
-                    code = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(code);
+                    code = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(code);
                 }
                 catch (VirtualReadException)
                 {
@@ -6483,6 +6483,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
                 if (pCode != TargetCodePointer.Null)
                 {
+                    pCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(pCode);
                     IReadOnlyList<AsyncSuspensionInfo> suspensionPoints = _target.Contracts.DebugInfo.GetAsyncSuspensionPoints(pCode);
                     if (state < (uint)suspensionPoints.Count)
                     {
@@ -6577,6 +6578,60 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*pIndex == indexLocal, $"cDAC: {*pIndex}, DAC: {indexLocal}");
+        }
+#endif
+        return hr;
+    }
+
+    public int GetTargetInfo(TargetInfo* pTargetInfo)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pTargetInfo is null)
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pTargetInfo));
+            Contracts.IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
+
+            pTargetInfo->Arch = runtimeInfo.GetTargetArchitecture() switch
+            {
+                Contracts.RuntimeInfoArchitecture.X86 => TargetArchitecture.X86,
+                Contracts.RuntimeInfoArchitecture.X64 => TargetArchitecture.AMD64,
+                Contracts.RuntimeInfoArchitecture.Arm => TargetArchitecture.Arm,
+                Contracts.RuntimeInfoArchitecture.Arm64 => TargetArchitecture.Arm64,
+                Contracts.RuntimeInfoArchitecture.LoongArch64 => TargetArchitecture.LoongArch64,
+                Contracts.RuntimeInfoArchitecture.RiscV64 => TargetArchitecture.RiscV64,
+                Contracts.RuntimeInfoArchitecture.Wasm => TargetArchitecture.Wasm,
+                _ => TargetArchitecture.Unknown,
+            };
+
+            pTargetInfo->OS = runtimeInfo.GetTargetOperatingSystem() switch
+            {
+                Contracts.RuntimeInfoOperatingSystem.Windows => TargetOperatingSystem.Windows,
+                Contracts.RuntimeInfoOperatingSystem.Unix => TargetOperatingSystem.Unix,
+                Contracts.RuntimeInfoOperatingSystem.Browser => TargetOperatingSystem.Browser,
+                Contracts.RuntimeInfoOperatingSystem.Apple => TargetOperatingSystem.Apple,
+                _ => TargetOperatingSystem.Unknown,
+            };
+
+            pTargetInfo->PointerSize = (uint)_target.PointerSize;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            TargetInfo targetInfoLocal = default;
+            int hrLocal = _legacy.GetTargetInfo(pTargetInfo == null ? null : &targetInfoLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pTargetInfo->Arch == targetInfoLocal.Arch, $"cDAC: {pTargetInfo->Arch}, DAC: {targetInfoLocal.Arch}");
+                Debug.Assert(pTargetInfo->OS == targetInfoLocal.OS, $"cDAC: {pTargetInfo->OS}, DAC: {targetInfoLocal.OS}");
+                Debug.Assert(pTargetInfo->PointerSize == targetInfoLocal.PointerSize, $"cDAC: {pTargetInfo->PointerSize}, DAC: {targetInfoLocal.PointerSize}");
+            }
         }
 #endif
         return hr;

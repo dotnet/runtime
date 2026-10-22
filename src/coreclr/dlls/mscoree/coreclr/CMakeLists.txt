@@ -80,7 +80,6 @@ set(CORECLR_LIBRARIES
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
-    ceefgen
     corguids
     utilcode
     v3binder

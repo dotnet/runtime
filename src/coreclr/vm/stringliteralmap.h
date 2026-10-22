@@ -324,7 +324,7 @@ struct StringLiteralEntryTraits final
 {
     using Type = StringLiteralEntry*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type pEntry)
+    static void Free(Type pEntry) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
         if (pEntry != NULL)
