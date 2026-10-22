@@ -25,7 +25,6 @@
 #endif // TARGET_LINUX && !MFD_CLOEXEC
 #include "minipal.h"
 #include "minipal/cpufeatures.h"
-#include <minipal/log.h>
 
 #ifndef TARGET_APPLE
 #if !defined(TARGET_WASI)
@@ -149,13 +148,8 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         size_t pageSize = (size_t)sysconf(_SC_PAGE_SIZE);
         void* pRW = mmap(NULL, pageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
         void* pRX = mmap(NULL, pageSize, PROT_NONE, MAP_SHARED, fd, 0);
-        int probeErrno = errno;
         bool canDoubleMap = (pRW != MAP_FAILED) && (pRX != MAP_FAILED) &&
             (mprotect(pRX, pageSize, PROT_READ | PROT_EXEC) == 0);
-        if (!canDoubleMap)
-        {
-            probeErrno = errno;
-        }
         if (pRX != MAP_FAILED)
         {
             munmap(pRX, pageSize);
@@ -166,7 +160,6 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         }
         if (!canDoubleMap)
         {
-            minipal_log_print_verbose("The double mapping backing file cannot be made executable (errno %d); disabling double mapping.\n", probeErrno);
             close(fd);
             return false;
         }
