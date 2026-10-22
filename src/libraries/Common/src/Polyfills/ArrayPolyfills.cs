@@ -10,6 +10,26 @@ internal static class ArrayPolyfills
     {
         public static int MaxLength => 0x7FFFFFC7;
 
+        public static void Reverse<T>(T[] array, int index, int length)
+        {
+            if (array is null || index < 0 || length < 0 || array.Length - index < length)
+            {
+                Array.Reverse(array, index, length);
+                return;
+            }
+
+            int i = index;
+            int j = index + length - 1;
+            while (i < j)
+            {
+                T temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+                i++;
+                j--;
+            }
+        }
+
         public static void Clear(Array array)
         {
             if (array is null)
