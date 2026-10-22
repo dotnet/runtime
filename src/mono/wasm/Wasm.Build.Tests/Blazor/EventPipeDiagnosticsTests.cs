@@ -51,14 +51,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     public Task BlazorEventPipeTestWithCpuSamplesReadyToRun(Configuration config)
         => BlazorEventPipeTestWithCpuSamplesCore(config, aot: false, readyToRun: true);
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-    [InlineData(Configuration.Debug)]
-    [InlineData(Configuration.Release)]
-    [TestCategory("no-workload")]
-    public Task BlazorEventPipeTestWithCpuSamplesReadyToRunRegressions(Configuration config)
-        => BlazorEventPipeTestWithCpuSamplesCore(config, aot: false, readyToRun: true, exerciseRegressions: true);
-
-    private async Task BlazorEventPipeTestWithCpuSamplesCore(Configuration config, bool aot, bool readyToRun, bool exerciseRegressions = false)
+    private async Task BlazorEventPipeTestWithCpuSamplesCore(Configuration config, bool aot, bool readyToRun)
     {
         string extraProperties = $@"
                 <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
@@ -68,17 +61,17 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <PublishTrimmed>false</PublishTrimmed>
                 <WBTDevServer>true</WBTDevServer>
             ";
-        if (exerciseRegressions)
+        if (readyToRun)
             extraProperties += "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
 
         ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp,
-            exerciseRegressions ? "blazor_cpu_samples_r2r_regressions" : readyToRun ? "blazor_cpu_samples_r2r" : "blazor_cpu_samples_interp",
+            readyToRun ? "blazor_cpu_samples_r2r" : "blazor_cpu_samples_interp",
             extraProperties: extraProperties,
             extraItems: $"""<WasmEnvironmentVariable Include="DOTNET_EventPipeThreadSamplingRate" Value="{int.MaxValue}" />""");
 
         UpdateCounterPage(useCpuSamplingTarget: true);
-        if (exerciseRegressions)
-            AddCpuSamplingRegressions();
+        if (readyToRun)
+            AddCpuSamplingScenarios();
 
         string extraBuildArgs = readyToRun
             ? $"{GetR2RBuildArgs(config)} -p:UsingBrowserRuntimeWorkload=false"
@@ -118,15 +111,15 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             }
 
             readyToRunMethodFound = source.CodeAddresses.Any(address => address.FullMethodName.StartsWith("System.Buffer.Memmove(", StringComparison.Ordinal));
-            if (exerciseRegressions)
+            if (readyToRun)
             {
                 reversePInvokeMethodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName.StartsWith(
-                    "BlazorBasicTestApp.CpuSamplingRegressions.ReversePInvokeTarget(", StringComparison.Ordinal));
+                    "BlazorBasicTestApp.CpuSamplingScenarios.ReversePInvokeTarget(", StringComparison.Ordinal));
             }
         }
 
         Assert.True(sampledMethodFound, "The cpuprofile.nettrace should contain stack frames for the 'Counter.CpuSamplingTarget' method");
-        if (exerciseRegressions)
+        if (readyToRun)
             Assert.True(reversePInvokeMethodFound, "The cpuprofile.nettrace should contain stack frames for the reverse P/Invoke entry samplepoint");
         if (BuildTestBase.IsCoreClrRuntime && !readyToRun)
         {
@@ -441,23 +434,23 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         UpdateFile(Path.Combine("Pages", "Counter.razor"), replacements);
     }
 
-    private void AddCpuSamplingRegressions()
+    private void AddCpuSamplingScenarios()
     {
         UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string>
         {
             ["for (int i = 0; i < 100_000; i++)"] = """
-                BlazorBasicTestApp.CpuSamplingRegressions.Run(value);
+                BlazorBasicTestApp.CpuSamplingScenarios.Run(value);
                 for (int i = 0; i < 100_000; i++)
                 """
         });
-        File.WriteAllText(Path.Combine(_projectDir, "CpuSamplingRegressions.cs"), """
+        File.WriteAllText(Path.Combine(_projectDir, "CpuSamplingScenarios.cs"), """
             using System;
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
 
             namespace BlazorBasicTestApp;
 
-            public static unsafe class CpuSamplingRegressions
+            public static unsafe class CpuSamplingScenarios
             {
                 private struct References
                 {
