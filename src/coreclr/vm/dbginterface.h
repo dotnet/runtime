@@ -21,7 +21,6 @@ class COR_ILMETHOD_DECODER;
 class DebuggerEval;
 class DebuggerFuncEvalResult;
 struct DebuggerFuncEvalContext;
-struct DebuggerFuncEvalArgument;
 
 //
 // The purpose of this object is to serve as an entry point to the
@@ -376,10 +375,7 @@ public:
     virtual void* AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType) = 0;
     virtual void ProtectFuncEvalByRefResult(
         DebuggerEval* pDE, TypeHandle resultType, DebuggerFuncEvalResult** ppResult) = 0;
-    virtual void GetFuncEvalArgument(
-        DebuggerFuncEvalContext* pContext, UINT32 index, DebuggerFuncEvalArgument* pArgument) = 0;
     virtual TypeHandle GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index) = 0;
-    virtual bool IsFuncEvalArgumentPassedAsHandleValue(DebuggerEval* pDE, UINT32 index) = 0;
     virtual BOOL ReadFuncEvalPrimitiveRegister(
         DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue) = 0;
     virtual void WriteFuncEvalRegister(

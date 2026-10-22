@@ -30,8 +30,8 @@
 extern MethodDesc* g_pDebuggerInvokeFunctionMethodDesc;
 
 // Bootstrap protection must precede the first managed entry, including metadata loading
-// and thunk generation. Objects, possible interior values, and writable argument homes
-// have separate roots. Native capture runs with GC forbidden. ExternalMemoryHandle
+// and thunk generation. Objects and possible interior values share roots; writable
+// argument homes have separate roots. Native capture runs with GC forbidden. ExternalMemoryHandle
 // protects serialized non-leaf object slots and contiguous snapshots of register structs.
 // One managed entry owns primitive working storage, the registered call-address vector,
 // conversion, boxing, invocation and memory/literal copy-back.
@@ -693,9 +693,9 @@ static void SetFuncEvalRegisterValue(
  *
  * Parameters:
  *    pDE - pointer to the DebuggerEval object being processed.
- *    pObjectRefArray - An array that contains any object refs.  It was built previously.
- *    pMaybeInteriorPtrArray - An array that contains values that may be pointers to
- *         the interior of a managed object.
+ *    pArguments - Native argument descriptors to populate before managed entry.
+ *    pMaybeInteriorPtrArray - An array that contains object refs and values that may
+ *         be pointers to the interior of a managed object.
  *    pBufferForArgsArray - Native argument storage. This step captures handle addresses.
  *
  * Returns:
@@ -703,7 +703,7 @@ static void SetFuncEvalRegisterValue(
  *
  */
 static void GCProtectAllPassedArgs(DebuggerEval *pDE,
-                                   OBJECTREF *pObjectRefArray,
+                                   DebuggerFuncEvalArgument* pArguments,
                                    void **pMaybeInteriorPtrArray,
                                    void **pByRefMaybeInteriorPtrArray,
                                    INT64 *pBufferForArgsArray
@@ -727,14 +727,29 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
     for ( ; currArgIndex < pDE->m_argCount; currArgIndex++)
     {
         DebuggerIPCE_FuncEvalArgData *pFEAD = &argData[currArgIndex];
+        DebuggerFuncEvalArgument* pArgument = &pArguments[currArgIndex];
+        pArgument->pLiteral = pFEAD->argLiteralData[0].GetNativeAddress();
+        pArgument->elementType = pFEAD->argElementType;
+        pArgument->flags = (pFEAD->argIsLiteral ? FuncEvalLiteral : 0) |
+            (pFEAD->argIsHandleValue ? FuncEvalHandle : 0) |
+            (pFEAD->argAddr != static_cast<CORDB_ADDRESS>(0) ? FuncEvalMemory : 0) |
+            (pFEAD->argHome.kind != RAK_NONE ? FuncEvalRegister : 0);
 
         // In case any of the arguments is a by ref argument and points into the GC heap,
         // we need to GC protect their addresses as well.
         if (pFEAD->argAddr != (CORDB_ADDRESS)0)
         {
-            pByRefMaybeInteriorPtrArray[currArgIndex] = CORDB_ADDRESS_TO_PTR(pFEAD->argAddr);
-            if (pFEAD->argIsHandleValue)
+            // Don't write the handle value into the pByRefMaybeInteriorPtrArray.
+            // We don't want the GC to see the slot in the handle table as a regular 'ref object'
+            // as that can cause double-reporting.
+            if (!pFEAD->argIsHandleValue)
             {
+                pByRefMaybeInteriorPtrArray[currArgIndex] = CORDB_ADDRESS_TO_PTR(pFEAD->argAddr);
+            }
+            else
+            {
+                // Preserve the handle in the native argument storage
+                // so we can correctly implement aliasing and write-back.
                 pBufferForArgsArray[currArgIndex] = static_cast<INT64>(static_cast<SIZE_T>(pFEAD->argAddr));
             }
         }
@@ -802,15 +817,23 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
                 {
                     // The address can be an interpreter stack slot, which is not viewed through a checked OBJECTREF
                     // (see LOCAL_VAR_OBJREF in interpexec.cpp): read it as a raw pointer.
-                    pObjectRefArray[currArgIndex] = ObjectToOBJECTREF(*((Object **)CORDB_ADDRESS_TO_PTR(pFEAD->argAddr)));
+                    pMaybeInteriorPtrArray[currArgIndex] =
+                        *static_cast<Object**>(CORDB_ADDRESS_TO_PTR(pFEAD->argAddr));
+                }
+                else
+                {
+                    // Otherwise, the address is a handle value.
+                    // We'll extract the object as writing to a handle value as though it's a regular interior pointer
+                    // uses the incorrect write barrier.
+                    pMaybeInteriorPtrArray[currArgIndex] = ObjectFromHandleUnchecked(static_cast<OBJECTHANDLE>(CORDB_ADDRESS_TO_PTR(pFEAD->argAddr)));
                 }
             }
             else if (pFEAD->argIsLiteral)
             {
-                _ASSERTE(sizeof(pFEAD->argLiteralData) >= sizeof(OBJECTREF));
-                OBJECTREF v = NULL;
+                _ASSERTE(sizeof(pFEAD->argLiteralData) >= sizeof(void*));
+                void* v = nullptr;
                 memcpy(&v, pFEAD->argLiteralData, sizeof(v));
-                pObjectRefArray[currArgIndex] = v;
+                pMaybeInteriorPtrArray[currArgIndex] = v;
             }
             else
             {
@@ -821,7 +844,7 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
                 SIZE_T v = GetRegisterValue(pDE, pFEAD->argHome.reg1, pFEAD->argHome.reg1Addr, pFEAD->argHome.reg1Value);
 
                 // The argument is the address.
-                pObjectRefArray[currArgIndex] = (OBJECTREF)v;
+                pMaybeInteriorPtrArray[currArgIndex] = reinterpret_cast<void*>(v);
             }
             break;
 
@@ -1074,27 +1097,6 @@ void Debugger::ProtectFuncEvalByRefResult(
     *ppResult = new (interopsafe) DebuggerFuncEvalResult(pDE, resultType);
 }
 
-void Debugger::GetFuncEvalArgument(
-    DebuggerFuncEvalContext* pContext, UINT32 index, DebuggerFuncEvalArgument* pArgument)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(index < pContext->argumentCount);
-    DebuggerIPCE_FuncEvalArgData* pArg = &pContext->pEval->GetArgData()[index];
-    pArgument->pLiteral = pArg->argLiteralData[0].GetNativeAddress();
-    pArgument->elementType = pArg->argElementType;
-    pArgument->flags = (pArg->argIsLiteral ? FuncEvalLiteral : 0) |
-        (pArg->argIsHandleValue ? FuncEvalHandle : 0) |
-        (pArg->argAddr != static_cast<CORDB_ADDRESS>(0) ? FuncEvalMemory : 0) |
-        (pArg->argHome.kind != RAK_NONE ? FuncEvalRegister : 0);
-}
-
 TypeHandle Debugger::GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index)
 {
     CONTRACTL
@@ -1111,20 +1113,6 @@ TypeHandle Debugger::GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index)
         reinterpret_cast<DebuggerIPCE_TypeArgData*>(CORDB_ADDRESS_TO_PTR(pArg->fullArgType)),
         pArg->fullArgTypeNodeCount);
     return walk.ReadTypeHandle();
-}
-
-bool Debugger::IsFuncEvalArgumentPassedAsHandleValue(DebuggerEval* pDE, UINT32 index)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(index < pDE->m_argCount);
-    return pDE->GetArgData()[index].argIsHandleValue;
 }
 
 BOOL Debugger::ReadFuncEvalPrimitiveRegister(
@@ -1434,24 +1422,10 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     ExternalMemoryHandle* temporaryResult = nullptr;
 
     //
-    // An array to hold object ref args. This array is protected from GC's.
+    // Object references and possible interior pointers share this GC-protected array.
     //
     SIZE_T cbAllocSize;
-    if ((!ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(OBJECTREF), cbAllocSize)) ||
-        (cbAllocSize != (size_t)(cbAllocSize)))
-    {
-        ThrowHR(COR_E_OVERFLOW);
-    }
-    void* memObjRefArray = _alloca(cbAllocSize);
-    memset(memObjRefArray, 0, cbAllocSize);
-    OBJECTREF* pObjectRefArray = (OBJECTREF*)memObjRefArray ;
-    GCPROTECT_ARRAY_BEGIN(*pObjectRefArray, pDE->m_argCount);
-
-    //
-    // An array to hold values that may be pointers into a managed object.  This array
-    // is protected from GCs.
-    //
-    if ((!ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(void**), cbAllocSize)) ||
+    if ((!ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(void*), cbAllocSize)) ||
         (cbAllocSize != (size_t)(cbAllocSize)))
     {
         ThrowHR(COR_E_OVERFLOW);
@@ -1486,6 +1460,13 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     INT64 *pBufferForArgsArray = (INT64*)_alloca(cbAllocSize);
     memset(pBufferForArgsArray, 0, cbAllocSize);
 
+    if (!ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(DebuggerFuncEvalArgument), cbAllocSize))
+    {
+        ThrowHR(COR_E_OVERFLOW);
+    }
+    DebuggerFuncEvalArgument* pArguments = static_cast<DebuggerFuncEvalArgument*>(_alloca(cbAllocSize));
+    memset(pArguments, 0, cbAllocSize);
+
     SIZE_T handleCount;
     if (!ClrSafeInt<SIZE_T>::addition(pDE->m_argCount, 1, handleCount) ||
         !ClrSafeInt<SIZE_T>::multiply(handleCount, sizeof(ExternalMemoryHandle*), cbAllocSize))
@@ -1508,7 +1489,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
 
     DebuggerFuncEvalContext context = {};
     context.pEval = pDE;
-    context.pObjects = pObjectRefArray;
+    context.pArguments = pArguments;
     context.pInteriors = pMaybeInteriorPtrArray;
     context.pHomes = pByRefMaybeInteriorPtrArray;
     context.pCapturedArguments = pBufferForArgsArray;
@@ -1530,7 +1511,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
             GCX_FORBID();
 
             GCProtectAllPassedArgs(pDE,
-                                   pObjectRefArray,
+                                   pArguments,
                                    pMaybeInteriorPtrArray,
                                    pByRefMaybeInteriorPtrArray,
                                    pBufferForArgsArray
@@ -1570,7 +1551,6 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     argumentHandles.Release();
     GCPROTECT_END();    // pByRefMaybeInteriorPtrArray
     GCPROTECT_END();    // pMaybeInteriorPtrArray
-    GCPROTECT_END();    // pObjectRefArray
     LOG((LF_CORDB, LL_EVERYTHING, "Managed func-eval: returning...\n"));
     _ASSERTE(pDE->m_funcEvalResult == nullptr);
     pDE->m_funcEvalResult = result;
