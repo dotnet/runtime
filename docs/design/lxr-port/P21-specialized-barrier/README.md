@@ -18,6 +18,7 @@ other facts. **Open** = not known or not done.
 - **Measured.** ReadyToRun is **on** in all managed tests of this step. "R2R must be off" is removed.
 - **Measured.** The code of the default collector is unchanged (hash of the stock helpers is equal to main plus the PR).
 - **Open.** ARM64 is not done (section 10). Windows Debug is not built (user decision).
+- **Open (known limit).** The slow path does not save the APX registers r16 to r31 (section 3). The runtime does not use them today.
 
 ## 2. How the barrier works now
 
@@ -170,8 +171,44 @@ the old value.
   `DOTNET_ReadyToRunAcceptUnmarkedImages=1` accepts such images. The control of the cell uses it.
 - Only CoreLib of the product build is precompiled in a frame. The other libraries are IL in our frames.
 
-**Open.** For a real product, all framework assemblies must be compiled with the flag. This is a build change
-(one option in the shared crossgen2 setup).
+### 9.1 How to build the framework with the flag
+
+**Code.** The coordinator approved this design (fail closed).
+
+- CoreLib of the product build: add the property to the normal build command.
+  `./build.sh -s clr -c Release -cmakeargs "-DCLR_CMAKE_ENABLE_LXR_GC=1" /p:CrossgenOldValueWriteBarriers=true`
+  (Windows: `build.cmd -s clr+libs -c Release -cmakeargs "-DCLR_CMAKE_ENABLE_LXR_GC=1" /p:CrossgenOldValueWriteBarriers=true`).
+  The property adds `--old-value-write-barriers` to the crossgen2 call in `src/coreclr/crossgen-corelib.proj`.
+- Any other assembly, by hand: pass `--old-value-write-barriers` to crossgen2. Example (Linux, used for the control):
+  `dotnet crossgen2.dll System.Private.CoreLib.dll -o out/System.Private.CoreLib.dll -r "<IL dir>/*.dll" --targetos:linux --targetarch:x64 -O --old-value-write-barriers`.
+- **ALL framework assemblies that are precompiled need the flag**, not only CoreLib. Every ReadyToRun image that has
+  stores of references can drop a barrier for null, frozen or provably safe values. The same is true for user
+  assemblies and for composite images. In our frames only CoreLib is precompiled, so only CoreLib needs the flag there.
+- **Open.** I did not add the option to the shared crossgen2 setup of the libraries (the SDK task for `libs`).
+  Before a product uses precompiled libraries with LXR, that setup must pass the option to every image.
+
+### 9.2 What happens with an unmarked image
+
+**Code and Measured.** The check is in `ReadyToRunInfo::Initialize` (`readytoruninfo.cpp`). It runs when the
+collector reports `FASTGC_REQUIRES_OLD_VALUE` and the image header does not have `READYTORUN_FLAG_OLD_VALUE_WRITE_BARRIERS`.
+
+- The runtime does not use the image. It returns "no ReadyToRun image" and compiles the methods with the JIT.
+  The program runs and gives the right result (**Measured:** checksum 14985972, same as the default collector).
+- The message is **not printed to the console**. It goes to the ReadyToRun log file only. Set
+  `DOTNET_ReadyToRunLogFile=<path>` (the process id is added to the name). **Measured**, the line in the file is:
+  `Ready to Run disabled - image was not compiled with old-value write barriers: "<path of the image>".`
+- Startup cost: every method of the rejected image goes through the JIT. **Measured, one run per case, binary trees
+  16 with LXR on Linux, whole process:** rejected CoreLib 2135 ms, flagged CoreLib 1763 ms, CoreLib not used at all
+  (`DOTNET_ReadyToRun=0`) 1900 ms. This is one run each and the machine is noisy, so the numbers show only the
+  direction. The cost is mostly JIT time at start.
+- `DOTNET_ReadyToRunAcceptUnmarkedImages=1` turns the check off. **This makes LXR unsound.** It exists only for
+  the control of the cell `r2r-stores`.
+
+### 9.3 Upstream proposal
+
+This flag is an **upstream-proposal item** (extension 5 in section 8). It belongs to the old-value contract: a
+collector that needs the old value must tell crossgen2, and the runtime must refuse images that did not follow it.
+A smaller upstream design could use one collector-neutral image flag, for example "barriers are never elided".
 
 ## 10. ARM64 status
 

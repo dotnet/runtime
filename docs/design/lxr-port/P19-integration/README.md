@@ -20,8 +20,11 @@ Where the text below says "Standard-ABI", "slot log" or "R2R must be off", **D1 
   store. The PR `bulk_move_with_write_barrier` handles plain reference ranges. The old-value extras that the PR hooks
   cannot express stay as an "LXR extension" (P21, section 8).
 - **Code.** The heap type is `GC_HEAP_CUSTOM` now (open item 2 of section 12 is closed). `GCSettings.IsServerGC` is true.
-- **Measured.** ReadyToRun is **on**. A framework image must be compiled with the new crossgen2 option
-  `--old-value-write-barriers`. The runtime rejects an unmarked image for LXR (fail closed). See P21, section 9.
+- **Measured.** ReadyToRun is **on**. Build the framework with `/p:CrossgenOldValueWriteBarriers=true` (it adds the
+  crossgen2 option `--old-value-write-barriers`). **All** precompiled framework assemblies need the flag; in our frames
+  only CoreLib is precompiled. The runtime rejects an unmarked image for LXR, uses the JIT instead (slower start, same
+  result) and writes the reason only to `DOTNET_ReadyToRunLogFile`. The flag is an upstream-proposal item.
+  Details: P21, section 9.
 - **Measured.** The stock helpers hash equal to main plus the PR: `46cee8bd87fd6252f5265267148d0a34` (re-recorded).
 - Still not in the branch: bump-pointer allocation (D2), ARM64 (P21, section 10).
 - Build with `/p:CrossgenOldValueWriteBarriers=true` in addition to the commands of section 7. Do not set
