@@ -1075,7 +1075,7 @@ DEFINE_METHOD(DEBUGGER,             USERBREAKPOINT,         UserBreakpoint,     
 #if defined(DEBUGGING_SUPPORTED)
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+Context, DebuggerFuncEvalContext)
 DEFINE_FIELD_U(Evaluation,        DebuggerFuncEvalContext, pEval)
-DEFINE_FIELD_U(Objects,           DebuggerFuncEvalContext, pObjects)
+DEFINE_FIELD_U(Arguments,         DebuggerFuncEvalContext, pArguments)
 DEFINE_FIELD_U(Interiors,         DebuggerFuncEvalContext, pInteriors)
 DEFINE_FIELD_U(Homes,             DebuggerFuncEvalContext, pHomes)
 DEFINE_FIELD_U(CapturedArguments, DebuggerFuncEvalContext, pCapturedArguments)

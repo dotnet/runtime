@@ -2530,10 +2530,7 @@ public:
     virtual void* AllocateFuncEvalExternalResult(DebuggerEval* pDE, TypeHandle resultType);
     virtual void ProtectFuncEvalByRefResult(
         DebuggerEval* pDE, TypeHandle resultType, DebuggerFuncEvalResult** ppResult);
-    virtual void GetFuncEvalArgument(
-        DebuggerFuncEvalContext* pContext, UINT32 index, DebuggerFuncEvalArgument* pArgument);
     virtual TypeHandle GetFuncEvalArgumentType(DebuggerEval* pDE, UINT32 index);
-    virtual bool IsFuncEvalArgumentPassedAsHandleValue(DebuggerEval* pDE, UINT32 index);
     virtual BOOL ReadFuncEvalPrimitiveRegister(
         DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue);
     virtual void WriteFuncEvalRegister(
