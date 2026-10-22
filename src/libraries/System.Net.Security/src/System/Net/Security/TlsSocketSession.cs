@@ -53,6 +53,11 @@ namespace System.Net.Security
         public TlsOperationStatus Shutdown() => ShutdownSocketCore();
 
         /// <summary>Server-side only. Sends a <c>CertificateRequest</c> on the socket for TLS 1.3 post-handshake authentication.</summary>
+        /// <remarks>
+        /// On Linux, if the TLS 1.3 client did not offer post-handshake authentication, no request is sent:
+        /// the method returns <see cref="TlsOperationStatus.Complete"/>, the handshake stays complete, no client
+        /// certificate is received, and the session remains usable.
+        /// </remarks>
         public TlsOperationStatus RequestClientCertificate() => RequestClientCertificateSocketCore();
     }
 }
