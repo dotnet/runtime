@@ -192,11 +192,6 @@ and `TestTrimming=true`, so trimming remains enabled without ReadyToRun.
 Use clean project-specific `bin` and `obj` browser-wasm outputs when switching modes;
 stale staged assets can otherwise cause assembly-loading failures before tests start.
 
-When symbols are enabled, trimmed test bundles must use the PDBs from the same
-linked closure as their assemblies, including the test project's own PDB. Browser
-stack traces read these symbols from memory; adding an untrimmed PDB to the virtual
-filesystem does not correct a mismatched assembly/PDB pair.
-
 The `LibraryTestsCoreCLR_R2R` CI jobs use the same configuration and archive the published
 tests for execution on Helix. The existing interpreter jobs remain separate.
 
