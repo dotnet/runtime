@@ -53,8 +53,6 @@ EXTERN_C int g_requiredCpuFeatures;
 #endif
 
 #ifdef TARGET_UNIX
-static bool InitGSCookie();
-
 //-----------------------------------------------------------------------------
 // GSCookies (guard-stack cookies) for detecting buffer overruns
 //-----------------------------------------------------------------------------
@@ -143,11 +141,6 @@ static bool InitDLL(HANDLE hPalInstance)
 
 #ifndef FEATURE_PORTABLE_HELPERS
     if (!DetectCPUFeatures())
-        return false;
-#endif
-
-#ifdef TARGET_UNIX
-    if (!InitGSCookie())
         return false;
 #endif
 
@@ -322,6 +315,12 @@ extern "C" bool RhInitialize(bool isDll)
 
     if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize, isDll)))
         return false;
+
+#ifdef TARGET_UNIX
+    // Shared libraries initialize the cookie before publishing the runtime initialization callback.
+    if (!isDll && !InitGSCookie())
+        return false;
+#endif
 
     return true;
 }
