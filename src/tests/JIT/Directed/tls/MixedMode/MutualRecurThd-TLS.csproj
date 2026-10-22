@@ -18,9 +18,9 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Test-TLS.cs" />
+    <Compile Include="MutualRecurThd-TLS.cs" />
     <CMakeProjectReference Include="CMakeLists.txt" />
-    <CMakeProjectReference Include="..\..\..\Interop\IJW\ijwhostmock\CMakeLists.txt" />
+    <CMakeProjectReference Include="..\..\..\..\Interop\IJW\ijwhostmock\CMakeLists.txt" />
     <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>
