@@ -1017,7 +1017,8 @@ namespace System.Net.Security
                 {
                     EnsureCredentialsAcquired();
 
-                    // SecureTransport does not request credentials again after CertificateRequested.
+                    // Resuming after CertificateRequested: SecureTransport does not stop again, so the
+                    // CredentialsNeeded path below never runs; install the certificate here.
                     if (isCredentialResume && _securityContext is not null && _options.CertificateContext is not null)
                     {
                         SslStreamPal.TryUpdateClintCertificate(ActiveCredentialsRef(), _securityContext, _options);
@@ -1032,7 +1033,8 @@ namespace System.Net.Security
                         out bytesConsumed,
                         _options);
 
-                    // SecureTransport still stops at CertificateRequest with a configured certificate.
+                    // Certificate configured before the handshake: SecureTransport still stops at
+                    // CertificateRequest, so install it here and continue.
                     if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded &&
                         _options.CertificateContext is not null &&
                         SslStreamPal.TryUpdateClintCertificate(ActiveCredentialsRef(), _securityContext, _options))
