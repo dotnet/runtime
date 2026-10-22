@@ -5,6 +5,25 @@
 **Branch:** `kkokosa-lxr-integrated` (local). It is one linear series on top of `dotnet/runtime` main.
 **Source of the work:** the stack that ends at P17 S6 (`kkokosa-lxr-s6-finalizer-registry`, `69e02a55607`).
 
+## Update D2 (step P18-D2, branch `kkokosa-lxr-d2-bump-allocation`)
+
+This update is on top of `kkokosa-lxr-d1-specialized-barrier` (`74dc9e84445`). The details are in `P22-bump-allocation/README.md`.
+Where the text below says "notifying helpers" or "allocation notification", **D2 replaced it**:
+
+- **Code.** LXR allocates through the **stock** bump-pointer helpers. The helper calls the collector only when the buffer
+  is full. The collector does bulk work for each buffer and records the used part of each buffer as a span. It does no
+  work for a single object on the fast path.
+- **Code.** Removed: `AllocFastNotification.S/.asm`, the helper selection in the VM and NativeAOT, the allocation-complete
+  flags, the `IGCHeap` notification method, the test collector of P1.4, and `CompleteAllocation`, `RecordFastAllocation`
+  and `pendingFast*` in the engine.
+- **Code.** The ValidObject bit is set once per survivor at promotion. Interior pointers into young objects are found
+  by a walk over the spans.
+- **Code.** GC interface minors are renumbered: 6.1 old-value hooks, 6.2 object reference enumeration (was 6.6),
+  6.3 object header bits (was 6.7). The minor version is **3**. (The table in section 4 shows the D1 numbers.)
+- **Measured.** One allocation costs 11 to 26 ns (D1: 78 to 96 ns). The stock helpers hash equal to main plus the PR:
+  `46cee8bd87fd6252f5265267148d0a34`.
+- Still not in the branch: ARM64 (P21, section 10), profiler heap walks over spans (P22, section 10).
+
 ## Update D1 (step P18-D1, branch `kkokosa-lxr-d1-specialized-barrier`)
 
 This update is on top of `kkokosa-lxr-root-capture-fix` (`a1ddb3fd4a1`). The details are in `P21-specialized-barrier/README.md`.
@@ -58,14 +77,14 @@ Every claim has one label.
 
 1. **Current `dotnet/runtime` main**, commit `a485c819c17` (2026-10-21 14:58 UTC). **Code.**
 2. **The runtime side of PR #3316** ("Custom GC support with Satori", author `janvorli`) as a patch series. The two PR commits are cherry-picked with their authors. The `gc_satori` folder is in the tree. Satori is **not** built by default. It is a comparison target (`-DCLR_CMAKE_ENABLE_SATORI_GC=1`). **Code.**
-3. **Our runtime changes** in one commit: slot-log write barriers and their write-watch twin, the JIT flags `USE_STANDARD_WRITE_BARRIER_ABI` and `WRITE_BARRIER_REQUIRES_OLD_VALUE`, the `RequiresOldValueWriteBarrier` intrinsic, bulk and layout store helpers, notifying allocation helpers, header-bit negotiation and object reference enumeration. **Code.**
+3. **Our runtime changes** in one commit: slot-log write barriers and their write-watch twin, the JIT flags `USE_STANDARD_WRITE_BARRIER_ABI` and `WRITE_BARRIER_REQUIRES_OLD_VALUE`, the `RequiresOldValueWriteBarrier` intrinsic, bulk and layout store helpers, notifying allocation helpers (removed in D2), header-bit negotiation and object reference enumeration. **Code.**
 4. **The LXR collector** (P2 to P16), then the measured steps of P17 as separate commits: S0, S5a, S1, S5a follow-up, S2, a large-object fix, S3, S4, S5b and S6. **Code.**
 5. **Tests and harness**, and **the documents** (P0 to P19, the roadmap extension and its benchmark results). **Code.**
 
 The README of the shared branch must be honest about three things. They are not in this branch:
 
 - ~~The barrier is still our Standard-ABI barrier.~~ **Superseded by D1:** the barrier is the Specialized-ABI barrier of the PR mechanism.
-- Allocation still uses our **notifying helpers**. It does not use the stock bump-pointer helpers.
+- ~~Allocation still uses our **notifying helpers**. It does not use the stock bump-pointer helpers.~~ **Superseded by D2:** LXR uses the stock bump-pointer helpers (P22).
 - **S7** (the pin list) is **not in the original integrated branch** (`kkokosa-lxr-integrated`, `06d7cda94cb`). It is on the branch `kkokosa-lxr-s7-pin-list`, which adds the S7 commits on top of it (see "S7 addition" at the end of section 11).
 
 Section 11 gives the details and the cost.
@@ -127,8 +146,12 @@ The series has 22 commits on top of `a485c819c17`. Run `git log --oneline a485c8
 
 | | `dotnet/runtime` main | PR #3316 | Our S6 stack | This branch |
 |---|---|---|---|---|
-| GC interface | 5.9 | 6.0 | 5.15 | **6.7** |
+| GC interface | 5.9 | 6.0 | 5.15 | **6.7** (D1); **6.3** (D2, see below) |
 | EE interface | 5 | 6 | 4 | **6** |
+
+**D2 (P22).** The allocation notification (6.5) is removed. The two minors above it move down: object reference
+enumeration 6.6 becomes **6.2**, object header bits 6.7 becomes **6.3**. `GC_INTERFACE_MINOR_VERSION` is 3. The table
+below shows the numbers of D1.
 
 **Code.** The PR sets 6.0. We adopt it. The LXR minors move above it, in the same order:
 
@@ -401,7 +424,7 @@ From P17, and I did not re-run them here:
 | Item | State | Cost or effect |
 |---|---|---|
 | **Specialized-ABI barrier** (`GetAssignRefFunctions`, assembly barrier with patchable slots) | **Done in D1** (P21). | NativeAOT is still not supported for LXR. |
-| **Bump-pointer allocation** (stock helpers, GC learns about objects at buffer refill) | Not done. The branch keeps the notifying helpers. | **Measured, from P1.4, not re-run:** the notifying helpers cost 14 percent (Workstation) and 24 percent (Server) of throughput in the churn scenario. |
+| **Bump-pointer allocation** (stock helpers, GC learns about objects at buffer refill) | **Done in D2** (P22). | **Measured:** 11 to 26 ns per allocation (D1 notifying helpers: 78 to 96 ns). The P1.4 churn scenario (14 percent Workstation, 24 percent Server) was not re-run: its harness needs the removed test collector. |
 | **S7** (the pin list) | Not in `kkokosa-lxr-integrated`. Done on the branch `kkokosa-lxr-s7-pin-list` (see below). | |
 | **R2R** | **On in D1** for a framework compiled with `--old-value-write-barriers` (P21, section 9). | An unmarked image is rejected for LXR (it runs through the JIT). |
 | ARM64 | No LXR barrier. The PR ARM64 files for Satori are in the tree and not built here. | |
@@ -437,9 +460,10 @@ I did not push, and I did not open a pull request. You decide.
 
 | File | Content |
 |---|---|
-| `kkokosa-lxr-d1-specialized-barrier.bundle` | `git bundle` of `a485c819c17..kkokosa-lxr-d1-specialized-barrier` (the integrated branch, S7, the root capture fix and the D1 commits). The receiver needs `dotnet/runtime` at `a485c819c17` (fetch `upstream/main`). |
-| `patches\*.patch` | `git format-patch` series of the same range (one file per commit, 34 files). |
+| `kkokosa-lxr-d2-bump-allocation.bundle` | `git bundle` of `a485c819c17..kkokosa-lxr-d2-bump-allocation` (the integrated branch, S7, the root capture fix, the D1 commits and the D2 commits). The receiver needs `dotnet/runtime` at `a485c819c17` (fetch `upstream/main`). |
+| `patches\*.patch` | `git format-patch` series of the same range (one file per commit). |
 | `SHA256SUMS.txt` | Hashes of the files above. |
+| `previous\kkokosa-lxr-d1-specialized-barrier\` | The bundle, the patch series and the hashes of the branch before D2. |
 | `previous\kkokosa-lxr-root-capture-fix\` | The bundle, the patch series and the hashes of the branch before D1. |
 | `previous\kkokosa-lxr-s7-pin-list\` | The bundle, the patch series and the hashes of the S7 branch before the root capture fix. |
 | `previous\` | Also the bundle, the patch series and the hashes of the integrated branch before S7. |
@@ -449,11 +473,11 @@ Use of the bundle:
 ```bash
 git clone https://github.com/dotnet/runtime.git && cd runtime
 git checkout a485c819c17
-git fetch ../kkokosa-lxr-d1-specialized-barrier.bundle kkokosa-lxr-d1-specialized-barrier:kkokosa-lxr-d1-specialized-barrier
-git switch kkokosa-lxr-d1-specialized-barrier
+git fetch ../kkokosa-lxr-d2-bump-allocation.bundle kkokosa-lxr-d2-bump-allocation:kkokosa-lxr-d2-bump-allocation
+git switch kkokosa-lxr-d2-bump-allocation
 ```
 
-To publish it later: `git push <remote> kkokosa-lxr-d1-specialized-barrier`. I advise a branch name that tells people that it is an experiment, for example `lxr-experiment`. The PR commits keep the authorship of `janvorli`. Say in the description that they come from PR #3316 and that they are not yet in `dotnet/runtime`.
+To publish it later: `git push <remote> kkokosa-lxr-d2-bump-allocation`. I advise a branch name that tells people that it is an experiment, for example `lxr-experiment`. The PR commits keep the authorship of `janvorli`. Say in the description that they come from PR #3316 and that they are not yet in `dotnet/runtime`.
 
 ## 14. Not checked
 
@@ -464,4 +488,4 @@ To publish it later: `git push <remote> kkokosa-lxr-d1-specialized-barrier`. I a
 
 ## 15. Scripts
 
-All in `docs/design/lxr-port/P19-integration/scripts/` (the scripts of D1 are in `P21-specialized-barrier/scripts/`): `helperhash.py` (section 5), `jit-compare.sh`, `gc-library-tests.sh`, `mkframe.sh`, `mkdbgcollector.sh`, `demo.sh`, `managed-debug-collector.sh`, `bench-wall.sh`, `bench-trace.sh`, `summarize.py`, `pause-pool.py`. The raw results are in `results/` (`wall.jsonl`, `pause-table.txt`, `helper-hashes.txt`).
+All in `docs/design/lxr-port/P19-integration/scripts/` (the scripts of D1 are in `P21-specialized-barrier/scripts/`, the scripts of D2 in `P22-bump-allocation/scripts/`): `helperhash.py` (section 5), `jit-compare.sh`, `gc-library-tests.sh`, `mkframe.sh`, `mkdbgcollector.sh`, `demo.sh`, `managed-debug-collector.sh`, `bench-wall.sh`, `bench-trace.sh`, `summarize.py`, `pause-pool.py`. The raw results are in `results/` (`wall.jsonl`, `pause-table.txt`, `helper-hashes.txt`).
