@@ -40,17 +40,6 @@ ISOSDacInterface* / IXCLRDataProcess (COM-style API surface)
   and algorithms each contract must implement.
 - **To write tests**: see the [tests README](tests/README.md).
 
-## Dump collection
-
-`SOSDacImpl` implements `ICLRDataEnumMemoryRegions` through shared collectors in
-`Microsoft.Diagnostics.DataContractReader.Legacy/EnumMemory`, used by both the
-universal cDAC and the NativeAOT `mscordaccore_enummemory` provider. Collection
-uses existing contracts and observed target reads to gather memory for mini,
-heap, and triage dumps, with triage-specific omission and optional sanitization.
-Set `UseCdacDumpCollectProvider=true` to build with the cDAC dump provider instead
-of the legacy DAC/DBI. These policies do not guarantee that all memory selected
-by the dump writer is free of personal information.
-
 ## Project structure
 
 | Directory | Purpose |
@@ -60,7 +49,7 @@ by the dump writer is free of personal information.
 | `Microsoft.Diagnostics.DataContractReader.Legacy` | `SOSDacImpl` — bridges `ISOSDacInterface*` COM APIs to contracts |
 | `Microsoft.Diagnostics.DataContractReader` | Contract/data descriptor parsing and `Target` construction |
 | `mscordaccore_universal` | Entry point that wires everything together |
-| `mscordaccore_enummemory` | NativeAOT entrypoint host for the shared dump collector; produces `mscordaccore` |
+| `mscordaccore_enummemory` | Dump enumerator entrypoint; produces `mscordaccore` |
 | `tests` | Unit tests with mock memory infrastructure |
 
 ## Contract specifications
