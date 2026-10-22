@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
+    <!-- Generates invalid metadata that do not round-trip -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <ItemGroup>

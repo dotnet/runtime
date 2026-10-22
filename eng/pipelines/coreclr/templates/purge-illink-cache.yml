@@ -1,0 +1,88 @@
+parameters:
+  osGroup: 'linux'
+
+steps:
+  - ${{ if ne(parameters.osGroup, 'windows') }}:
+    - script: |
+        set -euo pipefail
+
+        if [[ -z "${ILLINK_EXPERIMENTAL_CACHE_PATH:-}" ||
+              -z "${ILLINK_CACHE_BUILD_START:-}" ]]; then
+            echo "##vso[task.logissue type=warning]ILLink cache configuration or build-start timestamp is unavailable; skipping purge."
+            exit 0
+        fi
+
+        if [[ ! -e "$ILLINK_EXPERIMENTAL_CACHE_PATH/v1" ]]; then
+            echo "No ILLink cache entries were created; skipping purge."
+            exit 0
+        fi
+
+        dotnet="$(Build.SourcesDirectory)/.dotnet/dotnet"
+        if [[ ! -x "$dotnet" ]]; then
+            echo "##vso[task.logissue type=warning]The build SDK is unavailable; skipping ILLink cache purge."
+            exit 0
+        fi
+
+        tool=""
+        for candidate in "$(Build.SourcesDirectory)"/artifacts/bin/ILLink.CacheTool/*/net*/dotnet-illink-cache.dll; do
+            if [[ -f "$candidate" ]]; then
+                tool="$candidate"
+                break
+            fi
+        done
+
+        if [[ -z "$tool" ]]; then
+            echo "##vso[task.logissue type=warning]The ILLink cache maintenance tool was not built; skipping purge."
+            exit 1
+        fi
+
+        if ! "$dotnet" "$tool" purge \
+            --cache-directory "$ILLINK_EXPERIMENTAL_CACHE_PATH" \
+            --before "$ILLINK_CACHE_BUILD_START"; then
+            echo "##vso[task.logissue type=warning]ILLink cache purge failed; see the tool diagnostics above."
+        fi
+      displayName: Purge unused ILLink cache entries
+      condition: and(succeeded(), eq(variables['ILLINK_EXPERIMENTAL_CACHE'], 'true'))
+      continueOnError: true
+
+  - ${{ if eq(parameters.osGroup, 'windows') }}:
+    - pwsh: |
+        if ([string]::IsNullOrEmpty($env:ILLINK_EXPERIMENTAL_CACHE_PATH) -or
+            [string]::IsNullOrEmpty($env:ILLINK_CACHE_BUILD_START)) {
+            Write-Host "##vso[task.logissue type=warning]ILLink cache configuration or build-start timestamp is unavailable; skipping purge."
+            exit 0
+        }
+
+        if (-not (Test-Path -LiteralPath (Join-Path $env:ILLINK_EXPERIMENTAL_CACHE_PATH "v1") -PathType Container)) {
+            Write-Host "No ILLink cache entries were created; skipping purge."
+            exit 0
+        }
+
+        $dotnet = Join-Path "$(Build.SourcesDirectory)" ".dotnet/dotnet.exe"
+        if (-not (Test-Path -LiteralPath $dotnet -PathType Leaf)) {
+            Write-Host "##vso[task.logissue type=warning]The build SDK is unavailable; skipping ILLink cache purge."
+            exit 0
+        }
+
+        $toolRoot = Join-Path "$(Build.SourcesDirectory)" "artifacts/bin/ILLink.CacheTool"
+        if (-not (Test-Path -LiteralPath $toolRoot -PathType Container)) {
+            Write-Host "##vso[task.logissue type=warning]The ILLink cache maintenance tool was not built; skipping purge."
+            exit 1
+        }
+
+        $tool = Get-ChildItem -LiteralPath $toolRoot -Filter "dotnet-illink-cache.dll" -File -Recurse |
+            Sort-Object FullName | Select-Object -First 1
+        if ($null -eq $tool) {
+            Write-Host "##vso[task.logissue type=warning]The ILLink cache maintenance tool was not built; skipping purge."
+            exit 1
+        }
+
+        & $dotnet $tool.FullName purge `
+            --cache-directory $env:ILLINK_EXPERIMENTAL_CACHE_PATH `
+            --before $env:ILLINK_CACHE_BUILD_START
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "##vso[task.logissue type=warning]ILLink cache purge failed; see the tool diagnostics above."
+        }
+      displayName: Purge unused ILLink cache entries
+      condition: and(succeeded(), eq(variables['ILLINK_EXPERIMENTAL_CACHE'], 'true'))
+      continueOnError: true

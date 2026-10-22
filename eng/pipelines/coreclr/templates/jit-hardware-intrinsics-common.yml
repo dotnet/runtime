@@ -27,13 +27,13 @@ jobs:
       preBuildSteps:
         - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
       postBuildSteps:
-        - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
             testBuildArgs: ${{ parameters.testBuildArgs }}
             testRunNamePrefixSuffix: CoreCLR
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
+        - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
@@ -58,7 +58,6 @@ jobs:
       preBuildSteps:
         - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
       postBuildSteps:
-        - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
@@ -66,6 +65,7 @@ jobs:
             testRunNamePrefixSuffix: NativeAOT
             nativeAotTest: true
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
+        - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
