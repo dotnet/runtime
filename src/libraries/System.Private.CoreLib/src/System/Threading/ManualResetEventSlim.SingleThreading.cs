@@ -68,7 +68,8 @@ public partial class ManualResetEventSlim
             return false;
         }
 
-        throw new PlatformNotSupportedException();
+        TimeoutHelper.WaitForTimeout(millisecondsTimeout, cancellationToken);
+        return false;
     }
 
     private void DisposeCore(bool disposing)

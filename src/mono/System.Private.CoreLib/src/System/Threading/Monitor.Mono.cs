@@ -126,7 +126,7 @@ namespace System.Threading
                 throw new SynchronizationLockException();
 
 #if !FEATURE_MULTITHREADING
-            if (millisecondsTimeout != 0)
+            if (millisecondsTimeout == Timeout.Infinite)
                 throw new PlatformNotSupportedException();
 #elif FEATURE_WASM_MANAGED_THREADS
             if (millisecondsTimeout != 0)

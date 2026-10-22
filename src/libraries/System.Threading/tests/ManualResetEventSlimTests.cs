@@ -36,14 +36,16 @@ namespace System.Threading.Tests
             Assert.Throws<ObjectDisposedException>(() => ev.Reset());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         [InlineData(false, -1)]
         [InlineData(true, -1)]
         [InlineData(false, 0)]
         [InlineData(true, 0)]
         [InlineData(false, 1)]
         [InlineData(true, 1)]
-        public static void SingleThreadedWaitOnlyRejectsBlocking(bool initialState, int millisecondsTimeout)
+        [InlineData(false, 20)]
+        [InlineData(true, 20)]
+        public static void SingleThreadedWaitHonorsFiniteTimeouts(bool initialState, int millisecondsTimeout)
         {
             using ManualResetEventSlim ev = new(initialState);
             if (initialState)
@@ -51,10 +53,14 @@ namespace System.Threading.Tests
                 Assert.True(ev.Wait(millisecondsTimeout));
                 Assert.True(ev.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
             }
-            else if (millisecondsTimeout == 0)
+            else if (millisecondsTimeout != Timeout.Infinite)
             {
+                Stopwatch stopwatch = Stopwatch.StartNew();
                 Assert.False(ev.Wait(millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
                 Assert.False(ev.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
             }
             else
             {
@@ -120,7 +126,7 @@ namespace System.Threading.Tests
         }
 
         // Tests timeout on an event that is never set.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [Fact]
         public static void RunManualResetEventSlimTest2_TimeoutWait()
         {
             for (int i = 0; i < 2; i++)
@@ -149,7 +155,7 @@ namespace System.Threading.Tests
             using ManualResetEventSlim unsetEvent = new(false);
             Assert.False(unsetEvent.Wait(0));
             Assert.False(unsetEvent.Wait(TimeSpan.Zero));
-            Assert.Throws<PlatformNotSupportedException>(() => unsetEvent.Wait(1));
+            Assert.False(unsetEvent.Wait(1));
             Assert.Throws<PlatformNotSupportedException>(() => unsetEvent.Wait());
         }
 

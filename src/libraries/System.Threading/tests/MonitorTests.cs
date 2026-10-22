@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
@@ -89,11 +90,12 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         [InlineData(-2)]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1)]
+        [InlineData(20)]
         public static void SingleThreadedWaitValidatesBeforeBlocking(int millisecondsTimeout)
         {
             object obj = new();
@@ -113,11 +115,13 @@ namespace System.Threading.Tests
                 {
                     Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.Wait(obj, millisecondsTimeout));
                 }
-                else if (millisecondsTimeout == 0)
+                else if (millisecondsTimeout != Timeout.Infinite)
                 {
                     lock (obj)
                     {
+                        Stopwatch stopwatch = Stopwatch.StartNew();
                         Assert.False(Monitor.Wait(obj, millisecondsTimeout));
+                        Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
                         Assert.True(Monitor.IsEntered(obj));
                     }
                 }
@@ -540,7 +544,8 @@ namespace System.Threading.Tests
             {
                 Assert.False(Monitor.Wait(obj, 0));
                 Assert.False(Monitor.Wait(obj, TimeSpan.Zero));
-                Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj, 1));
+                Assert.False(Monitor.Wait(obj, 1));
+                Assert.False(Monitor.Wait(obj, TimeSpan.FromMilliseconds(1)));
                 Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj));
             }
         }

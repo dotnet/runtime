@@ -31,19 +31,24 @@ This fork of reference assemblies exists just for the experimental support. It w
 
 ### Implementation assemblies ###
 
-The implementation (in `System.Private.CoreLib`) we check
-`System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported` or call
-`System.Runtime.CompilerServices.RuntimeFeature.ThrowIfMultithreadingIsNotSupported()` to guard code paths that depends on
+The implementation in `System.Private.CoreLib` checks
+`System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported` or uses
+`FEATURE_MULTITHREADING` to guard code paths that depend on
 multi-threading.  The property is a boolean constant that will allow the IL trimmer or the
 JIT/interpreter/AOT to drop the multi-threaded implementation in the single-threaded CoreLib.
 
 The implementation should not use `[UnsupportedOSPlatform("browser")]`
 
-Synchronous wait APIs that are unsupported without multithreading should call
-`ThrowIfMultithreadingIsNotSupported()` only when they would actually block. They can succeed when
-a semaphore count, task completion, or set state is already available, and a zero-timeout wait
-should return its normal result. The public APIs remain annotated as unsupported because whether a
-wait blocks depends on runtime state.
+Synchronous wait APIs can succeed when a semaphore count, task completion, or set state is already
+available, and a zero-timeout wait should return its normal result. Single-threaded implementations
+also honor positive finite timeouts by waiting for the timeout and returning the normal timeout
+result. These waits do not pump the JavaScript event loop or run queued managed work. Unsatisfied
+infinite waits remain unsupported.
+
+Multi-threaded WebAssembly implementations should call
+`System.Runtime.CompilerServices.RuntimeFeature.ThrowIfBlockingIsNotSupported()` when a wait would
+actually block, since blocking support depends on the current thread at runtime. The public APIs
+remain annotated as unsupported because whether a wait blocks depends on runtime state.
 
 ## Native runtime preprocessor defines ##
 

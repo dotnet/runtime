@@ -56,7 +56,7 @@ namespace System.Threading.Tests
             Assert.True(invalidTaken);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public static void AnonymousSelfContentionHonorsFiniteTimeout(bool useTimeSpan)

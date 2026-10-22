@@ -67,7 +67,8 @@ public partial class SemaphoreSlim
             return false;
         }
 
-        throw new PlatformNotSupportedException();
+        TimeoutHelper.WaitForTimeout(millisecondsTimeout, cancellationToken);
+        return false;
     }
 
     private Task<bool> WaitAsyncCore(long millisecondsTimeout, CancellationToken cancellationToken)

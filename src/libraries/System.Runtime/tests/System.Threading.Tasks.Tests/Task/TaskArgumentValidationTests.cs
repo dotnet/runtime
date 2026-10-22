@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
@@ -31,16 +32,23 @@ namespace System.Threading.Tasks.Tests
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1)]
-        public void IncompleteTaskWaitsWithoutThreadsHonorZeroTimeout(int millisecondsTimeout)
+        [InlineData(20)]
+        public void IncompleteTaskWaitsWithoutThreadsHonorFiniteTimeouts(int millisecondsTimeout)
         {
             var source = new TaskCompletionSource<int>();
             Task pending = source.Task;
 
-            if (millisecondsTimeout == 0)
+            if (millisecondsTimeout != Timeout.Infinite)
             {
+                Stopwatch stopwatch = Stopwatch.StartNew();
                 Assert.False(pending.Wait(millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
                 Assert.False(Task.WaitAll([pending, Task.CompletedTask], millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
                 Assert.Equal(-1, Task.WaitAny([pending], millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
             }
             else
             {
@@ -59,6 +67,10 @@ namespace System.Threading.Tasks.Tests
             if (millisecondsTimeout == 0)
             {
                 Assert.False(pending.Wait(millisecondsTimeout, cancellation.Token));
+            }
+            else if (millisecondsTimeout != Timeout.Infinite)
+            {
+                Assert.Throws<OperationCanceledException>(() => pending.Wait(millisecondsTimeout, cancellation.Token));
             }
             else
             {

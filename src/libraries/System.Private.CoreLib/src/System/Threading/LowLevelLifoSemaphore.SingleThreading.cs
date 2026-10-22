@@ -5,5 +5,9 @@ namespace System.Threading;
 
 internal sealed partial class LowLevelLifoSemaphore
 {
-    private static bool WaitSlow(int timeoutMs) => throw new PlatformNotSupportedException();
+    private static bool WaitSlow(int timeoutMs)
+    {
+        TimeoutHelper.WaitForTimeout(timeoutMs, default);
+        return false;
+    }
 }

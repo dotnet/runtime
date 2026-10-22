@@ -117,7 +117,7 @@ public sealed partial class Lock
             throw new SynchronizationLockException();
         }
 
-        if (millisecondsTimeout != 0)
+        if (millisecondsTimeout == Timeout.Infinite)
         {
             throw new PlatformNotSupportedException();
         }

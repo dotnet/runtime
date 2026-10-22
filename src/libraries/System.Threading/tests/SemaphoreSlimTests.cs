@@ -102,13 +102,15 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         [InlineData(0, 0)]
         [InlineData(1, 0)]
         [InlineData(0, 1)]
         [InlineData(1, 1)]
         [InlineData(0, -1)]
         [InlineData(1, -1)]
+        [InlineData(0, 20)]
+        [InlineData(1, 20)]
         public static void SingleThreadedSynchronousWaitHonorsAvailableCount(int count, int millisecondsTimeout)
         {
             using SemaphoreSlim semaphore = new(count, 1);
@@ -123,10 +125,14 @@ namespace System.Threading.Tests
                 Assert.True(semaphore.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
                 Assert.False(handle.WaitOne(0));
             }
-            else if (millisecondsTimeout == 0)
+            else if (millisecondsTimeout != Timeout.Infinite)
             {
+                Stopwatch stopwatch = Stopwatch.StartNew();
                 Assert.False(semaphore.Wait(millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
                 Assert.False(semaphore.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
             }
             else
             {
@@ -166,7 +172,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest0_Helper(-1, 10, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [Fact]
         public static void RunSemaphoreSlimTest1_Wait()
         {
             // Infinite timeout
@@ -201,7 +207,7 @@ namespace System.Threading.Tests
             Assert.True(semaphore.Wait(0, CancellationToken.None));
 
             Assert.False(semaphore.Wait(0));
-            Assert.Throws<PlatformNotSupportedException>(() => semaphore.Wait(1));
+            Assert.False(semaphore.Wait(1));
             Assert.Throws<PlatformNotSupportedException>(() => semaphore.Wait());
         }
 

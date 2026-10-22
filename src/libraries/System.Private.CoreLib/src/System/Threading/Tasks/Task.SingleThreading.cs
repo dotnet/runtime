@@ -15,12 +15,8 @@ public partial class Task
         {
             return true;
         }
-        if (millisecondsTimeout == 0)
-        {
-            return false;
-        }
-
-        throw new PlatformNotSupportedException();
+        TimeoutHelper.WaitForTimeout(millisecondsTimeout, cancellationToken);
+        return false;
     }
 
     [UnsupportedOSPlatform("browser")]
@@ -54,7 +50,7 @@ public partial class Task
 
             if (!taskIsCompleted)
             {
-                // Continue validating and attempting inline execution before rejecting the wait.
+                // Continue validating and attempting inline execution before waiting.
                 hasIncompleteTask = true;
             }
             else
@@ -76,12 +72,8 @@ public partial class Task
 
         if (hasIncompleteTask)
         {
-            if (millisecondsTimeout == 0)
-            {
-                return false;
-            }
-
-            throw new PlatformNotSupportedException();
+            TimeoutHelper.WaitForTimeout(millisecondsTimeout, cancellationToken);
+            return false;
         }
 
         if (notificationTasks is not null)
@@ -114,6 +106,9 @@ public partial class Task
         return true;
     }
 
-    private static int WaitAnyBlockingCore(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken) =>
-        millisecondsTimeout == 0 ? -1 : throw new PlatformNotSupportedException();
+    private static int WaitAnyBlockingCore(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
+    {
+        TimeoutHelper.WaitForTimeout(millisecondsTimeout, cancellationToken);
+        return -1;
+    }
 }
