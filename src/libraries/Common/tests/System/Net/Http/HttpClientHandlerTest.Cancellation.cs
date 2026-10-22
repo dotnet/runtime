@@ -36,12 +36,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (chunkedTransfer && IsWasiHttpHandler)
-            {
-                // wasi:http rejects the Transfer-Encoding request header.
-                return;
-            }
-
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
@@ -568,17 +562,14 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (IsWasiHttpHandler)
-            {
-                // WasiHttpHandler doesn't fail the request when sending the request content fails.
-                return;
-            }
             // Skipping test for a sync scenario because DelegateStream drops the original cancellationToken when it calls Read/Write methods.
             // As a result, ReadAsyncFunc receives default in cancellationToken, which will never get signaled through the cancellationTokenSource.
             if (!TestAsync)
             {
                 return;
             }
+
+            var clientFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
@@ -593,12 +584,25 @@ namespace System.Net.Http.Functional.Tests
                             }
                         }
                         catch (OperationCanceledException) { }
+                        finally
+                        {
+                            clientFinished.SetResult();
+                        }
                 },
                 async server =>
                 {
                     try
                     {
-                        await server.HandleRequestAsync(content: "Hello World");
+                        Task serverTask = server.HandleRequestAsync(content: "Hello World");
+                        if (IsWasiHttpHandler)
+                        {
+                            // The wasi:http host may abandon the request before it connects to the server.
+                            await Task.WhenAny(serverTask, clientFinished.Task);
+                        }
+                        else
+                        {
+                            await serverTask;
+                        }
                     }
                     catch (Exception) { }
                 }).WaitAsync(TestHelper.PassingTestTimeout);

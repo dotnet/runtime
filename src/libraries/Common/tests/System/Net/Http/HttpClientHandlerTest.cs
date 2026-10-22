@@ -964,12 +964,6 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "CORS is required on Browser")]
         public async Task SendAsync_TransferEncodingSetButNoRequestContent_Throws()
         {
-            if (IsWasiHttpHandler)
-            {
-                // wasi:http rejects the Transfer-Encoding request header itself.
-                return;
-            }
-
             var req = new HttpRequestMessage(HttpMethod.Post, "http://bing.com") { Version = UseVersion };
             req.Headers.TransferEncodingChunked = true;
             using (HttpClient c = CreateHttpClient())
@@ -1817,12 +1811,6 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task SendAsync_Expect100Continue_RequestBodyFails_ThrowsContentException()
         {
-            if (IsWasiHttpHandler)
-            {
-                // WasiHttpHandler doesn't fail the request when sending the request content fails.
-                return;
-            }
-
             if (IsWinHttpHandler)
             {
                 return;
@@ -1853,10 +1841,20 @@ namespace System.Net.Http.Functional.Tests
                 }
             }, async server =>
             {
-                await server.AcceptConnectionAsync(async connection =>
+                Task serverTask = server.AcceptConnectionAsync(async connection =>
                 {
                     await IgnoreExceptions(connection.ReadRequestDataAsync(readBody: true));
                 });
+
+                if (IsWasiHttpHandler)
+                {
+                    // The wasi:http host may abandon the request before it connects to the server.
+                    await Task.WhenAny(serverTask, clientFinished.Task);
+                }
+                else
+                {
+                    await serverTask;
+                }
             });
         }
 
@@ -1958,12 +1956,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, true)]
         public async Task PostAsync_ThrowFromContentCopy_RequestFails(bool syncFailure, bool enableWasmStreaming)
         {
-            if (IsWasiHttpHandler)
-            {
-                // WasiHttpHandler doesn't fail the request when sending the request content fails.
-                return;
-            }
-
             if (UseVersion == HttpVersion30)
             {
                 // TODO: Make this version-indepdendent

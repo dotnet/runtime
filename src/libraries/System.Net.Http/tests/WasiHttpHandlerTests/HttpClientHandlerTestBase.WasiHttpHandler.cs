@@ -12,11 +12,6 @@ namespace System.Net.Http.Functional.Tests
 
         public static bool IsWasiHttpHandler => true;
 
-        // HttpClientHandler delegates to the wasi:http handler, which doesn't expose these features.
-        public static bool SupportsAutomaticDecompression { get; } = new HttpClientHandler().SupportsAutomaticDecompression;
-        public static bool SupportsProxy { get; } = new HttpClientHandler().SupportsProxy;
-        public static bool SupportsRedirectConfiguration { get; } = new HttpClientHandler().SupportsRedirectConfiguration;
-
         // wasi:http negotiates the protocol version itself and owns TLS.
         protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, bool allowAllCertificates = true, bool allowTlsResume = true) =>
             new HttpClientHandler();
