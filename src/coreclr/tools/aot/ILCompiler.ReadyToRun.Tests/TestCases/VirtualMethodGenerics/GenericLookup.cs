@@ -133,6 +133,34 @@ class CyclicStaticGenericFactory : IStaticGenericFactory
     }
 }
 
+interface ICyclicStaticGenericFactory
+{
+    static abstract T Echo<T>(T value);
+}
+
+class CyclicStaticGenericLeaf : ICyclicStaticGenericFactory
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static T Echo<T>(T value) => value;
+}
+
+class CyclicStaticGenericForwarder<TFactory> : ICyclicStaticGenericFactory where TFactory : ICyclicStaticGenericFactory
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static T Echo<T>(T value)
+    {
+        if (value is null)
+            TFactory.Echo(new ValueTuple<T>(value));
+        return value;
+    }
+}
+
+class CyclicStaticGenericLookup<TFactory> where TFactory : ICyclicStaticGenericFactory
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int ValueLookup(int value) => TFactory.Echo(value);
+}
+
 class StaticGenericLookup<TFactory> where TFactory : IStaticGenericFactory
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -152,5 +180,7 @@ public static class StaticLookupRoots
         typeof(StaticDefaultLookup<StaticDefaultFactory>), typeof(StaticGenericFactory),
         typeof(StaticLookup<StaticFactory, StaticFactory>),
         typeof(StaticGenericLookup<StaticGenericFactory>), typeof(CyclicStaticGenericFactory),
+        typeof(CyclicStaticGenericLookup<CyclicStaticGenericLeaf>),
+        typeof(CyclicStaticGenericForwarder<CyclicStaticGenericLeaf>),
     ];
 }

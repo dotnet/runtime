@@ -182,6 +182,8 @@ namespace ILCompiler
                         }
                     }
 
+                    bool hasMethodImpls = typeDefinition.GetMethodImplementations().Count > 0;
+
                     foreach (MethodDefinitionHandle methodHandle in typeDefinition.GetMethods())
                     {
                         // We need to look at methods on generic types, or generic methods.
@@ -201,7 +203,9 @@ namespace ILCompiler
                                 var ecmaMethod = assembly.GetMethod(methodHandle);
                                 WalkMethod(ecmaMethod);
 
-                                if (ecmaMethod.IsVirtual)
+                                // Static methods on classes may also implement static virtual interface methods
+                                // without being marked IsVirtual themselves in metadata, when mapped via a MethodImpl.
+                                if (ecmaMethod.IsVirtual || (hasMethodImpls && ecmaMethod.Signature.IsStatic))
                                     LookForVirtualOverrides(ecmaMethod);
                             }
                             catch (TypeSystemException)
@@ -270,7 +274,11 @@ namespace ILCompiler
                 // of the implementation to the generic parameters of the declaration - any call to the
                 // declaration will be modeled as if the declaration was calling into the implementation.
 
-                var decl = (EcmaMethod)MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method.GetMethodDefinition()).GetTypicalMethodDefinition();
+                // Non-virtual static methods can still implement static virtual interface methods,
+                // so only walk the virtual slot hierarchy when the method itself is virtual.
+                var decl = method.IsVirtual
+                    ? (EcmaMethod)MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method.GetMethodDefinition()).GetTypicalMethodDefinition()
+                    : method;
                 if (decl != method)
                 {
                     RecordBinding(this, decl.Instantiation, method.Instantiation);
@@ -279,7 +287,7 @@ namespace ILCompiler
                 {
                     TypeDesc methodOwningType = method.OwningType;
 
-                    // This is the slot definition. Does it implement an interface?
+                    // This is the slot definition (or a non-virtual static method). Does it implement an interface?
                     // (This has obvious holes. They haven't show up as issues so far.)
                     foreach (DefType interfaceType in methodOwningType.RuntimeInterfaces)
                     {
@@ -298,7 +306,12 @@ namespace ILCompiler
                                 methodOwningType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                             if (impl?.GetMethodDefinition() == method)
                             {
-                                RecordBinding(this, interfaceMethod.Instantiation, method.Instantiation);
+                                // When interfaceType is an instantiated generic interface, interfaceMethod is a
+                                // MethodForInstantiatedType; unwrap to the typical definition to get EcmaGenericParameters.
+                                if (interfaceMethod.GetTypicalMethodDefinition() is EcmaMethod typicalInterfaceMethod)
+                                {
+                                    RecordBinding(this, typicalInterfaceMethod.Instantiation, method.Instantiation);
+                                }
                                 // Continue the loop in case this method implements multiple interfaces
                             }
                         }

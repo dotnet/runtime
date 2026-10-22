@@ -2819,6 +2819,7 @@ public class R2RTestSuites
             Assert.False(R2RAssert.HasCompiledMethod(reader, "StaticFactory", "Unused", out diag), diag);
             Assert.False(R2RAssert.HasCompiledMethod(reader, "UndiscoveredStaticFactory", "Create", out diag), diag);
             Assert.False(R2RAssert.HasCompiledMethod(reader, "CyclicStaticGenericFactory", "Echo", out diag, ["int"]), diag);
+            Assert.False(R2RAssert.HasCompiledMethod(reader, "CyclicStaticGenericForwarder`1<__Canon>", "Echo", out diag, ["int"]), diag);
         }
     }
 
