@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #if defined(_MSC_VER) && defined(_DEBUG)
 #include "ep-tests-debug.h"
 #endif
@@ -9,19 +12,36 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-event-payload.h>
 #include <eventpipe/ep-sample-profiler.h>
-#include <eglib/test/test.h>
+#include "test.h"
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 #define TEST_FILE "./ep_test_create_file.txt"
 #define TEST_FILE_2 "./ep_test_create_file_2.txt"
-
-//#define TEST_PERF
 
 #ifdef _CRTDBG_MAP_ALLOC
 static _CrtMemState eventpipe_memory_start_snapshot;
 static _CrtMemState eventpipe_memory_end_snapshot;
 static _CrtMemState eventpipe_memory_diff_snapshot;
 #endif
+
+static EventPipeWriteEventResult
+write_session_event (
+	EventPipeSessionID session_id,
+	EventPipeEvent *ep_event,
+	EventPipeEventPayload *payload)
+{
+	EventPipeThread *thread = ep_thread_get_or_create ();
+	if (!thread)
+		return EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
+
+	EventPipeSession *session = (EventPipeSession *)(uintptr_t)session_id;
+	// Direct session writes bypass the session-use marker normally published by ep_write_event.
+	ep_thread_set_session_use_in_progress (thread, ep_session_get_index (session) | EP_SESSION_USE_WRITE_BUFFER_IN_USE);
+	EventPipeWriteEventResult result = ep_session_write_event (
+		session, ep_rt_thread_get_handle (), ep_event, payload, NULL, NULL, NULL, NULL);
+	ep_thread_set_session_use_in_progress (thread, UINT32_MAX);
+	return result;
+}
 
 static RESULT
 test_eventpipe_setup (void)
@@ -84,9 +104,9 @@ test_stress_create_delete_provider (void)
 	EventPipeProvider *test_providers [1000] = {0};
 
 	for (uint32_t i = 0; i < 1000; ++i) {
-		char *provider_name = g_strdup_printf (TEST_PROVIDER_NAME "_%i", i);
+		char *provider_name = ep_rt_utf8_string_printf_alloc (TEST_PROVIDER_NAME "_%i", i);
 		test_providers [i] = ep_create_provider (provider_name, NULL, NULL);
-		g_free (provider_name);
+		free (provider_name);
 
 		if (!test_providers [i]) {
 			result = FAILED ("Failed to create provider %s_%i, ep_create_provider returned NULL", TEST_PROVIDER_NAME, i);
@@ -665,6 +685,8 @@ test_create_delete_provider_with_callback (void)
 ep_on_exit:
 	ep_delete_provider (test_provider);
 	ep_disable (session_id);
+	// This isolated session has stopped, so its deferred providers can now be reclaimed.
+	ep_config_delete_deferred_providers (ep_config_get ());
 	ep_provider_config_fini (current_provider_config);
 	return result;
 
@@ -801,7 +823,7 @@ test_session_write_event (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = write_session_event (session_id, ep_event, &payload);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
@@ -854,7 +876,7 @@ test_session_write_event_seq_point (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = write_session_event (session_id, ep_event, &payload);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
@@ -911,7 +933,7 @@ test_session_write_wait_get_next_event (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = write_session_event (session_id, ep_event, &payload);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
@@ -983,7 +1005,7 @@ test_session_write_get_next_event (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = write_session_event (session_id, ep_event, &payload);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
@@ -1053,7 +1075,7 @@ test_session_write_suspend_event (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event ((EventPipeSession *)(uintptr_t)session_id, ep_rt_thread_get_handle (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = write_session_event (session_id, ep_event, &payload);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == EP_WRITE_EVENT_RESULT_WRITTEN);
@@ -1267,7 +1289,8 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-static RESULT
+#if TEST_PERF
+RESULT
 test_write_event_perf (void)
 {
 	RESULT result = NULL;
@@ -1339,6 +1362,7 @@ ep_on_error:
 		result = FAILED ("Failed at test location=%i", test_location);
 	ep_exit_error_handler ();
 }
+#endif
 
 // TODO: Add multithreaded test writing into private/shared sessions.
 
@@ -1351,8 +1375,7 @@ test_eventpipe_mem_checkpoint (void)
 #ifdef _CRTDBG_MAP_ALLOC
 	// Need to emulate a thread exit to make sure TLS gets cleaned up for current thread
 	// or we will get memory leaks reported.
-	extern void ep_rt_mono_thread_exited (void);
-	ep_rt_mono_thread_exited ();
+	ep_rt_test_thread_exited ();
 
 	_CrtMemCheckpoint (&eventpipe_memory_end_snapshot);
 	if ( _CrtMemDifference(&eventpipe_memory_diff_snapshot, &eventpipe_memory_start_snapshot, &eventpipe_memory_end_snapshot) ) {
@@ -1417,9 +1440,6 @@ static Test ep_tests [] = {
 	{"test_write_event", test_write_event},
 	{"test_write_get_next_event", test_write_get_next_event},
 	{"test_write_wait_get_next_event", test_write_wait_get_next_event},
-#ifdef TEST_PERF
-	{"test_write_event_perf", test_write_event_perf},
-#endif
 	{"test_eventpipe_mem_checkpoint", test_eventpipe_mem_checkpoint},
 	{"test_enable_disable_default_provider_config", test_enable_disable_default_provider_config},
 	{"test_enable_disable_multiple_default_provider_config", test_enable_disable_multiple_default_provider_config},

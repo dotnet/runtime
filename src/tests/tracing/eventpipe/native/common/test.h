@@ -55,6 +55,7 @@ typedef struct
 #define DEFINE_TEST_GROUP_INIT(name, table) const Test *name(void) { return table; }
 #define DEFINE_TEST_GROUP_INIT_H(name) const Test *name(void)
 
+#undef FAILED
 RESULT FAILED(const char *format, ...);
 bool run_group(const Group *group, size_t *passed, size_t *total);
 int run_tests_main(const Group *groups, int argc, char **argv);
