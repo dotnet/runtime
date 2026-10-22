@@ -614,6 +614,48 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
+        /// Creates a new <see cref="TypeName" /> object that represents a simple type name.
+        /// </summary>
+        /// <param name="metadataName">The unescaped name of the type as it appears in metadata, including the namespace; e.g., "System.Int32".
+        /// For a nested type, only the name of the nested type; e.g., "NestedType".</param>
+        /// <param name="declaringType">The declaring type of a nested type, or null.</param>
+        /// <param name="assemblyInfo">The assembly name, or null.</param>
+        /// <returns>Created simple name.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="metadataName"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="metadataName"/> is empty, or <paramref name="declaringType"/> is not a simple type name.</exception>
+        public static TypeName CreateSimpleTypeName(string metadataName, TypeName? declaringType = null, AssemblyNameInfo? assemblyInfo = null)
+        {
+            if (metadataName is null)
+            {
+                TypeNameParserHelpers.ThrowArgumentNullException(nameof(metadataName));
+            }
+
+            if (metadataName.Length == 0)
+            {
+                Throw.ArgumentEmptyString(nameof(metadataName));
+            }
+
+            string escapedName = TypeNameParserHelpers.Escape(metadataName);
+            if (declaringType is null)
+            {
+                return new TypeName(escapedName, assemblyInfo);
+            }
+
+            if (!declaringType.IsSimple)
+            {
+                throw new ArgumentException(SR.Format(SR.Arg_NotSimpleTypeName, declaringType.FullName), nameof(declaringType));
+            }
+
+            string declaringFullName = declaringType.FullName;
+            if (declaringType._nestedNameLength != declaringFullName.Length)
+            {
+                declaringType = new TypeName(declaringFullName, declaringType.AssemblyName, declaringType: declaringType._declaringType, nestedNameLength: declaringFullName.Length);
+            }
+
+            return new TypeName(declaringFullName + "+" + escapedName, assemblyInfo, declaringType: declaringType);
+        }
+
+        /// <summary>
         /// Creates a <see cref="TypeName" /> object representing a one-dimensional array
         /// of the current type, with a lower bound of zero.
         /// </summary>
