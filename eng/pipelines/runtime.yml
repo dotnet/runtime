@@ -107,6 +107,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Runtime product packages
+                  condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'))
               - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition: >-
               or(
@@ -136,6 +137,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Runtime product packages
+                  condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'))
               - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition: >-
               or(
@@ -389,7 +391,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Runtime product packages
-                  condition: and(succeeded(), ne(variables['osSubgroup'], '_musl'))
+                  condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'), ne(variables['osSubgroup'], '_musl'))
               - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
@@ -467,6 +469,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Runtime product packages
+                  condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'))
               - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
@@ -522,6 +525,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Runtime product packages
+                  condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'))
               - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/installer/helix-queues-setup.yml
                 parameters:
@@ -573,6 +577,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Checked runtime products
+                  condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'))
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   helixBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -708,6 +713,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Checked runtime products
+                  condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'))
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -759,7 +765,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: CoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Checked runtime products
-                  condition: and(succeeded(), eq(variables['archType'], 'arm64'))
+                  condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'), eq(variables['archType'], 'arm64'))
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -1379,6 +1385,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: RuntimeArtifacts_Mono_$(osGroup)_$(archType)_$(_BuildConfig)
                   displayName: Runtime product packages
+                  condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'))
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1607,6 +1614,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Runtime product packages
+                  condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'))
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -1649,6 +1657,7 @@ extends:
                   tarCompression: $(tarCompression)
                   artifactName: RuntimeArtifacts_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                   displayName: Runtime product packages
+                  condition: and(succeeded(), eq(variables['Build.Reason'], 'Manual'))
             condition: eq(variables['Build.Reason'], 'Manual')
 
       #
