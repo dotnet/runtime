@@ -3692,9 +3692,7 @@ PhaseStatus Compiler::fgWasmProfInstrument()
 
     // Use the Wasm graph: EH resumptions are explicit by this phase, while modeled
     // two-pass EH edges can form cycles that are not executable loops.
-    // Unlike fgHasCycleWithoutGCSafePoint we do NOT skip BBF_GC_SAFE_POINT blocks:
-    // the framework is not instrumented, so a loop calling only BCL methods would
-    // otherwise never sample.
+    // Unlike fgHasCycleWithoutGCSafePoint we do NOT skip BBF_GC_SAFE_POINT blocks.
     FgWasm                  fgWasm(this);
     bool                    hasBlocksOnlyReachableViaEH = false;
     FlowGraphDfsTree* const dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
