@@ -1765,17 +1765,19 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 	 */
 	mono_images_lock ();
 	image = (MonoImage *)g_hash_table_lookup (loaded_images, absfname);
-	g_free (absfname);
 
 	if (image) { // Image already loaded
 		mono_image_addref (image);
 		mono_images_unlock ();
+		g_free (absfname);
 		return image;
 	}
 	mono_images_unlock ();
 
 	// Image not loaded, load it now
-	image = do_mono_image_open (alc, fname, status, options);
+	// Use absfname (the resolved absolute path) instead of fname (which may be relative)
+	image = do_mono_image_open (alc, absfname, status, options);
+	g_free (absfname);
 	if (image == NULL)
 		return NULL;
 
