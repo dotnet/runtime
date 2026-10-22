@@ -1074,7 +1074,7 @@ namespace System.IO.Compression
         internal void ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting()
         {
             if (_originallyInArchive
-                && IsZipCryptoEncrypted
+                && Encryption == ZipEncryptionMethod.ZipCrypto
                 && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0
                 && (Changes & ZipArchive.ChangeState.StoredData) == 0
                 && GetZipCryptoTimeCheckByte(_lastModified) != GetZipCryptoTimeCheckByte(_originalLastModified))
