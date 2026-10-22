@@ -35,9 +35,21 @@
 #if defined(FEATURE_PORTABLE_HELPERS)
 EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame);
 
-static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, intptr_t numElements)
+#ifdef HOST_WASM
+#define ALLOCATION_CALLER_SP callersStackPointer,
+#else
+#define ALLOCATION_CALLER_SP
+#endif
+
+static Object* AllocateObject FCALL_METHOD_ARGS_NO_METHOD_NAME(MethodTable* pEEType, uint32_t uFlags, intptr_t numElements)
 {
-    Object* pObject = (Object*)RhpGcAlloc(pEEType, uFlags, numElements, nullptr);
+    PInvokeTransitionFrame* pTransitionFrame = nullptr;
+#ifdef HOST_WASM
+    PInvokeTransitionFrame frame = {};
+    frame.m_ShadowSP = callersStackPointer;
+    pTransitionFrame = &frame;
+#endif
+    Object* pObject = (Object*)RhpGcAlloc(pEEType, uFlags, numElements, pTransitionFrame);
     if (pObject == nullptr)
     {
         ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
@@ -74,7 +86,7 @@ FCIMPL1(Object *, RhpNewFast, MethodTable* pEEType)
         return pObject;
     }
 
-    return AllocateObject(pEEType, 0, 0);
+    return AllocateObject(ALLOCATION_CALLER_SP pEEType, 0, 0);
 }
 FCIMPLEND
 
@@ -85,7 +97,7 @@ FCIMPLEND
 FCIMPL1(Object *, RhpNewFinalizable, MethodTable* pEEType)
 {
     ASSERT(pEEType->HasFinalizer());
-    return AllocateObject(pEEType, GC_ALLOC_FINALIZE, 0);
+    return AllocateObject(ALLOCATION_CALLER_SP pEEType, GC_ALLOC_FINALIZE, 0);
 }
 FCIMPLEND
 
@@ -105,7 +117,7 @@ FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, intptr_t numElemen
     if (numElements > 0x10000)
     {
         // Overflow here should result in an OOM. Let the slow path take care of it.
-        return (Array*)AllocateObject(pArrayEEType, 0, numElements);
+        return (Array*)AllocateObject(ALLOCATION_CALLER_SP pArrayEEType, 0, numElements);
     }
 #endif // !HOST_64BIT
 
@@ -124,7 +136,7 @@ FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, intptr_t numElemen
         return pObject;
     }
 
-    return (Array*)AllocateObject(pArrayEEType, 0, numElements);
+    return (Array*)AllocateObject(ALLOCATION_CALLER_SP pArrayEEType, 0, numElements);
 }
 FCIMPLEND
 
@@ -154,7 +166,7 @@ GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 
 FCIMPL1(Object *, RhpNewFinalizableAlign8, MethodTable* pEEType)
 {
-    return AllocateObject(pEEType, GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8, 0);
+    return AllocateObject(ALLOCATION_CALLER_SP pEEType, GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8, 0);
 }
 FCIMPLEND
 
@@ -193,7 +205,7 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pEEType)
         return pObject;
     }
 
-    return AllocateObject(pEEType, GC_ALLOC_ALIGN8, 0);
+    return AllocateObject(ALLOCATION_CALLER_SP pEEType, GC_ALLOC_ALIGN8, 0);
 }
 FCIMPLEND
 
@@ -228,7 +240,7 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
         return pObject;
     }
 
-    return AllocateObject(pEEType, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0);
+    return AllocateObject(ALLOCATION_CALLER_SP pEEType, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0);
 }
 FCIMPLEND
 
@@ -247,7 +259,7 @@ FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, intptr_t numEl
     if (numElements > 0x10000)
     {
         // Overflow here should result in an OOM. Let the slow path take care of it.
-        return (Array*)AllocateObject(pArrayEEType, GC_ALLOC_ALIGN8, numElements);
+        return (Array*)AllocateObject(ALLOCATION_CALLER_SP pArrayEEType, GC_ALLOC_ALIGN8, numElements);
     }
 
     uint32_t baseSize = pArrayEEType->GetBaseSize();
@@ -279,7 +291,7 @@ FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, intptr_t numEl
         return pObject;
     }
 
-    return (Array*)AllocateObject(pArrayEEType, GC_ALLOC_ALIGN8, numElements);
+    return (Array*)AllocateObject(ALLOCATION_CALLER_SP pArrayEEType, GC_ALLOC_ALIGN8, numElements);
 }
 FCIMPLEND
 #endif // !HOST_64BIT

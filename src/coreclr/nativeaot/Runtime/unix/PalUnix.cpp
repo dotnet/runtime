@@ -45,6 +45,11 @@
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 
+#ifdef TARGET_WASI
+extern "C" char __stack_low;
+extern "C" char __stack_high;
+#endif
+
 #ifdef TARGET_LINUX
 #include <sys/syscall.h>
 #include <link.h>
@@ -913,7 +918,10 @@ bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHi
     void* pStackHighOut = NULL;
     void* pStackLowOut = NULL;
 
-#ifdef __APPLE__
+#ifdef TARGET_WASI
+    pStackLowOut = &__stack_low;
+    pStackHighOut = &__stack_high;
+#elif defined(__APPLE__)
     // This is a Mac specific method
     pStackHighOut = pthread_get_stackaddr_np(pthread_self());
     pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));
