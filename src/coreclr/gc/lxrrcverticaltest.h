@@ -5,7 +5,6 @@
 #define LXR_RC_VERTICAL_TEST_H
 
 void LxrRcVerticalObserveWrite(Object** destination, Object* oldReference);
-void LxrRcVerticalObserveAllocation(Object* object, size_t size, AllocationCompleteFlags flags);
 void LxrRcVerticalOnThreadDetach(gc_alloc_context* context);
 bool LxrRcVerticalUnlogObservedSlot(Object** destination);
 

@@ -619,6 +619,13 @@ SideMetadataResult ImmixAllocationManager::PrepareFreshBlock(
         markingContext == ImmixMarkingContext::ConcurrentOrFinalMark
             ? 1
             : 0;
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_D2_NO_MARK_CONTROL)
+    // Control: a buffer that is handed out during a trace is not marked in bulk.
+    if (!IsCopySource(source))
+    {
+        objectMark = 0;
+    }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_D2_NO_MARK_CONTROL
     result = InitializeObjectMarkRange(
         block,
         ImmixBlockGeometry::BlockBytes,
@@ -651,7 +658,11 @@ SideMetadataResult ImmixAllocationManager::PrepareRecycledHole(
     {
         return result;
     }
-    if (markingContext == ImmixMarkingContext::ConcurrentOrFinalMark)
+    if (markingContext == ImmixMarkingContext::ConcurrentOrFinalMark
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_D2_NO_MARK_CONTROL)
+        && IsCopySource(source)
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_D2_NO_MARK_CONTROL
+        )
     {
         result = InitializeObjectMarkRange(hole.start, size, 1);
         if (result == SideMetadataResult::Success)
@@ -684,6 +695,30 @@ SideMetadataResult ImmixAllocationManager::InitializeFieldLogRange(
         }
     }
 #endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_VALID_CLEAR_CONTROL
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_D2_NO_BULK_CLEAR_CONTROL)
+    if (!copy)
+    {
+        // P22 (D2). A mutator takes the whole range and bumps a pointer in it, with no call per object. So the refill
+        // is the only place that makes the range a clean nursery range: no start bit, no count, no straddle mark.
+        // A free block and a hole have these cleared already; the explicit clear makes the contract independent of
+        // how the range became free.
+        if (m_metadata->IsSpecEnabled(LxrSideMetadataKind::ReferenceCountStraddle))
+        {
+            SideMetadataResult result = m_metadata->ResetRangeQuiescent(
+                LxrSideMetadataKind::ReferenceCountStraddle, start, size, 0);
+            if (result != SideMetadataResult::Success)
+            {
+                return result;
+            }
+        }
+        SideMetadataResult result = m_metadata->ResetRangeQuiescent(
+            LxrSideMetadataKind::ReferenceCount, start, size, 0);
+        if (result != SideMetadataResult::Success)
+        {
+            return result;
+        }
+    }
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_D2_NO_BULK_CLEAR_CONTROL
     uintptr_t value = copy ? 1 : 0;
     return m_metadata->ResetRangeQuiescent(LxrSideMetadataKind::FieldUnlogged, start, size, value);
 }

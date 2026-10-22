@@ -603,7 +603,7 @@ namespace
 LxrRcMutator::LxrRcMutator()
     : engine(nullptr), state(0), identity(0), owner(0), allocator(),
       increments(nullptr), decrements(nullptr), publishedCursor(0), publishedLimit(0),
-      pendingFastStart(0), pendingFastSize(0)
+      spanStart(0), spans()
 {
 }
 
@@ -1376,50 +1376,61 @@ LxrRcResult LxrReferenceCounting::GetAllocationSpan(
     *limit = 0;
     uintptr_t first = mutator->allocator.GetCursor();
     uintptr_t end = mutator->allocator.GetLimit();
+    size_t cap = m_configuration.allocationBufferBytes;
+    if (cap != 0 && end >= first && end - first > cap)
+    {
+        end = first + cap;
+    }
     if (end >= first && end - first >= MIN_OBJECT_SIZE)
     {
+        if (mutator->spanStart == 0)
+        {
+            mutator->spanStart = first;
+        }
         mutator->publishedCursor = first;
         mutator->publishedLimit = end;
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+        mutator->lastPublishedLimit = end;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
         *cursor = first;
         *limit = end;
     }
     return LxrRcResult::Success;
 }
 
-LxrRcResult LxrReferenceCounting::RecordFastAllocation(
-    LxrRcMutator* mutator, Object* object, size_t size, bool* fast)
+LxrRcResult LxrReferenceCounting::CloseSpan(LxrRcMutator* mutator, uintptr_t end)
 {
-    if (mutator == nullptr || mutator->engine != this || fast == nullptr ||
-        mutator->state.load(std::memory_order_acquire) != 2)
+    uintptr_t start = mutator->spanStart;
+    mutator->spanStart = 0;
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_D2_SPAN_TO_LIMIT_CONTROL)
+    // Control: the span covers the unused tail of the buffer too.
+    if (mutator->lastPublishedLimit > end)
     {
-        return LxrRcResult::InvalidArgument;
+        end = mutator->lastPublishedLimit;
     }
-    *fast = false;
-    mutator->pendingFastStart = 0;
-    mutator->pendingFastSize = 0;
-    uintptr_t start = Start(object);
-    if (mutator->publishedLimit == 0 || start < mutator->publishedCursor)
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_D2_SPAN_TO_LIMIT_CONTROL
+    if (start == 0 || end <= start)
     {
         return LxrRcResult::Success;
     }
-    if (start != mutator->publishedCursor || size > mutator->publishedLimit - start ||
-        size < MIN_OBJECT_SIZE || size % sizeof(uintptr_t) != 0)
+    if (!mutator->spans.Push(start, end))
     {
-        return LxrRcResult::InvariantViolation;
+        return Fail(LxrRcResult::OutOfMemory);
     }
-    mutator->publishedCursor += size;
-    mutator->pendingFastStart = start;
-    mutator->pendingFastSize = size;
-    m_metrics[Allocations].fetch_add(1, std::memory_order_relaxed);
-    m_metrics[AllocatedBytes].fetch_add(size, std::memory_order_relaxed);
-    *fast = true;
+    m_span_metrics[0].fetch_add(1, std::memory_order_relaxed);
+    m_span_metrics[1].fetch_add(end - start, std::memory_order_relaxed);
+    m_metrics[AllocatedBytes].fetch_add(end - start, std::memory_order_relaxed);
     return LxrRcResult::Success;
 }
 
 LxrRcResult LxrReferenceCounting::RetireAllocationSpan(LxrRcMutator* mutator, uintptr_t cursor)
 {
+    // The thread used the buffer up to cursor. Whatever lies between the used point and the end of the buffer is
+    // zero memory that no object occupies. The allocator goes on from the used point, so the span stays open and
+    // covers the objects of the next buffer of the same hole too.
     if (mutator == nullptr || mutator->engine != this ||
-        mutator->publishedLimit == 0 || cursor != mutator->publishedCursor ||
+        mutator->publishedLimit == 0 || cursor < mutator->publishedCursor || cursor > mutator->publishedLimit ||
+        cursor % sizeof(uintptr_t) != 0 ||
         mutator->allocator.SetCursor(cursor) != SideMetadataResult::Success)
     {
         return LxrRcResult::InvariantViolation;
@@ -1452,8 +1463,8 @@ LxrRcResult LxrReferenceCounting::AttachMutator(void* identity, LxrRcMutator** m
         candidate.decrements = nullptr;
         candidate.publishedCursor = 0;
         candidate.publishedLimit = 0;
-        candidate.pendingFastStart = 0;
-        candidate.pendingFastSize = 0;
+        candidate.spanStart = 0;
+        candidate.spans.Clear();
         candidate.state.store(2, std::memory_order_release);
         *mutator = &candidate;
         return LxrRcResult::Success;
@@ -1614,6 +1625,30 @@ LxrRcResult LxrReferenceCounting::DetachMutator(LxrRcMutator* mutator)
         mutator->identity.store(0, std::memory_order_relaxed);
         mutator->state.store(0, std::memory_order_release);
         return LxrRcResult::Success;
+    }
+    // The thread leaves with its spans. They go to the shared list until the next pause, because the slot of the
+    // mutator can be taken by another thread before that.
+    LxrRcResult closed = CloseSpan(mutator, mutator->allocator.GetCursor());
+    if (closed != LxrRcResult::Success)
+    {
+        return closed;
+    }
+    if (mutator->spans.Size() != 0
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_D2_DETACH_DROP_CONTROL)
+        && false
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_D2_DETACH_DROP_CONTROL
+        )
+    {
+        while (m_detached_lock.test_and_set(std::memory_order_acquire))
+        {
+            YieldProcessor();
+        }
+        bool taken = m_detached_spans.Take(mutator->spans);
+        m_detached_lock.clear(std::memory_order_release);
+        if (!taken)
+        {
+            return Fail(LxrRcResult::OutOfMemory);
+        }
     }
     ImmixAllocationStatus status;
     SideMetadataResult result = mutator->allocator.Reset(&status);
@@ -1815,6 +1850,18 @@ LxrRcResult LxrReferenceCounting::Allocate(
         {
             return result == SideMetadataResult::Success ? LxrRcResult::AllocationFailure : FromMetadata(result);
         }
+        // A pinned object is allocated one by one and is found by its bit (interior pointers into it included). The
+        // ranges of the block were prepared when the hole was taken, so the bit is all that is left to set.
+        if (
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_D2_NO_PINNED_VALID_CONTROL)
+            FromMetadata(m_counts.RegisterObjectInClearedSpan(start, completeSize)) != LxrRcResult::Success
+#else
+            false
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_D2_NO_PINNED_VALID_CONTROL
+            )
+        {
+            return GetFailure();
+        }
     }
     else
     {
@@ -1830,6 +1877,11 @@ LxrRcResult LxrReferenceCounting::Allocate(
             m_configuration.immixBytes / ImmixBlockGeometry::BlockBytes;
         while (status != ImmixAllocationStatus::Allocated && attempts-- != 0)
         {
+            // The hole is left behind: the span of its objects ends at the used point.
+            if (CloseSpan(mutator, mutator->allocator.GetCursor()) != LxrRcResult::Success)
+            {
+                return GetFailure();
+            }
             result = mutator->allocator.TryRefill(
                 recycled ? ImmixAllocationSource::MutatorRecycled : ImmixAllocationSource::MutatorFresh,
                 m_marking.load(std::memory_order_acquire)
@@ -1858,86 +1910,37 @@ LxrRcResult LxrReferenceCounting::Allocate(
         }
     }
     *object = Reference(start);
+    if (!pinned && IsImmix(start) && mutator->spanStart == 0)
+    {
+        mutator->spanStart = start;
+    }
     if (IsLarge(start) && m_marking.load(std::memory_order_acquire) &&
         FromMetadata(m_metadata.Store(LxrSideMetadataKind::ObjectMark, start, 1,
             SideMetadataMemoryOrder::SequentiallyConsistent)) != LxrRcResult::Success)
     {
         return GetFailure();
     }
-    m_metrics[Allocations].fetch_add(1, std::memory_order_relaxed);
-    m_metrics[AllocatedBytes].fetch_add(completeSize, std::memory_order_relaxed);
-    return LxrRcResult::Success;
-}
-
-LxrRcResult LxrReferenceCounting::CompleteAllocation(
-    Object* object, size_t completeSize, AllocationCompleteFlags flags, LxrRcMutator* mutator)
-{
-    if (object == nullptr || completeSize < MIN_OBJECT_SIZE ||
-        completeSize % sizeof(uintptr_t) != 0 || GetPhase() != LxrRcPhase::Mutator)
-    {
-        return Fail(LxrRcResult::InvalidArgument);
-    }
-    uint32_t unsupported = static_cast<uint32_t>(AllocationCompleteFlags::FrozenObjectHeap);
-    if (!m_object_model.admitFinalizable)
-    {
-        unsupported |= static_cast<uint32_t>(AllocationCompleteFlags::Finalizable);
-    }
-    if (m_object_model.getLoaderAllocatorSlot == nullptr)
-    {
-        unsupported |= static_cast<uint32_t>(AllocationCompleteFlags::Collectible);
-    }
-    if ((static_cast<uint32_t>(flags) & unsupported) != 0)
-    {
-        return Fail(LxrRcResult::UnsupportedLifetime);
-    }
-    uintptr_t start = Start(object);
-    bool cleared = mutator != nullptr && mutator->engine == this &&
-        mutator->state.load(std::memory_order_acquire) == 2 &&
-        mutator->pendingFastStart == start && mutator->pendingFastSize == completeSize;
-    if (mutator != nullptr && mutator->engine == this)
-    {
-        mutator->pendingFastStart = 0;
-        mutator->pendingFastSize = 0;
-    }
-    size_t index = (start - GetReservationStart()) / sizeof(uintptr_t);
-    LxrRcResult result;
-    if (IsImmix(start))
-    {
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    {
+        // The oracle of the test platform has the size of every object that went through this call.
+        size_t index = (start - GetReservationStart()) / sizeof(uintptr_t);
         if (ExtentSlot(index).load(std::memory_order_acquire) != 0)
         {
             return Fail(LxrRcResult::InvariantViolation);
         }
-#endif // LXR_SIDE_METADATA_TEST_PLATFORM
-        result = FromMetadata(cleared ? m_counts.RegisterObjectInClearedSpan(start, completeSize) :
-            m_counts.InitializeObjectQuiescent(start, completeSize));
+        OracleBirth(start, completeSize);
     }
-    else if (IsLarge(start) && start % LxrLargeObjectSpace::PageBytes == 0 &&
-        m_metadata.IsDataRangeOwned(start, completeSize))
-    {
-        uintptr_t count;
-        result = FromMetadata(m_counts.Load(start, &count));
-    }
-    else
-    {
-        return Fail(LxrRcResult::InvalidArgument);
-    }
-    if (result != LxrRcResult::Success)
-    {
-        return result;
-    }
-#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
-    if (ExtentSlot(index).exchange(completeSize, std::memory_order_release) != 0)
-    {
-        return Fail(LxrRcResult::InvariantViolation);
-    }
-    m_live_objects[index / 64].fetch_or(UINT64_C(1) << (index % 64), std::memory_order_release);
-    m_live_bytes.fetch_add(completeSize, std::memory_order_relaxed);
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
     if (m_probe_start.load(std::memory_order_acquire) == start)
     {
         m_probe_retired.store(false, std::memory_order_release);
         m_probe_births.fetch_add(1, std::memory_order_release);
+    }
+    m_metrics[Allocations].fetch_add(1, std::memory_order_relaxed);
+    if (pinned || IsLarge(start))
+    {
+        // The bytes of a young object are counted when its span closes.
+        m_metrics[AllocatedBytes].fetch_add(completeSize, std::memory_order_relaxed);
     }
     return LxrRcResult::Success;
 }
@@ -2191,11 +2194,19 @@ LxrRcResult LxrReferenceCounting::FlushMutators()
             {
                 continue;
             }
-            mutator.pendingFastStart = 0;
-            mutator.pendingFastSize = 0;
             if (mutator.publishedLimit != 0)
             {
                 return Fail(LxrRcResult::InvariantViolation);
+            }
+            // The buffer is retired, so the cursor of the allocator is the used point: the span of the thread ends there.
+            LxrRcResult closed = CloseSpan(&mutator, mutator.allocator.GetCursor());
+            if (closed != LxrRcResult::Success)
+            {
+                return closed;
+            }
+            if (!m_young_spans.Take(mutator.spans))
+            {
+                return Fail(LxrRcResult::OutOfMemory);
             }
             ImmixAllocationStatus status;
             SideMetadataResult result = mutator.allocator.Reset(&status);
@@ -2211,6 +2222,19 @@ LxrRcResult LxrReferenceCounting::FlushMutators()
     }
     if (!m_observer)
     {
+        while (m_detached_lock.test_and_set(std::memory_order_acquire))
+        {
+            YieldProcessor();
+        }
+        bool merged = m_young_spans.Take(m_detached_spans);
+        m_detached_lock.clear(std::memory_order_release);
+        if (!merged)
+        {
+            return Fail(LxrRcResult::OutOfMemory);
+        }
+        m_young_spans.Sort();
+        m_span_metrics[2].store(m_young_spans.Size(), std::memory_order_relaxed);
+        CheckProbeInSpans();
         // The pinned allocator belongs to no mutator. It gives its block back like a mutator allocator does.
         ImmixAllocationStatus status;
         if (m_pinned_allocator.Reset(&status) != SideMetadataResult::Success ||
@@ -2224,6 +2248,94 @@ LxrRcResult LxrReferenceCounting::FlushMutators()
         m_storage_metrics[8].store(active, std::memory_order_release);
     }
     return LxrRcResult::Success;
+}
+
+void LxrReferenceCounting::MarkPromotedStart(uintptr_t start)
+{
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_D2_NO_PROMOTE_VALID_CONTROL)
+    // Control: a survivor gets no ValidObject bit.
+    (void)start;
+    return;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_D2_NO_PROMOTE_VALID_CONTROL
+    // Only the first count of an object needs the bit. The count is in the same metadata line as the one that the
+    // increment reads next, so the test is cheap.
+    if (m_rc_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0)
+    {
+        m_valid_metadata.Store(start, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
+    }
+}
+
+LxrRcResult LxrReferenceCounting::FindInYoungSpans(uintptr_t address, Object** object, bool requireCounted) const
+{
+    const LxrSpan* span = m_young_spans.Find(address);
+    if (span == nullptr)
+    {
+        return LxrRcResult::InvalidArgument;
+    }
+    // Every object of a span is complete: a thread cannot be suspended inside the bump-pointer helper, and the
+    // pause has cut the buffers at their used point. The walk reads the size of each object from the object. A
+    // source that the pause has copied has lost its first field to the forwarding pointer, so its size is read from
+    // the copy, which has the same size.
+    uintptr_t cursor = span->start;
+    while (cursor < span->end)
+    {
+        Object* candidate = Reference(cursor);
+        size_t size = ObjectSize(ResolveForwarded(candidate));
+        if (size < MIN_OBJECT_SIZE || size > span->end - cursor)
+        {
+            return LxrRcResult::InvalidArgument;
+        }
+        if (address < cursor + size)
+        {
+            if (address < reinterpret_cast<uintptr_t>(candidate) ||
+                (requireCounted && m_rc_metadata.Load(cursor, SideMetadataMemoryOrder::Relaxed) == 0))
+            {
+                return LxrRcResult::InvalidArgument;
+            }
+            *object = candidate;
+            return LxrRcResult::Success;
+        }
+        cursor += size;
+    }
+    return LxrRcResult::InvalidArgument;
+}
+
+void LxrReferenceCounting::CheckProbeInSpans()
+{
+    // The probe is armed on a live object. A span that starts an object at the probed address is a birth only after
+    // the probed object has retired: the object that is there before is the probed one.
+    uintptr_t probe = m_probe_start.load(std::memory_order_acquire);
+    const LxrSpan* span = probe == 0 || !m_probe_retired.load(std::memory_order_acquire)
+        ? nullptr : m_young_spans.Find(probe);
+    if (span == nullptr)
+    {
+        return;
+    }
+    uintptr_t cursor = span->start;
+    while (cursor < span->end && cursor < probe)
+    {
+        size_t size = ObjectSize(Reference(cursor));
+        if (size < MIN_OBJECT_SIZE || size > span->end - cursor)
+        {
+            return;
+        }
+        cursor += size;
+    }
+    if (cursor == probe)
+    {
+        m_probe_retired.store(false, std::memory_order_release);
+        m_probe_births.fetch_add(1, std::memory_order_release);
+    }
+}
+
+bool LxrReferenceCounting::IsOwnedObject(Object* object) const
+{
+    uintptr_t start = Start(object);
+    if (!OwnsAddress(start) || start % sizeof(uintptr_t) != 0)
+    {
+        return false;
+    }
+    return !IsLarge(start) || IsObjectStart(object);
 }
 
 LxrRcResult LxrReferenceCounting::PrepareWork()
@@ -2464,6 +2576,7 @@ void LxrReferenceCounting::Suspend(void* context)
 void LxrReferenceCounting::Resume(bool finishedGc, void* context)
 {
     LxrReferenceCounting* engine = static_cast<LxrReferenceCounting*>(context);
+    engine->m_young_spans.Clear();
     if (engine->m_pause_timers.Enabled())
     {
         int64_t released = engine->m_release_end_stamp.exchange(0, std::memory_order_relaxed);
@@ -2769,10 +2882,9 @@ LxrRcResult LxrReferenceCounting::AddRoot(Object* object, bool interior, bool tr
             return result;
         }
     }
-    uintptr_t valid;
-    SideMetadataResult result = m_metadata.Load(LxrSideMetadataKind::ValidObject,
-        Start(object), SideMetadataMemoryOrder::Relaxed, &valid);
-    if (result != SideMetadataResult::Success || valid != 1)
+    // A root may point to a young object, which has no ValidObject bit. The runtime reports exact roots, so the value
+    // only has to lie in the owned space.
+    if (!IsOwnedObject(object))
     {
         return LxrRcResult::InvalidArgument;
     }
@@ -2810,10 +2922,7 @@ LxrRcResult LxrReferenceCounting::RetainRoot(Object* object)
     {
         return LxrRcResult::Success;
     }
-    uintptr_t valid;
-    SideMetadataResult result = m_metadata.Load(LxrSideMetadataKind::ValidObject,
-        Start(object), SideMetadataMemoryOrder::Relaxed, &valid);
-    if (result != SideMetadataResult::Success || valid != 1)
+    if (!IsOwnedObject(object))
     {
         return LxrRcResult::InvalidArgument;
     }
@@ -2863,10 +2972,10 @@ Object* LxrReferenceCounting::ResolveForwarded(Object* object) const
         return object;
     }
     uintptr_t start = Start(object);
-    // A source keeps its ValidObject bit until RetireForwardedSources, so the bit tells a registered start from
-    // an arbitrary address without a per-object size table.
-    if (!IsImmix(start) || start % sizeof(uintptr_t) != 0 ||
-        m_valid_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0)
+    // P22 (D2). The value is the address of an object that the runtime or the engine holds, so it is the start of
+    // an object even when the object is young and has no ValidObject bit. Only a source that is being copied, or has
+    // been copied, carries a forwarding state. The guard keeps the read of the header inside the Immix space.
+    if (!IsImmix(start) || start % sizeof(uintptr_t) != 0)
     {
         return object;
     }
@@ -3591,6 +3700,7 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
     if (!copyable)
     {
         SideMetadataUpdateStatus updated;
+        MarkPromotedStart(start);
         result = FromMetadata(m_counts.IncrementFast(start, previous, &updated));
         *incrementedInPlace = result == LxrRcResult::Success;
         header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
@@ -3612,6 +3722,7 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
         m_copy_exhausted.store(true, std::memory_order_relaxed);
         m_nursery_metrics[3].fetch_add(1, std::memory_order_relaxed);
         SideMetadataUpdateStatus updated;
+        MarkPromotedStart(start);
         result = FromMetadata(m_counts.IncrementFast(start, previous, &updated));
         *incrementedInPlace = result == LxrRcResult::Success;
         header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
@@ -3710,6 +3821,10 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
     LxrRcResult result = LxrRcResult::Success;
     if (!copied && !incrementedInPlace)
     {
+        if (IsImmix(start))
+        {
+            MarkPromotedStart(start);
+        }
         result = FromMetadata(m_counts.IncrementFast(start, &previous, &status));
     }
     if (result == LxrRcResult::Success && trace && GetTracePhase() != LxrTracePhase::Inactive)
@@ -4836,13 +4951,23 @@ LxrRcResult LxrReferenceCounting::FindContainingObject(uintptr_t address, Object
     uintptr_t lower = IsImmix(address)
         ? address & ~ImmixBlockGeometry::BlockMask : m_large.GetReservationStart();
     uintptr_t upper = lower + ImmixBlockGeometry::BlockBytes;
+    if (m_young_spans.Size() != 0
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_D2_NO_SPAN_LOOKUP_CONTROL)
+        && false
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_D2_NO_SPAN_LOOKUP_CONTROL
+        &&
+        FindInYoungSpans(address, object, requireCounted) == LxrRcResult::Success)
+    {
+        return LxrRcResult::Success;
+    }
     uintptr_t cursor = address & ~(sizeof(uintptr_t) - 1);
     // The nearest ValidObject bit at or below the address is the start of the object that contains it. An object
-    // range is cleared (ValidObject and counts) before an allocation or a copy reuses it, and only the start of the
-    // object is set afterwards, so no stale bit lies between the start of a live object and an address inside it.
-    // The size comes from the object, which is intact: it is live. A stale bit of a dead young object can be the
-    // nearest bit only for an address outside every live object; the checks below turn most such addresses into
-    // an error, but the result is not defined for an address that no live object contains.
+    // range is cleared (ValidObject and counts) before an allocation or a copy reuses it, and only the start of a
+    // promoted object is set afterwards, so no stale bit lies between the start of a live object and an address
+    // inside it. The size comes from the object, which is intact: it is live. A stale bit of a dead object can be
+    // the nearest bit only for an address outside every live object; the checks below turn most such addresses into
+    // an error, but the result is not defined for an address that no live object contains. A young object has no
+    // bit: an address inside it is found above, in the spans of the pause.
     while (cursor >= lower)
     {
         // The address is inside the admitted Immix space and the scan stays in its block.
@@ -5015,7 +5140,7 @@ size_t LxrReferenceCounting::FindNextOracleSlot(size_t first) const
 
 LxrRcResult LxrReferenceCounting::ArmLifetimeProbe(Object* object)
 {
-    if (GetPhase() != LxrRcPhase::Mutator || !IsObjectStart(object))
+    if (GetPhase() != LxrRcPhase::Mutator || !IsOwnedObject(object))
     {
         return LxrRcResult::InvalidArgument;
     }
@@ -6926,7 +7051,7 @@ LxrTraceMetrics LxrReferenceCounting::GetTraceMetrics() const
 LxrRcResult LxrReferenceCounting::ArmScanCheckpoint(Object* object)
 {
     if (GetPhase() != LxrRcPhase::Mutator || GetTracePhase() != LxrTracePhase::Inactive ||
-        !IsObjectStart(object) || m_scan_checkpoint_active.load(std::memory_order_acquire))
+        !IsOwnedObject(object) || m_scan_checkpoint_active.load(std::memory_order_acquire))
     {
         return LxrRcResult::InvalidPhase;
     }
@@ -6982,6 +7107,51 @@ size_t LxrReferenceCounting::GetFreshBlocksReleasedInPauseForTest() const
 bool LxrReferenceCounting::IsDataOwnedForTest(uintptr_t address) const
 {
     return m_metadata.IsDataAddressOwned(address);
+}
+
+LxrRcResult LxrReferenceCounting::PoisonRangeForTest(uintptr_t start, size_t bytes)
+{
+    for (uintptr_t address = start; address < start + bytes; address += sizeof(uintptr_t))
+    {
+        m_valid_metadata.Store(address, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
+        m_rc_metadata.Store(address, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
+        m_unlogged_metadata.Store(address, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
+        m_mark_metadata.Store(address, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
+    }
+    for (uintptr_t line = start; line < start + bytes; line += ImmixBlockGeometry::LineBytes)
+    {
+        LxrRcResult result = FromMetadata(m_metadata.Store(
+            LxrSideMetadataKind::ReferenceCountStraddle, line, 1, SideMetadataMemoryOrder::SequentiallyConsistent));
+        if (result != LxrRcResult::Success)
+        {
+            return result;
+        }
+    }
+    return LxrRcResult::Success;
+}
+
+LxrRcResult LxrReferenceCounting::GetRangeStateForTest(
+    uintptr_t start, size_t bytes, RangeStateForTest* state)
+{
+    *state = {};
+    for (uintptr_t address = start; address < start + bytes; address += sizeof(uintptr_t))
+    {
+        state->validSlots += m_valid_metadata.Load(address, SideMetadataMemoryOrder::Relaxed) != 0;
+        state->countedSlots += m_rc_metadata.Load(address, SideMetadataMemoryOrder::Relaxed) != 0;
+        state->unloggedSlots += m_unlogged_metadata.Load(address, SideMetadataMemoryOrder::Relaxed) != 0;
+        state->markedSlots += m_mark_metadata.Load(address, SideMetadataMemoryOrder::Relaxed) != 0;
+    }
+    for (uintptr_t line = start; line < start + bytes; line += ImmixBlockGeometry::LineBytes)
+    {
+        uintptr_t straddle = 0;
+        if (m_metadata.Load(LxrSideMetadataKind::ReferenceCountStraddle, line,
+                SideMetadataMemoryOrder::Relaxed, &straddle) != SideMetadataResult::Success)
+        {
+            return LxrRcResult::MetadataFailure;
+        }
+        state->straddleLines += straddle != 0;
+    }
+    return LxrRcResult::Success;
 }
 
 LxrRcResult LxrReferenceCounting::ProcessQueuedTraceReferenceForTest(uintptr_t address)

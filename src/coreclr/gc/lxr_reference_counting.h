@@ -11,6 +11,7 @@
 #include "lxr_virtual_array.h"
 #include "lxr_finalizer_registry.h"
 #include "lxr_pin_list.h"
+#include "lxr_young_spans.h"
 
 class Object;
 class LxrReferenceCounting;
@@ -53,6 +54,10 @@ struct LxrRcConfiguration
     size_t hardLimitBytes = 0;
     size_t minimumReuseLines = 1;
     size_t bufferSize = 1024;
+    // P22 (D2). The largest allocation buffer that a mutator gets from a hole of an Immix block, in bytes. Zero means
+    // the whole hole (a block is 32 KiB, so a buffer never crosses a block). A smaller value is rounded down to a
+    // multiple of the line size and must be at least one line.
+    size_t allocationBufferBytes = 0;
     bool lazyDecrements = true;
     bool lineRecycling = true;
     bool copyLineRecycling = true;
@@ -302,10 +307,17 @@ private:
     ImmixBumpAllocator allocator;
     void* increments;
     void* decrements;
+    // The buffer that the stock bump-pointer helpers use: [publishedCursor, publishedLimit) when published.
     uintptr_t publishedCursor;
     uintptr_t publishedLimit;
-    uintptr_t pendingFastStart;
-    size_t pendingFastSize;
+    // Start of the span that is open now: the first object that the engine allocated in the current hole. Zero when no
+    // span is open. The span closes when the buffer is retired, when the hole is replaced, or at a pause.
+    uintptr_t spanStart;
+    // The closed spans of this thread since the last pause. A pause merges them into the list of the engine.
+    LxrSpanList spans;
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    uintptr_t lastPublishedLimit = 0;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
 };
 
 class LxrReferenceCounting final
@@ -335,14 +347,16 @@ public:
     LxrRcMutator* FindMutator(void* identity) const;
     LxrRcMutator* FindCachedMutator(void* cached, void* identity) const;
     LxrRcResult GetAllocationSpan(LxrRcMutator* mutator, uintptr_t* cursor, uintptr_t* limit);
+    // P22 (D2). The mutator's buffer ends at cursor (the used point: the address of the next object header). The span of
+    // the objects that the thread allocated in the hole is recorded as [start, cursor).
     LxrRcResult RetireAllocationSpan(LxrRcMutator* mutator, uintptr_t cursor);
-    LxrRcResult RecordFastAllocation(LxrRcMutator* mutator, Object* object, size_t size, bool* fast);
     // pinned: the object belongs to the pinned object heap. A small one goes into a pinned block (a block that holds
     // such objects only, and that no pause copies from). A large one goes into the large-object space, which never
     // moves objects.
+    // P22 (D2). A small non-pinned object is a young object: the engine records no bit for it. The memory is zero and
+    // its ranges are prepared (see ImmixAllocationManager). Large and pinned objects get their ValidObject bit here,
+    // because they are allocated one by one and are found by it.
     LxrRcResult Allocate(LxrRcMutator* mutator, size_t completeSize, Object** object, bool pinned = false);
-    LxrRcResult CompleteAllocation(
-        Object* object, size_t completeSize, AllocationCompleteFlags flags, LxrRcMutator* mutator = nullptr);
     LxrRcResult LogBeforeWrite(
         LxrRcMutator* mutator, Object** slot, Object* oldTarget);
     LxrRcResult Collect(LxrRcCaptureRoots capture, void* context, uint32_t timeoutMilliseconds);
@@ -391,9 +405,12 @@ public:
     bool IsScanCheckpointActive() const;
     LxrRcResult Drain(uint32_t timeoutMilliseconds);
     LxrRcResult LoadCount(Object* object, uintptr_t* count) const;
-    // requireCounted: the address may lie outside every live object (a remembered slot of a dead holder). The
-    // ValidObject bit of a dead young object stays set, and its memory may be overwritten, so only an object with a
-    // count above zero may be read. Use it after the increments of a pause.
+    // requireCounted: the address may lie outside every live object (a remembered slot of a dead holder). Only an
+    // object with a count above zero may be read. Use it after the increments of a pause.
+    // P22 (D2). A promoted object is found by its ValidObject bit. A young object has no bit. During a pause, the
+    // address is looked up in the spans that the mutators filled since the last pause (the engine walks the objects of
+    // the span from its start, by size). Outside a pause the engine has no span list, so an address inside a young
+    // object is not found.
     LxrRcResult FindContainingObject(uintptr_t address, Object** object, bool requireCounted = false) const;
     LxrRcMetrics GetMetrics() const;
     LxrRcResult GetFailure() const;
@@ -409,13 +426,34 @@ public:
     // Exact per-object accounting. Only the test platform keeps it, as an oracle for the sweep checks.
     size_t GetLiveBytes() const;
     uint64_t GetReclaimedBytes() const;
+    // The test harness plays the stock bump-pointer helper. A product object that a helper bumps has no call into the
+    // engine, so the harness tells the oracle about it with this call.
+    void RecordHelperObjectForTest(Object* object, size_t size) { OracleBirth(Start(object), size); }
+    // P22 (D2) tests. Fills the planes of a block range with values that a clean range must not have, and reads
+    // them back. The refill of a buffer has to clear them all.
+    struct RangeStateForTest
+    {
+        size_t validSlots;
+        size_t countedSlots;
+        size_t unloggedSlots;
+        size_t markedSlots;
+        size_t straddleLines;
+    };
+    LxrRcResult PoisonRangeForTest(uintptr_t start, size_t bytes);
+    LxrRcResult GetRangeStateForTest(uintptr_t start, size_t bytes, RangeStateForTest* state);
+    bool IsMarkingForTest() const { return m_marking.load(std::memory_order_acquire); }
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
     bool OwnsAddress(uintptr_t address) const;
     // Whether the address is the start of an object that the engine registered: the ValidObject bit is set.
-    // The bit stays set for a dead young object until its range is reused or its block is released, so
-    // "start of an object" does not mean "live". Use the reference count (above zero) for liveness after the
-    // increments of a pause.
+    // P22 (D2). The bit is set when an Immix object is promoted (its first increment) or copied, when a large object or
+    // a pinned-object-heap object is allocated, and never for a young object. So this is false for a young object that
+    // has no increment yet. Use IsOwnedObject for a value that may be young. A dead object keeps its bit until
+    // Death or the cycle sweep clears it. Use the reference count (above zero) for liveness after the increments of
+    // a pause.
     bool IsObjectStart(Object* object) const;
+    // Whether the value can be an object of the engine: it lies in the owned space and is aligned. For a large
+    // object the ValidObject bit must also be set. It is true for a young object. It does not read the object.
+    bool IsOwnedObject(Object* object) const;
     // Size of a live object (ValidObject bit set and reference count above zero), or of a large object that is
     // registered in the large-object space (from its allocation record). Zero for anything else.
     size_t GetLiveObjectSize(Object* object) const;
@@ -443,7 +481,7 @@ public:
     size_t GetAdmittedBytes() const;
     size_t GetNativePlaneCommittedBytes() const;
     // Next slot at or after first whose ValidObject bit is set, or the reservation size in slots when there is none.
-    // Stale bits of dead young objects are included.
+    // Stale bits of dead promoted objects are included.
     size_t FindNextValidSlot(size_t first) const;
     LxrRcResult Grow(
         bool large, size_t minimumBytes, LxrRcCaptureRoots capture, void* context, uint32_t timeout);
@@ -473,6 +511,17 @@ public:
     };
     uint64_t GetOvershootMetric(size_t metric) const;
     size_t GetPauseSurvivorBytes() const;
+    // P22 (D2). Span statistics: 0 = spans closed, 1 = bytes in closed spans, 2 = spans of the last pause.
+    uint64_t GetSpanMetric(size_t metric) const { return m_span_metrics[metric].load(std::memory_order_relaxed); }
+    // Number of spans of the pause that runs now (0 outside a pause) and the span at an index. For tests.
+    size_t GetYoungSpanCount() const { return m_young_spans.Size(); }
+    bool GetYoungSpan(size_t index, uintptr_t* start, uintptr_t* end) const
+    {
+        if (index >= m_young_spans.Size()) { return false; }
+        *start = m_young_spans[index].start;
+        *end = m_young_spans[index].end;
+        return true;
+    }
     LxrRcResult GetMaturePages(size_t* pages) const;
     LxrRcResult DrainLazySweep(uint32_t timeout);
     // Block counts and the estimate that the .NET memory APIs report. All of them are read from counters that block
@@ -489,6 +538,7 @@ public:
     LxrRcResult WalkObjects(LxrRcWalkObject visit, void* context) const;
     // Visits every object start whose ValidObject bit is set, stale bits included, without reading the object.
     // The size passed to the callback is zero. Use it for per-object flag walks that run before the increments.
+    // P22 (D2). Young objects have no bit, so they are not visited.
     LxrRcResult WalkObjectStarts(LxrRcWalkObject visit, void* context) const;
     LxrRcResult WalkForwarded(LxrRcWalkForwarded visit, void* context) const;
     bool HasPendingDetaches() const;
@@ -582,6 +632,16 @@ private:
     LxrRcResult PublishReferences(
         LogStream& stream, size_t capacity, const uintptr_t* references, size_t count);
     LxrRcResult FlushMutators();
+    // P22 (D2). Closes the open span of a mutator at end (an object start). An empty span is not recorded.
+    LxrRcResult CloseSpan(LxrRcMutator* mutator, uintptr_t end);
+    // Looks for the object that contains the address in the spans of the pause. Returns InvalidArgument when no span
+    // contains the address.
+    LxrRcResult FindInYoungSpans(uintptr_t address, Object** object, bool requireCounted) const;
+    // Counts a birth of the lifetime probe when an object of a recorded span starts at the probed address.
+    void CheckProbeInSpans();
+    // P22 (D2). The ValidObject bit of an Immix object that is about to get its first count. It must be visible before
+    // the count is, because another worker that sees the count may trace the object.
+    void MarkPromotedStart(uintptr_t start);
     LxrRcResult PrepareWork();
     Work* NewWork(
         WorkKind kind, const uintptr_t* references, size_t count, LxrWorkBucketStage stage,
@@ -782,6 +842,13 @@ private:
     LxrPauseKind m_pause_kind;
     std::atomic<bool> m_cycle_sweep;
     LxrRcMutator* m_mutators;
+    // P22 (D2). The spans that mutators filled since the last pause, merged and sorted at the start of the pause and
+    // dropped when the pause ends. Only a pause reads it.
+    LxrSpanList m_young_spans;
+    // The spans of threads that left since the last pause (see DetachMutator).
+    LxrSpanList m_detached_spans;
+    std::atomic_flag m_detached_lock = ATOMIC_FLAG_INIT;
+    std::atomic<uint64_t> m_span_metrics[4]{};
     ImmixBumpAllocator* m_copy_allocators = nullptr;
     // One list of copied sources per worker, plus one shared slot for the mature copy. A source loses its first
     // field to the forwarding pointer, so the pause keeps its size here until RetireForwardedSources.

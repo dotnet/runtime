@@ -68,7 +68,8 @@ public:
     SideMetadataResult LoadFast(uintptr_t object, uintptr_t* count) const
     {
 #ifdef _DEBUG
-        _ASSERTE(ValidateAddress(object, true) == SideMetadataResult::Success);
+        // The object may be young: a young object has no ValidObject bit (P22).
+        _ASSERTE(ValidateAddress(object, false) == SideMetadataResult::Success);
 #endif // _DEBUG
         *count = m_rc.Load(object, SideMetadataMemoryOrder::Relaxed);
         return SideMetadataResult::Success;

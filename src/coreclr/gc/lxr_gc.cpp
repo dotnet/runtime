@@ -205,7 +205,6 @@ struct LxrGcHeap::WalkContext
 
 LxrGcHeap::LxrGcHeap()
     : m_engine(),
-      m_notification{AllocationNotificationRequestStatus::NotProcessed, AllocationComplete, this},
       m_enumeration{ObjectReferenceEnumerationRequestStatus::NotProcessed,
           ObjectReferenceEnumerationRequest::Enabled, nullptr},
       m_frozen{}, m_frozen_readers(0), m_cards(nullptr), m_bundles(nullptr),
@@ -261,8 +260,7 @@ HRESULT LxrGcHeap::Initialize()
         return E_NOTIMPL;
     }
 #endif // TARGET_WINDOWS
-    if (m_notification.request_status != AllocationNotificationRequestStatus::Accepted ||
-        m_enumeration.request_status != ObjectReferenceEnumerationRequestStatus::Accepted ||
+    if (m_enumeration.request_status != ObjectReferenceEnumerationRequestStatus::Accepted ||
         m_enumeration.get_loader_allocator_object_slot == nullptr ||
         m_header_bits.request_status != ObjectHeaderBitsRequestStatus::Accepted ||
         m_header_bits.object_byte_offset != -static_cast<int32_t>(sizeof(ObjHeader)) ||
@@ -331,6 +329,7 @@ HRESULT LxrGcHeap::Initialize()
         !ReadSetting("LXRNurseryRatio", &nurseryRatio, 10, SIZE_MAX - 1) ||
         !ReadSetting("LXRMinReuseLines", &configuration.minimumReuseLines, 10, ImmixBlockGeometry::LinesPerBlock) ||
         !ReadSetting("LXRBufferSize", &configuration.bufferSize, 10, LxrReferenceCounting::BufferCapacity) ||
+        !ReadSetting("LXRBufferBytes", &configuration.allocationBufferBytes, 10, ImmixBlockGeometry::BlockBytes) ||
         !ReadBooleanSetting("LXRNoLineRecycling", &noRecycling) ||
         !ReadBooleanSetting("LXRNoMutatorLineRecycling", &noMutatorRecycling) ||
         !ReadBooleanSetting("LXROvershootToSpace", &overshoot) ||
@@ -376,6 +375,7 @@ HRESULT LxrGcHeap::Initialize()
         largeReserve < largeInitial ||
         immixReserve > (LxrSideMetadataLayout::AddressLimit >> 20) - largeReserve ||
         configuration.minimumReuseLines == 0 ||
+        configuration.allocationBufferBytes % ImmixBlockGeometry::LineBytes != 0 ||
         (configuration.bufferSize != 256 && configuration.bufferSize != 512 && configuration.bufferSize != 1024) ||
         m_policy_configuration.maxSurvivalMB == 0 || m_policy_configuration.incrementsLimit == 0 ||
         m_policy_configuration.nurseryBlocks == 0 || youngMB == 0 || nativePlaneLimitMB == 0)
@@ -536,6 +536,22 @@ LxrRcMutator* LxrGcHeap::FindOrAttach(gc_alloc_context* context, bool barrier)
 
 Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
 {
+    // The stock helpers bump alloc_ptr inside the buffer that this method gave to the thread, and call it only when the
+    // buffer cannot hold the object, or for an object that needs the slow path (a finalizable object, a sampled
+    // allocation, a large or pinned-object-heap object). A small object that fits is taken in place: the memory is
+    // zero already and the buffer is still prepared and counted.
+    if ((flags & GC_ALLOC_USER_OLD_HEAP) == 0 && context->alloc_ptr != nullptr &&
+        size >= MIN_OBJECT_SIZE && size < LxrLargeObjectSpace::MinimumObjectBytes)
+    {
+        size_t aligned = (size + sizeof(uintptr_t) - 1) & ~(sizeof(uintptr_t) - 1);
+        if (static_cast<size_t>(context->alloc_limit - context->alloc_ptr) >= aligned)
+        {
+            Object* inPlace = reinterpret_cast<Object*>(context->alloc_ptr);
+            context->alloc_ptr += aligned;
+            RegisterFinalizable(inPlace, flags);
+            return inPlace;
+        }
+    }
     RetireAllocationSpan(context, true);
     if (size < MIN_OBJECT_SIZE || size > SIZE_MAX - (sizeof(uintptr_t) - 1))
     {
@@ -646,7 +662,22 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
             m_fast_refills.fetch_add(1, std::memory_order_relaxed);
         }
     }
+    RegisterFinalizable(object, flags);
     return object;
+}
+
+// A finalizable object is registered when it is allocated, as the standard collector does. The registry never reads the
+// object before a pause, and a thread cannot be suspended between the allocation and the point where the runtime has
+// written the MethodTable, so a pause sees a complete object. The critical bit of the finalizer is taken from the
+// MethodTable when the pause captures the entry (see CaptureFinalizers). Objects of a collectible type, large objects
+// and pinned-object-heap objects reach this method for each object too, so they need no further hook: the pause
+// reads the type of an object when it first counts it.
+void LxrGcHeap::RegisterFinalizable(Object* object, uint32_t flags)
+{
+    if ((flags & GC_ALLOC_FINALIZE) != 0 && !m_registry.Register(object, false))
+    {
+        Fatal("LXR could not register an object for finalization.");
+    }
 }
 
 bool LxrGcHeap::CanAdmitRange(size_t, size_t, size_t nativeBytes, void* context)
@@ -693,7 +724,7 @@ void LxrGcHeap::RetireAllocationSpan(gc_alloc_context* context, bool subtractUnu
         m_engine.RetireAllocationSpan(mutator,
             reinterpret_cast<uintptr_t>(context->alloc_ptr) - sizeof(ObjHeader)) != LxrRcResult::Success)
     {
-        Fatal("LXR allocation span contains an unpublished or foreign birth.");
+        Fatal("LXR allocation span contains a foreign or inconsistent used point.");
     }
     size_t unused = static_cast<size_t>(context->alloc_limit - context->alloc_ptr);
     m_unused_span_bytes.fetch_add(unused, std::memory_order_relaxed);
@@ -709,40 +740,6 @@ void LxrGcHeap::RetireAllocationSpan(gc_alloc_context* context, bool subtractUnu
 void LxrGcHeap::RetireAllocationContext(gc_alloc_context* context, void* heap)
 {
     static_cast<LxrGcHeap*>(heap)->RetireAllocationSpan(context, true);
-}
-
-void LOCALGC_CALLCONV LxrGcHeap::AllocationComplete(
-    Object* object, size_t size, AllocationCompleteFlags flags, void* context)
-{
-    LxrGcHeap* heap = static_cast<LxrGcHeap*>(context);
-    if ((static_cast<uint32_t>(flags) & static_cast<uint32_t>(AllocationCompleteFlags::FrozenObjectHeap)) != 0)
-    {
-        return;
-    }
-    bool fast;
-    gc_alloc_context* allocation = GCToEEInterface::GetAllocContext();
-    LxrRcMutator* mutator = heap->m_engine.FindCachedMutator(allocation->gc_reserved_1, allocation);
-    if (heap->m_engine.RecordFastAllocation(mutator, object, size, &fast) != LxrRcResult::Success)
-    {
-        heap->Fatal("LXR notifying helper did not publish an exact owned allocation.");
-    }
-    if (heap->m_engine.CompleteAllocation(object, size, flags, mutator) != LxrRcResult::Success)
-    {
-        heap->Fatal("LXR allocation-complete metadata publication failed.");
-    }
-    if ((static_cast<uint32_t>(flags) & static_cast<uint32_t>(AllocationCompleteFlags::Finalizable)) != 0)
-    {
-        // Alloc does not register: the runtime reports every allocation here with its final type, so an object is
-        // registered exactly once, and the critical bit of its finalizer is known.
-        if (!heap->m_registry.Register(object, object->GetGCSafeMethodTable()->HasCriticalFinalizer()))
-        {
-            heap->Fatal("LXR could not register an object for finalization.");
-        }
-    }
-    if (fast)
-    {
-        heap->m_fast_allocations.fetch_add(1, std::memory_order_relaxed);
-    }
 }
 
 // Logs the old value of a field that has not been logged in this epoch. The old value is read BEFORE the claim in
@@ -1738,7 +1735,7 @@ Object* LxrGcHeap::GetNextFinalizable()
 
 bool LxrGcHeap::RegisterForFinalization(int, Object* object)
 {
-    if (!m_engine.IsObjectStart(object))
+    if (!m_engine.IsOwnedObject(object))
     {
         Unsupported("LXR cannot register finalization for a nonowned or incomplete object.");
         return false;
@@ -1749,7 +1746,7 @@ bool LxrGcHeap::RegisterForFinalization(int, Object* object)
 
 void LxrGcHeap::SetFinalizationRun(Object* object)
 {
-    if (!m_engine.IsObjectStart(object))
+    if (!m_engine.IsOwnedObject(object))
     {
         Fatal("LXR finalization suppression received a nonowned object.");
     }
@@ -2063,7 +2060,7 @@ void LxrGcHeap::PublishObject(uint8_t* object)
 void LxrGcHeap::ValidateObjectMember(Object* object)
 {
     object = m_engine.ResolveForwarded(object);
-    if (!m_engine.IsObjectStart(object) && !IsInFrozenSegment(object))
+    if (!m_engine.IsOwnedObject(object) && !IsInFrozenSegment(object))
     {
         Fatal("LXR object verification received a reclaimed or nonowned object.");
     }
@@ -2072,7 +2069,7 @@ void LxrGcHeap::ValidateObjectMember(Object* object)
         for (size_t index = 0; index < count; index++)
         {
             Object* child = first[index];
-            if (child != nullptr && !m_engine.IsObjectStart(child) && !IsInFrozenSegment(child))
+            if (child != nullptr && !m_engine.IsOwnedObject(child) && !IsInFrozenSegment(child))
             {
                 Fatal("LXR object verification found an invalid managed child.");
             }
@@ -2332,7 +2329,6 @@ void LxrGcHeap::GetAssignRefFunctions(void** assignRef, size_t* assignRefSize, v
     *patchableValues = reinterpret_cast<GCWriteBarrierPatchableValue*>(block.patchable);
 }
 
-AllocationNotificationParameters* LxrGcHeap::GetAllocationNotificationParameters() { return &m_notification; }
 ObjectReferenceEnumerationParameters* LxrGcHeap::GetObjectReferenceEnumerationParameters() { return &m_enumeration; }
 ObjectHeaderBitsParameters* LxrGcHeap::GetObjectHeaderBitsParameters() { return &m_header_bits; }
 
@@ -2356,7 +2352,7 @@ LxrRcResult LxrGcHeap::ArmPrototypeScan(OBJECTHANDLE handle)
 bool LxrGcHeap::IsOwnedHandle(OBJECTHANDLE handle) const
 {
     Object** slot = reinterpret_cast<Object**>(reinterpret_cast<uintptr_t>(handle) & ~static_cast<uintptr_t>(1));
-    return slot != nullptr && m_engine.IsObjectStart(*slot);
+    return slot != nullptr && m_engine.IsOwnedObject(*slot);
 }
 
 uintptr_t LxrGcHeap::GetOwnedStart() const { return m_engine.GetReservationStart(); }
@@ -2384,7 +2380,7 @@ segment_handle LxrGcHeap::RegisterPrototypeFrozenArray(
         templateObject->GetGCSafeMethodTable()->RawGetComponentSize() == sizeof(Object*) &&
         templateObject->GetGCSafeMethodTable()->ContainsGCPointers() &&
         reinterpret_cast<ArrayBase*>(templateObject)->GetNumComponents() == 1 &&
-        m_engine.IsObjectStart(referent))
+        m_engine.IsOwnedObject(referent))
     {
         size_t size = templateObject->GetSize();
         if (size <= capacity && sizeof(ObjHeader) <= capacity - size)
@@ -2504,7 +2500,7 @@ uint64_t LxrGcHeap::GetPrototypeMetric(uint32_t metric) const
         case 29: return trace.concurrentSlices;
         case 30: return m_engine.IsScanCheckpointActive();
         case 31: return trace.checkpointInterruptions;
-        case 32: return m_fast_allocations.load();
+        case 32: return m_engine.GetSpanMetric(0);
         case 33: return m_fast_refills.load();
         case 34: return m_unused_span_bytes.load();
         case 35: return m_engine.GetReservationBytes();

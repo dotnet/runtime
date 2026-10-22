@@ -144,18 +144,6 @@ void LxrRcVerticalObserveWrite(Object** destination, Object* oldReference)
     }
 }
 
-void LxrRcVerticalObserveAllocation(Object* object, size_t size, AllocationCompleteFlags)
-{
-    if (Observer.load(std::memory_order_acquire) != nullptr)
-    {
-        Births.fetch_add(1, std::memory_order_relaxed);
-        if (object == nullptr || size < MIN_OBJECT_SIZE || size % sizeof(void*) != 0)
-        {
-            BirthErrors.fetch_add(1, std::memory_order_relaxed);
-        }
-    }
-}
-
 void LxrRcVerticalOnThreadDetach(gc_alloc_context* context)
 {
     LxrReferenceCounting* observer = Observer.load(std::memory_order_acquire);

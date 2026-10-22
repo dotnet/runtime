@@ -230,6 +230,14 @@ public:
     template <typename Suppressed, typename Retain>
     bool CaptureNew(Suppressed&& suppressed, Retain&& retain)
     {
+        return CaptureNew(suppressed, retain, [](Object*) { return false; });
+    }
+
+    // critical(object): whether the finalizer of the object is critical. Allocation registers an object before the
+    // runtime has written its MethodTable, so the bit is read here, when every thread is stopped.
+    template <typename Suppressed, typename Retain, typename Critical>
+    bool CaptureNew(Suppressed&& suppressed, Retain&& retain, Critical&& critical)
+    {
         m_batch_start = m_entries.Size();
         bool success = true;
         m_batch.Truncate(0);
@@ -278,6 +286,10 @@ public:
             {
                 m_dropped.fetch_add(1, std::memory_order_relaxed);
                 continue;
+            }
+            if (critical(object))
+            {
+                entry |= CriticalBit;
             }
             if (!m_entries.Push(entry))
             {

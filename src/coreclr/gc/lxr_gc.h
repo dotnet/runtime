@@ -126,7 +126,6 @@ public:
     // Called by the assembly write barrier (through LxrBarrierSlowPath) when the unlog bit of a field is set.
     static void BarrierSlowPath(Object** slot);
 
-    AllocationNotificationParameters* GetAllocationNotificationParameters() override;
     ObjectReferenceEnumerationParameters* GetObjectReferenceEnumerationParameters() override;
     ObjectHeaderBitsParameters* GetObjectHeaderBitsParameters() override;
 
@@ -187,7 +186,6 @@ private:
     static bool IsFinalizationSuppressed(Object* object);
     static bool WalkHeapObject(Object* object, size_t size, void* context);
     static bool IsImmortal(Object* object, void* context);
-    static void LOCALGC_CALLCONV AllocationComplete(Object* object, size_t size, AllocationCompleteFlags flags, void* context);
 
     // The hooks that LXR hands to the runtime in FastGCFunctions (PR #3316 interface plus the 6.1 extension), and the
     // function that the assembly write barrier calls. All of them log the OLD value of a field before it is
@@ -221,6 +219,7 @@ private:
     void ValidateWalk(const char* operation) const;
     void PublishMemoryInfo();
     void RetireAllocationSpan(gc_alloc_context* context, bool subtractUnused);
+    void RegisterFinalizable(Object* object, uint32_t flags);
     LxrRcResult TryGrow(bool large, size_t size);
     LxrRcResult CollectForPressure(bool emergency, bool user, bool heapFull = false);
     LxrRcResult UpdatePolicyHints();
@@ -242,7 +241,6 @@ private:
     size_t m_native_plane_limit = 0;
     size_t m_hard_limit = 0;
     std::atomic<LxrCollectionCause> m_collection_cause{LxrCollectionCause::None};
-    AllocationNotificationParameters m_notification;
     ObjectReferenceEnumerationParameters m_enumeration;
     ObjectHeaderBitsParameters m_header_bits{};
     FrozenSegment m_frozen[MaximumFrozenSegments];
@@ -295,7 +293,6 @@ private:
     std::atomic<uint32_t> m_last_memory_load;
     size_t m_reserved_limit;
     std::atomic<uint64_t> m_barrier_bootstraps;
-    std::atomic<uint64_t> m_fast_allocations{0};
     std::atomic<uint64_t> m_fast_refills{0};
     std::atomic<uint64_t> m_unused_span_bytes{0};
     std::atomic<uint64_t> m_context_allocated_bytes{0};

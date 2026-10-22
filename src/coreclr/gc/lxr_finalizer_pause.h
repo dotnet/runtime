@@ -43,7 +43,7 @@ inline LxrRcResult LxrFinalizerCapture(
         {
             counters->retained.fetch_add(1, std::memory_order_relaxed);
         }
-    });
+    }, [](Object* object) { return object->GetGCSafeMethodTable()->HasCriticalFinalizer(); });
     size_t released = registry.DrainReleased([&](Object* object)
     {
         LxrRcResult result = engine.ReleaseRoot(object);
