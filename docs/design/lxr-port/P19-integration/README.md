@@ -5,6 +5,28 @@
 **Branch:** `kkokosa-lxr-integrated` (local). It is one linear series on top of `dotnet/runtime` main.
 **Source of the work:** the stack that ends at P17 S6 (`kkokosa-lxr-s6-finalizer-registry`, `69e02a55607`).
 
+## Update D1 (step P18-D1, branch `kkokosa-lxr-d1-specialized-barrier`)
+
+This update is on top of `kkokosa-lxr-root-capture-fix` (`a1ddb3fd4a1`). The details are in `P21-specialized-barrier/README.md`.
+Where the text below says "Standard-ABI", "slot log" or "R2R must be off", **D1 replaced it**:
+
+- **Code.** The write barrier of LXR is now assembly (`gc/amd64/lxr_writebarrier.S` and `.asm`). The runtime installs it
+  through the mechanism of PR #3316 (`GetAssignRefFunctions`, `WRITE_BARRIER_CUSTOM`, patchable slots). It follows the
+  Specialized ABI. The PR mechanism is the **only** way to customize the write barrier.
+- **Code.** Removed: the two slot-log `WriteBarrierManager` types and their five patched fields, the JIT flag
+  `USE_STANDARD_WRITE_BARRIER_ABI` and every Standard-ABI path, `ErectWriteBarrierRangePre` and the separate pre-store
+  calls, software write watch for LXR, and the test-only build option. The JIT-EE GUID is new.
+- **Code.** One pre-store hook: the PR `check_escape(dst, ref)`. LXR may read `*dst` in it, because it runs before the
+  store. The PR `bulk_move_with_write_barrier` handles plain reference ranges. The old-value extras that the PR hooks
+  cannot express stay as an "LXR extension" (P21, section 8).
+- **Code.** The heap type is `GC_HEAP_CUSTOM` now (open item 2 of section 12 is closed). `GCSettings.IsServerGC` is true.
+- **Measured.** ReadyToRun is **on**. A framework image must be compiled with the new crossgen2 option
+  `--old-value-write-barriers`. The runtime rejects an unmarked image for LXR (fail closed). See P21, section 9.
+- **Measured.** The stock helpers hash equal to main plus the PR: `46cee8bd87fd6252f5265267148d0a34` (re-recorded).
+- Still not in the branch: bump-pointer allocation (D2), ARM64 (P21, section 10).
+- Build with `/p:CrossgenOldValueWriteBarriers=true` in addition to the commands of section 7. Do not set
+  `DOTNET_ReadyToRun=0` for LXR any more (`demo.sh` takes `LXR_READYTORUN`, default 1).
+
 ## 0. How to read this report
 
 ### 0.1 Labels
@@ -25,9 +47,9 @@ Every claim has one label.
 | LXR | The collector that this port adds. It uses reference counting and a concurrent trace on an Immix heap. |
 | Satori | The second custom collector of PR dotnet/runtimelab#3316. We keep it only as a comparison build. |
 | Frame | A flat folder with the runtime, the libraries, `corerun` and the collector library. We start programs from a frame. |
-| Standard-ABI barrier | Our write barrier. The JIT treats the call to it like an ordinary C call. |
+| Standard-ABI barrier | Our former write barrier. The JIT treated the call to it like an ordinary C call. **Removed in D1.** |
 | Notifying helpers | Our allocation helpers. They call the collector once for every new object. |
-| Specialized-ABI barrier | The barrier model of the PR. It is not in this branch (see section 11). |
+| Specialized-ABI barrier | The barrier model of the PR. **In the branch since D1** (see P21). |
 
 ## 1. What the branch contains
 
@@ -39,7 +61,7 @@ Every claim has one label.
 
 The README of the shared branch must be honest about three things. They are not in this branch:
 
-- The barrier is still our **Standard-ABI** barrier. It is not the Specialized-ABI barrier of the PR.
+- ~~The barrier is still our Standard-ABI barrier.~~ **Superseded by D1:** the barrier is the Specialized-ABI barrier of the PR mechanism.
 - Allocation still uses our **notifying helpers**. It does not use the stock bump-pointer helpers.
 - **S7** (the pin list) is **not in the original integrated branch** (`kkokosa-lxr-integrated`, `06d7cda94cb`). It is on the branch `kkokosa-lxr-s7-pin-list`, which adds the S7 commits on top of it (see "S7 addition" at the end of section 11).
 
@@ -229,7 +251,7 @@ cd W:\
 | (nothing) | The default collector. |
 | `DOTNET_GCPath=<frame>/libclrlxrgc.so` (Windows: `clrlxrgc.dll`) | Load LXR. |
 | `DOTNET_GCName=libsatorigc.so` | Load Satori (comparison build only). |
-| `DOTNET_ReadyToRun=0`, `DOTNET_TieredCompilation=0` | **Required for LXR.** Precompiled code has the stock barrier. |
+| `DOTNET_TieredCompilation=0` | Used in all our runs. (**D1:** `DOTNET_ReadyToRun=0` is no longer required. The framework is compiled with `--old-value-write-barriers`.) |
 | `DOTNET_gcServer=0`, `DOTNET_gcConcurrent=1`, `DOTNET_GCHeapCount=2` | The settings of all our runs. |
 | `DOTNET_LXRLegacyCapacity=1`, `DOTNET_LXRManagedHeapHardLimitMB=<heap>`, `DOTNET_LXRImmixInitialMB`, `DOTNET_LXRLOSInitialMB` | Fixed heap size. |
 | `DOTNET_LXREvacuateNursery=0\|1`, `DOTNET_LXREvacuateMature=0\|1` | Mode: `0,0` non-moving, `1,0` nursery copy, `1,1` mature copy. |
@@ -375,10 +397,10 @@ From P17, and I did not re-run them here:
 
 | Item | State | Cost or effect |
 |---|---|---|
-| **Specialized-ABI barrier** (`GetAssignRefFunctions`, assembly barrier with patchable slots) | Not done. The branch keeps our Standard-ABI barrier. The PR mechanism is present and works for Satori. | The JIT contract flag stays. Every store site is larger. ReadyToRun must be off. NativeAOT is not supported for LXR. |
+| **Specialized-ABI barrier** (`GetAssignRefFunctions`, assembly barrier with patchable slots) | **Done in D1** (P21). | NativeAOT is still not supported for LXR. |
 | **Bump-pointer allocation** (stock helpers, GC learns about objects at buffer refill) | Not done. The branch keeps the notifying helpers. | **Measured, from P1.4, not re-run:** the notifying helpers cost 14 percent (Workstation) and 24 percent (Server) of throughput in the churn scenario. |
 | **S7** (the pin list) | Not in `kkokosa-lxr-integrated`. Done on the branch `kkokosa-lxr-s7-pin-list` (see below). | |
-| **R2R** | Off for LXR (`DOTNET_ReadyToRun=0`). | Startup is slower, and precompiled framework code is not used. |
+| **R2R** | **On in D1** for a framework compiled with `--old-value-write-barriers` (P21, section 9). | An unmarked image is rejected for LXR (it runs through the JIT). |
 | ARM64 | No LXR barrier. The PR ARM64 files for Satori are in the tree and not built here. | |
 
 ### S7 addition
@@ -397,11 +419,11 @@ The branch `kkokosa-lxr-root-capture-fix` holds the S7 branch plus the commits o
 ## 12. Open items
 
 1. **Epoch reset in `RestartEE`.** The callback stays in `GCToEEInterface::RestartEE`. It is not moved into the collector. (Step 5 of the plan: left as it is.)
-2. **Heap type.** LXR reports `GC_HEAP_WKS`. The PR guards use `g_heap_type != GC_HEAP_CUSTOM`. So LXR takes the stock paths where the PR has a custom-collector branch. This works in all tests. No audit was done.
+2. **Heap type.** (Closed in D1: LXR reports `GC_HEAP_CUSTOM`.) Before D1, LXR reported `GC_HEAP_WKS`. The PR guards use `g_heap_type != GC_HEAP_CUSTOM`. So LXR takes the stock paths where the PR has a custom-collector branch. This works in all tests. No audit was done.
 3. **Reflection invocation.** Main moved it to managed code. Our logging for the return-buffer copy is not ported. **Inferred:** a value type with references that is returned through reflection may copy references without an old-value log. No test covers it.
 4. **Final JIT-EE GUID**, and a decision about the flag bits 34 and 35 if upstream takes them first.
 5. **The 5.8 compatibility tests** of P1.1.
-6. **Hook unification.** Our pre-store calls and the PR `check_escape` stay as two calls. Plan step 5 is not done.
+6. **Hook unification.** (Done in D1: one hook, the PR `check_escape`, plus the LXR extension of P21 section 8.)
 7. **A bisect build** of every commit.
 
 ## 13. How to share the branch
@@ -438,4 +460,4 @@ To publish it later: `git push <remote> kkokosa-lxr-root-capture-fix`. I advise 
 
 ## 15. Scripts
 
-All in `docs/design/lxr-port/P19-integration/scripts/`: `helperhash.py` (section 5), `jit-compare.sh`, `gc-library-tests.sh`, `mkframe.sh`, `mkdbgcollector.sh`, `demo.sh`, `managed-debug-collector.sh`, `bench-wall.sh`, `bench-trace.sh`, `summarize.py`, `pause-pool.py`. The raw results are in `results/` (`wall.jsonl`, `pause-table.txt`, `helper-hashes.txt`).
+All in `docs/design/lxr-port/P19-integration/scripts/` (the scripts of D1 are in `P21-specialized-barrier/scripts/`): `helperhash.py` (section 5), `jit-compare.sh`, `gc-library-tests.sh`, `mkframe.sh`, `mkdbgcollector.sh`, `demo.sh`, `managed-debug-collector.sh`, `bench-wall.sh`, `bench-trace.sh`, `summarize.py`, `pause-pool.py`. The raw results are in `results/` (`wall.jsonl`, `pause-table.txt`, `helper-hashes.txt`).

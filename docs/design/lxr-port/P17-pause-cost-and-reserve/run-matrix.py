@@ -30,7 +30,7 @@ def command(frame, mode, workload, size, ops, heap_mib, program, extra_env, no_l
     los = max(8, heap_mib // 8)
     nursery, mature = MODES[mode]
     env = {"PATH": "/usr/bin:/bin"}
-    env.update(DOTNET_TieredCompilation="0", DOTNET_ReadyToRun="0", DOTNET_gcConcurrent="1",
+    env.update(DOTNET_TieredCompilation="0", DOTNET_ReadyToRun=os.environ.get("LXR_READYTORUN", "0"), DOTNET_gcConcurrent="1",
                DOTNET_GCHeapCount="2", DOTNET_gcServer="0",
                DOTNET_GCPath=f"{frame}/libclrlxrgc.so", DOTNET_LXRLegacyCapacity="1",
                DOTNET_LXREvacuateNursery=nursery, DOTNET_LXREvacuateMature=mature,
