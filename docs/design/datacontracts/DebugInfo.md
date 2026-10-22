@@ -246,10 +246,10 @@ ReadyToRun format version change so static readers such as R2RDump do not misdec
 
 ### WebAssembly Stack Base Encoding
 
-WASM `VLT_STK` and `VLT_STK2` records currently encode base register `2`.
-`REG_FPBASE`, `REG_SPBASE`, and `REGNUM_AMBIENT_SP` all have that value on this target, so the
-debug record identifies a logical frame-relative stack home; it does not identify a particular
-WebAssembly engine local.
+On WebAssembly, base register `2` in `VLT_STK` and `VLT_STK2` records is a sentinel meaning
+"logical frame base." It is not a WebAssembly local; the stack offset is relative to the method's
+logical frame. `REG_FPBASE`, `REG_SPBASE`, and `REGNUM_AMBIENT_SP` all have the value `2` on this
+target, which is why the JIT emits it.
 
 The absolute logical frame address is reconstructed by the runtime stack-walk and unwind
 protocol from shadow-stack linear memory. The engine's current per-function SP/FP local allocation
