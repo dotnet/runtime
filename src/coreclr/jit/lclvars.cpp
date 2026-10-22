@@ -1281,7 +1281,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 
 #if defined(TARGET_WASM)
-    if (varNum == lvaWasmSpArg)
+    if ((varNum == lvaWasmSpArg) || (varNum == lvaWasmPortableEntryPointArg))
     {
         return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
     }
@@ -1316,6 +1316,11 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
 
 #if defined(TARGET_WASM)
     if (lvaWasmSpArg != BAD_VAR_NUM && originalVarNum > lvaWasmSpArg && lvaGetDesc(lvaWasmSpArg)->lvIsParam)
+    {
+        varNum--;
+    }
+
+    if ((lvaWasmPortableEntryPointArg != BAD_VAR_NUM) && (originalVarNum > lvaWasmPortableEntryPointArg))
     {
         varNum--;
     }
