@@ -11,8 +11,9 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
-  <!-- PublishReadyToRun remains an explicit publish opt-in. Select the default Debug build's prebuilt
-       framework images separately below, so even a direct MSBuild Publish target does not crossgen the app. -->
+  <!-- ReadyToRun publishing defaults OFF for now. Flipping the publish default to true belongs to the
+       codegen-quality / crossgen2-resolution work stream (dotnet/runtime#132466), not here.
+       Consumers opt in to publishing with -p:PublishReadyToRun=true. -->
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
     <!-- Override only the incompatible SDK default: net11+ defaults ContainerFormat=pe (unloadable on wasm).
          An explicit unsupported value is left as-is and rejected by _WasmCoreClrValidateReadyToRun. -->
