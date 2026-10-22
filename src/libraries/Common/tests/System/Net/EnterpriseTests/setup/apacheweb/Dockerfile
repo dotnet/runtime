@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04
+FROM mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-amd64
 
 ARG DEBIAN_FRONTEND=noninteractive
 
