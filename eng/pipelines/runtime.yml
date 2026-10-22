@@ -126,7 +126,7 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             preBuildSteps:
-            - script: sudo tdnf install -y cmake ninja-build
+            - script: sudo tdnf install -y cmake ninja-build perl-core
               displayName: Install CMake and Ninja
             - script: eng/pipelines/ohos/setup-ohos-assets.sh
               displayName: Prepare the OpenHarmony SDK and assets
