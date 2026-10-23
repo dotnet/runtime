@@ -9026,9 +9026,9 @@ int main(int argc, char** argv)
     }
     if (argc == 2 && strcmp(argv[1], "--f10-rc") == 0)
     {
-        for (uint8_t bits : {2, 4, 8})
+        for (int bits : {2, 4, 8})
         {
-            ValidateF10Overflow(bits);
+            ValidateF10Overflow(static_cast<uint8_t>(bits));
         }
         std::printf("%s: %d/%d F10 count width checks\n",
             Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
