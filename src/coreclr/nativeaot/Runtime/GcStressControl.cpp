@@ -106,7 +106,7 @@ private:
         if (!found)
         {
             CallsiteCountEntry e = {CallsiteIP, 1, 1, ht};
-            s_callsites.AddOrReplace(e);
+            s_callsites.Add(e);
         }
 
         return !found;
