@@ -2931,16 +2931,18 @@ void MarkInlinedCallFrameAsEHHelperCall(Frame* pFrame)
     pInlinedCallFrame->m_Datum = (PTR_PInvokeMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper);
 }
 
-static TADDR GetSpForDiagnosticReporting(REGDISPLAY *pRD)
+static TADDR GetSpForDiagnosticReporting(CrawlFrame *pCF)
 {
+    WRAPPER_NO_CONTRACT;
+
 #ifdef ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
-    TADDR sp = CallerStackFrame::FromRegDisplay(pRD).SP;
+    TADDR sp = pCF->GetCallerSp();
 #if defined(TARGET_X86)
     sp -= sizeof(TADDR); // For X86 we want the address 1 pointer into the callee.
 #endif // defined(TARGET_X86)
     return sp;
 #else
-    return GetSP(pRD->pCurrentContext);
+    return GetSP(pCF->GetRegisterSet()->pCurrentContext);
 #endif
 }
 
@@ -2973,7 +2975,7 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
 
     // Notify the debugger that we are on the first pass for a managed exception.
     // Note that this callback is made for every managed frame.
-    TADDR spForDebugger = GetSpForDiagnosticReporting(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
+    TADDR spForDebugger = GetSpForDiagnosticReporting(&pExInfo->m_frameIter.m_crawl);
     EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread, ip, spForDebugger);
 
     if (!pExInfo->DeliveredFirstChanceNotification())
@@ -3123,7 +3125,7 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
 
         MethodDesc *pMD = exInfo->m_frameIter.m_crawl.GetFunction();
         // Profiler, debugger and ETW events
-        TADDR spForDebugger = GetSpForDiagnosticReporting(pvRegDisplay);
+        TADDR spForDebugger = GetSpForDiagnosticReporting(&exInfo->m_frameIter.m_crawl);
         exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
 
         EH_LOG((LL_INFO100, "Calling catch funclet at %p\n", pHandlerIP));
@@ -3351,7 +3353,7 @@ void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exIn
 
     MethodDesc *pMD = exInfo->m_frameIter.m_crawl.GetFunction();
     // Profiler, debugger and ETW events
-    TADDR spForDebugger = GetSpForDiagnosticReporting(pvRegDisplay);
+    TADDR spForDebugger = GetSpForDiagnosticReporting(&exInfo->m_frameIter.m_crawl);
     exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_CurrentClause, (DWORD_PTR)pHandlerIP, spForDebugger);
     EH_LOG((LL_INFO100, "Calling finally funclet at %p\n", pHandlerIP));
 
@@ -3384,7 +3386,7 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
     pExInfo->m_csfEnclosingClause = pExInfo->m_frameIter.m_crawl.GetCallerStackFrame();
     MethodDesc *pMD = pExInfo->m_frameIter.m_crawl.GetFunction();
     // Profiler, debugger and ETW events
-    TADDR spForDebugger = GetSpForDiagnosticReporting(pvRegDisplay);
+    TADDR spForDebugger = GetSpForDiagnosticReporting(&pExInfo->m_frameIter.m_crawl);
     pExInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &pExInfo->m_CurrentClause, (DWORD_PTR)pFilterIP, spForDebugger);
     EH_LOG((LL_INFO100, "Calling filter funclet at %p\n", pFilterIP));
 
@@ -3672,7 +3674,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
                 // We don't need to do anything special for continuable exceptions after calling
                 // this callback.  We are going to start unwinding anyway.
                 PCODE uMethodStartPC = pExInfo->m_frameIter.m_crawl.GetCodeInfo()->GetStartAddress();
-                TADDR spForDebugger = GetSpForDiagnosticReporting(pRD);
+                TADDR spForDebugger = GetSpForDiagnosticReporting(&pExInfo->m_frameIter.m_crawl);
                 EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedExceptionCatcherFound(pThread, pMD, (TADDR) uMethodStartPC, spForDebugger,
                                                                                                &pExInfo->m_ClauseForCatch);
             }
