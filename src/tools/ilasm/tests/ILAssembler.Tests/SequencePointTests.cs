@@ -232,6 +232,185 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void AutoIncrementDirective_DoubleQuotedLineOnlyFormAnchorsTheNextLine()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
+                    #line 0 "a.cs"
+                    nop nop
+
+                    ret
+            """)));
+
+            Assert.Equal(new[] { (0, 0, 0, 0, 65535, "a.cs"), (2, 2, 0, 2, 65535, "a.cs") }, Points(pdb, "M"));
+        }
+
+        [Theory]
+        [InlineData("#line 10 'a.cs'", 0, 65535)]
+        [InlineData("#line 10", 0, 65535)]
+        [InlineData("#line 10 : 2 'a.cs'", 2, 65535)]
+        [InlineData("#line 10,10 : 2,4 'a.cs'", 2, 4)]
+        public void AutoIncrementDirective_OtherFormsAnchorTheDirectiveLine(string directive, int startColumn, int endColumn)
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", $"{directive}\nnop\nret")));
+            string document = directive.Contains("a.cs", StringComparison.Ordinal) ? "a.cs" : "test.il";
+
+            Assert.Equal(
+                new[] { (0, 11, startColumn, 11, endColumn, document), (1, 12, startColumn, 12, endColumn, document) },
+                Points(pdb, "M"));
+        }
+
+        [Theory]
+        [InlineData("\n")]
+        [InlineData("\r\n")]
+        public void AutoIncrementDirective_ShiftsBothLinesByPhysicalSourceLines(string lineEnding)
+        {
+            string source = Program(Method("M", """
+                    #line 100,102 : 7,3 'a.cs' nop nop
+                    nop
+
+                    // a comment
+                    /* two
+                       lines */
+                    ret
+            """)).ReplaceLineEndings(lineEnding);
+            using var pdb = PortablePdbTestReader.Compile(source);
+
+            Assert.Equal(
+                new[] { (0, 100, 7, 102, 3, "a.cs"), (2, 101, 7, 103, 3, "a.cs"), (3, 106, 7, 108, 3, "a.cs") },
+                Points(pdb, "M"));
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_ResetsAtDirectivesAndKeepsTheCurrentDocument()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
+                    #line 10,10 : 1,3 'a.cs'
+                    nop
+                    .line 20,20 : 2,4 ''
+                    nop
+                    nop
+                    #line 30,31 : 3,5
+                    nop
+                    #line 40,40 : 4,6 'b.cs'
+                    ret
+            """)));
+
+            Assert.Equal(
+                new[] { (0, 11, 1, 11, 3, "a.cs"), (1, 20, 2, 20, 4, "a.cs"), (3, 31, 3, 32, 5, "a.cs"), (4, 41, 4, 41, 6, "b.cs") },
+                Points(pdb, "M"));
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_ContinuesAcrossMethods()
+        {
+            string methods =
+                "    #line 50,52 : 1,3 'a.cs'\n" +
+                Method("A", "        nop\n        ret\n") + "\n" +
+                Method("B", "        nop\n        ret\n");
+            string source = Program(methods);
+            int directiveLine = LineOf(source, "#line");
+            using var pdb = PortablePdbTestReader.Compile(source);
+
+            foreach (string name in new[] { "A", "B" })
+            {
+                int firstLine = LineOf(source, $"void {name}") + 2 - directiveLine;
+                Assert.Equal(
+                    new[] { (0, 50 + firstLine, 1, 52 + firstLine, 3, "a.cs"), (1, 51 + firstLine, 1, 53 + firstLine, 3, "a.cs") },
+                    Points(pdb, name));
+            }
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_IncludeStatesAreIndependent()
+        {
+            using var pdb = CompileWithIncludes(
+                Program(Method("M", """
+                    #line 10,11 : 1,3 'outer.cs'
+                    nop
+            #include "inc.il"
+                    ret
+            """)),
+                ("inc.il", "#line 30,32 : 2,4 'inner.cs'\nnop\nnop\n"));
+
+            Assert.Equal(
+                new[] { (0, 11, 1, 12, 3, "outer.cs"), (1, 31, 2, 33, 4, "inner.cs"), (2, 32, 2, 34, 4, "inner.cs"), (3, 13, 1, 14, 3, "outer.cs") },
+                Points(pdb, "M"));
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_MacroInstructionsUseTheInvocationLine()
+        {
+            string source = "#define TWO \"nop nop\"\n" + Program(Method("M", """
+                    #line 10,10 : 1,3 'a.cs'
+                    TWO
+
+                    ret
+            """));
+            using var pdb = PortablePdbTestReader.Compile(source);
+
+            Assert.Equal(new[] { (0, 11, 1, 11, 3, "a.cs"), (2, 13, 1, 13, 3, "a.cs") }, Points(pdb, "M"));
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_HiddenMarkerRemainsHiddenUntilTheNextDirective()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
+                    #line 0xFEEFEE,0xFEEFEE : 0,0 'a.cs'
+                    nop
+                    nop
+                    #line 10,10 : 1,3 ''
+                    ret
+            """)));
+
+            Assert.Equal(
+                new[] { (0, SequencePoint.HiddenLine, 0, SequencePoint.HiddenLine, 0, "a.cs"), (2, 11, 1, 11, 3, "a.cs") },
+                Points(pdb, "M"));
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_WithoutAPdbDoesNotValidateEffectiveCoordinates()
+        {
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(
+                Program(Method("M", "#line 0x1fffffff,0x1fffffff : 1,3 'a.cs'\nret")), new Options());
+
+            Assert.Null(result.PortablePdb);
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_LastRepresentableLineIsEmitted()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
+                    #line 0x1ffffffd,0x1ffffffe : 1,3 'a.cs'
+                    ret
+            """)));
+
+            Assert.Equal(new[] { (0, 0x1ffffffe, 1, 0x1fffffff, 3, "a.cs") }, Points(pdb, "M"));
+        }
+
+        [Theory]
+        [InlineData("0x1ffffffe,0x1fffffff : 1,3")]
+        [InlineData("0x7fffffff,0x7fffffff : 1,3")]
+        [InlineData("16707565,16707565 : 1,3")]
+        public void AutoIncrementDirective_InvalidEffectiveRangeIsReportedAtItsDirective(string coordinates)
+        {
+            string source = Program(Method("M", $$"""
+                    #line {{coordinates}} 'a.cs'
+                    nop
+                    .line 10,10 : 1,3 'b.cs'
+                    ret
+            """));
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { Debug = true, ErrorTolerant = true });
+            Diagnostic diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.InvalidSequencePoint, diagnostic.Id);
+            Assert.Equal(source.IndexOf("#line", StringComparison.Ordinal), diagnostic.Location.Span.Start);
+            Assert.NotNull(result);
+            using var pdb = new PortablePdbTestReader(result!);
+
+            Assert.Equal(new[] { (1, 10, 1, 10, 3, "b.cs") }, Points(pdb, "M"));
+        }
+
+        [Fact]
         public void MethodWithoutLineDirectives_HasAPointOnTheSourceLineOfEachInstruction()
         {
             string source = Program(Method("M", """

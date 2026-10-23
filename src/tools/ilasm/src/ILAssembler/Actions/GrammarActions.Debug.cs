@@ -21,7 +21,9 @@ internal sealed partial class GrammarActions
         IToken? path)
     {
         int lineNumber = ParseInt32(line);
-        return CreateSourceDirective(autoIncrement, lineNumber, 0, lineNumber, null, path);
+        return CreateSourceDirective(
+            autoIncrement, lineNumber, 0, lineNumber, null, path,
+            appliesToNextLine: autoIncrement && path?.Type == CILLexer.QSTRING);
     }
 
     internal SourceDirectiveValue CreateSourceColumn(
@@ -96,7 +98,8 @@ internal sealed partial class GrammarActions
         int startColumn,
         int endLine,
         int? endColumn,
-        IToken? path)
+        IToken? path,
+        bool appliesToNextLine = false)
         => new(
             autoIncrement,
             startLine,
@@ -104,7 +107,10 @@ internal sealed partial class GrammarActions
             endLine,
             endColumn ?? (startLine == SequencePoint.HiddenLine && endLine == SequencePoint.HiddenLine &&
                 startColumn == 0 ? 0 : ushort.MaxValue),
-            path is null ? null : StringHelpers.ParseQuotedString(path.Text));
+            path is null ? null : StringHelpers.ParseQuotedString(path.Text))
+        {
+            AppliesToNextLine = appliesToNextLine,
+        };
 
     internal void EndSourceDirective(
         CILParser.ExtSourceSpecContext context,
@@ -137,7 +143,10 @@ internal sealed partial class GrammarActions
     /// inclusion of an <c>#include</c>d file), wherever it is and across methods, and the next instruction always
     /// gets a point. An empty file name (<c>''</c> or <c>""</c>), which ildasm writes for "the same file", and
     /// a missing one keep the source's current document: the source itself until a directive in it names another
-    /// file.
+    /// file. With <c>#line</c>, both line endpoints advance by the number of physical source lines since the
+    /// directive; columns do not change. The line-only form with a double-quoted file name anchors the specified
+    /// line to the following source line; all other forms anchor it to the directive's own line. Hidden sequence
+    /// points stay hidden until another directive, since their line is a marker rather than a source coordinate.
     /// </remarks>
     private void ApplySourceDirective(SourceDirectiveValue value, IToken directiveToken)
     {
@@ -149,32 +158,39 @@ internal sealed partial class GrammarActions
 
         state.HasInvalidDirective = GeneratesPdb && !ValidateSourceDirective(value, directiveToken);
         state.DirectiveCoordinates = (value.StartLine, value.StartColumn, value.EndLine, value.EndColumn);
+        state.AutoIncrementLine = value.AutoIncrement
+            ? (long)directiveToken.Line + (value.AppliesToNextLine ? 1 : 0)
+            : null;
+        state.DirectiveToken = directiveToken;
         _lastSequencePointSpan = null;
     }
 
     private bool ValidateSourceDirective(SourceDirectiveValue value, IToken directiveToken)
+        => ValidateSourceCoordinates(value.StartLine, value.StartColumn, value.EndLine, value.EndColumn, directiveToken);
+
+    private bool ValidateSourceCoordinates(long startLine, int startColumn, long endLine, int endColumn, IToken directiveToken)
     {
         // Portable PDB, Sequence Points: docs/design/specs/PortablePdb-Metadata.md#sequence-points-blob.
         const int MaximumLine = 0x1fffffff;
         string? message = null;
-        if (value.StartLine == SequencePoint.HiddenLine || value.EndLine == SequencePoint.HiddenLine)
+        if (startLine == SequencePoint.HiddenLine || endLine == SequencePoint.HiddenLine)
         {
-            if (value.StartLine != SequencePoint.HiddenLine || value.EndLine != SequencePoint.HiddenLine ||
-                value.StartColumn != 0 || value.EndColumn != 0)
+            if (startLine != SequencePoint.HiddenLine || endLine != SequencePoint.HiddenLine ||
+                startColumn != 0 || endColumn != 0)
             {
                 message = DiagnosticMessageTemplates.InvalidHiddenSequencePoint;
             }
         }
-        else if ((uint)value.StartLine > MaximumLine || (uint)value.EndLine > MaximumLine)
+        else if ((ulong)startLine > MaximumLine || (ulong)endLine > MaximumLine)
         {
             message = DiagnosticMessageTemplates.SequencePointLineOutOfRange;
         }
-        else if ((uint)value.StartColumn > ushort.MaxValue || (uint)value.EndColumn > ushort.MaxValue)
+        else if ((uint)startColumn > ushort.MaxValue || (uint)endColumn > ushort.MaxValue)
         {
             message = DiagnosticMessageTemplates.SequencePointColumnOutOfRange;
         }
-        else if (value.EndLine < value.StartLine ||
-            (value.EndLine == value.StartLine && value.EndColumn <= value.StartColumn))
+        else if (endLine < startLine ||
+            (endLine == startLine && endColumn <= startColumn))
         {
             message = DiagnosticMessageTemplates.SequencePointReversedRange;
         }
@@ -226,6 +242,22 @@ internal sealed partial class GrammarActions
         int document = state.Document ??= _pdbDocuments.GetOrAdd(state.SourceName, _currentLanguageGuid);
         (int startLine, int startColumn, int endLine, int endColumn) =
             state.DirectiveCoordinates ?? (opcodeToken.Line, 1, opcodeToken.Line, 2);
+        if (state.AutoIncrementLine is long directiveLine && startLine != SequencePoint.HiddenLine)
+        {
+            long delta = (long)opcodeToken.Line - directiveLine;
+            long effectiveStartLine = startLine + delta;
+            long effectiveEndLine = endLine + delta;
+            Debug.Assert(state.DirectiveToken is not null);
+            if (!ValidateSourceCoordinates(effectiveStartLine, startColumn, effectiveEndLine, endColumn, state.DirectiveToken))
+            {
+                state.HasInvalidDirective = true;
+                return;
+            }
+
+            startLine = (int)effectiveStartLine;
+            endLine = (int)effectiveEndLine;
+        }
+
         var span = new SequencePointSpan(document, startLine, startColumn, endLine, endColumn);
         if (_lastSequencePointSpan == span)
         {
@@ -291,6 +323,10 @@ internal sealed partial class GrammarActions
         public (int StartLine, int StartColumn, int EndLine, int EndColumn)? DirectiveCoordinates { get; set; }
 
         public bool HasInvalidDirective { get; set; }
+
+        public long? AutoIncrementLine { get; set; }
+
+        public IToken? DirectiveToken { get; set; }
     }
 
     /// <summary>The document and source span of a recorded sequence point.</summary>
