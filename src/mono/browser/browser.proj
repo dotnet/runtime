@@ -513,7 +513,6 @@
   </Target>
 
   <ItemGroup>
-    <_RollupInputs Include="$(RepoRoot)src/native/libs/Common/JavaScript/appsettings.ts" />
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/**/*.ts"
 		   Exclude="$(BrowserProjectRoot)runtime/dotnet.d.ts;$(BrowserProjectRoot)runtime/node_modules/**/*.ts" />
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/**/tsconfig.*"

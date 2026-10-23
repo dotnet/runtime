@@ -22,7 +22,7 @@ import { forceDisposeProxies, get_proxy_counts } from "./gc-handles";
 import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
 import { monoStringToStringUnsafe } from "./strings";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
-import { getAppSettingsFiles, getAppSettingsBytes } from "../../../native/libs/Common/JavaScript/appsettings";
+import { getAppSettingsFiles, getAppSettingsBytes } from "./appsettings";
 
 import { mono_wasm_dump_threads } from "./pthreads";
 
