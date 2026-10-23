@@ -14,6 +14,24 @@ async function createFixture(options = {}) {
     const calls = [];
     const errors = [];
     const workerListeners = [];
+    const memory = new WebAssembly.Memory({ initial: 1, maximum: 4, shared: options.sharedMemory ?? true });
+    const allocations = new Set();
+    let nextPointer = 1024;
+    const module = {
+        _malloc: size => {
+            const pointer = nextPointer;
+            const end = pointer + Math.ceil(size / 8) * 8;
+            if (end > memory.buffer.byteLength) {
+                memory.grow(Math.ceil((end - memory.buffer.byteLength) / 65536));
+            }
+            nextPointer = end;
+            allocations.add(pointer);
+            return pointer;
+        },
+        _free: pointer => {
+            assert.equal(allocations.delete(pointer), true);
+        },
+    };
     let terminated;
     const termination = new Promise(resolve => terminated = resolve);
     const runtime = {
@@ -36,7 +54,15 @@ async function createFixture(options = {}) {
         AbortController, Atomics, SharedArrayBuffer, setTimeout, clearTimeout,
         self: {
             addEventListener: (_type, listener) => workerListeners.push(listener),
-            postMessage: data => queueMicrotask(() => workers[0].onmessage?.({ data: structuredClone(data) })),
+            postMessage: data => {
+                const message = structuredClone(data);
+                if (message.type === "ready" && options.invalidReadyMemory) {
+                    message.wasmMemory = options.invalidReadyMemory === "missing"
+                        ? undefined
+                        : new WebAssembly.Memory({ initial: 1 });
+                }
+                queueMicrotask(() => workers[0].onmessage?.({ data: message }));
+            },
             close: () => workers[0].closed = true,
         },
         Worker: class {
@@ -74,8 +100,8 @@ async function createFixture(options = {}) {
         "./config": { mergeLoaderConfig: () => {} },
         "./host-builder": { HostBuilder: class { async create() { return runtime; } } },
         "./cross-module": {
-            Module: {},
-            dotnetNativeBrowserExports: { getWasmMemory: () => new WebAssembly.Memory({ initial: 1 }) },
+            Module: module,
+            dotnetNativeBrowserExports: { getWasmMemory: () => memory },
             dotnetLogger: { error: (...args) => errors.push(args) },
         },
     };
@@ -106,10 +132,68 @@ async function createFixture(options = {}) {
     const proxyModule = await load("./worker-proxy");
     await proxyModule.evaluate();
     return {
-        workers, calls, errors, termination,
+        workers, calls, errors, termination, memory, module, allocations,
         create: (config = { workerOptions: { timeoutMs: 1000 } }) => proxyModule.namespace.createWorkerProxy(config),
     };
 }
+
+for (const grow of [false, true]) {
+    test(`UI views share the worker WASM heap${grow ? " after growth" : ""}`, { timeout: 3000 }, async () => {
+        const fixture = await createFixture();
+        const api = await fixture.create();
+        const scratch = fixture.module._malloc(4);
+        let grownAllocation;
+        try {
+            const manager = api.INTERNAL.workerMemoryViews;
+            assert.ok(manager, "The ready handshake must initialize internal UI memory views");
+            const initialViews = manager.refreshIfNeeded();
+            const initialLength = initialViews.u8.byteLength;
+            new Uint32Array(fixture.memory.buffer)[scratch / 4] = 0x12345678;
+            assert.equal(initialViews.u32[scratch / 4], 0x12345678);
+            initialViews.u32[scratch / 4] = 0x24681357;
+            assert.equal(new Uint32Array(fixture.memory.buffer)[scratch / 4], 0x24681357);
+
+            if (grow) {
+                grownAllocation = fixture.module._malloc(initialLength + 8);
+                const grownOffset = grownAllocation + initialLength;
+                new Uint32Array(fixture.memory.buffer)[grownOffset / 4] = 0x11223344;
+                const refreshed = manager.refreshIfNeeded();
+                assert.notEqual(refreshed, initialViews);
+                assert.ok(refreshed.u8.byteLength > initialLength);
+                assert.equal(initialViews.u8.byteLength, initialLength);
+                assert.equal(refreshed.u32[scratch / 4], 0x24681357);
+                assert.equal(refreshed.u32[grownOffset / 4], 0x11223344);
+                refreshed.u32[grownOffset / 4] = 0x55667788;
+                assert.equal(new Uint32Array(fixture.memory.buffer)[grownOffset / 4], 0x55667788);
+            } else {
+                assert.equal(manager.refreshIfNeeded(), initialViews);
+            }
+            assert.throws(() => api.getHeapU8(scratch), /not supported/);
+        } finally {
+            if (grownAllocation !== undefined) fixture.module._free(grownAllocation);
+            fixture.module._free(scratch);
+            api.exit(0);
+            await fixture.termination;
+        }
+        assert.equal(fixture.allocations.has(scratch), false);
+        if (grownAllocation !== undefined) assert.equal(fixture.allocations.has(grownAllocation), false);
+    });
+}
+
+for (const invalidReadyMemory of ["missing", "non-shared"]) {
+    test(`a ready message with ${invalidReadyMemory} WASM memory rejects startup`, { timeout: 3000 }, async () => {
+        const fixture = await createFixture({ invalidReadyMemory });
+        await assert.rejects(fixture.create(), /WASM memory.*shared/);
+        assert.equal(fixture.workers[0].terminated, true);
+    });
+}
+
+test("non-shared worker WASM memory rejects startup before allocation", { timeout: 3000 }, async () => {
+    const fixture = await createFixture({ sharedMemory: false });
+    await assert.rejects(fixture.create(), /WASM memory.*shared/);
+    assert.equal(fixture.allocations.size, 0);
+    assert.equal(fixture.workers[0].terminated, true);
+});
 
 test("runMain forwards the assembly and arguments without exiting", { timeout: 3000 }, async () => {
     const fixture = await createFixture();

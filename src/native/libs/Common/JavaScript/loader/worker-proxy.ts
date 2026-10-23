@@ -24,6 +24,7 @@ import {
     OFFSET_COMMAND_PROMISE_ID,
     allocatePromiseId,
     wakeMain,
+    MemoryViewManager,
 } from "./shared-signaling";
 
 import type { WorkerCommandMessage, WorkerInitMessage, WorkerToMainMessage } from "./worker-runtime";
@@ -65,12 +66,17 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
         const msg = ev.data;
 
         if (msg.type === "ready") {
+            if (!(msg.wasmMemory?.buffer instanceof SharedArrayBuffer)) {
+                terminate(new Error("withWorker(): worker WASM memory is missing or not shared"));
+                return;
+            }
             if (timeoutId !== undefined) {
                 clearTimeout(timeoutId);
             }
 
             const signalView = new Int32Array(msg.signalBuffer);
-            const api = buildProxyRuntimeAPI(config, signalView, msg.runtimeBuildInfo, worker, terminate, handler => {
+            const memoryViews = new MemoryViewManager(msg.wasmMemory, signalView);
+            const api = buildProxyRuntimeAPI(config, signalView, memoryViews, msg.runtimeBuildInfo, worker, terminate, handler => {
                 rejectCommand = handler;
             });
             resolve(api);
@@ -107,6 +113,7 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
 function buildProxyRuntimeAPI(
     config: LoaderConfig,
     signalView: Int32Array,
+    memoryViews: MemoryViewManager,
     runtimeBuildInfo: RuntimeAPI["runtimeBuildInfo"],
     worker: Worker,
     terminate: (error: Error) => void,
@@ -184,7 +191,7 @@ function buildProxyRuntimeAPI(
         runtimeBuildInfo,
 
         // Stubs — not yet supported in proxy mode
-        INTERNAL: {},
+        INTERNAL: { workerMemoryViews: memoryViews },
         Module,
         runtimeId: 0,
         getAssemblyExports: notSupported("getAssemblyExports"),

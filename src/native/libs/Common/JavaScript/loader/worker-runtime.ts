@@ -44,6 +44,7 @@ export interface WorkerInitMessage {
 
 export interface WorkerReadyMessage {
     type: "ready";
+    wasmMemory: WebAssembly.Memory;
     signalBuffer: SharedArrayBuffer;
     runtimeBuildInfo: RuntimeAPI["runtimeBuildInfo"];
 }
@@ -107,6 +108,9 @@ export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promis
 
 
         const wasmMemory = dotnetNativeBrowserExports.getWasmMemory();
+        if (!(wasmMemory.buffer instanceof SharedArrayBuffer)) {
+            throw new Error("withWorker(): runtime WASM memory is not shared");
+        }
 
         // Allocate the signaling buffer (separate small SharedArrayBuffer)
         const signalBuffer = createSignalingBuffer();
@@ -136,6 +140,7 @@ export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promis
         // Post "ready" back to main thread
         const readyMsg: WorkerReadyMessage = {
             type: "ready",
+            wasmMemory,
             signalBuffer,
             runtimeBuildInfo: runtime.runtimeBuildInfo,
         };
