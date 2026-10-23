@@ -5,6 +5,16 @@
 .assembly VTableFixups {}
 .corflags 0
 
+#ifdef ARM64
+#define SLOT "int64"
+#else
+#ifdef X64
+#define SLOT "int64"
+#else
+#define SLOT "int32"
+#endif
+#endif
+
 .vtfixup [2] SLOT at Managed
 .vtfixup [2] SLOT fromunmanaged at Unmanaged
 .vtfixup [1] SLOT retainappdomain at Retained

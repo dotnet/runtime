@@ -4,7 +4,6 @@
     <CLRTestKind>SharedLibrary</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Pointer32.il" />
     <Compile Include="VTableFixups.il" />
   </ItemGroup>
 </Project>

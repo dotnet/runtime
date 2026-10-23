@@ -5,7 +5,7 @@
     <IlasmFlags>$(IlasmFlags) -PE64 -X64</IlasmFlags>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Pointer64.il" />
+    <Compile Include="X64.il" />
     <Compile Include="VTableFixups.il" />
   </ItemGroup>
 </Project>

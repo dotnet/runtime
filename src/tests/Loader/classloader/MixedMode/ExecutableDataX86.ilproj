@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <IlasmFlags Condition="'$(TargetBits)' == '64'">$(IlasmFlags) -PE64 -$(TargetArchitecture)</IlasmFlags>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ExecutableData.il" />

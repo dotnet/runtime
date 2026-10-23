@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Runtime {}
-.assembly extern xunit.core {}
 .assembly DataPointers {}
 
 // Keep target offsets nonzero so omitted label fixups cannot pass.
@@ -63,10 +62,8 @@
         throw
     }
 
-    .method public static int32 Main() cil managed
+    .method public static int32 Run() cil managed
     {
-        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (01 00 00 00)
-        .entrypoint
         ldsflda native int DataPointers::Backward
         conv.u
         call void DataPointers::CheckTable(native int)

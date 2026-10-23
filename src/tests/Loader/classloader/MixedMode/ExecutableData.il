@@ -2,41 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Runtime {}
-.assembly extern xunit.core {}
 .assembly ExecutableData {}
 // This is obviously not IL-only
 .corflags 0
 
-// mov eax, 100; ret, padded to keep each code blob eight bytes long.
-.data cil X86Code = bytearray (B8 64 00 00 00 C3 90 90)
+#ifdef ARM64
 // mov w0, 100; ret
-.data cil Arm64Code = bytearray (80 0C 80 52 C0 03 5F D6)
+.data cil Code = bytearray (80 0C 80 52 C0 03 5F D6)
+#else
+// mov eax, 100; ret, padded to eight bytes.
+.data cil Code = bytearray (B8 64 00 00 00 C3 90 90)
+#endif
 
 .class public ExecutableData extends [System.Runtime]System.Object
 {
-    .field private static int64 X86 at X86Code
-    .field private static int64 Arm64 at Arm64Code
+    .field private static int64 Code at Code
 
-    .method public static int32 Main() cil managed
+    .method public static int32 Run() cil managed
     {
-        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (01 00 00 00)
-        .entrypoint
         .maxstack 1
 
-        call valuetype [System.Runtime]System.Runtime.InteropServices.Architecture [System.Runtime]System.Runtime.InteropServices.RuntimeInformation::get_ProcessArchitecture()
-        switch (X86, X64, UNSUPPORTED, ARM64)
-    UNSUPPORTED:
-        ldstr "Unsupported process architecture."
-        newobj instance void [System.Runtime]System.PlatformNotSupportedException::.ctor(string)
-        throw
-
-    X86:
-    X64:
-        ldsflda int64 ExecutableData::X86
-        br.s CALL
-    ARM64:
-        ldsflda int64 ExecutableData::Arm64
-    CALL:
+        ldsflda int64 ExecutableData::Code
         conv.u
         calli unmanaged cdecl int32()
         ret

@@ -7,15 +7,17 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
 
-public class VTableFixupTests
+public class MixedModeTests
 {
-    [Theory]
+    public static bool IsX86OrX64 => RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64;
+
+    // ILASM has no ARM64 native export stub.
+    [ConditionalTheory(nameof(IsX86OrX64))]
     [InlineData(false)]
     [InlineData(true)]
     public static unsafe void FixupTables(bool autoExports)
     {
-        string name = (autoExports ? "AutoExports" : "VTableFixups") + RuntimeInformation.ProcessArchitecture;
-        Assembly assembly = Assembly.LoadFrom(Path.Combine(AppContext.BaseDirectory, name + ".dll"));
+        Assembly assembly = LoadAssembly(autoExports ? "AutoExports" : "VTableFixups");
         nint module = Marshal.GetHINSTANCE(assembly.ManifestModule);
         var twice = (delegate* unmanaged[Stdcall]<int, int>)NativeLibrary.GetExport(module, "Twice");
         var triple = (delegate* unmanaged[Stdcall]<int, int>)NativeLibrary.GetExport(module, "Triple");
@@ -41,5 +43,20 @@ public class VTableFixupTests
                 Assert.Equal(137, ((delegate* unmanaged[Stdcall]<int, int>)retained[0])(37));
             }
         }
+    }
+
+    [Theory]
+    [InlineData("DataPointers")]
+    [InlineData("ExecutableData")]
+    public static void Data(string name)
+    {
+        Type type = LoadAssembly(name).GetType(name, throwOnError: true)!;
+        Func<int> run = type.GetMethod("Run")!.CreateDelegate<Func<int>>();
+        Assert.Equal(100, run());
+    }
+
+    private static Assembly LoadAssembly(string name)
+    {
+        return Assembly.LoadFrom(Path.Combine(AppContext.BaseDirectory, name + RuntimeInformation.ProcessArchitecture + ".dll"));
     }
 }
