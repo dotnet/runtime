@@ -24,9 +24,14 @@ namespace System.Text.Json.Nodes
                     ReadOnlyMemory<byte> utf8String = buffer.AsMemory(0, reader.CopyString(buffer));
                     return new JsonValueOfJsonString(utf8String, options);
                 case JsonTokenType.Number:
+#if NET
                     return reader.HasValueSequence
                         ? CreateNumberValue(reader.ValueSequence, options)
                         : CreateNumberValue(reader.ValueSpan, options);
+#else
+                    byte[] numberValue = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
+                    return new JsonValueOfJsonNumber(numberValue, options);
+#endif
                 default:
                     Debug.Fail("Only primitives allowed.");
                     ThrowHelper.ThrowJsonException();
@@ -34,27 +39,27 @@ namespace System.Text.Json.Nodes
             }
         }
 
+#if NET
         private static JsonValue CreateNumberValue(ReadOnlySpan<byte> number, JsonNodeOptions options)
         {
-#if NET
             if (number.Length <= JsonValueOfJsonNumberInline16.MaxLength)
             {
                 return new JsonValueOfJsonNumberInline16(number, options);
             }
-#endif
+
             return new JsonValueOfJsonNumber(number.ToArray(), options);
         }
 
         private static JsonValue CreateNumberValue(ReadOnlySequence<byte> number, JsonNodeOptions options)
         {
-#if NET
             if (number.Length <= JsonValueOfJsonNumberInline16.MaxLength)
             {
                 return new JsonValueOfJsonNumberInline16(number, options);
             }
-#endif
+
             return new JsonValueOfJsonNumber(number.ToArray(), options);
         }
+#endif
     }
 
     internal sealed class JsonValueOfJsonString : JsonValue
