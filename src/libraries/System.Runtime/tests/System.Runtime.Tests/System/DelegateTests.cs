@@ -67,6 +67,82 @@ namespace System.Tests
             Assert.NotEqual(testDelegate, other.TestFunc);
         }
 
+        public static TheoryData<MethodInfo, object> ClosedStaticDelegate_NonReferenceFirstParameter_TestData => new()
+        {
+            { ((Func<int, object>)ClosedStaticInt).Method, 42 },
+            { ((Func<int, object>)ClosedStaticIdentity<int>).Method, 42 },
+            { ((Func<long, object>)ClosedStaticIdentity<long>).Method, 42L },
+            { ((Func<byte, object>)ClosedStaticIdentity<byte>).Method, (byte)42 },
+            { ((Func<char, object>)ClosedStaticIdentity<char>).Method, 'a' },
+            { ((Func<double, object>)ClosedStaticIdentity<double>).Method, 42.0 },
+            { ((Func<nint, object>)ClosedStaticIdentity<nint>).Method, (nint)42 },
+            { ((Func<IntEnum, object>)ClosedStaticIdentity<IntEnum>).Method, IntEnum.One },
+            { ((Func<TestStruct, object>)ClosedStaticIdentity<TestStruct>).Method, new TestStruct() },
+            { ((Func<int?, object>)ClosedStaticIdentity<int?>).Method, 42 },
+            { ((Func<int, object>)ClosedStaticStructIdentity<int>).Method, 42 },
+            { ((Func<int, object>)ClosedStaticGenericClass<int>.Identity).Method, 42 },
+            { typeof(DelegateTests).GetMethod(nameof(ClosedStaticPointer)), null },
+            { typeof(DelegateTests).GetMethod(nameof(ClosedStaticFunctionPointer)), null },
+            { typeof(DelegateTests).GetMethod(nameof(ClosedStaticByRef)), null },
+            { typeof(DelegateTests).GetMethod(nameof(ClosedStaticByRefLike)), null },
+            { typeof(DelegateTests).GetMethod(nameof(ClosedStaticTypedReference)), null },
+        };
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [MemberData(nameof(ClosedStaticDelegate_NonReferenceFirstParameter_TestData))]
+        public static void ClosedStaticDelegate_NonReferenceFirstParameter(MethodInfo method, object firstArgument)
+        {
+            foreach (object target in new[] { firstArgument, null })
+            {
+                Assert.Throws<ArgumentException>(() => method.CreateDelegate(typeof(Func<object>), target));
+                Assert.Throws<ArgumentException>(() => method.CreateDelegate<Func<object>>(target));
+                Assert.Throws<ArgumentException>(() => Delegate.CreateDelegate(typeof(Func<object>), target, method));
+                Assert.Throws<ArgumentException>(() => Delegate.CreateDelegate(typeof(Func<object>), target, method, throwOnBindFailure: true));
+                Assert.Null(Delegate.CreateDelegate(typeof(Func<object>), target, method, throwOnBindFailure: false));
+            }
+        }
+
+        public static TheoryData<MethodInfo, object> ClosedStaticDelegate_ReferenceFirstParameter_TestData => new()
+        {
+            { ((Func<object, object>)ClosedStaticObject).Method, new object() },
+            { ((Func<string, object>)ClosedStaticIdentity<string>).Method, "hello" },
+            { ((Func<object, object>)ClosedStaticIdentity<object>).Method, new object() },
+            { ((Func<IComparable, object>)ClosedStaticIdentity<IComparable>).Method, 42 },
+            { ((Func<TestClass, object>)ClosedStaticIdentity<TestClass>).Method, new TestClass() },
+            { ((Func<int[], object>)ClosedStaticIdentity<int[]>).Method, new int[] { 42 } },
+            { ((Func<string, object>)ClosedStaticGenericClass<string>.Identity).Method, "hello" },
+        };
+
+        [Theory]
+        [MemberData(nameof(ClosedStaticDelegate_ReferenceFirstParameter_TestData))]
+        public static void ClosedStaticDelegate_ReferenceFirstParameter(MethodInfo method, object firstArgument)
+        {
+            foreach (object target in new[] { firstArgument, null })
+            {
+                Assert.Same(target, ((Func<object>)method.CreateDelegate(typeof(Func<object>), target))());
+                Assert.Same(target, method.CreateDelegate<Func<object>>(target)());
+                Assert.Same(target, ((Func<object>)Delegate.CreateDelegate(typeof(Func<object>), target, method))());
+                Assert.Same(target, ((Func<object>)Delegate.CreateDelegate(typeof(Func<object>), target, method, throwOnBindFailure: true))());
+                Assert.Same(target, ((Func<object>)Delegate.CreateDelegate(typeof(Func<object>), target, method, throwOnBindFailure: false))());
+            }
+        }
+
+        private static object ClosedStaticInt(int value) => value;
+        private static object ClosedStaticObject(object value) => value;
+        private static object ClosedStaticIdentity<T>(T value) => value;
+        private static object ClosedStaticStructIdentity<T>(T value) where T : struct => value;
+
+        private static class ClosedStaticGenericClass<T>
+        {
+            public static object Identity(T value) => value;
+        }
+
+        public static object ClosedStaticPointer(int* value) => null;
+        public static object ClosedStaticFunctionPointer(delegate*<int> value) => null;
+        public static object ClosedStaticByRef(ref int value) => null;
+        public static object ClosedStaticByRefLike(Span<int> value) => null;
+        public static object ClosedStaticTypedReference(TypedReference value) => null;
+
         public class A { }
         public class B : A { }
         public delegate A DynamicInvokeDelegate(A nonRefParam1, B nonRefParam2, ref A refParam, out B outParam);

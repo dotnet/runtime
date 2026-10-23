@@ -1886,8 +1886,6 @@ public:
 
     void CleanupTransportSocket();
 
-    void InitializeLazyDataIfNecessary();
-
     void LazyInit(); // will throw
     HRESULT LazyInitWrapper(); // calls LazyInit and converts to HR.
 

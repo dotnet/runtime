@@ -139,6 +139,7 @@ struct READYTORUN_CORE_HEADER
 | READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE | 0x00000040 | This R2R module has multiple modules within its version bubble (For versions before version 6.3, all modules are assumed to possibly have this characteristic)
 | READYTORUN_FLAG_UNRELATED_R2R_CODE         | 0x00000080 | This R2R module has code in it that would not be naturally encoded into this module
 | READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE      | 0x00000100 | The owning composite executable is in the platform native format
+| READYTORUN_FLAG_SINGLE_THREADED            | 0x00002000 | The image targets a single-threaded runtime (built without `FEATURE_MULTITHREADING`) and lays out `[ThreadStatic]` fields as regular statics. The runtime rejects the image if its threading model doesn't match.
 
 ## READYTORUN_SECTION
 
@@ -225,6 +226,11 @@ struct READYTORUN_IMPORT_SECTION
 | ReadyToRunImportSectionFlags::PCode    | 0x0004  | Section contains pointers to code
 
 
+Module-eager fixups in `System.Private.CoreLib`, including composite images containing
+`System.Private.CoreLib`, may refer to any type, method, or field in CoreLib and may trigger
+loading of CoreLib types needed to resolve those references. In other modules, module-eager
+fixups must not trigger type loading; the required types must already be loaded.
+
 ### READYTORUN_IMPORT_SECTIONS::Type
 
 | ReadyToRunImportSectionType                 | Value  | Description
@@ -237,6 +243,11 @@ struct READYTORUN_IMPORT_SECTION
 *Future*: The section type can be used to group slots of the same type together. For example, all virtual
 stub dispatch slots may be grouped together to simplify resetting of virtual stub dispatch cells into their
 initial state.
+
+When `Vector<T>` support is non-optimistic, its SIMD width is fixed at compile time and does
+not require a type-layout check. This includes Wasm, where `Vector<T>` has a fixed 16-byte
+layout. Types containing vectors also have fixed layout when their remaining layout is fixed
+within the version bubble. Optimistic `Vector<T>` support retains runtime-dependent layout checks.
 
 ### READYTORUN_IMPORT_SECTIONS::Signatures
 

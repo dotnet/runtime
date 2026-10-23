@@ -71,6 +71,13 @@ public static class DiagnosticIds
     public const string PseudoCustomAttributeInvalidBlob = "ILA0051";
     public const string PseudoCustomAttributeUnknownArgument = "ILA0052";
     public const string PseudoCustomAttributeRepeatedArgument = "ILA0053";
+    public const string LocalSlotInUse = "ILA0054";
+    public const string LocalSlotTypeConflict = "ILA0055";
+    public const string UndefinedLocalSlotType = "ILA0056";
+    public const string LocalSlotOutOfRange = "ILA0057";
+    public const string LocalScopeWithoutInstructions = "ILA0058";
+    public const string LocalNameDeclaredTwiceInScope = "ILA0059";
+    public const string LocalSlotNamedTwiceInScope = "ILA0060";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -129,4 +136,11 @@ internal static class DiagnosticMessageTemplates
     public const string PseudoCustomAttributeInvalidBlob = "Custom attribute '{0}' has a malformed value blob";
     public const string PseudoCustomAttributeUnknownArgument = "Custom attribute '{0}' does not have a field or property named '{1}'";
     public const string PseudoCustomAttributeRepeatedArgument = "Custom attribute '{0}' specifies '{1}' more than once";
+    public const string LocalSlotInUse = "Local var slot {0} is in use";
+    public const string LocalSlotTypeConflict = "Local var slot {0}: type conflict";
+    public const string UndefinedLocalSlotType = "Undefined type of local var slot {0} in method {1}";
+    public const string LocalSlotOutOfRange = "Local var slot {0} is out of range; a slot index must be between 0 and {1}";
+    public const string LocalScopeWithoutInstructions = "Local var '{0}' is declared in a scope that has no instructions; a PDB local scope must not be empty";
+    public const string LocalNameDeclaredTwiceInScope = "Local var '{0}' is already declared in this scope";
+    public const string LocalSlotNamedTwiceInScope = "Local var '{0}': slot {1} is already named '{2}' in this scope";
 }

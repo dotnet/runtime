@@ -26,6 +26,7 @@
     <Compile Include="$(TestUtilities)\System\Buffers\BoundedMemory.*" Link="TestUtilities\%(Filename)%(Extension)" />
     <Compile Include="$(TestUtilities)\System\Buffers\PoisonPagePlacement.cs" Link="TestUtilities\PoisonPagePlacement.cs" />
     <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs" Link="Common\System\IO\ReadOnlyMemoryStream.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\KerberosPacLogonInfo.cs" Link="Common\System\Net\Security\KerberosPacLogonInfo.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,7 +36,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\System.Net.Security.Fuzzing\System.Net.Security.Fuzzing.csproj" />
     <PackageReference Include="Microsoft.DotNetFuzzing.TestData" Version="$(MicrosoftDotNetFuzzingTestDataVersion)" />
     <ProjectReference Include="..\..\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
   </ItemGroup>
