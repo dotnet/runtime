@@ -1,0 +1,15 @@
+-- ConcGCThreads=1
+p26-final-Release-linux  listsuffix  lxr-nonmoving wall=4.88 cpu=13.15 user=13.23 sys=0.41 gc=1.76 pauses=66
+p26-final-Release-linux  listsuffix  lxr-nonmoving wall=5.16 cpu=12.53 user=13.32 sys=0.39 gc=1.71 pauses=66
+p26-final-Release-linux  listsuffix  lxr-nursery  wall=6.71 cpu=15.65 user=17.41 sys=0.40 gc=2.57 pauses=64
+p26-final-Release-linux  listsuffix  lxr-nursery  wall=5.74 cpu=16.05 user=16.53 sys=0.39 gc=2.67 pauses=66
+-- ConcGCThreads=2
+p26-final-Release-linux  listsuffix  lxr-nonmoving wall=4.02 cpu=9.89 user=9.95 sys=0.19 gc=1.54 pauses=60
+p26-final-Release-linux  listsuffix  lxr-nonmoving wall=4.08 cpu=9.77 user=9.81 sys=0.21 gc=1.59 pauses=60
+p26-final-Release-linux  listsuffix  lxr-nursery  wall=5.05 cpu=11.63 user=12.35 sys=0.23 gc=2.33 pauses=56
+p26-final-Release-linux  listsuffix  lxr-nursery  wall=5.23 cpu=13.52 user=14.10 sys=0.25 gc=2.43 pauses=59
+-- ConcGCThreads=4
+p26-final-Release-linux  listsuffix  lxr-nonmoving wall=3.90 cpu=9.18 user=9.19 sys=0.24 gc=1.53 pauses=59
+p26-final-Release-linux  listsuffix  lxr-nonmoving wall=3.82 cpu=8.61 user=8.79 sys=0.17 gc=1.51 pauses=58
+p26-final-Release-linux  listsuffix  lxr-nursery  wall=4.97 cpu=11.79 user=12.48 sys=0.26 gc=2.34 pauses=57
+p26-final-Release-linux  listsuffix  lxr-nursery  wall=5.04 cpu=12.32 user=12.92 sys=0.20 gc=2.38 pauses=59

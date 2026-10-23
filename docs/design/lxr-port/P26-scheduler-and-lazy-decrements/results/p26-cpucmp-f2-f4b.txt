@@ -1,0 +1,8 @@
+p26-f2-Release-linux     requests    lxr-nursery  wall=4.62 cpu=9.20 user=6.75 sys=2.87 gc=0.98 pauses=68
+p25-Release-linux        requests    lxr-nursery  wall=4.12 cpu=6.06 user=5.73 sys=0.50 gc=0.92 pauses=68
+p26-f2-Release-linux     requests    lxr-nursery  wall=4.35 cpu=9.21 user=6.53 sys=2.89 gc=0.99 pauses=68
+p25-Release-linux        requests    lxr-nursery  wall=4.08 cpu=6.05 user=5.69 sys=0.58 gc=0.93 pauses=68
+p26-f2-Release-linux     listsuffix  lxr-nursery  wall=4.86 cpu=14.12 user=13.71 sys=1.39 gc=1.51 pauses=51
+p25-Release-linux        listsuffix  lxr-nursery  wall=4.78 cpu=13.41 user=13.72 sys=0.41 gc=1.53 pauses=51
+p26-f2-Release-linux     listsuffix  lxr-nursery  wall=4.86 cpu=14.26 user=13.57 sys=1.45 gc=1.52 pauses=51
+p25-Release-linux        listsuffix  lxr-nursery  wall=4.48 cpu=12.87 user=13.11 sys=0.50 gc=1.46 pauses=51

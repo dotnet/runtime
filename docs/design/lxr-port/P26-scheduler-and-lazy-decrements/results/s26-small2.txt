@@ -1,0 +1,18 @@
+-- base
+p26-base-Release-linux   listsuffix  lxr-nonmoving wall=6.15 cpu=8.64 user=8.73 sys=0.28 gc=2.45 pauses=53
+p26-base-Release-linux   listsuffix  lxr-nonmoving wall=5.91 cpu=8.59 user=8.63 sys=0.27 gc=2.39 pauses=53
+-- f2
+p26-f2-Release-linux     listsuffix  lxr-nonmoving wall=5.82 cpu=8.53 user=8.59 sys=0.18 gc=2.38 pauses=53
+p26-f2-Release-linux     listsuffix  lxr-nonmoving wall=5.80 cpu=8.51 user=8.61 sys=0.16 gc=2.37 pauses=53
+-- f4b
+p26-f4b-Release-linux    listsuffix  lxr-nonmoving wall=5.60 cpu=8.12 user=8.25 sys=0.12 gc=2.33 pauses=52
+p26-f4b-Release-linux    listsuffix  lxr-nonmoving wall=5.68 cpu=8.13 user=8.40 sys=0.12 gc=2.29 pauses=51
+-- final
+p26-final-Release-linux  listsuffix  lxr-nonmoving wall=6.89 cpu=12.41 user=12.51 sys=0.14 gc=2.78 pauses=70
+p26-final-Release-linux  listsuffix  lxr-nonmoving wall=6.73 cpu=12.12 user=12.30 sys=0.12 gc=2.68 pauses=69
+-- final WaitForLazy=1
+p26-final-Release-linux  listsuffix  lxr-nonmoving wall=6.75 cpu=12.16 user=12.29 sys=0.17 gc=2.69 pauses=69
+p26-final-Release-linux  listsuffix  lxr-nonmoving wall=5.51 cpu=8.10 user=8.24 sys=0.11 gc=2.29 pauses=52
+-- final ConcGCThreads=2
+p26-final-Release-linux  listsuffix  lxr-nonmoving wall=5.54 cpu=8.94 user=9.05 sys=0.14 gc=2.54 pauses=61
+p26-final-Release-linux  listsuffix  lxr-nonmoving wall=5.37 cpu=8.42 user=8.65 sys=0.08 gc=2.51 pauses=60

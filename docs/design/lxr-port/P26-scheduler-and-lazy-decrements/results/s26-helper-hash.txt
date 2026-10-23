@@ -1,0 +1,5 @@
+/root/d2/main/artifacts/obj/coreclr/linux.x64.Release/dlls/mscoree/coreclr/libcoreclr.so /root/p25/frames/p26-final-Release-linux/libcoreclr.so differ: byte 42, line 1
+JIT_NewArr1OBJ_MP_FastPortable                MISSING
+JIT_Patchpoint                                bytes=112   insns=33   c70b8298f441424d
+TOTAL 46cee8bd87fd6252f5265267148d0a34
+baseline TOTAL 46cee8bd87fd6252f5265267148d0a34

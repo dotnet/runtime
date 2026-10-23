@@ -5,6 +5,20 @@
 **Branch:** `kkokosa-lxr-integrated` (local). It is one linear series on top of `dotnet/runtime` main.
 **Source of the work:** the stack that ends at P17 S6 (`kkokosa-lxr-s6-finalizer-registry`, `69e02a55607`).
 
+## Update P26 (branch `kkokosa-lxr-scheduler-f2-f4b-f8`)
+
+This update is on top of P25 (`c3352e76067`). Six local commits. The details are in `P26-scheduler-and-lazy-decrements/README.md`.
+
+- **F2 (code).** A pause no longer walks the trace backlog: trace packets are not in `m_work` any more, `FixForwardingReaders` does not walk the consumed log bank, forwarding is resolved when a
+  packet runs. The Java value of 3 concurrent trace workers is now the default (with a floor of 2 on small machines, a deviation on purpose). **Measured:** list suffix nursery with the limit of 3: 13.7 s and 10.6 s become 4.6 s and 4.4 s.
+  The 148 ms FinalMark of P25 was 78 ms wait before the pause and 34 ms wait after it, plus 36 ms of stopped time.
+- **F4b (code).** Work-stealing deques and per-stage batch injectors replace the global-mutex queues; the trace packet loops over its children. **Measured:** system time of requests nursery 2.9 s becomes 0.5 s; CPU 9.2 s becomes 6.0 s.
+- **F8 (code).** The thread that made an RC or FinalMark pause does not wait for the lazy decrements and the sweep. **Measured:** 7 to 13 percent wall time in requests and list suffix.
+- **Tests (Measured).** New selectors `--f2-pause`, `--f4b-scheduler`, `--f8-lazy` with 8 controls; 40 native selectors pass on Linux Debug and Release and on Windows Release; 90 managed cells pass with the Debug collector.
+  The flaky P3.4 check was a race in the test (16 of 100 runs failed, now 0 of 100). TSan: no report on the scheduler suites. The stock helper hash is unchanged (`46cee8bd87fd6252f5265267148d0a34`).
+- **Final numbers (same session, x WKS):** wall 1.3/1.7 (binary trees), 1.8/1.9 (requests), 0.8/1.0 (list suffix) for nonmoving/nursery; CPU 2.4 to 5.1 times WKS.
+- **Open:** the next pause still waits for the last lazy generation; per-object RC cost; Full pause on one thread; the injector is not lock-free.
+- **Share files:** `C:\Users\konradkokosa\lxr-integrated-share\kkokosa-lxr-scheduler-f2-f4b-f8.bundle` and `patches\`. The P25 set is in `previous\kkokosa-lxr-parity-fixes-f1-f5-f4\`.
 ## Update P25 (branch `kkokosa-lxr-parity-fixes-f1-f5-f4`)
 
 This update is on top of the D2 branch and the P24 investigation (`c16710a2c1c`). Four local commits. The details are in `P25-parity-fixes-f1-f5-f4/README.md`.

@@ -1,0 +1,21 @@
+== binarytrees lxr-nonmoving
+  RefCount     n= 17 median=    5.53 ms  max=   17.65 ms
+== binarytrees lxr-nursery
+  RefCount     n= 18 median=    6.59 ms  max=   31.85 ms
+  InitialMark  n=  1 median=   29.27 ms  max=   29.27 ms
+== requests lxr-nonmoving
+  RefCount     n= 57 median=   16.50 ms  max=   44.51 ms
+  InitialMark  n=  1 median=    8.08 ms  max=    8.08 ms
+  FinalMark    n=  1 median=   36.29 ms  max=   36.29 ms
+== requests lxr-nursery
+  RefCount     n= 64 median=   19.17 ms  max=   56.45 ms
+  InitialMark  n=  2 median=   13.71 ms  max=   15.36 ms
+  FinalMark    n=  2 median=   31.86 ms  max=   32.53 ms
+== listsuffix lxr-nonmoving
+  RefCount     n= 51 median=   31.87 ms  max=   61.60 ms
+  InitialMark  n=  1 median=   22.38 ms  max=   22.38 ms
+  FinalMark    n=  1 median=   71.27 ms  max=   71.27 ms
+== listsuffix lxr-nursery
+  RefCount     n= 50 median=   39.16 ms  max=  113.58 ms
+  InitialMark  n=  1 median=   79.03 ms  max=   79.03 ms
+  FinalMark    n=  1 median=   56.35 ms  max=   56.35 ms

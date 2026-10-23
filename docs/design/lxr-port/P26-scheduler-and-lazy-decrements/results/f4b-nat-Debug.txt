@@ -1,0 +1,42 @@
+build exit=0
+Debug default exit=0 :: PASS: 23642/23642 integrated P4 checks :: flip_overlaps=0 flip_blocked=0
+Debug --log-storage exit=0 :: PASS: 2109/2109 log storage checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature exit=0 :: PASS: 1796/1796 mature movement checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-remset exit=0 :: PASS: 58/58 mature remset checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-reader exit=0 :: PASS: 30/30 mature reader checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-retained-owner exit=0 :: PASS: 18/18 retained mature owner checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-released-candidate exit=0 :: PASS: 67/67 released candidate incarnation checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-headroom exit=0 :: PASS: 67/67 nursery headroom checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-completed-scan exit=0 :: PASS: 27/27 completed mature descriptor checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-remset-whole exit=0 :: PASS: 274/274 whole-block remset lifetime checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-remset-wrap exit=0 :: PASS: 1078/1078 byte-wrap remset lifetime checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-remset-same-shape exit=0 :: PASS: 1079/1079 same-shape remset checks :: flip_overlaps=0 flip_blocked=0
+Debug --mature-remset-boundaries exit=0 :: PASS: 4315/4315 remset current-owner boundary checks :: flip_overlaps=0 flip_blocked=0
+Debug --nursery exit=0 :: PASS: 207/207 moving nursery checks :: flip_overlaps=0 flip_blocked=0
+Debug --nursery-reader exit=0 :: PASS: 31/31 moving reader checks :: flip_overlaps=0 flip_blocked=0
+Debug --root-batching exit=0 :: PASS: 3095/3095 root batching checks :: flip_overlaps=0 flip_blocked=0
+Debug --trace-batching exit=0 :: PASS: 206016/206016 trace batching checks :: flip_overlaps=0 flip_blocked=0
+Debug --aux-retirement exit=0 :: PASS: 8209/8209 auxiliary retirement checks :: flip_overlaps=0 flip_blocked=0
+Debug --object-planes exit=0 :: PASS: 16/16 object plane checks :: flip_overlaps=0 flip_blocked=0
+Debug --storage-diagnostics exit=0 :: PASS: 29/29 storage accounting checks :: flip_overlaps=0 flip_blocked=0
+Debug --lifetime exit=0 :: PASS: 15/15 lifetime probe checks :: flip_overlaps=0 flip_blocked=0
+Debug --p8-policy exit=0 :: PASS: 61/61 policy checks :: flip_overlaps=0 flip_blocked=0
+Debug --p8-storage exit=0 :: PASS: 1421/1421 fast-span and growth checks :: flip_overlaps=0 flip_blocked=0
+Debug --trace exit=0 :: PASS: 8333/8333 trace engine checks :: flip_overlaps=0 flip_blocked=0
+Debug --first-store-churn exit=0 :: PASS: 158/158 first-store engine checks :: flip_overlaps=0 flip_blocked=0
+Debug --inline-metadata exit=0 :: PASS: 465/465 inline metadata accessor checks :: flip_overlaps=0 flip_blocked=0
+Debug --lazy-large-release exit=0 :: PASS: 13/13 lazy large-object release checks :: flip_overlaps=0 flip_blocked=0
+Debug --s3-bookkeeping exit=0 :: PASS: 1324/1324 S3 bookkeeping checks :: flip_overlaps=0 flip_blocked=0
+Debug --s4-sweep exit=0 :: PASS: 13114/13114 S4 sweep checks :: flip_overlaps=0 flip_blocked=0
+Debug --s5b-overshoot exit=0 :: PASS: 422/422 S5b overshoot checks :: flip_overlaps=0 flip_blocked=0
+Debug --s6-registry exit=0 :: PASS: 241/241 S6 registry checks :: flip_overlaps=0 flip_blocked=0
+Debug --s7-pins exit=0 :: PASS: 4135/4135 S7 pin checks :: flip_overlaps=0 flip_blocked=0
+Debug --fresh-block-race exit=0 :: PASS: 10/10 fresh block race checks :: flip_overlaps=0 flip_blocked=0
+Debug --d2-spans exit=0 :: PASS: 1420/1420 D2 bump-allocation checks :: flip_overlaps=0 flip_blocked=0
+Debug --f1-trace exit=0 :: PASS: 79477/79477 F1 trace packet checks :: flip_overlaps=0 flip_blocked=0
+Debug --f5-policy exit=0 :: PASS: 16272/16272 F5 emergency accounting checks :: flip_overlaps=0 flip_blocked=0
+Debug --f4-scheduler exit=0 :: PASS: 3547/3547 F4 scheduler and recursion checks :: flip_overlaps=0 flip_blocked=0
+Debug --f2-pause exit=0 :: PASS: 2484/2484 F2 pause walk checks :: flip_overlaps=0 flip_blocked=0
+Debug --f4b-scheduler exit=0 :: PASS: 4026/4026 F4b scheduler and trace loop checks :: flip_overlaps=0 flip_blocked=0
+native Debug failed=0
+exit=0

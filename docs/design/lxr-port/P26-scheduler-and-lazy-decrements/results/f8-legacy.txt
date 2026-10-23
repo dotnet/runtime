@@ -1,0 +1,11 @@
+run-side-metadata-validation exit=0 :: PASS: Linux x64 side-metadata validation
+run-immix-block-validation exit=0 :: PASS: Linux x64 Immix block validation
+run-reference-count-validation exit=0 :: PASS: Linux x64 reference-count validation
+run-immix-allocation-validation exit=0 :: PASS: Linux x64 Immix allocation validation
+run-large-object-space-validation exit=0 :: PASS: Linux x64 large object space validation
+run-lxr-work-packet-validation exit=0 :: PASS: 642/642 P3.1 validation checks
+run-lxr-pause-validation exit=0 :: PASS: 380/380 P3.2 pause checks
+run-lxr-deferred-bucket-validation exit=0 :: PASS: 357/357 P3.3 validation checks
+run-lxr-completion-counter-validation exit=0 :: PASS: 58/58 P3.4 validation checks
+legacy failed=0
+exit=0

@@ -1,0 +1,3 @@
+[65/67] Building CXX object gc\CMakeFiles\clrlxrgc.dir\lxr_gc.cpp.obj
+[66/67] Building CXX object gc\CMakeFiles\clrlxrgc.dir\lxr_gcload.cpp.obj
+[67/67] Linking CXX shared library gc\clrlxrgc.dll

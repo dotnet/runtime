@@ -1,0 +1,14 @@
+Debug Debug mature finalizer-closure 0 5 ok
+Debug Debug mature dependent 0 139 ok
+managed failures=9
+exit=1
+ok cells: 81
+Debug Release nonmoving full -6 0 FAILED
+Debug Release nonmoving churn -6 0 FAILED
+Debug Release nursery full -6 0 FAILED
+Debug Release nursery churn -6 0 FAILED
+Debug Release mature full -6 0 FAILED
+Debug Release mature churn -6 0 FAILED
+Debug Debug nonmoving full -6 0 FAILED
+Debug Debug nursery full -6 0 FAILED
+Debug Debug mature full -6 0 FAILED
