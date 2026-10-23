@@ -22,8 +22,10 @@ The feature is experimental. Its configuration and behavior may change or be rem
 internal sealed class ILLinkCache
 {
     internal static ILLinkCache? TryCreate(string? cacheDirectory, TaskLoggingHelper log);
-    internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc);
-    internal void Store(string inputHash, string outputDirectory);
+    internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc,
+        Action<string, MessageImportance>? logOutput = null);
+    internal void Store(string inputHash, string outputDirectory,
+        IReadOnlyList<(string Line, MessageImportance Importance)>? output = null);
 }
 ```
 
@@ -51,7 +53,8 @@ internal sealed class ILLinkCache
 - Use a named `System.Threading.Mutex` derived from the resolved cache-directory path and input hash. An abandoned mutex grants ownership; recheck the entry and use fresh staging. This coordinates processes on one machine, not writers on different machines sharing a network directory.
 - Support concurrent task invocations with distinct output directories sharing a cache directory. Concurrent linking to the same output directory is unsupported.
 - Treat missing or unreadable cache data as a failed restore, never a successful hit.
-- Start without replaying warnings or other linker diagnostics on cache hits. This is an intentional v1 limitation.
+- Capture original linker output lines and their logging importance before task logging applies MSBuild warning policy. After successful restoration, replay them through the same `ToolTask` logging path. This preserves diagnostic parsing, including code, text, location, and subcategory, and lets the current engine apply global/per-code warning escalation, exceptions, and warning-as-message policies. Cache-internal messages are not captured. Do not replay anything on a failed restore, or treat a logging failure as a cache failure that retries linking.
+- Keep tool-owned warning settings in the invocation key as before. MSBuild's downstream warning policy is not part of the key. A replayed warning promoted by MSBuild fails the task and build just as it would on fresh execution: although the cached compiler result was successful, return `-1` when logging reports errors, matching `ToolTask`'s normal execution behavior. Normal execution still stores only when ILLink exits zero and the task has no logged errors.
 
 ## Input identity and eligibility
 
@@ -67,8 +70,8 @@ internal sealed class ILLinkCache
 
 ## Entry layout
 
-- Store entries under `<cache>/v1/<input-hash>/`, with a binary `manifest`, an `outputs/` tree, and a `last-used` UTC timestamp in invariant round-trip (`O`) text format.
-- The manifest records the format version, output paths, lengths, and SHA-256 content hashes. Validate it and every listed file before starting restoration.
+- Store entries under `<cache>/v1/<input-hash>/`, with a binary `manifest`, an `outputs/` tree, a binary `diagnostics` file, and a `last-used` UTC timestamp in invariant round-trip (`O`) text format.
+- The manifest records output paths, lengths, and SHA-256 content hashes, plus the length and SHA-256 hash of the diagnostics file. The diagnostics file records a count followed by each original output line and its logging importance, including an explicit zero count for warning-free invocations. Validate the complete manifest, diagnostics, and every listed file before starting restoration. Keep format version 1: hashing the changed task assembly invalidates existing keys, and manifests missing the required diagnostic integrity record fail validation rather than being assumed warning-free.
 - Copy the complete output tree without special-casing filenames. The MSBuild target owns `<output-directory>.semaphore` (normally `linked.semaphore`) and invalidates it before the incremental skip decision when that directory is missing. There is no special migration or exclusion for old in-directory `Link.semaphore` files; ordinary whole-directory cleanup and caching apply to them. Empty directories are not recorded.
 - The restore helper replaces the destination tree after entry validation. Copy failures can leave partial results, which the task's normal execution cleanup removes before fallback linking. Publication is atomic; restoration is not.
 - Assume ILLink outputs are not symbolic links; do not check for them. Cache and output directories must not contain each other.
@@ -90,5 +93,4 @@ internal sealed class ILLinkCache
 - Revisit identifying the resolved runtime/CoreLib that executes ILLink without adding substantial cache-lookup overhead.
 - Revisit symbolic-link handling when generalizing beyond ILLink outputs.
 - Revisit cross-process shared-reader/exclusive-purge coordination if concurrent maintenance becomes necessary.
-- Reconsider diagnostic replay, including missing console/binlog warnings and effects on external warning-as-error policies.
 - Examine manual wiping racing reads, including safe fallback after partially restoring output files.
