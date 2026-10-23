@@ -6583,6 +6583,52 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
+    public int GetRuntimeVersion(COR_VERSION* pVersion)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pVersion is null)
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pVersion));
+            *pVersion = default;
+
+            ReadOnlySpan<char> productVersion = _target.Contracts.RuntimeInfo.GetRuntimeProductVersion().AsSpan();
+            int suffix = productVersion.IndexOfAny('-', '+');
+            if (!Version.TryParse(suffix >= 0 ? productVersion[..suffix] : productVersion, out Version? version) ||
+                version.Build < 0 || version.Revision >= 0)
+                throw new FormatException($"Expected a three-component runtime product version, got '{productVersion}'.");
+
+            *pVersion = new COR_VERSION
+            {
+                dwMajor = (uint)version.Major,
+                dwMinor = (uint)version.Minor,
+                dwBuild = (uint)version.Build,
+                dwSubBuild = 0,
+            };
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            COR_VERSION versionLocal = default;
+            int hrLocal = _legacy.GetRuntimeVersion(pVersion is null ? null : &versionLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pVersion->dwMajor == versionLocal.dwMajor, $"cDAC: {pVersion->dwMajor}, DAC: {versionLocal.dwMajor}");
+                Debug.Assert(pVersion->dwMinor == versionLocal.dwMinor, $"cDAC: {pVersion->dwMinor}, DAC: {versionLocal.dwMinor}");
+                Debug.Assert(pVersion->dwBuild == versionLocal.dwBuild, $"cDAC: {pVersion->dwBuild}, DAC: {versionLocal.dwBuild}");
+                Debug.Assert(pVersion->dwSubBuild == versionLocal.dwSubBuild, $"cDAC: {pVersion->dwSubBuild}, DAC: {versionLocal.dwSubBuild}");
+            }
+        }
+#endif
+        return hr;
+    }
+
     public int GetTargetInfo(TargetInfo* pTargetInfo)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
