@@ -1786,7 +1786,7 @@ private:
             {
                 // Only a setter so make the invoke a set which maps to
                 // INVOKE_PROPERTYPUT | INVOKE_PROPERTYPUTREF.
-                binderFlags = BINDER_SetProperty;
+                binderFlags |= BINDER_SetProperty;
             }
             break;
         }
