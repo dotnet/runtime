@@ -450,10 +450,11 @@ inline uintptr_t SideMetadataAccessor::LoadWord(volatile uintptr_t* word, SideMe
         return VolatileLoadWithoutBarrier(word);
     }
 
-    MemoryBarrier();
-    uintptr_t value = VolatileLoad(word);
-    MemoryBarrier();
-    return value;
+    // P28 (F9, F10). A sequentially consistent load is an acquire load, as it is in the Java LXR (Rust compiles
+    // load_atomic(SeqCst) to a plain load on x64 and to ldar on ARM64). The order against an earlier store comes from the
+    // store: every store of this class is a compare-exchange loop, which is a full barrier on both architectures. The
+    // earlier code put a full barrier before and after each load (two mfence on x64). The selector --f10-order tests it.
+    return VolatileLoad(word);
 }
 
 inline uintptr_t SideMetadataAccessor::CompareExchangeWord(
@@ -550,6 +551,17 @@ inline void SideMetadataAccessor::Store(
     VerifyLocation(dataAddress, location);
     _ASSERTE((value & ~m_value_mask) == 0);
 #endif // _DEBUG
+#ifdef LXR_F10_PLAIN_STORE_CONTROL
+    // Control: a store is a plain store, which is not a barrier. A sequentially consistent load after it can be reordered.
+    if (order == SideMetadataMemoryOrder::SequentiallyConsistent)
+    {
+        uintptr_t plainWord = VolatileLoadWithoutBarrier(location.word);
+        VolatileStoreWithoutBarrier(
+            const_cast<uintptr_t*>(location.word),
+            static_cast<uintptr_t>((plainWord & ~location.mask) | ((value << location.shift) & location.mask)));
+        return;
+    }
+#endif // LXR_F10_PLAIN_STORE_CONTROL
     uintptr_t oldWord = LoadWord(location.word, order);
     while (true)
     {

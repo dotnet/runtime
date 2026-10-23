@@ -1319,6 +1319,68 @@ namespace
         }
     }
 
+    // P28 (F10). The metadata loads are plain acquire loads. Sequential consistency between a store and a later load of
+    // another location comes from the store (a compare-exchange loop, a full barrier). This is the store-buffer test: two
+    // threads each store to their own location and then load the location of the other. Both loads returning zero would be
+    // the reordering that a plain store allows. The Java LXR relies on the same property (SeqCst load = plain load on x64).
+    void TestF10LoadOrder()
+    {
+        Fixture fixture(1, 2, 1);
+        Expect("f10 order fixture initialized", fixture.initialized);
+        if (!fixture.initialized)
+        {
+            return;
+        }
+        SideMetadataAccessor accessor = fixture.metadata.GetAccessor(LxrSideMetadataKind::ObjectMark);
+        Expect("f10 order accessor", accessor.IsValid());
+        if (!accessor.IsValid())
+        {
+            return;
+        }
+        constexpr int Iterations = 300000;
+        const uintptr_t first = fixture.data_start;
+        const uintptr_t second = fixture.data_start + 4096;
+        std::vector<uint8_t> seenFirst(Iterations, 1);
+        std::vector<uint8_t> seenSecond(Iterations, 1);
+        std::atomic<int> go{-1};
+        std::atomic<int> finished{0};
+        auto worker = [&](uintptr_t mine, uintptr_t other, std::vector<uint8_t>* seen)
+        {
+            for (int i = 0; i < Iterations; i++)
+            {
+                while (go.load(std::memory_order_acquire) < i)
+                {
+                }
+                accessor.Store(mine, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
+                (*seen)[i] = static_cast<uint8_t>(accessor.Load(other, SideMetadataMemoryOrder::SequentiallyConsistent));
+                finished.fetch_add(1, std::memory_order_acq_rel);
+            }
+        };
+        std::thread a(worker, first, second, &seenFirst);
+        std::thread b(worker, second, first, &seenSecond);
+        for (int i = 0; i < Iterations; i++)
+        {
+            accessor.Store(first, 0, SideMetadataMemoryOrder::Relaxed);
+            accessor.Store(second, 0, SideMetadataMemoryOrder::Relaxed);
+            go.store(i, std::memory_order_release);
+            while (finished.load(std::memory_order_acquire) < 2 * (i + 1))
+            {
+            }
+        }
+        a.join();
+        b.join();
+        size_t both = 0;
+        for (int i = 0; i < Iterations; i++)
+        {
+            both += (seenFirst[i] == 0 && seenSecond[i] == 0) ? 1 : 0;
+        }
+        if (both != 0)
+        {
+            printf("DETAIL: f10 store-buffer outcomes (both loads zero): %zu of %d\n", both, Iterations);
+        }
+        Expect("f10 a store followed by a load of another location is not reordered (no both-zero outcome)", both == 0);
+    }
+
     void TestPhaseAndContention()
     {
         {
@@ -1771,6 +1833,7 @@ int main()
     TestF9RefillSchedule(1);
     TestF9RefillSchedule(3);
     TestF9DirtyRangeIsReported();
+    TestF10LoadOrder();
     TestPhaseAndContention();
     TestFreshReclamation();
     TestRejectedReusableBlocks();
