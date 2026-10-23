@@ -354,7 +354,6 @@ namespace System.Net.Http.Functional.Tests
 #endif
 
     [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
-    [SkipOnPlatform(TestPlatforms.Wasi, "AutomaticDecompression not supported on Wasi")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Decompression_Tests : HttpClientHandler_Decompression_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Decompression_Tests(ITestOutputHelper output) : base(output) { }
@@ -1594,6 +1593,11 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "SocketsHttpHandler is not supported on Browser")]
         public async Task SendAsync_EmptyOrInvalidAltSvcHeader_Success(string altSvc, HttpStatusCode statusCode)
         {
+            if (!PlatformDetection.IsTlsSupported)
+            {
+                return;
+            }
+
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = false;
             using HttpClient client = CreateHttpClient(handler);
