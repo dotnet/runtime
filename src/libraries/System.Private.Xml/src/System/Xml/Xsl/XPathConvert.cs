@@ -1810,7 +1810,7 @@ namespace System.Xml.Xsl
                 Debug.Assert(dec.MantissaSize >= 0);
 
                 uint uAdd, uMul;
-                int cu = (dec.MantissaSize + 8) / 9;
+                int cu = checked((dec.MantissaSize + 8) / 9);
                 int mantissaSize = dec.MantissaSize;
 
                 Ensure(cu);
