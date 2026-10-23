@@ -142,7 +142,7 @@ namespace Wasm.Build.Tests
             AssertPerAppCrossgenRan(config, expected: false);
         }
 
-        // A WasmReadyToRunProfile drives a crossgen2 --partial image: only the profiled subset is precompiled,
+        // PublishReadyToRunPgoFiles drives a crossgen2 --partial image: only the profiled subset is precompiled,
         // the rest is interpreted at runtime. Republish the same project through full, roots-only partial,
         // profiled partial, and full states. This proves that the profile contributes methods, property-only
         // changes invalidate incremental R2R output in both directions, and interpreter fallback covers methods
@@ -163,7 +163,8 @@ namespace Wasm.Build.Tests
                     <PublishReadyToRun>true</PublishReadyToRun>
                     <PublishTrimmed>false</PublishTrimmed>
                     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmBuildTestRootsOnlyPartial)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
-                    """);
+                    """,
+                extraItems: """<PublishReadyToRunPgoFiles Include="$(WasmBuildTestReadyToRunProfile)" Condition="'$(WasmBuildTestReadyToRunProfile)' != ''" />""");
 
             string frameworkDir = PublishR2RClosure(info, config, extraArgs: "", label: "full");
             AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
@@ -183,7 +184,7 @@ namespace Wasm.Build.Tests
             frameworkDir = PublishR2RClosure(
                 info,
                 config,
-                extraArgs: $"-p:WasmReadyToRunProfile=\"{profile}\"",
+                extraArgs: $"-p:WasmBuildTestReadyToRunProfile=\"{profile}\"",
                 label: "profiled");
             AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
             AssertPerAppCrossgenRan(config, expected: true);

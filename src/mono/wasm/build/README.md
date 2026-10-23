@@ -61,13 +61,15 @@ MIBC profile:
 ```xml
 <PropertyGroup>
   <PublishReadyToRun>true</PublishReadyToRun>
-  <WasmReadyToRunProfile>path/to/profile.mibc</WasmReadyToRunProfile>
 </PropertyGroup>
+<ItemGroup>
+  <PublishReadyToRunPgoFiles Include="path/to/profile.mibc" />
+</ItemGroup>
 ```
 
-`WasmReadyToRunProfile` enables crossgen2 partial compilation. Methods selected by the profile
-are compiled eagerly and other methods remain available through the interpreter. Without the
-property, `PublishReadyToRun` compiles the full closure.
+`PublishReadyToRunPgoFiles` enables crossgen2 partial compilation for CoreCLR browser apps.
+Methods selected by the profile are compiled eagerly and other methods remain available through
+the interpreter. Without PGO files, `PublishReadyToRun` compiles the full closure.
 
 The profile must exist when the project is published and must match the assemblies passed to
 crossgen2. In particular, profiles identify methods in specific assembly builds, so regenerate the

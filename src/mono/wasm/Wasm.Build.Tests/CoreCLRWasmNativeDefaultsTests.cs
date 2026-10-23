@@ -161,16 +161,16 @@ namespace Wasm.Build.Tests
             Assert.Equal(Path.Combine(GetObjDir(config), "R2R") + Path.DirectorySeparatorChar, match.Groups[1].Value);
         }
 
-        // The profile drives a crossgen2 --partial image: with a profile and R2R on, --partial is appended and
-        // the .mibc flows into PublishReadyToRunPgoFiles (crossgen2 -m:). With no profile the full closure is
-        // compiled (no --partial, no PGO input); the gate also requires PublishReadyToRun=true so a profile with
+        // PublishReadyToRunPgoFiles drives a crossgen2 --partial image: with PGO data and R2R on, --partial is
+        // appended and the .mibc flows to crossgen2 as -m:. With no PGO data the full closure is compiled
+        // (no --partial, no PGO input); the gate also requires PublishReadyToRun=true so PGO data with
         // R2R off is inert. Stops before crossgen2 - only the property/item wiring is under test; the crossgen2
         // args just let the R2R restore resolve a compiler (in-build when BASE_DIR is set, SDK pack otherwise).
         [Theory]
         [InlineData(/*profileSet*/ true,  /*r2r*/ true,  /*expectPartial*/ true)]
         [InlineData(/*profileSet*/ false, /*r2r*/ true,  /*expectPartial*/ false)]
         [InlineData(/*profileSet*/ true,  /*r2r*/ false, /*expectPartial*/ false)]
-        public void WasmReadyToRunProfileControlsPartialAndPgoInput(bool profileSet, bool r2r, bool expectPartial)
+        public void PublishReadyToRunPgoFilesControlsPartialCompilation(bool profileSet, bool r2r, bool expectPartial)
         {
             Configuration config = Configuration.Release;
             string profilePath = Path.Combine(BuildEnvironment.TestDataPath, "DotNet_Blazor_Wasm.mibc");
@@ -183,13 +183,14 @@ namespace Wasm.Build.Tests
                 </Target>
                 """;
 
-            string profileProperty = profileSet ? $"<WasmReadyToRunProfile>{profilePath}</WasmReadyToRunProfile>" : "";
+            string profileItem = profileSet ? $"<PublishReadyToRunPgoFiles Include=\"{profilePath}\" />" : "";
             ProjectInfo info = CopyTestAsset(
                 config,
                 aot: false,
                 TestAsset.WasmBasicTestApp,
                 $"coreclr_r2r_profile_{profileSet}_{r2r}",
-                extraProperties: $"<PublishReadyToRun>{r2r}</PublishReadyToRun>{profileProperty}",
+                extraProperties: $"<PublishReadyToRun>{r2r}</PublishReadyToRun>",
+                extraItems: profileItem,
                 insertAtEnd: printValueTarget);
 
             (string _, string output) = BuildProject(
@@ -219,7 +220,7 @@ namespace Wasm.Build.Tests
         }
 
         [Fact]
-        public void WasmReadyToRunProfileMustExist()
+        public void PublishReadyToRunPgoFileMustExist()
         {
             Configuration config = Configuration.Release;
             const string profilePath = "missing-profile.mibc";
@@ -230,8 +231,8 @@ namespace Wasm.Build.Tests
                 "coreclr_r2r_missing_profile",
                 extraProperties: $"""
                     <PublishReadyToRun>true</PublishReadyToRun>
-                    <WasmReadyToRunProfile>{profilePath}</WasmReadyToRunProfile>
-                    """);
+                    """,
+                extraItems: $"<PublishReadyToRunPgoFiles Include=\"{profilePath}\" />");
 
             (string _, string output) = BuildProject(
                 info,
@@ -240,7 +241,7 @@ namespace Wasm.Build.Tests
                     ExpectSuccess: false,
                     ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)));
 
-            Assert.Contains($"WasmReadyToRunProfile '{profilePath}' does not exist.", output);
+            Assert.Contains($"PublishReadyToRunPgoFiles item '{profilePath}' does not exist.", output);
         }
 
         [Theory]

@@ -25,21 +25,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">false</PublishReadyToRunComposite>
     <!-- Compile every assembly into one shared (large) version bubble. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
-    <!-- With a profile, compile only the profiled subset into the eager image (smaller startup); the rest
-         runs interpreted. Hardware intrinsics stay (ContainsMethodBody keeps them when the target has no
-         runtime codegen, i.e. wasm) and CoreLib JIT-helper implementations are rooted, so both remain
-         available before any interpreted call needs them. Without a profile the partial switch is omitted
-         and the full closure is compiled (unchanged behavior). -->
-    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmReadyToRunProfile)' != ''">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--instruction-set:relaxed-simd</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
-
-  <!-- Optional external method profile (.mibc) that selects the eager partial subset. Flows into the base
-       SDK ReadyToRun PGO input, so crossgen2 receives it as -m:&lt;profile&gt;; combined with the partial
-       switch above it compiles just the profiled methods. Absent, the eager image is the full closure. -->
-  <ItemGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmReadyToRunProfile)' != ''">
-    <PublishReadyToRunPgoFiles Include="$(WasmReadyToRunProfile)" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
     <RuntimeHostConfigurationOption Include="System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"
@@ -75,8 +62,12 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WasmCoreClrValidateReadyToRun"
           Condition="'$(PublishReadyToRun)' == 'true'"
           BeforeTargets="_WasmCoreClrSelectR2RDirectories;_ResolveWasmOutputs">
-    <Error Condition="'$(WasmReadyToRunProfile)' != '' and !Exists('$(WasmReadyToRunProfile)')"
-           Text="WasmReadyToRunProfile '$(WasmReadyToRunProfile)' does not exist. Specify an existing .mibc file generated for the assemblies being published." />
+    <ItemGroup>
+      <_WasmMissingReadyToRunPgoFile Include="@(PublishReadyToRunPgoFiles)"
+                                     Condition="!Exists('%(PublishReadyToRunPgoFiles.Identity)')" />
+    </ItemGroup>
+    <Error Condition="'@(_WasmMissingReadyToRunPgoFile)' != ''"
+           Text="PublishReadyToRunPgoFiles item '@(_WasmMissingReadyToRunPgoFile)' does not exist. Specify an existing .mibc file generated for the assemblies being published." />
     <Error Condition="'$(PublishReadyToRunComposite)' == 'true' and '$(_WasmEnableWebcil)' != 'true'"
            Text="PublishReadyToRunComposite for CoreCLR browser-wasm requires WebCIL-in-Wasm assemblies; enable WasmEnableWebcil." />
     <Error Condition="'$(PublishReadyToRunContainerFormat)' != 'wasm'"
@@ -254,7 +245,11 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
           BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
-      <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|Profile=$(WasmReadyToRunProfile)|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)</_WasmReadyToRunState>
+      <!-- With explicit PGO data, compile only the profiled subset into the eager image; the rest runs
+           interpreted. This is evaluated at target execution because top-level properties cannot reference
+           item lists. Without PGO data the partial switch is omitted and the full closure is compiled. -->
+      <PublishReadyToRunCrossgen2ExtraArgs Condition="'@(PublishReadyToRunPgoFiles)' != ''">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
+      <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|PgoFiles=@(PublishReadyToRunPgoFiles->'%(FullPath)', '|')|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)</_WasmReadyToRunState>
       <_WasmReadyToRunStateHash>$([MSBuild]::StableStringHash('$(_WasmReadyToRunState)', 'Sha256'))</_WasmReadyToRunStateHash>
       <_WasmReadyToRunStateFile>$(_WasmPublishR2RDir)browser-r2r-state.stamp</_WasmReadyToRunStateFile>
     </PropertyGroup>
