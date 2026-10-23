@@ -18,8 +18,7 @@ internal static class NativeTestProcess
         {
             RedirectStandardError = true,
             RedirectStandardOutput = true,
-            UseShellExecute = false,
-            WorkingDirectory = directory
+            UseShellExecute = false
         };
 
         foreach (string argument in arguments)
@@ -27,17 +26,35 @@ internal static class NativeTestProcess
             startInfo.ArgumentList.Add(argument);
         }
 
-        using Process process = Process.Start(startInfo);
-        Task<string> output = process.StandardOutput.ReadToEndAsync();
-        Task<string> error = process.StandardError.ReadToEndAsync();
-
-        if (!process.WaitForExit(60_000))
+        DirectoryInfo workingDirectory = Directory.CreateTempSubdirectory(nameof(NativeTestProcess) + "-");
+        try
         {
-            process.Kill(entireProcessTree: true);
-            process.WaitForExit();
-            throw new TimeoutException($"Native test executable '{fileName}' did not exit within 60 seconds.");
-        }
+            startInfo.WorkingDirectory = workingDirectory.FullName;
+            using Process process = Process.Start(startInfo);
+            try
+            {
+                Task<string> output = process.StandardOutput.ReadToEndAsync();
+                Task<string> error = process.StandardError.ReadToEndAsync();
 
-        return (process.ExitCode, output.GetAwaiter().GetResult(), error.GetAwaiter().GetResult());
+                if (!process.WaitForExit(60_000))
+                {
+                    throw new TimeoutException($"Native test executable '{fileName}' did not exit within 60 seconds.");
+                }
+
+                return (process.ExitCode, output.GetAwaiter().GetResult(), error.GetAwaiter().GetResult());
+            }
+            finally
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit();
+                }
+            }
+        }
+        finally
+        {
+            workingDirectory.Delete(recursive: true);
+        }
     }
 }
