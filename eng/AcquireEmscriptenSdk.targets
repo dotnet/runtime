@@ -235,4 +235,25 @@ JS_ENGINES = [NODE_JS]
   <Target Name="AcquireEmscriptenSdk"
           Condition="'$(TargetsBrowser)' == 'true' or $(MonoGenerateOffsetsOSGroups.Contains('browser'))"
           DependsOnTargets="AcquireEmscriptenSdkUnconditional" />
+
+  <!-- Validation only. Fails the build when the provisioned Node or npm is not the expected version, which
+       also catches a stale shared cache entry that still holds the previous Node. -->
+  <Target Name="_ValidateNode423Toolchain"
+          AfterTargets="AcquireEmscriptenSdkUnconditional"
+          Condition="'$(EMSDK_PATH)' != ''">
+    <PropertyGroup>
+      <_NodeValidationRoot>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)'))node/</_NodeValidationRoot>
+      <_NodeValidationExe>$(_NodeValidationRoot)bin/node</_NodeValidationExe>
+      <_NodeValidationExe Condition="'$(HostOS)' == 'windows'">$(_NodeValidationRoot)bin/node.exe</_NodeValidationExe>
+      <_NodeValidationNpmCli>$(_NodeValidationRoot)lib/node_modules/npm/bin/npm-cli.js</_NodeValidationNpmCli>
+      <_NodeValidationNpmCli Condition="'$(HostOS)' == 'windows'">$(_NodeValidationRoot)bin/node_modules/npm/bin/npm-cli.js</_NodeValidationNpmCli>
+    </PropertyGroup>
+    <Message Text="Validating Node transport $(NodePackageVersion) for dotnet/node#423 at $(_NodeValidationExe)" Importance="High" />
+    <Exec Command="&quot;$(_NodeValidationExe)&quot; -e &quot;const assert = require('node:assert/strict'); assert.equal(process.versions.node, '24.22.1'); assert.equal(process.versions.undici, '7.30.1'); console.log(process.execPath, process.version, 'undici', process.versions.undici)&quot;" />
+    <Exec Command="&quot;$(_NodeValidationExe)&quot; &quot;$(_NodeValidationNpmCli)&quot; --version"
+          ConsoleToMSBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_ValidatedNpmVersion" />
+    </Exec>
+    <Error Condition="'$(_ValidatedNpmVersion)' != '11.19.1'" Text="Expected npm 11.19.1, got '$(_ValidatedNpmVersion)'." />
+  </Target>
 </Project>
