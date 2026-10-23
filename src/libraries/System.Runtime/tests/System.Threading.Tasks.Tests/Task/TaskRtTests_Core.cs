@@ -2430,6 +2430,22 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void Wait_SingleThreaded()
+        {
+            Task incompleteTask = new TaskCompletionSource().Task;
+
+            Task.CompletedTask.Wait();
+            Assert.True(Task.CompletedTask.Wait(0));
+            Assert.False(incompleteTask.Wait(0));
+            Assert.False(Task.WaitAll([incompleteTask], 0));
+            Assert.Equal(-1, Task.WaitAny([incompleteTask], 0));
+
+            Assert.Throws<PlatformNotSupportedException>(() => incompleteTask.Wait(1));
+            Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAll([incompleteTask], 1));
+            Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAny([incompleteTask], 1));
+        }
+
         // Just runs a task and waits on it.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitTest_NegativeTests()

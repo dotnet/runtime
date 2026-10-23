@@ -609,9 +609,16 @@ namespace System.Net.Sockets
 
             if (_isHandleNonBlocking)
             {
-                if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 0) == 0)
+                try
                 {
-                    _isHandleNonBlocking = false;
+                    if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 0) == 0)
+                    {
+                        _isHandleNonBlocking = false;
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Concurrent disposal is allowed; restoring blocking mode is only an optimization.
                 }
             }
         }

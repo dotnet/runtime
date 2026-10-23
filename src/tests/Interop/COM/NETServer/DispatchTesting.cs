@@ -142,4 +142,11 @@ public class DispatchTesting : Server.Contract.IDispatchTesting
     {
         return values[0] is ExpectedArrayElement;
     }
+
+    private int _propertySetterRegressionTest;
+    public int PropertySetterRegressionTest
+    {
+        get => _propertySetterRegressionTest;
+        set => _propertySetterRegressionTest = value;
+    }
 }

@@ -23,6 +23,27 @@ namespace System.Security.Cryptography.Xml
         // Keeping this number low will preserve some stack space
         internal const int XmlDsigSearchDepth = 20;
 
+        /// <summary>
+        /// Adds <paramref name="attr"/> to a canonicalization render list, enforcing
+        /// <see cref="LocalAppContextSwitches.DangerousMaxCanonicalizationAttributesPerElement"/>.
+        /// </summary>
+        /// <remarks>
+        /// The render lists are scanned linearly for each candidate name, so leaving them unbounded
+        /// makes canonicalizing a single element quadratic in the number of attributes or namespace
+        /// declarations it carries - a cost an attacker controls on the signature verification path.
+        /// </remarks>
+        internal static void AddToRenderList(SortedList list, XmlAttribute attr)
+        {
+            int maxAttributes = LocalAppContextSwitches.DangerousMaxCanonicalizationAttributesPerElement;
+
+            if (maxAttributes > 0 && list.Count >= maxAttributes)
+            {
+                throw new CryptographicException(SR.Cryptography_Xml_MaxCanonicalizationAttributesExceeded);
+            }
+
+            list.Add(attr, null);
+        }
+
         private static bool HasNamespace(XmlElement element, string prefix, string value)
         {
             if (IsCommittedNamespace(element, prefix, value)) return true;
@@ -182,10 +203,235 @@ namespace System.Security.Cryptography.Xml
         {
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.XmlResolver = xmlResolver;
-            settings.DtdProcessing = DtdProcessing.Parse;
+            settings.DtdProcessing = LocalAppContextSwitches.CryptoXmlAllowDtdProcessing
+                ? DtdProcessing.Parse
+                : DtdProcessing.Prohibit;
             settings.MaxCharactersFromEntities = MaxCharactersFromEntities;
             settings.MaxCharactersInDocument = MaxCharactersInDocument;
             return settings;
+        }
+
+        internal static void LoadXmlDocumentWithMaxDepthCheck(XmlDocument xmlDocument, XmlReader reader, long maxDepth)
+        {
+            if (maxDepth == 0)
+            {
+                xmlDocument.Load(reader);
+                return;
+            }
+
+            using (XmlReader maxDepthReader = new MaxDepthXmlReader(reader, maxDepth, depthOffset: 0))
+            {
+                xmlDocument.Load(maxDepthReader);
+            }
+        }
+
+        internal static void ValidateInputXmlMaxDepth(XmlNode node, long maxDepth)
+        {
+            if (maxDepth == 0)
+            {
+                return;
+            }
+
+            XmlNode current = node;
+            long depth = 0;
+            while (true)
+            {
+                if (depth > maxDepth)
+                {
+                    throw new CryptographicException(SR.Cryptography_Xml_MaxDepthExceeded);
+                }
+
+                if (current.FirstChild != null)
+                {
+                    current = current.FirstChild;
+                    depth++;
+                    continue;
+                }
+
+                while (current != node && current.NextSibling == null)
+                {
+                    current = current.ParentNode!;
+                    depth--;
+                }
+
+                if (current == node)
+                {
+                    return;
+                }
+
+                current = current.NextSibling!;
+            }
+        }
+
+        internal static void ValidateInputXmlMaxDepth(XmlNode parent, string xml, long maxDepth, bool allowDtdProcessing)
+        {
+            if (maxDepth == 0 && allowDtdProcessing)
+            {
+                return;
+            }
+
+            NameTable nameTable = new NameTable();
+            XmlNamespaceManager nsMgr = new XmlNamespaceManager(nameTable);
+            for (XmlNode? ancestor = parent; ancestor != null; ancestor = ancestor.ParentNode)
+            {
+                if (ancestor.Attributes == null)
+                {
+                    continue;
+                }
+
+                foreach (XmlAttribute attr in ancestor.Attributes)
+                {
+                    if (attr.Prefix == "xmlns")
+                    {
+                        if (nsMgr.LookupNamespace(attr.LocalName) == null)
+                        {
+                            nsMgr.AddNamespace(attr.LocalName, attr.Value);
+                        }
+                    }
+                    else if (attr.Name == "xmlns")
+                    {
+                        if (nsMgr.LookupNamespace(string.Empty) == null)
+                        {
+                            nsMgr.AddNamespace(string.Empty, attr.Value);
+                        }
+                    }
+                }
+            }
+
+            XmlParserContext context = new XmlParserContext(nameTable, nsMgr, null, XmlSpace.None);
+
+            // XmlTextReader is used so general entity references surface as EntityReference
+            // nodes (below) instead of throwing when they aren't declared in this standalone
+            // parser's scope, and so DtdProcessing.Ignore skips any DOCTYPE without loading
+            // its entities. XmlResolver is nulled out so no external entity can be fetched.
+            XmlTextReader textReader;
+            if (parent is XmlDocument)
+            {
+                textReader = new XmlTextReader(new StringReader(xml), nameTable);
+            }
+            else
+            {
+                textReader = new XmlTextReader(xml, XmlNodeType.Element, context);
+            }
+
+            textReader.EntityHandling = EntityHandling.ExpandCharEntities;
+            textReader.DtdProcessing = allowDtdProcessing
+                ? DtdProcessing.Ignore
+                : DtdProcessing.Prohibit;
+            textReader.XmlResolver = null;
+
+            long depthOffset = 0;
+
+            if (maxDepth > 0 && parent is not XmlDocument)
+            {
+                XmlNode? container = parent is XmlElement ? parent : parent.ParentNode;
+
+                for (XmlNode? ancestor = container; ancestor != null; ancestor = ancestor.ParentNode)
+                {
+                    if (ancestor is XmlElement)
+                    {
+                        depthOffset++;
+                    }
+
+                    if (ancestor is XmlDocument)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            XmlReader outerReader = textReader;
+            XmlReader? innerReader = null;
+
+            if (maxDepth > 0)
+            {
+                outerReader = new MaxDepthXmlReader(textReader, maxDepth, depthOffset);
+                innerReader = textReader;
+            }
+
+            using (innerReader)
+            using (outerReader)
+            {
+                try
+                {
+                    while (outerReader.Read())
+                    {
+                        // A general entity reference can expand into an arbitrarily deep subtree
+                        // via the target document's DTD after this validator returns; without
+                        // processing that DTD here (billion laughs) the depth cannot be counted,
+                        // so reject the reference outright when DTD processing is disabled.
+                        // Predefined character entities do not surface as EntityReference and
+                        // are unaffected.
+                        if (!allowDtdProcessing && outerReader.NodeType == XmlNodeType.EntityReference)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Xml_MaxDepthExceeded);
+                        }
+                    }
+                }
+                catch (XmlException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Xml_MaxDepthExceeded, e);
+                }
+            }
+        }
+
+        // Close() is a no-op so this wrapper does not take ownership of the inner reader.
+        private sealed class MaxDepthXmlReader : XmlReader
+        {
+            private readonly XmlReader _reader;
+            private readonly long _maxDepth;
+            private readonly long _depthOffset;
+
+            internal MaxDepthXmlReader(XmlReader reader, long maxDepth, long depthOffset)
+            {
+                _reader = reader;
+                _maxDepth = maxDepth;
+                _depthOffset = depthOffset;
+            }
+
+            public override bool Read()
+            {
+                bool result = _reader.Read();
+                if (_depthOffset + _reader.Depth > _maxDepth)
+                {
+                    throw new CryptographicException(SR.Cryptography_Xml_MaxDepthExceeded);
+                }
+
+                return result;
+            }
+
+            public override XmlNodeType NodeType => _reader.NodeType;
+            public override string LocalName => _reader.LocalName;
+            public override string NamespaceURI => _reader.NamespaceURI;
+            public override string Prefix => _reader.Prefix;
+            public override bool HasValue => _reader.HasValue;
+            public override string Value => _reader.Value;
+            public override int Depth => _reader.Depth;
+            public override string BaseURI => _reader.BaseURI;
+            public override bool IsEmptyElement => _reader.IsEmptyElement;
+            public override bool IsDefault => _reader.IsDefault;
+            public override XmlSpace XmlSpace => _reader.XmlSpace;
+            public override string XmlLang => _reader.XmlLang;
+            public override Type ValueType => _reader.ValueType;
+            public override int AttributeCount => _reader.AttributeCount;
+            public override bool EOF => _reader.EOF;
+            public override ReadState ReadState => _reader.ReadState;
+            public override XmlNameTable NameTable => _reader.NameTable;
+            public override bool CanResolveEntity => _reader.CanResolveEntity;
+            public override System.Xml.Schema.IXmlSchemaInfo? SchemaInfo => _reader.SchemaInfo;
+
+            public override string GetAttribute(int i) => _reader.GetAttribute(i);
+            public override string? GetAttribute(string name) => _reader.GetAttribute(name);
+            public override string? GetAttribute(string name, string? namespaceURI) => _reader.GetAttribute(name, namespaceURI);
+            public override string? LookupNamespace(string prefix) => _reader.LookupNamespace(prefix);
+            public override bool MoveToAttribute(string name) => _reader.MoveToAttribute(name);
+            public override bool MoveToAttribute(string name, string? ns) => _reader.MoveToAttribute(name, ns);
+            public override bool MoveToElement() => _reader.MoveToElement();
+            public override bool MoveToFirstAttribute() => _reader.MoveToFirstAttribute();
+            public override bool MoveToNextAttribute() => _reader.MoveToNextAttribute();
+            public override bool ReadAttributeValue() => _reader.ReadAttributeValue();
+            public override void ResolveEntity() => _reader.ResolveEntity();
+            public override void Close() { }
         }
 
         internal static XmlDocument PreProcessDocumentInput(XmlDocument document, XmlResolver xmlResolver, string baseUri)
@@ -200,11 +446,21 @@ namespace System.Security.Cryptography.Xml
             {
                 XmlReaderSettings settings = new XmlReaderSettings();
                 settings.XmlResolver = xmlResolver;
-                settings.DtdProcessing = DtdProcessing.Parse;
+                settings.DtdProcessing = LocalAppContextSwitches.CryptoXmlAllowDtdProcessing
+                    ? DtdProcessing.Parse
+                    : DtdProcessing.Prohibit;
                 settings.MaxCharactersFromEntities = MaxCharactersFromEntities;
                 settings.MaxCharactersInDocument = MaxCharactersInDocument;
                 using XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
-                doc.Load(reader);
+                long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+                if (maxDepth > 0)
+                {
+                    LoadXmlDocumentWithMaxDepthCheck(doc, reader, maxDepth);
+                }
+                else
+                {
+                    doc.Load(reader);
+                }
             }
             return doc;
         }
@@ -220,11 +476,21 @@ namespace System.Security.Cryptography.Xml
             {
                 XmlReaderSettings settings = new XmlReaderSettings();
                 settings.XmlResolver = xmlResolver;
-                settings.DtdProcessing = DtdProcessing.Parse;
+                settings.DtdProcessing = LocalAppContextSwitches.CryptoXmlAllowDtdProcessing
+                    ? DtdProcessing.Parse
+                    : DtdProcessing.Prohibit;
                 settings.MaxCharactersFromEntities = MaxCharactersFromEntities;
                 settings.MaxCharactersInDocument = MaxCharactersInDocument;
                 using XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
-                doc.Load(reader);
+                long maxDepth = LocalAppContextSwitches.CryptoXmlMaxInputDocumentDepth;
+                if (maxDepth > 0)
+                {
+                    LoadXmlDocumentWithMaxDepthCheck(doc, reader, maxDepth);
+                }
+                else
+                {
+                    doc.Load(reader);
+                }
             }
             return doc;
         }
