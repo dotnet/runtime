@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- The fixtures require ILASM native export stubs. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="VTableFixups.cs" />
+    <ProjectReference Include="AutoExportsX64.ilproj" />
+    <ProjectReference Include="AutoExportsX86.ilproj" />
+    <ProjectReference Include="VTableFixupsX64.ilproj" />
+    <ProjectReference Include="VTableFixupsX86.ilproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <IlasmFlags Condition="'$(TargetBits)' == '64'">$(IlasmFlags) -PE64 -$(TargetArchitecture)</IlasmFlags>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ExecutableData.il" />
+  </ItemGroup>
+</Project>
