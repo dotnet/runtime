@@ -7441,8 +7441,8 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
     // We will iterate and pop the args in reverse order as we sometimes need
     // to spill some args. However, we need signature information and the
     // JIT-EE interface only allows us to iterate the signature forwards. We
-    // will collect the needed information here and at the same time notify the
-    // EE that the signature types need to be loaded.
+    // will collect the needed information here. R2R target resolution prepares signature
+    // types; other compilation modes notify the EE that these types need to be loaded.
     CORINFO_ARG_LIST_HANDLE sigArg                = sig->args;
     bool                    hasSecretStubArgument = false;
     for (unsigned i = 0; i < sig->numArgs; i++)
@@ -7465,7 +7465,8 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             hasSecretStubArgument = true;
         }
 
-        if (corType != CORINFO_TYPE_CLASS && corType != CORINFO_TYPE_BYREF && corType != CORINFO_TYPE_PTR)
+        if (!IsReadyToRun() && corType != CORINFO_TYPE_CLASS && corType != CORINFO_TYPE_BYREF &&
+            corType != CORINFO_TYPE_PTR)
         {
             CORINFO_CLASS_HANDLE argRealClass = info.compCompHnd->getArgClass(sig, sigArg);
             if (argRealClass != nullptr)
@@ -7482,7 +7483,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         sigArg = info.compCompHnd->getArgNext(sigArg);
     }
 
-    if ((sig->retTypeSigClass != nullptr) && (sig->retType != CORINFO_TYPE_CLASS) &&
+    if (!IsReadyToRun() && (sig->retTypeSigClass != nullptr) && (sig->retType != CORINFO_TYPE_CLASS) &&
         (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR))
     {
         // Make sure that all valuetypes (including enums) that we push are loaded.

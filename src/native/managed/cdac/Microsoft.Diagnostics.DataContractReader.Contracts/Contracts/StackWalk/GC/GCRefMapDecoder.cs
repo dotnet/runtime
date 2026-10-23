@@ -17,6 +17,7 @@ internal enum GCRefMapToken
     MethodParam = 3,
     TypeParam = 4,
     VASigCookie = 5,
+    This = 6,
 }
 
 /// <summary>
@@ -27,10 +28,10 @@ internal enum GCRefMapToken
 /// It is used by ExternalMethodFrame and StubDispatchFrame to report GC roots
 /// without needing the full MethodDesc/signature decoding path.
 ///
-/// Encoding: each slot is encoded as a variable-length integer using 3 bits per
-/// token (see <see cref="GCRefMapToken"/>), with a high-bit continuation flag.
-/// A "skip" token advances the slot position without reporting. The stream ends
-/// when all slots have been consumed (indicated by a zero byte after the last token).
+/// Encoding: two-bit tokens use escape 3 for extended tokens and longer skips.
+/// Extended integers use three payload bits and a continuation bit per group.
+/// THIS additionally consumes a receiver-kind bit. Each byte carries seven stream
+/// bits and a high continuation bit; trailing zero bits need not be stored.
 ///
 /// The native implementation lives in coreclr/inc/gcrefmap.h (GCRefMapDecoder class).
 /// </summary>
@@ -48,6 +49,7 @@ internal ref struct GCRefMapDecoder
     private int _blobIndex;
     private int _pendingByte;
     private int _pos;
+    public bool ThisIsInterior { get; private set; }
 
     public GCRefMapDecoder(Target target, TargetPointer blob)
     {
@@ -57,6 +59,7 @@ internal ref struct GCRefMapDecoder
         _blobIndex = 0;
         _pendingByte = 0x80; // Forces first byte read
         _pos = 0;
+        ThisIsInterior = false;
     }
 
     public GCRefMapDecoder(byte[] blob)
@@ -67,6 +70,7 @@ internal ref struct GCRefMapDecoder
         _blobIndex = 0;
         _pendingByte = 0x80; // Forces first byte read
         _pos = 0;
+        ThisIsInterior = false;
     }
 
     public readonly bool AtEnd => _pendingByte == 0;
@@ -148,7 +152,10 @@ internal ref struct GCRefMapDecoder
             else
             {
                 _pos++;
-                return (GCRefMapToken)((ext >> 1) + 3);
+                GCRefMapToken token = (GCRefMapToken)((ext >> 1) + 3);
+                if (token == GCRefMapToken.This)
+                    ThisIsInterior = GetBit() != 0;
+                return token;
             }
         }
         _pos++;

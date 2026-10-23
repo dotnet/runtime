@@ -94,7 +94,7 @@ public:
     }
 #endif
 
-    void WriteToken(int pos, int gcRefMapToken)
+    void WriteToken(int pos, int gcRefMapToken, bool thisIsInterior = false)
     {
         int posDelta = pos - m_Pos;
         m_Pos = pos + 1;
@@ -127,6 +127,8 @@ public:
         {
             AppendTwoBit(3);
             AppendInt(((gcRefMapToken - 3) << 1) | 1);
+            if (gcRefMapToken == GCREFMAP_THIS)
+                AppendBit(thisIsInterior ? 1 : 0);
         }
     }
 
@@ -160,6 +162,7 @@ class GCRefMapDecoder
     PTR_BYTE m_pCurrentByte;
     int m_PendingByte;
     int m_Pos;
+    bool m_ThisIsInterior;
 
     FORCEINLINE int GetBit()
     {
@@ -197,7 +200,7 @@ class GCRefMapDecoder
 
 public:
     GCRefMapDecoder(PTR_BYTE pBlob)
-        : m_pCurrentByte(pBlob), m_PendingByte(0x80), m_Pos(0)
+        : m_pCurrentByte(pBlob), m_PendingByte(0x80), m_Pos(0), m_ThisIsInterior(false)
     {
     }
 
@@ -223,6 +226,11 @@ public:
         return m_Pos;
     }
 
+    bool ThisIsInterior() const
+    {
+        return m_ThisIsInterior;
+    }
+
     int ReadToken()
     {
         int val = GetTwoBit();
@@ -237,7 +245,10 @@ public:
             else
             {
                 m_Pos++;
-                return (ext >> 1) + 3;
+                int token = (ext >> 1) + 3;
+                if (token == GCREFMAP_THIS)
+                    m_ThisIsInterior = GetBit() != 0;
+                return token;
             }
         }
         m_Pos++;
