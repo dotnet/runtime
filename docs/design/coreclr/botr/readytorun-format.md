@@ -224,6 +224,7 @@ struct READYTORUN_IMPORT_SECTION
 | ReadyToRunImportSectionFlags::None     | 0x0000  | None
 | ReadyToRunImportSectionFlags::Eager    | 0x0001 | Set if the slots in the section have to be initialized at image load time. It is used to avoid lazy initialization when it cannot be done or when it would have undesirable reliability or performance effects (unexpected failure or GC trigger points, overhead of lazy initialization).
 | ReadyToRunImportSectionFlags::PCode    | 0x0004  | Section contains pointers to code
+| ReadyToRunImportSectionFlags::GCRefMap | 0x0008 | Each signature RVA points to a GC reference map followed immediately by the fixup signature (R2R 33 and later).
 
 
 Module-eager fixups in `System.Private.CoreLib`, including composite images containing
@@ -381,10 +382,21 @@ Because this fixup depends on the target entry point already being registered, i
 
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
-For slots resolved lazily via `READYTORUN_HELPER_DelayLoad_MethodCall` helper, auxiliary data are
-compressed argument maps that allow precise GC stack scanning while the helper is running. The CoreCLR runtime class [`GCRefMapDecoder`](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/inc/gcrefmap.h#L158) is used to parse this information. This data would not be required for runtimes that allow conservative stack scanning.
+For slots resolved lazily via `READYTORUN_HELPER_DelayLoad_MethodCall`, compressed argument maps
+allow precise GC stack scanning while the helper is running. The CoreCLR runtime class [`GCRefMapDecoder`](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/inc/gcrefmap.h#L158) is used to parse this information. This data would not be required for runtimes that allow conservative stack scanning.
 
-The auxiliary data table contains the exact same number of GC ref map records as there are method entries in the import section. To accelerate GC ref map lookup, the auxiliary data section starts with a lookup table holding the offset of every 1024-th method in the runtime function table within the linearized GC ref map.
+Starting with R2R 33, import sections with `ReadyToRunImportSectionFlags::GCRefMap` store each
+argument map immediately before its fixup signature. The per-cell signature RVA points to the
+start of the map. To decode the fixup signature, skip bytes through the first byte whose high
+bit is clear, inclusive. This also skips the x86 stack-pop information, which is part of the same
+map encoding. Individual maps require only byte alignment.
+
+The GC reads the map directly through the cell's signature RVA; there is no separate map table
+or sparse lookup index, and `AuxiliaryData` is zero. Cells that already share a signature also
+share its map. References that do not need a map can point directly to the signature tail.
+
+In earlier versions, `AuxiliaryData` points to a table with one map per import entry, prefixed
+by offsets for every 1024th entry:
 
 |     Offset in auxiliary data | Size | Content
 |-----------------------------:|-----:|:-------

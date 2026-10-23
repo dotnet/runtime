@@ -22,6 +22,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly MethodWithToken _method;
 
+        private byte[] _gcRefMap;
+
+        internal bool EmitGCRefMap { get; set; }
+
+        public override int Offset => _gcRefMap?.Length ?? 0;
+
         public MethodFixupSignature(
             ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
@@ -50,6 +56,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public TypeDesc ConstrainedType => _method.ConstrainedType;
 
         public bool NeedsInstantiationArg => _method.ConstrainedType?.IsCanonicalSubtype(CanonicalFormKind.Any) ?? false;
+
+        internal byte[] GetGCRefMap(NodeFactory factory)
+        {
+            if (_gcRefMap is null)
+            {
+                GCRefMapBuilder builder = new GCRefMapBuilder(factory.Target, relocsOnly: false);
+                builder.GetCallRefMap(Method, IsUnboxingStub || IsInstantiatingStub);
+                _gcRefMap = builder.Builder.ToObjectData().Data;
+            }
+            return _gcRefMap;
+        }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
@@ -128,6 +145,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder(factory, relocsOnly);
+            if (EmitGCRefMap)
+            {
+                foreach (byte value in GetGCRefMap(factory))
+                {
+                    dataBuilder.EmitByte(value);
+                }
+            }
+
+            // Plain signature references alias the tail; map-bearing imports reference the prefix.
             dataBuilder.AddSymbol(this);
 
             // Optimize some of the fixups into a more compact form.

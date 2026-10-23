@@ -875,8 +875,8 @@ GCRefMap resolution from a frame's `Indirection` pointer proceeds as follows:
 3. Compute the RVA of the indirection address: `rva = indirection - imageBase`.
 4. Search through `READYTORUN_IMPORT_SECTION` entries to find the section containing the RVA.
 5. Compute the slot index within the section: `index = (rva - sectionVA) / entrySize`.
-6. Use the section's `AuxiliaryData` RVA to locate the GCRefMap lookup table.
-7. Use stride-based lookup (stride = 1024) plus linear scan to find the specific GCRefMap entry.
+6. If the section has the `GCRefMap` flag (`0x0008`), read the DWORD at `imageBase + Signatures + index * 4`. This RVA points directly to the GCRefMap prefix of the import signature.
+7. Otherwise, for older images, use the section's `AuxiliaryData` RVA to locate the GCRefMap lookup table, then use stride-based lookup (stride = 1024) plus linear scan to find the specific entry.
 
 #### Slot Mapping
 
@@ -930,7 +930,7 @@ the frame overrides its interpretation:
   the method's owning type is a value type and the method is not an unboxing stub.
 
 All supported ReadyToRun instance import maps use `THIS`: the runtime's minimum supported
-ReadyToRun major version is 33. No per-map format flag or receiver-token validation is needed.
+ReadyToRun major version is 33. No per-map receiver-format flag or receiver-token validation is needed.
 Signature-synthesized maps may continue to use concrete `REF` and `INTERIOR` tokens; synthetic
 maps for explicit-context shared bodies are not eligible for declaration-map borrowing.
 

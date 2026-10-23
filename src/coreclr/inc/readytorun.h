@@ -82,7 +82,8 @@
 // method's ReadyToRun entry point and fixups.
 // R2R Version 31.1 adds READYTORUN_FLAG_SINGLE_THREADED, which records that the image lays out [ThreadStatic] fields as regular statics
 // for a runtime built without FEATURE_MULTITHREADING.
-// R2R Version 33 requires contextual THIS tokens in instance-call GCRefMaps.
+// R2R Version 33 requires contextual THIS tokens in instance-call GCRefMaps and
+// prefixes map-bearing import signatures with their GCRefMaps.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -184,6 +185,7 @@ enum class ReadyToRunImportSectionFlags : uint16_t
     None  = 0x0000,
     Eager = 0x0001, // Fixups must be resolved at module load time before any code in the module runs.
     PCode = 0x0004, // Section contains pointers to code
+    GCRefMap = 0x0008, // Each signature is prefixed by its argument GC reference map.
 };
 
 // All values in this enum should within a nibble (4 bits).

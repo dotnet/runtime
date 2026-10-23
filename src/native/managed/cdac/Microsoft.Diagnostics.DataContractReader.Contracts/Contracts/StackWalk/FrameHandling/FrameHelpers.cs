@@ -123,8 +123,11 @@ internal sealed class FrameHelpers
         const int ImportSectionSize = 20;
         const int SectionVAOffset = 0;
         const int SectionSizeOffset = 4;
+        const int FlagsOffset = 8;
         const int EntrySizeOffset = 11;
+        const int SignaturesOffset = 12;
         const int AuxiliaryDataOffset = 16;
+        const ushort GCRefMapFlag = 0x0008;
 
         TargetPointer sectionsBase = r2rInfo.ImportSections;
         for (uint i = 0; i < r2rInfo.NumImportSections; i++)
@@ -140,6 +143,14 @@ internal sealed class FrameHelpers
                     return TargetPointer.Null;
 
                 uint index = (rva - sectionVA) / entrySize;
+                if ((_target.Read<ushort>(sectionAddr + FlagsOffset) & GCRefMapFlag) != 0)
+                {
+                    uint signaturesRva = _target.Read<uint>(sectionAddr + SignaturesOffset);
+                    TargetPointer signatureEntry = new(imageBase + signaturesRva + index * sizeof(uint));
+                    uint mapRva = _target.Read<uint>(signatureEntry);
+                    return new TargetPointer(imageBase + mapRva);
+                }
+
                 uint auxDataRva = _target.Read<uint>(sectionAddr + AuxiliaryDataOffset);
                 if (auxDataRva == 0)
                     return TargetPointer.Null;

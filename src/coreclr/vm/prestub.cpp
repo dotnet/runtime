@@ -22,6 +22,7 @@
 #include "array.h"
 #include "ecall.h"
 #include "virtualcallstub.h"
+#include "gcrefmap.h"
 #include "../debug/ee/debugger.h"
 
 #include "CachedInterfaceDispatchPal.h"
@@ -2997,7 +2998,16 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 
-        PCCOR_SIGNATURE pBlob = (BYTE *)pNativeImage->GetRvaData(pSignatures[index]);
+        PTR_BYTE pGCRefMap = dac_cast<PTR_BYTE>(pNativeImage->GetRvaData(pSignatures[index]));
+        PCCOR_SIGNATURE pBlob = pGCRefMap;
+        if ((pImportSection->Flags & ReadyToRunImportSectionFlags::GCRefMap) != ReadyToRunImportSectionFlags::None)
+        {
+            pBlob = GCRefMapDecoder::Skip(pBlob);
+        }
+        else
+        {
+            pGCRefMap = nullptr;
+        }
 
         BYTE kind = *pBlob++;
 
@@ -3058,7 +3068,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                 pMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &th);
 
         VirtualEntry:
-                pMD->PrepareForUseAsAVirtualCallTargetOfANativeImage(pEMFrame->GetGCRefMap());
+                pMD->PrepareForUseAsAVirtualCallTargetOfANativeImage(pGCRefMap);
 
                 if (pMD->IsVtableMethod())
                 {
@@ -3208,7 +3218,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
             _ASSERTE(pMD != NULL);
 
             _ASSERTE(!pModule->IsCollectible());
-            pMD->PrepareForUseAsACallTargetOfANativeImage(pEMFrame->GetGCRefMap());
+            pMD->PrepareForUseAsACallTargetOfANativeImage(pGCRefMap);
 
             {
                 // Switch to cooperative mode to avoid racing with GC stackwalk
@@ -3218,9 +3228,9 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
 #if _DEBUG
             // Recomputing an unprepared signature would reintroduce the avoided type loads.
-            if (pMD->HaveNativeImageDependenciesBeenPrepared() && pEMFrame->GetGCRefMap() != NULL)
+            if (pMD->HaveNativeImageDependenciesBeenPrepared() && pGCRefMap != nullptr)
             {
-                _ASSERTE(CheckGCRefMapEqual(pEMFrame->GetGCRefMap(), pMD, false));
+                _ASSERTE(CheckGCRefMapEqual(pGCRefMap, pMD, false));
             }
 #endif // _DEBUG
 
@@ -3666,6 +3676,10 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 
     PCCOR_SIGNATURE pBlob = (BYTE *)pNativeImage->GetRvaData(pSignatures[index]);
+    if ((pImportSection->Flags & ReadyToRunImportSectionFlags::GCRefMap) != ReadyToRunImportSectionFlags::None)
+    {
+        pBlob = GCRefMapDecoder::Skip(pBlob);
+    }
     PCCOR_SIGNATURE pBlobStart = pBlob;
 
     ReadyToRunFixupKind kind = (ReadyToRunFixupKind)*pBlob++;

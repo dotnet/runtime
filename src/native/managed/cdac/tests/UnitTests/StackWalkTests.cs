@@ -24,6 +24,20 @@ public unsafe class StackWalkTests
     private const uint X86TransitionBlockSize = 7 * sizeof(uint);
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FindGCRefMap_ResolvesImportRecord(bool inlineGCRefMap)
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            nameof(Data.ExternalMethodFrame), gcRefMap: [0x83, 0x05], hasMethodDesc: false,
+            inlineGCRefMap: inlineGCRefMap);
+
+        TargetPointer map = new FrameHelpers(target).FindGCRefMap(new TargetPointer(0x100108));
+
+        Assert.Equal(inlineGCRefMap ? 0x100200UL : 0x100206UL, map.Value);
+    }
+
+    [Theory]
     [InlineData(0x00, 0)]
     [InlineData(0x01, 1)]
     [InlineData(0x02, 2)]
@@ -1098,7 +1112,7 @@ public unsafe class StackWalkTests
         string frameType, byte[]? gcRefMap, bool hasMethodDesc, byte[]? signatureBlob = null,
         uint? representativeMethodDescAddress = null, bool hasUnresolvedIndirection = false,
         RuntimeInfoArchitecture architecture = RuntimeInfoArchitecture.X86, bool hasCodeData = true,
-        bool hasGCRefMapField = true, bool? valueType = null, bool unboxing = false)
+        bool hasGCRefMapField = true, bool? valueType = null, bool unboxing = false, bool inlineGCRefMap = true)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
         TestPlaceholderTarget.Builder builder = new(arch);
@@ -1159,12 +1173,28 @@ public unsafe class StackWalkTests
             helpers.Write(importSection.AsSpan(0), ImportSectionRva);
             helpers.Write(importSection.AsSpan(4), 3u * sizeof(uint));
             importSection[11] = sizeof(uint);
-            helpers.Write(importSection.AsSpan(16), GCRefMapRva);
+            if (inlineGCRefMap)
+            {
+                const uint SignaturesRva = 0x180;
+                helpers.Write(importSection.AsSpan(8), (ushort)0x0008);
+                helpers.Write(importSection.AsSpan(12), SignaturesRva);
+                byte[] signatures = new byte[3 * sizeof(uint)];
+                helpers.Write(signatures.AsSpan(2 * sizeof(uint)), GCRefMapRva);
+                builder.MemoryBuilder.AddHeapFragment(new() { Address = ImageBase + SignaturesRva, Data = signatures, Name = "Import signatures" });
+            }
+            else
+            {
+                helpers.Write(importSection.AsSpan(16), GCRefMapRva);
+            }
             builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x5000, Data = importSection, Name = "Import section" });
-            // The first two import entries have empty maps; select the third entry.
-            byte[] maps = new byte[6 + gcRefMap.Length];
-            helpers.Write(maps.AsSpan(0), 4u);
-            gcRefMap.CopyTo(maps, 6);
+            int mapOffset = inlineGCRefMap ? 0 : 6;
+            byte[] maps = new byte[mapOffset + gcRefMap.Length];
+            if (!inlineGCRefMap)
+            {
+                // The first two import entries have empty maps; select the third entry.
+                helpers.Write(maps.AsSpan(0), 4u);
+            }
+            gcRefMap.CopyTo(maps, mapOffset);
             builder.MemoryBuilder.AddHeapFragment(new() { Address = ImageBase + GCRefMapRva, Data = maps, Name = "GCRefMaps" });
             executionManager.Setup(e => e.FindReadyToRunModule(indirection)).Returns(new TargetPointer(0x3000));
         }

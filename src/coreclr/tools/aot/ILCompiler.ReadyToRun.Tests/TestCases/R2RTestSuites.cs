@@ -30,6 +30,66 @@ public class R2RTestSuites
         _output = output;
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ImportSignaturesContainGCRefMaps(bool composite)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(ImportSignaturesContainGCRefMaps),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ImportSignaturesContainGCRefMaps),
+            [
+                new(nameof(ImportSignaturesContainGCRefMaps), [new CrossgenAssembly(input)])
+                {
+                    Options = composite ? [Crossgen2Option.Composite] : [],
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            int mapCount = 0;
+            int multiByteMapCount = 0;
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                bool hasMaps = section.Type == ReadyToRunImportSectionType.StubDispatch;
+                Assert.Equal(hasMaps, (section.Flags & ReadyToRunImportSectionFlags.GCRefMap) != 0);
+                Assert.Equal(0, section.AuxiliaryDataRVA);
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    int start = reader.GetOffset((int)entry.SignatureRVA);
+                    int signature = entry.GetSignatureOffset(reader);
+                    if (hasMaps)
+                    {
+                        Assert.True(entry.GCRefMapSize > 0);
+                        for (int offset = start; offset < signature - 1; offset++)
+                        {
+                            Assert.NotEqual(0, reader.Image[offset] & 0x80);
+                        }
+                        Assert.Equal(0, reader.Image[signature - 1] & 0x80);
+                        mapCount++;
+                        if (entry.GCRefMapSize > 1)
+                            multiByteMapCount++;
+                    }
+                    else
+                    {
+                        Assert.Equal(0, entry.GCRefMapSize);
+                        Assert.Null(entry.GCRefMap);
+                    }
+                    Assert.Equal((byte)entry.Signature.FixupKind, (byte)(reader.Image[signature] & 0x7f));
+                }
+            }
+            Assert.True(mapCount > 0);
+            Assert.True(multiByteMapCount > 0);
+        }
+    }
+
     [Fact]
     public void CallSignaturesDoNotRequireTypeHandleFixups()
     {
@@ -776,7 +836,7 @@ public class R2RTestSuites
                 importEntries,
                 entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.InjectStringThunks);
 
-            int offset = reader.GetOffset((int)injectStringThunks.SignatureRVA);
+            int offset = injectStringThunks.GetSignatureOffset(reader);
             Assert.Equal((byte)ReadyToRunFixupKind.InjectStringThunks, image[offset++]);
 
             ReadOnlySpan<byte> thunkKey = "Viiiii"u8;

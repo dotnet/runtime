@@ -868,28 +868,14 @@ static PTR_BYTE FindGCRefMap(PTR_Module pZapModule, TADDR ptr)
     RVA rva = pNativeImage->GetDataRva(ptr);
 
     PTR_READYTORUN_IMPORT_SECTION pImportSection = pZapModule->GetImportSectionForRVA(rva);
-    if (pImportSection == NULL)
+    if (pImportSection == NULL ||
+        (pImportSection->Flags & ReadyToRunImportSectionFlags::GCRefMap) == ReadyToRunImportSectionFlags::None)
         return NULL;
 
     COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / pImportSection->EntrySize;
 
-    PTR_BYTE pGCRefMap = dac_cast<PTR_BYTE>(pNativeImage->GetRvaData(pImportSection->AuxiliaryData));
-    _ASSERTE(pGCRefMap != NULL);
-
-    // GCRefMap starts with lookup index to limit size of linear scan that follows.
-    PTR_BYTE p = pGCRefMap + dac_cast<PTR_DWORD>(pGCRefMap)[index / GCREFMAP_LOOKUP_STRIDE];
-    COUNT_T remaining = index % GCREFMAP_LOOKUP_STRIDE;
-
-    while (remaining > 0)
-    {
-        while ((*p & 0x80) != 0)
-            p++;
-        p++;
-
-        remaining--;
-    }
-
-    return p;
+    PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
+    return dac_cast<PTR_BYTE>(pNativeImage->GetRvaData(pSignatures[index]));
 }
 
 PTR_BYTE StubDispatchFrame::GetGCRefMap()
