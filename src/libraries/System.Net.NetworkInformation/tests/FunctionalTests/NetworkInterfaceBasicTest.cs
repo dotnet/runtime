@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
@@ -93,6 +94,45 @@ namespace System.Net.NetworkInformation.Tests
                 {
                     Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
                 }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux|TestPlatforms.Android)]
+        public void BasicTest_SpeedIsNotTruncatedForHighSpeedInterfaces()
+        {
+            // The Android/OpenHarmony PAL reads the full 32-bit ethtool speed. A NIC
+            // reporting more than 65535 Mbps is needed to observe the old truncation;
+            // CI machines do not have one, so this is a hardware-only regression test.
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (nic.Speed <= 0)
+                {
+                    continue;
+                }
+
+                string speedFilePath = $"/sys/class/net/{nic.Name}/speed";
+                string speedText;
+                try
+                {
+                    speedText = File.ReadAllText(speedFilePath).Trim();
+                }
+                catch (IOException)
+                {
+                    continue;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    continue;
+                }
+
+                if (!long.TryParse(speedText, out long speedMbps) || speedMbps <= ushort.MaxValue)
+                {
+                    continue;
+                }
+
+                _log.WriteLine($"{nic.Name}: sysfs speed {speedMbps} Mbps, NetworkInterface.Speed {nic.Speed} bit/s");
+                Assert.Equal(speedMbps * 1_000_000, nic.Speed);
             }
         }
 
