@@ -97,8 +97,7 @@ SideMetadataResult ImmixAllocationManager::Initialize(
     m_arena_size = arenaSize;
     m_block_count = arenaSize / ImmixBlockGeometry::BlockBytes;
     m_minimum_reuse_lines = minimumReuseLines;
-    m_next_fresh_block.store(0, std::memory_order_relaxed);
-    m_next_recycled_block.store(0, std::memory_order_relaxed);
+    ResetCursors();
     m_fresh_blocks_acquired.store(0, std::memory_order_relaxed);
     m_recycled_blocks_acquired.store(0, std::memory_order_relaxed);
     m_recycled_lines_consumed.store(0, std::memory_order_relaxed);
@@ -115,8 +114,7 @@ void ImmixAllocationManager::Shutdown()
     m_arena_size = 0;
     m_block_count = 0;
     m_minimum_reuse_lines = 0;
-    m_next_fresh_block.store(0, std::memory_order_relaxed);
-    m_next_recycled_block.store(0, std::memory_order_relaxed);
+    ResetCursors();
     m_fresh_blocks_acquired.store(0, std::memory_order_relaxed);
     m_recycled_blocks_acquired.store(0, std::memory_order_relaxed);
     m_recycled_lines_consumed.store(0, std::memory_order_relaxed);
@@ -136,6 +134,7 @@ SideMetadataResult ImmixAllocationManager::GrowQuiescent(size_t arenaSize)
     }
     m_arena_size = arenaSize;
     m_block_count = arenaSize / ImmixBlockGeometry::BlockBytes;
+    ResetCursors();
     return SideMetadataResult::Success;
 }
 
@@ -148,6 +147,7 @@ SideMetadataResult ImmixAllocationManager::ShrinkQuiescent(size_t arenaSize)
     }
     m_arena_size = arenaSize;
     m_block_count = arenaSize / ImmixBlockGeometry::BlockBytes;
+    ResetCursors();
     return SideMetadataResult::Success;
 }
 
@@ -169,6 +169,18 @@ void ImmixAllocationManager::SetMutatorFreshBlocksQuiescent(size_t mutatorFreshB
 
 void ImmixAllocationManager::ResetCopyCursorQuiescent()
 {
+    m_next_copy_block.store(0, std::memory_order_relaxed);
+}
+
+void ImmixAllocationManager::ResetCursors()
+{
+#if defined(LXR_F9_TEST_HOOKS) && defined(LXR_F9_NO_CURSOR_RESET_CONTROL)
+    // Control: the cursors are never set back.
+    return;
+#endif // LXR_F9_TEST_HOOKS && LXR_F9_NO_CURSOR_RESET_CONTROL
+    m_next_fresh_block.store(0, std::memory_order_relaxed);
+    m_next_recycled_block.store(0, std::memory_order_relaxed);
+    m_next_pinned_block.store(0, std::memory_order_relaxed);
     m_next_copy_block.store(0, std::memory_order_relaxed);
 }
 
@@ -437,90 +449,101 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
         return SideMetadataResult::Success;
     }
 
-    uint64_t token = m_blocks->GetStateToken();
-    std::atomic<uint64_t>& exhaustedToken = pinnedSource ? m_pinned_exhausted_token : m_recycled_exhausted_token;
-    if (!fresh && mutator && exhaustedToken.load(std::memory_order_acquire) == token)
-    {
-        return SideMetadataResult::Success;
-    }
+    // P28 (F9). The search for a block is the one of the Java LXR (blockpageresource_nosweep.rs: acquire_clean_blocks_fast,
+    // acquire_reusable_blocks_fast). A cursor moves forward only; a caller reads the state of the blocks from the cursor with
+    // plain loads and claims the range that it has looked at with one compare-exchange of the cursor. When the cursor has
+    // reached the end there is no block for this kind of request until the cursors are reset (at the pause, or when the arena
+    // changes). A recycled block is any block that is not free (the Java LXR scans the counts of its lines when it takes it).
     bool placed = fresh && m_placement;
-    size_t modulus = placed && mutator && m_mutator_fresh_blocks < m_block_count ? m_mutator_fresh_blocks : m_block_count;
-    for (size_t attempt = 0; attempt < modulus; attempt++)
+    size_t limit = placed && mutator && m_mutator_fresh_blocks < m_block_count ? m_mutator_fresh_blocks : m_block_count;
+    if (limit > m_block_count)
     {
-        size_t index;
-        if (fresh)
-        {
-            index = placed && !mutator
-                ? m_next_copy_block.fetch_add(1, std::memory_order_relaxed) % m_block_count
-                : m_next_fresh_block.fetch_add(1, std::memory_order_relaxed) % modulus;
-        }
-        else
-        {
-            index = m_next_recycled_block.fetch_add(
-                1,
-                std::memory_order_relaxed) % m_block_count;
-        }
-
-        uintptr_t candidate =
-            m_arena_start + (index * ImmixBlockGeometry::BlockBytes);
+        limit = m_block_count;
+    }
+    std::atomic<size_t>& cursor = fresh
+        ? ((placed && !mutator) ? m_next_copy_block : m_next_fresh_block)
+        : (pinnedSource ? m_next_pinned_block : m_next_recycled_block);
+    SideMetadataResult failure = SideMetadataResult::Success;
+    auto isCandidate = [&](size_t index) -> bool
+    {
+        uintptr_t address = m_arena_start + (index * ImmixBlockGeometry::BlockBytes);
         ImmixBlockState state;
         uint8_t unavailableLines;
-        SideMetadataResult result =
-            m_blocks->GetStateFast(candidate, &state, &unavailableLines);
-        if (result != SideMetadataResult::Success)
+        failure = m_blocks->GetStateFast(address, &state, &unavailableLines);
+        if (failure != SideMetadataResult::Success)
         {
-            return result;
+            return true;
         }
         if (fresh)
         {
             if (state != ImmixBlockState::Unallocated)
             {
-                continue;
+                return false;
             }
-
             bool nursery;
-            result = m_blocks->IsNurseryFast(candidate, &nursery);
-            if (result != SideMetadataResult::Success)
+            failure = m_blocks->IsNurseryFast(address, &nursery);
+            // Block state remains Unallocated while a fresh block is a current-epoch nursery; the cursor must not make it
+            // available again merely because its owner was returned.
+            return failure != SideMetadataResult::Success || !nursery;
+        }
+        if (state == ImmixBlockState::Unallocated)
+        {
+            return false;
+        }
+#if defined(LXR_F9_TEST_HOOKS) && defined(LXR_F9_PREFILTER_CONTROL)
+        // Control: only a Reusable block with enough free lines is a candidate (the rule before F9).
+        if (state != ImmixBlockState::Reusable || unavailableLines > ImmixBlockGeometry::LinesPerBlock ||
+            ImmixBlockGeometry::LinesPerBlock - static_cast<size_t>(unavailableLines) < m_minimum_reuse_lines)
+        {
+            return false;
+        }
+#endif // LXR_F9_TEST_HOOKS && LXR_F9_PREFILTER_CONTROL
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_S7_POH_RECYCLE_CONTROL)
+        // A pinned block holds pinned-object-heap objects only: pinned recycling takes these blocks and no other
+        // recycling does.
+        bool pinnedBlock = m_notes.pinned_flags != nullptr &&
+            (m_notes.pinned_flags[index].load(std::memory_order_acquire) & PinnedBlockFlag) != 0;
+        if (pinnedBlock != pinnedSource)
+        {
+            return false;
+        }
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_S7_POH_RECYCLE_CONTROL
+        // A block that an allocator took in this epoch has young objects without counts.
+        return !m_blocks->IsReusingFast(address);
+    };
+
+    while (true)
+    {
+        size_t first = cursor.load(std::memory_order_relaxed);
+        if (first >= limit)
+        {
+            return SideMetadataResult::Success;
+        }
+        size_t next = first;
+        size_t index = SIZE_MAX;
+        while (next < limit)
+        {
+            size_t examined = next++;
+            if (isCandidate(examined))
             {
-                return result;
-            }
-            if (nursery)
-            {
-                // Block state remains Unallocated while a fresh block is a
-                // current-epoch nursery; the pool cursor must not make it
-                // available again merely because its owner was returned.
-                continue;
+                index = examined;
+                break;
             }
         }
-        else
+        if (failure != SideMetadataResult::Success)
         {
-            if (state != ImmixBlockState::Reusable)
-            {
-                continue;
-            }
-#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_S7_POH_RECYCLE_CONTROL)
-            // A pinned block holds pinned-object-heap objects only: pinned recycling takes these blocks and no other
-            // recycling does.
-            bool pinnedBlock = m_notes.pinned_flags != nullptr &&
-                (m_notes.pinned_flags[index].load(std::memory_order_acquire) & PinnedBlockFlag) != 0;
-            if (pinnedBlock != pinnedSource)
-            {
-                continue;
-            }
-#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_S7_POH_RECYCLE_CONTROL
-            if (unavailableLines > ImmixBlockGeometry::LinesPerBlock)
-            {
-                continue;
-            }
-            size_t availableLines =
-                ImmixBlockGeometry::LinesPerBlock -
-                static_cast<size_t>(unavailableLines);
-            if (availableLines < m_minimum_reuse_lines)
-            {
-                continue;
-            }
+            return failure;
+        }
+        if (!cursor.compare_exchange_weak(first, next, std::memory_order_relaxed, std::memory_order_relaxed))
+        {
+            continue;
+        }
+        if (index == SIZE_MAX)
+        {
+            return SideMetadataResult::Success;
         }
 
+        uintptr_t candidate = m_arena_start + (index * ImmixBlockGeometry::BlockBytes);
         ImmixBlockOperationStatus blockStatus;
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
         if (m_after_precheck_hook != nullptr)
@@ -528,7 +551,7 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
             m_after_precheck_hook(m_after_precheck_context, candidate);
         }
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
-        result = m_blocks->TryAcquire(
+        SideMetadataResult result = m_blocks->TryAcquire(
             candidate,
             owner,
             GetAcquireKind(source),
@@ -584,12 +607,6 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
             }
         }
     }
-
-    if (!fresh && mutator && *status == ImmixAllocationStatus::Exhausted)
-    {
-        exhaustedToken.store(token, std::memory_order_release);
-    }
-    return SideMetadataResult::Success;
 }
 
 SideMetadataResult ImmixAllocationManager::ReturnBlock(

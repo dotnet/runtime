@@ -84,6 +84,8 @@ public:
     void EnablePlacementQuiescent(size_t mutatorFreshBlocks);
     void SetMutatorFreshBlocksQuiescent(size_t mutatorFreshBlocks);
     void ResetCopyCursorQuiescent();
+    // The Java LXR starts every pause, and ends it, with the block cursors at 0 (BlockPageResource::prepare_gc, reset).
+    void ResetCursors();
 
     SideMetadataResult TryFindNextHole(
         uintptr_t block,
@@ -211,16 +213,15 @@ private:
     size_t m_arena_size;
     size_t m_block_count;
     size_t m_minimum_reuse_lines;
+    // The cursors of the block search (the Java LXR: blockpageresource_nosweep.rs, clean_block_cursor and reuse_block_cursor).
+    // A cursor only moves forward through the arena, and the search for a block stops at the end. The cursors go back to 0
+    // at the start and at the end of every pause, and when the arena changes size (ResetCursorsQuiescent).
     std::atomic<size_t> m_next_fresh_block;
     std::atomic<size_t> m_next_recycled_block;
+    std::atomic<size_t> m_next_pinned_block{0};
     bool m_placement = false;
     size_t m_mutator_fresh_blocks = 0;
     std::atomic<size_t> m_next_copy_block{0};
-    // Block-state token at which a mutator search for recycled blocks scanned every block and found none.
-    // The token changes at every epoch flip and when a block is made Reusable, so the search is not repeated
-    // while no block can have become a candidate. (The epoch value itself wraps and cannot be used.)
-    std::atomic<uint64_t> m_recycled_exhausted_token{UINT64_MAX};
-    std::atomic<uint64_t> m_pinned_exhausted_token{UINT64_MAX};
     AcquireNotes m_notes{};
     std::atomic<size_t> m_fresh_blocks_acquired;
     std::atomic<size_t> m_recycled_blocks_acquired;

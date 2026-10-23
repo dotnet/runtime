@@ -1381,6 +1381,92 @@ namespace
         Expect("f10 a store followed by a load of another location is not reordered (no both-zero outcome)", both == 0);
     }
 
+    // P28 (F9). The block cursors of the Java LXR: they move forward only, a block that becomes a candidate behind the cursor
+    // is found after the cursors are set back (the pause does it), and concurrent callers take every block exactly once.
+    void TestF9Cursors()
+    {
+        {
+            Fixture fixture(1, 4, 1);
+            Expect("f9 cursor fixture initialized", fixture.initialized);
+            if (!fixture.initialized)
+            {
+                return;
+            }
+            ImmixBumpAllocator allocator;
+            ExpectMetadata("f9 cursor allocator", allocator.Initialize(&fixture.allocation, OwnerOne),
+                SideMetadataResult::Success);
+            ImmixAllocationStatus status = ImmixAllocationStatus::InvalidRequest;
+            ExpectMetadata("f9 first recycled refill", allocator.TryRefill(ImmixAllocationSource::MutatorRecycled,
+                ImmixMarkingContext::Inactive, &status), SideMetadataResult::Success);
+            Expect("f9 no recycled block while every block is free", status == ImmixAllocationStatus::Exhausted);
+            uintptr_t block = fixture.data_start + (2 * ImmixBlockGeometry::BlockBytes);
+            SeedReusableBlock(fixture, block);
+            SeedAllLines(fixture, block, 1);
+            SeedLine(fixture, block, 4, 0);
+            SeedLine(fixture, block, 5, 0);
+            SeedLine(fixture, block, 6, 0);
+            ExpectMetadata("f9 second recycled refill", allocator.TryRefill(ImmixAllocationSource::MutatorRecycled,
+                ImmixMarkingContext::Inactive, &status), SideMetadataResult::Success);
+            Expect("f9 a block that becomes a candidate behind the cursor is not found before the cursors are reset",
+                status == ImmixAllocationStatus::Exhausted);
+            fixture.allocation.ResetCursors();
+            ExpectMetadata("f9 third recycled refill", allocator.TryRefill(ImmixAllocationSource::MutatorRecycled,
+                ImmixMarkingContext::Inactive, &status), SideMetadataResult::Success);
+            Expect("f9 the block is found after the cursors are reset",
+                status == ImmixAllocationStatus::Ready && allocator.GetBlock() == block);
+            allocator.Reset(&status);
+        }
+        {
+            constexpr size_t BlockCount = 64;
+            constexpr size_t ThreadCount = 8;
+            Fixture fixture(1, BlockCount, 1);
+            Expect("f9 concurrent fixture initialized", fixture.initialized);
+            if (!fixture.initialized)
+            {
+                return;
+            }
+            std::vector<std::vector<uintptr_t>> taken(ThreadCount);
+            std::vector<std::thread> threads;
+            for (size_t thread = 0; thread < ThreadCount; thread++)
+            {
+                threads.emplace_back([&, thread]()
+                {
+                    ImmixBumpAllocator allocator;
+                    if (allocator.Initialize(&fixture.allocation, 0x3000 + thread) != SideMetadataResult::Success)
+                    {
+                        return;
+                    }
+                    ImmixAllocationStatus status = ImmixAllocationStatus::InvalidRequest;
+                    while (allocator.TryRefill(ImmixAllocationSource::MutatorFresh, ImmixMarkingContext::Inactive,
+                               &status) == SideMetadataResult::Success && status == ImmixAllocationStatus::Ready)
+                    {
+                        taken[thread].push_back(allocator.GetBlock());
+                    }
+                });
+            }
+            for (std::thread& thread : threads)
+            {
+                thread.join();
+            }
+            std::vector<size_t> seen(BlockCount, 0);
+            size_t total = 0;
+            for (const std::vector<uintptr_t>& blocks : taken)
+            {
+                for (uintptr_t block : blocks)
+                {
+                    seen[(block - fixture.data_start) / ImmixBlockGeometry::BlockBytes]++;
+                    total++;
+                }
+            }
+            bool once = total == BlockCount;
+            for (size_t count : seen)
+            {
+                once = once && count == 1;
+            }
+            Expect("f9 concurrent callers take every block exactly once", once);
+        }
+    }
+
     void TestPhaseAndContention()
     {
         {
@@ -1601,6 +1687,8 @@ namespace
         Expect(
             "reclamation release GC updated",
             blockStatus == ImmixBlockOperationStatus::Updated);
+        // P28 (F9). The block cursors only move forward; the engine sets them back to 0 at the end of a pause (as the Java LXR does).
+        fixture.allocation.ResetCursors();
 
         ExpectMetadata(
             "reclaimed fresh refill",
@@ -1663,6 +1751,8 @@ namespace
             Expect(
                 "rejected-block refill exhausted",
                 status == ImmixAllocationStatus::Exhausted);
+            // P28 (F9). Every block that is not free is a candidate, as in the Java LXR (block_is_available): its counts are read when
+            // it is taken, and a block without a hole of the minimum length is given back.
             Expect(
                 "prefiltered block remains unowned",
                 LoadMetadata(
@@ -1676,8 +1766,8 @@ namespace
                     LxrSideMetadataKind::BlockOwner,
                     scanned) == ImmixBlockManager::NoOwner);
             Expect(
-                "only scanned candidate acquired",
-                fixture.allocation.GetRecycledBlocksAcquired() == 1);
+                "every block that is not free is taken and given back",
+                fixture.allocation.GetRecycledBlocksAcquired() == 2);
         }
 
         {
@@ -1833,6 +1923,7 @@ int main()
     TestF9RefillSchedule(1);
     TestF9RefillSchedule(3);
     TestF9DirtyRangeIsReported();
+    TestF9Cursors();
     TestF10LoadOrder();
     TestPhaseAndContention();
     TestFreshReclamation();

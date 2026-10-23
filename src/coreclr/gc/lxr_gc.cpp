@@ -618,6 +618,7 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
         {
             Fatal("LXR lazy sweep did not finish before an allocation retry.");
         }
+        m_engine.ResetAllocationCursors();
         result = m_engine.Allocate(mutator, size, &object, pinned);
     }
     if (result == LxrRcResult::AllocationFailure && !m_shutdown.load())

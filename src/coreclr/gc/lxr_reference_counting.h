@@ -418,6 +418,9 @@ public:
     LxrRcResult ArmScanCheckpoint(Object* object);
     bool IsScanCheckpointActive() const;
     LxrRcResult Drain(uint32_t timeoutMilliseconds);
+    // The block cursors go back to the start of the arena. The allocation path calls this when a request has failed and the lazy
+    // sweep has finished, so that blocks that the sweep freed behind the cursors can be taken (the Java LXR gets a new chunk).
+    void ResetAllocationCursors() { m_allocation.ResetCursors(); }
     LxrRcResult LoadCount(Object* object, uintptr_t* count) const;
     // requireCounted: the address may lie outside every live object (a remembered slot of a dead holder). Only an
     // object with a count above zero may be read. Use it after the increments of a pause.

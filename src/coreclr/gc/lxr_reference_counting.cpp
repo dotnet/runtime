@@ -2570,6 +2570,9 @@ void LxrReferenceCounting::Suspend(void* context)
     {
         return;
     }
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_F9_NO_PAUSE_RESET_CONTROL)
+    engine->m_allocation.ResetCursors();
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_F9_NO_PAUSE_RESET_CONTROL
     if (engine->m_grow_bytes != 0)
     {
         engine->m_growth_result = engine->GrowSuspended();
@@ -4831,6 +4834,9 @@ LxrRcResult LxrReferenceCounting::ReleaseEpoch()
             return Fail(LxrRcResult::InvalidPhase);
         }
     }
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_F9_NO_PAUSE_RESET_CONTROL)
+    m_allocation.ResetCursors();
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_F9_NO_PAUSE_RESET_CONTROL
     size_t bank = m_producer_bank.load(std::memory_order_relaxed) ^ 1;
     result = ResetBank(m_banks[bank]);
     if (result != LxrRcResult::Success)

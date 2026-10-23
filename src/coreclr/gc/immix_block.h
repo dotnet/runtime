@@ -202,6 +202,20 @@ public:
         return SideMetadataResult::Success;
     }
     SideMetadataResult IsReusing(uintptr_t block, bool* result) const;
+    // Fast form of IsReusing (the same rules as IsNurseryFast): the block is not Unallocated and an allocator took it in this
+    // epoch.
+    bool IsReusingFast(uintptr_t block) const
+    {
+        uint8_t rawState = static_cast<uint8_t>(Accessor(LxrSideMetadataKind::BlockMark).Load(
+            block, SideMetadataMemoryOrder::SequentiallyConsistent));
+        uint8_t blockEpoch = static_cast<uint8_t>(Accessor(LxrSideMetadataKind::PhaseEpoch).Load(
+            block, SideMetadataMemoryOrder::SequentiallyConsistent));
+        uint8_t globalEpoch = GetGlobalPhaseEpoch();
+        bool nurseryOrReusing = (globalEpoch & 1) != 0
+            ? blockEpoch == globalEpoch
+            : blockEpoch == static_cast<uint8_t>(globalEpoch - 1);
+        return (rawState != RawUnallocated) && nurseryOrReusing;
+    }
     SideMetadataResult IsGcReusing(uintptr_t block, bool* result) const;
 
     SideMetadataResult TryAcquire(

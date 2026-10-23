@@ -1168,6 +1168,16 @@ namespace
             }
             Check(replacement == first && replacement->GetHeader()->GetGCReservedBits(3, 0) == 0,
                 "an evacuated source is actually reused with clear forwarding state");
+            // P28 (F9). The block cursors start at 0 after a pause, so the first allocation takes the freed source block. The test needs
+            // the heap to be full when the next pause runs (the replacement is then promoted in place, not copied): fill it.
+            for (size_t attempt = 0; attempt < 32; attempt++)
+            {
+                Object* ignored = nullptr;
+                if (engine.Allocate(mutator, filler.table->GetBaseSize(), &ignored) != LxrRcResult::Success)
+                {
+                    break;
+                }
+            }
             if (replacement != nullptr)
             {
                 roots.objects.push_back(replacement);
@@ -5693,9 +5703,14 @@ namespace
     }
 
     // The pause looks at the allocated blocks only. A nursery block without a promoted object goes back to the free
-    // pool in the pause. A block with a promoted object keeps its state, is not given to an allocator before the
-    // lazy sweep has counted its lines, and is Reusable after that sweep.
-    void ValidatePauseReleaseAndLazyReuse()
+    // pool in the pause. A block with a promoted object keeps its state after the pause.
+    //
+    // P28 (F9). A block that is not free is a candidate for allocation from the start of the epoch, as in the Java LXR: the
+    // allocator reads the counts of its lines when it takes it, and hands out only lines without a count. So the first
+    // scenario lets the mutator allocate before the lazy sweep has looked at the promoted blocks: the promoted objects stay
+    // intact, the blocks are used, and the sweep leaves a block that an allocator took in this epoch to the next pause. In the
+    // second scenario the sweep finishes first: it makes the blocks Reusable with their free-line count, and they are used.
+    void ValidatePauseReleaseAndLazyReuse(bool allocateWhileHeld)
     {
         Type leaf(24, 0);
         LxrReferenceCounting engine;
@@ -5727,42 +5742,64 @@ namespace
         Check(BlockStateOf(engine, blocks.first) == ImmixBlockState::Unmarked &&
                 BlockStateOf(engine, blocks.last) == ImmixBlockState::Unmarked,
             "a block with a promoted object keeps its state; the pause does not count its lines");
-        // Allocation while the sweep is held must not use the unprocessed blocks.
-        bool unprocessedUsed = false;
-        for (size_t index = 0; index < 2800; index++)
+        if (allocateWhileHeld)
         {
-            Object* object = Allocate(engine, mutator, leaf);
-            if (object == nullptr)
+            bool unprocessedUsed = false;
+            bool overlap = false;
+            for (size_t index = 0; index < 2800; index++)
             {
-                break;
+                Object* object = Allocate(engine, mutator, leaf);
+                if (object == nullptr)
+                {
+                    break;
+                }
+                size_t block = BlockOfObject(engine, object);
+                unprocessedUsed = unprocessedUsed || block == blocks.first || block == blocks.last;
+                for (Object* root : blocks.roots)
+                {
+                    overlap = overlap || object == root;
+                }
             }
-            size_t block = BlockOfObject(engine, object);
-            unprocessedUsed = unprocessedUsed || block == blocks.first || block == blocks.last;
+            uintptr_t count = 0;
+            bool intact = true;
+            for (Object* root : blocks.roots)
+            {
+                intact = intact && engine.IsObjectStart(root) &&
+                    engine.LoadCount(root, &count) == LxrRcResult::Success && count == 1;
+            }
+            Check(unprocessedUsed && !overlap && intact,
+                "a promoted block is handed out before the lazy sweep has looked at it, and its promoted objects stay intact");
+            engine.HoldSweepForTest(false);
+            Check(held && engine.Drain(Timeout) == LxrRcResult::Success, "the lazy sweep finishes");
+            Check(BlockStateOf(engine, blocks.first) != ImmixBlockState::Unallocated &&
+                    BlockStateOf(engine, blocks.last) != ImmixBlockState::Unallocated &&
+                    engine.BlockCountersMatchWalk(),
+                "the sweep leaves a block that an allocator took in this epoch, and the counters equal a walk");
         }
-        Check(!unprocessedUsed && BlockStateOf(engine, blocks.first) == ImmixBlockState::Unmarked &&
-                BlockStateOf(engine, blocks.last) == ImmixBlockState::Unmarked,
-            "no block is handed out before the lazy sweep has looked at it");
-        engine.HoldSweepForTest(false);
-        Check(held && engine.Drain(Timeout) == LxrRcResult::Success, "the lazy sweep finishes");
-        Check(BlockStateOf(engine, blocks.first, &lines) == ImmixBlockState::Reusable && lines >= 1 && lines <= 4 &&
-                BlockStateOf(engine, blocks.last, &lines) == ImmixBlockState::Reusable && lines >= 1 && lines <= 4,
-            "the lazy sweep makes a block with a promoted object Reusable with its free-line count");
-        size_t nonFree;
-        size_t freeLines;
-        Check(engine.BlockCountersMatchWalk(&nonFree, &freeLines) && nonFree == 2 && freeLines >= 2 * 124,
-            "the block counters equal a walk after the lazy sweep");
-        bool reused = false;
-        for (size_t index = 0; index < 3000; index++)
+        else
         {
-            Object* object = Allocate(engine, mutator, leaf);
-            if (object == nullptr)
+            engine.HoldSweepForTest(false);
+            Check(held && engine.Drain(Timeout) == LxrRcResult::Success, "the lazy sweep finishes");
+            Check(BlockStateOf(engine, blocks.first, &lines) == ImmixBlockState::Reusable && lines >= 1 && lines <= 4 &&
+                    BlockStateOf(engine, blocks.last, &lines) == ImmixBlockState::Reusable && lines >= 1 && lines <= 4,
+                "the lazy sweep makes a block with a promoted object Reusable with its free-line count");
+            size_t nonFree;
+            size_t freeLines;
+            Check(engine.BlockCountersMatchWalk(&nonFree, &freeLines) && nonFree == 2 && freeLines >= 2 * 124,
+                "the block counters equal a walk after the lazy sweep");
+            bool reused = false;
+            for (size_t index = 0; index < 3000; index++)
             {
-                break;
+                Object* object = Allocate(engine, mutator, leaf);
+                if (object == nullptr)
+                {
+                    break;
+                }
+                size_t block = BlockOfObject(engine, object);
+                reused = reused || block == blocks.first || block == blocks.last;
             }
-            size_t block = BlockOfObject(engine, object);
-            reused = reused || block == blocks.first || block == blocks.last;
+            Check(reused, "a block that the lazy sweep made Reusable is used for allocation in the same epoch");
         }
-        Check(reused, "a block that the lazy sweep made Reusable is used for allocation in the same epoch");
         Check(Epoch(engine, blocks.roots) && engine.BlockCountersMatchWalk(),
             "the next pause keeps the counters and the promoted blocks");
         Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "S4 owner detaches");
@@ -5964,7 +6001,8 @@ namespace
 
     void ValidateS4Sweep()
     {
-        ValidatePauseReleaseAndLazyReuse();
+        ValidatePauseReleaseAndLazyReuse(false);
+        ValidatePauseReleaseAndLazyReuse(true);
         ValidatePauseWaitsForLazySweep();
         for (int kind = 0; kind < 3; kind++)
         {
