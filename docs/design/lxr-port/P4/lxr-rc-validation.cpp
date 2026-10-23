@@ -4046,8 +4046,168 @@ namespace
         Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "F4 recursion mutator detaches");
     }
 
+    // P26 (F2). The cost of a pause does not follow the trace backlog. One worker may run trace packets and a gate blocks it
+    // after its first packet, so the packets that the test queues stay in the scheduler. A RefCount pause then runs with
+    // 500 and with 8 000 pending packets. The walks of the pause (Retire, FixForwardingReaders, PublishTraceWork) must visit
+    // a number of packets that does not depend on the backlog. Control LXR_F2_WALK_BACKLOG_CONTROL: the packets are in the
+    // list that the pause walks again.
+    bool InitializeF2(F1Fixture& fixture, bool nursery)
+    {
+        LxrRcConfiguration configuration{
+            64 * ImmixBlockGeometry::BlockBytes, 8 * LxrLargeObjectSpace::MinimumObjectBytes, 4, 2048, 4, 8,
+        };
+        configuration.evacuateNursery = nursery;
+        configuration.concurrentTraceWorkers = 1;
+        fixture.model.context = &fixture.roots;
+        fixture.model.finishRelocation = RelocateMoving;
+        LxrPauseRuntimeAdapter runtime{Suspend, Resume, nullptr, false};
+        return Check(fixture.engine.Initialize(configuration, runtime, &fixture.model) == LxrRcResult::Success &&
+                fixture.engine.AttachMutator(&fixture.identity, &fixture.mutator) == LxrRcResult::Success,
+            "F2 fixture engine and mutator initialize");
+    }
+
+    void ValidateF2Backlog(bool nursery, size_t backlog)
+    {
+        F1Fixture fixture;
+        if (!InitializeF2(fixture, nursery))
+        {
+            return;
+        }
+        LxrReferenceCounting& engine = fixture.engine;
+        Type link(24, 1);
+        Type leaf(24, 0);
+        Object* anchor = Allocate(engine, fixture.mutator, link);
+        Object* child = Allocate(engine, fixture.mutator, leaf);
+        if (anchor == nullptr || child == nullptr ||
+            !Check(Store(engine, fixture.mutator, Field(anchor), child), "F2 anchor points to a child"))
+        {
+            return;
+        }
+        fixture.roots.objects = {anchor};
+        constexpr size_t Holders = 200;
+        for (size_t index = 0; index < Holders; index++)
+        {
+            Object* holder = Allocate(engine, fixture.mutator, link);
+            Object* held = Allocate(engine, fixture.mutator, leaf);
+            if (holder == nullptr || held == nullptr ||
+                !Check(Store(engine, fixture.mutator, Field(holder), held), "F2 holder points to a first target"))
+            {
+                return;
+            }
+            fixture.roots.objects.push_back(holder);
+        }
+        if (!F1Pause(fixture, LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        engine.ArmTraceGateForTest(1);
+        if (!F1Pause(fixture, LxrPauseKind::InitialMark))
+        {
+            return;
+        }
+        std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() +
+            std::chrono::milliseconds(Timeout);
+        while (!engine.IsTraceGateBlockedForTest() && std::chrono::steady_clock::now() < deadline)
+        {
+            std::this_thread::yield();
+        }
+        anchor = fixture.roots.objects[0];
+        child = *Field(anchor);
+        // The program overwrites the field of every mature holder: the first write of a slot logs the old value, so the
+        // decrement log of the next pause has one entry for each holder.
+        Object* replacement = Allocate(engine, fixture.mutator, leaf);
+        bool stored = replacement != nullptr;
+        for (size_t index = 1; stored && index <= Holders; index++)
+        {
+            stored = Store(engine, fixture.mutator, Field(fixture.roots.objects[index]), replacement);
+        }
+        if (!Check(stored && engine.IsTraceGateBlockedForTest() && child != nullptr &&
+                engine.QueueTraceBacklogForTest(child, backlog) == LxrRcResult::Success,
+                "F2 the only trace worker is blocked and the backlog is queued"))
+        {
+            return;
+        }
+        uint64_t pending = engine.GetTracePendingForTest();
+        Check(pending >= backlog, "F2 the backlog is pending in the scheduler");
+        if (!F1Pause(fixture, LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        LxrPauseWalkMetrics walk = engine.GetPauseWalkMetrics();
+        std::printf("f2_backlog nursery=%d pending=%llu retire=%llu fix_packets=%llu fix_log=%llu publish=%llu rewritten=%llu\n",
+            nursery ? 1 : 0, static_cast<unsigned long long>(pending), static_cast<unsigned long long>(walk.retireVisited),
+            static_cast<unsigned long long>(walk.fixPackets), static_cast<unsigned long long>(walk.fixLogEntries),
+            static_cast<unsigned long long>(walk.publishVisited), static_cast<unsigned long long>(walk.fixRewritten));
+        Check(walk.retireVisited <= 96 && walk.fixPackets <= 96 && walk.publishVisited <= 96,
+            "F2 the packets that a pause visits do not follow the number of pending trace packets");
+#ifndef _DEBUG
+        // A Debug build walks the log to check it (the Java LXR never walks it); a Release build must not.
+        Check(walk.fixLogEntries == 0, "F2 a pause that copies only young objects does not walk the decrement log");
+#endif // !_DEBUG
+        deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(Timeout);
+        while (!engine.IsTraceExhausted() && std::chrono::steady_clock::now() < deadline)
+        {
+            std::this_thread::yield();
+        }
+        Check(engine.IsTraceExhausted(), "F2 the backlog runs to the end after the pause");
+        if (!F1Pause(fixture, LxrPauseKind::FinalMark))
+        {
+            return;
+        }
+        anchor = fixture.roots.objects[0];
+        child = *Field(anchor);
+        Check(engine.GetFailure() == LxrRcResult::Success && child != nullptr && engine.IsMarked(child) &&
+                Count(engine, child) != 0,
+            "F2 the trace ends with the child marked and counted");
+        Check(engine.DetachMutator(fixture.mutator) == LxrRcResult::Success, "F2 fixture detaches");
+    }
+
+    // P26 (F2). A shutdown with a backlog that nobody has run frees every pending trace packet (no list owns them).
+    void ValidateF2ShutdownWithBacklog()
+    {
+        F1Fixture fixture;
+        if (!InitializeF2(fixture, false))
+        {
+            return;
+        }
+        LxrReferenceCounting& engine = fixture.engine;
+        Type link(24, 1);
+        Type leaf(24, 0);
+        Object* anchor = Allocate(engine, fixture.mutator, link);
+        Object* child = Allocate(engine, fixture.mutator, leaf);
+        if (anchor == nullptr || child == nullptr ||
+            !Check(Store(engine, fixture.mutator, Field(anchor), child), "F2 shutdown anchor points to a child"))
+        {
+            return;
+        }
+        fixture.roots.objects = {anchor};
+        if (!F1Pause(fixture, LxrPauseKind::RefCount))
+        {
+            return;
+        }
+        engine.ArmTraceGateForTest(1);
+        if (!F1Pause(fixture, LxrPauseKind::InitialMark))
+        {
+            return;
+        }
+        std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() +
+            std::chrono::milliseconds(Timeout);
+        while (!engine.IsTraceGateBlockedForTest() && std::chrono::steady_clock::now() < deadline)
+        {
+            std::this_thread::yield();
+        }
+        child = *Field(fixture.roots.objects[0]);
+        Check(engine.IsTraceGateBlockedForTest() && engine.QueueTraceBacklogForTest(child, 2000) == LxrRcResult::Success &&
+                engine.GetTracePendingForTest() >= 2000,
+            "F2 a backlog is pending when the engine shuts down");
+        // The gate is still closed. The destructor of the fixture shuts the engine down; the blocked worker is released by
+        // the phase change of Shutdown. The run ends without a crash and without a leak report.
+        engine.StopWorkers();
+    }
+
     // A large object that dies in a RefCount pause while a concurrent trace is active is released by the lazy
     // sweep after the pause. The large-object space is in its ConcurrentMark phase then, and the release must
+
     // be accepted (P17 fix). Before the fix the lazy sweep failed with MetadataFailure and the engine faulted.
     void ValidateLazyLargeReleaseDuringTrace()
     {
@@ -8166,6 +8326,18 @@ int main(int argc, char** argv)
             ValidateF1Stress(seed);
         }
         std::printf("%s: %d/%d F1 trace packet checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
+    if (argc == 2 && strcmp(argv[1], "--f2-pause") == 0)
+    {
+        for (bool nursery : {false, true})
+        {
+            ValidateF2Backlog(nursery, 500);
+            ValidateF2Backlog(nursery, 8000);
+        }
+        ValidateF2ShutdownWithBacklog();
+        std::printf("%s: %d/%d F2 pause walk checks\n",
             Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
         return Failures == 0 ? 0 : 1;
     }

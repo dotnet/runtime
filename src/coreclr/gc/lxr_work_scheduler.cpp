@@ -351,6 +351,14 @@ public:
         }
 #endif
 
+        if (cancelledCallback != nullptr)
+        {
+            for (LxrWorkPacket* packet : cancelledPackets)
+            {
+                cancelledCallback(packet, cancelledContext);
+            }
+        }
+
         for (Worker& worker : workers)
         {
             if (worker.thread.joinable())
@@ -877,6 +885,8 @@ public:
     // uses ConcGCThreads of its ParallelGCThreads workers for the concurrent trace. Default: all workers.
     size_t concurrentTraceLimit = SIZE_MAX;
     size_t concurrentTraceRunning = 0;
+    CancelledPacketCallback cancelledCallback = nullptr;
+    void* cancelledContext = nullptr;
 
     static bool IsTraceStage(LxrWorkBucketStage stage)
     {
@@ -1048,6 +1058,123 @@ LxrWorkSchedulerResult LxrWorkScheduler::ConfigureConcurrentTraceWorkers(size_t 
         return LxrWorkSchedulerResult::InvalidArgument;
     }
     m_impl->concurrentTraceLimit = limit;
+    return LxrWorkSchedulerResult::Success;
+}
+
+LxrWorkSchedulerResult LxrWorkScheduler::SetCancelledPacketCallback(
+    CancelledPacketCallback callback, void* context)
+{
+    if (m_impl == nullptr)
+    {
+        return LxrWorkSchedulerResult::NotInitialized;
+    }
+    std::lock_guard<std::mutex> guard(m_impl->lock);
+    m_impl->cancelledCallback = callback;
+    m_impl->cancelledContext = context;
+    return LxrWorkSchedulerResult::Success;
+}
+
+LxrWorkSchedulerResult LxrWorkScheduler::RunQueuedInline(
+    LxrWorkBucketStage stage, size_t executionIndex, uint64_t* ran)
+{
+    if (ran == nullptr || StageIndex(stage) >= StageCount)
+    {
+        return LxrWorkSchedulerResult::InvalidArgument;
+    }
+    *ran = 0;
+    if (m_impl == nullptr)
+    {
+        return LxrWorkSchedulerResult::NotInitialized;
+    }
+    size_t stageIndex = StageIndex(stage);
+    std::vector<LxrWorkPacket*> packets;
+    {
+        std::lock_guard<std::mutex> guard(m_impl->lock);
+        Impl::Bucket& bucket = m_impl->buckets[stageIndex];
+        if (m_impl->shuttingDown)
+        {
+            return LxrWorkSchedulerResult::Shutdown;
+        }
+        if (m_impl->IsEligibleLocked(stage) || bucket.executing != 0)
+        {
+            return LxrWorkSchedulerResult::InvalidState;
+        }
+        while (!bucket.queue.empty())
+        {
+            packets.push_back(bucket.queue.front());
+            bucket.queue.pop_front();
+        }
+        for (Impl::Worker& worker : m_impl->workers)
+        {
+            for (std::deque<LxrWorkPacket*>::iterator iterator = worker.local.begin();
+                iterator != worker.local.end();)
+            {
+                if ((*iterator)->GetStage() == stage)
+                {
+                    packets.push_back(*iterator);
+                    iterator = worker.local.erase(iterator);
+                }
+                else
+                {
+                    iterator++;
+                }
+            }
+        }
+        std::vector<LxrWorkPacket*> claimed;
+        for (LxrWorkPacket* packet : packets)
+        {
+            if (!packet->TryTransition(LxrWorkPacketState::Queued, LxrWorkPacketState::Executing))
+            {
+                m_impl->ownershipViolations++;
+                continue;
+            }
+            bucket.executing++;
+            if (m_impl->queuedPackets != 0)
+            {
+                m_impl->queuedPackets--;
+            }
+            claimed.push_back(packet);
+        }
+        packets.swap(claimed);
+    }
+
+    for (LxrWorkPacket* packet : packets)
+    {
+        packet->Execute(executionIndex);
+#ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
+        LxrCompletionResult completionResult = packet->CompleteRegistration();
+        if (completionResult != LxrCompletionResult::Success &&
+            completionResult != LxrCompletionResult::AlreadyCompleted &&
+            completionResult != LxrCompletionResult::Cancelled &&
+            completionResult != LxrCompletionResult::CallbackFailed)
+        {
+            std::lock_guard<std::mutex> guard(m_impl->lock);
+            m_impl->ownershipViolations++;
+            m_impl->completionFailure = true;
+        }
+#endif
+    }
+
+    std::lock_guard<std::mutex> guard(m_impl->lock);
+    Impl::Bucket& bucket = m_impl->buckets[stageIndex];
+    for (LxrWorkPacket* packet : packets)
+    {
+        bucket.executing--;
+        if (packet->TryTransition(LxrWorkPacketState::Executing, LxrWorkPacketState::Completed))
+        {
+            bucket.outstanding--;
+            m_impl->executed++;
+        }
+        else
+        {
+            m_impl->ownershipViolations++;
+        }
+    }
+    *ran = packets.size();
+    if (m_impl->externalWaiters != 0)
+    {
+        m_impl->condition.notify_all();
+    }
     return LxrWorkSchedulerResult::Success;
 }
 

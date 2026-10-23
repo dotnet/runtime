@@ -182,6 +182,17 @@ struct LxrTraceMetrics
     uint64_t checkpointInterruptions;
 };
 
+// P26 (F2). What the last pause visited in the walks that used to follow the trace backlog. The counters count visited
+// packets or entries, so a test can check that they do not grow with the number of pending trace packets.
+struct LxrPauseWalkMetrics
+{
+    uint64_t retireVisited;       // packets that RetireCompletedWork looked at (it frees the finished ones)
+    uint64_t fixPackets;          // packets that FixForwardingReaders looked at
+    uint64_t fixLogEntries;       // decrement log entries that FixForwardingReaders looked at
+    uint64_t publishVisited;      // trace packets that PublishTraceWork submitted
+    uint64_t fixRewritten;        // references that FixForwardingReaders changed
+};
+
 // Wall-clock timers for the phases of one collection. They use a few timestamps at phase and
 // packet boundaries, never one per object. They only observe; no collector decision reads them.
 class LxrPauseTimers final
@@ -402,6 +413,7 @@ public:
     bool IsTraceExhausted() const;
     LxrTracePhase GetTracePhase() const;
     LxrTraceMetrics GetTraceMetrics() const;
+    LxrPauseWalkMetrics GetPauseWalkMetrics() const;
     LxrRcResult HoldTrace(bool hold);
     LxrRcResult ArmScanCheckpoint(Object* object);
     bool IsScanCheckpointActive() const;
@@ -576,6 +588,12 @@ public:
     LxrRcResult HoldTracePacketsForTest(bool hold);
     size_t GetCompletedScanUsers(Object* object) const;
     LxrRcResult ValidateTraceBatchForTest(Object* object, size_t count);
+    // P26 (F2) tests. The gate blocks the worker of the concurrent trace after it has processed `packets` packets. It lets
+    // a test keep a large trace backlog queued in the scheduler (with one trace worker). A pause opens the gate.
+    void ArmTraceGateForTest(uint64_t packets);
+    LxrRcResult QueueTraceBacklogForTest(Object* object, size_t count);
+    bool IsTraceGateBlockedForTest() const { return m_gate_blocked.load(std::memory_order_acquire); }
+    uint64_t GetTracePendingForTest() const { return m_trace_pending.load(std::memory_order_acquire); }
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
 
 private:
@@ -657,6 +675,9 @@ private:
     void DeleteWork();
     void ReleaseWork(Work* work);
     void RetireCompletedWork();
+    void PushTraceUnsubmitted(Work* work);
+    void RetireTraceWork(Work* work);
+    static void ReleaseCancelledPacket(LxrWorkPacket* packet, void* context);
     LxrRcResult ProcessIncrementWork(Work* work, size_t worker);
     LxrRcResult ProcessChildIncrements(ReferenceBatch* children, size_t worker);
     LxrRcResult ProcessDecrementEntry(uintptr_t reference, bool previousRoot, DeathContext* death, size_t worker);
@@ -687,6 +708,7 @@ private:
     LxrRcResult ReplayMatureRememberedSlots();
     void DeleteRememberedChunks();
     LxrRcResult FixForwardingReaders();
+    void FixPacketReferences(Work* work);
     LxrRcResult RetireForwardedSources();
     LxrRcResult ReserveCopyRecord(size_t slot);
     void CommitCopyRecord(size_t slot, uintptr_t start, size_t size);
@@ -873,6 +895,8 @@ private:
     std::atomic<bool> m_copy_exhausted{false};
     std::atomic<bool> m_mature_copy_exhausted{false};
     mutable std::atomic<uint64_t> m_nursery_metrics[6]{};
+    // P26 (F2). Walk counters of the last pause (see LxrPauseWalkMetrics).
+    std::atomic<uint64_t> m_walk[5]{};
     std::atomic<size_t> m_pause_copied_bytes{0};
     std::atomic<uint8_t>* m_evacuation_sources = nullptr;
     std::atomic<RememberedChunk*> m_remembered_chunks{nullptr};
@@ -893,7 +917,12 @@ private:
     std::atomic<size_t> m_dead_large_count;
     std::atomic<size_t> m_producer_bank;
     std::atomic<Work*> m_work;
-    std::atomic<Work*> m_trace_todo;
+    // P26 (F2). Trace packets are not in m_work. A trace packet that cannot go to the scheduler yet (it was made inside a
+    // pause, the trace is held, or the stage is closed) waits in m_trace_unsubmitted, which PublishTraceWork empties
+    // at Resume. A trace packet that was processed goes to m_trace_done; the next Suspend frees it. A pending
+    // packet in the scheduler is in no list: the cost of a pause does not follow the number of such packets.
+    std::atomic<Work*> m_trace_unsubmitted;
+    std::atomic<Work*> m_trace_done;
     std::atomic<uint64_t> m_next_id;
     std::atomic<LxrRcPhase> m_phase;
     std::atomic<LxrRcResult> m_failure;
@@ -909,6 +938,9 @@ private:
     std::atomic<uintptr_t> m_watched_remembered_slot{0};
     std::atomic<uint64_t> m_remembered_payload_reads{0};
     std::atomic<uintptr_t> m_mature_scan_receipt[6]{};
+    std::atomic<bool> m_gate_armed{false};
+    std::atomic<bool> m_gate_blocked{false};
+    std::atomic<int64_t> m_gate_remaining{0};
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
 };
 

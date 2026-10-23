@@ -331,8 +331,8 @@ struct LxrReferenceCounting::Work
     LxrWorkPacket packet;
     bool trace;
     TraceScan* scan;
-    std::atomic<bool> traceSubmitted;
     std::atomic<bool> traceProcessed;
+    std::atomic<bool> doneQueued;
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     bool watchedReader = false;
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
@@ -344,7 +344,7 @@ struct LxrReferenceCounting::Work
           ownedReferences(count == 0 || borrow ? nullptr : new (std::nothrow) uintptr_t[count]),
           references(borrow ? values : ownedReferences),
           packet(id, stage, references, count, Execute, this), trace(traceObjects), scan(traceScan),
-          traceSubmitted(false), traceProcessed(false)
+          traceProcessed(false), doneQueued(false)
     {
         if (count != 0 && ownedReferences != nullptr)
         {
@@ -620,7 +620,7 @@ LxrReferenceCounting::LxrReferenceCounting()
       m_mutators(nullptr), m_mutator_chunks(nullptr),
       m_banks(nullptr), m_roots{nullptr, nullptr}, m_root_counts{0, 0}, m_root_capacity{0, 0},
       m_current_roots(0), m_dead_large(nullptr), m_mature_candidates(nullptr), m_dead_large_count(0),
-      m_producer_bank(0), m_work(nullptr), m_trace_todo(nullptr), m_next_id(1),
+      m_producer_bank(0), m_work(nullptr), m_trace_unsubmitted(nullptr), m_trace_done(nullptr), m_next_id(1),
       m_phase(LxrRcPhase::Uninitialized), m_failure(LxrRcResult::Success), m_metrics{}
 {
 }
@@ -743,6 +743,10 @@ LxrRcResult LxrReferenceCounting::Initialize(
     }
     if (m_scheduler.Initialize(configuration.workers, true, true,
             DecrementsDrained, OverallDrained, this) != LxrWorkSchedulerResult::Success)
+    {
+        return Fail(LxrRcResult::SchedulerFailure);
+    }
+    if (m_scheduler.SetCancelledPacketCallback(ReleaseCancelledPacket, this) != LxrWorkSchedulerResult::Success)
     {
         return Fail(LxrRcResult::SchedulerFailure);
     }
@@ -2033,22 +2037,65 @@ LxrReferenceCounting::Work* LxrReferenceCounting::NewWork(
         }
     }
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
+    if (kind == WorkKind::TraceObjects || kind == WorkKind::TraceScan)
+    {
+        // P26 (F2). A trace packet is owned by the scheduler or by m_trace_unsubmitted until it is processed. It is in no
+        // list that a pause walks.
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_F2_WALK_BACKLOG_CONTROL)
+        return work;
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_F2_WALK_BACKLOG_CONTROL
+    }
     Work* head = m_work.load(std::memory_order_relaxed);
     do
     {
         work->next = head;
     } while (!m_work.compare_exchange_weak(
         head, work, std::memory_order_release, std::memory_order_relaxed));
-    if (kind == WorkKind::TraceObjects || kind == WorkKind::TraceScan)
-    {
-        Work* pending = m_trace_todo.load(std::memory_order_relaxed);
-        do
-        {
-            work->traceNext = pending;
-        } while (!m_trace_todo.compare_exchange_weak(
-            pending, work, std::memory_order_release, std::memory_order_relaxed));
-    }
     return work;
+}
+
+void LxrReferenceCounting::PushTraceUnsubmitted(Work* work)
+{
+    Work* head = m_trace_unsubmitted.load(std::memory_order_relaxed);
+    do
+    {
+        work->traceNext = head;
+    } while (!m_trace_unsubmitted.compare_exchange_weak(
+        head, work, std::memory_order_release, std::memory_order_relaxed));
+}
+
+void LxrReferenceCounting::RetireTraceWork(Work* work)
+{
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F2_WALK_BACKLOG_CONTROL)
+    // Control: the behaviour before P26. m_work owns the trace packets, and Retire frees the finished ones by walking it.
+    (void)work;
+    return;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F2_WALK_BACKLOG_CONTROL
+    if (work->doneQueued.exchange(true, std::memory_order_acq_rel))
+    {
+        Fail(LxrRcResult::InvariantViolation);
+        return;
+    }
+    Work* head = m_trace_done.load(std::memory_order_relaxed);
+    do
+    {
+        work->next = head;
+    } while (!m_trace_done.compare_exchange_weak(
+        head, work, std::memory_order_release, std::memory_order_relaxed));
+}
+
+void LxrReferenceCounting::ReleaseCancelledPacket(LxrWorkPacket* packet, void* context)
+{
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F2_WALK_BACKLOG_CONTROL)
+    (void)packet;
+    (void)context; // Control: m_work owns every packet and frees it in DeleteWork.
+    return;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F2_WALK_BACKLOG_CONTROL
+    Work* work = static_cast<Work*>(packet->GetContext());
+    if (work->kind == WorkKind::TraceObjects || work->kind == WorkKind::TraceScan)
+    {
+        static_cast<LxrReferenceCounting*>(context)->ReleaseWork(work);
+    }
 }
 
 void LxrReferenceCounting::ReleaseWork(Work* work)
@@ -2072,11 +2119,27 @@ void LxrReferenceCounting::ReleaseWork(Work* work)
 
 void LxrReferenceCounting::DeleteWork()
 {
-    m_trace_todo.store(nullptr, std::memory_order_relaxed);
     Work* work = m_work.exchange(nullptr, std::memory_order_acquire);
     while (work != nullptr)
     {
         Work* next = work->next;
+        ReleaseWork(work);
+        work = next;
+    }
+    work = m_trace_done.exchange(nullptr, std::memory_order_acquire);
+    while (work != nullptr)
+    {
+        Work* next = work->next;
+        ReleaseWork(work);
+        work = next;
+    }
+    work = m_trace_unsubmitted.exchange(nullptr, std::memory_order_acquire);
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F2_WALK_BACKLOG_CONTROL)
+    work = nullptr; // Control: m_work owns these packets and has freed them above.
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F2_WALK_BACKLOG_CONTROL
+    while (work != nullptr)
+    {
+        Work* next = work->traceNext;
         ReleaseWork(work);
         work = next;
     }
@@ -2096,18 +2159,32 @@ void LxrReferenceCounting::DeleteWork()
 
 void LxrReferenceCounting::RetireCompletedWork()
 {
+    // P26 (F2). The trace packets that were processed since the last pause are in m_trace_done. The pending ones are
+    // in the scheduler or in m_trace_unsubmitted, and this function does not touch them. So the cost follows the work
+    // of the last epoch, not the trace backlog. m_work holds no trace packet.
+    Work* done = m_trace_done.exchange(nullptr, std::memory_order_acquire);
+    while (done != nullptr)
+    {
+        Work* next = done->next;
+        m_walk[0].fetch_add(1, std::memory_order_relaxed);
+        ReleaseWork(done);
+        done = next;
+    }
     Work* kept = nullptr;
-    Work* pending = nullptr;
     Work* work = m_work.load(std::memory_order_acquire);
     while (work != nullptr)
     {
         Work* next = work->next;
+        m_walk[0].fetch_add(1, std::memory_order_relaxed);
         LxrWorkPacketState state = work->packet.GetState();
-        if (state == LxrWorkPacketState::Completed ||
+        if (state == LxrWorkPacketState::Completed
 #ifdef LXR_RETIRE_PENDING_CONTROL
-            state == LxrWorkPacketState::CallerOwned ||
+            || state == LxrWorkPacketState::CallerOwned
 #endif // LXR_RETIRE_PENDING_CONTROL
-            (state == LxrWorkPacketState::CallerOwned && work->traceProcessed.load(std::memory_order_acquire)))
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F2_WALK_BACKLOG_CONTROL)
+            || (state == LxrWorkPacketState::CallerOwned && work->traceProcessed.load(std::memory_order_acquire))
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F2_WALK_BACKLOG_CONTROL
+            )
         {
             ReleaseWork(work);
         }
@@ -2115,17 +2192,10 @@ void LxrReferenceCounting::RetireCompletedWork()
         {
             work->next = kept;
             kept = work;
-            if ((work->kind == WorkKind::TraceObjects || work->kind == WorkKind::TraceScan) &&
-                !work->traceProcessed.load(std::memory_order_acquire))
-            {
-                work->traceNext = pending;
-                pending = work;
-            }
         }
         work = next;
     }
     m_work.store(kept, std::memory_order_release);
-    m_trace_todo.store(pending, std::memory_order_release);
     TraceScan* scans = nullptr;
     TraceScan* scan = m_scan_work.load(std::memory_order_acquire);
     while (scan != nullptr)
@@ -2488,6 +2558,10 @@ void LxrReferenceCounting::Suspend(void* context)
     {
         engine->m_worker_counters[worker].values[PromotedBytes].store(0, std::memory_order_relaxed);
     }
+    for (std::atomic<uint64_t>& walk : engine->m_walk)
+    {
+        walk.store(0, std::memory_order_relaxed);
+    }
     engine->RetireCompletedWork();
     if (engine->FlushMutators() != LxrRcResult::Success)
     {
@@ -2681,6 +2755,9 @@ LxrRcResult LxrReferenceCounting::RunPause(
             m_trace_metrics[CheckpointInterruptions].fetch_add(1, std::memory_order_relaxed);
         }
         m_scan_checkpoint.store(0, std::memory_order_release);
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+        m_gate_armed.store(false, std::memory_order_release);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
 #if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_MATURE_READER_COMPLETION_CONTROL)
         // Force the previously permitted completion between checkpoint release and scheduler interruption.
         std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() +
@@ -4388,6 +4465,32 @@ LxrRcResult LxrReferenceCounting::SweepLargeNursery()
     return LxrRcResult::Success;
 }
 
+void LxrReferenceCounting::FixPacketReferences(Work* work)
+{
+    if (work->kind == WorkKind::Slots || work->kind == WorkKind::NurserySlots || work->ownedReferences == nullptr)
+    {
+        return;
+    }
+    for (size_t index = 0; index < work->packet.GetReferenceCount(); index++)
+    {
+        uintptr_t flags = work->kind == WorkKind::Roots || work->kind == WorkKind::PreviousRoots
+            ? work->ownedReferences[index] & 1 : 0;
+        Object* object = reinterpret_cast<Object*>(work->ownedReferences[index] & ~flags);
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_PENDING_READER_REBASE_CONTROL)
+        if (work->watchedReader)
+        {
+            continue;
+        }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_PENDING_READER_REBASE_CONTROL
+        Object* fixedObject = ResolveForwarded(object);
+        if (fixedObject != object)
+        {
+            m_walk[4].fetch_add(1, std::memory_order_relaxed);
+        }
+        work->ownedReferences[index] = reinterpret_cast<uintptr_t>(fixedObject) | flags;
+    }
+}
+
 LxrRcResult LxrReferenceCounting::FixForwardingReaders()
 {
     if (!m_configuration.evacuateNursery && !m_configuration.evacuateMature)
@@ -4400,8 +4503,34 @@ LxrRcResult LxrReferenceCounting::FixForwardingReaders()
         {
             uintptr_t flags = m_roots[bank][index] & 1;
             Object* object = reinterpret_cast<Object*>(m_roots[bank][index] & ~static_cast<uintptr_t>(1));
-            m_roots[bank][index] = reinterpret_cast<uintptr_t>(ResolveForwarded(object)) | flags;
+            Object* fixedRoot = ResolveForwarded(object);
+            if (fixedRoot != object)
+            {
+                m_walk[4].fetch_add(1, std::memory_order_relaxed);
+            }
+            m_roots[bank][index] = reinterpret_cast<uintptr_t>(fixedRoot) | flags;
         }
+    }
+    // P26 (F2). The decrement log. The Java LXR resolves a forwarded target when it uses it (rc.rs: ProcessDecs, only for
+    // the objects that a mature evacuation moves) and never walks the log in a pause. Here:
+    //  - the log bank that the lazy decrements of the last pause have consumed is not read again;
+    //  - the log of this pause holds the values that the fields had at the last pause. These are counted objects, which the
+    //    nursery copy does not move (it copies objects with count 0). So a pause that copies only young objects does not
+    //    walk it. Debug builds walk it and check that no entry names a source of this pause.
+    //  - a pause that can copy mature objects (FinalMark, Full) rewrites it, as before.
+    bool copiesMature = m_configuration.evacuateMature &&
+        (m_pause_kind == LxrPauseKind::Full || m_pause_kind == LxrPauseKind::FinalMark);
+    (void)copiesMature;
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F2_WALK_LOGS_CONTROL)
+    // Control: the walk of both banks, as before P26.
+    for (size_t bank = 0; bank < 2; bank++)
+#else
+    size_t bank = m_producer_bank.load(std::memory_order_relaxed);
+#ifndef _DEBUG
+    if (copiesMature)
+#endif // !_DEBUG
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F2_WALK_LOGS_CONTROL
+    {
         LogStream& decrements = m_banks[bank].decrements;
         size_t limit = decrements.reserved.load(std::memory_order_acquire);
         for (size_t cursor = 0; cursor < limit;)
@@ -4414,35 +4543,43 @@ LxrRcResult LxrReferenceCounting::FixForwardingReaders()
             }
             for (size_t index = cursor; index < cursor + count; index++)
             {
+                m_walk[2].fetch_add(1, std::memory_order_relaxed);
                 uintptr_t value = decrements.references[index];
                 uintptr_t publication = decrements.published == nullptr && index == cursor
                     ? value & ~LogReferenceMask : 0;
-                decrements.references[index] = reinterpret_cast<uintptr_t>(
-                    ResolveForwarded(reinterpret_cast<Object*>(value & LogReferenceMask))) | publication;
+                Object* target = reinterpret_cast<Object*>(value & LogReferenceMask);
+                Object* fixedDec = ResolveForwarded(target);
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_F2_WALK_LOGS_CONTROL)
+                if (!copiesMature)
+                {
+                    if (fixedDec != target)
+                    {
+                        return Fail(LxrRcResult::InvariantViolation);
+                    }
+                    continue;
+                }
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_F2_WALK_LOGS_CONTROL
+                if (fixedDec != target)
+                {
+                    m_walk[4].fetch_add(1, std::memory_order_relaxed);
+                }
+                decrements.references[index] = reinterpret_cast<uintptr_t>(fixedDec) | publication;
             }
             cursor += count;
         }
     }
+    // The packets that the pause itself made are in m_work (the packets of earlier pauses are freed at Suspend) and in
+    // m_trace_unsubmitted. The trace packets that wait in the scheduler are not visited: ProcessTraceObject checks the
+    // address when it uses it (see there), so a packet that names a moved young source needs no rewrite.
     for (Work* work = m_work.load(std::memory_order_acquire); work != nullptr; work = work->next)
     {
-        if (work->kind == WorkKind::Slots || work->kind == WorkKind::NurserySlots ||
-            work->ownedReferences == nullptr)
-        {
-            continue;
-        }
-        for (size_t index = 0; index < work->packet.GetReferenceCount(); index++)
-        {
-            uintptr_t flags = work->kind == WorkKind::Roots || work->kind == WorkKind::PreviousRoots
-                ? work->ownedReferences[index] & 1 : 0;
-            Object* object = reinterpret_cast<Object*>(work->ownedReferences[index] & ~flags);
-#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_PENDING_READER_REBASE_CONTROL)
-            if (work->watchedReader)
-            {
-                continue;
-            }
-#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_PENDING_READER_REBASE_CONTROL
-            work->ownedReferences[index] = reinterpret_cast<uintptr_t>(ResolveForwarded(object)) | flags;
-        }
+        m_walk[1].fetch_add(1, std::memory_order_relaxed);
+        FixPacketReferences(work);
+    }
+    for (Work* work = m_trace_unsubmitted.load(std::memory_order_acquire); work != nullptr; work = work->traceNext)
+    {
+        m_walk[1].fetch_add(1, std::memory_order_relaxed);
+        FixPacketReferences(work);
     }
     for (TraceScan* scan = m_scan_work.load(std::memory_order_acquire); scan != nullptr; scan = scan->next)
     {
@@ -4856,6 +4993,8 @@ void LxrReferenceCounting::Execute(LxrWorkPacket* packet, size_t worker, void* c
         case WorkKind::TraceObjects:
         case WorkKind::TraceScan:
             engine->ProcessTraceWork(work);
+            // The scheduler is still busy with the packet, so the memory is freed at the next Suspend, not here.
+            engine->RetireTraceWork(work);
             break;
         case WorkKind::EpochClosure:
         {
@@ -6274,6 +6413,9 @@ LxrRcResult LxrReferenceCounting::GetHeapStatistics(size_t* heapBytes, size_t* f
 LxrRcResult LxrReferenceCounting::StopWorkers()
 {
     m_scan_checkpoint.store(0, std::memory_order_release);
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    m_gate_armed.store(false, std::memory_order_release);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     return FromScheduler(m_scheduler.Shutdown());
 }
 
@@ -6395,24 +6537,26 @@ LxrRcResult LxrReferenceCounting::QueueTrace(
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     if (work->watchedReader && m_reader_held.load(std::memory_order_acquire))
     {
+        PushTraceUnsubmitted(work);
         return LxrRcResult::Success;
     }
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
     if (GetTracePhase() != LxrTracePhase::Concurrent ||
         GetPhase() != LxrRcPhase::Mutator || m_hold_trace.load(std::memory_order_acquire))
     {
+        PushTraceUnsubmitted(work);
         return LxrRcResult::Success;
     }
-    bool expected = false;
-    if (!work->traceSubmitted.compare_exchange_strong(expected, true, std::memory_order_acq_rel))
+    // The packet may run and be retired as soon as Submit returns, so it is not touched after this call.
+    LxrWorkSchedulerResult result = m_scheduler.Submit(&work->packet);
+    if (result == LxrWorkSchedulerResult::Success)
     {
         return LxrRcResult::Success;
     }
-    LxrWorkSchedulerResult result = m_scheduler.Submit(&work->packet);
+    PushTraceUnsubmitted(work);
     if (result == LxrWorkSchedulerResult::StageDisabled ||
         result == LxrWorkSchedulerResult::Busy || result == LxrWorkSchedulerResult::InvalidState)
     {
-        work->traceSubmitted.store(false, std::memory_order_release);
         return LxrRcResult::Success;
     }
     return FromScheduler(result);
@@ -6430,32 +6574,34 @@ LxrRcResult LxrReferenceCounting::PublishTraceWork()
     {
         return enabled;
     }
-    // P25 (F1). Only the packets that are not processed yet are visited (the list m_trace_todo), not every packet of the
-    // epoch. The cost of the walk follows the trace backlog, not the number of packets that the epoch created.
-    for (Work* work = m_trace_todo.load(std::memory_order_acquire); work != nullptr; work = work->traceNext)
+    // P26 (F2). Only the packets that could not go to the scheduler are visited (m_trace_unsubmitted). The pending packets
+    // that are queued in the scheduler stay where they are, so the cost does not follow the trace backlog.
+    Work* batch = m_trace_unsubmitted.exchange(nullptr, std::memory_order_acquire);
+    LxrRcResult status = LxrRcResult::Success;
+    while (batch != nullptr)
     {
-        if ((work->kind != WorkKind::TraceObjects && work->kind != WorkKind::TraceScan) ||
-            work->traceProcessed.load(std::memory_order_acquire))
+        Work* work = batch;
+        batch = work->traceNext;
+        if (status == LxrRcResult::Success)
         {
-            continue;
-        }
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
-        if (work->watchedReader && m_reader_held.load(std::memory_order_acquire))
-        {
-            continue;
-        }
-#endif // LXR_SIDE_METADATA_TEST_PLATFORM
-        bool expected = false;
-        if (work->traceSubmitted.compare_exchange_strong(expected, true, std::memory_order_acq_rel))
-        {
-            LxrRcResult result = FromScheduler(m_scheduler.Submit(&work->packet));
-            if (result != LxrRcResult::Success)
+            if (work->watchedReader && m_reader_held.load(std::memory_order_acquire))
             {
-                return result;
+                PushTraceUnsubmitted(work);
+                continue;
             }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
+            m_walk[3].fetch_add(1, std::memory_order_relaxed);
+            LxrWorkSchedulerResult result = m_scheduler.Submit(&work->packet);
+            if (result == LxrWorkSchedulerResult::Success)
+            {
+                continue;
+            }
+            status = FromScheduler(result);
         }
+        PushTraceUnsubmitted(work);
     }
-    return LxrRcResult::Success;
+    return status;
 }
 
 LxrRcResult LxrReferenceCounting::ProcessTraceWork(Work* work)
@@ -6520,9 +6666,45 @@ LxrRcResult LxrReferenceCounting::ProcessTraceWork(Work* work, TraceBatch* targe
     {
         m_reader_completions.fetch_add(1, std::memory_order_release);
     }
+    if (m_gate_armed.load(std::memory_order_acquire) && GetPhase() == LxrRcPhase::Mutator &&
+        GetTracePhase() == LxrTracePhase::Concurrent && m_gate_remaining.fetch_sub(1, std::memory_order_acq_rel) <= 1)
+    {
+        m_gate_blocked.store(true, std::memory_order_release);
+        while (m_gate_armed.load(std::memory_order_acquire) && GetPhase() == LxrRcPhase::Mutator)
+        {
+            GCToOSInterface::YieldThread(0);
+        }
+        m_gate_blocked.store(false, std::memory_order_release);
+    }
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
     return result;
 }
+
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+void LxrReferenceCounting::ArmTraceGateForTest(uint64_t packets)
+{
+    m_gate_remaining.store(static_cast<int64_t>(packets), std::memory_order_release);
+    m_gate_armed.store(true, std::memory_order_release);
+}
+
+LxrRcResult LxrReferenceCounting::QueueTraceBacklogForTest(Object* object, size_t count)
+{
+    if (GetPhase() != LxrRcPhase::Mutator || GetTracePhase() != LxrTracePhase::Concurrent)
+    {
+        return LxrRcResult::InvalidPhase;
+    }
+    uintptr_t reference = reinterpret_cast<uintptr_t>(object);
+    for (size_t index = 0; index < count; index++)
+    {
+        LxrRcResult result = QueueTrace(&reference, 1);
+        if (result != LxrRcResult::Success)
+        {
+            return result;
+        }
+    }
+    return LxrRcResult::Success;
+}
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
 
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
 LxrRcResult LxrReferenceCounting::ValidateTraceBatchForTest(Object* object, size_t count)
@@ -6928,19 +7110,43 @@ LxrRcResult LxrReferenceCounting::DrainTraceInsidePause()
     while (m_trace_pending.load(std::memory_order_acquire) != 0)
     {
         bool progressed = false;
-        Work* batch = m_trace_todo.exchange(nullptr, std::memory_order_acquire);
-        for (Work* work = batch; work != nullptr; work = work->traceNext)
+        // P26 (F2). The pending trace packets are in two places: the packets that were made in this pause (or never went to
+        // the scheduler) are in m_trace_unsubmitted; the packets of the concurrent phase wait in the scheduler. The stage is
+        // closed in a pause, so the pause thread runs them itself.
+        Work* batch = m_trace_unsubmitted.exchange(nullptr, std::memory_order_acquire);
+        while (batch != nullptr)
         {
-            if ((work->kind == WorkKind::TraceObjects || work->kind == WorkKind::TraceScan) &&
-                !work->traceProcessed.load(std::memory_order_acquire))
+            Work* work = batch;
+            batch = work->traceNext;
+            LxrRcResult result = ProcessTraceWork(work);
+            RetireTraceWork(work);
+            if (result != LxrRcResult::Success)
             {
-                LxrRcResult result = ProcessTraceWork(work);
-                if (result != LxrRcResult::Success)
+                while (batch != nullptr)
                 {
-                    return result;
+                    Work* rest = batch;
+                    batch = rest->traceNext;
+                    PushTraceUnsubmitted(rest);
                 }
-                progressed = true;
+                return result;
             }
+            progressed = true;
+        }
+        uint64_t ran = 0;
+        LxrWorkSchedulerResult inlineResult = m_scheduler.RunQueuedInline(
+            LxrWorkBucketStage::ConcurrentResumable, m_configuration.workers, &ran);
+        // InvalidState: the stage is open or a packet runs. Outside a pause nothing is queued that the caller must run.
+        if (inlineResult != LxrWorkSchedulerResult::Success && inlineResult != LxrWorkSchedulerResult::InvalidState)
+        {
+            return FromScheduler(inlineResult);
+        }
+        if (ran != 0)
+        {
+            progressed = true;
+        }
+        if (GetFailure() != LxrRcResult::Success)
+        {
+            return GetFailure();
         }
         if (!progressed && m_trace_pending.load(std::memory_order_acquire) != 0)
         {
@@ -7197,6 +7403,15 @@ LxrTraceMetrics LxrReferenceCounting::GetTraceMetrics() const
         m_trace_metrics[SplitPackets].load(), m_trace_metrics[CycleObjects].load(),
         m_trace_metrics[CycleBytes].load(), m_trace_metrics[Interruptions].load(),
         m_trace_metrics[ConcurrentSlices].load(), m_trace_metrics[CheckpointInterruptions].load(),
+    };
+}
+
+LxrPauseWalkMetrics LxrReferenceCounting::GetPauseWalkMetrics() const
+{
+    return {
+        m_walk[0].load(std::memory_order_relaxed), m_walk[1].load(std::memory_order_relaxed),
+        m_walk[2].load(std::memory_order_relaxed), m_walk[3].load(std::memory_order_relaxed),
+        m_walk[4].load(std::memory_order_relaxed),
     };
 }
 

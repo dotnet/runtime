@@ -97,6 +97,8 @@ public:
     const uintptr_t* GetReferences() const;
     size_t GetReferenceCount() const;
     LxrWorkPacketState GetState() const;
+    // P26 (F2). The context pointer that the owner gave to the packet.
+    void* GetContext() const { return m_context; }
 #ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
     LxrCompletionResult CreateBlockReleaseGuard(
         LxrBlockReleaseGuard* guard) const;

@@ -117,6 +117,14 @@ public:
     // P25 (F4). The most workers that may run the packets of the concurrent trace stages while the program runs (1 to the
     // number of workers). The other workers still run all other packets. The default is every worker.
     LxrWorkSchedulerResult ConfigureConcurrentTraceWorkers(size_t limit);
+    // P26 (F2). Shutdown calls the callback for every packet that it cancels, after the packet is caller owned again and
+    // outside the lock of the scheduler. The owner uses it to free packets that nobody else knows.
+    using CancelledPacketCallback = void (*)(LxrWorkPacket* packet, void* context);
+    LxrWorkSchedulerResult SetCancelledPacketCallback(CancelledPacketCallback callback, void* context);
+    // P26 (F2). Runs the queued packets of one stage on the calling thread. The stage must not be runnable (it is closed
+    // for a pause) and none of its packets may be running. A pause uses it to finish the trace backlog without a list
+    // of the packets. executionIndex is the worker index that the packets see. ran gets the number of packets.
+    LxrWorkSchedulerResult RunQueuedInline(LxrWorkBucketStage stage, size_t executionIndex, uint64_t* ran);
 
     LxrWorkSchedulerResult Submit(
         LxrWorkPacket* packet,
