@@ -255,7 +255,7 @@ internal sealed class Program
                 foreach (var diagnostic in diagnostics)
                 {
                     hasErrors |= diagnostic.Severity == DiagnosticSeverity.Error;
-                    Console.WriteLine($"{diagnostic.Severity}: {diagnostic.Location}: {diagnostic.Message}");
+                    Console.WriteLine($"{diagnostic.Location} : {diagnostic.Severity.ToString().ToLowerInvariant()} {diagnostic.Id} : {diagnostic.Message}");
                 }
             }
 
