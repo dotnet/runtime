@@ -6606,14 +6606,33 @@ LxrRcResult LxrReferenceCounting::PublishTraceWork()
 
 LxrRcResult LxrReferenceCounting::ProcessTraceWork(Work* work)
 {
-    return GetTracePhase() == LxrTracePhase::Full
-        ? ProcessFullTraceWork(work) : ProcessTraceWork(work, nullptr);
+    // P26 (F4b). Every trace packet collects its children in one batch and loops over it (see ProcessTraceWork below).
+    return ProcessFullTraceWork(work);
 }
 
 NOINLINE LxrRcResult LxrReferenceCounting::ProcessFullTraceWork(Work* work)
 {
     TraceBatch targets(this);
     return GetFailure() == LxrRcResult::Success ? ProcessTraceWork(work, &targets) : GetFailure();
+}
+
+// P26 (F4b). The trace loop of a packet stops when a pause wants the workers: the scheduler has been asked to interrupt the
+// concurrent work (the pause waits for this packet), or the engine left the mutator phase. In a pause the loop never stops.
+bool LxrReferenceCounting::ShouldStopTraceLoop() const
+{
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4B_NO_TRACE_LOOP_CONTROL)
+    return true;
+#else
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    if (m_trace_loop_off.load(std::memory_order_acquire))
+    {
+        return true;
+    }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
+    return GetFailure() != LxrRcResult::Success ||
+        (GetPhase() == LxrRcPhase::Mutator && GetTracePhase() == LxrTracePhase::Concurrent &&
+            m_scheduler.IsInterruptionRequested());
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4B_NO_TRACE_LOOP_CONTROL
 }
 
 LxrRcResult LxrReferenceCounting::ProcessTraceWork(Work* work, TraceBatch* targets)
@@ -6648,6 +6667,35 @@ LxrRcResult LxrReferenceCounting::ProcessTraceWork(Work* work, TraceBatch* targe
                 reinterpret_cast<Object*>(work->references[index]), &directBudget, targets);
             if (result != LxrRcResult::Success)
             {
+                break;
+            }
+        }
+    }
+    // P26 (F4b). The Java LXR trace packet loops: it traces its objects, swaps in the children that it found, and goes on
+    // until no child is left (cm.rs: LXRConcurrentTraceObjects::do_work). A chain of children costs one packet. Only a
+    // batch that fills up (8 192 children) becomes a new packet, so that other workers can take it. Before, every
+    // object that had children made its own packet.
+    while (result == LxrRcResult::Success && targets != nullptr && targets->count != 0 && !ShouldStopTraceLoop())
+    {
+        size_t levelCount = targets->count;
+        uintptr_t level[FullTraceBatchCapacity];
+        memcpy(level, targets->references, levelCount * sizeof(uintptr_t));
+        targets->count = 0;
+        size_t directBudget = BufferCapacity;
+        for (size_t index = 0; index < levelCount; index++)
+        {
+            directBudget = BufferCapacity;
+            result = ProcessTraceObject(reinterpret_cast<Object*>(level[index]), &directBudget, targets);
+            if (result != LxrRcResult::Success)
+            {
+                break;
+            }
+            if ((index & 255) == 255 && index + 1 < levelCount && ShouldStopTraceLoop())
+            {
+                for (size_t rest = index + 1; rest < levelCount && result == LxrRcResult::Success; rest++)
+                {
+                    result = targets->Append(level[rest]);
+                }
                 break;
             }
         }
@@ -7061,6 +7109,11 @@ LxrRcResult LxrReferenceCounting::ProcessTraceScan(TraceScan* scan, bool finish,
         uintptr_t target = reinterpret_cast<uintptr_t>(scan->object);
         if (!complete && m_scan_checkpoint.load(std::memory_order_acquire) == target)
         {
+            // The children of the slice must be visible while the scan waits (the packets are made before the wait).
+            if (result == LxrRcResult::Success && targets != nullptr)
+            {
+                result = targets->Flush();
+            }
             // Stop after a real slice, outside the object lock. A pause releases the checkpoint before quiescing workers.
             m_scan_checkpoint_active.store(true, std::memory_order_release);
             while (m_scan_checkpoint.load(std::memory_order_acquire) == target &&

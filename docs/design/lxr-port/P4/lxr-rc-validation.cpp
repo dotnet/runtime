@@ -790,6 +790,7 @@ namespace
         {
             return;
         }
+        engine.SetTraceLoopForTest(false);
         Type carrierType(24000, 2500);
         Type targetType(4096, 0);
         Object* carrier = Allocate(engine, mutator, carrierType);
@@ -1020,6 +1021,7 @@ namespace
         {
             return;
         }
+        engine.SetTraceLoopForTest(false);
         Type carrierType(65536, 4097);
         Object* carrier = Allocate(engine, mutator, carrierType);
         roots.objects = {carrier};
@@ -1744,8 +1746,8 @@ namespace
                     static_cast<unsigned long long>(engine.GetStorageMetric(56)));
                 Check(packets <= packetBound,
                     "actual trace packet count is bounded by batches, not individual objects");
-                Check(engine.GetStorageMetric(53) >= count * 8 && engine.GetStorageMetric(54) != 0,
-                    "small-object descendants of a traced parent use the trace target accumulator");
+                Check(engine.GetStorageMetric(53) >= count * 8,
+                    "small-object descendants of a traced parent use the trace target accumulator (P26: a flush happens only when the batch fills)");
                 Check(engine.GetStorageMetric(55) == 0 && engine.GetStorageMetric(56) >=
                         LxrReferenceCounting::FullTraceBatchCapacity * sizeof(uintptr_t) &&
                         engine.GetStorageMetric(2) >= engine.GetStorageMetric(56) &&
@@ -4203,6 +4205,297 @@ namespace
         // The gate is still closed. The destructor of the fixture shuts the engine down; the blocked worker is released by
         // the phase change of Shutdown. The run ends without a crash and without a leak report.
         engine.StopWorkers();
+    }
+
+    // P26 (F4b). The trace packet loops over its children (the Java LXR trace loop, cm.rs: do_work). A chain of objects is
+    // traced by a few packets, not by one packet for each object. Control LXR_F4B_NO_TRACE_LOOP_CONTROL: the packet ends
+    // after its own objects.
+    void ValidateF4bTraceLoop()
+    {
+        constexpr size_t Chain = 2000;
+        Type link(24, 1);
+        LxrReferenceCounting engine;
+        int identity;
+        LxrRcMutator* mutator;
+        if (!Initialize(engine, 8, &mutator, &identity) ||
+            !Check(engine.EnableStorageDiagnostics(Timeout) == LxrRcResult::Success, "F4b storage accounting starts"))
+        {
+            return;
+        }
+        std::vector<Object*> nodes;
+        for (size_t index = 0; index < Chain; index++)
+        {
+            Object* node = Allocate(engine, mutator, link);
+            if (node == nullptr)
+            {
+                return;
+            }
+            if (!nodes.empty() && !Check(Store(engine, mutator, Field(nodes.back()), node), "F4b chain link stores"))
+            {
+                return;
+            }
+            nodes.push_back(node);
+        }
+        std::vector<Object*> held{nodes[0]};
+        Roots roots{&held};
+        if (!Check(Epoch(engine, held), "F4b chain matures"))
+        {
+            return;
+        }
+        uint64_t before = engine.GetStorageMetric(0);
+        if (!Check(engine.BeginTrace(Capture, &roots, Timeout) == LxrRcResult::Success, "F4b trace starts"))
+        {
+            return;
+        }
+        std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() +
+            std::chrono::milliseconds(Timeout);
+        while (!engine.IsTraceExhausted() && std::chrono::steady_clock::now() < deadline)
+        {
+            std::this_thread::yield();
+        }
+        uint64_t created = engine.GetStorageMetric(0) - before;
+        std::printf("f4b_trace_loop chain=%zu packets=%llu\n", Chain, static_cast<unsigned long long>(created));
+        Check(engine.IsTraceExhausted() && created < 100,
+            "a chain of 2000 objects is traced by a few packets (the packet loops over the children it finds)");
+        size_t marked = 0;
+        for (Object* node : nodes)
+        {
+            marked += engine.IsMarked(node) ? 1 : 0;
+        }
+        Check(marked == Chain, "every object of the chain is marked");
+        Check(engine.FinishTrace(Capture, &roots, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success && engine.GetFailure() == LxrRcResult::Success,
+            "F4b the trace ends");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "F4b trace loop mutator detaches");
+    }
+
+    // P26 (F4b). Work stealing. One packet runs on a worker and submits 20 000 child packets from there; they go to the deque
+    // of that worker. The other workers have to take them. Every packet runs exactly once. Control
+    // LXR_F4B_NO_STEAL_CONTROL: a worker never steals, so one worker runs everything.
+    struct F4bSteal
+    {
+        LxrWorkScheduler* scheduler = nullptr;
+        std::vector<std::unique_ptr<LxrWorkPacket>> children;
+        std::vector<std::atomic<int>> executions;
+        std::vector<std::atomic<int>> byWorker;
+        std::atomic<int> submitFailures{0};
+        std::atomic<uint64_t> sink{0};
+        F4bSteal(size_t count, size_t workers) : executions(count), byWorker(workers + 1)
+        {
+            for (std::atomic<int>& value : executions)
+            {
+                value = 0;
+            }
+            for (std::atomic<int>& value : byWorker)
+            {
+                value = 0;
+            }
+        }
+    };
+
+    void F4bChildRun(LxrWorkPacket* packet, size_t worker, void* context)
+    {
+        F4bSteal* state = static_cast<F4bSteal*>(context);
+        state->executions[packet->GetId() - 1].fetch_add(1);
+        state->byWorker[worker].fetch_add(1);
+        uint64_t value = packet->GetId();
+        for (int round = 0; round < 400; round++)
+        {
+            value = value * 6364136223846793005ULL + 1442695040888963407ULL;
+        }
+        state->sink.fetch_add(value, std::memory_order_relaxed);
+    }
+
+    void F4bParentRun(LxrWorkPacket*, size_t, void* context)
+    {
+        F4bSteal* state = static_cast<F4bSteal*>(context);
+        for (std::unique_ptr<LxrWorkPacket>& child : state->children)
+        {
+            if (state->scheduler->Submit(child.get()) != LxrWorkSchedulerResult::Success)
+            {
+                state->submitFailures.fetch_add(1);
+            }
+        }
+    }
+
+    void ValidateF4bStealing()
+    {
+        constexpr size_t Children = 20000;
+        constexpr size_t Workers = 8;
+        LxrWorkScheduler scheduler;
+        F4bSteal state(Children, Workers);
+        state.scheduler = &scheduler;
+        if (!Check(scheduler.Initialize(Workers) == LxrWorkSchedulerResult::Success, "F4b stealing scheduler starts"))
+        {
+            return;
+        }
+        for (size_t index = 0; index < Children; index++)
+        {
+            state.children.push_back(std::make_unique<LxrWorkPacket>(
+                index + 1, LxrWorkBucketStage::Unconstrained, nullptr, 0, F4bChildRun, &state));
+        }
+        LxrWorkPacket parent(Children + 1, LxrWorkBucketStage::Unconstrained, nullptr, 0, F4bParentRun, &state);
+        Check(scheduler.Submit(&parent) == LxrWorkSchedulerResult::Success &&
+                scheduler.WaitForIdle(Timeout) == LxrWorkSchedulerResult::Success,
+            "F4b the parent and its children run");
+        size_t exactlyOnce = 0;
+        for (std::atomic<int>& value : state.executions)
+        {
+            exactlyOnce += value.load() == 1 ? 1 : 0;
+        }
+        size_t workersUsed = 0;
+        int busiest = 0;
+        for (size_t worker = 0; worker < Workers; worker++)
+        {
+            int ran = state.byWorker[worker].load();
+            workersUsed += ran != 0 ? 1 : 0;
+            busiest = ran > busiest ? ran : busiest;
+        }
+        LxrWorkSchedulerMetrics metrics = scheduler.GetMetrics();
+        std::printf("f4b_steal children=%zu workers_used=%zu busiest=%d executed=%llu\n", Children, workersUsed, busiest,
+            static_cast<unsigned long long>(metrics.executed));
+        Check(state.submitFailures.load() == 0 && exactlyOnce == Children, "F4b every child runs exactly once");
+        Check(metrics.executed == Children + 1 && metrics.ownershipViolations == 0, "F4b the counters agree");
+        Check(workersUsed >= 4 && busiest < static_cast<int>(Children * 3 / 4),
+            "F4b work that lands in one worker is taken by the others (stealing)");
+        Check(scheduler.Shutdown() == LxrWorkSchedulerResult::Success, "F4b stealing scheduler stops");
+    }
+
+    // P26 (F4b). No packet is lost and none runs twice. Four threads submit packets while eight workers run them and make
+    // more. Control LXR_F4B_STEAL_NO_CAS_CONTROL: a thief takes a packet without the compare-and-swap that claims it.
+    struct F4bStress
+    {
+        LxrWorkScheduler* scheduler = nullptr;
+        std::vector<std::unique_ptr<LxrWorkPacket>> packets;
+        std::vector<std::atomic<int>> executions;
+        std::atomic<size_t> next{0};
+        std::atomic<int> failures{0};
+        explicit F4bStress(size_t count) : executions(count)
+        {
+            for (std::atomic<int>& value : executions)
+            {
+                value = 0;
+            }
+        }
+    };
+
+    void F4bStressRun(LxrWorkPacket* packet, size_t, void* context)
+    {
+        F4bStress* state = static_cast<F4bStress*>(context);
+        size_t id = packet->GetId() - 1;
+        state->executions[id].fetch_add(1);
+        // A packet makes up to two more, as long as the pool lasts.
+        for (int copy = 0; copy < static_cast<int>(id % 3); copy++)
+        {
+            size_t index = state->next.fetch_add(1);
+            if (index < state->packets.size())
+            {
+                if (state->scheduler->Submit(state->packets[index].get()) != LxrWorkSchedulerResult::Success)
+                {
+                    state->failures.fetch_add(1);
+                }
+            }
+        }
+    }
+
+    void ValidateF4bStress()
+    {
+        constexpr size_t Total = 60000;
+        constexpr size_t Seeds = 4000;
+        LxrWorkScheduler scheduler;
+        F4bStress state(Total);
+        state.scheduler = &scheduler;
+        if (!Check(scheduler.Initialize(8) == LxrWorkSchedulerResult::Success, "F4b stress scheduler starts"))
+        {
+            return;
+        }
+        for (size_t index = 0; index < Total; index++)
+        {
+            state.packets.push_back(std::make_unique<LxrWorkPacket>(
+                index + 1, LxrWorkBucketStage::Unconstrained, nullptr, 0, F4bStressRun, &state));
+        }
+        state.next.store(Seeds);
+        std::vector<std::thread> threads;
+        for (size_t thread = 0; thread < 4; thread++)
+        {
+            threads.emplace_back([&, thread]()
+            {
+                for (size_t index = thread; index < Seeds; index += 4)
+                {
+                    if (scheduler.Submit(state.packets[index].get()) != LxrWorkSchedulerResult::Success)
+                    {
+                        state.failures.fetch_add(1);
+                    }
+                }
+            });
+        }
+        for (std::thread& thread : threads)
+        {
+            thread.join();
+        }
+        Check(scheduler.WaitForIdle(Timeout) == LxrWorkSchedulerResult::Success, "F4b the stress work drains");
+        size_t submitted = state.next.load() < Total ? state.next.load() : Total;
+        size_t once = 0;
+        size_t twice = 0;
+        size_t never = 0;
+        for (size_t index = 0; index < submitted; index++)
+        {
+            int ran = state.executions[index].load();
+            once += ran == 1 ? 1 : 0;
+            twice += ran > 1 ? 1 : 0;
+            never += ran == 0 ? 1 : 0;
+        }
+        LxrWorkSchedulerMetrics metrics = scheduler.GetMetrics();
+        std::printf("f4b_stress submitted=%zu once=%zu twice=%zu never=%zu executed=%llu\n", submitted, once, twice,
+            never, static_cast<unsigned long long>(metrics.executed));
+        Check(state.failures.load() == 0 && twice == 0 && never == 0 && once == submitted,
+            "F4b no packet is lost and none runs twice");
+        Check(metrics.submitted == submitted && metrics.executed == submitted && metrics.ownershipViolations == 0,
+            "F4b the counters agree with the packets");
+        Check(scheduler.Shutdown() == LxrWorkSchedulerResult::Success, "F4b stress scheduler stops");
+    }
+
+    // P26 (F4b). The concurrent trace stage closes for a pause without moving its packets. Packets of the stage that a worker
+    // made stay in its deque, a pause runs them itself (RunQueuedInline) and a later Resume lets the workers take the rest.
+    void ValidateF4bPauseKeepsTracePackets()
+    {
+        constexpr size_t Count = 3000;
+        LxrWorkScheduler scheduler;
+        F4bSteal state(Count, 4);
+        state.scheduler = &scheduler;
+        if (!Check(scheduler.Initialize(4) == LxrWorkSchedulerResult::Success,
+                "F4b scheduler with a closed trace stage starts"))
+        {
+            return;
+        }
+        for (size_t index = 0; index < Count; index++)
+        {
+            state.children.push_back(std::make_unique<LxrWorkPacket>(
+                index + 1, LxrWorkBucketStage::ConcurrentResumable, nullptr, 0, F4bChildRun, &state));
+        }
+        // The trace stage is not open, so the packets stay queued.
+        for (std::unique_ptr<LxrWorkPacket>& child : state.children)
+        {
+            scheduler.Submit(child.get());
+        }
+        uint64_t ran = 0;
+        size_t before = 0;
+        for (std::atomic<int>& value : state.executions)
+        {
+            before += value.load();
+        }
+        Check(before == 0 && scheduler.GetStageOutstanding(LxrWorkBucketStage::ConcurrentResumable) == Count,
+            "F4b a closed stage runs nothing and keeps every packet");
+        Check(scheduler.RunQueuedInline(LxrWorkBucketStage::ConcurrentResumable, 4, &ran) == LxrWorkSchedulerResult::Success &&
+                ran == Count, "F4b a pause runs the queued packets of the closed stage itself");
+        size_t once = 0;
+        for (std::atomic<int>& value : state.executions)
+        {
+            once += value.load() == 1 ? 1 : 0;
+        }
+        Check(once == Count && scheduler.GetStageOutstanding(LxrWorkBucketStage::ConcurrentResumable) == 0,
+            "F4b every queued packet ran exactly once and the stage is empty");
+        Check(scheduler.Shutdown() == LxrWorkSchedulerResult::Success, "F4b pause scheduler stops");
     }
 
     // A large object that dies in a RefCount pause while a concurrent trace is active is released by the lazy
@@ -8338,6 +8631,16 @@ int main(int argc, char** argv)
         }
         ValidateF2ShutdownWithBacklog();
         std::printf("%s: %d/%d F2 pause walk checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
+    if (argc == 2 && strcmp(argv[1], "--f4b-scheduler") == 0)
+    {
+        ValidateF4bTraceLoop();
+        ValidateF4bStealing();
+        ValidateF4bStress();
+        ValidateF4bPauseKeepsTracePackets();
+        std::printf("%s: %d/%d F4b scheduler and trace loop checks\n",
             Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
         return Failures == 0 ? 0 : 1;
     }

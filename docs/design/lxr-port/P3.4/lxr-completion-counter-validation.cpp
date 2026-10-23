@@ -441,6 +441,11 @@ namespace
                     LxrWorkSchedulerResult::Success,
             "tracked generation publishes after resume");
         success &= Check(WaitUntil(context.childStarted), "child work starts");
+        // The parent registers the child inside its own Execute, and its own registration ends after Execute returns. The
+        // child can start on another worker before that, so the snapshot is taken only when the parent has completed.
+        success &= Check(
+            scheduler.WaitForPacket(&parent, TimeoutMilliseconds) == LxrWorkSchedulerResult::Success,
+            "parent completes while the child still runs");
         LxrCompletionSnapshot blocked{};
         success &= Check(
             scheduler.GetCompletionSnapshot(1, &blocked) ==

@@ -78,26 +78,258 @@ namespace
 #endif
 }
 
+namespace
+{
+    // P26 (F4b). Queues of the scheduler. They replace the one global mutex of the scheduler on the hot paths: a worker takes
+    // and adds packets without the mutex. The mutex is for the control plane (stages, pauses, deferred queues, parking).
+
+    constexpr size_t StealBatchCapacity = 16;
+
+    // The scheduler that the current thread works for, the index of the worker, and whether the packet that the worker runs
+    // now is a trace packet. A packet that a worker submits goes to the deque of this worker.
+    thread_local const void* tlsScheduler = nullptr;
+    thread_local size_t tlsWorkerIndex = 0;
+    thread_local bool tlsRunningTrace = false;
+
+    // A small test-and-test-and-set lock for the injectors. The thread yields after a few spins, so a machine with one or two
+    // processors does not burn its time slice.
+    class SpinLock final
+    {
+    public:
+        void Lock()
+        {
+            unsigned spins = 0;
+            while (m_held.exchange(true, std::memory_order_acquire))
+            {
+                while (m_held.load(std::memory_order_relaxed))
+                {
+                    if (++spins > 32)
+                    {
+                        std::this_thread::yield();
+                    }
+                }
+            }
+        }
+
+        void Unlock()
+        {
+            m_held.store(false, std::memory_order_release);
+        }
+
+    private:
+        std::atomic<bool> m_held{false};
+    };
+
+    // The queue of a bucket for packets that no worker owns: packets from threads that are not workers, packets for a stage
+    // that is not open yet, and packets that a worker spills. Workers take packets in batches. The Java LXR uses a lock-free
+    // crossbeam Injector here. This one holds a spin lock for a few instructions; a batch take keeps the number of lock
+    // operations low (one for up to 16 packets). The count is read without the lock.
+    class Injector final
+    {
+    public:
+        void Push(LxrWorkPacket* packet)
+        {
+            m_lock.Lock();
+            m_items.push_back(packet);
+            m_count.store(m_items.size(), std::memory_order_seq_cst);
+            m_lock.Unlock();
+        }
+
+        size_t PopBatch(LxrWorkPacket** out, size_t maximum)
+        {
+            if (m_count.load(std::memory_order_seq_cst) == 0)
+            {
+                return 0;
+            }
+            m_lock.Lock();
+            size_t count = m_items.size() < maximum ? m_items.size() : maximum;
+            for (size_t index = 0; index < count; index++)
+            {
+                out[index] = m_items.front();
+                m_items.pop_front();
+            }
+            m_count.store(m_items.size(), std::memory_order_seq_cst);
+            m_lock.Unlock();
+            return count;
+        }
+
+        size_t Count() const
+        {
+            return m_count.load(std::memory_order_seq_cst);
+        }
+
+    private:
+        SpinLock m_lock;
+        std::deque<LxrWorkPacket*> m_items;
+        std::atomic<size_t> m_count{0};
+    };
+
+    // Chase-Lev work-stealing deque of packets (Le, Pop, Cohen, Zappa Nardelli: "Correct and Efficient Work-Stealing for Weak
+    // Memory Models", with sequentially consistent operations instead of fences, so that ThreadSanitizer can check it).
+    // The owner pushes and pops at the bottom; any thread may steal from the top. The Java LXR uses the crossbeam deque.
+    // The ring grows when it is full. An old ring stays alive until the deque is destroyed, because a thief may still read it.
+    class WorkDeque final
+    {
+    public:
+        WorkDeque()
+            : m_top(0), m_bottom(0), m_ring(new Ring(64))
+        {
+        }
+
+        ~WorkDeque()
+        {
+            delete m_ring.load();
+            for (Ring* ring : m_retired)
+            {
+                delete ring;
+            }
+        }
+
+        WorkDeque(const WorkDeque&) = delete;
+        WorkDeque& operator=(const WorkDeque&) = delete;
+
+        enum class StealResult
+        {
+            Empty,
+            Success,
+            Retry,
+        };
+
+        // Owner only.
+        void Push(LxrWorkPacket* packet)
+        {
+            int64_t bottom = m_bottom.load(std::memory_order_relaxed);
+            int64_t top = m_top.load(std::memory_order_seq_cst);
+            Ring* ring = m_ring.load(std::memory_order_relaxed);
+            if (bottom - top >= static_cast<int64_t>(ring->capacity))
+            {
+                Ring* grown = new Ring(ring->capacity * 2);
+                for (int64_t index = top; index < bottom; index++)
+                {
+                    grown->Put(index, ring->Get(index));
+                }
+                m_retired.push_back(ring);
+                m_ring.store(grown, std::memory_order_seq_cst);
+                ring = grown;
+            }
+            ring->Put(bottom, packet);
+            m_bottom.store(bottom + 1, std::memory_order_seq_cst);
+        }
+
+        // Owner only. Returns null when the deque is empty.
+        LxrWorkPacket* Pop()
+        {
+            int64_t bottom = m_bottom.load(std::memory_order_relaxed) - 1;
+            Ring* ring = m_ring.load(std::memory_order_relaxed);
+            m_bottom.store(bottom, std::memory_order_seq_cst);
+            int64_t top = m_top.load(std::memory_order_seq_cst);
+            if (top > bottom)
+            {
+                m_bottom.store(bottom + 1, std::memory_order_relaxed);
+                return nullptr;
+            }
+            LxrWorkPacket* packet = ring->Get(bottom);
+            if (top == bottom)
+            {
+                if (!m_top.compare_exchange_strong(top, top + 1, std::memory_order_seq_cst))
+                {
+                    packet = nullptr;
+                }
+                m_bottom.store(bottom + 1, std::memory_order_relaxed);
+            }
+            return packet;
+        }
+
+        // Any thread.
+        StealResult Steal(LxrWorkPacket** packet)
+        {
+            int64_t top = m_top.load(std::memory_order_seq_cst);
+            int64_t bottom = m_bottom.load(std::memory_order_seq_cst);
+            if (top >= bottom)
+            {
+                return StealResult::Empty;
+            }
+            Ring* ring = m_ring.load(std::memory_order_seq_cst);
+            LxrWorkPacket* value = ring->Get(top);
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4B_STEAL_NO_CAS_CONTROL)
+            // Control: the thief takes the packet without claiming it. The owner or another thief can take it too.
+            m_top.store(top + 1, std::memory_order_seq_cst);
+#else
+            if (!m_top.compare_exchange_strong(top, top + 1, std::memory_order_seq_cst))
+            {
+                return StealResult::Retry;
+            }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4B_STEAL_NO_CAS_CONTROL
+            *packet = value;
+            return StealResult::Success;
+        }
+
+        bool MaybeNonEmpty() const
+        {
+            return m_bottom.load(std::memory_order_seq_cst) > m_top.load(std::memory_order_seq_cst);
+        }
+
+    private:
+        struct Ring final
+        {
+            explicit Ring(size_t slots)
+                : capacity(slots), items(new std::atomic<LxrWorkPacket*>[slots])
+            {
+            }
+
+            ~Ring()
+            {
+                delete[] items;
+            }
+
+            LxrWorkPacket* Get(int64_t index) const
+            {
+                return items[static_cast<size_t>(index) & (capacity - 1)].load(std::memory_order_relaxed);
+            }
+
+            void Put(int64_t index, LxrWorkPacket* packet)
+            {
+                items[static_cast<size_t>(index) & (capacity - 1)].store(packet, std::memory_order_relaxed);
+            }
+
+            size_t capacity;
+            std::atomic<LxrWorkPacket*>* items;
+        };
+
+        std::atomic<int64_t> m_top;
+        std::atomic<int64_t> m_bottom;
+        std::atomic<Ring*> m_ring;
+        std::vector<Ring*> m_retired;
+    };
+}
+
 class LxrWorkScheduler::Impl final
 {
 public:
-    struct Bucket final
+    // The state of a bucket changes only under the mutex, but workers read it without the mutex, so the fields are atomic.
+    struct alignas(64) Bucket final
     {
-        BucketState state = BucketState::Closed;
-        bool enabled = true;
-        bool accepting = true;
-        uint64_t outstanding = 0;
-        uint64_t executing = 0;
-        std::deque<LxrWorkPacket*> queue;
+        std::atomic<BucketState> state{BucketState::Closed};
+        std::atomic<bool> enabled{true};
+        std::atomic<bool> accepting{true};
+        // Packets that are queued or running, and packets that run. A packet is counted in outstanding from Submit until
+        // it has completed. The bucket is drained when both are zero.
+        std::atomic<uint64_t> outstanding{0};
+        std::atomic<uint64_t> executing{0};
+        Injector injector;
     };
 
-    struct Worker final
+    // A worker has two deques. The general deque holds packets of the stages that are always runnable while they are open
+    // (Unconstrained and the current STW stage). The trace deque holds packets of the concurrent trace stages. A pause
+    // closes these stages. Their packets stay in the deque, so a pause does not move them (P26 F2).
+    struct alignas(64) Worker final
     {
-        std::deque<LxrWorkPacket*> local;
+        WorkDeque general;
+        WorkDeque trace;
         std::thread thread;
         bool parked = false;
-        uint64_t executed = 0;
-        uint64_t stolen = 0;
+        std::atomic<uint64_t> executed{0};
+        std::atomic<uint64_t> stolen{0};
     };
 
     struct DeferredQueueSet final
@@ -118,6 +350,56 @@ public:
         uint64_t Count() const
         {
             return static_cast<uint64_t>(normal.size() + prioritized.size());
+        }
+    };
+
+    // The published deferred packets. Workers take them with one atomic increment each, without the mutex. The vectors are
+    // filled at publication, when no worker reads them, and cleared at the end of the next cycle, when every worker is parked.
+    struct ActiveDeferred final
+    {
+        std::vector<LxrWorkPacket*> prioritized;
+        std::vector<LxrWorkPacket*> normal;
+        std::atomic<size_t> prioritizedNext{0};
+        std::atomic<size_t> normalNext{0};
+        std::atomic<bool> ready{false};
+
+        uint64_t Remaining() const
+        {
+            if (!ready.load(std::memory_order_acquire))
+            {
+                return 0;
+            }
+            size_t prioritizedTaken = prioritizedNext.load(std::memory_order_seq_cst);
+            size_t normalTaken = normalNext.load(std::memory_order_seq_cst);
+            uint64_t remaining = 0;
+            remaining += prioritizedTaken < prioritized.size() ? prioritized.size() - prioritizedTaken : 0;
+            remaining += normalTaken < normal.size() ? normal.size() - normalTaken : 0;
+            return remaining;
+        }
+
+        LxrWorkPacket* Take()
+        {
+            if (!ready.load(std::memory_order_seq_cst))
+            {
+                return nullptr;
+            }
+            if (prioritizedNext.load(std::memory_order_seq_cst) < prioritized.size())
+            {
+                size_t index = prioritizedNext.fetch_add(1, std::memory_order_seq_cst);
+                if (index < prioritized.size())
+                {
+                    return prioritized[index];
+                }
+            }
+            if (normalNext.load(std::memory_order_seq_cst) < normal.size())
+            {
+                size_t index = normalNext.fetch_add(1, std::memory_order_seq_cst);
+                if (index < normal.size())
+                {
+                    return normal[index];
+                }
+            }
+            return nullptr;
         }
     };
 
@@ -223,14 +505,32 @@ public:
         }
     }
 
+    // Takes a packet that Shutdown cancels back to the caller. The caller holds the mutex or is the only thread.
+    void CancelPacket(LxrWorkPacket* packet, bool decrementOutstanding, std::vector<LxrWorkPacket*>* cancelledPackets)
+    {
+        if (packet->TryTransition(LxrWorkPacketState::Queued, LxrWorkPacketState::CallerOwned))
+        {
+            packet->SetGeneration(0);
+            packet->SetPreferredWorker(LxrWorkScheduler::NoPreferredWorker);
+            packet->SetDeferred(false);
+            if (decrementOutstanding)
+            {
+                buckets[StageIndex(packet->GetStage())].outstanding--;
+            }
+            cancelledPackets->push_back(packet);
+        }
+        else
+        {
+            ownershipViolations++;
+        }
+    }
+
     void Shutdown()
     {
         std::vector<LxrWorkPacket*> cancelledPackets;
 #ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
         uint64_t shutdownOwnershipViolations = 0;
         bool shutdownCompletionFailure = false;
-#endif
-#ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
         std::array<LxrLazyCompletionRegistration, 2> cancelledSeeds;
 #endif
         {
@@ -260,19 +560,33 @@ public:
                 }
             }
 #endif
+            NotifyAllLocked();
+        }
 
+        // The workers leave their loop at the next poll. After they have joined, this thread is the only one that touches
+        // the queues, so it may empty them without the mutex.
+        for (Worker& worker : workers)
+        {
+            if (worker.thread.joinable())
+            {
+                worker.thread.join();
+            }
+        }
+
+        {
+            std::lock_guard<std::mutex> guard(lock);
             for (size_t index = 0; index < deferredQueues.size(); index++)
             {
                 DeferredQueueSet& queueSet = deferredQueues[index];
-                bool isPublished = index == activeDeferredIndex;
-                CancelDeferredQueueLocked(
-                    queueSet.prioritized,
-                    isPublished,
-                    &cancelledPackets);
-                CancelDeferredQueueLocked(
-                    queueSet.normal,
-                    isPublished,
-                    &cancelledPackets);
+                for (std::deque<LxrWorkPacket*>* queue : {&queueSet.prioritized, &queueSet.normal})
+                {
+                    while (!queue->empty())
+                    {
+                        LxrWorkPacket* packet = queue->front();
+                        queue->pop_front();
+                        CancelPacket(packet, false, &cancelledPackets);
+                    }
+                }
 #ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
                 if (completionEnabled && queueSet.completionSeed.IsActive())
                 {
@@ -281,52 +595,41 @@ public:
                 }
 #endif
             }
+            if (active.ready.load())
+            {
+                for (std::vector<LxrWorkPacket*>* packets : {&active.prioritized, &active.normal})
+                {
+                    size_t next = packets == &active.prioritized ? active.prioritizedNext.load() : active.normalNext.load();
+                    for (size_t index = next; index < packets->size(); index++)
+                    {
+                        CancelPacket((*packets)[index], true, &cancelledPackets);
+                    }
+                    packets->clear();
+                }
+                active.ready.store(false);
+            }
             for (Bucket& bucket : buckets)
             {
-                while (!bucket.queue.empty())
+                LxrWorkPacket* batch[StealBatchCapacity];
+                size_t count;
+                while ((count = bucket.injector.PopBatch(batch, StealBatchCapacity)) != 0)
                 {
-                    LxrWorkPacket* packet = bucket.queue.front();
-                    bucket.queue.pop_front();
-                    if (packet->TryTransition(
-                        LxrWorkPacketState::Queued,
-                        LxrWorkPacketState::CallerOwned))
+                    for (size_t index = 0; index < count; index++)
                     {
-                        packet->SetGeneration(0);
-                        packet->SetPreferredWorker(LxrWorkScheduler::NoPreferredWorker);
-                        packet->SetDeferred(false);
-                        bucket.outstanding--;
-                        cancelledPackets.push_back(packet);
-                    }
-                    else
-                    {
-                        ownershipViolations++;
+                        CancelPacket(batch[index], true, &cancelledPackets);
                     }
                 }
             }
             for (Worker& worker : workers)
             {
-                while (!worker.local.empty())
+                for (WorkDeque* deque : {&worker.general, &worker.trace})
                 {
-                    LxrWorkPacket* packet = worker.local.front();
-                    worker.local.pop_front();
-                    Bucket& bucket = buckets[StageIndex(packet->GetStage())];
-                    if (packet->TryTransition(
-                        LxrWorkPacketState::Queued,
-                        LxrWorkPacketState::CallerOwned))
+                    while (LxrWorkPacket* packet = deque->Pop())
                     {
-                        packet->SetGeneration(0);
-                        packet->SetPreferredWorker(LxrWorkScheduler::NoPreferredWorker);
-                        packet->SetDeferred(false);
-                        bucket.outstanding--;
-                        cancelledPackets.push_back(packet);
-                    }
-                    else
-                    {
-                        ownershipViolations++;
+                        CancelPacket(packet, true, &cancelledPackets);
                     }
                 }
             }
-            NotifyAllLocked();
         }
 
 #ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
@@ -359,14 +662,6 @@ public:
             }
         }
 
-        for (Worker& worker : workers)
-        {
-            if (worker.thread.joinable())
-            {
-                worker.thread.join();
-            }
-        }
-
 #ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
         if (completionEnabled)
         {
@@ -396,205 +691,102 @@ public:
 #endif
     }
 
-    void CancelDeferredQueueLocked(
-        std::deque<LxrWorkPacket*>& queue,
-        bool decrementOutstanding,
-        std::vector<LxrWorkPacket*>* cancelledPackets)
-    {
-        while (!queue.empty())
-        {
-            LxrWorkPacket* packet = queue.front();
-            queue.pop_front();
-            if (packet->TryTransition(
-                LxrWorkPacketState::Queued,
-                LxrWorkPacketState::CallerOwned))
-            {
-                packet->SetGeneration(0);
-                packet->SetPreferredWorker(LxrWorkScheduler::NoPreferredWorker);
-                packet->SetDeferred(false);
-                if (decrementOutstanding)
-                {
-                    buckets[StageIndex(LxrWorkBucketStage::Unconstrained)].outstanding--;
-                }
-                cancelledPackets->push_back(packet);
-            }
-            else
-            {
-                ownershipViolations++;
-            }
-        }
-    }
-
-    bool IsEligibleLocked(LxrWorkBucketStage stage) const
+    // A stage is eligible when its packets may run now: it is open and enabled, and either no pause runs and the stage is
+    // concurrent, or it is the Unconstrained stage or the current STW stage. Workers call it without the mutex.
+    bool IsEligible(LxrWorkBucketStage stage) const
     {
         const Bucket& bucket = buckets[StageIndex(stage)];
-        if (!bucket.enabled || bucket.state != BucketState::Open)
+        if (!bucket.enabled.load(std::memory_order_seq_cst) ||
+            bucket.state.load(std::memory_order_seq_cst) != BucketState::Open)
         {
             return false;
         }
 
-        if (!cycleActive)
+        if (!cycleActive.load(std::memory_order_seq_cst))
         {
             return LxrIsConcurrentStage(stage);
         }
 
-        return stage == LxrWorkBucketStage::Unconstrained || stage == currentStwStage;
+        return stage == LxrWorkBucketStage::Unconstrained ||
+            stage == currentStwStage.load(std::memory_order_seq_cst);
     }
 
-    // P25 (F4). Eligible, and not a trace packet beyond the limit of concurrent trace workers.
-    bool IsRunnableLocked(LxrWorkBucketStage stage) const
+    bool IsEligibleLocked(LxrWorkBucketStage stage) const
     {
-        if (!IsEligibleLocked(stage))
+        return IsEligible(stage);
+    }
+
+    static bool IsTraceStage(LxrWorkBucketStage stage)
+    {
+        return stage == LxrWorkBucketStage::Concurrent || stage == LxrWorkBucketStage::ConcurrentResumable;
+    }
+
+    // Eligible, and not a trace packet beyond the limit of concurrent trace workers (P25 F4).
+    bool IsRunnable(LxrWorkBucketStage stage) const
+    {
+        if (!IsEligible(stage))
         {
             return false;
         }
 #if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NO_CONC_LIMIT_CONTROL)
         return true;
 #else
-        return !(IsTraceStage(stage) && !cycleActive && concurrentTraceRunning >= concurrentTraceLimit);
+        return !(IsTraceStage(stage) &&
+            concurrentTraceRunning.load(std::memory_order_seq_cst) >= concurrentTraceLimit.load(std::memory_order_relaxed));
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4_NO_CONC_LIMIT_CONTROL
     }
 
-    LxrWorkPacket* TakeLocalLocked(size_t workerIndex, bool fromBack)
+    bool IsTraceClassRunnable() const
     {
-        std::deque<LxrWorkPacket*>& local = workers[workerIndex].local;
-        if (fromBack)
-        {
-            for (
-                std::deque<LxrWorkPacket*>::reverse_iterator iterator = local.rbegin();
-                iterator != local.rend();
-                iterator++)
-            {
-                if (IsRunnableLocked((*iterator)->GetStage()))
-                {
-                    LxrWorkPacket* packet = *iterator;
-                    local.erase(std::next(iterator).base());
-                    return packet;
-                }
-            }
-        }
-        else
-        {
-            for (
-                std::deque<LxrWorkPacket*>::iterator iterator = local.begin();
-                iterator != local.end();
-                iterator++)
-            {
-                if (IsRunnableLocked((*iterator)->GetStage()))
-                {
-                    LxrWorkPacket* packet = *iterator;
-                    local.erase(iterator);
-                    return packet;
-                }
-            }
-        }
-
-        return nullptr;
+        return IsRunnable(LxrWorkBucketStage::Concurrent) || IsRunnable(LxrWorkBucketStage::ConcurrentResumable);
     }
 
-    LxrWorkPacket* TakeBucketLocked(size_t workerIndex)
+    enum class ClaimResult
     {
-        for (size_t stageIndex = 0; stageIndex < StageCount; stageIndex++)
-        {
-            LxrWorkBucketStage stage = static_cast<LxrWorkBucketStage>(stageIndex);
-            Bucket& bucket = buckets[stageIndex];
-            if (!IsRunnableLocked(stage))
-            {
-                continue;
-            }
+        Claimed,
+        NotRunnable,
+        Lost,
+    };
 
-            if (stage == LxrWorkBucketStage::Unconstrained)
-            {
-                LxrWorkPacket* deferred = TakeDeferredActiveLocked(workerIndex);
-                if (deferred != nullptr)
-                {
-                    return deferred;
-                }
-            }
-            if (bucket.queue.empty())
-            {
-                continue;
-            }
-
-            LxrWorkPacket* packet = bucket.queue.front();
-            bucket.queue.pop_front();
-            size_t refill = 0;
-            while (!bucket.queue.empty() &&
-                workers[workerIndex].local.size() < LxrLocalPacketCacheCapacity &&
-                refill < (LxrLocalPacketCacheCapacity / 2))
-            {
-                workers[workerIndex].local.push_back(bucket.queue.front());
-                bucket.queue.pop_front();
-                refill++;
-            }
-            return packet;
-        }
-
-        return nullptr;
-    }
-
-    LxrWorkPacket* TakeDeferredActiveLocked(size_t workerIndex)
+    // A worker has taken the packet from a queue. It counts the packet as running first and only then checks that its stage
+    // is still runnable. InterruptConcurrentWork closes the stage first and then waits for the count, so one of the two sees the
+    // other: a packet never starts after the pause has seen the stage idle.
+    ClaimResult TryClaim(LxrWorkPacket* packet, size_t workerIndex)
     {
-        if (!deferredEnabled || activeDeferredIndex == LxrNoDeferredQueue)
+        LxrWorkBucketStage stage = packet->GetStage();
+        Bucket& bucket = buckets[StageIndex(stage)];
+        bucket.executing.fetch_add(1, std::memory_order_seq_cst);
+        bool trace = IsTraceStage(stage);
+        bool runnable = IsEligible(stage);
+        if (runnable && trace)
         {
-            return nullptr;
-        }
-
-        DeferredQueueSet& active = deferredQueues[activeDeferredIndex];
-        std::deque<LxrWorkPacket*>* source = nullptr;
-        if (!active.prioritized.empty())
-        {
-            source = &active.prioritized;
-        }
-        else if (!active.normal.empty())
-        {
-            source = &active.normal;
-        }
-        if (source == nullptr)
-        {
-            return nullptr;
-        }
-
-        LxrWorkPacket* packet = source->front();
-        source->pop_front();
-        size_t refill = 0;
-        while (!source->empty() &&
-            workers[workerIndex].local.size() < LxrLocalPacketCacheCapacity &&
-            refill < (LxrLocalPacketCacheCapacity / 2))
-        {
-            workers[workerIndex].local.push_back(source->front());
-            source->pop_front();
-            refill++;
-        }
-        return packet;
-    }
-
-    LxrWorkPacket* StealLocked(size_t workerIndex)
-    {
-        if (workers.size() <= 1)
-        {
-            return nullptr;
-        }
-
-        for (size_t offset = 1; offset < workers.size(); offset++)
-        {
-            size_t victim = (workerIndex + offset) % workers.size();
-            LxrWorkPacket* packet = TakeLocalLocked(victim, false);
-            if (packet != nullptr)
+            size_t running = concurrentTraceRunning.fetch_add(1, std::memory_order_seq_cst);
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NO_CONC_LIMIT_CONTROL)
+            (void)running;
+#else
+            if (running >= concurrentTraceLimit.load(std::memory_order_relaxed))
             {
-                return packet;
+                concurrentTraceRunning.fetch_sub(1, std::memory_order_seq_cst);
+                runnable = false;
             }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4_NO_CONC_LIMIT_CONTROL
         }
-
-        return nullptr;
-    }
-
-    bool TryBeginExecutionLocked(LxrWorkPacket* packet, size_t workerIndex)
-    {
+        if (!runnable)
+        {
+            bucket.executing.fetch_sub(1, std::memory_order_seq_cst);
+            NotifyExternal();
+            return ClaimResult::NotRunnable;
+        }
         if (!packet->TryTransition(LxrWorkPacketState::Queued, LxrWorkPacketState::Executing))
         {
             ownershipViolations++;
-            return false;
+            if (trace)
+            {
+                concurrentTraceRunning.fetch_sub(1, std::memory_order_seq_cst);
+            }
+            bucket.executing.fetch_sub(1, std::memory_order_seq_cst);
+            NotifyExternal();
+            return ClaimResult::Lost;
         }
 
         size_t preferredWorker = packet->GetPreferredWorker();
@@ -604,34 +796,182 @@ public:
             workers[workerIndex].stolen++;
             stolen++;
         }
-        buckets[StageIndex(packet->GetStage())].executing++;
-        if (!packet->IsDeferred() && queuedPackets != 0)
+        if (!packet->IsDeferred())
         {
-            queuedPackets--;
+            size_t queued = queuedPackets.load(std::memory_order_relaxed);
+            while (queued != 0 &&
+                !queuedPackets.compare_exchange_weak(queued, queued - 1, std::memory_order_relaxed))
+            {
+            }
         }
-        if (IsTraceStage(packet->GetStage()))
-        {
-            concurrentTraceRunning++;
-        }
-        return true;
+        return ClaimResult::Claimed;
     }
 
-    LxrWorkPacket* PollLocked(size_t workerIndex)
+    // Gives a packet back that the worker could not run after all. It goes to the injector of its stage.
+    void Requeue(LxrWorkPacket* packet)
     {
-        LxrWorkPacket* packet = TakeLocalLocked(workerIndex, true);
-        if (packet == nullptr)
+        buckets[StageIndex(packet->GetStage())].injector.Push(packet);
+    }
+
+    // Finds a packet for the worker and claims it. No mutex.
+    LxrWorkPacket* Poll(size_t workerIndex)
+    {
+        Worker& worker = workers[workerIndex];
+        LxrWorkPacket* packet;
+
+        // 1. The own deque of general packets, newest first.
+        while ((packet = worker.general.Pop()) != nullptr)
         {
-            packet = TakeBucketLocked(workerIndex);
+            ClaimResult claim = TryClaim(packet, workerIndex);
+            if (claim == ClaimResult::Claimed)
+            {
+                return packet;
+            }
+            if (claim == ClaimResult::NotRunnable)
+            {
+                worker.general.Push(packet);
+                break;
+            }
         }
-        if (packet == nullptr)
+
+        // 2. The own deque of trace packets, if the stage is open and the limit allows one more.
+        bool traceRunnable = IsTraceClassRunnable();
+        if (traceRunnable)
         {
-            packet = StealLocked(workerIndex);
+            while ((packet = worker.trace.Pop()) != nullptr)
+            {
+                ClaimResult claim = TryClaim(packet, workerIndex);
+                if (claim == ClaimResult::Claimed)
+                {
+                    return packet;
+                }
+                if (claim == ClaimResult::NotRunnable)
+                {
+                    worker.trace.Push(packet);
+                    break;
+                }
+            }
         }
-        if (packet != nullptr && !TryBeginExecutionLocked(packet, workerIndex))
+
+        // 3. The injectors, in the order of the stages. A batch moves to the own deque, as the Java LXR does with
+        // steal_batch_and_pop.
+        for (size_t stageIndex = 0; stageIndex < StageCount; stageIndex++)
         {
-            return nullptr;
+            LxrWorkBucketStage stage = static_cast<LxrWorkBucketStage>(stageIndex);
+            if (!IsRunnable(stage))
+            {
+                continue;
+            }
+            Bucket& bucket = buckets[stageIndex];
+            if (stage == LxrWorkBucketStage::Unconstrained)
+            {
+                packet = active.Take();
+                if (packet != nullptr)
+                {
+                    ClaimResult claim = TryClaim(packet, workerIndex);
+                    if (claim == ClaimResult::Claimed)
+                    {
+                        return packet;
+                    }
+                    if (claim == ClaimResult::NotRunnable)
+                    {
+                        Requeue(packet);
+                    }
+                }
+            }
+            size_t available = bucket.injector.Count();
+            if (available == 0)
+            {
+                continue;
+            }
+            LxrWorkPacket* batch[StealBatchCapacity];
+            size_t want = available / workers.size() + 1;
+            size_t count = bucket.injector.PopBatch(batch, want < StealBatchCapacity ? want : StealBatchCapacity);
+            if (count == 0)
+            {
+                continue;
+            }
+            WorkDeque& local = IsTraceStage(stage) ? worker.trace : worker.general;
+            for (size_t index = 1; index < count; index++)
+            {
+                local.Push(batch[index]);
+            }
+            ClaimResult claim = TryClaim(batch[0], workerIndex);
+            if (claim == ClaimResult::Claimed)
+            {
+                return batch[0];
+            }
+            if (claim == ClaimResult::NotRunnable)
+            {
+                Requeue(batch[0]);
+            }
         }
-        return packet;
+
+        // 4. Steal from the other workers.
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4B_NO_STEAL_CONTROL)
+        if (false)
+#else
+        if (workers.size() > 1)
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4B_NO_STEAL_CONTROL
+        {
+            for (size_t offset = 1; offset < workers.size(); offset++)
+            {
+                Worker& victim = workers[(workerIndex + offset) % workers.size()];
+                for (int cls = 0; cls < 2; cls++)
+                {
+                    bool traceClass = cls == 1;
+                    if (traceClass && !traceRunnable)
+                    {
+                        continue;
+                    }
+                    WorkDeque& deque = traceClass ? victim.trace : victim.general;
+                    WorkDeque::StealResult result;
+                    do
+                    {
+                        result = deque.Steal(&packet);
+                    } while (result == WorkDeque::StealResult::Retry);
+                    if (result != WorkDeque::StealResult::Success)
+                    {
+                        continue;
+                    }
+                    ClaimResult claim = TryClaim(packet, workerIndex);
+                    if (claim == ClaimResult::Claimed)
+                    {
+                        return packet;
+                    }
+                    if (claim == ClaimResult::NotRunnable)
+                    {
+                        (traceClass ? worker.trace : worker.general).Push(packet);
+                    }
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    // True when Poll could find a packet now. The worker has registered as parked before it asks, so a packet that a producer
+    // adds after this scan makes the producer see the parked worker.
+    bool HasWork(size_t workerIndex) const
+    {
+        bool traceRunnable = IsTraceClassRunnable();
+        for (size_t index = 0; index < workers.size(); index++)
+        {
+            const Worker& worker = workers[index];
+            if (worker.general.MaybeNonEmpty() || (traceRunnable && worker.trace.MaybeNonEmpty()))
+            {
+                return true;
+            }
+        }
+        (void)workerIndex;
+        for (size_t stageIndex = 0; stageIndex < StageCount; stageIndex++)
+        {
+            LxrWorkBucketStage stage = static_cast<LxrWorkBucketStage>(stageIndex);
+            if (buckets[stageIndex].injector.Count() != 0 && IsRunnable(stage))
+            {
+                return true;
+            }
+        }
+        return IsEligible(LxrWorkBucketStage::Unconstrained) && active.Remaining() != 0;
     }
 
     bool AllWorkersParkedLocked() const
@@ -649,9 +989,8 @@ public:
     bool IsBucketDrainedLocked(LxrWorkBucketStage stage) const
     {
         const Bucket& bucket = buckets[StageIndex(stage)];
-        return bucket.outstanding == 0 &&
-            bucket.executing == 0 &&
-            bucket.queue.empty();
+        return bucket.outstanding.load(std::memory_order_seq_cst) == 0 &&
+            bucket.executing.load(std::memory_order_seq_cst) == 0;
     }
 
     void RecordOpenLocked(LxrWorkBucketStage stage)
@@ -713,6 +1052,12 @@ public:
         producerDeferredIndex = nextProducerIndex;
         deferredQueues[producerDeferredIndex].generation = generation + 1;
         activeDeferredIndex = LxrNoDeferredQueue;
+        // Every worker is parked and the published packets have all been taken (the Unconstrained bucket is drained).
+        active.ready.store(false, std::memory_order_seq_cst);
+        active.prioritized.clear();
+        active.normal.clear();
+        active.prioritizedNext.store(0, std::memory_order_relaxed);
+        active.normalNext.store(0, std::memory_order_relaxed);
         return true;
     }
 
@@ -763,92 +1108,105 @@ public:
         return openedWork;
     }
 
+    // Wakes the threads that wait for the scheduler (WaitFor...) when a counter that they may wait for has changed.
+    void NotifyExternal()
+    {
+        if (externalWaiters.load(std::memory_order_seq_cst) != 0)
+        {
+            std::lock_guard<std::mutex> guard(lock);
+            condition.notify_all();
+        }
+    }
+
+    // Runs one claimed packet and completes it. The worker does not touch the packet after the state change to Completed:
+    // the owner may free it then. A pause frees processed trace packets only after it has seen executing == 0.
+    void RunPacket(LxrWorkPacket* packet, size_t workerIndex)
+    {
+        LxrWorkBucketStage stage = packet->GetStage();
+        bool trace = IsTraceStage(stage);
+        bool deferred = packet->IsDeferred();
+        tlsRunningTrace = trace;
+        packet->Execute(workerIndex);
+        tlsRunningTrace = false;
+#ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
+        LxrCompletionResult completionResult = packet->CompleteRegistration();
+#endif
+        Bucket& bucket = buckets[StageIndex(stage)];
+        if (packet->TryTransition(
+            LxrWorkPacketState::Executing,
+            LxrWorkPacketState::Completed))
+        {
+            bucket.outstanding--;
+            workers[workerIndex].executed++;
+            executed++;
+            if (deferred)
+            {
+                deferredExecuted++;
+            }
+        }
+        else
+        {
+            ownershipViolations++;
+        }
+#ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
+        if (completionResult != LxrCompletionResult::Success &&
+            completionResult != LxrCompletionResult::AlreadyCompleted &&
+            completionResult != LxrCompletionResult::Cancelled &&
+            completionResult != LxrCompletionResult::CallbackFailed)
+        {
+            ownershipViolations++;
+            completionFailure = true;
+        }
+        if (completionResult == LxrCompletionResult::CallbackFailed)
+        {
+            completionFailure = true;
+        }
+#endif
+        if (trace)
+        {
+            concurrentTraceRunning.fetch_sub(1, std::memory_order_seq_cst);
+        }
+        bucket.executing.fetch_sub(1, std::memory_order_seq_cst);
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NOTIFY_ALL_CONTROL)
+        std::lock_guard<std::mutex> guard(lock);
+        NotifyAllLocked();
+#else
+        // P25 (F4). A completed packet wakes only the threads that wait for the scheduler, and only if there are any.
+        NotifyExternal();
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4_NOTIFY_ALL_CONTROL
+    }
+
     void WorkerLoop(size_t workerIndex)
     {
-        std::unique_lock<std::mutex> guard(lock);
-        while (!shuttingDown)
+        tlsScheduler = this;
+        tlsWorkerIndex = workerIndex;
+        while (!shuttingDown.load(std::memory_order_acquire))
         {
-            Worker& worker = workers[workerIndex];
-            if (worker.parked)
-            {
-                worker.parked = false;
-                parkedWorkers--;
-                if (wakeupsInFlight != 0)
-                {
-                    wakeupsInFlight--;
-                }
-                wakes++;
-            }
-
-            LxrWorkPacket* packet = PollLocked(workerIndex);
+            LxrWorkPacket* packet = Poll(workerIndex);
             if (packet != nullptr)
             {
-                guard.unlock();
-                packet->Execute(workerIndex);
-#ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
-                LxrCompletionResult completionResult =
-                    packet->CompleteRegistration();
-#endif
-                guard.lock();
-
-                Bucket& bucket = buckets[StageIndex(packet->GetStage())];
-                bucket.executing--;
-                if (IsTraceStage(packet->GetStage()))
-                {
-                    concurrentTraceRunning--;
-                }
-                if (packet->TryTransition(
-                    LxrWorkPacketState::Executing,
-                    LxrWorkPacketState::Completed))
-                {
-                    bucket.outstanding--;
-                    worker.executed++;
-                    executed++;
-                    if (packet->IsDeferred())
-                    {
-                        deferredExecuted++;
-                    }
-                }
-                else
-                {
-                    ownershipViolations++;
-                }
-#ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
-                if (completionResult != LxrCompletionResult::Success &&
-                    completionResult != LxrCompletionResult::AlreadyCompleted &&
-                    completionResult != LxrCompletionResult::Cancelled &&
-                    completionResult != LxrCompletionResult::CallbackFailed)
-                {
-                    ownershipViolations++;
-                    completionFailure = true;
-                }
-                if (completionResult == LxrCompletionResult::CallbackFailed)
-                {
-                    completionFailure = true;
-                }
-#endif
-#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NOTIFY_ALL_CONTROL)
-                NotifyAllLocked();
-#else
-                // P25 (F4). A completed packet wakes only the threads that wait for the scheduler, and only if there are any.
-                // A worker finds the next packet by itself; the last worker that parks opens the next stage.
-                if (externalWaiters != 0)
-                {
-                    condition.notify_all();
-                }
-#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4_NOTIFY_ALL_CONTROL
+                RunPacket(packet, workerIndex);
                 continue;
             }
 
+            std::unique_lock<std::mutex> guard(lock);
+            if (shuttingDown)
+            {
+                break;
+            }
+            Worker& worker = workers[workerIndex];
             worker.parked = true;
-            parkedWorkers++;
+            parkedWorkers.fetch_add(1, std::memory_order_seq_cst);
             parks++;
-            bool openedWork = AdvanceBucketsLocked();
-            if (openedWork)
+            // A producer pushes first and reads parkedWorkers second; this thread raised it first and looks second.
+            // One of the two sees the other, so a packet cannot be left in a queue while every worker sleeps.
+            bool found = HasWork(workerIndex);
+            bool openedWork = !found && AdvanceBucketsLocked();
+            if (!found && openedWork)
             {
                 // P25 (F4). A stage opened: wake as many workers as the stage has packets, not all of them.
                 size_t packets = static_cast<size_t>(buckets[StageIndex(currentStwStage)].outstanding);
-                if (packets >= parkedWorkers)
+                if (packets >= parkedWorkers.load())
                 {
                     NotifyAllLocked();
                 }
@@ -861,10 +1219,18 @@ public:
                         workCondition.notify_one();
                     }
                 }
-                continue;
             }
-
-            workCondition.wait(guard);
+            else if (!found)
+            {
+                workCondition.wait(guard);
+                wakes++;
+                if (wakeupsInFlight.load() != 0)
+                {
+                    wakeupsInFlight--;
+                }
+            }
+            worker.parked = false;
+            parkedWorkers.fetch_sub(1, std::memory_order_seq_cst);
         }
     }
 
@@ -875,23 +1241,19 @@ public:
     // P25 (F4). Idle workers sleep on their own condition variable, so that a packet wakes one worker and a packet that
     // completes wakes nobody. The condition variable above is for the threads that wait for the scheduler (WaitFor...).
     std::condition_variable workCondition;
-    size_t parkedWorkers = 0;
+    std::atomic<size_t> parkedWorkers{0};
     // Workers that a submit has woken and that have not run yet, and packets that wait in a queue (not deferred ones).
-    size_t wakeupsInFlight = 0;
-    size_t queuedPackets = 0;
-    size_t externalWaiters = 0;
-    uint64_t signals = 0;
+    std::atomic<size_t> wakeupsInFlight{0};
+    std::atomic<size_t> queuedPackets{0};
+    std::atomic<size_t> externalWaiters{0};
+    std::atomic<uint64_t> signals{0};
     // P25 (F4). At most this many workers run the packets of the concurrent trace while the program runs. The Java LXR
     // uses ConcGCThreads of its ParallelGCThreads workers for the concurrent trace. Default: all workers.
-    size_t concurrentTraceLimit = SIZE_MAX;
-    size_t concurrentTraceRunning = 0;
+    std::atomic<size_t> concurrentTraceLimit{SIZE_MAX};
+    std::atomic<size_t> concurrentTraceRunning{0};
     CancelledPacketCallback cancelledCallback = nullptr;
     void* cancelledContext = nullptr;
-
-    static bool IsTraceStage(LxrWorkBucketStage stage)
-    {
-        return stage == LxrWorkBucketStage::Concurrent || stage == LxrWorkBucketStage::ConcurrentResumable;
-    }
+    ActiveDeferred active;
 
     // Wakes every worker and every waiting thread. For changes of state: a stage opens or closes, a pause starts, shutdown.
     void NotifyAllLocked()
@@ -902,20 +1264,76 @@ public:
     }
 
     // Wakes one idle worker for one new packet, but only if the workers that are on their way (woken, not yet running) do
-    // not already cover the packets that wait. This is "wake as many workers as there is work".
-    void NotifyNewPacketLocked()
+    // not already cover the packets that wait. This is "wake as many workers as there is work". A trace packet that cannot
+    // run because of the limit wakes nobody: the worker that finishes a trace packet takes it.
+    void NotifyNewPacketLocked(LxrWorkBucketStage stage)
     {
 #if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NOTIFY_ALL_CONTROL)
         // Control: the behaviour before P25 (F4). Every packet wakes everybody.
+        (void)stage;
         NotifyAllLocked();
 #else
-        if (parkedWorkers > wakeupsInFlight && queuedPackets > wakeupsInFlight)
+        if (IsTraceStage(stage) &&
+            concurrentTraceRunning.load() >= concurrentTraceLimit.load())
+        {
+            return;
+        }
+        size_t inFlight = wakeupsInFlight.load();
+        if (parkedWorkers.load() > inFlight && queuedPackets.load() > inFlight)
         {
             signals++;
             wakeupsInFlight++;
             workCondition.notify_one();
         }
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4_NOTIFY_ALL_CONTROL
+    }
+
+    // The same for a thread that does not hold the mutex. It takes the mutex only when a worker is parked.
+    void NotifyNewPacket(LxrWorkBucketStage stage)
+    {
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NOTIFY_ALL_CONTROL)
+        std::lock_guard<std::mutex> guard(lock);
+        NotifyNewPacketLocked(stage);
+#else
+        if (parkedWorkers.load(std::memory_order_seq_cst) == 0)
+        {
+            return;
+        }
+        std::lock_guard<std::mutex> guard(lock);
+        NotifyNewPacketLocked(stage);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F4_NOTIFY_ALL_CONTROL
+    }
+
+    // Puts a packet that Submit has accepted (and counted in outstanding) into a queue. A worker that submits a packet of a
+    // stage that is open keeps it in its own deque; a trace packet only if the worker runs a trace packet now. All other
+    // packets go to the injector of the stage.
+    void PushQueued(LxrWorkPacket* packet, bool mutexHeld)
+    {
+        LxrWorkBucketStage stage = packet->GetStage();
+        bool onWorker = tlsScheduler == this;
+        bool trace = IsTraceStage(stage);
+        if (onWorker && IsEligible(stage) && (!trace || tlsRunningTrace))
+        {
+            Worker& worker = workers[tlsWorkerIndex];
+            (trace ? worker.trace : worker.general).Push(packet);
+        }
+        else
+        {
+            if (onWorker && IsEligible(stage))
+            {
+                spilled++;
+            }
+            buckets[StageIndex(stage)].injector.Push(packet);
+        }
+        queuedPackets++;
+        if (mutexHeld)
+        {
+            NotifyNewPacketLocked(stage);
+        }
+        else
+        {
+            NotifyNewPacket(stage);
+        }
     }
 
     template <typename Predicate>
@@ -926,15 +1344,15 @@ public:
         externalWaiters--;
         return result;
     }
-    bool shuttingDown;
-    bool cycleActive;
+    std::atomic<bool> shuttingDown;
+    std::atomic<bool> cycleActive;
     bool cycleCompleted;
-    bool interruptionRequested;
+    std::atomic<bool> interruptionRequested;
     bool concurrentInterrupted;
     bool concurrentWasEnabled[2];
     bool concurrentWasOpen[2];
-    uint64_t generation;
-    LxrWorkBucketStage currentStwStage;
+    std::atomic<uint64_t> generation;
+    std::atomic<LxrWorkBucketStage> currentStwStage;
     std::vector<LxrWorkBucketStage> openTrace;
     bool deferredEnabled;
     std::array<DeferredQueueSet, 2> deferredQueues;
@@ -945,26 +1363,26 @@ public:
     uint64_t sealedGeneration;
     uint64_t publishedGeneration;
     std::vector<LxrWorkBucketStage> completionTrace;
-    uint64_t submitted;
-    uint64_t executed;
-    uint64_t stolen;
-    uint64_t spilled;
-    uint64_t rejected;
-    uint64_t ownershipViolations;
-    uint64_t parks;
-    uint64_t wakes;
-    uint64_t deferredSubmitted;
-    uint64_t deferredPublished;
-    uint64_t deferredExecuted;
-    uint64_t deferredFlips;
-    uint64_t deferredEmptyFlips;
+    std::atomic<uint64_t> submitted;
+    std::atomic<uint64_t> executed;
+    std::atomic<uint64_t> stolen;
+    std::atomic<uint64_t> spilled;
+    std::atomic<uint64_t> rejected;
+    std::atomic<uint64_t> ownershipViolations;
+    std::atomic<uint64_t> parks;
+    std::atomic<uint64_t> wakes;
+    std::atomic<uint64_t> deferredSubmitted;
+    std::atomic<uint64_t> deferredPublished;
+    std::atomic<uint64_t> deferredExecuted;
+    std::atomic<uint64_t> deferredFlips;
+    std::atomic<uint64_t> deferredEmptyFlips;
 #ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
     bool completionEnabled;
     LxrDecrementsDrainedCallback decrementsDrainedCallback;
     LxrOverallDrainedCallback overallDrainedCallback;
     void* completionCallbackContext;
     uint64_t maximumCompletionOutstanding;
-    bool completionFailure;
+    std::atomic<bool> completionFailure;
 #endif
 };
 
@@ -1099,24 +1517,40 @@ LxrWorkSchedulerResult LxrWorkScheduler::RunQueuedInline(
         {
             return LxrWorkSchedulerResult::InvalidState;
         }
-        while (!bucket.queue.empty())
+        LxrWorkPacket* batch[StealBatchCapacity];
+        size_t taken;
+        while ((taken = bucket.injector.PopBatch(batch, StealBatchCapacity)) != 0)
         {
-            packets.push_back(bucket.queue.front());
-            bucket.queue.pop_front();
+            for (size_t index = 0; index < taken; index++)
+            {
+                packets.push_back(batch[index]);
+            }
         }
+        // The calling thread acts as a thief on the deques of the class of the stage. A packet of another stage goes back to
+        // the injector of its own stage.
+        bool traceClass = Impl::IsTraceStage(stage);
         for (Impl::Worker& worker : m_impl->workers)
         {
-            for (std::deque<LxrWorkPacket*>::iterator iterator = worker.local.begin();
-                iterator != worker.local.end();)
+            WorkDeque& deque = traceClass ? worker.trace : worker.general;
+            while (true)
             {
-                if ((*iterator)->GetStage() == stage)
+                LxrWorkPacket* stolen = nullptr;
+                WorkDeque::StealResult stealResult = deque.Steal(&stolen);
+                if (stealResult == WorkDeque::StealResult::Retry)
                 {
-                    packets.push_back(*iterator);
-                    iterator = worker.local.erase(iterator);
+                    continue;
+                }
+                if (stealResult == WorkDeque::StealResult::Empty)
+                {
+                    break;
+                }
+                if (stolen->GetStage() == stage)
+                {
+                    packets.push_back(stolen);
                 }
                 else
                 {
-                    iterator++;
+                    m_impl->Requeue(stolen);
                 }
             }
         }
@@ -1129,9 +1563,9 @@ LxrWorkSchedulerResult LxrWorkScheduler::RunQueuedInline(
                 continue;
             }
             bucket.executing++;
-            if (m_impl->queuedPackets != 0)
+            size_t queued = m_impl->queuedPackets.load();
+            while (queued != 0 && !m_impl->queuedPackets.compare_exchange_weak(queued, queued - 1))
             {
-                m_impl->queuedPackets--;
             }
             claimed.push_back(packet);
         }
@@ -1202,7 +1636,14 @@ LxrWorkSchedulerResult LxrWorkScheduler::Submit(
         return LxrWorkSchedulerResult::InvalidArgument;
     }
 
-    std::lock_guard<std::mutex> guard(m_impl->lock);
+    // A worker submits without the mutex (P26 F4b); every other thread takes it, as before. The state that the checks read
+    // is atomic, and a worker that submits is running a packet, so no stage can complete and no pause can start under it.
+    bool onWorker = tlsScheduler == static_cast<const void*>(m_impl);
+    std::unique_lock<std::mutex> guard(m_impl->lock, std::defer_lock);
+    if (!onWorker)
+    {
+        guard.lock();
+    }
     if (m_impl->shuttingDown)
     {
         return LxrWorkSchedulerResult::Shutdown;
@@ -1247,29 +1688,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::Submit(
             NoPreferredWorker);
     bucket.outstanding++;
     m_impl->submitted++;
-
-    bool canUseLocal =
-        preferredWorker < m_impl->workers.size() &&
-        bucket.state == BucketState::Open &&
-        bucket.enabled &&
-        m_impl->workers[preferredWorker].local.size() < LxrLocalPacketCacheCapacity;
-    if (canUseLocal)
-    {
-        m_impl->workers[preferredWorker].local.push_back(packet);
-    }
-    else
-    {
-        if (preferredWorker < m_impl->workers.size() &&
-            bucket.state == BucketState::Open &&
-            bucket.enabled)
-        {
-            m_impl->spilled++;
-        }
-        bucket.queue.push_back(packet);
-    }
-
-    m_impl->queuedPackets++;
-    m_impl->NotifyNewPacketLocked();
+    m_impl->PushQueued(packet, !onWorker);
     return LxrWorkSchedulerResult::Success;
 }
 
@@ -1301,8 +1720,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::ConfigureStwStages(uint16_t enabledStag
         Impl::Bucket& bucket = m_impl->buckets[stageIndex];
         if (bucket.state != BucketState::Closed ||
             bucket.outstanding != 0 ||
-            bucket.executing != 0 ||
-            !bucket.queue.empty())
+            bucket.executing != 0)
         {
             return LxrWorkSchedulerResult::Busy;
         }
@@ -1437,9 +1855,11 @@ LxrWorkSchedulerResult LxrWorkScheduler::SubmitTracked(
     {
         return LxrWorkSchedulerResult::InvalidState;
     }
-    uint64_t packetGeneration = m_impl->cycleActive
-        ? m_impl->generation
-        : m_impl->generation + 1;
+    uint64_t packetGeneration = m_impl->generation.load();
+    if (!m_impl->cycleActive)
+    {
+        packetGeneration++;
+    }
     Impl::DeferredQueueSet& producer =
         m_impl->deferredQueues[m_impl->producerDeferredIndex];
     if (producer.generation != packetGeneration)
@@ -1481,9 +1901,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::SubmitTracked(
             : NoPreferredWorker);
     bucket.outstanding++;
     m_impl->submitted++;
-    bucket.queue.push_back(packet);
-    m_impl->queuedPackets++;
-    m_impl->NotifyNewPacketLocked();
+    m_impl->PushQueued(packet, true);
     return LxrWorkSchedulerResult::Success;
 }
 
@@ -1835,7 +2253,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::BeginStwCycle()
             return LxrWorkSchedulerResult::InvalidState;
         }
         if (m_impl->activeDeferredIndex != LxrNoDeferredQueue &&
-            !m_impl->deferredQueues[m_impl->activeDeferredIndex].IsEmpty())
+            m_impl->active.Remaining() != 0)
         {
             return LxrWorkSchedulerResult::Busy;
         }
@@ -1940,6 +2358,14 @@ LxrWorkSchedulerResult LxrWorkScheduler::PublishDeferredConcurrentWork(
     }
 #endif
     uint64_t publishedCount = published.Count();
+    // The packets move to the structure that workers read without the mutex. No worker reads it now (ready is false).
+    m_impl->active.prioritized.assign(published.prioritized.begin(), published.prioritized.end());
+    m_impl->active.normal.assign(published.normal.begin(), published.normal.end());
+    published.prioritized.clear();
+    published.normal.clear();
+    m_impl->active.prioritizedNext.store(0, std::memory_order_relaxed);
+    m_impl->active.normalNext.store(0, std::memory_order_relaxed);
+    m_impl->active.ready.store(true, std::memory_order_seq_cst);
     m_impl->activeDeferredIndex = publishedIndex;
     m_impl->sealedDeferredIndex = LxrNoDeferredQueue;
     m_impl->sealedGeneration = 0;
@@ -2034,7 +2460,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::ResumeInterruptedConcurrentWork()
     {
         Impl::Bucket& bucket = m_impl->buckets[StageIndex(stage)];
         bucket.accepting = true;
-        bool hasWork = bucket.outstanding != 0 || !bucket.queue.empty();
+        bool hasWork = bucket.outstanding != 0;
         bucket.enabled = hasWork;
         bucket.state = hasWork ? BucketState::Open : BucketState::Closed;
     }
@@ -2065,7 +2491,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::ResetCompletedCycle()
         }
         if (!m_impl->IsBucketDrainedLocked(LxrWorkBucketStage::Unconstrained) ||
             (m_impl->activeDeferredIndex != LxrNoDeferredQueue &&
-                !m_impl->deferredQueues[m_impl->activeDeferredIndex].IsEmpty()))
+                m_impl->active.Remaining() != 0))
         {
             return LxrWorkSchedulerResult::Busy;
         }
@@ -2102,7 +2528,7 @@ LxrWorkSchedulerResult LxrWorkScheduler::ResetCompletedCycle()
     for (size_t stageIndex = FirstStwIndex; stageIndex < StageCount; stageIndex++)
     {
         Impl::Bucket& bucket = m_impl->buckets[stageIndex];
-        if (bucket.outstanding != 0 || bucket.executing != 0 || !bucket.queue.empty())
+        if (bucket.outstanding != 0 || bucket.executing != 0)
         {
             return LxrWorkSchedulerResult::Busy;
         }
@@ -2297,6 +2723,11 @@ bool LxrWorkScheduler::IsStageEnabled(LxrWorkBucketStage stage) const
     }
     std::lock_guard<std::mutex> guard(m_impl->lock);
     return m_impl->buckets[StageIndex(stage)].enabled;
+}
+
+bool LxrWorkScheduler::IsInterruptionRequested() const
+{
+    return m_impl != nullptr && m_impl->interruptionRequested.load(std::memory_order_acquire);
 }
 
 bool LxrWorkScheduler::IsCycleCompleted() const

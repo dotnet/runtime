@@ -181,6 +181,9 @@ public:
     bool IsStageEnabled(LxrWorkBucketStage stage) const;
     bool IsStageCompleted(LxrWorkBucketStage stage) const;
     bool IsCycleCompleted() const;
+    // P26 (F4b). True from the moment that a pause asks the scheduler to interrupt the concurrent work until the work resumes.
+    // A long packet polls it, so that the pause does not wait for the end of the packet. No mutex.
+    bool IsInterruptionRequested() const;
     uint64_t GetStageOutstanding(LxrWorkBucketStage stage) const;
     uint64_t GetGeneration() const;
     size_t GetWorkerCount() const;

@@ -591,6 +591,9 @@ public:
     // P26 (F2) tests. The gate blocks the worker of the concurrent trace after it has processed `packets` packets. It lets
     // a test keep a large trace backlog queued in the scheduler (with one trace worker). A pause opens the gate.
     void ArmTraceGateForTest(uint64_t packets);
+    // P26 (F4b). The trace packet loops over its children (the Java LXR does). A test that needs a child packet to exist
+    // switches the loop off; the packet then ends after its own objects and makes packets of the children.
+    void SetTraceLoopForTest(bool enabled) { m_trace_loop_off.store(!enabled, std::memory_order_release); }
     LxrRcResult QueueTraceBacklogForTest(Object* object, size_t count);
     bool IsTraceGateBlockedForTest() const { return m_gate_blocked.load(std::memory_order_acquire); }
     uint64_t GetTracePendingForTest() const { return m_trace_pending.load(std::memory_order_acquire); }
@@ -744,6 +747,7 @@ private:
     LxrRcResult PublishTraceWork();
     LxrRcResult ProcessTraceWork(Work* work);
     LxrRcResult ProcessFullTraceWork(Work* work);
+    bool ShouldStopTraceLoop() const;
     LxrRcResult ProcessTraceWork(Work* work, TraceBatch* targets);
     LxrRcResult ProcessTraceObject(Object* object, size_t* directBudget, TraceBatch* targets);
     LxrRcResult ProcessTraceScan(TraceScan* scan, bool finish, TraceBatch* targets = nullptr);
@@ -939,6 +943,7 @@ private:
     std::atomic<uint64_t> m_remembered_payload_reads{0};
     std::atomic<uintptr_t> m_mature_scan_receipt[6]{};
     std::atomic<bool> m_gate_armed{false};
+    std::atomic<bool> m_trace_loop_off{false};
     std::atomic<bool> m_gate_blocked{false};
     std::atomic<int64_t> m_gate_remaining{0};
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
