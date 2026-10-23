@@ -493,12 +493,12 @@ EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersSta
 
 // EventPipe CPU-sampling samplepoint helper for R2R (native wasm) code on single-threaded WASM.
 // Emitted by the JIT at method entry and loop back-edges when a method matches the
-// WasmPerformanceInstrumentation filter. Cooperative throughout; on an active sampling session it
+// WasmPerformanceInstrumentation filter. Cooperative throughout; when a sample is due it
 // anchors a managed stack walk with an InlinedCallFrame derived from the caller's shadow SP, then
-// delegates to the shared SamplingProfiler_OnSamplepoint (which owns the adaptive skip counter).
+// delegates to the shared sample collection implementation.
 #if defined(FEATURE_PERFTRACING) && defined(PERFTRACING_DISABLE_THREADS)
-EXTERN_C bool SamplingProfiler_IsActive();
-EXTERN_C void SamplingProfiler_OnSamplepoint();
+EXTERN_C bool SamplingProfiler_ShouldSample();
+EXTERN_C void SamplingProfiler_CollectSample();
 #endif
 
 HCIMPL0(void, JIT_WasmProfSamplepoint)
@@ -506,7 +506,7 @@ HCIMPL0(void, JIT_WasmProfSamplepoint)
     FCALL_CONTRACT;
 
 #if defined(FEATURE_PERFTRACING) && defined(PERFTRACING_DISABLE_THREADS)
-    if (!SamplingProfiler_IsActive())
+    if (!SamplingProfiler_ShouldSample())
         return;
 
     Thread* pThread = GetThread();
@@ -521,7 +521,7 @@ HCIMPL0(void, JIT_WasmProfSamplepoint)
     inlinedCallFrame.m_pThread              = pThread;
     inlinedCallFrame.Push();
 
-    SamplingProfiler_OnSamplepoint();
+    SamplingProfiler_CollectSample();
 
     inlinedCallFrame.Pop();
 #else

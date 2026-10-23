@@ -140,18 +140,27 @@ void ep_rt_coreclr_sample_profiler_disabled(void)
     s_skipsPerPeriod = 1;
 }
 
-// True only while an EventPipe CPU-sampling session is active. R2R samplepoints use this to
-// skip the InlinedCallFrame anchor push on the overwhelmingly common no-session path.
-extern "C" bool SamplingProfiler_IsActive()
+// Decide before R2R samplepoints construct their stack-walk frame.
+extern "C" bool SamplingProfiler_ShouldSample()
 {
     LIMITED_METHOD_CONTRACT;
-    return s_currentSamplingEvent != nullptr && s_currentSamplingThread != nullptr;
+
+    if (s_currentSamplingEvent == nullptr || s_currentSamplingThread == nullptr)
+        return false;
+
+    if (s_desiredSampleIntervalMs != 0.0)
+    {
+        if (++s_sampleSkipCounter < s_skipsPerPeriod)
+            return false;
+
+        s_sampleSkipCounter = 0;
+        UpdateSampleFrequency();
+    }
+
+    return true;
 }
 
-// Called from the interpreter's INTOP_PROF_SAMPLEPOINT handler.
-// On single-threaded WASM this is the cooperative sampling entry point.
-// On multi-threaded platforms the opcode is never emitted.
-extern "C" void SamplingProfiler_OnSamplepoint()
+extern "C" void SamplingProfiler_CollectSample()
 {
     CONTRACTL {
         NOTHROW;
@@ -159,17 +168,7 @@ extern "C" void SamplingProfiler_OnSamplepoint()
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    if (s_currentSamplingEvent == nullptr || s_currentSamplingThread == nullptr)
-        return;
-
-    if (s_desiredSampleIntervalMs != 0.0)
-    {
-        if (++s_sampleSkipCounter < s_skipsPerPeriod)
-            return;
-
-        s_sampleSkipCounter = 0;
-        UpdateSampleFrequency();
-    }
+    _ASSERTE(s_currentSamplingEvent != nullptr && s_currentSamplingThread != nullptr);
 
     EventPipeStackContents stackContents;
     EventPipeStackContents *pStackContents = ep_stack_contents_init(&stackContents);
@@ -189,6 +188,19 @@ extern "C" void SamplingProfiler_OnSamplepoint()
     }
 
     ep_stack_contents_fini(pStackContents);
+}
+
+// Called from the interpreter's INTOP_PROF_SAMPLEPOINT handler.
+extern "C" void SamplingProfiler_OnSamplepoint()
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    if (SamplingProfiler_ShouldSample())
+        SamplingProfiler_CollectSample();
 }
 
 #endif // PERFTRACING_DISABLE_THREADS
