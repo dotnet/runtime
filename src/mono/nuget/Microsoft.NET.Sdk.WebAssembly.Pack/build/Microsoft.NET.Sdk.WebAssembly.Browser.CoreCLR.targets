@@ -244,25 +244,26 @@ Copyright (c) .NET Foundation. All rights reserved.
        so _CreateR2RImages reruns even when its per-assembly outputs are otherwise up-to-date. -->
   <Target Name="_WasmCoreClrConservativeR2RInputs"
           Condition="'$(PublishReadyToRun)' == 'true'"
+          DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
           BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
       <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|Profile=$(WasmReadyToRunProfile)|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)</_WasmReadyToRunState>
       <_WasmReadyToRunStateHash>$([MSBuild]::StableStringHash('$(_WasmReadyToRunState)', 'Sha256'))</_WasmReadyToRunStateHash>
-      <_WasmReadyToRunStateDirectory>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'R2R'))</_WasmReadyToRunStateDirectory>
-      <_WasmReadyToRunStateFile>$(_WasmReadyToRunStateDirectory)browser-r2r-state-$(_WasmReadyToRunStateHash).stamp</_WasmReadyToRunStateFile>
-      <_WasmReadyToRunStateChanged Condition="!Exists('$(_WasmReadyToRunStateFile)')">true</_WasmReadyToRunStateChanged>
+      <_WasmReadyToRunStateFile>$(_WasmPublishR2RDir)browser-r2r-state.stamp</_WasmReadyToRunStateFile>
     </PropertyGroup>
-    <ItemGroup>
-      <_WasmObsoleteReadyToRunState Include="$(_WasmReadyToRunStateDirectory)browser-r2r-state-*.stamp"
-                                    Exclude="$(_WasmReadyToRunStateFile)" />
-    </ItemGroup>
+    <ReadLinesFromFile File="$(_WasmReadyToRunStateFile)"
+                       Condition="Exists('$(_WasmReadyToRunStateFile)')">
+      <Output TaskParameter="Lines" PropertyName="_WasmPreviousReadyToRunStateHash" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <_WasmReadyToRunStateChanged Condition="'$(_WasmPreviousReadyToRunStateHash)' != '$(_WasmReadyToRunStateHash)'">true</_WasmReadyToRunStateChanged>
+    </PropertyGroup>
     <!-- Output timestamps can be newer than a newly written state file. Delete every batch output on a
          state change so _CreateR2RImages cannot retain a mixture of full and partial images. -->
     <Delete Condition="'$(_WasmReadyToRunStateChanged)' == 'true'"
             Files="@(_ReadyToRunCompileList->'%(OutputR2RImage)');@(_ReadyToRunCompileList->'%(OutputPDBImage)')" />
-    <Delete Files="@(_WasmObsoleteReadyToRunState)" />
     <WriteLinesToFile File="$(_WasmReadyToRunStateFile)"
-                      Lines="$(_WasmReadyToRunState)"
+                      Lines="$(_WasmReadyToRunStateHash)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
@@ -271,21 +272,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
       <FileWrites Include="$(_WasmReadyToRunStateFile)" />
-    </ItemGroup>
-    <!-- Crossgen2 configuration that isn't a file input: extra arguments (e.g. -p:PublishReadyToRunStripDebugInfo)
-         and the composite mode, whose component stubs share the per-assembly <name>.wasm output names and would
-         otherwise look up-to-date after a composite publish. WriteOnlyWhenDifferent bumps the timestamp only
-         when this configuration changes. -->
-    <PropertyGroup>
-      <_WasmReadyToRunArgsStamp>$(IntermediateOutputPath)wasm-r2r-args.stamp</_WasmReadyToRunArgsStamp>
-    </PropertyGroup>
-    <WriteLinesToFile File="$(_WasmReadyToRunArgsStamp)"
-                      Lines="PublishReadyToRunComposite=$(PublishReadyToRunComposite);$(PublishReadyToRunCrossgen2ExtraArgs)"
-                      Overwrite="true"
-                      WriteOnlyWhenDifferent="true" />
-    <ItemGroup>
-      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunArgsStamp)" />
-      <FileWrites Include="$(_WasmReadyToRunArgsStamp)" />
     </ItemGroup>
   </Target>
 
