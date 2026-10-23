@@ -331,6 +331,11 @@ namespace ILAssembler
         private ImmutableArray<ValidatedVTableAssociation> ValidateVTableAssociations(
             ImmutableArray<ValidatedVTableFixup> validatedVTableFixups)
         {
+            if (_vtableFixups.Count == 0)
+            {
+                return ImmutableArray<ValidatedVTableAssociation>.Empty;
+            }
+
             var fixupsByOriginalIndex = new Dictionary<int, (int SerializedIndex, ValidatedVTableFixup Fixup)>(
                 validatedVTableFixups.Length);
             for (int i = 0; i < validatedVTableFixups.Length; i++)
@@ -597,8 +602,8 @@ namespace ILAssembler
         {
             portablePdb = null;
 
-            // As in native ilasm, only /DEBUG (any mode) or /PDB produces a PDB. Without them, sequence
-            // points from .line directives are parsed and validated but not emitted.
+            // Only /DEBUG (any mode) or /PDB produces a PDB. Without them, .line
+            // directives are still parsed and validated, and no sequence points are recorded.
             if (!GeneratesPdb)
             {
                 return null;
@@ -708,6 +713,8 @@ namespace ILAssembler
                 List<EntityRegistry.SequencePoint> sequencePoints = method.DebugInfo.SequencePoints;
                 if (sequencePoints.Count == 0 || !method.HasBody)
                 {
+                    // Points are recorded as instructions are emitted, so a method without an IL body has none
+                    // to map; a .line directive inside it applies to the next instruction, in a later method.
                     _pdbBuilder.AddMethodDebugInformation(default, default);
                 }
                 else
