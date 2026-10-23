@@ -2601,7 +2601,6 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     }
 
     BOOL   fHandleSkippedFrames = FALSE;
-    TADDR pvReferenceSP;
 
     // Can the caller handle skipped frames;
     fHandleSkippedFrames = (m_flags & HANDLESKIPPEDFRAMES);
