@@ -771,6 +771,7 @@ private:
     bool IsReturnedImmix(uintptr_t start) const;
     bool IsLarge(uintptr_t start) const;
     static uintptr_t Start(Object* object);
+    void SetUnloggedLines(uintptr_t start, size_t size);
     static Object* Reference(uintptr_t start);
     size_t GetLargeObjectSize(uintptr_t start) const;
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM

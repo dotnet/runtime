@@ -1467,6 +1467,80 @@ namespace
         }
     }
 
+    // P28 (F10). The counts are updated with a compare-exchange on one byte. Neighbouring counts share the byte (four 2-bit counts,
+    // two 4-bit counts), so a lost update of one thread shows in the count of another. Each thread adds one to its own count and
+    // takes it away again, many times; the counts must end as they started. The control writes the byte with a plain store.
+    void TestF10ByteCompareExchange(uint8_t logBits)
+    {
+        Fixture fixture(logBits, 2, 1);
+        Expect("f10 byte fixture initialized", fixture.initialized);
+        if (!fixture.initialized)
+        {
+            return;
+        }
+        SideMetadataAccessor accessor = fixture.metadata.GetAccessor(LxrSideMetadataKind::ReferenceCount);
+        Expect("f10 byte accessor", accessor.IsValid());
+        if (!accessor.IsValid())
+        {
+            return;
+        }
+        const size_t entries = 8;
+        for (size_t entry = 0; entry < entries; entry++)
+        {
+            ExpectMetadata("f10 byte seed", fixture.metadata.Store(LxrSideMetadataKind::ReferenceCount,
+                fixture.data_start + (entry * sizeof(uintptr_t)), 1, SideMetadataMemoryOrder::Relaxed),
+                SideMetadataResult::Success);
+        }
+        std::atomic<bool> go{false};
+        std::vector<std::thread> threads;
+        for (size_t entry = 0; entry < entries; entry++)
+        {
+            threads.emplace_back([&, entry]()
+            {
+                while (!go.load(std::memory_order_acquire))
+                {
+                }
+                uintptr_t address = fixture.data_start + (entry * sizeof(uintptr_t));
+                for (int round = 0; round < 200000; round++)
+                {
+                    uintptr_t previous;
+                    accessor.IncrementSaturating(address, SideMetadataMemoryOrder::Relaxed, &previous);
+                    accessor.DecrementNonZeroNonSaturated(address, SideMetadataMemoryOrder::Relaxed, &previous);
+                }
+            });
+        }
+        go.store(true, std::memory_order_release);
+        for (std::thread& thread : threads)
+        {
+            thread.join();
+        }
+        bool same = true;
+        for (size_t entry = 0; entry < entries; entry++)
+        {
+            same = same && LoadMetadata(fixture, LxrSideMetadataKind::ReferenceCount,
+                fixture.data_start + (entry * sizeof(uintptr_t))) == 1;
+        }
+        Expect("f10 counts that share a byte keep their values under concurrent updates", same);
+        // A count saturates at its maximum and then stays.
+        uintptr_t maximum = (static_cast<uintptr_t>(1) << (1u << logBits)) - 1;
+        uintptr_t address = fixture.data_start + (3 * sizeof(uintptr_t));
+        uintptr_t previous = 0;
+        SideMetadataUpdateStatus status = SideMetadataUpdateStatus::Updated;
+        for (uintptr_t value = 1; value < maximum; value++)
+        {
+            status = accessor.IncrementSaturating(address, SideMetadataMemoryOrder::Relaxed, &previous);
+        }
+        bool saturated = status == SideMetadataUpdateStatus::Updated &&
+            accessor.IncrementSaturating(address, SideMetadataMemoryOrder::Relaxed, &previous) ==
+                SideMetadataUpdateStatus::Saturated && previous == maximum;
+        saturated = saturated && accessor.DecrementNonZeroNonSaturated(address, SideMetadataMemoryOrder::Relaxed, &previous) ==
+            SideMetadataUpdateStatus::Saturated && LoadMetadata(fixture, LxrSideMetadataKind::ReferenceCount, address) == maximum;
+        Expect("f10 a count at its maximum is sticky: no increment, no decrement", saturated);
+        Expect("f10 the neighbours of a saturated count are unchanged",
+            LoadMetadata(fixture, LxrSideMetadataKind::ReferenceCount, address - sizeof(uintptr_t)) == 1 &&
+            LoadMetadata(fixture, LxrSideMetadataKind::ReferenceCount, address + sizeof(uintptr_t)) == 1);
+    }
+
     void TestPhaseAndContention()
     {
         {
@@ -1925,6 +1999,9 @@ int main()
     TestF9DirtyRangeIsReported();
     TestF9Cursors();
     TestF10LoadOrder();
+    TestF10ByteCompareExchange(1);
+    TestF10ByteCompareExchange(2);
+    TestF10ByteCompareExchange(3);
     TestPhaseAndContention();
     TestFreshReclamation();
     TestRejectedReusableBlocks();

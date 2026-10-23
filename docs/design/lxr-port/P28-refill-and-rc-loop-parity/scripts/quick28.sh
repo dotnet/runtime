@@ -3,7 +3,8 @@
 # the frames are interleaved (rep 1: A B C, rep 2: B C A, rep 3: C A B). One run at a time. Prints the median wall time, CPU time,
 # GC time, pause count and Full count of each frame and cell, and the checksums that were seen.
 # usage: quick28.sh <out-prefix> <frame> [<frame> ...]        env: CELLS="requests:lxr-nursery ..." REPS=3
-# frame = a directory under /root/p25/frames
+# frame = a directory under /root/p25/frames, optionally followed by @NAME=VALUE (an environment setting for that frame, for example
+#         p28-f10b-Release-linux@DOTNET_LXRRCBits=8)
 OUT=/root/p28/results/$1; shift
 FRAMES=("$@")
 CELLS=${CELLS:-"binarytrees:lxr-nonmoving binarytrees:lxr-nursery requests:lxr-nonmoving requests:lxr-nursery listsuffix:lxr-nonmoving listsuffix:lxr-nursery"}
@@ -16,7 +17,8 @@ for rep in $(seq 0 $((REPS - 1))); do
     w=${cell%%:*}; a=${cell##*:}
     for k in $(seq 0 $((n - 1))); do
       f=${FRAMES[$(( (k + rep) % n ))]}
-      line=$(/root/p25/scripts26/cell.sh /root/p25/frames/$f "$w" "$a" 2>&1 | tail -1)
+      fdir=${f%%@*}; fenv=""; [ "$f" != "$fdir" ] && fenv=${f#*@}
+      line=$(/root/p25/scripts26/cell.sh /root/p25/frames/$fdir "$w" "$a" $fenv 2>&1 | tail -1)
       echo "$f $rep $line" >> $OUT.jsonl
     done
   done

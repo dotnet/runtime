@@ -3871,6 +3871,27 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
     return LxrRcResult::Success;
 }
 
+// The unlog bits of the lines that an object promoted in place covers. One line of 256 bytes has 32 bits of unlog table, so one
+// 32-bit store sets a line (rc.rs: scan_nursery_object). The first field is 16 bytes after the start (header and method table).
+// A line that holds a young object holds no old object: holes are whole lines.
+void LxrReferenceCounting::SetUnloggedLines(uintptr_t start, size_t size)
+{
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F10_NO_INPLACE_UNLOG_CONTROL)
+    (void)start;
+    (void)size;
+    return;
+#else
+    uintptr_t line = (start + (2 * sizeof(uintptr_t))) & ~ImmixBlockGeometry::LineMask;
+    uintptr_t end = (start + size + ImmixBlockGeometry::LineMask) & ~ImmixBlockGeometry::LineMask;
+    SideMetadataLocation location = m_unlogged_metadata.Locate(line);
+    uint32_t* bits = reinterpret_cast<uint32_t*>(const_cast<uintptr_t*>(location.word)) + (location.shift >> 5);
+    for (size_t index = 0; index < (end - line) / ImmixBlockGeometry::LineBytes; index++)
+    {
+        VolatileStoreWithoutBarrier(bits + index, 0xffffffffu);
+    }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F10_NO_INPLACE_UNLOG_CONTROL
+}
+
 LxrRcResult LxrReferenceCounting::ProcessIncrement(
     Object** reference, bool trace, ReferenceBatch* children, size_t worker)
 {
@@ -3992,10 +4013,11 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
         if (!copied)
         {
             result = FromMetadata(m_counts.MarkStraddleLinesFast(start, size));
-            if (result == LxrRcResult::Success)
+            // P28 (F10). As in the Java LXR (rc.rs: scan_nursery_object, in_place_promotion): an object without reference fields
+            // needs no unlog bits, and the bits of the others are set one line at a time with a store of 32 bits.
+            if (result == LxrRcResult::Success && type->ContainsGCPointers())
             {
-                result = FromMetadata(m_metadata.ResetRangeQuiescent(
-                    LxrSideMetadataKind::FieldUnlogged, start, size, 1));
+                SetUnloggedLines(start, size);
             }
         }
     }
