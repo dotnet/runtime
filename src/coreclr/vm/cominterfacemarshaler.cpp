@@ -124,9 +124,8 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         _ASSERTE(!"Creating a COM wrapper for WinRT delegates (which do not inherit from __ComObject) is not supported.");
     }
 
-    // make sure we "pin" the syncblock before switching to preemptive mode
+    // Get the sync block index before switching to preemptive mode.
     SyncBlock *pSB = (*pComObj)->GetSyncBlock();
-    pSB->SetPrecious();
     DWORD dwSyncBlockIndex = pSB->GetSyncBlockIndex();
 
     NewRCWHolder pNewRCW(RCW::CreateRCW(m_pUnknown, dwSyncBlockIndex, m_flags, m_typeHandle.GetMethodTable()));

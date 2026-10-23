@@ -1004,24 +1004,6 @@ public:
         return pModule->GetCustomAttribute(GetMemberDef(), attribute, ppData, pcbData);
     }
 
-#ifndef DACCESS_COMPILE
-    IMetaDataEmit* GetEmitter()
-    {
-        WRAPPER_NO_CONTRACT;
-        Module *pModule = GetModule();
-        _ASSERTE(pModule != NULL);
-        return pModule->GetEmitter();
-    }
-
-    IMetaDataImport* GetRWImporter()
-    {
-        WRAPPER_NO_CONTRACT;
-        Module *pModule = GetModule();
-        _ASSERTE(pModule != NULL);
-        return pModule->GetRWImporter();
-    }
-#endif // !DACCESS_COMPILE
-
 #ifdef FEATURE_COMINTEROP
     WORD GetComSlot();
     LONG GetComDispid();
@@ -2357,6 +2339,9 @@ public:
 public:
     PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
+#ifdef FEATURE_READYTORUN
+    PCODE PublishPrecompiledCode(PrepareCodeConfig* pConfig, PCODE pCode, bool shouldTier);
+#endif // FEATURE_READYTORUN
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     // Probe for precompiled R2R native code for an UnmanagedCallersOnly method and, if present,

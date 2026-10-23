@@ -96,7 +96,7 @@ namespace Internal.NativeFormat
             return endOffset;
         }
 
-        public unsafe bool StringEquals(uint offset, string value)
+        public unsafe bool StringEquals(uint offset, ReadOnlySpan<char> value)
         {
             uint originalOffset = offset;
 
@@ -114,7 +114,7 @@ namespace Internal.NativeFormat
             {
                 int ch = *(_base + offset + i);
                 if (ch > 0x7F)
-                    return ReadString(originalOffset) == value;
+                    return value.SequenceEqual(ReadString(originalOffset));
 
                 // We are assuming here that valid UTF8 encoded byte > 0x7F cannot map to a character with code point <= 0x7F
                 if (ch != value[i])
