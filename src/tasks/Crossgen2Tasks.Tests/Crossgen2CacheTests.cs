@@ -593,7 +593,7 @@ public class Crossgen2CacheTests
     [CachePlatformTheory]
     [InlineData(null)]
     [InlineData("pe")]
-    public void DefaultOrExplicitPeContainerFormatIsCached(string format) => RemoteExecutor.Invoke(value =>
+    public void DefaultOrExplicitPeContainerFormatIsCached(string? format) => RemoteExecutor.Invoke(value =>
     {
         using var fixture = new Fixture();
         MockCompiler miss = fixture.Create();
