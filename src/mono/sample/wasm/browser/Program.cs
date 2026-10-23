@@ -13,6 +13,7 @@ namespace Sample
         public static Task<int> Main(string[] args)
         {
             Console.WriteLine("Hello from WASM!");
+            Console.WriteLine($"Arguments: {string.Join(", ", args)}");
             //DisplayMeaning(42);
             return Task.FromResult(0);
         }

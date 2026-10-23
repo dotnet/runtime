@@ -20,6 +20,7 @@ export const enum CommandId {
     NONE = 0,
     RUN_MAIN = 1,
     EXIT = 2,
+    RUN_MAIN_AND_EXIT = 3,
 }
 
 // Layout version — bump when the signaling buffer layout changes

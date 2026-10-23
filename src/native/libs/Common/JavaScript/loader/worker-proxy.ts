@@ -4,8 +4,8 @@
 // -----------------------------------------------------------
 // Main-thread worker proxy for withWorker() mode.
 //
-// Creates shared WebAssembly.Memory, spawns a dedicated worker
-// running the same dotnet.js module, and returns a RuntimeAPI
+// Spawns a dedicated worker running the same dotnet.js module
+// and returns a RuntimeAPI
 // that proxies runMain/runMainAndExit to the worker via shared
 // memory signaling.
 //
@@ -21,12 +21,15 @@ import {
     OFFSET_COMMAND_SIGNAL,
     OFFSET_COMMAND_ID,
     OFFSET_COMMAND_RESULT,
-    wakeWorker,
+    OFFSET_COMMAND_PROMISE_ID,
+    allocatePromiseId,
+    wakeMain,
 } from "./shared-signaling";
 
-import type { WorkerInitMessage, WorkerToMainMessage } from "./worker-runtime";
+import type { WorkerCommandMessage, WorkerInitMessage, WorkerToMainMessage } from "./worker-runtime";
 import { scriptUrl } from "./bootstrap";
 import { createPromiseCompletionSource } from "./promise-completion-source";
+import { dotnetLogger, Module } from "./cross-module";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -34,20 +37,27 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
 
     const worker = new globalThis.Worker(scriptUrl, { type: "module" });
 
-    // Post init message with config
-    const initMsg: WorkerInitMessage = {
-        type: "init",
-        config,
-    };
-    worker.postMessage(initMsg);
     const { promise: apiPromise, resolve, reject } = createPromiseCompletionSource<RuntimeAPI>();
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let rejectCommand: ((error: Error) => void) | undefined;
+    let terminated = false;
+
+    function terminate(error: Error): void {
+        if (terminated) return;
+        terminated = true;
+        if (timeoutId !== undefined) clearTimeout(timeoutId);
+        worker.onmessage = null;
+        worker.onerror = null;
+        worker.onmessageerror = null;
+        worker.terminate();
+        rejectCommand?.(error);
+        reject(error);
+    }
 
     const timeoutMs = config.workerOptions?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     if (timeoutMs > 0) {
         timeoutId = setTimeout(() => {
-            //TODO worker.terminate();
-            reject(new Error(`withWorker(): worker did not respond within ${timeoutMs}ms`));
+            terminate(new Error(`withWorker(): worker did not respond within ${timeoutMs}ms`));
         }, timeoutMs);
     }
 
@@ -60,23 +70,28 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
             }
 
             const signalView = new Int32Array(msg.signalBuffer);
-            const runtimeBuildInfo = msg.runtimeBuildInfo as RuntimeAPI["runtimeBuildInfo"];
-            const api = buildProxyRuntimeAPI(config, signalView, runtimeBuildInfo, worker);
+            const api = buildProxyRuntimeAPI(config, signalView, msg.runtimeBuildInfo, worker, terminate, handler => {
+                rejectCommand = handler;
+            });
             resolve(api);
         } else if (msg.type === "error") {
-            if (timeoutId !== undefined) {
-                clearTimeout(timeoutId);
-            }
-            reject(new Error(`withWorker(): worker initialization failed: ${msg.message}`));
+            terminate(new Error(`withWorker(): worker failed: ${msg.message}`));
         }
     };
 
     worker.onerror = (ev: ErrorEvent): void => {
-        if (timeoutId !== undefined) {
-            clearTimeout(timeoutId);
-        }
-        reject(new Error(`withWorker(): worker error: ${ev.message}`));
+        terminate(new Error(`withWorker(): worker error: ${ev.message}`));
     };
+    worker.onmessageerror = (): void => {
+        terminate(new Error("withWorker(): could not deserialize a worker message"));
+    };
+
+    const initMsg: WorkerInitMessage = { type: "init", config };
+    try {
+        worker.postMessage(initMsg);
+    } catch (error) {
+        terminate(error instanceof Error ? error : new Error(String(error)));
+    }
 
     return await apiPromise;
 }
@@ -94,50 +109,91 @@ function buildProxyRuntimeAPI(
     signalView: Int32Array,
     runtimeBuildInfo: RuntimeAPI["runtimeBuildInfo"],
     worker: Worker,
+    terminate: (error: Error) => void,
+    registerFailureHandler: (handler: (error: Error) => void) => void,
 ): RuntimeAPI {
-    function sendCommandAndWait(commandId: CommandId): Promise<number> {
-        // Write command to signaling buffer
+    let pendingCommand: AbortController | undefined;
+    let exited: Error | undefined;
+    let exiting = false;
+    let exitRequested = false;
+
+    registerFailureHandler(error => {
+        exited = error;
+        pendingCommand?.abort(error);
+        wakeMain(signalView);
+    });
+
+    async function sendCommandAndWait(commandId: CommandId, mainAssemblyName?: string, args?: string[], exitCode?: number, reason?: unknown): Promise<number> {
+        if (exited) throw exited;
+        if (pendingCommand) throw new Error("withWorker(): another command is already running");
+        const controller = new AbortController();
+        pendingCommand = controller;
+        const promiseId = allocatePromiseId();
+        const message: WorkerCommandMessage = { type: "command", commandId, promiseId, mainAssemblyName, args, exitCode, reason };
         Atomics.store(signalView, OFFSET_COMMAND_ID, commandId);
         Atomics.store(signalView, OFFSET_COMMAND_SIGNAL, SignalState.PENDING);
-        wakeWorker(signalView);
-
-        // Wait asynchronously for the worker to complete the command
-        return waitForCommandCompletion(signalView);
+        try {
+            // Strings are structured-cloned until the shared-heap marshaler is implemented.
+            worker.postMessage(message);
+            return await waitForCommandCompletion(signalView, promiseId, controller.signal);
+        } finally {
+            if (pendingCommand === controller) pendingCommand = undefined;
+        }
     }
 
     const notSupported = (name: string) => (): never => {
         throw new Error(`${name}() is not supported in withWorker() proxy mode`);
     };
 
-    const api = {
+    const api: RuntimeAPI = {
         // Functional APIs
-        runMain: (_mainAssemblyName?: string, _args?: string[]): Promise<number> => {
-            return sendCommandAndWait(CommandId.RUN_MAIN);
+        runMain: (mainAssemblyName?: string, args?: string[]): Promise<number> => {
+            if (exiting) return Promise.reject(exited ?? new Error("withWorker(): runtime is exiting"));
+            return sendCommandAndWait(CommandId.RUN_MAIN, mainAssemblyName, args);
         },
-        runMainAndExit: (_mainAssemblyName?: string, _args?: string[]): Promise<number> => {
-            return sendCommandAndWait(CommandId.RUN_MAIN);
+        runMainAndExit: async (mainAssemblyName?: string, args?: string[]): Promise<number> => {
+            if (exiting) throw exited ?? new Error("withWorker(): runtime is exiting");
+            if (pendingCommand) throw new Error("withWorker(): another command is already running");
+            exiting = true;
+            try {
+                return await sendCommandAndWait(CommandId.RUN_MAIN_AND_EXIT, mainAssemblyName, args);
+            } finally {
+                if (!exitRequested) terminate(new Error("withWorker(): runtime has exited"));
+            }
         },
-        exit: (code: number, _reason?: any): void => {
-            Atomics.store(signalView, OFFSET_COMMAND_RESULT, code);
-            Atomics.store(signalView, OFFSET_COMMAND_ID, CommandId.EXIT);
-            Atomics.store(signalView, OFFSET_COMMAND_SIGNAL, SignalState.PENDING);
-            wakeWorker(signalView);
-            worker.terminate();
+        exit: (code: number, reason?: unknown): void => {
+            if (exitRequested || exited) return;
+            exitRequested = true;
+            exiting = true;
+            pendingCommand?.abort(new Error(`withWorker(): runtime exited with code ${code}`));
+            pendingCommand = undefined;
+            wakeMain(signalView);
+            const timeout = setTimeout(() => {
+                const error = new Error("withWorker(): worker did not acknowledge exit");
+                dotnetLogger.error(error.message, error);
+                terminate(error);
+            }, DEFAULT_TIMEOUT_MS);
+            void sendCommandAndWait(CommandId.EXIT, undefined, undefined, code, reason).catch(error => {
+                dotnetLogger.error("withWorker(): worker shutdown failed", error);
+            }).finally(() => {
+                clearTimeout(timeout);
+                terminate(new Error(`withWorker(): runtime exited with code ${code}`));
+            });
         },
         getConfig: (): LoaderConfig => config,
         runtimeBuildInfo,
 
         // Stubs — not yet supported in proxy mode
         INTERNAL: {},
-        Module: {} as any,
+        Module,
         runtimeId: 0,
-        setEnvironmentVariable: notSupported("setEnvironmentVariable"),
         getAssemblyExports: notSupported("getAssemblyExports"),
         setModuleImports: notSupported("setModuleImports"),
         invokeLibraryInitializers: notSupported("invokeLibraryInitializers"),
 
         // Memory APIs — not supported in proxy mode
         setHeapB32: notSupported("setHeapB32"),
+        setHeapB8: notSupported("setHeapB8"),
         setHeapU8: notSupported("setHeapU8"),
         setHeapU16: notSupported("setHeapU16"),
         setHeapU32: notSupported("setHeapU32"),
@@ -150,6 +206,7 @@ function buildProxyRuntimeAPI(
         setHeapF32: notSupported("setHeapF32"),
         setHeapF64: notSupported("setHeapF64"),
         getHeapB32: notSupported("getHeapB32"),
+        getHeapB8: notSupported("getHeapB8"),
         getHeapU8: notSupported("getHeapU8"),
         getHeapU16: notSupported("getHeapU16"),
         getHeapU32: notSupported("getHeapU32"),
@@ -175,8 +232,9 @@ function buildProxyRuntimeAPI(
         collectCpuSamples: notSupported("collectCpuSamples"),
         collectMetrics: notSupported("collectMetrics"),
         collectGcDump: notSupported("collectGcDump"),
+        collectPgoTrace: notSupported("collectPgoTrace"),
         connectDSRouter: notSupported("connectDSRouter"),
-    } as unknown as RuntimeAPI;
+    };
 
     return api;
 }
@@ -189,10 +247,17 @@ function buildProxyRuntimeAPI(
 // from PENDING to DONE or ERROR.
 // -----------------------------------------------------------
 
-function waitForCommandCompletion(signalView: Int32Array): Promise<number> {
+function waitForCommandCompletion(signalView: Int32Array, promiseId: number, abortSignal: AbortSignal): Promise<number> {
     return new Promise<number>((resolve, reject) => {
         function check(): void {
-            const signal = Atomics.load(signalView, OFFSET_COMMAND_SIGNAL);
+            if (abortSignal.aborted) {
+                reject(abortSignal.reason);
+                return;
+            }
+            const lastSeen = Atomics.load(signalView, OFFSET_WAKEUP_MAIN);
+            const signal = Atomics.load(signalView, OFFSET_COMMAND_PROMISE_ID) === promiseId
+                ? Atomics.load(signalView, OFFSET_COMMAND_SIGNAL)
+                : SignalState.PENDING;
             if (signal === SignalState.DONE) {
                 const result = Atomics.load(signalView, OFFSET_COMMAND_RESULT);
                 Atomics.store(signalView, OFFSET_COMMAND_SIGNAL, SignalState.IDLE);
@@ -209,7 +274,6 @@ function waitForCommandCompletion(signalView: Int32Array): Promise<number> {
             }
 
             // Not yet complete — wait for next wakeup
-            const lastSeen = Atomics.load(signalView, OFFSET_WAKEUP_MAIN);
             const waitResult = Atomics.waitAsync(signalView, OFFSET_WAKEUP_MAIN, lastSeen);
             if (waitResult.async) {
                 waitResult.value.then(check);

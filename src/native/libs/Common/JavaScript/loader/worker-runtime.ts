@@ -6,9 +6,8 @@
 //
 // When dotnet.js detects ENVIRONMENT_IS_WEB_WORKER, it calls
 // waitForInitMessage() to receive config from the main thread,
-// then bootstrapWorkerRuntime() boots the runtime (Emscripten
-// creates shared WebAssembly.Memory via -sSHARED_MEMORY=1)
-// and enters the signaling event loop.
+// then bootstrapWorkerRuntime() boots the runtime and enters
+// the signaling event loop.
 // -----------------------------------------------------------
 
 import type { LoaderConfig, RuntimeAPI } from "./types";
@@ -20,8 +19,8 @@ import {
     createSignalingBuffer,
     notifyMemoryGrowth,
     OFFSET_COMMAND_SIGNAL,
-    OFFSET_COMMAND_ID,
     OFFSET_COMMAND_RESULT,
+    OFFSET_COMMAND_PROMISE_ID,
     OFFSET_JSEXPORT_HEAD,
     OFFSET_JSEXPORT_TAIL,
     OFFSET_WAKEUP_WORKER,
@@ -46,7 +45,17 @@ export interface WorkerInitMessage {
 export interface WorkerReadyMessage {
     type: "ready";
     signalBuffer: SharedArrayBuffer;
-    runtimeBuildInfo: object;
+    runtimeBuildInfo: RuntimeAPI["runtimeBuildInfo"];
+}
+
+export interface WorkerCommandMessage {
+    type: "command";
+    commandId: CommandId;
+    promiseId: number;
+    mainAssemblyName?: string;
+    args?: string[];
+    exitCode?: number;
+    reason?: unknown;
 }
 
 export interface WorkerErrorMessage {
@@ -80,8 +89,7 @@ export function waitForInitMessage(): Promise<WorkerInitMessage> {
 // -----------------------------------------------------------
 // Bootstrap the runtime on the worker
 //
-// Boots the full runtime (Emscripten creates shared
-// WebAssembly.Memory via -sSHARED_MEMORY=1), allocates
+// Boots the full runtime, allocates
 // signaling + frame buffers, hooks memory growth, posts
 // "ready" back, then enters the signaling event loop.
 // -----------------------------------------------------------
@@ -94,7 +102,6 @@ export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promis
         mergeLoaderConfig(config);
 
         // Boot the runtime through the normal HostBuilder path.
-        // Emscripten creates shared WebAssembly.Memory (-sSHARED_MEMORY=1).
         const builder = new HostBuilder();
         const runtime: RuntimeAPI = await builder.create();
 
@@ -124,6 +131,8 @@ export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promis
             return result;
         };
 
+        runWorkerEventLoop(signalView, runtime);
+
         // Post "ready" back to main thread
         const readyMsg: WorkerReadyMessage = {
             type: "ready",
@@ -132,8 +141,6 @@ export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promis
         };
         self.postMessage(readyMsg);
 
-        // Enter the signaling event loop
-        runWorkerEventLoop(signalView, runtime);
     } catch (err: any) {
         // Post error back to main thread
         const errorMsg: WorkerErrorMessage = {
@@ -153,20 +160,49 @@ export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promis
 // runMainAndExit). Falls back to Atomics.wait only during
 // synchronous JSExport processing where blocking is needed.
 //
-// Both the command slot and JSExport ring writes notify
-// OFFSET_WAKEUP_WORKER to wake this loop.
+// Command messages carry arguments; JSExport ring writes notify
+// OFFSET_WAKEUP_WORKER to wake the shared-memory loop.
 // -----------------------------------------------------------
 
 function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI): void {
+    let closing = false;
+    let commandRunning = false;
+
+    self.addEventListener("message", (ev: MessageEvent<WorkerCommandMessage>): void => {
+        if (ev.data.type !== "command" || closing) return;
+        const command = ev.data;
+        if (commandRunning && command.commandId !== CommandId.EXIT) {
+            const errorMsg: WorkerErrorMessage = { type: "error", message: "Another worker command is already running" };
+            self.postMessage(errorMsg);
+            return;
+        }
+        commandRunning = true;
+        if (command.commandId === CommandId.EXIT) closing = true;
+        void processCommand(command, runtime).then(result => {
+            if (closing && command.commandId !== CommandId.EXIT) return;
+            Atomics.store(signalView, OFFSET_COMMAND_RESULT, result);
+            Atomics.store(signalView, OFFSET_COMMAND_PROMISE_ID, command.promiseId);
+            Atomics.store(signalView, OFFSET_COMMAND_SIGNAL, SignalState.DONE);
+            commandRunning = false;
+            wakeMain(signalView);
+            if (command.commandId !== CommandId.RUN_MAIN) {
+                closing = true;
+                self.close();
+            }
+        }, error => {
+            if (closing && command.commandId !== CommandId.EXIT) return;
+            closing = true;
+            const errorMsg: WorkerErrorMessage = {
+                type: "error",
+                message: error instanceof Error ? error.message : String(error),
+            };
+            self.postMessage(errorMsg);
+            self.close();
+        });
+    });
+
     function processAllPending(): boolean {
         let didWork = false;
-
-        // Check command slot
-        const commandSignal = Atomics.load(signalView, OFFSET_COMMAND_SIGNAL);
-        if (commandSignal === SignalState.PENDING) {
-            processCommand(signalView, runtime);
-            didWork = true;
-        }
 
         // Drain JSExport ring
         // eslint-disable-next-line no-constant-condition
@@ -182,12 +218,13 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI): void {
     }
 
     function waitLoop(): void {
+        if (closing) return;
+        const lastSeen = Atomics.load(signalView, OFFSET_WAKEUP_WORKER);
         // Process anything already pending
         processAllPending();
 
         // Wait asynchronously for next wakeup — keeps event loop alive
         // so that async operations (runMainAndExit, Promises) can resolve.
-        const lastSeen = Atomics.load(signalView, OFFSET_WAKEUP_WORKER);
         const result = Atomics.waitAsync(signalView, OFFSET_WAKEUP_WORKER, lastSeen);
         if (result.async) {
             result.value.then(() => waitLoop());
@@ -200,55 +237,27 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI): void {
     waitLoop();
 }
 
-function processCommand(signalView: Int32Array, runtime: RuntimeAPI): void {
-    const commandId = Atomics.load(signalView, OFFSET_COMMAND_ID);
-    // command_promise_id will be used in Phase 4 for async correlation
-
-    let result = 0;
-    let error = false;
-
-    switch (commandId) {
+async function processCommand(command: WorkerCommandMessage, runtime: RuntimeAPI): Promise<number> {
+    switch (command.commandId) {
         case CommandId.RUN_MAIN:
+            return await runtime.runMain(command.mainAssemblyName, command.args);
+        case CommandId.RUN_MAIN_AND_EXIT:
+            return await runtime.runMainAndExit(command.mainAssemblyName, command.args);
+        case CommandId.EXIT: {
+            const exitCode = command.exitCode ?? 0;
             try {
-                // runMain is async — dispatch via Promise.
-                // The event loop stays alive (waitAsync-based) so .then() resolves.
-                runtime.runMainAndExit(undefined, undefined).then(
-                    (exitCode: number) => {
-                        Atomics.store(signalView, OFFSET_COMMAND_RESULT, exitCode);
-                        Atomics.store(signalView, OFFSET_COMMAND_SIGNAL, SignalState.DONE);
-                        wakeMain(signalView);
-                    },
-                    () => {
-                        Atomics.store(signalView, OFFSET_COMMAND_RESULT, 1);
-                        Atomics.store(signalView, OFFSET_COMMAND_SIGNAL, SignalState.ERROR);
-                        wakeMain(signalView);
-                    },
-                );
-                // Don't signal completion yet — the async handler will
-                return;
-            } catch (err) {
-                result = 1;
-                error = true;
+                runtime.exit(exitCode, command.reason);
+            } catch (error) {
+                if (!error || typeof error !== "object" || !("status" in error) || typeof error.status !== "number") {
+                    throw error;
+                }
+                return error.status;
             }
-            break;
-
-        case CommandId.EXIT:
-            result = Atomics.load(signalView, OFFSET_COMMAND_RESULT);
-            Atomics.store(signalView, OFFSET_COMMAND_SIGNAL, SignalState.DONE);
-            wakeMain(signalView);
-            // Exit the worker
-            self.close();
-            return;
-
+            return exitCode;
+        }
         default:
-            result = -1;
-            error = true;
-            break;
+            throw new Error(`Unknown worker command ${command.commandId}`);
     }
-
-    Atomics.store(signalView, OFFSET_COMMAND_RESULT, result);
-    Atomics.store(signalView, OFFSET_COMMAND_SIGNAL, error ? SignalState.ERROR : SignalState.DONE);
-    wakeMain(signalView);
 }
 
 function processJSExportEntry(signalView: Int32Array, tailIndex: number): void {

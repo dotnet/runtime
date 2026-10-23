@@ -14,7 +14,8 @@ export interface DotnetHostBuilder {
     withConfig(config: LoaderConfig): DotnetHostBuilder;
     /**
      * Configures the runtime to start on a dedicated web worker.
-     * The main thread gets a full RuntimeAPI backed by SharedArrayBuffer.
+     * The main thread gets a proxy supporting runMain, runMainAndExit, and exit.
+     * JS interop, heap access, and diagnostics are not yet supported by the proxy.
      * Requires COOP/COEP headers and SharedArrayBuffer support.
      */
     withWorker(options?: WorkerOptions): DotnetHostBuilder;
