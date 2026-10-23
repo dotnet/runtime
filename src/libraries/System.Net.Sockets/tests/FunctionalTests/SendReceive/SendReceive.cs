@@ -782,8 +782,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(0, await receive.WaitAsync(TestSettings.PassingTestTimeout));
 
             byte[] buffer = new byte[1];
-            SocketReceiveFromResult result = await ReceiveFromAsync(receiver, buffer, new IPEndPoint(IPAddress.Any, 0)).WaitAsync(TestSettings.PassingTestTimeout);
-            Assert.Equal(1, result.ReceivedBytes);
+            Assert.Equal(1, await ReceiveAsync(receiver, buffer).WaitAsync(TestSettings.PassingTestTimeout));
             Assert.Equal(42, buffer[0]);
         }
 
