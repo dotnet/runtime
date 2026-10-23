@@ -43,6 +43,27 @@ namespace Internal.Metadata.NativeFormat
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
 #endif
+    public enum ConstantTypeCode : byte
+    {
+        Boolean = 0x02,
+        Char = 0x03,
+        SByte = 0x04,
+        Byte = 0x05,
+        Int16 = 0x06,
+        UInt16 = 0x07,
+        Int32 = 0x08,
+        UInt32 = 0x09,
+        Int64 = 0x0a,
+        UInt64 = 0x0b,
+        Single = 0x0c,
+        Double = 0x0d,
+        String = 0x0e,
+        NullReference = 0x12,
+    } // ConstantTypeCode
+
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public enum GenericParameterKind : byte
     {
         /// Represents a type parameter for a generic type.
@@ -51,18 +72,6 @@ namespace Internal.Metadata.NativeFormat
         /// Represents a type parameter from a generic method.
         GenericMethodParameter = 0x1,
     } // GenericParameterKind
-
-#if SYSTEM_PRIVATE_CORELIB
-    [CLSCompliant(false)]
-#endif
-    public enum NamedArgumentMemberKind : byte
-    {
-        /// Specifies the name of a property
-        Property = 0x0,
-
-        /// Specifies the name of a field
-        Field = 0x1,
-    } // NamedArgumentMemberKind
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
@@ -89,66 +98,38 @@ namespace Internal.Metadata.NativeFormat
         Null = 0x0,
         ArraySignature = 0x1,
         ByReferenceSignature = 0x2,
-        ConstantBooleanArray = 0x3,
-        ConstantBooleanValue = 0x4,
-        ConstantByteArray = 0x5,
-        ConstantByteValue = 0x6,
-        ConstantCharArray = 0x7,
-        ConstantCharValue = 0x8,
-        ConstantDoubleArray = 0x9,
-        ConstantDoubleValue = 0xa,
-        ConstantEnumArray = 0xb,
-        ConstantEnumValue = 0xc,
-        ConstantHandleArray = 0xd,
-        ConstantInt16Array = 0xe,
-        ConstantInt16Value = 0xf,
-        ConstantInt32Array = 0x10,
-        ConstantInt32Value = 0x11,
-        ConstantInt64Array = 0x12,
-        ConstantInt64Value = 0x13,
-        ConstantReferenceValue = 0x14,
-        ConstantSByteArray = 0x15,
-        ConstantSByteValue = 0x16,
-        ConstantSingleArray = 0x17,
-        ConstantSingleValue = 0x18,
-        ConstantStringArray = 0x19,
-        ConstantStringValue = 0x1a,
-        ConstantUInt16Array = 0x1b,
-        ConstantUInt16Value = 0x1c,
-        ConstantUInt32Array = 0x1d,
-        ConstantUInt32Value = 0x1e,
-        ConstantUInt64Array = 0x1f,
-        ConstantUInt64Value = 0x20,
-        CustomAttribute = 0x21,
-        Event = 0x22,
-        Field = 0x23,
-        FieldSignature = 0x24,
-        FunctionPointerSignature = 0x25,
-        GenericParameter = 0x26,
-        MemberReference = 0x27,
-        Method = 0x28,
-        MethodInstantiation = 0x29,
-        MethodSemantics = 0x2a,
-        MethodSignature = 0x2b,
-        MethodTypeVariableSignature = 0x2c,
-        ModifiedType = 0x2d,
-        NamedArgument = 0x2e,
-        NamespaceDefinition = 0x2f,
-        NamespaceReference = 0x30,
-        Parameter = 0x31,
-        PointerSignature = 0x32,
-        Property = 0x33,
-        PropertySignature = 0x34,
-        QualifiedField = 0x35,
-        QualifiedMethod = 0x36,
-        SZArraySignature = 0x37,
-        ScopeDefinition = 0x38,
-        ScopeReference = 0x39,
-        TypeDefinition = 0x3a,
-        TypeForwarder = 0x3b,
-        TypeInstantiationSignature = 0x3c,
-        TypeReference = 0x3d,
-        TypeSpecification = 0x3e,
-        TypeVariableSignature = 0x3f,
+        Constant = 0x3,
+        ConstantStringArray = 0x4,
+        ConstantStringValue = 0x5,
+        CustomAttribute = 0x6,
+        Event = 0x7,
+        Field = 0x8,
+        FieldSignature = 0x9,
+        FunctionPointerSignature = 0xa,
+        GenericParameter = 0xb,
+        MemberReference = 0xc,
+        Method = 0xd,
+        MethodInstantiation = 0xe,
+        MethodSemantics = 0xf,
+        MethodSignature = 0x10,
+        MethodTypeVariableSignature = 0x11,
+        ModifiedType = 0x12,
+        NamespaceDefinition = 0x13,
+        NamespaceReference = 0x14,
+        Parameter = 0x15,
+        PointerSignature = 0x16,
+        Property = 0x17,
+        PropertySignature = 0x18,
+        QualifiedField = 0x19,
+        QualifiedMethod = 0x1a,
+        SZArraySignature = 0x1b,
+        ScopeDefinition = 0x1c,
+        ScopeReference = 0x1d,
+        TypeDefinition = 0x1e,
+        TypeForwarder = 0x1f,
+        TypeInstantiationSignature = 0x20,
+        TypeReference = 0x21,
+        TypeSpecification = 0x22,
+        TypeVariableSignature = 0x23,
     } // HandleType
 } // Internal.Metadata.NativeFormat

@@ -89,7 +89,10 @@ internal sealed class ReaderGen : CsWriter
         {
             if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
                 continue;
-            WriteLine($"offset = streamReader.Read(offset, out {member.GetMemberFieldName()});");
+            if ((member.Flags & MemberDefFlags.Blob) != 0 && member == record.Members[^1])
+                WriteLine($"{member.GetMemberFieldName()} = new ByteCollection(streamReader, offset);");
+            else
+                WriteLine($"offset = streamReader.Read(offset, out {member.GetMemberFieldName()});");
         }
         CloseScope();
 

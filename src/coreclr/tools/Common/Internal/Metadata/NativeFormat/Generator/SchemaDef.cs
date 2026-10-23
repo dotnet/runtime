@@ -43,8 +43,8 @@ public enum MemberDefFlags
     Compare = 0x0080, // Indicates member should be used for equality functionality.
     EnumerateForHashCode = 0x0100, // Indicates that the collection is safe to be enumerated in GetHashCode
                                    // without causing reentrancy
-    CustomCompare = 0x0200, // Indicates that this member uses a custom comparer
     HashTable = 0x0400, // Persists a typed record map as a hashtable instead of a linear collection.
+    Blob = 0x0800, // Contains sequential bytes and relocatable record references.
 }
 
 public enum MemberTypeKind
@@ -76,6 +76,9 @@ public class MemberDef
 
     public string GetMemberType(MemberTypeKind kind = MemberTypeKind.Accessor)
     {
+        if ((Flags & MemberDefFlags.Blob) != 0)
+            return kind == MemberTypeKind.WriterField ? "MetadataBlob" : "ByteCollection";
+
         string typeName;
         if ((Flags & MemberDefFlags.RecordRef) != 0)
         {
@@ -158,16 +161,14 @@ public class EnumType
 
 public class PrimitiveType
 {
-    public PrimitiveType(string name, string typeName, bool customCompare = false)
+    public PrimitiveType(string name, string typeName)
     {
         Name = name;
         TypeName = typeName;
-        CustomCompare = customCompare;
     }
 
     public readonly string Name;
     public readonly string TypeName;
-    public readonly bool CustomCompare;
 }
 
 /// <summary>
@@ -200,6 +201,7 @@ internal sealed class SchemaDef
         new EnumType("AssemblyFlags", "uint"),
         new EnumType("AssemblyHashAlgorithm", "uint"),
         new EnumType("CallingConventions", "ushort"),
+        new EnumType("ConstantTypeCode", "byte"),
         new EnumType("SignatureCallingConvention", "byte"),
         new EnumType("EventAttributes", "ushort"),
         new EnumType("FieldAttributes", "ushort"),
@@ -208,7 +210,6 @@ internal sealed class SchemaDef
         new EnumType("MethodAttributes", "ushort"),
         new EnumType("MethodImplAttributes", "ushort"),
         new EnumType("MethodSemanticsAttributes", "ushort"),
-        new EnumType("NamedArgumentMemberKind", "byte"),
         new EnumType("ParameterAttributes", "ushort"),
         new EnumType("PInvokeAttributes", "ushort"),
         new EnumType("PropertyAttributes", "ushort"),
@@ -227,8 +228,8 @@ internal sealed class SchemaDef
         new PrimitiveType("uint", "UInt32"),
         new PrimitiveType("long", "Int64"),
         new PrimitiveType("ulong", "UInt64"),
-        new PrimitiveType("float", "Single", customCompare: true),
-        new PrimitiveType("double", "Double", customCompare: true),
+        new PrimitiveType("float", "Single"),
+        new PrimitiveType("double", "Double"),
     };
 
     // These enums supplement those defined by System.Reflection.Primitives.
@@ -256,15 +257,25 @@ internal sealed class SchemaDef
                 new MemberDef(name: "SHA1", value: "0x8004"),
             }
         ),
-        // NamedArgumentMemberKind - used to disambiguate the referenced members of the named
-        // arguments to a custom attribute instance.
         new RecordDef(
-            name: "NamedArgumentMemberKind",
+            name: "ConstantTypeCode",
             baseTypeName: "byte",
             flags: RecordDefFlags.Enum,
             members: new MemberDef[] {
-                new MemberDef(name: "Property", value: "0x0", comment: "Specifies the name of a property"),
-                new MemberDef(name: "Field", value: "0x1", comment: "Specifies the name of a field"),
+                new MemberDef(name: "Boolean", value: "0x02"),
+                new MemberDef(name: "Char", value: "0x03"),
+                new MemberDef(name: "SByte", value: "0x04"),
+                new MemberDef(name: "Byte", value: "0x05"),
+                new MemberDef(name: "Int16", value: "0x06"),
+                new MemberDef(name: "UInt16", value: "0x07"),
+                new MemberDef(name: "Int32", value: "0x08"),
+                new MemberDef(name: "UInt32", value: "0x09"),
+                new MemberDef(name: "Int64", value: "0x0a"),
+                new MemberDef(name: "UInt64", value: "0x0b"),
+                new MemberDef(name: "Single", value: "0x0c"),
+                new MemberDef(name: "Double", value: "0x0d"),
+                new MemberDef(name: "String", value: "0x0e"),
+                new MemberDef(name: "NullReference", value: "0x12"),
             }
         ),
         // GenericParameterKind - used to distinguish between generic type and generic method type parameters.
@@ -302,125 +313,34 @@ internal sealed class SchemaDef
     //  Record schema definition
     //
 
-    //
-    // ConstantXXXValue, ConstantXXXArray, and corresponding Handle types
-    //
-
-    // Set of record schema definitions (see format description in "Metadata records" section below)
-    // that represent constant primitive type values. Adds concept of constant managed reference, which
-    // must always have a null value (thus the use of the NotPersisted flag).
-
-    private static readonly RecordDef[] ConstantValueRecordSchema =
-        (
-            from primitiveType in PrimitiveTypes
-            select new RecordDef(
-                    name: "Constant" + primitiveType.TypeName + "Value",
-                    members: new MemberDef[] {
-                        new MemberDef(name: "Value", typeName: primitiveType.Name,
-                            flags: primitiveType.CustomCompare ? MemberDefFlags.CustomCompare : 0)
-                    }
-                )
-        )
-        .Concat
-        (
-            new RecordDef[] {
-                new RecordDef(
-                    name: "ConstantReferenceValue",
-                    members: new MemberDef[] {
-                        new MemberDef(name: "Value", typeName: "Object", flags: MemberDefFlags.NotPersisted)
-                    }
-                ),
-                new RecordDef(
-                    name: "ConstantStringValue",
-                    members: new MemberDef[] {
-                        new MemberDef(name: "Value", typeName: "string")
-                    }
-                ),
-                new RecordDef(
-                    name: "ConstantEnumValue",
-                    members: new MemberDef[] {
-                        new MemberDef("Value", EnumConstantValue, MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                        new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef)
-                    }
-                )
-            }
-        )
-        .ToArray();
-
-    // Set of record schema definitions (see format description in "Metadata records" section below)
-    // that represent constant arrays primitive type values. Adds concept of a constant array of handle values (currently used to store
-    // an array TypeDefOrRefOrSpec handles corresponding to System.Type arguments to the instantiation of a custom attribute, or to store
-    // custom initialized object[] arrays in custom attributes).
-
-    private static readonly RecordDef[] ConstantArrayRecordSchema =
-        (
-            from primitiveType in PrimitiveTypes
-            select new RecordDef(
-                    name: "Constant" + primitiveType.TypeName + "Array",
-                    members: new MemberDef[] {
-                        new MemberDef(name: "Value", typeName: primitiveType.TypeName,
-                            flags: MemberDefFlags.Array | (primitiveType.CustomCompare ? MemberDefFlags.CustomCompare : 0))
-                    }
-                )
-        )
-        .Concat
-        (
-            new RecordDef[] {
-                new RecordDef(
-                    name: "ConstantHandleArray",
-                    members: new MemberDef[] {
-                        new MemberDef(name: "Value", flags: MemberDefFlags.RecordRef | MemberDefFlags.List)
-                    }
-                ),
-                new RecordDef(
-                    name: "ConstantStringArray",
-                    members: new MemberDef[] {
-                        new MemberDef(name: "Value", typeName: new string[] { "ConstantStringValue", "ConstantReferenceValue" }, flags: MemberDefFlags.RecordRef | MemberDefFlags.List)
-                    }
-                ),
-                new RecordDef(
-                    name: "ConstantEnumArray",
-                    members: new MemberDef[] {
-                        new MemberDef("ElementType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-                        new MemberDef("Value", ConstantEnumArrayValue, MemberDefFlags.RecordRef)
-                    }
-                ),
-            }
-        )
-        .ToArray();
-
     private static readonly RecordDef[] ConstantRecordSchema =
-        ConstantValueRecordSchema.Concat(ConstantArrayRecordSchema)
+        new RecordDef[] {
+            new RecordDef(
+                name: "Constant",
+                members: new MemberDef[] {
+                    new MemberDef("TypeCode", "ConstantTypeCode"),
+                    new MemberDef("Blob", flags: MemberDefFlags.Blob),
+                }
+            ),
+            new RecordDef(
+                name: "ConstantStringValue",
+                members: new MemberDef[] {
+                    new MemberDef("Value", "string"),
+                }
+            ),
+            new RecordDef(
+                name: "ConstantStringArray",
+                members: new MemberDef[] {
+                    new MemberDef("Value", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.List | MemberDefFlags.EnumerateForHashCode),
+                }
+            ),
+        }
         .OrderBy(record => record.Name, StringComparer.Ordinal)
         .ToArray();
 
     //
     // Common tuple definitions
     //
-
-    private static readonly string[] EnumConstantValue = new string[]
-    {
-        "ConstantByteValue",
-        "ConstantSByteValue",
-        "ConstantInt16Value",
-        "ConstantUInt16Value",
-        "ConstantInt32Value",
-        "ConstantUInt32Value",
-        "ConstantInt64Value",
-        "ConstantUInt64Value",
-    };
-
-    private static readonly string[] ConstantEnumArrayValue = new string[]
-    {
-        "ConstantByteArray",
-        "ConstantSByteArray",
-        "ConstantInt16Array",
-        "ConstantUInt16Array",
-        "ConstantInt32Array",
-        "ConstantUInt32Array",
-        "ConstantInt64Array",
-        "ConstantUInt64Array",
-    };
 
     private static readonly string[] TypeDefOrRef = new string[]
     {
@@ -454,9 +374,6 @@ internal sealed class SchemaDef
         "TypeVariableSignature",
         "MethodTypeVariableSignature",
     };
-
-    private static readonly string[] TypeDefOrRefOrSpecOrConstant =
-        TypeDefOrRefOrSpec.Concat(from constantRecord in ConstantRecordSchema select constantRecord.Name).ToArray();
 
     private static readonly string[] MethodDefOrRef = new string[]
     {
@@ -605,7 +522,7 @@ internal sealed class SchemaDef
                 new MemberDef("Flags", "FieldAttributes"),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 new MemberDef("Signature", "FieldSignature", MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("DefaultValue", TypeDefOrRefOrSpecOrConstant, MemberDefFlags.RecordRef),
+                new MemberDef("DefaultValue", "Constant", MemberDefFlags.RecordRef),
                 new MemberDef("Offset", "uint"),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
             }
@@ -624,7 +541,7 @@ internal sealed class SchemaDef
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 new MemberDef("Signature", "PropertySignature", MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 new MemberDef("MethodSemantics", "MethodSemantics", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
-                new MemberDef("DefaultValue", TypeDefOrRefOrSpecOrConstant, MemberDefFlags.RecordRef),
+                new MemberDef("DefaultValue", "Constant", MemberDefFlags.RecordRef),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
             }
         ),
@@ -643,17 +560,7 @@ internal sealed class SchemaDef
             flags: RecordDefFlags.ReentrantEquals,
             members: new MemberDef[] {
                 new MemberDef("Constructor", MethodDefOrRef, MemberDefFlags.RecordRef),
-                new MemberDef("FixedArguments", TypeDefOrRefOrSpecOrConstant, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
-                new MemberDef("NamedArguments", "NamedArgument", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
-            }
-        ),
-        new RecordDef(
-            name: "NamedArgument",
-            members: new MemberDef[] {
-                new MemberDef("Flags", "NamedArgumentMemberKind"),
-                new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-                new MemberDef("Value", TypeDefOrRefOrSpecOrConstant, MemberDefFlags.RecordRef),
+                new MemberDef("Blob", flags: MemberDefFlags.Blob),
             }
         ),
         new RecordDef(
@@ -680,7 +587,7 @@ internal sealed class SchemaDef
                 new MemberDef("Flags", "ParameterAttributes"),
                 new MemberDef("Sequence", "ushort"),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("DefaultValue", TypeDefOrRefOrSpecOrConstant, MemberDefFlags.RecordRef),
+                new MemberDef("DefaultValue", "Constant", MemberDefFlags.RecordRef),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
@@ -785,7 +692,7 @@ internal sealed class SchemaDef
             }
         )
     }
-    // ConstantXXXValue provided in ConstantRecordSchema and appended to end of this list.
+    // Constants and strings are provided in ConstantRecordSchema.
     .Concat(ConstantRecordSchema)
     .OrderBy(record => record.Name, StringComparer.Ordinal)
     .ToArray();
