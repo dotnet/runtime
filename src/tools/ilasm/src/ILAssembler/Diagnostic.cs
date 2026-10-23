@@ -149,4 +149,5 @@ internal static class DiagnosticMessageTemplates
     public const string SequencePointLineOutOfRange = "Sequence point lines must be between 0 and 0x1fffffff";
     public const string SequencePointColumnOutOfRange = "Sequence point columns must be between 0 and 0xffff";
     public const string SequencePointReversedRange = "A sequence point must end after it starts";
+    public const string SequencePointLineDeltaOutOfRange = "The start line difference from the previous non-hidden sequence point must be between -0x10000000 and 0x0fffffff";
 }

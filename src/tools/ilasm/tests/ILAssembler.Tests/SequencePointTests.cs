@@ -68,6 +68,106 @@ namespace ILAssembler.Tests
             => Compile(new Options { Debug = true }, [new SourceText(source, "test.il")], includes);
 
         [Theory]
+        [InlineData(0, 0x10000000, false, false)]
+        [InlineData(0, 0x10000000, false, true)]
+        [InlineData(0, 0x10000000, true, true)]
+        [InlineData(0x10000001, 0, false, false)]
+        [InlineData(0x10000001, 0, false, true)]
+        [InlineData(0x10000001, 0, true, true)]
+        public void UnencodableStartLineDelta_IsDiagnosed(int firstLine, int secondLine, bool hiddenBetween, bool errorTolerant)
+        {
+            string hidden = hiddenBetween ? ".line 0xFEEFEE,0xFEEFEE : 0,0\nnop\n" : "";
+            string invalidDirective = $".line {secondLine},{secondLine} : 1,2 'second.cs'";
+            string source = Program(Method("M", $"""
+                .line {firstLine},{firstLine} : 1,2 'first.cs'
+                nop
+                {hidden}
+                {invalidDirective}
+                nop
+                nop
+                .line {firstLine},{firstLine} : 1,2 'first.cs'
+                ret
+                """));
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { Debug = true, ErrorTolerant = errorTolerant });
+
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal("ILA0061", error.Id);
+            Assert.Equal(source.IndexOf(invalidDirective, StringComparison.Ordinal), error.Location.Span.Start);
+            if (!errorTolerant)
+            {
+                Assert.Null(result);
+                return;
+            }
+
+            using var pdb = new PortablePdbTestReader(Assert.IsType<CompilationResult>(result));
+            BlobReader blob = pdb.Pdb.GetBlobReader(pdb.GetDebugInformation("M").SequencePointsBlob);
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(firstLine, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            if (hiddenBetween)
+            {
+                Assert.Equal(1, blob.ReadCompressedInteger());
+                Assert.Equal(0, blob.ReadCompressedInteger());
+                Assert.Equal(0, blob.ReadCompressedInteger());
+            }
+            Assert.Equal(3, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedSignedInteger());
+            Assert.Equal(0, blob.ReadCompressedSignedInteger());
+            Assert.Equal(0, blob.RemainingBytes);
+        }
+
+        [Theory]
+        [InlineData(0, 0x0fffffff)]
+        [InlineData(0x10000000, 0)]
+        public void EncodableStartLineDeltaBoundary_IsPreserved(int firstLine, int secondLine)
+        {
+            string source = Program(Method("M", $"""
+                .line {firstLine},{firstLine} : 1,2 'a.cs'
+                nop
+                .line {secondLine},{secondLine} : 1,2 'a.cs'
+                ret
+                """));
+            using var pdb = PortablePdbTestReader.Compile(source);
+            BlobReader blob = pdb.Pdb.GetBlobReader(pdb.GetDebugInformation("M").SequencePointsBlob);
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(firstLine, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(secondLine - firstLine, blob.ReadCompressedSignedInteger());
+            Assert.Equal(0, blob.ReadCompressedSignedInteger());
+            Assert.Equal(0, blob.RemainingBytes);
+        }
+
+        [Fact]
+        public void StartLineDelta_DoesNotCrossMethodBoundaries()
+        {
+            string source = Program(
+                Method("A", ".line 0,0 : 1,2 'a.cs'\nret") +
+                Method("B", ".line 0x10000000,0x10000000 : 1,2 'b.cs'\nret"));
+            using var pdb = PortablePdbTestReader.Compile(source);
+
+            BlobReader blob = pdb.Pdb.GetBlobReader(pdb.GetDebugInformation("B").SequencePointsBlob);
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(0x10000000, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.RemainingBytes);
+        }
+
+        [Theory]
         [InlineData("10,9 : 1,2")]
         [InlineData("10,10 : 2,1")]
         [InlineData("10,10 : 2,2")]

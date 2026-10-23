@@ -157,11 +157,11 @@ internal sealed partial class GrammarActions
         }
 
         state.HasInvalidDirective = GeneratesPdb && !ValidateSourceDirective(value, directiveToken);
+        state.DirectiveToken = directiveToken;
         state.DirectiveCoordinates = (value.StartLine, value.StartColumn, value.EndLine, value.EndColumn);
         state.AutoIncrementLine = value.AutoIncrement
             ? (long)directiveToken.Line + (value.AppliesToNextLine ? 1 : 0)
             : null;
-        state.DirectiveToken = directiveToken;
         _lastSequencePointSpan = null;
     }
 
@@ -268,6 +268,32 @@ internal sealed partial class GrammarActions
         int ilOffset = method.Definition.MethodBody.Offset;
         var point = new EntityRegistry.SequencePoint(document, ilOffset, startLine, startColumn, endLine, endColumn);
         List<EntityRegistry.SequencePoint> sequencePoints = method.Definition.DebugInfo.SequencePoints;
+        if (!point.IsHidden)
+        {
+            // Start lines after the first non-hidden point use a signed compressed integer, across documents
+            // and hidden points. Exclude a point at this offset, since it is about to be replaced.
+            for (int i = sequencePoints.Count - 1; i >= 0; i--)
+            {
+                EntityRegistry.SequencePoint previous = sequencePoints[i];
+                if (previous.IsHidden || previous.ILOffset == ilOffset)
+                {
+                    continue;
+                }
+
+                int delta = startLine - previous.StartLine;
+                if (delta is < -0x10000000 or > 0x0fffffff)
+                {
+                    ReportError(
+                        DiagnosticIds.InvalidSequencePoint,
+                        DiagnosticMessageTemplates.SequencePointLineDeltaOutOfRange,
+                        state.DirectiveToken ?? opcodeToken);
+                    return;
+                }
+
+                break;
+            }
+        }
+
         Debug.Assert(sequencePoints.Count == 0 || sequencePoints[^1].ILOffset <= ilOffset, "IL offsets never decrease.");
         if (sequencePoints.Count > 0 && sequencePoints[^1].ILOffset == ilOffset)
         {
