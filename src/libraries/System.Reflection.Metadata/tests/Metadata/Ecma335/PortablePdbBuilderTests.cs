@@ -126,6 +126,159 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             }
         }
 
+        [Theory]
+        [InlineData(0, true)]
+        [InlineData(SequencePoint.HiddenLine - 2, true)]
+        [InlineData(SequencePoint.HiddenLine - 1, false)]
+        [InlineData(SequencePoint.HiddenLine, false)]
+        [InlineData(SequencePoint.HiddenLine + 1, true)]
+        [InlineData(0x1ffffffe, true)]
+        public void SequencePoints_InitialLine(int startLine, bool valid)
+        {
+            var points = new BlobBuilder();
+            points.WriteCompressedInteger(0); // local signature
+            points.WriteCompressedInteger(0); // IL offset
+            points.WriteCompressedInteger(1); // delta lines
+            points.WriteCompressedSignedInteger(0); // delta columns
+            points.WriteCompressedInteger(startLine);
+            points.WriteCompressedInteger(1); // start column
+
+            using var provider = CreateSequencePointsPdb(points);
+            var enumerator = provider.GetMetadataReader().GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(1)).GetSequencePoints().GetEnumerator();
+            if (valid)
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(startLine, enumerator.Current.StartLine);
+                Assert.Equal(startLine + 1, enumerator.Current.EndLine);
+                Assert.False(enumerator.Current.IsHidden);
+                Assert.False(enumerator.MoveNext());
+            }
+            else
+            {
+                Assert.Throws<BadImageFormatException>(() => enumerator.MoveNext());
+            }
+        }
+
+        [Theory]
+        [InlineData(0, SequencePoint.HiddenLine - 1, true)]
+        [InlineData(0, SequencePoint.HiddenLine, false)]
+        [InlineData(0, SequencePoint.HiddenLine + 1, true)]
+        [InlineData(0x1ffffffe, 1, true)]
+        [InlineData(0x1fffffff, 0, true)]
+        [InlineData(0x1fffffff, 1, false)]
+        [InlineData(0x1fffffff, 0x1fffffff, false)]
+        public void SequencePoints_EndLine(int startLine, int deltaLines, bool valid)
+        {
+            var points = new BlobBuilder();
+            points.WriteCompressedInteger(0); // local signature
+            points.WriteCompressedInteger(0); // IL offset
+            points.WriteCompressedInteger(deltaLines);
+            if (deltaLines == 0)
+            {
+                points.WriteCompressedInteger(1); // delta columns
+            }
+            else
+            {
+                points.WriteCompressedSignedInteger(1); // delta columns
+            }
+            points.WriteCompressedInteger(startLine);
+            points.WriteCompressedInteger(1); // start column
+
+            using var provider = CreateSequencePointsPdb(points);
+            var enumerator = provider.GetMetadataReader().GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(1)).GetSequencePoints().GetEnumerator();
+            if (valid)
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(startLine, enumerator.Current.StartLine);
+                Assert.Equal(startLine + deltaLines, enumerator.Current.EndLine);
+                Assert.False(enumerator.Current.IsHidden);
+                Assert.False(enumerator.MoveNext());
+            }
+            else
+            {
+                Assert.Throws<BadImageFormatException>(() => enumerator.MoveNext());
+            }
+        }
+
+        [Theory]
+        [InlineData(0, SequencePoint.HiddenLine - 1, true)]
+        [InlineData(0, SequencePoint.HiddenLine, false)]
+        [InlineData(0, SequencePoint.HiddenLine + 1, true)]
+        [InlineData(SequencePoint.HiddenLine + 1, -1, false)]
+        [InlineData(0x10000000, 0x0fffffff, true)]
+        [InlineData(0x1fffffff, 1, false)]
+        [InlineData(0, -1, false)]
+        [InlineData(0x10000000, -0x10000000, true)]
+        [InlineData(0x1fffffff, -0x10000000, true)]
+        public void SequencePoints_StartLineDelta(int startLine, int deltaLines, bool valid)
+        {
+            var points = new BlobBuilder();
+            points.WriteCompressedInteger(0); // local signature
+            points.WriteCompressedInteger(0); // IL offset
+            points.WriteCompressedInteger(0); // delta lines
+            points.WriteCompressedInteger(1); // delta columns
+            points.WriteCompressedInteger(startLine);
+            points.WriteCompressedInteger(1); // start column
+            points.WriteCompressedInteger(1); // delta IL offset
+            points.WriteCompressedInteger(0); // delta lines
+            points.WriteCompressedInteger(1); // delta columns
+            points.WriteCompressedSignedInteger(deltaLines);
+            points.WriteCompressedSignedInteger(0); // delta start column
+
+            using var provider = CreateSequencePointsPdb(points);
+            var enumerator = provider.GetMetadataReader().GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(1)).GetSequencePoints().GetEnumerator();
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(startLine, enumerator.Current.StartLine);
+            if (valid)
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(startLine + deltaLines, enumerator.Current.StartLine);
+                Assert.Equal(startLine + deltaLines, enumerator.Current.EndLine);
+                Assert.False(enumerator.Current.IsHidden);
+                Assert.False(enumerator.MoveNext());
+            }
+            else
+            {
+                Assert.Throws<BadImageFormatException>(() => enumerator.MoveNext());
+            }
+        }
+
+        [Fact]
+        public void SequencePoints_HiddenBetweenHighLines()
+        {
+            var points = new BlobBuilder();
+            points.WriteCompressedInteger(0); // local signature
+            points.WriteCompressedInteger(0); // IL offset
+            points.WriteCompressedInteger(0); // delta lines
+            points.WriteCompressedInteger(1); // delta columns
+            points.WriteCompressedInteger(0x1fffffff); // start line
+            points.WriteCompressedInteger(1); // start column
+            points.WriteCompressedInteger(1); // delta IL offset
+            points.WriteCompressedInteger(0); // hidden point
+            points.WriteCompressedInteger(0);
+            points.WriteCompressedInteger(1); // delta IL offset
+            points.WriteCompressedInteger(0); // delta lines
+            points.WriteCompressedInteger(1); // delta columns
+            points.WriteCompressedSignedInteger(-1); // delta start line
+            points.WriteCompressedSignedInteger(0); // delta start column
+
+            using var provider = CreateSequencePointsPdb(points);
+            var enumerator = provider.GetMetadataReader().GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(1)).GetSequencePoints().GetEnumerator();
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(0x1fffffff, enumerator.Current.StartLine);
+            Assert.True(enumerator.MoveNext());
+            Assert.True(enumerator.Current.IsHidden);
+            Assert.Equal(SequencePoint.HiddenLine, enumerator.Current.StartLine);
+            Assert.Equal(SequencePoint.HiddenLine, enumerator.Current.EndLine);
+            Assert.Equal(0, enumerator.Current.StartColumn);
+            Assert.Equal(0, enumerator.Current.EndColumn);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(0x1ffffffe, enumerator.Current.StartLine);
+            Assert.Equal(0x1ffffffe, enumerator.Current.EndLine);
+            Assert.False(enumerator.Current.IsHidden);
+            Assert.False(enumerator.MoveNext());
+        }
+
         private static MetadataReaderProvider CreateSequencePointsPdb(BlobBuilder points)
         {
             var metadata = new MetadataBuilder();
