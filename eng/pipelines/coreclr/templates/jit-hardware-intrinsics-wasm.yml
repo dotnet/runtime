@@ -22,6 +22,9 @@ jobs:
     jobParameters:
       testGroup: outerloop
       nameSuffix: CoreCLR
+      # Fork PR builds don't get credentials, so the Helix submission fails with a 401
+      # when it creates the Azure DevOps test run. Skip the job for fork PRs.
+      condition: ne(variables['System.PullRequest.IsFork'], 'True')
       buildArgs: -s clr+libs+packs -c $(_BuildConfig) /p:TestAssemblies=false
       timeoutInMinutes: 180
       postBuildSteps:
