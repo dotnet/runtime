@@ -258,28 +258,12 @@ namespace Internal.StackTraceMetadata
         private void EmitNamespaceReferenceName(NamespaceReferenceHandle namespaceRefHandle)
         {
             NamespaceReference namespaceRef = _metadataReader.GetNamespaceReference(namespaceRefHandle);
-            if (!namespaceRef.ParentScopeOrNamespace.IsNil &&
-                namespaceRef.ParentScopeOrNamespace.HandleType == HandleType.NamespaceReference)
-            {
-                int charsWritten = _outputBuilder.Length;
-                EmitNamespaceReferenceName(namespaceRef.ParentScopeOrNamespace.ToNamespaceReferenceHandle(_metadataReader));
-                if (_outputBuilder.Length - charsWritten > 0)
-                    _outputBuilder.Append('.');
-            }
             EmitString(namespaceRef.Name);
         }
 
         private void EmitNamespaceDefinitionName(NamespaceDefinitionHandle namespaceDefHandle)
         {
             NamespaceDefinition namespaceDef = _metadataReader.GetNamespaceDefinition(namespaceDefHandle);
-            if (!namespaceDef.ParentScopeOrNamespace.IsNil &&
-                namespaceDef.ParentScopeOrNamespace.HandleType == HandleType.NamespaceDefinition)
-            {
-                int charsWritten = _outputBuilder.Length;
-                EmitNamespaceDefinitionName(namespaceDef.ParentScopeOrNamespace.ToNamespaceDefinitionHandle(_metadataReader));
-                if (_outputBuilder.Length - charsWritten > 0)
-                    _outputBuilder.Append('.');
-            }
             EmitString(namespaceDef.Name);
         }
 
@@ -289,12 +273,12 @@ namespace Internal.StackTraceMetadata
         private void EmitTypeReferenceName(TypeReferenceHandle typeRefHandle, Flags flags)
         {
             TypeReference typeRef = _metadataReader.GetTypeReference(typeRefHandle);
-            if (!typeRef.ParentNamespaceOrType.IsNil)
+            if (!typeRef.NamespaceOrEnclosingType.IsNil)
             {
-                if (typeRef.ParentNamespaceOrType.HandleType != HandleType.NamespaceReference)
+                if (typeRef.NamespaceOrEnclosingType.HandleType != HandleType.NamespaceReference)
                 {
                     // Nested type
-                    EmitTypeName(typeRef.ParentNamespaceOrType, flags);
+                    EmitTypeName(typeRef.NamespaceOrEnclosingType, flags);
                     if ((flags & Flags.ReflectionFormat) != 0)
                         _outputBuilder.Append('+');
                     else
@@ -303,7 +287,7 @@ namespace Internal.StackTraceMetadata
                 else if ((flags & Flags.NamespaceQualify) != 0)
                 {
                     int charsWritten = _outputBuilder.Length;
-                    EmitNamespaceReferenceName(typeRef.ParentNamespaceOrType.ToNamespaceReferenceHandle(_metadataReader));
+                    EmitNamespaceReferenceName(typeRef.NamespaceOrEnclosingType.ToNamespaceReferenceHandle(_metadataReader));
                     if (_outputBuilder.Length - charsWritten > 0)
                         _outputBuilder.Append('.');
                 }
@@ -314,19 +298,20 @@ namespace Internal.StackTraceMetadata
         private void EmitTypeDefinitionName(TypeDefinitionHandle typeDefHandle, Flags flags)
         {
             TypeDefinition typeDef = _metadataReader.GetTypeDefinition(typeDefHandle);
-            if (!typeDef.EnclosingType.IsNil)
+            Handle namespaceOrEnclosingType = typeDef.NamespaceOrEnclosingType;
+            if (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
             {
                 // Nested type
-                EmitTypeName(typeDef.EnclosingType, flags);
+                EmitTypeName(namespaceOrEnclosingType, flags);
                 if ((flags & Flags.ReflectionFormat) != 0)
                     _outputBuilder.Append('+');
                 else
                     _outputBuilder.Append('.');
             }
-            else if ((flags & Flags.NamespaceQualify) != 0)
+            else if (namespaceOrEnclosingType.HandleType == HandleType.NamespaceDefinition && (flags & Flags.NamespaceQualify) != 0)
             {
                 int charsWritten = _outputBuilder.Length;
-                EmitNamespaceDefinitionName(typeDef.NamespaceDefinition);
+                EmitNamespaceDefinitionName(namespaceOrEnclosingType.ToNamespaceDefinitionHandle(_metadataReader));
                 if (_outputBuilder.Length - charsWritten > 0)
                     _outputBuilder.Append('.');
             }

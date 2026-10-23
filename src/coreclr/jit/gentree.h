@@ -508,7 +508,6 @@ enum GenTreeFlags : unsigned
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
 
     GTF_BOX_CLONED              = 0x40000000, // GT_BOX -- this box and its operand has been cloned, cannot assume it to be single-use anymore
-    GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
 
     GTF_QMARK_EARLY_EXPAND      = 0x01000000, // GT_QMARK -- early expansion of the QMARK node is required
 
@@ -528,12 +527,6 @@ enum GenTreeFlags : unsigned
     GTF_DIV_MOD_NO_BY_ZERO      = 0x20000000, // GT_DIV, GT_MOD -- Div or mod definitely does not divide-by-zero.
 
     GTF_DIV_MOD_NO_OVERFLOW     = 0x40000000, // GT_DIV, GT_MOD -- Div or mod definitely does not overflow.
-
-    GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
-
-    GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
-
-    GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_ALLOCOBJ_EMPTY_STATIC = 0x80000000, // GT_ALLOCOBJ -- allocation site is part of an empty static pattern
 
@@ -609,7 +602,6 @@ enum GenTreeDebugFlags : unsigned short
 
     GTF_DEBUG_NODE_MASK         = 0x003E, // These flags are all node (rather than operation) properties.
 
-    GTF_DEBUG_VAR_CSE_REF       = 0x8000, // GT_LCL_VAR -- This is a CSE LCL_VAR node
     GTF_DEBUG_CAST_DONT_FOLD    = 0x4000, // GT_CAST    -- Try to prevent this cast from being folded
 };
 
@@ -3346,7 +3338,7 @@ struct GenTreeIntConCommon : public GenTree
 #endif
     }
 
-    bool ImmedValNeedsReloc(Compiler* comp);
+    bool ImmedValNeedsReloc(Compiler* comp) const;
     bool ImmedValCanBeFolded(Compiler* comp, genTreeOps op);
 
 #if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
@@ -4404,7 +4396,6 @@ enum GenTreeCallFlags : unsigned int
                                                      // know when these flags are set.
 
     GTF_CALL_M_DOES_NOT_RETURN         = 0x00002000, // call does not return
-    GTF_CALL_M_STACK_ARRAY             = 0x00004000, // this call is a new array helper for a stack allocated array.
     GTF_CALL_M_FAT_POINTER_CHECK       = 0x00008000, // NativeAOT managed calli needs transformation, that checks
                                                      // special bit in calli address. If it is set, then it is necessary
                                                      // to restore real function address and load hidden argument
@@ -5433,7 +5424,8 @@ struct GenTreeCall final : public GenTree
     bool IsGenericVirtual(Compiler* compiler) const
     {
         return (gtCallType == CT_INDIRECT && (gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                                              gtControlExpr->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT)
+                                              gtControlExpr->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT) ||
+                                              gtControlExpr->IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT)
 #ifdef FEATURE_READYTORUN
                                               || gtControlExpr->IsHelperCall(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
 #endif
@@ -6944,15 +6936,18 @@ struct GenTreeVecCon : public GenTree
     static unsigned ElementCount(unsigned simdSize, var_types simdBaseType);
 
     template <typename simdTypename>
-    static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simdTypename& simdVal)
+    static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node,
+                                            simdTypename&       simdVal,
+                                            simdmask_t*         cnsMask = nullptr)
     {
         NamedIntrinsic intrinsic    = node->GetHWIntrinsicId();
         var_types      simdType     = node->TypeGet();
         var_types      simdBaseType = node->GetSimdBaseType();
         unsigned       simdSize     = node->GetSimdSize();
 
-        size_t argCnt    = node->GetOperandCount();
-        size_t cnsArgCnt = 0;
+        size_t     argCnt    = node->GetOperandCount();
+        size_t     cnsArgCnt = 0;
+        simdmask_t mask      = {};
 
         switch (intrinsic)
         {
@@ -6967,6 +6962,7 @@ struct GenTreeVecCon : public GenTree
                 if ((argCnt == 1) && HandleArgForHWIntrinsicCreate<simdTypename>(node->Op(1), 0, simdVal, simdBaseType))
                 {
                     // CreateScalar leaves the upper bits as zero
+                    mask.u64[0] |= 1;
 
                     if (intrinsic != NI_Vector_CreateScalar)
                     {
@@ -6974,6 +6970,7 @@ struct GenTreeVecCon : public GenTree
                         for (unsigned i = 1; i < ElementCount(simdSize, simdBaseType); i++)
                         {
                             HandleArgForHWIntrinsicCreate<simdTypename>(node->Op(1), i, simdVal, simdBaseType);
+                            mask.u64[0] |= (1ULL << i);
                         }
                     }
 
@@ -6985,17 +6982,27 @@ struct GenTreeVecCon : public GenTree
                     {
                         if (HandleArgForHWIntrinsicCreate<simdTypename>(node->Op(i), i - 1, simdVal, simdBaseType))
                         {
+                            mask.u64[0] |= (1ULL << (i - 1));
                             cnsArgCnt++;
                         }
                     }
                 }
 
                 assert((argCnt == 1) || (argCnt == ElementCount(simdSize, simdBaseType)));
+
+                if (cnsMask != nullptr)
+                {
+                    *cnsMask = mask;
+                }
                 return argCnt == cnsArgCnt;
             }
 
             default:
             {
+                if (cnsMask != nullptr)
+                {
+                    *cnsMask = mask;
+                }
                 return false;
             }
         }
@@ -10072,7 +10079,7 @@ inline uint64_t GenTree::GetIntegralVectorConstElement(size_t index, var_types s
 inline bool GenTree::IsBoxedValue()
 {
     assert(gtOper != GT_BOX || AsBox()->BoxOp() != nullptr);
-    return (OperIs(GT_BOX)) && (gtFlags & GTF_BOX_VALUE);
+    return OperIs(GT_BOX);
 }
 
 inline GenTree* GenTree::gtGetOp1() const

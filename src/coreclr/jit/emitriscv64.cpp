@@ -1865,7 +1865,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         if (doEmit)
         {
             assert(!emitGeneratingPrologOrFuncletProlog() && !emitGeneratingEpilogOrFuncletEpilog());
-            auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
+            auto constAddr = emitDataConst(&originalImm, sizeof(originalImm), sizeof(originalImm), TYP_LONG);
             emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, m_compiler->eeFindJitDataOffs(constAddr));
         }
         return -1;

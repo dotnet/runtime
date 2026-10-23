@@ -1,5 +1,5 @@
 <Project>
-    <Import Project="..\Directory.Build.props" />
+    <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..\'))" />
 
     <PropertyGroup>
       <!-- Source-build and bootstrap NativeAOT publishing on community platforms require toolchain assets that are not in the released SDK. -->

@@ -515,14 +515,14 @@ namespace System.Runtime.Serialization
                 xmlReader.Read();
                 xmlReader.MoveToContent();
             }
-            if (xmlDataContract.UnderlyingType == Globals.TypeOfXmlElement)
+            if (xmlDataContract.UnderlyingType == typeof(XmlElement))
             {
                 if (!xmlReader.IsStartElement())
                     throw CreateUnexpectedStateException(XmlNodeType.Element, xmlReader);
                 XmlDocument xmlDoc = new XmlDocument();
                 obj = (XmlElement?)xmlDoc.ReadNode(xmlSerializableReader);
             }
-            else if (xmlDataContract.UnderlyingType == Globals.TypeOfXmlNodeArray)
+            else if (xmlDataContract.UnderlyingType == typeof(XmlNode[]))
             {
                 obj = XmlSerializableServices.ReadNodes(xmlSerializableReader);
             }
@@ -574,7 +574,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    value = InternalDeserialize(xmlReader, Globals.TypeOfObject, name, string.Empty);
+                    value = InternalDeserialize(xmlReader, typeof(object), name, string.Empty);
                 }
 
                 serInfo.AddValue(name, value);
@@ -733,7 +733,7 @@ namespace System.Runtime.Serialization
                 case XmlNodeType.EndElement:
                     {
                         // NOTE: cannot distinguish between empty class or IXmlSerializable and typeof(object)
-                        IDataNode objNode = ReadUnknownPrimitiveData(xmlReader, Globals.TypeOfObject, dataContractName, dataContractNamespace);
+                        IDataNode objNode = ReadUnknownPrimitiveData(xmlReader, typeof(object), dataContractName, dataContractNamespace);
                         xmlReader.ReadEndElement();
                         objNode.IsFinalValue = false;
                         return objNode;
@@ -746,7 +746,7 @@ namespace System.Runtime.Serialization
         protected virtual IDataNode ReadPrimitiveExtensionDataValue(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
         {
             Type valueType = xmlReader.ValueType;
-            if (valueType == Globals.TypeOfString)
+            if (valueType == typeof(string))
             {
                 // NOTE: cannot distinguish other primitives from string (default XmlReader ValueType)
                 IDataNode stringNode = new DataNode<object>(xmlReader.ReadContentAsString());

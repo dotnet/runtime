@@ -18,6 +18,22 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
+    /// <summary>
+    /// Specifies the debug information emitted for WebAssembly ReadyToRun images.
+    /// </summary>
+    [Flags]
+    public enum WasmDebugInfo
+    {
+        /// <summary>Do not emit WebAssembly debug information.</summary>
+        None = 0,
+        /// <summary>Emit the standard WebAssembly function name section.</summary>
+        NameSection = 1,
+        /// <summary>Emit an Emscripten-compatible function symbol map sidecar.</summary>
+        SymbolMap = 2,
+        /// <summary>Emit all supported WebAssembly debug information.</summary>
+        All = NameSection | SymbolMap,
+    }
+
     public sealed class ReadyToRunCodegenCompilationBuilder : CompilationBuilder
     {
         private static bool _isJitInitialized = false;
@@ -43,6 +59,7 @@ namespace ILCompiler
         private bool _verifyTypeAndFieldLayout;
         private bool _hotColdSplitting;
         private bool _verifyGCModeTransitions;
+        private WasmDebugInfo _wasmDebugInfo = WasmDebugInfo.NameSection;
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
@@ -206,6 +223,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseWasmDebugInfo(WasmDebugInfo wasmDebugInfo)
+        {
+            _wasmDebugInfo = wasmDebugInfo;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseHotColdSplitting(bool hotColdSplitting)
         {
             _hotColdSplitting = hotColdSplitting;
@@ -283,6 +306,10 @@ namespace ILCompiler
             if (_verifyGCModeTransitions)
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions;
+            }
+            if (_r2rContext.TargetIsSingleThreaded)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SingleThreaded;
             }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
@@ -385,6 +412,7 @@ namespace ILCompiler
                 _customPESectionAlignment,
                 _verifyTypeAndFieldLayout,
                 _format,
+                _wasmDebugInfo,
                 _wasmNativeBuildId);
         }
     }

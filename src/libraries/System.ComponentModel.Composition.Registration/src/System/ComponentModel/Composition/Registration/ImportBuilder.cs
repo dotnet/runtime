@@ -8,7 +8,6 @@ namespace System.ComponentModel.Composition.Registration
 {
     public sealed class ImportBuilder
     {
-        private static readonly Type s_stringType = typeof(string);
         private string _contractName;
         private Type _contractType;
         private bool _asMany;
@@ -73,7 +72,7 @@ namespace System.ComponentModel.Composition.Registration
             Attribute importAttribute;
 
             // Infer from Type when not explicitly set.
-            bool asMany = (!_asManySpecified) ? type != s_stringType && typeof(IEnumerable).IsAssignableFrom(type) : _asMany;
+            bool asMany = (!_asManySpecified) ? type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type) : _asMany;
             if (!asMany)
             {
                 importAttribute = new ImportAttribute(_contractName, _contractType)

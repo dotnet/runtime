@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -13,15 +12,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool EqualsOrdinalIgnoreCaseUtf8(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value)
         {
-            // For UTF-8 ist is possible for two spans of different byte length
-            // to compare as equal under an OrdinalIgnoreCase comparison.
-
-            if ((span.Length | value.Length) == 0)  // span.Length == value.Length == 0
-            {
-                return true;
-            }
-
-            return Ordinal.EqualsIgnoreCaseUtf8(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(value), value.Length);
+            return Ordinal.EqualsIgnoreCaseUtf8(span, value);
         }
 
         /// <summary>

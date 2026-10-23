@@ -29,6 +29,7 @@ public unsafe class LoaderTests
             [DataType.EEConfig] = TargetTestHelpers.CreateTypeInfo(loader.EEConfigLayout),
             [DataType.CGrowableSymbolStream] = TargetTestHelpers.CreateTypeInfo(loader.CGrowableSymbolStreamLayout),
             [DataType.ModuleLookupMap] = TargetTestHelpers.CreateTypeInfo(loader.ModuleLookupMapLayout),
+            [DataType.DynamicILBlobTable] = TargetTestHelpers.CreateTypeInfo(loader.DynamicILBlobTableLayout),
         };
 
     private static ILoader CreateLoaderContract(MockTarget.Architecture arch, Action<MockLoaderBuilder> configure)
@@ -58,6 +59,86 @@ public unsafe class LoaderTests
         targetBuilder.AddContract<ILoader>(version: "c1");
         var target = targetBuilder.Build();
         return (target.Contracts.Loader, target);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDynamicILAndILHeader_TokenBackedStorageWithoutPEImage(MockTarget.Architecture arch)
+    {
+        const uint MethodToken = 0x06000001;
+        const uint FieldToken = 0x04000001;
+        const uint MissingMethodToken = 0x06000006;
+        const uint MissingFieldToken = 0x04000006;
+        TargetPointer methodIL = new(0x0003_0000);
+        TargetPointer fieldData = new(0x0004_0000);
+        TargetPointer moduleAddress = default;
+        Mock<IEcmaMetadata> metadata = new(MockBehavior.Strict);
+
+        (ILoader contract, TestPlaceholderTarget target) = CreateLoaderContractWithTarget(arch, (loader, targetBuilder) =>
+        {
+            MockLoaderModule module = loader.AddModule(flags: (uint)ModuleFlags.ReflectionEmit);
+            moduleAddress = module.Address;
+
+            // Full tokens hash to buckets 0 and 2; the missing tokens probe past those occupied buckets.
+            loader.SetDynamicILBlobTable(module,
+                (FieldToken, fieldData.Value), default, (MethodToken, methodIL.Value), default, default);
+            loader.Builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+            {
+                Name = "Dynamic method IL",
+                Address = methodIL.Value,
+                Data = [0x06, 0x2a], // Tiny method header followed by ret.
+            });
+            loader.Builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+            {
+                Name = "Dynamic RVA field data",
+                Address = fieldData.Value,
+                Data = [0x12, 0x34, 0x56, 0x78],
+            });
+            targetBuilder
+                .AddContract<ISHash>(version: "c1")
+                .AddMockContract(metadata);
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddress);
+        Assert.Equal(TargetPointer.Null, contract.GetPEAssembly(handle));
+        Assert.Equal(methodIL, contract.GetDynamicIL(handle, MethodToken));
+        Assert.Equal(fieldData, contract.GetDynamicIL(handle, FieldToken));
+        Assert.Equal(TargetPointer.Null, contract.GetDynamicIL(handle, MissingMethodToken));
+        Assert.Equal(TargetPointer.Null, contract.GetDynamicIL(handle, MissingFieldToken));
+        Assert.Equal(methodIL, contract.GetILHeader(handle, MethodToken));
+
+        IXCLRDataMethodDefinition methodDefinition = new ClrDataMethodDefinition(
+            target, moduleAddress, MethodToken, legacyImpl: null, new());
+        ClrDataAddress entryAddress;
+        Assert.Equal(System.HResults.S_OK, methodDefinition.GetRepresentativeEntryAddress(&entryAddress));
+        Assert.Equal(new TargetPointer(methodIL + 1).ToClrDataAddress(target), entryAddress);
+        metadata.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDynamicIL_NullAndEmptyTablesReturnNull(MockTarget.Architecture arch)
+    {
+        const uint MethodToken = 0x06000001;
+        const uint FieldToken = 0x04000001;
+        TargetPointer uninitializedModuleAddress = default;
+        TargetPointer emptyModuleAddress = default;
+
+        (ILoader contract, _) = CreateLoaderContractWithTarget(arch, (loader, targetBuilder) =>
+        {
+            uninitializedModuleAddress = loader.AddModule(flags: (uint)ModuleFlags.ReflectionEmit).Address;
+            MockLoaderModule emptyModule = loader.AddModule(flags: (uint)ModuleFlags.ReflectionEmit);
+            loader.SetDynamicILBlobTable(emptyModule);
+            emptyModuleAddress = emptyModule.Address;
+            targetBuilder.AddContract<ISHash>(version: "c1");
+        });
+
+        foreach (TargetPointer moduleAddress in new[] { uninitializedModuleAddress, emptyModuleAddress })
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddress);
+            Assert.Equal(TargetPointer.Null, contract.GetDynamicIL(handle, MethodToken));
+            Assert.Equal(TargetPointer.Null, contract.GetDynamicIL(handle, FieldToken));
+        }
     }
 
     [Theory]
@@ -777,6 +858,95 @@ public unsafe class LoaderTests
         // RVA in second section: offset = (0x4500 - 0x4000) + 0x2200 = 0x2700
         Assert.Equal((TargetPointer)(imageBase + 0x2700u), contract.GetILAddr(peAssemblyAddr, 0x4500));
     }
+
+    public static IEnumerable<object[]> GetModuleHandles_ProfilerNotifiedData()
+    {
+        const AssemblyIterationFlags Loaded = AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution;
+        const AssemblyIterationFlags AvailableToProfilers = AssemblyIterationFlags.IncludeAvailableToProfilers | AssemblyIterationFlags.IncludeExecution;
+        foreach (object[] archData in new MockTarget.StdArch())
+        {
+            var arch = (MockTarget.Architecture)archData[0];
+            // Profiler notified, still loading: not a loaded assembly
+            yield return [arch, true, false, Loaded, false];
+            // Profiler notified, still loading: available to profilers
+            yield return [arch, true, false, AvailableToProfilers, true];
+            // Profiler notified, loaded: a loaded assembly
+            yield return [arch, true, true, Loaded, true];
+            // Profiler notified, loaded: available to profilers
+            yield return [arch, true, true, AvailableToProfilers, true];
+            // Not notified, still loading: not available to profilers
+            yield return [arch, false, false, AvailableToProfilers, false];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetModuleHandles_ProfilerNotifiedData))]
+    public void GetModuleHandles_ProfilerNotified(
+        MockTarget.Architecture arch,
+        bool profilerNotified,
+        bool isLoaded,
+        AssemblyIterationFlags iterationFlags,
+        bool expected)
+    {
+        const uint ProfilerNotified = 0x1; // ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED
+        TargetPointer appDomain = default;
+        TargetPointer moduleAddress = default;
+
+        (ILoader contract, _) = CreateLoaderContractWithTarget(arch, (loader, targetBuilder) =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            MockLoaderAssembly assembly = loader.GetAssembly(module);
+            assembly.NotifyFlags = profilerNotified ? ProfilerNotified : 0;
+            assembly.IsLoaded = isLoaded;
+            moduleAddress = module.Address;
+            appDomain = loader.AddAppDomain(module);
+            targetBuilder.AddTypes(CreateAppDomainTypes(loader));
+        });
+
+        List<TargetPointer> modules = [];
+        foreach (Contracts.ModuleHandle handle in contract.GetModuleHandles(appDomain, iterationFlags))
+        {
+            modules.Add(handle.Address);
+        }
+
+        TargetPointer[] expectedModules = expected ? [moduleAddress] : [];
+        Assert.Equal(expectedModules, modules);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetModuleHandles_SkipsEmptySlots(MockTarget.Architecture arch)
+    {
+        TargetPointer appDomain = default;
+        TargetPointer[] expectedModules = [];
+
+        (ILoader contract, _) = CreateLoaderContractWithTarget(arch, (loader, targetBuilder) =>
+        {
+            MockLoaderModule first = loader.AddModule();
+            MockLoaderModule second = loader.AddModule();
+            loader.GetAssembly(first).IsLoaded = true;
+            loader.GetAssembly(second).IsLoaded = true;
+            expectedModules = [first.Address, second.Address];
+            appDomain = loader.AddAppDomain(null, first, null, second, null);
+            targetBuilder.AddTypes(CreateAppDomainTypes(loader));
+        });
+
+        List<TargetPointer> modules = [];
+        foreach (Contracts.ModuleHandle handle in contract.GetModuleHandles(appDomain, AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+        {
+            modules.Add(handle.Address);
+        }
+
+        Assert.Equal(expectedModules, modules);
+    }
+
+    private static Dictionary<DataType, Target.TypeInfo> CreateAppDomainTypes(MockLoaderBuilder loader)
+        => new()
+        {
+            [DataType.AppDomain] = TargetTestHelpers.CreateTypeInfo(loader.AppDomainLayout),
+            [DataType.ArrayListBase] = TargetTestHelpers.CreateTypeInfo(loader.ArrayListBaseLayout),
+            [DataType.ArrayListBlock] = TargetTestHelpers.CreateTypeInfo(loader.ArrayListBlockLayout),
+        };
 
     public static IEnumerable<object[]> IsModuleMappedData()
     {
