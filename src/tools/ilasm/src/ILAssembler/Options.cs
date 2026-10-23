@@ -114,8 +114,9 @@ namespace ILAssembler
         /// that disables JIT optimization (see <see cref="DebugMode"/> for the other settings).
         /// </summary>
         /// <remarks>
-        /// The <c>DebuggableAttribute</c> is added only when the source declares an assembly (<c>.assembly</c>);
-        /// a module without one gets no attribute.
+        /// For a netmodule, the assembly attribute is attached to
+        /// <c>System.Runtime.CompilerServices.AssemblyAttributesGoHere</c> for the assembly linker.
+        /// A v1 <c>mscorlib</c> target uses the legacy two-Boolean constructor.
         /// The PDB is returned in <see cref="CompilationResult.PortablePdb"/>, not embedded in the image.
         /// The image references it through its debug directory; see <see cref="PdbFilePath"/>.
         /// </remarks>
@@ -138,8 +139,9 @@ namespace ILAssembler
         /// </summary>
         /// <remarks>
         /// A non-null value implies <see cref="Debug"/>: it produces a Portable PDB and adds a
-        /// <c>DebuggableAttribute</c> with the selected debugging modes, likewise only when the source
-        /// declares an assembly.
+        /// <c>DebuggableAttribute</c> with the selected debugging modes, including for netmodules.
+        /// The legacy two-Boolean constructor represents both the default and <c>IMPL</c> modes as
+        /// tracking enabled and optimization disabled.
         /// </remarks>
         public DebugMode? DebugMode { get; set; }
 
