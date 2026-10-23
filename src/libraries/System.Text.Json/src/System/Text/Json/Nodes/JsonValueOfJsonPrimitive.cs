@@ -350,7 +350,7 @@ namespace System.Text.Json.Nodes
     {
         internal const int MaxLength = 16;
 
-        private readonly Inline16ByteArray _value;
+        private readonly InlineArray16<byte> _value;
         private readonly byte _length;
 
         internal JsonValueOfJsonNumberInline16(ReadOnlySpan<byte> number, JsonNodeOptions? options)
@@ -395,12 +395,6 @@ namespace System.Text.Json.Nodes
             ArgumentNullException.ThrowIfNull(writer);
 
             writer.WriteNumberValue(Value);
-        }
-
-        [InlineArray(MaxLength)]
-        private struct Inline16ByteArray
-        {
-            private byte _element0;
         }
     }
 #endif
