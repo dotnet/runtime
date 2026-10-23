@@ -338,6 +338,38 @@ try {
             break;
         case "AppSettingsTest":
             exports.AppSettingsTest.Run();
+            const settingsBytes = INTERNAL.getAppSettingsBytes("appsettings.json");
+            const firstSettingsByte = settingsBytes[0];
+            settingsBytes[0] ^= 0xff;
+            if (INTERNAL.getAppSettingsBytes("appsettings.json")[0] !== firstSettingsByte) {
+                throw new Error("Mutating returned appsettings bytes changed VFS contents");
+            }
+            const originalAppsettings = config.appsettings;
+            config.appsettings = [...originalAppsettings].reverse().concat(originalAppsettings);
+            const selectedFiles = INTERNAL.getAppSettingsFiles();
+            const expectedFiles = ["appsettings.json", `appsettings.${config.applicationEnvironment}.json`]
+                .filter(name => originalAppsettings.some(url => url.substring(url.lastIndexOf("/") + 1) === name));
+            if (JSON.stringify(selectedFiles) !== JSON.stringify(expectedFiles)) {
+                throw new Error(`Unexpected appsettings selection: ${JSON.stringify(selectedFiles)}`);
+            }
+            selectedFiles.length = 0;
+            if (JSON.stringify(INTERNAL.getAppSettingsFiles()) !== JSON.stringify(expectedFiles)) {
+                throw new Error("Mutating the returned appsettings list changed subsequent results");
+            }
+            config.appsettings = originalAppsettings.filter(url => !url.endsWith("/appsettings.json"));
+            if (JSON.stringify(INTERNAL.getAppSettingsFiles()) !== JSON.stringify(expectedFiles.slice(1))) {
+                throw new Error("Unexpected appsettings selection without base settings");
+            }
+            config.appsettings = [];
+            if (INTERNAL.getAppSettingsFiles().length !== 0) {
+                throw new Error("Empty appsettings should return an empty file list");
+            }
+            delete config.appsettings;
+            if (INTERNAL.getAppSettingsFiles().length !== 0) {
+                throw new Error("Absent appsettings should return an empty file list");
+            }
+            config.appsettings = originalAppsettings;
+            testOutput("Appsettings file API passed");
             exit(0);
             break;
         case "FilesToIncludeInFileSystemTest":

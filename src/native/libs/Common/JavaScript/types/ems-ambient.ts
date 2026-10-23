@@ -45,6 +45,7 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _SystemInteropJS_CallJSExport: (methodHandle: CSFnHandle, args: JSMarshalerArguments) => void;
 
     FS: {
+        readFile: (path: string) => Uint8Array;
         createPath: (parent: string, path: string, canRead?: boolean, canWrite?: boolean) => string;
         createDataFile: (parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean) => string;
         chdir: (path: string) => void;

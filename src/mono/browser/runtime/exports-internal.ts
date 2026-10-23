@@ -22,11 +22,15 @@ import { forceDisposeProxies, get_proxy_counts } from "./gc-handles";
 import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
 import { monoStringToStringUnsafe } from "./strings";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
+import { getAppSettingsFiles, getAppSettingsBytes } from "../../../native/libs/Common/JavaScript/appsettings";
 
 import { mono_wasm_dump_threads } from "./pthreads";
 
 export function export_internal (): any {
     return {
+        getAppSettingsFiles: () => getAppSettingsFiles(runtimeHelpers.config),
+        getAppSettingsBytes: (fileName: string) => getAppSettingsBytes(Module.FS, fileName),
+
         // tests
         mono_wasm_exit: (exit_code: number) => {
             Module.err("early exit " + exit_code);

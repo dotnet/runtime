@@ -46,6 +46,7 @@ public class AppSettingsTests : WasmTemplateTestsBase
             yield return new object?[] { false, "FromMSBuild", "Production", "Production" };
 
         yield return new object?[] { true, "FromMSBuild", "Development", "Development" };
+        yield return new object?[] { true, null, "Staging", "Staging" };
     }
 
     [Theory, TestCategory("bundler-friendly")]
@@ -74,5 +75,11 @@ public class AppSettingsTests : WasmTemplateTestsBase
         Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.json' exists 'True'"));
         Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.Development.json' exists '{expectedApplicationEnvironment == "Development"}'"));
         Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.Production.json' exists '{expectedApplicationEnvironment == "Production"}'"));
+        string expectedFiles = expectedApplicationEnvironment is "Development" or "Production"
+            ? $"appsettings.json,appsettings.{expectedApplicationEnvironment}.json"
+            : "appsettings.json";
+        Assert.Contains(result.TestOutput, m => m.Contains($"Appsettings files: {expectedFiles}"));
+        Assert.Contains(result.TestOutput, m => m.Contains("Appsettings byte API passed"));
+        Assert.Contains(result.TestOutput, m => m.Contains("Appsettings file API passed"));
     }
 }

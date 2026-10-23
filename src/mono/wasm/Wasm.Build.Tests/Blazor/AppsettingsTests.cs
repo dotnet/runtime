@@ -26,7 +26,10 @@ public class AppsettingsTests : BlazorWasmTestBase
         ProjectInfo info = CreateWasmTemplateProject(Template.BlazorWasm, config, aot: false, "blazor");
         UpdateHomePage();
         string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
-        File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.json"), $"{{ \"Id\": \"{info.ProjectName}\" }}");
+        string settings = $"{{ \"Id\": \"{info.ProjectName}\" }}";
+        File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.json"), settings);
+        File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.Development.json"), "{}");
+        File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.Production.json"), "{}");
         UpdateFile("Program.cs", new Dictionary<string, string>
         {
             {
@@ -49,6 +52,12 @@ public class AppsettingsTests : BlazorWasmTestBase
                     existsChecked = true;
                 else if (msg.Contains($"appSettings Content '{{ \"Id\": \"{info.ProjectName}\" }}'"))
                     contentChecked = true;
+            },
+            Test: async page => {
+                string[] files = await page.EvaluateAsync<string[]>("() => getDotnetRuntime(0).INTERNAL.getAppSettingsFiles()");
+                Assert.Equal(new[] { "appsettings.json", "appsettings.Development.json" }, files);
+                string content = await page.EvaluateAsync<string>("() => new TextDecoder().decode(getDotnetRuntime(0).INTERNAL.getAppSettingsBytes('appsettings.json'))");
+                Assert.Equal(settings, content);
             }));
 
         Assert.True(existsChecked, "File '/appsettings.json' wasn't found");
