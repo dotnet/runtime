@@ -19,12 +19,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         internal readonly MethodDesc CallingMethod;
 
+        private readonly bool _sortLast;
+
         public Signature Signature => ImportSignature.Target;
 
-        public Import(ImportSectionNode tableNode, Signature importSignature, MethodDesc callingMethod = null)
+        public Import(ImportSectionNode tableNode, Signature importSignature, MethodDesc callingMethod = null, bool sortLast = false)
         {
             Table = tableNode;
             CallingMethod = callingMethod;
+            _sortLast = sortLast;
             ImportSignature = new SignatureEmbeddedPointerIndirectionNode(this, importSignature);
         }
 
@@ -73,7 +76,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             Import otherNode = (Import)other;
-            int result = comparer.Compare(CallingMethod, otherNode.CallingMethod);
+            int result = _sortLast.CompareTo(otherNode._sortLast);
+            if (result != 0)
+                return result;
+
+            result = comparer.Compare(CallingMethod, otherNode.CallingMethod);
             if (result != 0)
                 return result;
 

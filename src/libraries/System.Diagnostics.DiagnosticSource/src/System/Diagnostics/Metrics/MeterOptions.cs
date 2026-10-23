@@ -18,7 +18,11 @@ namespace System.Diagnostics.Metrics
         public string Name
         {
             get => _name;
-            set => _name = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _name = value;
+            }
         }
 
         /// <summary>

@@ -167,6 +167,7 @@ bool        IsRedundantMov(
 bool EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src);
 
 bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs);
+bool TryEmitLclAddrAsMov(emitAttr attr, regNumber ireg, int varx, int offs);
 
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);

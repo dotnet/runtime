@@ -8,6 +8,10 @@
     <!-- <WasmXHarnessMonoArgs>- -setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug</WasmXHarnessMonoArgs> -->
     <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
 
+    <!-- Override the imported runonly defaults so Helix selects this browser test. -->
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+
     <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
     <IgnoreForCI Condition="'$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">true</IgnoreForCI>
   </PropertyGroup>

@@ -30,6 +30,231 @@ public class R2RTestSuites
         _output = output;
     }
 
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, true)]
+    public void IntrinsicTypeHandlesAreModuleEager(bool composite, bool optimize, bool includeCoreLib)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(IntrinsicTypeHandlesAreModuleEager),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+        List<Crossgen2Option> options = new();
+        if (composite)
+            options.Add(Crossgen2Option.Composite);
+        if (optimize)
+            options.Add(Crossgen2Option.Optimize);
+
+        List<string> additionalArgs = new();
+        if (!optimize)
+            additionalArgs.Add("--optimize-disabled");
+        if (includeCoreLib)
+            additionalArgs.AddRange(["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath]);
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(IntrinsicTypeHandlesAreModuleEager),
+            [
+                new(nameof(IntrinsicTypeHandlesAreModuleEager), [new CrossgenAssembly(input)])
+                {
+                    Options = options,
+                    AdditionalArgs = additionalArgs,
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            string[] types =
+            [
+                "void", "bool", "char", "sbyte", "byte", "short", "ushort", "int", "uint",
+                "long", "ulong", "float", "double", "IntPtr", "UIntPtr", "string", "object",
+                "typedbyref",
+            ];
+            string[] arrayTypes =
+            [
+                "bool[]", "int[]", "string[]", "UIntPtr[]",
+            ];
+            string[] lazyArrayTypes =
+            [
+                "int[...,...]", "int[][]", "object[...,...,...]", "int[][...,...]",
+                "int[...,...][]",
+            ];
+            string[] tokenDependentTypes =
+            [
+                "Webcil.WasmWebcilModule+GenericTokenValue",
+                "Webcil.WasmWebcilModule+LdtokenType",
+                "System.DayOfWeek", "System.Decimal", "System.Half", "System.Nullable`1<int>",
+                "Webcil.WasmWebcilModule+LdtokenHolder`1<int>",
+                "Webcil.WasmWebcilModule+LdtokenType[]",
+                "Webcil.WasmWebcilModule+GenericTokenValue[][...,...]",
+            ];
+            SignatureFormattingOptions formatting = new();
+
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            ReadyToRunMethod intrinsic = Assert.Single(methods,
+                method => method.SignatureString.Contains(".ReadIntrinsicTypeToken(", StringComparison.Ordinal));
+            ReadyToRunMethod intrinsicArray = Assert.Single(methods,
+                method => method.SignatureString.Contains(".ReadIntrinsicArrayTypeToken(", StringComparison.Ordinal));
+            ReadyToRunMethod tokenDependent = Assert.Single(methods,
+                method => method.SignatureString.Contains(".ReadTokenDependentTypeToken(", StringComparison.Ordinal));
+
+            foreach (string type in types)
+            {
+                ValidateTypeHandle(type, intrinsic, eager: true);
+            }
+            foreach (string type in arrayTypes)
+            {
+                ValidateTypeHandle(type, intrinsicArray, eager: includeCoreLib);
+            }
+            foreach (string type in lazyArrayTypes)
+            {
+                ValidateTypeHandle(type, intrinsicArray, eager: false);
+            }
+            foreach (string type in tokenDependentTypes)
+            {
+                ValidateTypeHandle(type, tokenDependent, eager: false);
+            }
+
+            void ValidateTypeHandle(string type, ReadyToRunMethod method, bool eager)
+            {
+                ReadyToRunImportSection section = Assert.Single(reader.ImportSections,
+                    section => section.Entries.Any(entry =>
+                        entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                        entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)"));
+                Assert.Equal(eager ? ReadyToRunImportSectionFlags.Eager : (ReadyToRunImportSectionFlags)0,
+                    section.Flags & ReadyToRunImportSectionFlags.Eager);
+                Assert.Single(section.Entries, entry =>
+                    entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                    entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)");
+                Assert.Equal(eager ? 0 : 1, (method.Fixups ?? Array.Empty<FixupCell>()).Count(fixup =>
+                    fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                    fixup.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)"));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void StaticFieldIntrinsicsDoNotRequireStaticBaseFixups(bool composite, bool optimize)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(StaticFieldIntrinsicsDoNotRequireStaticBaseFixups),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+        List<Crossgen2Option> options = new();
+        if (composite)
+            options.Add(Crossgen2Option.Composite);
+        if (optimize)
+            options.Add(Crossgen2Option.Optimize);
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(StaticFieldIntrinsicsDoNotRequireStaticBaseFixups),
+            [
+                new(nameof(StaticFieldIntrinsicsDoNotRequireStaticBaseFixups), [new CrossgenAssembly(input)])
+                {
+                    Options = options,
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            SignatureFormattingOptions formatting = new();
+            foreach ((string suffix, string declaringType) in new[]
+            {
+                ("IntPtrZero", "IntPtr"),
+                ("UIntPtrZero", "UIntPtr"),
+                ("StringEmpty", "string"),
+                ("IsLittleEndian", "System.BitConverter"),
+            })
+            {
+                ReadyToRunMethod read = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".Read{suffix}(", StringComparison.Ordinal));
+                foreach (FixupCell fixup in read.Fixups ?? Array.Empty<FixupCell>())
+                {
+                    Assert.Equal(ReadyToRunFixupKind.StringHandle, fixup.Signature.FixupKind);
+                }
+
+                ReadyToRunMethod address = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".Address{suffix}(", StringComparison.Ordinal));
+                if (TestPaths.IsWasmTarget)
+                {
+                    IEnumerable<ReadyToRunSignature?> signatures =
+                        (address.Fixups ?? Array.Empty<FixupCell>()).Select(fixup => fixup.Signature)
+                        .Concat(reader.ImportSections
+                            .Where(section => (section.Flags & ReadyToRunImportSectionFlags.Eager) != 0)
+                            .SelectMany(section => section.Entries)
+                            .Select(entry => entry.Signature));
+                    Assert.Contains(signatures, signature =>
+                        signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                        signature.ToString(formatting) == $"{declaringType} (TYPE_HANDLE)");
+                }
+            }
+        }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsXArchTarget))]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void ManagedHelperEagerRegistration(int parallelism)
+    {
+        var input = new CompiledAssembly
+        {
+            AssemblyName = nameof(ManagedHelperEagerRegistration),
+            SourceResourceNames = ["ManagedHelpers/HelperCalls.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ManagedHelperEagerRegistration),
+            [
+                new(nameof(ManagedHelperEagerRegistration), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs =
+                    [
+                        "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath,
+                        "--parallelism", parallelism.ToString(),
+                    ],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "System.Threading.Thread", "PollGC", out string diagnostic), diagnostic);
+            var formattingOptions = new SignatureFormattingOptions();
+            var eagerHelperSignatures = new List<string>();
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                if ((section.Flags & ReadyToRunImportSectionFlags.Eager) == 0)
+                    continue;
+
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    if (entry.Signature?.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun)
+                    {
+                        eagerHelperSignatures.Add(entry.Signature.ToString(formattingOptions));
+                    }
+                }
+            }
+
+            Assert.Contains(eagerHelperSignatures, signature =>
+                signature.Contains("System.Threading.Thread.PollGC()", StringComparison.Ordinal));
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void BasicCrossModuleInlining()
     {
@@ -95,6 +320,105 @@ public class R2RTestSuites
         }
     }
 
+    [Fact]
+    public void StructConstrainedPrimitiveInstantiations()
+    {
+        var structConstrainedGenerics = new CompiledAssembly
+        {
+            AssemblyName = nameof(StructConstrainedPrimitiveInstantiations),
+            SourceResourceNames = ["PrimitiveInstantiations/StructConstrainedGenerics.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(StructConstrainedPrimitiveInstantiations),
+            [
+                new(nameof(StructConstrainedPrimitiveInstantiations), [new CrossgenAssembly(structConstrainedGenerics)])
+                {
+                    Options = [Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StructConstrainedGenerics", "StructConstrained", out diag, ["int"]), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StructConstrainedGenerics", "UnmanagedConstrained", out diag, ["int"]), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StructConstrainedBox`1<int>", "GetValueHashCode", out diag), diag);
+            Assert.True(R2RAssert.HasInlinedMethod(reader, "CallInlineableStructConstrained", "InlineableStructConstrained", out diag), diag);
+            Assert.True(R2RAssert.HasInlinedMethod(reader, "CallInlineableUnmanagedConstrained", "InlineableUnmanagedConstrained", out diag), diag);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CastFoldingRespectsVersionBubble(bool inputBubble)
+    {
+        var castFolding = new CompiledAssembly
+        {
+            AssemblyName = nameof(CastFoldingRespectsVersionBubble),
+            SourceResourceNames = ["CastFolding/CastFolding.cs"],
+        };
+
+        // With --input-bubble and no explicit bubble references, the framework is in the version bubble.
+        List<Crossgen2Option> options = inputBubble ? [Crossgen2Option.InputBubble, Crossgen2Option.Optimize] : [Crossgen2Option.Optimize];
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CastFoldingRespectsVersionBubble),
+            [
+                new(nameof(CastFoldingRespectsVersionBubble), [new CrossgenAssembly(castFolding)])
+                {
+                    Options = options,
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            // Box and isinst reference their types through NEW_OBJECT/IS_INSTANCE_OF imports
+            // or TYPE_HANDLE fixups depending on the target, so look for the type in any import.
+            var formattingOptions = new SignatureFormattingOptions();
+            var importedTypes = new HashSet<string>();
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    string? signature = entry.Signature?.ToString(formattingOptions);
+                    int kindStart = signature?.LastIndexOf(" (", StringComparison.Ordinal) ?? -1;
+                    if (kindStart > 0)
+                        importedTypes.Add(signature![..kindStart]);
+                }
+            }
+
+            string diagnostic = $"Imported types: [{string.Join(", ", importedTypes)}]";
+
+            // Value type casts to other non-interface types fold, along with their boxes.
+            Assert.False(importedTypes.Contains("char"), diagnostic);
+            Assert.False(importedTypes.Contains("byte"), diagnostic);
+            Assert.False(importedTypes.Contains("SourceStruct"), diagnostic);
+            Assert.False(importedTypes.Contains("TargetStruct"), diagnostic);
+
+            // Casts to interfaces fold only when every type in the hierarchy is in the version bubble,
+            // which includes System.Object and System.ValueType only with the framework in the bubble.
+            Assert.True(importedTypes.Contains("ControlStruct") != inputBubble, diagnostic);
+            Assert.True(importedTypes.Contains("INotImplemented") != inputBubble, diagnostic);
+            Assert.True(importedTypes.Contains("INotImplementedByClass") != inputBubble, diagnostic);
+
+            // Interfaces have no base type, so typeof(...) assignability checks between them fold whenever
+            // the target and every inherited interface are in the version bubble, including for shared
+            // generics. Per assembly, IsAssignableFrom stays only for the IComparable target and
+            // IsAssignableTo only for the interface that inherits IDisposable.
+            Assert.True(importedTypes.Any(s => s.Contains("System.Type.IsAssignableFrom(", StringComparison.Ordinal)) != inputBubble, diagnostic);
+            Assert.True(importedTypes.Any(s => s.Contains("System.Type.IsAssignableTo(", StringComparison.Ordinal)) != inputBubble, diagnostic);
+
+            // Variant and COM casts are never folded.
+            Assert.True(importedTypes.Contains("IVariant`1<SealedClass>"), diagnostic);
+            Assert.True(importedTypes.Contains("INotImplementedByCom"), diagnostic);
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmWebcilModule()
     {
@@ -110,15 +434,35 @@ public class R2RTestSuites
                 new(nameof(WasmWebcilModule), [new CrossgenAssembly(wasmWebcilModule)])
                 {
                     OutputFileExtension = ".wasm",
-                    Validate = Validate,
+                    Validate = ValidateDefault,
+                },
+                new("WasmWebcilModuleNoDebugInfo", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--wasm-debug-info=none"],
+                    Validate = ValidateNone,
+                },
+                new("WasmWebcilModuleSymbolMap", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--wasm-debug-info=symbol-map"],
+                    Validate = ValidateSymbolMap,
+                },
+                new("WasmWebcilModuleAllDebugInfo", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--wasm-debug-info=name,symbol-map"],
+                    Validate = ValidateAll,
                 },
             ]));
 
-        static void Validate(ReadyToRunReader reader)
+        static void ValidateDefault(ReadyToRunReader reader)
         {
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            WasmR2RAssert.AssertFrameIdentityPrologs(webcilReader);
             Assert.True(webcilReader.IsWasmWrapped);
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+            Assert.False(File.Exists(Path.ChangeExtension(reader.Filename, ".symbols")));
 
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
             Assert.True(methods.Exists(method =>
@@ -135,6 +479,20 @@ public class R2RTestSuites
                 method.SignatureString.Contains("CatchException", StringComparison.Ordinal)));
 
             Assert.True(WasmR2RAssert.WasmIndexSpacesHaveExpectedEntries(webcilReader, out string indexDiagnostic), indexDiagnostic);
+            Assert.True(
+                WasmR2RAssert.MethodsShareFunctionDefinitionButRetainTableSlots(
+                    reader,
+                    "FoldableBodyOne",
+                    "FoldableBodyTwo",
+                    out string foldingDiagnostic),
+                foldingDiagnostic);
+            Assert.True(
+                WasmR2RAssert.MethodsRetainDistinctFunctionDefinitionsAndTableSlots(
+                    reader,
+                    "CatchExceptionOne",
+                    "CatchExceptionTwo",
+                    out string funcletDiagnostic),
+                funcletDiagnostic);
 
             // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
             // relocations that the R2R object writer must self-resolve to the fixed global
@@ -152,6 +510,64 @@ public class R2RTestSuites
             Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
                 "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
         }
+
+        static void ValidateNone(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.False(WasmR2RAssert.WasmImageHasFunctionNameSection(webcilReader));
+            Assert.False(File.Exists(Path.ChangeExtension(reader.Filename, ".symbols")));
+        }
+
+        static void ValidateSymbolMap(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.False(WasmR2RAssert.WasmImageHasFunctionNameSection(webcilReader));
+            Assert.True(
+                WasmR2RAssert.WasmSymbolMapHasExpectedFunctionNames(reader, out string diagnostic),
+                diagnostic);
+        }
+
+        static void ValidateAll(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(WasmR2RAssert.WasmImageHasFunctionNameSection(webcilReader));
+            Assert.True(
+                WasmR2RAssert.WasmSymbolMapHasExpectedFunctionNames(reader, out string diagnostic),
+                diagnostic);
+        }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData("SelfMethodOne", "SelfMethodTwo")]
+    [InlineData("WasmSelfForwarder.BeforeEvent", "WasmSelfForwarder.AfterEvent")]
+    public void WasmSelfImportsAreNotFolded(string firstMethodName, string secondMethodName)
+    {
+        var module = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmSelfImportsAreNotFolded),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmSelfImportsAreNotFolded),
+            [
+                new(nameof(WasmSelfImportsAreNotFolded), [new CrossgenAssembly(module)])
+                {
+                    Options = [Crossgen2Option.Optimize],
+                    OutputFileExtension = ".wasm",
+                    Validate = reader =>
+                    {
+                        Assert.True(
+                            WasmR2RAssert.MethodsShareFunctionDefinitionButRetainTableSlots(
+                                reader, "FoldableBodyOne", "FoldableBodyTwo", out string foldingDiagnostic),
+                            foldingDiagnostic);
+                        Assert.True(
+                            WasmR2RAssert.MethodsRetainDistinctFunctionDefinitionsAndTableSlots(
+                                reader, firstMethodName, secondMethodName, out string selfImportDiagnostic),
+                            selfImportDiagnostic);
+                    },
+                },
+            ]));
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
@@ -333,6 +749,59 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.SupportsVectorT))]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void VectorLayoutChecksRespectTargetAndVersionBubble(bool composite, bool targetAllowsRuntimeCodeGeneration)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(VectorLayoutChecksRespectTargetAndVersionBubble),
+            SourceResourceNames = ["Webcil/WasmSimdModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(VectorLayoutChecksRespectTargetAndVersionBubble),
+            [
+                new(nameof(VectorLayoutChecksRespectTargetAndVersionBubble), [new CrossgenAssembly(input)])
+                {
+                    Options = composite ? [Crossgen2Option.Composite, Crossgen2Option.Optimize] : [Crossgen2Option.Optimize],
+                    AdditionalArgs =
+                    [
+                        "--target-allows-runtime-code-generation", targetAllowsRuntimeCodeGeneration ? "true" : "false",
+                        .. composite ? new[] { "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath } : [],
+                    ],
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = reader =>
+                    {
+                        List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+                        foreach (string name in new[]
+                        {
+                            "EchoVectorT", "CallEchoVectorT", "EchoWrappedVectorT", "CallEchoWrappedVectorT",
+                            "EchoVectorPair", "EchoVectorTriple",
+                        })
+                        {
+                            ReadyToRunMethod method = Assert.Single(methods,
+                                method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+                            IReadOnlyList<FixupCell> fixups = method.Fixups ?? Array.Empty<FixupCell>();
+                            bool needsCheck = targetAllowsRuntimeCodeGeneration ||
+                                (!composite && name is "EchoVectorPair" or "EchoVectorTriple");
+                            if (needsCheck)
+                            {
+                                Assert.Contains(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.Check_TypeLayout);
+                            }
+                            else
+                            {
+                                Assert.DoesNotContain(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.Check_TypeLayout);
+                            }
+                        }
+                    },
+                },
+            ]));
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmSimdModule()
     {
@@ -392,18 +861,6 @@ public class R2RTestSuites
 
             static string Format(IReadOnlyList<byte> valTypes) =>
                 $"[{string.Join(",", valTypes.Select(b => $"0x{b:X2}"))}]";
-        }
-
-        static WebcilImageReader.WasmFunctionInfo ResolveWasmBody(
-            ReadyToRunReader reader, WebcilImageReader webcilReader, ReadyToRunMethod method)
-        {
-            uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)method.EntryPointRuntimeFunctionId);
-            int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
-            Assert.True(functionIndex >= 0, $"Could not resolve wasm table index {tableIndex} to a function body.");
-
-            WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
-            Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
-            return body.Value;
         }
     }
 
@@ -469,6 +926,18 @@ public class R2RTestSuites
                     metadata.MetadataReader.GetString(metadata.MetadataReader.GetAssemblyDefinition().Name));
             }
         }
+    }
+
+    private static WebcilImageReader.WasmFunctionInfo ResolveWasmBody(
+        ReadyToRunReader reader, WebcilImageReader webcilReader, ReadyToRunMethod method)
+    {
+        uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)method.EntryPointRuntimeFunctionId);
+        int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
+        Assert.True(functionIndex >= 0, $"Could not resolve wasm table index {tableIndex} to a function body.");
+
+        WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
+        Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
+        return body.Value;
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
@@ -2195,6 +2664,13 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasStringThunk(reader, "MS16Tp", out diag), diag);
             Assert.True(R2RAssert.HasStringThunk(reader, "IS16Tip", out diag), diag);
             Assert.True(R2RAssert.HasStringThunk(reader, "IS56Tip", out diag), diag);
+            Assert.True(
+                WasmR2RAssert.StringThunksShareFunctionDefinitionButRetainTableSlots(
+                    reader,
+                    "MS56Tp",
+                    "MS16Tp",
+                    out diag),
+                diag);
         }
     }
 

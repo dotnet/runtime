@@ -442,9 +442,7 @@ namespace System.Numerics
         /// <summary>Explicitly converts a <see cref="decimal" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        // Round through double, not float: decimal -> double is correctly rounded and double (53-bit significand)
-        // -> BFloat16 is an innocuous double rounding (53 >= 2 * 8 + 2), so the result is correctly rounded.
-        public static explicit operator BFloat16(decimal value) => (BFloat16)(double)value;
+        public static explicit operator BFloat16(decimal value) => decimal.VarBFloat16FromDec(in value);
 
         /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>

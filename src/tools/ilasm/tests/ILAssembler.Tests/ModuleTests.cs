@@ -219,7 +219,8 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
             var reader = pe.GetMetadataReader();
             var moduleType = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(1));
             var globalMethod = reader.GetMethodDefinition(Assert.Single(moduleType.GetMethods()));
@@ -240,14 +241,10 @@ namespace ILAssembler.Tests
             Assert.Empty(attribute.FixedArguments);
             Assert.Empty(attribute.NamedArguments);
 
-            var embeddedPdb = Assert.Single(
-                pe.ReadDebugDirectory(),
-                entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-            using var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdb);
+            using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
-            Assert.Contains(
-                "global.cs",
-                pdbReader.GetString(pdbReader.GetDocument(Assert.Single(pdbReader.Documents)).Name));
+            // The input file is the first document; the top-level .line file follows.
+            Assert.Equal(new[] { "test.il", "global.cs" }, pdbReader.Documents.Select(handle => pdbReader.GetString(pdbReader.GetDocument(handle).Name)));
         }
     }
 }

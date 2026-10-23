@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
+// ============================================================================
 // File: VirtualCallStub.h
 //
 // See code:VirtualCallStubManager for details
-//
 // ============================================================================
 
 #ifndef _VIRTUAL_CALL_STUB_H
@@ -779,8 +778,6 @@ class VirtualCallStubManagerManager : public StubManager
 
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
 
-    static MethodDesc *Entry2MethodDesc(PCODE stubStartAddress, MethodTable *pMT);
-
 #ifdef DACCESS_COMPILE
     virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual LPCWSTR GetStubManagerName(PCODE addr)
@@ -1526,10 +1523,13 @@ private:
     // does not throw on OOM. **YOU MUST CHECK FOR NULL RETURN**
     static FastTable* MakeTable(size_t numberOfEntries)
     {
-        CONTRACTL {
+        CONTRACTL
+        {
             THROWS;
             GC_TRIGGERS;
-        } CONTRACTL_END;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
 
         size_t size = CALL_STUB_MIN_ENTRIES;
         while (size < numberOfEntries) {size = size<<1;}

@@ -3263,11 +3263,9 @@ public:
     // empty BB's when necessary:
     //   * No block is both the first block of a handler and the first block of a try.
     //   * No block is the first block of multiple 'try' regions.
-    //   * No block is the last block of multiple EH regions.
     void fgNormalizeEH();
     bool fgNormalizeEHCase1();
     bool fgNormalizeEHCase2();
-    bool fgNormalizeEHCase3();
 
     bool fgCreateFiltersForGenericExceptions();
 
@@ -4397,8 +4395,9 @@ public:
 
 #if defined(TARGET_WASM)
     unsigned lvaWasmSpArg = BAD_VAR_NUM; // lcl var index of Wasm stack pointer arg
+    unsigned lvaWasmPortableEntryPointArg = BAD_VAR_NUM; // lcl var index of the incoming portable entrypoint
     unsigned lvaWasmVirtualIP = BAD_VAR_NUM; // Wasm virtual IP slot
-    unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm function index slot
+    unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm frame identity slot
     unsigned lvaWasmResumeIP = BAD_VAR_NUM; // Wasm catch resumption IP slot
 
     struct WasmSpillSlot
@@ -4408,6 +4407,7 @@ public:
         bool     inUse;
     };
     jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
+    BitVec* m_wasmGCRefCandidates = nullptr;
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -5220,7 +5220,7 @@ public:
 #endif // defined(DEBUG)
     );
 
-    bool impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
+    void impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
 
     enum class GDVProbeType
     {
@@ -7026,6 +7026,7 @@ public:
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmFindGCRefCandidates();
     PhaseStatus fgWasmSpillRefs();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
@@ -7837,7 +7838,6 @@ protected:
 
     void optScaleLoopBlocks(FlowGraphNaturalLoop* loop);
 
-    bool optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt);
     unsigned optIsLoopIncrTree(GenTree* incr);
     bool optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** ppIncr);
 
@@ -9200,7 +9200,7 @@ public:
             return dsc;
         }
 
-        // Create an exact-type or sub-type assertion: objVN is (exactly of | subtype of) typeHndVN
+        // Create an exact-type or sub-type assertion about a non-null object.
         static AssertionDsc CreateSubtype(const Compiler* comp, ValueNum objVN, ValueNum typeHndVN, bool exact)
         {
             assert((objVN != ValueNumStore::NoVN) && comp->vnStore->IsVNTypeHandle(typeHndVN));
@@ -9374,7 +9374,6 @@ public:
     bool optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
     bool optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
-    AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
     AssertionIndex optLocalAssertionIsEqualOrNotEqual(
         optOp1Kind op1Kind, unsigned lclNum, optOp2Kind op2Kind, ssize_t cnsVal, ASSERT_VALARG_TP assertions);
 
@@ -9411,6 +9410,8 @@ public:
                                           Statement*       stmt,
                                           BasicBlock*      block);
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    bool     optIsNeverNegativeCheckedBound(ValueNum vn, ASSERT_VALARG_TP assertions);
+    ValueNum optGetPreferredBoundForRange(ValueNum vn, ASSERT_VALARG_TP assertions);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
     bool     optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
@@ -12213,20 +12214,11 @@ private:
     class ClassLayoutTable* typGetClassLayoutTable();
 
 public:
-    // Get the layout having the specified layout number.
-    ClassLayout* typGetLayoutByNum(unsigned layoutNum);
-    // Get the layout number of the specified layout.
-    unsigned typGetLayoutNum(ClassLayout* layout);
     // Get the layout for the specified class handle.
     ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
-    // Get the number of a layout for the specified class handle.
-    unsigned     typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
     ClassLayout* typGetCustomLayout(const ClassLayoutBuilder& builder);
-    unsigned     typGetCustomLayoutNum(const ClassLayoutBuilder& builder);
     // Get the layout having the specified size but no class handle.
     ClassLayout* typGetBlkLayout(unsigned blockSize);
-    // Get the number of a layout having the specified size but no class handle.
-    unsigned typGetBlkLayoutNum(unsigned blockSize);
     // Get the layout for the specified array of known length
     ClassLayout* typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, unsigned length);
 
@@ -12486,11 +12478,6 @@ public:
     VarScopeDsc* compGetNextEnterScope(unsigned offs, bool scan = false);
 
     VarScopeDsc* compGetNextExitScope(unsigned offs, bool scan = false);
-
-    void compProcessScopesUntil(unsigned   offset,
-                                VARSET_TP* inScope,
-                                void (Compiler::*enterScopeFn)(VARSET_TP* inScope, VarScopeDsc*),
-                                void (Compiler::*exitScopeFn)(VARSET_TP* inScope, VarScopeDsc*));
 
 #ifdef DEBUG
     void compDispScopeLists();

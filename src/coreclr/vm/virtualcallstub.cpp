@@ -98,22 +98,14 @@ struct CachedIndirectionCellBlockListNode
 
 BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     return GenerateDispatchStubCellEntrySlot(pLoaderAllocator, ownerType, pMD->GetSlot(), pResolver);
 }
 
 BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     VirtualCallStubManager * pMgr = pLoaderAllocator->GetVirtualCallStubManager();
 
@@ -1168,6 +1160,7 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(target != NULL);
     } CONTRACTL_END;
 
@@ -2319,6 +2312,7 @@ VirtualCallStubManager::Resolver(
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(TypeHandle(pMT).CheckFullyLoaded());
     } CONTRACTL_END;
@@ -2918,6 +2912,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
@@ -3062,6 +3057,7 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(addrOfResolver != NULL);
     } CONTRACTL_END;
 
@@ -4241,42 +4237,6 @@ BOOL VirtualCallStubManagerManager::DoTraceStub(
 
     return pMgr->DoTraceStub(stubStartAddress, trace);
 }
-
-#ifndef DACCESS_COMPILE
-#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-/////////////////////////////////////////////////////////////////////////////////////////////
-MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
-                    PCODE stubStartAddress,
-                    MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END
-
-    if (pMT == NULL)
-        return NULL;
-
-    StubCodeBlockKind sk = STUB_CODE_BLOCK_UNKNOWN;
-
-    // Find the owning manager.
-    VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(stubStartAddress,  &sk);
-    if (pMgr == NULL)
-        return NULL;
-
-    // Do the full resolve
-    DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, stubStartAddress, sk));
-
-    PCODE target = (PCODE)NULL;
-    // TODO: passing NULL as protectedObj here can lead to incorrect behavior for IDynamicInterfaceCastable objects
-    VirtualCallStubManager::Resolver(pMT, token, NULL, &target, TRUE /* throwOnConflict */);
-
-    return NonVirtualEntry2MethodDesc(target);
-}
-#endif // FEATURE_VIRTUAL_STUB_DISPATCH
-#endif
 
 #ifdef DACCESS_COMPILE
 void VirtualCallStubManagerManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)

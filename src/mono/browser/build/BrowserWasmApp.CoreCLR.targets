@@ -39,9 +39,11 @@
     <_CoreCLRInvalidSIMD Condition="'$(WasmEnableSIMD)' != '' and '$(WasmEnableSIMD)' != 'true'">true</_CoreCLRInvalidSIMD>
     <WasmEnableExceptionHandling>true</WasmEnableExceptionHandling>
     <WasmEnableSIMD>true</WasmEnableSIMD>
+    <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">false</WasmEnableRelaxedSimd>
     <WasmClang>emcc</WasmClang>
 
     <_WasmDefaultFlags>-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128</_WasmDefaultFlags>
+    <_WasmDefaultFlags Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(_WasmDefaultFlags) -mrelaxed-simd</_WasmDefaultFlags>
 
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Build</WasmBuildAppAfterThisTarget>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
@@ -71,6 +73,12 @@
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
+    <RuntimeHostConfigurationOption Include="System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"
+                                    Value="true"
+                                    Trim="true" />
+  </ItemGroup>
 
   <!-- EmccInitialHeapSize is the documented browser property (src/mono/browser/README.md) and
        EmccTotalMemory is its legacy alias; the Mono path collapses both into WasmInitialHeapSize
@@ -247,6 +255,9 @@
       <WasmNativeAsset Remove="@(WasmNativeAsset)" />
       <WasmNativeAsset Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == 'WasmNativeAsset'" />
 
+      <_WasmNestedPublishCompositeR2RImage Remove="@(_WasmNestedPublishCompositeR2RImage)" />
+      <_WasmNestedPublishCompositeR2RImage Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == '_WasmNestedPublishCompositeR2RImage'" />
+
       <FileWrites Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == 'FileWrites'" />
     </ItemGroup>
   </Target>
@@ -255,10 +266,14 @@
   <Target Name="WasmNestedPublishApp"
           Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
           DependsOnTargets="ResolveRuntimePackAssets;$(_WasmNestedPublishAppPreTarget);$(WasmNestedPublishAppDependsOn);_CoreCLRSetWasmBuildNativeDefaults;_CoreCLRWasmBuildAppCore"
-          Returns="@(WasmNativeAsset);@(WasmAssembliesFinal);@(FileWrites)">
+          Returns="@(WasmNativeAsset);@(WasmAssembliesFinal);@(_WasmNestedPublishCompositeR2RImage);@(FileWrites)">
     <ItemGroup>
       <WasmNativeAsset OriginalItemName="WasmNativeAsset" />
       <WasmAssembliesFinal OriginalItemName="WasmAssembliesFinal" />
+      <!-- The composite ReadyToRun image is not an assembly, so it is returned separately. -->
+      <_WasmNestedPublishCompositeR2RImage Include="@(_ReadyToRunCompileList->WithMetadataValue('CreateCompositeImage', 'true')->'%(OutputR2RImage)')"
+                                           KeepMetadata="OutputR2RImage" />
+      <_WasmNestedPublishCompositeR2RImage OriginalItemName="_WasmNestedPublishCompositeR2RImage" />
       <FileWrites OriginalItemName="FileWrites" />
     </ItemGroup>
   </Target>
@@ -535,6 +550,10 @@
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=0" Condition="'$(WasmCachePath)' != '' and '$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=1" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=0" Condition="'$(WasmEnableRelaxedSimd)' != 'true'" />
     </ItemGroup>
   </Target>
 
@@ -580,6 +599,7 @@
       <_EmccCommonFlags Include="-fwasm-exceptions" />
       <_EmccCommonFlags Include="-sWASM_LEGACY_EXCEPTIONS=0" />
       <_EmccCommonFlags Include="-msimd128" />
+      <_EmccCommonFlags Include="-mrelaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>

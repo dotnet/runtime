@@ -26,6 +26,12 @@ namespace System.Threading.Threads.Tests
         private const int UnexpectedTimeoutMilliseconds = ThreadTestHelpers.UnexpectedTimeoutMilliseconds;
         private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
 
+        [ThreadStatic]
+        private static int t_threadStaticValue;
+        [ThreadStatic]
+        private static object t_threadStaticReference;
+        private static int s_globalStaticValue;
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ConstructorTest()
         {
@@ -76,6 +82,102 @@ namespace System.Threading.Threads.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(() => { }, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(state => { }, -1));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void ConstructorTest_WithoutMultithreading()
+        {
+            Assert.Throws<ArgumentNullException>(() => new Thread((ThreadStart)null));
+            Assert.Throws<ArgumentNullException>(() => new Thread((ThreadStart)null, 0));
+            Assert.Throws<ArgumentNullException>(() => new Thread((ParameterizedThreadStart)null));
+            Assert.Throws<ArgumentNullException>(() => new Thread((ParameterizedThreadStart)null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(() => { }, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(state => { }, -1));
+
+            Thread first = new Thread(() => { });
+            Thread second = new Thread(state => { });
+
+            Assert.True(first.ManagedThreadId > 1);
+            Assert.True(second.ManagedThreadId > 1);
+            Assert.NotEqual(first.ManagedThreadId, second.ManagedThreadId);
+            Assert.NotEqual(Environment.CurrentManagedThreadId, first.ManagedThreadId);
+            Assert.Equal(1, Thread.CurrentThread.ManagedThreadId);
+
+            Thread current = Thread.CurrentThread;
+            bool wasBackground = current.IsBackground;
+            try
+            {
+                current.IsBackground = !wasBackground;
+                Assert.Equal(!wasBackground, current.IsBackground);
+            }
+            finally
+            {
+                current.IsBackground = wasBackground;
+            }
+
+            Assert.False(first.IsAlive);
+            Assert.Equal(ThreadState.Unstarted, first.ThreadState);
+            Assert.False(first.IsBackground);
+            first.IsBackground = true;
+            Assert.True(first.IsBackground);
+            Assert.Equal(ThreadState.Unstarted | ThreadState.Background, first.ThreadState);
+
+            Assert.Equal(ThreadPriority.Normal, first.Priority);
+            first.Priority = ThreadPriority.AboveNormal;
+            Assert.Equal(ThreadPriority.AboveNormal, first.Priority);
+            Assert.Throws<ArgumentOutOfRangeException>(() => first.Priority = (ThreadPriority)int.MaxValue);
+
+            const string ThreadName = "unstarted";
+            first.Name = ThreadName;
+            Assert.Equal(ThreadName, first.Name);
+            first.Name = null;
+            Assert.Null(first.Name);
+
+            Assert.Throws<PlatformNotSupportedException>(() => first.Start());
+            Assert.Throws<PlatformNotSupportedException>(() => first.Start(new object()));
+            Assert.Throws<PlatformNotSupportedException>(() => first.UnsafeStart());
+            Assert.Throws<PlatformNotSupportedException>(() => first.UnsafeStart(new object()));
+            Assert.Throws<PlatformNotSupportedException>(() => second.Start());
+            Assert.Throws<PlatformNotSupportedException>(() => second.Start(new object()));
+            Assert.Throws<PlatformNotSupportedException>(() => second.UnsafeStart());
+            Assert.Throws<PlatformNotSupportedException>(() => second.UnsafeStart(new object()));
+            Assert.Throws<ArgumentNullException>(() => first.CurrentCulture = null);
+            Assert.Throws<ArgumentNullException>(() => first.CurrentUICulture = null);
+            first.CurrentCulture = CultureInfo.InvariantCulture;
+            first.CurrentUICulture = CultureInfo.InvariantCulture;
+            Assert.Throws<InvalidOperationException>(() => first.CurrentCulture);
+            Assert.Throws<InvalidOperationException>(() => first.CurrentUICulture);
+            Assert.Equal(ThreadState.Unstarted | ThreadState.Background, first.ThreadState);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void ThreadStaticValuePersistsWhenConstructingThread()
+        {
+            const int ThreadStaticValue = 1;
+            const int GlobalStaticValue = 2;
+            const int UpdatedGlobalStaticValue = 3;
+            const int UpdatedThreadStaticValue = 4;
+
+            t_threadStaticValue = ThreadStaticValue;
+            object reference = new object();
+            t_threadStaticReference = reference;
+            s_globalStaticValue = GlobalStaticValue;
+
+            _ = new Thread(() => { });
+            GC.Collect();
+
+            Assert.Equal(ThreadStaticValue, t_threadStaticValue);
+            Assert.Same(reference, t_threadStaticReference);
+            Assert.Equal(GlobalStaticValue, s_globalStaticValue);
+
+            s_globalStaticValue = UpdatedGlobalStaticValue;
+            Assert.Equal(ThreadStaticValue, t_threadStaticValue);
+            Assert.Equal(UpdatedGlobalStaticValue, s_globalStaticValue);
+
+            t_threadStaticValue = UpdatedThreadStaticValue;
+            Assert.Equal(UpdatedThreadStaticValue, t_threadStaticValue);
+            Assert.Equal(UpdatedGlobalStaticValue, s_globalStaticValue);
+            t_threadStaticReference = null;
         }
 
         public static IEnumerable<object[]> ApartmentStateTest_MemberData()
@@ -1034,6 +1136,53 @@ namespace System.Threading.Threads.Tests
 
             Assert.True(t.Join(0));
             Assert.True(t.Join(TimeSpan.Zero));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(0, false)]
+        [InlineData(0, true)]
+        [InlineData(10, false)]
+        [InlineData(10, true)]
+        [InlineData(50, false)]
+        [InlineData(50, true)]
+        public static void JoinSingleThreadTest(int millisecondsTimeout, bool useTimeSpan)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            bool joined = useTimeSpan
+                ? Thread.CurrentThread.Join(TimeSpan.FromMilliseconds(millisecondsTimeout))
+                : Thread.CurrentThread.Join(millisecondsTimeout);
+            stopwatch.Stop();
+
+            Assert.False(joined);
+            // Allow for rounding in the wait subsystem's millisecond timer.
+            Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void JoinSingleThreadInvalidTest()
+        {
+            Thread current = Thread.CurrentThread;
+            Assert.Throws<ArgumentOutOfRangeException>(() => current.Join(-2));
+            Assert.Throws<ArgumentOutOfRangeException>(() => current.Join(TimeSpan.FromMilliseconds(-2)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => current.Join(TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
+            Assert.Throws<PlatformNotSupportedException>(() => current.Join());
+            Assert.Throws<PlatformNotSupportedException>(() => current.Join(Timeout.Infinite));
+            Assert.Throws<PlatformNotSupportedException>(() => current.Join(Timeout.InfiniteTimeSpan));
+
+            Thread unstarted = new Thread(() => { });
+            Assert.Throws<ThreadStateException>(() => unstarted.Join(0));
+            Assert.Throws<ThreadStateException>(() => unstarted.Join(10));
+            Assert.Throws<ThreadStateException>(() => unstarted.Join(TimeSpan.Zero));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(0)]
+        [InlineData(10)]
+        public static void JoinSingleThreadInterruptedTest(int millisecondsTimeout)
+        {
+            Thread.CurrentThread.Interrupt();
+            Assert.Throws<ThreadInterruptedException>(() => Thread.CurrentThread.Join(millisecondsTimeout));
+            Assert.False(Thread.CurrentThread.Join(millisecondsTimeout));
         }
 
         [Fact]

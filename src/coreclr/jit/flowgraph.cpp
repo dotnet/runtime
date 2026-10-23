@@ -874,8 +874,11 @@ void Compiler::fgSetPreferredInitCctor()
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #if defined(TARGET_WASM)
-    // Wasm does not support dynamically created helpers
-    return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+    // CoreCLR Wasm does not support dynamically created helpers.
+    if (!IsNativeAot())
+    {
+        return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+    }
 #endif
 
 #ifdef FEATURE_READYTORUN
@@ -1010,6 +1013,9 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
 
     target_ssize_t offset;
     gtPeelOffsets(&op, &offset);
+
+    // After LSRA the base of a contained address mode may be wrapped in a COPY/RELOAD
+    op = op->gtSkipReloadOrCopy();
 
     // Ignore the offset for locals
 
@@ -5836,18 +5842,8 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
-    // Obtain the relop from the "test" tree.
-    GenTree* relop;
-    if (test->OperIs(GT_JTRUE))
-    {
-        relop = test->gtGetOp1();
-    }
-    else
-    {
-        assert(test->OperIs(GT_STORE_LCL_VAR));
-        relop = test->AsLclVar()->Data();
-    }
-
+    assert(test->OperIs(GT_JTRUE));
+    GenTree* relop = test->gtGetOp1();
     noway_assert(relop->OperIsCompare());
 
     GenTree* opr1 = relop->AsOp()->gtOp1;
