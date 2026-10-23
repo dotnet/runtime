@@ -75,4 +75,47 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         Assert.Contains("customHookCalled=true", result.TestOutput);
         Assert.Contains("resources.libraryInitializers.length=1", result.TestOutput);
     }
+
+    [Theory, TestCategory("no-workload")]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public async Task JSExportFromNet10Library(Configuration config)
+    {
+        ProjectInfo info = CopyTestAsset(
+            config, false, TestAsset.WasmBasicTestApp, "net10_exports",
+            extraProperties: "<PublishTrimmed>true</PublishTrimmed>",
+            extraItems: $"""
+                <Reference Include="LegacyExports">
+                    <HintPath>..\LegacyExports\bin\{config}\net10.0\LegacyExports.dll</HintPath>
+                </Reference>
+                <TrimmerRootAssembly Include="LegacyExports" />
+                """);
+        string libraryDir = Path.Combine(_projectDir, "..", "LegacyExports");
+        Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "LegacyExports"), libraryDir);
+
+        // Do not let the parent WBT overrides substitute the in-tree targeting pack or generator.
+        using (ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+            .WithWorkingDirectory(libraryDir)
+            .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir))
+        {
+            cmd.ExecuteWithCapturedOutput(
+                $"build -c {config} -bl:\"{Path.Combine(_logPath, "LegacyExports.binlog")}\"",
+                "-p:ImportDirectoryBuildProps=false -p:ImportDirectoryBuildTargets=false")
+                .EnsureSuccessful();
+        }
+
+        string generatedFile = Directory.GetFiles(Path.Combine(libraryDir, "obj"), "JSExports.g.cs", SearchOption.AllDirectories).Single();
+        string generatedCode = File.ReadAllText(generatedFile);
+        Assert.Contains("JSFunctionBinding.BindManagedFunction(", generatedCode);
+        Assert.Contains("static void __Register_()", generatedCode);
+        Assert.DoesNotContain("RegisterAssemblyExports", generatedCode);
+
+        string libraryPath = Path.Combine(libraryDir, "bin", config.ToString(), "net10.0", "LegacyExports.dll");
+        byte[] libraryBytes = File.ReadAllBytes(libraryPath);
+        PublishProject(info, config);
+        Assert.Equal(libraryBytes, File.ReadAllBytes(libraryPath));
+
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "LegacyJSExports"));
+        Assert.Contains("Legacy JSExports passed", result.TestOutput);
+    }
 }
