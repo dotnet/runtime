@@ -20,7 +20,7 @@ FILES=()
 for s in "${SOURCES[@]}"; do FILES+=("$GC/$s"); done
 FILES+=("$REPO/docs/design/lxr-port/P2.5/large-object-space-test-platform.cpp" "$REPO/docs/design/lxr-port/P4/lxr-rc-validation.cpp")
 failed=0
-for control in "" LXR_VALID_CLEAR_CONTROL LXR_D2_NO_BULK_CLEAR_CONTROL LXR_D2_NO_MARK_CONTROL \
+for control in "" LXR_VALID_CLEAR_CONTROL LXR_D2_NO_MARK_CONTROL \
     LXR_D2_SPAN_TO_LIMIT_CONTROL LXR_D2_DETACH_DROP_CONTROL LXR_D2_NO_SPAN_LOOKUP_CONTROL \
     LXR_D2_NO_PROMOTE_VALID_CONTROL LXR_D2_NO_PINNED_VALID_CONTROL; do
   name=${control:-baseline}

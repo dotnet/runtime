@@ -8,6 +8,7 @@
 #include <atomic>
 #include <stdio.h>
 #include <thread>
+#include <vector>
 
 namespace
 {
@@ -18,6 +19,7 @@ namespace
         DefaultBlockCount * ImmixBlockGeometry::BlockBytes;
     constexpr uintptr_t OwnerOne = 0x2401;
     constexpr uintptr_t OwnerTwo = 0x2402;
+    constexpr uintptr_t OwnerThree = 0x2403;
 #endif
 
     int s_checks;
@@ -925,6 +927,398 @@ namespace
             SideMetadataResult::Success);
     }
 
+    // ---- P28 (F9): the hole search and the refill as the Java LXR does them ----
+
+    struct F9Hole
+    {
+        size_t first;
+        size_t end;
+    };
+
+    // The search of the Java LXR (immixspace.rs: rc_get_next_available_lines), written again from its source over a
+    // table of live lines: the whole block is known, and the holes are listed in one pass. The first dead line after a live
+    // line is skipped (an object may end in it), a run shorter than the minimum is skipped, and the next search starts at
+    // the end of the hole.
+    std::vector<F9Hole> F9JavaHoles(const std::vector<bool>& live, size_t minimumLines)
+    {
+        std::vector<F9Hole> holes;
+        size_t search = 0;
+        const size_t limit = live.size();
+        while (search < limit)
+        {
+            size_t first = limit;
+            bool findFreeLine = false;
+            for (size_t i = search; i < limit; i++)
+            {
+                if (!live[i])
+                {
+                    if (i == 0)
+                    {
+                        first = i;
+                        break;
+                    }
+                    else if (!findFreeLine)
+                    {
+                        findFreeLine = true;
+                    }
+                    else
+                    {
+                        first = i;
+                        break;
+                    }
+                }
+                else
+                {
+                    findFreeLine = false;
+                }
+            }
+            if (first == limit)
+            {
+                break;
+            }
+            size_t end = first + 1;
+            while (end < limit && !live[end])
+            {
+                end++;
+            }
+            if (end - first >= minimumLines)
+            {
+                holes.push_back({first, end});
+            }
+            search = end;
+        }
+        return holes;
+    }
+
+    uint32_t F9Next(uint64_t* state)
+    {
+        *state = (*state * UINT64_C(6364136223846793005)) + UINT64_C(1442695040888963407);
+        return static_cast<uint32_t>(*state >> 33);
+    }
+
+    // Puts a count in one slot of a line, not always the first slot, so that every word of the counts of the line is used.
+    void F9SeedLiveLine(Fixture& fixture, uintptr_t block, size_t line, uint8_t logBits, uint64_t* state)
+    {
+        uintptr_t maximum = (static_cast<uintptr_t>(1) << (1u << logBits)) - 1;
+        uintptr_t value = F9Next(state) % 4 == 0 ? maximum : 1 + (F9Next(state) % maximum);
+        size_t slot = F9Next(state) % (ImmixBlockGeometry::LineBytes / sizeof(uintptr_t));
+        ExpectMetadata(
+            "f9 seed live slot",
+            fixture.metadata.Store(
+                LxrSideMetadataKind::ReferenceCount,
+                LineAddress(block, line) + (slot * sizeof(uintptr_t)),
+                value,
+                SideMetadataMemoryOrder::Relaxed),
+            SideMetadataResult::Success);
+    }
+
+    // The holes that the lazy search returns one by one are the holes that the eager search of the Java LXR lists, for counts
+    // of 2, 4 and 8 bits, for every minimum run length, and for random line patterns, with live lines of every density.
+    void TestF9ScanEquivalence()
+    {
+        constexpr double Densities[] = {0.0, 0.05, 0.3, 0.6, 0.9, 1.0};
+        uint64_t state = 28;
+        for (uint8_t logBits = 1; logBits <= 3; logBits++)
+        {
+            for (size_t minimumLines : {1, 2, 3, 7})
+            {
+                Fixture fixture(logBits, 4, minimumLines);
+                Expect("f9 scan fixture initialized", fixture.initialized);
+                if (!fixture.initialized)
+                {
+                    return;
+                }
+                size_t mismatches = 0;
+                size_t compared = 0;
+                for (size_t round = 0; round < 40; round++)
+                {
+                    for (size_t index = 0; index < 4; index++)
+                    {
+                        uintptr_t block = fixture.data_start + (index * ImmixBlockGeometry::BlockBytes);
+                        double density = Densities[(round + index) % 6];
+                        std::vector<bool> live(ImmixBlockGeometry::LinesPerBlock, false);
+                        SeedAllLines(fixture, block, 0);
+                        for (size_t line = 0; line < live.size(); line++)
+                        {
+                            live[line] = (F9Next(&state) % 1000) < static_cast<uint32_t>(density * 1000);
+                            if (live[line])
+                            {
+                                F9SeedLiveLine(fixture, block, line, logBits, &state);
+                            }
+                        }
+                        std::vector<F9Hole> expected = F9JavaHoles(live, minimumLines);
+                        std::vector<F9Hole> actual;
+                        size_t search = 0;
+                        for (size_t guard = 0; guard <= ImmixBlockGeometry::LinesPerBlock; guard++)
+                        {
+                            ImmixHole hole = {};
+                            size_t next = 0;
+                            ImmixAllocationStatus status = ImmixAllocationStatus::InvalidRequest;
+                            SideMetadataResult result =
+                                fixture.allocation.TryFindNextHole(block, search, &hole, &next, &status);
+                            if (result != SideMetadataResult::Success || status != ImmixAllocationStatus::Ready)
+                            {
+                                break;
+                            }
+                            actual.push_back({
+                                static_cast<size_t>(hole.start - block) / ImmixBlockGeometry::LineBytes,
+                                static_cast<size_t>(hole.end - block) / ImmixBlockGeometry::LineBytes});
+                            if (next != actual.back().end)
+                            {
+                                mismatches++;
+                            }
+                            search = next;
+                        }
+                        compared++;
+                        bool same = actual.size() == expected.size();
+                        for (size_t i = 0; same && i < actual.size(); i++)
+                        {
+                            same = actual[i].first == expected[i].first && actual[i].end == expected[i].end;
+                        }
+                        mismatches += same ? 0 : 1;
+                    }
+                }
+                Expect("f9 the lazy hole search returns the holes of the eager search of the Java LXR",
+                    mismatches == 0 && compared == 160);
+            }
+        }
+    }
+
+    // The search reads only the lines that one buffer needs: from the search line to the first live line after the hole.
+    void TestF9LazyScan()
+    {
+        uint64_t state = 7;
+        for (uint8_t logBits = 1; logBits <= 3; logBits++)
+        {
+            Fixture fixture(logBits, 2, 1);
+            Expect("f9 lazy fixture initialized", fixture.initialized);
+            if (!fixture.initialized)
+            {
+                return;
+            }
+            size_t wrong = 0;
+            size_t checked = 0;
+            for (size_t round = 0; round < 60; round++)
+            {
+                uintptr_t block = fixture.data_start;
+                std::vector<bool> live(ImmixBlockGeometry::LinesPerBlock, false);
+                SeedAllLines(fixture, block, 0);
+                for (size_t line = 0; line < live.size(); line++)
+                {
+                    live[line] = F9Next(&state) % 100 < 40;
+                    if (live[line])
+                    {
+                        F9SeedLiveLine(fixture, block, line, logBits, &state);
+                    }
+                }
+                size_t search = 0;
+                while (search < ImmixBlockGeometry::LinesPerBlock)
+                {
+                    ImmixHole hole = {};
+                    size_t next = 0;
+                    ImmixAllocationStatus status = ImmixAllocationStatus::InvalidRequest;
+                    uint64_t before = fixture.allocation.GetLineProbesForTest();
+                    SideMetadataResult result = fixture.allocation.TryFindNextHole(block, search, &hole, &next, &status);
+                    uint64_t probes = fixture.allocation.GetLineProbesForTest() - before;
+                    // The last line that is read: the line after the hole when the hole ends before the block end, else
+                    // the last line of the block.
+                    size_t lastRead = ImmixBlockGeometry::LinesPerBlock - 1;
+                    if (status == ImmixAllocationStatus::Ready)
+                    {
+                        size_t end = static_cast<size_t>(hole.end - block) / ImmixBlockGeometry::LineBytes;
+                        lastRead = end < ImmixBlockGeometry::LinesPerBlock ? end : ImmixBlockGeometry::LinesPerBlock - 1;
+                    }
+                    checked++;
+                    wrong += (result != SideMetadataResult::Success || probes != (lastRead - search + 1)) ? 1 : 0;
+                    if (status != ImmixAllocationStatus::Ready)
+                    {
+                        break;
+                    }
+                    search = next;
+                }
+            }
+            Expect("f9 one search reads only the lines from the search line to the end of the hole", wrong == 0 && checked != 0);
+        }
+    }
+
+    // The refill clears only what the Java LXR clears at a refill (the unlog table, and the mark table when a trace runs),
+    // plus the ValidObject plane (forced by .NET). It does not touch the count plane and the straddle plane: they are zero
+    // in a free range, and a range that is not zero is reported.
+    void TestF9RefillSchedule(uint8_t logBits)
+    {
+        Fixture fixture(logBits, 6, 1);
+        Expect("f9 refill fixture initialized", fixture.initialized);
+        if (!fixture.initialized)
+        {
+            return;
+        }
+        size_t arenaBytes = 6 * ImmixBlockGeometry::BlockBytes;
+        for (LxrSideMetadataKind kind : {LxrSideMetadataKind::ValidObject, LxrSideMetadataKind::FieldUnlogged,
+                 LxrSideMetadataKind::ObjectMark})
+        {
+            ExpectMetadata("f9 poison plane",
+                fixture.metadata.FillRangeBytes(kind, fixture.data_start, arenaBytes, 0xff), SideMetadataResult::Success);
+        }
+        for (size_t block = 0; block < 6; block++)
+        {
+            ExpectMetadata("f9 preset reuse count",
+                fixture.metadata.Store(LxrSideMetadataKind::LineReuse,
+                    LineAddress(fixture.data_start + (block * ImmixBlockGeometry::BlockBytes), 5), UINT8_MAX,
+                    SideMetadataMemoryOrder::SequentiallyConsistent),
+                SideMetadataResult::Success);
+        }
+        auto planeIs = [&](LxrSideMetadataKind kind, uintptr_t start, size_t size, uintptr_t expected)
+        {
+            for (uintptr_t address = start; address < start + size; address += sizeof(uintptr_t))
+            {
+                if (LoadMetadata(fixture, kind, address) != expected)
+                {
+                    return false;
+                }
+            }
+            return true;
+        };
+        auto countsAndStraddleZero = [&](uintptr_t start, size_t size)
+        {
+            bool zero = false;
+            bool straddleZero = false;
+            return fixture.metadata.IsRangeZero(LxrSideMetadataKind::ReferenceCount, start, size,
+                       SideMetadataMemoryOrder::Relaxed, &zero) == SideMetadataResult::Success && zero &&
+                fixture.metadata.IsRangeZero(LxrSideMetadataKind::ReferenceCountStraddle, start, size,
+                       SideMetadataMemoryOrder::Relaxed, &straddleZero) == SideMetadataResult::Success && straddleZero;
+        };
+
+        // A fresh block for a mutator outside a trace: the unlog table, the mark table and the ValidObject plane are clear.
+        ImmixBumpAllocator first;
+        ImmixAllocationStatus status = ImmixAllocationStatus::InvalidRequest;
+        ExpectMetadata("f9 first allocator", first.Initialize(&fixture.allocation, OwnerOne), SideMetadataResult::Success);
+        ExpectMetadata("f9 fresh refill", first.TryRefill(ImmixAllocationSource::MutatorFresh,
+            ImmixMarkingContext::Inactive, &status), SideMetadataResult::Success);
+        Expect("f9 fresh refill ready", status == ImmixAllocationStatus::Ready);
+        uintptr_t freshBlock = first.GetBlock();
+        Expect("f9 fresh block clears ValidObject", planeIs(LxrSideMetadataKind::ValidObject, freshBlock,
+            ImmixBlockGeometry::BlockBytes, 0));
+        Expect("f9 fresh block clears the unlog table", planeIs(LxrSideMetadataKind::FieldUnlogged, freshBlock,
+            ImmixBlockGeometry::BlockBytes, 0));
+        Expect("f9 fresh block clears the mark table", planeIs(LxrSideMetadataKind::ObjectMark, freshBlock,
+            ImmixBlockGeometry::BlockBytes, 0));
+        Expect("f9 fresh block keeps zero counts and no straddle mark",
+            countsAndStraddleZero(freshBlock, ImmixBlockGeometry::BlockBytes));
+        Expect("f9 fresh block outside a trace leaves the reuse counts",
+            LoadMetadata(fixture, LxrSideMetadataKind::LineReuse, LineAddress(freshBlock, 5)) == UINT8_MAX);
+        uintptr_t otherBlock = freshBlock == fixture.data_start ? fixture.data_start + ImmixBlockGeometry::BlockBytes
+                                                                 : fixture.data_start;
+        Expect("f9 a block that no buffer took keeps its planes",
+            planeIs(LxrSideMetadataKind::ValidObject, otherBlock, ImmixBlockGeometry::BlockBytes, 1) &&
+            planeIs(LxrSideMetadataKind::FieldUnlogged, otherBlock, ImmixBlockGeometry::BlockBytes, 1) &&
+            planeIs(LxrSideMetadataKind::ObjectMark, otherBlock, ImmixBlockGeometry::BlockBytes, 1));
+
+        // A fresh block during a trace: marked in bulk, and the reuse counts of its lines are incremented (255 wraps to 0).
+        ImmixBumpAllocator second;
+        ExpectMetadata("f9 second allocator", second.Initialize(&fixture.allocation, OwnerTwo), SideMetadataResult::Success);
+        ExpectMetadata("f9 marking fresh refill", second.TryRefill(ImmixAllocationSource::MutatorFresh,
+            ImmixMarkingContext::ConcurrentOrFinalMark, &status), SideMetadataResult::Success);
+        uintptr_t markedBlock = second.GetBlock();
+        Expect("f9 marking refill took another block", markedBlock != freshBlock && markedBlock != 0);
+        Expect("f9 a refill during a trace marks the whole block", planeIs(LxrSideMetadataKind::ObjectMark, markedBlock,
+            ImmixBlockGeometry::BlockBytes, 1));
+        Expect("f9 a refill during a trace clears the unlog table", planeIs(LxrSideMetadataKind::FieldUnlogged, markedBlock,
+            ImmixBlockGeometry::BlockBytes, 0));
+        bool reuseOk = LoadMetadata(fixture, LxrSideMetadataKind::LineReuse, LineAddress(markedBlock, 5)) == 0;
+        for (size_t line = 0; line < ImmixBlockGeometry::LinesPerBlock; line++)
+        {
+            reuseOk = reuseOk && (line == 5 ||
+                LoadMetadata(fixture, LxrSideMetadataKind::LineReuse, LineAddress(markedBlock, line)) == 1);
+        }
+        Expect("f9 a refill during a trace increments the reuse count of every line", reuseOk);
+        Expect("f9 the marking refill keeps zero counts and no straddle mark",
+            countsAndStraddleZero(markedBlock, ImmixBlockGeometry::BlockBytes));
+
+        // A recycled hole: only the hole is changed, and the lines after it are not read (the lazy search).
+        uintptr_t reusable = 0;
+        for (size_t index = 0; index < 6; index++)
+        {
+            uintptr_t candidate = fixture.data_start + (index * ImmixBlockGeometry::BlockBytes);
+            if (candidate != freshBlock && candidate != markedBlock)
+            {
+                reusable = candidate;
+                break;
+            }
+        }
+        SeedReusableBlock(fixture, reusable);
+        SeedAllLines(fixture, reusable, 1);
+        SeedLine(fixture, reusable, 6, 0);
+        SeedLine(fixture, reusable, 7, 0);
+        SeedLine(fixture, reusable, 8, 0);
+        ImmixBumpAllocator third;
+        ExpectMetadata("f9 third allocator", third.Initialize(&fixture.allocation, OwnerThree), SideMetadataResult::Success);
+        uint64_t before = fixture.allocation.GetLineProbesForTest();
+        ExpectMetadata("f9 recycled refill", third.TryRefill(ImmixAllocationSource::MutatorRecycled,
+            ImmixMarkingContext::Inactive, &status), SideMetadataResult::Success);
+        Expect("f9 recycled refill ready", status == ImmixAllocationStatus::Ready);
+        Expect("f9 the recycled hole is the run after the skipped line",
+            third.GetCursor() == LineAddress(reusable, 7) && third.GetLimit() == LineAddress(reusable, 9));
+        Expect("f9 the search of one hole read 10 lines of 128",
+            fixture.allocation.GetLineProbesForTest() - before == 10);
+        Expect("f9 the recycled hole clears ValidObject and the unlog table",
+            planeIs(LxrSideMetadataKind::ValidObject, LineAddress(reusable, 7), 2 * ImmixBlockGeometry::LineBytes, 0) &&
+            planeIs(LxrSideMetadataKind::FieldUnlogged, LineAddress(reusable, 7), 2 * ImmixBlockGeometry::LineBytes, 0));
+        Expect("f9 the recycled hole leaves its neighbours alone",
+            planeIs(LxrSideMetadataKind::ValidObject, LineAddress(reusable, 6), ImmixBlockGeometry::LineBytes, 1) &&
+            planeIs(LxrSideMetadataKind::ValidObject, LineAddress(reusable, 9), ImmixBlockGeometry::LineBytes, 1) &&
+            planeIs(LxrSideMetadataKind::FieldUnlogged, LineAddress(reusable, 9), ImmixBlockGeometry::LineBytes, 1));
+        Expect("f9 outside a trace the recycled hole keeps its mark bits",
+            planeIs(LxrSideMetadataKind::ObjectMark, LineAddress(reusable, 7), 2 * ImmixBlockGeometry::LineBytes, 1));
+
+        ImmixBumpAllocator* all[] = {&first, &second, &third};
+        for (ImmixBumpAllocator* allocator : all)
+        {
+            allocator->Reset(&status);
+        }
+    }
+
+    // A range that a mutator is about to take has zero counts and no straddle mark. When it has, the refill reports it
+    // (Debug builds and the test platform), and does not clear the planes.
+    void TestF9DirtyRangeIsReported()
+    {
+        for (bool straddle : {false, true})
+        {
+            Fixture fixture(2, 2, 1);
+            Expect("f9 dirty fixture initialized", fixture.initialized);
+            if (!fixture.initialized)
+            {
+                return;
+            }
+            uintptr_t block = fixture.data_start;
+            if (straddle)
+            {
+                ExpectMetadata("f9 dirty straddle",
+                    fixture.metadata.Store(LxrSideMetadataKind::ReferenceCountStraddle, LineAddress(block, 3), 1,
+                        SideMetadataMemoryOrder::SequentiallyConsistent), SideMetadataResult::Success);
+            }
+            else
+            {
+                SeedLine(fixture, block, 3, 1);
+            }
+            ImmixBumpAllocator allocator;
+            ExpectMetadata("f9 dirty allocator", allocator.Initialize(&fixture.allocation, OwnerOne),
+                SideMetadataResult::Success);
+            ImmixAllocationStatus status = ImmixAllocationStatus::InvalidRequest;
+            SideMetadataResult result = allocator.TryRefill(ImmixAllocationSource::MutatorFresh,
+                ImmixMarkingContext::Inactive, &status);
+            // The allocator takes the next block when this one fails, so look at the outcome for the dirty block.
+            uintptr_t taken = allocator.GetBlock();
+            Expect("f9 a dirty free block is reported and not handed out",
+                result == SideMetadataResult::InconsistentState || (result == SideMetadataResult::Success &&
+                    taken != block && taken != 0));
+            bool zero = true;
+            fixture.metadata.IsRangeZero(LxrSideMetadataKind::ReferenceCount, block, ImmixBlockGeometry::BlockBytes,
+                SideMetadataMemoryOrder::Relaxed, &zero);
+            Expect("f9 the refill does not clear a count that it found", straddle ? true : !zero);
+            allocator.Reset(&status);
+        }
+    }
+
     void TestPhaseAndContention()
     {
         {
@@ -1372,6 +1766,11 @@ int main()
     TestRecycledAllocation(
         ImmixMarkingContext::ConcurrentOrFinalMark);
     TestGcCopyRecycledAllocation();
+    TestF9ScanEquivalence();
+    TestF9LazyScan();
+    TestF9RefillSchedule(1);
+    TestF9RefillSchedule(3);
+    TestF9DirtyRangeIsReported();
     TestPhaseAndContention();
     TestFreshReclamation();
     TestRejectedReusableBlocks();

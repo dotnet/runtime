@@ -453,7 +453,7 @@ public:
         size_t markedSlots;
         size_t straddleLines;
     };
-    LxrRcResult PoisonRangeForTest(uintptr_t start, size_t bytes);
+    LxrRcResult PoisonRangeForTest(uintptr_t start, size_t bytes, bool counts = true);
     LxrRcResult GetRangeStateForTest(uintptr_t start, size_t bytes, RangeStateForTest* state);
     bool IsMarkingForTest() const { return m_marking.load(std::memory_order_acquire); }
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM

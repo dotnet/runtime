@@ -176,6 +176,16 @@ public:
         return m_value_mask;
     }
 
+    uint8_t GetLogBitsPerValue() const
+    {
+        return m_log_bits_per_value;
+    }
+
+    uint8_t GetLogBytesPerValue() const
+    {
+        return m_log_bytes_per_value;
+    }
+
     SideMetadataLocation Locate(uintptr_t dataAddress) const;
 
     uintptr_t Load(uintptr_t dataAddress, SideMetadataMemoryOrder order) const;
@@ -333,6 +343,16 @@ public:
         uintptr_t dataStart,
         size_t dataSize,
         uintptr_t value);
+
+    // The refill clears and sets the planes of a range of lines as the Java LXR does: a memset of the metadata bytes
+    // (Block::clear_field_unlog_table, Line::initialize_field_unlog_table_as_unlogged, Line::initialize_mark_table_as_marked
+    // in mmtk-core). Only for a plane of one bit per 8 data bytes. The data range must start and end on a multiple of 64
+    // bytes, so that it covers whole metadata bytes; byteValue is 0x00 (all entries 0) or 0xff (all entries 1).
+    SideMetadataResult FillRangeBytes(
+        LxrSideMetadataKind kind,
+        uintptr_t dataStart,
+        size_t dataSize,
+        uint8_t byteValue);
 
     SideMetadataResult IsRangeZero(
         LxrSideMetadataKind kind,

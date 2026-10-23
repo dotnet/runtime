@@ -7542,16 +7542,19 @@ bool LxrReferenceCounting::IsDataOwnedForTest(uintptr_t address) const
     return m_metadata.IsDataAddressOwned(address);
 }
 
-LxrRcResult LxrReferenceCounting::PoisonRangeForTest(uintptr_t start, size_t bytes)
+LxrRcResult LxrReferenceCounting::PoisonRangeForTest(uintptr_t start, size_t bytes, bool counts)
 {
     for (uintptr_t address = start; address < start + bytes; address += sizeof(uintptr_t))
     {
         m_valid_metadata.Store(address, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
-        m_rc_metadata.Store(address, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
+        if (counts)
+        {
+            m_rc_metadata.Store(address, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
+        }
         m_unlogged_metadata.Store(address, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
         m_mark_metadata.Store(address, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
     }
-    for (uintptr_t line = start; line < start + bytes; line += ImmixBlockGeometry::LineBytes)
+    for (uintptr_t line = start; counts && line < start + bytes; line += ImmixBlockGeometry::LineBytes)
     {
         LxrRcResult result = FromMetadata(m_metadata.Store(
             LxrSideMetadataKind::ReferenceCountStraddle, line, 1, SideMetadataMemoryOrder::SequentiallyConsistent));

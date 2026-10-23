@@ -7796,8 +7796,9 @@ namespace
             }
             uintptr_t arena = engine.GetReservationStart();
             size_t blocks = engine.GetImmixCapacityBytes() / ImmixBlockGeometry::BlockBytes;
-            Check(engine.PoisonRangeForTest(arena, blocks * ImmixBlockGeometry::BlockBytes) == LxrRcResult::Success,
-                "the planes of every block are poisoned");
+            Check(engine.PoisonRangeForTest(arena, blocks * ImmixBlockGeometry::BlockBytes, false) ==
+                    LxrRcResult::Success,
+                "the ValidObject, unlog and mark planes of every block are poisoned (the count and straddle planes are not: F9)");
             Type type(24, 0);
             Helper helper{&engine, mutator};
             Object* first = helper.NewObject(type);
@@ -7810,7 +7811,7 @@ namespace
             Check(engine.GetRangeStateForTest(block, ImmixBlockGeometry::BlockBytes, &state) == LxrRcResult::Success &&
                 state.validSlots == 0 && state.countedSlots == 0 && state.unloggedSlots == 0 &&
                 state.straddleLines == 0,
-                "the refill clears the ValidObject, count, unlog and straddle planes of the whole range");
+                "the refill clears the ValidObject and unlog planes of the whole range, and the count and straddle planes stay zero");
             constexpr size_t SlotsPerBlock = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
             Check(state.markedSlots == (marking ? SlotsPerBlock : 0),
                 marking ? "a refill during a trace marks the whole range" : "a refill outside a trace leaves no mark");

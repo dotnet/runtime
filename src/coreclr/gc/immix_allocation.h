@@ -8,6 +8,12 @@
 
 #include <atomic>
 
+// Test hooks of F9 (the probe counter, the check of the clean-range invariant and the controls). The native test platform
+// of the engine tests enables them; the validation program of P2.4 enables them with -DLXR_F9_TEST_HOOKS.
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && !defined(LXR_F9_TEST_HOOKS)
+#define LXR_F9_TEST_HOOKS
+#endif
+
 enum class ImmixAllocationSource : uint8_t
 {
     MutatorFresh,
@@ -90,6 +96,13 @@ public:
     size_t GetRecycledBlocksAcquired() const;
     size_t GetRecycledLinesConsumed() const;
     size_t GetBlocksInUse() const;
+#ifdef LXR_F9_TEST_HOOKS
+    // Test only. The number of lines whose counts the hole search has read since the manager was initialized.
+    uint64_t GetLineProbesForTest() const
+    {
+        return m_line_probes.load(std::memory_order_relaxed);
+    }
+#endif // LXR_F9_TEST_HOOKS
     SideMetadataResult NotifyBlockReleased();
 
     // Storage that the owner of the manager provides, one byte per block unless noted. Every successful block
@@ -135,6 +148,28 @@ private:
         uintptr_t block,
         size_t lineIndex,
         bool* dead) const;
+    // The line scan of the Java LXR (RCArray::is_dead): the counts of one line are a few whole words of the count plane, and
+    // the line is dead when all of them are zero. blockWords is the first word of the count plane of the block.
+    bool IsLineDeadFast(const volatile uintptr_t* blockWords, size_t lineIndex) const
+    {
+#ifdef LXR_F9_TEST_HOOKS
+        m_line_probes.fetch_add(1, std::memory_order_relaxed);
+#endif // LXR_F9_TEST_HOOKS
+        const volatile uintptr_t* words = blockWords + lineIndex * m_rc_words_per_line;
+#if defined(LXR_F9_TEST_HOOKS) && defined(LXR_F9_SCAN_ONE_WORD_CONTROL)
+        // Control: only the first word of the counts of a line is read.
+        return VolatileLoadWithoutBarrier(words) == 0;
+#else
+        for (size_t word = 0; word < m_rc_words_per_line; word++)
+        {
+            if (VolatileLoadWithoutBarrier(words + word) != 0)
+            {
+                return false;
+            }
+        }
+        return true;
+#endif // LXR_F9_TEST_HOOKS && LXR_F9_SCAN_ONE_WORD_CONTROL
+    }
     SideMetadataResult AcquireBlock(
         uintptr_t owner,
         ImmixAllocationSource source,
@@ -169,6 +204,8 @@ private:
     // Inline accessor for the reference-count plane (line scan).
     // The arena that this manager serves is always inside a data range that the metadata manager owns.
     SideMetadataAccessor m_reference_count;
+    // Words of the count plane for one line: 1, 2 or 4 for counts of 2, 4 or 8 bits.
+    size_t m_rc_words_per_line = 0;
     ImmixBlockManager* m_blocks;
     uintptr_t m_arena_start;
     size_t m_arena_size;
@@ -189,6 +226,9 @@ private:
     std::atomic<size_t> m_recycled_blocks_acquired;
     std::atomic<size_t> m_recycled_lines_consumed;
     std::atomic<size_t> m_blocks_in_use{0};
+#ifdef LXR_F9_TEST_HOOKS
+    mutable std::atomic<uint64_t> m_line_probes{0};
+#endif // LXR_F9_TEST_HOOKS
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     AfterPrecheckHook m_after_precheck_hook = nullptr;
     void* m_after_precheck_context = nullptr;

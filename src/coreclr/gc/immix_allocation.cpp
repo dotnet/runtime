@@ -7,8 +7,6 @@
 
 namespace
 {
-    constexpr SideMetadataMemoryOrder MetadataOrder =
-        SideMetadataMemoryOrder::SequentiallyConsistent;
     constexpr SideMetadataMemoryOrder RcReadOrder =
         SideMetadataMemoryOrder::Relaxed;
 
@@ -85,11 +83,15 @@ SideMetadataResult ImmixAllocationManager::Initialize(
 
     m_metadata = metadata;
     m_reference_count = metadata->GetAccessor(LxrSideMetadataKind::ReferenceCount);
-    if (!m_reference_count.IsValid())
+    if (!m_reference_count.IsValid() ||
+        (m_reference_count.GetLogBytesPerValue() != 3) ||
+        (m_reference_count.GetLogBitsPerValue() < 1) ||
+        (m_reference_count.GetLogBitsPerValue() > 3))
     {
         m_metadata = nullptr;
         return SideMetadataResult::InvalidLayout;
     }
+    m_rc_words_per_line = static_cast<size_t>(1) << (m_reference_count.GetLogBitsPerValue() - 1);
     m_blocks = blocks;
     m_arena_start = arenaStart;
     m_arena_size = arenaSize;
@@ -108,7 +110,7 @@ void ImmixAllocationManager::Shutdown()
 {
     m_metadata = nullptr;
     m_reference_count = SideMetadataAccessor();
-    m_blocks = nullptr;
+    m_rc_words_per_line = 0;
     m_arena_start = 0;
     m_arena_size = 0;
     m_block_count = 0;
@@ -198,6 +200,36 @@ SideMetadataResult ImmixAllocationManager::TryFindNextHole(
         return SideMetadataResult::AddressNotOwned;
     }
 
+    // The count plane of the block is read in place, one line at a time, as the Java LXR does (RCArray::is_dead): the
+    // first word of the plane is found once, and a line is a fixed number of words from it.
+    const volatile uintptr_t* blockWords = m_reference_count.Locate(block).word;
+    auto isDead = [&](size_t lineIndex) -> bool
+    {
+        bool dead = IsLineDeadFast(blockWords, lineIndex);
+#ifdef _DEBUG
+        for (int attempt = 0; attempt < 16; attempt++)
+        {
+            bool checkedDead = false;
+            if (IsLineDead(block, lineIndex, &checkedDead) != SideMetadataResult::Success || checkedDead == dead)
+            {
+                return dead;
+            }
+            // Another thread may have changed a count between the two reads; look again.
+            dead = IsLineDeadFast(blockWords, lineIndex);
+        }
+        _ASSERTE(!"The line scan of the count plane and the checked scan disagree.");
+#endif // _DEBUG
+        return dead;
+    };
+
+#if defined(LXR_F9_TEST_HOOKS) && defined(LXR_F9_EAGER_SCAN_CONTROL)
+    // Control: every line of the block is read before the first hole is returned.
+    for (size_t eager = 0; eager < ImmixBlockGeometry::LinesPerBlock; eager++)
+    {
+        (void)isDead(eager);
+    }
+#endif // LXR_F9_TEST_HOOKS && LXR_F9_EAGER_SCAN_CONTROL
+
     size_t line = searchLine;
     while (line < ImmixBlockGeometry::LinesPerBlock)
     {
@@ -205,13 +237,7 @@ SideMetadataResult ImmixAllocationManager::TryFindNextHole(
         size_t firstReusableLine = ImmixBlockGeometry::LinesPerBlock;
         while (line < ImmixBlockGeometry::LinesPerBlock)
         {
-            bool dead = false;
-            SideMetadataResult result =
-                IsLineDead(block, line, &dead);
-            if (result != SideMetadataResult::Success)
-            {
-                return result;
-            }
+            bool dead = isDead(line);
             if (dead && ((line == 0) || previousDead))
             {
                 firstReusableLine = line;
@@ -229,14 +255,7 @@ SideMetadataResult ImmixAllocationManager::TryFindNextHole(
         line = firstReusableLine + 1;
         while (line < ImmixBlockGeometry::LinesPerBlock)
         {
-            bool dead = false;
-            SideMetadataResult result =
-                IsLineDead(block, line, &dead);
-            if (result != SideMetadataResult::Success)
-            {
-                return result;
-            }
-            if (!dead)
+            if (!isDead(line))
             {
                 break;
             }
@@ -684,43 +703,70 @@ SideMetadataResult ImmixAllocationManager::InitializeFieldLogRange(
     size_t size,
     bool copy)
 {
+    // The ValidObject plane exists because .NET needs the start of the object that contains an interior pointer; the Java
+    // LXR has no such plane. A stale bit of a dead object must not lie in a range that new objects use, so the plane is
+    // cleared here, on the same schedule as the unlog and mark tables of the Java LXR (at the refill of the range).
 #if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_VALID_CLEAR_CONTROL)
     if (m_metadata->IsSpecEnabled(LxrSideMetadataKind::ValidObject))
     {
-        SideMetadataResult result = m_metadata->ResetRangeQuiescent(
-            LxrSideMetadataKind::ValidObject, start, size, 0);
+        SideMetadataResult result = m_metadata->FillRangeBytes(LxrSideMetadataKind::ValidObject, start, size, 0);
         if (result != SideMetadataResult::Success)
         {
             return result;
         }
     }
 #endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_VALID_CLEAR_CONTROL
-#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_D2_NO_BULK_CLEAR_CONTROL)
+    // P28 (F9). The Java LXR does not clear the count plane and the straddle plane at a refill: the counts and the straddle
+    // marks of a dead object are cleared when the object dies (rc.rs, rc_work.rs: unmark_straddle_object), and the tables of a
+    // block are cleared only when a defrag source is released. So a free block and a hole have zero counts and no straddle
+    // mark, and the refill only has to unlog (the Java LXR: Block::clear_field_unlog_table, Line::clear_field_unlog_table).
+    // Debug builds and the test platform check this invariant.
+#if defined(LXR_F9_TEST_HOOKS) && defined(LXR_F9_CLEAR_AT_REFILL_CONTROL)
+    // Control: the refill clears the count and straddle planes (the behaviour before F9).
     if (!copy)
     {
-        // P22 (D2). A mutator takes the whole range and bumps a pointer in it, with no call per object. So the refill
-        // is the only place that makes the range a clean nursery range: no start bit, no count, no straddle mark.
-        // A free block and a hole have these cleared already; the explicit clear makes the contract independent of
-        // how the range became free.
+        SideMetadataResult result = SideMetadataResult::Success;
         if (m_metadata->IsSpecEnabled(LxrSideMetadataKind::ReferenceCountStraddle))
         {
-            SideMetadataResult result = m_metadata->ResetRangeQuiescent(
-                LxrSideMetadataKind::ReferenceCountStraddle, start, size, 0);
-            if (result != SideMetadataResult::Success)
-            {
-                return result;
-            }
+            result = m_metadata->ResetRangeQuiescent(LxrSideMetadataKind::ReferenceCountStraddle, start, size, 0);
         }
-        SideMetadataResult result = m_metadata->ResetRangeQuiescent(
-            LxrSideMetadataKind::ReferenceCount, start, size, 0);
+        if (result == SideMetadataResult::Success)
+        {
+            result = m_metadata->ResetRangeQuiescent(LxrSideMetadataKind::ReferenceCount, start, size, 0);
+        }
         if (result != SideMetadataResult::Success)
         {
             return result;
         }
     }
-#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_D2_NO_BULK_CLEAR_CONTROL
-    uintptr_t value = copy ? 1 : 0;
-    return m_metadata->ResetRangeQuiescent(LxrSideMetadataKind::FieldUnlogged, start, size, value);
+#endif // LXR_F9_TEST_HOOKS && LXR_F9_CLEAR_AT_REFILL_CONTROL
+#if (defined(_DEBUG) || defined(LXR_F9_TEST_HOOKS)) && !defined(LXR_F9_NO_VERIFY_CONTROL)
+    if (!copy)
+    {
+        bool zero = false;
+        SideMetadataResult result = m_metadata->IsRangeZero(
+            LxrSideMetadataKind::ReferenceCount, start, size, SideMetadataMemoryOrder::Relaxed, &zero);
+        bool noStraddle = true;
+        if ((result == SideMetadataResult::Success) &&
+            m_metadata->IsSpecEnabled(LxrSideMetadataKind::ReferenceCountStraddle))
+        {
+            result = m_metadata->IsRangeZero(
+                LxrSideMetadataKind::ReferenceCountStraddle, start, size, SideMetadataMemoryOrder::Relaxed, &noStraddle);
+        }
+        if (result != SideMetadataResult::Success)
+        {
+            return result;
+        }
+        if (!zero || !noStraddle)
+        {
+#if !defined(LXR_F9_TEST_HOOKS)
+            _ASSERTE(!"A range that a mutator takes has counts or straddle marks.");
+#endif // !LXR_F9_TEST_HOOKS
+            return SideMetadataResult::InconsistentState;
+        }
+    }
+#endif // (_DEBUG || LXR_F9_TEST_HOOKS) && !LXR_F9_NO_VERIFY_CONTROL
+    return m_metadata->FillRangeBytes(LxrSideMetadataKind::FieldUnlogged, start, size, copy ? 0xff : 0);
 }
 
 SideMetadataResult ImmixAllocationManager::InitializeObjectMarkRange(
@@ -728,32 +774,30 @@ SideMetadataResult ImmixAllocationManager::InitializeObjectMarkRange(
     size_t size,
     uintptr_t value)
 {
-    return m_metadata->ResetRangeQuiescent(
+    return m_metadata->FillRangeBytes(
         LxrSideMetadataKind::ObjectMark,
         start,
         size,
-        value);
+        value != 0 ? 0xff : 0);
 }
 
 SideMetadataResult ImmixAllocationManager::IncrementLineReuseRange(
     uintptr_t start,
     size_t size)
 {
-    uintptr_t end = start + size;
-    for (uintptr_t line = start;
-         line < end;
-         line += ImmixBlockGeometry::LineBytes)
+    // Line::inc_reuse_counts of the Java LXR: one byte per line, a plain load and store (no read-modify-write), wrapping at
+    // 255. Only the thread that took the range changes these bytes while it is in the mutator phase.
+    SideMetadataLocation first = {};
+    SideMetadataResult result = m_metadata->GetLocation(LxrSideMetadataKind::LineReuse, start, &first);
+    if (result != SideMetadataResult::Success)
     {
-        SideMetadataResult result = m_metadata->FetchAddWrapping(
-            LxrSideMetadataKind::LineReuse,
-            line,
-            1,
-            MetadataOrder,
-            nullptr);
-        if (result != SideMetadataResult::Success)
-        {
-            return result;
-        }
+        return result;
+    }
+    uint8_t* counts = reinterpret_cast<uint8_t*>(const_cast<uintptr_t*>(first.word)) + (first.shift >> 3);
+    for (size_t line = 0; line < size / ImmixBlockGeometry::LineBytes; line++)
+    {
+        uint8_t count = VolatileLoadWithoutBarrier(counts + line);
+        VolatileStore(counts + line, static_cast<uint8_t>(count == UINT8_MAX ? 0 : count + 1));
     }
 
     return SideMetadataResult::Success;

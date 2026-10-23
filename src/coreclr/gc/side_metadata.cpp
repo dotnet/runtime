@@ -1034,6 +1034,50 @@ SideMetadataResult SideMetadataManager::ResetRangeQuiescent(
     return ResetRangeQuiescentCore(*spec, dataStart, dataSize, value);
 }
 
+SideMetadataResult SideMetadataManager::FillRangeBytes(
+    LxrSideMetadataKind kind,
+    uintptr_t dataStart,
+    size_t dataSize,
+    uint8_t byteValue)
+{
+    if ((m_layout == nullptr) || m_commit_failed || (dataSize == 0))
+    {
+        return dataSize == 0 ? SideMetadataResult::Success : SideMetadataResult::InvalidArgument;
+    }
+
+    const SideMetadataSpec* spec = m_layout->GetSpec(kind);
+    if ((spec == nullptr) || !IsSpecEnabled(kind) ||
+        (spec->log_bits_per_value != 0) || (spec->log_bytes_per_value != 3) ||
+        ((byteValue != 0) && (byteValue != 0xff)))
+    {
+        return SideMetadataResult::InvalidArgument;
+    }
+
+    // One metadata byte covers 8 entries of 8 data bytes each.
+    constexpr size_t BytesPerMetadataByte = 64;
+    if (((dataStart & (BytesPerMetadataByte - 1)) != 0) ||
+        ((dataSize & (BytesPerMetadataByte - 1)) != 0) ||
+        !IsDataRangeOwned(dataStart, dataSize))
+    {
+        return SideMetadataResult::AddressNotOwned;
+    }
+
+#if BIGENDIAN
+    return ResetRangeQuiescentCore(*spec, dataStart, dataSize, byteValue == 0 ? 0 : 1);
+#else
+    SideMetadataLocation first = {};
+    SideMetadataResult result = GetLocationUnchecked(*spec, dataStart, &first);
+    if (result != SideMetadataResult::Success)
+    {
+        return result;
+    }
+    uint8_t* bytes = reinterpret_cast<uint8_t*>(const_cast<uintptr_t*>(first.word)) + (first.shift >> 3);
+    _ASSERTE((first.shift & 7) == 0);
+    memset(bytes, byteValue, dataSize / BytesPerMetadataByte);
+    return SideMetadataResult::Success;
+#endif // BIGENDIAN
+}
+
 SideMetadataResult SideMetadataManager::ResetRangeQuiescentCore(
     const SideMetadataSpec& spec,
     uintptr_t dataStart,

@@ -31,6 +31,7 @@ command=(
   -DHOST_AMD64
   -DTARGET_64BIT
   -DHOST_64BIT
+  -DLXR_F9_TEST_HOOKS
   -I"$gc_root"
   -I"$gc_root/env"
   -I"$native_root"
@@ -42,6 +43,10 @@ command=(
   "$gc_root/immix_allocation.cpp"
   -o "$output_root/immix-allocation-validation"
 )
+
+# A control is a deliberately broken variant: P2_4_EXTRA_DEFINES="-DLXR_F9_EAGER_SCAN_CONTROL" (see P28 controls-f9.sh).
+read -r -a extra_defines <<< "${P2_4_EXTRA_DEFINES:-}"
+command+=(${extra_defines[@]+"${extra_defines[@]}"})
 
 printf '%q ' "${command[@]}" > "$output_root/command.txt"
 printf '\n' >> "$output_root/command.txt"
