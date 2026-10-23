@@ -76,9 +76,11 @@ namespace System.Reflection.Metadata
             TypeName? declaringType,
             ImmutableArray<TypeName> genericTypeArguments,
             int rankOrModifier = default,
-            int nestedNameLength = -1)
+            int nestedNameLength = -1,
+            string? name = null)
         {
             _fullName = fullName;
+            _name = name;
             AssemblyName = assemblyName;
             _elementOrGenericType = elementOrGenericType;
             _declaringType = declaringType;
@@ -228,7 +230,6 @@ namespace System.Reflection.Metadata
                 }
                 else if (IsNested)
                 {
-                    // Nested types created by CreateSimpleTypeName store only their own name.
                     _declaringType.AppendFullName(ref builder);
                     builder.Append('+');
                     builder.Append(_name);
@@ -621,10 +622,8 @@ namespace System.Reflection.Metadata
                 elementOrGenericType: null,
                 declaringType: declaringType,
                 genericTypeArguments: ImmutableArray<TypeName>.Empty,
-                nestedNameLength: _nestedNameLength)
-            {
-                _name = _name,
-            };
+                nestedNameLength: _nestedNameLength,
+                name: _name);
         }
 
         /// <summary>
@@ -666,15 +665,12 @@ namespace System.Reflection.Metadata
                 throw new ArgumentException(SR.Arg_NestedTypeAssemblyInfo, nameof(assemblyInfo));
             }
 
-            // The full name is built on first use of FullName.
             return new TypeName(fullName: null,
                 assemblyName: declaringType.AssemblyName,
                 elementOrGenericType: null,
                 declaringType: declaringType,
-                genericTypeArguments: ImmutableArray<TypeName>.Empty)
-            {
-                _name = escapedName,
-            };
+                genericTypeArguments: ImmutableArray<TypeName>.Empty,
+                name: escapedName);
         }
 
         /// <summary>
