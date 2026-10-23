@@ -353,6 +353,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>Resets the decoder session, allowing reuse for decompressing the next Zstandard frame.</summary>
+        /// <remarks>Clears any prefix and restores the dictionary supplied when the decoder was constructed.</remarks>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="IOException">Failed to reset the decoder session.</exception>
         public void Reset()
@@ -364,7 +365,11 @@ namespace System.IO.Compression
         }
 
         /// <summary>References a prefix for the next decompression operation.</summary>
-        /// <remarks>The prefix will be used only for the next decompression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the decompression operation.</remarks>
+        /// <remarks>
+        /// The prefix will be used only for the next decompression frame and will be removed when <see cref="Reset"/> is called.
+        /// The prefix replaces any dictionary supplied when the decoder was constructed until <see cref="Reset"/> restores that dictionary.
+        /// The referenced data must remain valid and unmodified for the duration of the decompression operation.
+        /// </remarks>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The decoder is in an invalid state for setting a prefix.</exception>
         public void SetPrefix(ReadOnlyMemory<byte> prefix)
