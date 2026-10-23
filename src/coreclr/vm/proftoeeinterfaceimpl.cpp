@@ -8347,7 +8347,7 @@ Loop:
             unsigned uiMethodSizeDummy;
             PTR_CBYTE table = PTR_CBYTE(gcInfo);
             table += decodeUnsigned(table, &uiMethodSizeDummy);
-            table = decodeHeader(table, gcInfoToken.Version, &header);
+            table = decodeHeader(table, GCINFO_VERSION, &header);
 
             // Ok, GCInfo, can we do a simple EBP walk or what?
 

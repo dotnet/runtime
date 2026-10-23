@@ -10,6 +10,19 @@
 #error "This should be included only for Wasm"
 #endif // TARGET_WASM
 
+static uint64_t EncodeWasmUnwindInfo(unsigned frameSizeInUnits, unsigned virtualIPCountInUnits)
+{
+    constexpr unsigned MaxUnwindFieldValue = 0xFFFFFF;
+    if ((frameSizeInUnits > MaxUnwindFieldValue) || (virtualIPCountInUnits > MaxUnwindFieldValue))
+    {
+        IMPL_LIMITATION("Wasm unwind frame size or virtual IP count exceeds 24 bits");
+    }
+
+    return (frameSizeInUnits & 0xF) | ((virtualIPCountInUnits & 0xF) << 4) | ((frameSizeInUnits & 0xF0) << 4) |
+           ((virtualIPCountInUnits & 0xF0) << 8) | (static_cast<uint64_t>(frameSizeInUnits >> 8) << 16) |
+           (static_cast<uint64_t>(virtualIPCountInUnits >> 8) << 32);
+}
+
 void Compiler::unwindBegProlog()
 {
 }
@@ -61,8 +74,9 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     bool isFunclet  = func->IsFunclet();
     bool isColdCode = false;
     assert(func->endVirtualIP > func->startVirtualIP);
-    ULONG encodedSize = emitter::SizeOfULEB128(func->funWasmFrameSize) +
-                        emitter::SizeOfULEB128(func->endVirtualIP - func->startVirtualIP);
+    assert((func->funWasmFrameSize % STACK_ALIGN) == 0);
+    ULONG encodedSize = emitter::SizeOfULEB128(
+        EncodeWasmUnwindInfo(func->funWasmFrameSize / STACK_ALIGN, func->endVirtualIP - func->startVirtualIP));
 
     eeReserveUnwindInfo(isFunclet, isColdCode, encodedSize);
 }
@@ -107,14 +121,15 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     //
     pColdCode = nullptr;
 
-    // Unwind info is the frame size and the virtual IP length.
-    // All values encoded via ULEB128.
+    // Interleave the frame size in 16-byte units and virtual IP count in 2-IP units into one ULEB128.
     //
     uint8_t buffer[10];
     size_t  index = 0;
     assert(func->endVirtualIP > func->startVirtualIP);
-    index += GetEmitter()->emitOutputULEB128(buffer + index, func->funWasmFrameSize);
-    index += GetEmitter()->emitOutputULEB128(buffer + index, func->endVirtualIP - func->startVirtualIP);
+    assert((func->funWasmFrameSize % STACK_ALIGN) == 0);
+    index += GetEmitter()->emitOutputULEB128(buffer + index,
+                                             EncodeWasmUnwindInfo(func->funWasmFrameSize / STACK_ALIGN,
+                                                                  func->endVirtualIP - func->startVirtualIP));
     assert(index <= sizeof(buffer));
 
     JITDUMP("Unwind info for %s %u: VIP range [%u, %u); frame size %u\n", func->IsFunclet() ? "funclet" : "main",

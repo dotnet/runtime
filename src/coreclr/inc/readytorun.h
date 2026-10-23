@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 32
+#define READYTORUN_MAJOR_VERSION 33
 #define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 26
+#define MINIMUM_READYTORUN_MAJOR_VERSION 33
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -82,6 +82,9 @@
 // method's ReadyToRun entry point and fixups.
 // R2R Version 31.1 adds READYTORUN_FLAG_SINGLE_THREADED, which records that the image lays out [ThreadStatic] fields as regular statics
 // for a runtime built without FEATURE_MULTITHREADING.
+// R2R Version 33 uses GCInfo v6, with shrinking slot flag bits and offsets relative within flags/base groups.
+//     Wasm also compacts stack slot offsets and packs scaled unwind frame sizes and virtual IP counts into one ULEB128.
+//     Wasm images from earlier versions must be regenerated.
 
 struct READYTORUN_CORE_HEADER
 {

@@ -460,18 +460,97 @@ value containing the minimum WebAssembly function table index for the image.
 
 ### UnwindInfo (wasm)
 
-On WebAssembly, the unwind info blob associated with each `RUNTIME_FUNCTION` entry is encoded as
-two consecutive ULEB128 values:
+On WebAssembly, the unwind info blob associated with each `RUNTIME_FUNCTION` entry is a single
+ULEB128-encoded unsigned 64-bit integer. It interleaves the frame size divided by 16 and the
+virtual IP count divided by 2:
 
-| Order | Encoding | Value
-|------:|:---------|:-----
-|     1 | ULEB128  | Frame size in bytes (the number of bytes to unwind from the stack)
-|     2 | ULEB128  | Virtual IP count divided by 2 (the number of virtual IPs logically present in the function, halved)
+| Encoded bits | Value
+|-------------:|:-----
+|          3:0 | Frame size in 16-byte units, bits 3:0
+|          7:4 | Virtual IP count in 2-IP units, bits 3:0
+|         11:8 | Frame size in 16-byte units, bits 7:4
+|        15:12 | Virtual IP count in 2-IP units, bits 7:4
+|        31:16 | Frame size in 16-byte units, bits 23:8
+|        47:32 | Virtual IP count in 2-IP units, bits 23:8
+
+The largest representable frame size is `2^28 - 16` bytes; the largest virtual IP count is
+`2^25 - 2`. The encoded value requires at most seven bytes, and one byte when the frame size
+is below 256 bytes and the virtual IP count is below 16.
+
+ReadyToRun format 33.0 uses this packed unwind data and the compact Wasm GC encoding described
+below. The runtime requires ReadyToRun format 33.0 or later on every architecture and only
+decodes GCInfo v6. Earlier images must be regenerated. Inspection tools retain older non-Wasm
+format support, but reject earlier Wasm images before interpreting their unwind or GC metadata.
 
 The virtual IP count (after multiplying by 2) gives the span of virtual IPs covered by this
 function or funclet. All virtual IPs are forced to even numbers so that the runtime can force all virtual
 ips to have odd numbers and fit into the address space in a manner which cannot conflict with either interpreter
 IPs or PortableEntryPoint structures.
+
+### GC info
+
+ReadyToRun format 33.0 uses GCInfo v6. On non-Wasm platforms using the shared GCInfo encoding,
+tracked and untracked stack slots are each sorted in descending flag order:
+pinned interior pointers, pinned object references, interior pointers, then ordinary object
+references.
+
+Register slots encode their interior/pinned flags before the register number. Slots are sorted
+in descending flag order, so all pinned slots precede unpinned slots. The first register carries
+both flag bits. Subsequent registers carry both bits while the preceding slot is pinned, only
+the interior bit after an unpinned interior slot, and no flag bits after an ordinary reference.
+Once an unpinned slot has been seen, the pinned bit is therefore implicitly zero.
+The first register in each flag group uses an absolute register number; subsequent registers
+with the same flags use the difference from the preceding register number minus one.
+
+Register numbers and deltas use at most two chunks. The first chunk contains `ENCBASE` low
+payload bits followed by one continuation bit. If set, the second chunk contains all remaining
+bits of the target register number, without another continuation bit:
+
+| Target | Register bits | Absolute ENCBASE / total bits | Delta ENCBASE / total bits |
+| --- | --- | --- | --- |
+| x64 (including APX R16-R31), Arm64, LoongArch64, RISC-V64 | 5 | 3 / 4 or 6 | 2 / 3 or 6 |
+| Arm32 | 4 | 2 / 3 or 5 | 1 / 2 or 5 |
+| Shared-format x86 | 3 | 3 / 4 | 3 / 4 |
+
+This reserves x64 encoding space for APX roots without changing register allocation or
+runtime context support for them. Legacy x86 GCInfo uses its separate, unchanged format.
+
+Stack slots use the same shrinking flag bits as registers: two bits initially and after a
+pinned slot, only the interior bit after an unpinned interior slot, and no flag bits after an
+ordinary reference. Within each flag group, slots are sorted by base, SP before Frame, then
+by ascending offset. Each non-Wasm slot has one base bit: `0` for SP-relative and `1` for
+frame-relative. Caller-SP-relative slots are not represented in v6.
+
+The first slot of each flags/base combination has a signed absolute stack offset, followed
+by unsigned offset deltas for the remaining slots in that group. Flags, base, and offset state
+reset at the tracked/untracked boundary. Platform-specific offset normalization is unchanged.
+
+### GC info (wasm)
+
+Wasm GC slot tables omit the register-presence bit and per-slot stack base: roots are implicitly
+frame-relative, with offsets stored in 4-byte pointer units. Both header forms implicitly use
+normalized zero for the default frame register: neither its presence bit nor its register
+number is encoded. Fat headers therefore contain nine flag bits instead of ten. The prolog
+size is also implicit at one virtual-IP unit; its encoded size-minus-one field is omitted.
+Wasm XORs the pinned flag (`0x2`) before sorting and encoding stack slot flags. The descending
+encoded order is therefore interior pointers (`11`), ordinary object references (`10`),
+pinned interior pointers (`01`), then pinned object references (`00`). Pinned object references
+are the most common Wasm roots. The first slot carries two flag bits; subsequent slots carry
+two bits after an unpinned slot, one bit after a pinned interior pointer, and no flag bits after
+a pinned object reference. Decoders XOR `0x2` back to recover the semantic flags.
+Offset grouping and tracked/untracked state resets are unchanged.
+
+Wasm slim headers imply zero safe points and omit the count. Methods with nonzero safe-point
+counts must use fat headers, which retain the count and safe-point data. Non-Wasm slim headers
+retain their safe-point counts.
+
+Wasm v6 uses ENCBASE 5 for code lengths, 7 for untracked-slot counts, 3 for safe-point counts,
+and 4 for reverse-P/Invoke frame offsets. These values favor whole-image Brotli compression
+rather than the smallest uncompressed GC payload.
+
+Wasm ReadyToRun reports only untracked roots. The zero tracked-slot count remains in the
+stream, but its runtime decoder omits tracked-slot descriptor and lifetime parsing.
+The interpreter retains tracked-root support and its own register-free encoding.
 
 ## ReadyToRunSectionType.MethodDefEntryPoints
 

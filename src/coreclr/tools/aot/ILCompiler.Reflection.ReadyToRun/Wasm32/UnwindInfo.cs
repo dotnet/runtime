@@ -6,8 +6,7 @@ using System.Text;
 namespace ILCompiler.Reflection.ReadyToRun.Wasm32
 {
     /// Parses the WASM unwind info blob used by ReadyToRun.
-    /// The blob format is two unsigned LEB128 values in order:
-    /// <c>BytesUnwind</c> (frame size), followed by <c>VirtualIPCount</c> (virtual IP span / 2).
+    /// The blob is one unsigned LEB128 value interleaving frame size / 16 and virtual IP span / 2.
     /// <see cref="BaseUnwindInfo.Size"/> is the number of bytes consumed while decoding those fields.
     public class UnwindInfo : BaseUnwindInfo
     {
@@ -20,8 +19,11 @@ namespace ILCompiler.Reflection.ReadyToRun.Wasm32
         public UnwindInfo(NativeReader imageReader, int offset)
         {
             uint startOffset = (uint)offset;
-            BytesUnwind = imageReader.ReadULEB128(ref offset);
-            VirtualIPCount = imageReader.ReadULEB128(ref offset) * 2;
+            ulong encoded = imageReader.ReadULEB128(ref offset);
+            BytesUnwind = (uint)((encoded & 0xF) | (((encoded >> 8) & 0xF) << 4) |
+                                (((encoded >> 16) & 0xFFFF) << 8)) * 16;
+            VirtualIPCount = (uint)(((encoded >> 4) & 0xF) | (((encoded >> 12) & 0xF) << 4) |
+                                   (((encoded >> 32) & 0xFFFF) << 8)) * 2;
             Size = offset - (int)startOffset;
         }
 

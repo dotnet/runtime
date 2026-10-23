@@ -5,13 +5,27 @@ This contract is for fetching information related to GCInfo associated with nati
 The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract.
 
 WebAssembly uses the common decoder with `Wasm32GcInfoEncoding` traits from
-`src/coreclr/inc/gcinfotypes.h`: code lengths/offsets and stack offsets are
-unscaled, the code-length encoding base is 6, and there is no fixed stack
+`src/coreclr/inc/gcinfotypes.h`: code lengths/offsets are unscaled, stack offsets
+are in four-byte pointer units, the code-length encoding base is 5, and there is no fixed stack
 parameter scratch area. The platform encoding has no interruptible-range
-count in its fat header (`HAS_INTERRUPTIBLE_RANGES` is false).
+count in its fat header (`HAS_INTERRUPTIBLE_RANGES` is false). Both header forms omit the
+frame-register presence bit and register value,
+implicitly using normalized register zero (physical register 2). The prolog-size-minus-one
+field is omitted and its normalized prolog size is implicitly one when needed for
+GS-cookie or generic-context validity. Slim headers imply zero safe points and omit the
+count; nonzero safe-point counts require fat headers and remain explicitly encoded.
+Wasm stack-slot flags are sorted and encoded after XOR with the pinned bit (`0x2`):
+interior, ordinary object, pinned interior, then pinned object. The first slot has two
+flag bits; later slots have two after an unpinned root, one after a pinned interior root,
+and none after a pinned object root. Decoding restores the semantic pinned bit with
+the same XOR. Tracked and untracked sections reset their flag and offset state independently.
 `DecodeInterpreterGCInfo` uses the separate interpreter traits even on
 WebAssembly, including its code-length encoding base of 8 and its
 interruptible-range count field.
+
+The runtime uses GCInfo v6 exclusively. This contract also retains non-Wasm GCInfo v5
+decoding to support older runtimes. WebAssembly has only the v6 platform encoding;
+there is no legacy WebAssembly decoding path.
 
 ## APIs of contract
 
@@ -197,6 +211,22 @@ Constants:
 ### GCInfo Format
 
 The GCInfo format consists of a header structure and following data types. The header is either 'slim' for simple methods that can use the compact encoding scheme or a 'fat' header containing more details.
+
+The tables and decoding pseudocode below describe the common layout. Wasm platform GCInfo
+version 6 omits `UsingStackBaseRegister`, `StackBaseRegister`, and `PrologSize` as described
+above, and omits `NumSafePoints` only for slim headers. Its fat `HeaderFlags` occupy nine
+bits: bit `0x40` is omitted from the stream, higher flag bits shift down one position, and
+the decoder restores `GC_INFO_HAS_STACK_BASE_REGISTER` implicitly. Interpreter headers
+retain the common layout on every architecture.
+
+Wasm uses the following tuned variable-length integer bases.
+
+| Constant | Wasm v6 ENCBASE |
+| --- | --- |
+| `CODE_LENGTH_ENCBASE` | 5 |
+| `NUM_UNTRACKED_SLOTS_ENCBASE` | 7 |
+| `NUM_SAFE_POINTS_ENCBASE` | 3 |
+| `REVERSE_PINVOKE_FRAME_ENCBASE` | 4 |
 
 #### GCInfo Header
 

@@ -188,6 +188,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             gcVersion = GetR2RGCInfoVersion(r2rInfo);
         }
 
+        // Diagnostics retain the historical mapping even when the runtime raises its minimum R2R version.
         // This function must be kept up to date with R2R version changes.
         // When the R2R version is bumped, it must be mapped to the correct GCInfo version.
         // Adding "MINIMUM_READYTORUN_MAJOR_VERSION" to ensure this is updated according
@@ -199,6 +200,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             // see readytorun.h for the versioning details
             return header.MajorVersion switch
             {
+                >= 33 => 6,
                 >= 21 => 5,
                 >= 11 => 4,
                  < 11 => 3,
