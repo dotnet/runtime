@@ -33,8 +33,8 @@ static MapViewOfFile3Fn s_mapViewOfFile3 = nullptr;
 
 static BOOL CALLBACK InitializePlaceholderMapping(PINIT_ONCE, void*, void**)
 {
-    // Use the API-set contract because kernel32.dll does not directly export these APIs on all supported systems.
-    HMODULE module = LoadLibraryExW(L"api-ms-win-core-memory-l1-1-6.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    // kernel32.dll does not directly export these APIs on all supported systems.
+    HMODULE module = LoadLibraryExW(L"KernelBase.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (module != nullptr)
     {
         s_virtualAlloc2 = reinterpret_cast<VirtualAlloc2Fn>(GetProcAddress(module, "VirtualAlloc2"));
