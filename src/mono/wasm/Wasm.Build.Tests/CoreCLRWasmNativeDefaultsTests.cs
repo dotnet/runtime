@@ -38,6 +38,7 @@ namespace Wasm.Build.Tests
             { "<InvariantGlobalization>false</InvariantGlobalization>", false },
             { "<InvariantTimezone>false</InvariantTimezone>", false },
             { "<EnableDiagnostics>false</EnableDiagnostics>", false },
+            { "<WasmEnableRelaxedSimd>false</WasmEnableRelaxedSimd>", false },
             // property left unset -> no relink
             { "", false },
             // casing must not matter, MSBuild string comparison is case-insensitive
@@ -46,6 +47,7 @@ namespace Wasm.Build.Tests
             { "<InvariantGlobalization>true</InvariantGlobalization>", true },
             { "<InvariantTimezone>true</InvariantTimezone>", true },
             { "<EnableDiagnostics>true</EnableDiagnostics>", true },
+            { "<WasmEnableRelaxedSimd>true</WasmEnableRelaxedSimd>", true },
             { "<WasmInitialHeapSize>67108864</WasmInitialHeapSize>", true },
             // EmccInitialHeapSize is the documented browser property and EmccTotalMemory its legacy
             // alias; both must be normalized into WasmInitialHeapSize before the registry compares.
