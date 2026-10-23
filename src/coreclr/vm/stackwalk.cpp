@@ -2595,7 +2595,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    if ((m_flags & GC_ROOT_SCAN) && m_crawl.pFrame == FRAME_TOP)
+    if (m_crawl.pFrame == FRAME_TOP)
     {
         return FALSE;
     }
@@ -2610,8 +2610,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // this makes it so that any Frame that is in a managed call
     // frame will be reported before its containing method.
 
-    // This should always succeed!  If it doesn't, it's a bug somewhere else!
-    pvReferenceSP = EECodeManager::GetCallerSp(m_crawl.pRD, m_crawl.isFrameless ? &m_cachedCodeInfo : NULL, m_codeManFlags);
+    TADDR pvReferenceSP = EECodeManager::GetCallerSp(m_crawl.pRD, m_crawl.isFrameless ? &m_cachedCodeInfo : NULL, m_codeManFlags);
 
     if ( !( (m_crawl.pFrame != FRAME_TOP) &&
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP) )
