@@ -100,17 +100,23 @@ internal sealed partial class GrammarActions
         int? endColumn,
         IToken? path,
         bool appliesToNextLine = false)
-        => new(
+    {
+        // Match Roslyn's column limit for compatibility with existing SRM readers' off-by-one check:
+        // https://github.com/dotnet/roslyn/blob/e3c31f15b79e226656e3b082a921d4d60127b1fa/src/Compilers/Core/Portable/CodeGen/SequencePointList.cs#L182-L186
+        const int DefaultEndColumn = ushort.MaxValue - 1;
+
+        return new(
             autoIncrement,
             startLine,
             startColumn,
             endLine,
             endColumn ?? (startLine == SequencePoint.HiddenLine && endLine == SequencePoint.HiddenLine &&
-                startColumn == 0 ? 0 : ushort.MaxValue),
+                startColumn == 0 ? 0 : DefaultEndColumn),
             path is null ? null : StringHelpers.ParseQuotedString(path.Text))
         {
             AppliesToNextLine = appliesToNextLine,
         };
+    }
 
     internal void EndSourceDirective(
         CILParser.ExtSourceSpecContext context,

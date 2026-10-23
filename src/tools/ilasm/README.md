@@ -36,4 +36,8 @@ Instructions on the same source line share a sequence point. Includes maintain t
 returning from an include restores the including source's mapping. An effective span outside the
 Portable PDB coordinate limits is diagnosed at the directive.
 
+An omitted end column defaults to 65534 (`ushort.MaxValue - 1`) for compatibility with existing
+metadata readers. Explicit columns are preserved, including the legal maximum 65535, which requires
+a corrected reader. Hidden sequence points retain columns `0,0`.
+
 For more details, see the main repository README or contact the maintainers.

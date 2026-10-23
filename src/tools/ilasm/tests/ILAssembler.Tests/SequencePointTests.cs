@@ -187,6 +187,7 @@ namespace ILAssembler.Tests
         [InlineData("0xFEEFEE,0xFEEFEF : 0,0")]
         [InlineData("10,0xFEEFEE : 0,0")]
         [InlineData("10 : 65535")]
+        [InlineData("10 : 65534")]
         [InlineData("0xFEEFEE : 1")]
         public void InvalidLineDirective_ReportsErrorAtTheDirective(string coordinates)
         {
@@ -208,22 +209,11 @@ namespace ILAssembler.Tests
         [InlineData("10", 10, 0, 10)]
         [InlineData("10 : 5", 10, 5, 10)]
         [InlineData("10,11 : 5", 10, 5, 11)]
-        [InlineData("10 : 65534", 10, 65534, 10)]
-        [InlineData("10,10 : 1,65535", 10, 1, 10)]
-        [InlineData("10,11 : 65535,65535", 10, 65535, 11)]
-        public void OmittedOrMaximumEndColumn_IsEncodedAsMaximumColumn(string coordinates, int startLine, int startColumn, int endLine)
+        [InlineData("10 : 65533", 10, 65533, 10)]
+        public void OmittedEndColumn_UsesReaderCompatibleMaximumColumn(string coordinates, int startLine, int startColumn, int endLine)
         {
             using var pdb = PortablePdbTestReader.Compile(Program(Method("M", $".line {coordinates} 'a.cs'\nret")));
-            BlobReader blob = pdb.Pdb.GetBlobReader(pdb.GetDebugInformation("M").SequencePointsBlob);
-            Assert.Equal(0, blob.ReadCompressedInteger());
-            Assert.Equal(0, blob.ReadCompressedInteger());
-            Assert.Equal(endLine - startLine, blob.ReadCompressedInteger());
-            Assert.Equal(0xffff - startColumn, endLine == startLine
-                ? blob.ReadCompressedInteger()
-                : blob.ReadCompressedSignedInteger());
-            Assert.Equal(startLine, blob.ReadCompressedInteger());
-            Assert.Equal(startColumn, blob.ReadCompressedInteger());
-            Assert.Equal(0, blob.RemainingBytes);
+            Assert.Equal(new[] { (0, startLine, startColumn, endLine, ushort.MaxValue - 1, "a.cs") }, Points(pdb, "M"));
         }
 
         [Theory]
@@ -231,6 +221,8 @@ namespace ILAssembler.Tests
         [InlineData("10,11 : 9,1", 10, 9, 11, 1)]
         [InlineData("10,11 : 5,5", 10, 5, 11, 5)]
         [InlineData("10,10 : 1,65534", 10, 1, 10, 65534)]
+        [InlineData("10,10 : 1,65535", 10, 1, 10, 65535)]
+        [InlineData("10,11 : 65535,65535", 10, 65535, 11, 65535)]
         [InlineData("0xFEEFEE,0xFEEFEE : 0,0", 0xFEEFEE, 0, 0xFEEFEE, 0)]
         [InlineData("0xFEEFEE", 0xFEEFEE, 0, 0xFEEFEE, 0)]
         [InlineData("0xFEEFEE : 0", 0xFEEFEE, 0, 0xFEEFEE, 0)]
@@ -341,13 +333,13 @@ namespace ILAssembler.Tests
                     ret
             """)));
 
-            Assert.Equal(new[] { (0, 0, 0, 0, 65535, "a.cs"), (2, 2, 0, 2, 65535, "a.cs") }, Points(pdb, "M"));
+            Assert.Equal(new[] { (0, 0, 0, 0, 65534, "a.cs"), (2, 2, 0, 2, 65534, "a.cs") }, Points(pdb, "M"));
         }
 
         [Theory]
-        [InlineData("#line 10 'a.cs'", 0, 65535)]
-        [InlineData("#line 10", 0, 65535)]
-        [InlineData("#line 10 : 2 'a.cs'", 2, 65535)]
+        [InlineData("#line 10 'a.cs'", 0, 65534)]
+        [InlineData("#line 10", 0, 65534)]
+        [InlineData("#line 10 : 2 'a.cs'", 2, 65534)]
         [InlineData("#line 10,10 : 2,4 'a.cs'", 2, 4)]
         public void AutoIncrementDirective_OtherFormsAnchorTheDirectiveLine(string directive, int startColumn, int endColumn)
         {
