@@ -159,6 +159,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
 
     <ILLink AssemblyPaths="@(ManagedAssemblyToLink)"
+            SourceRoots="@(SourceRoot)"
             ReferenceAssemblyPaths="@(ReferencePath)"
             RootAssemblyNames="@(TrimmerRootAssembly)"
             TrimMode="$(TrimMode)"
