@@ -1,5 +1,10 @@
 # Managed IL Assembler - Known Issues
 
+## Data section placement
+
+Managed ilasm emits all supported `.data` declarations, including `.data cil`, into the `.text` section.
+It does not place `.data` declarations in the read/write `.sdata` section or `.data cil` declarations in the read-only `.il` section.
+
 ## TLS RVA statics
 
 Thread-local storage (TLS) RVA static fields (`.data tls`) are not
