@@ -20,6 +20,15 @@ If you modify any `.g4` grammar files (rare), you must regenerate the parser and
 
 This will update the generated files before building the main project.
 
+## Entry-point validation
+
+Only one method may declare `.entrypoint`, and that method must be static.
+A repeated directive (including a second directive in the same method) or an
+instance entry point is an assembly error reported at the directive.
+With `-ERROR`, the image is emitted: the first valid entry point is retained,
+and an instance method is not selected. Compiler callers still receive the
+diagnostics; the command line suppresses them in error-tolerant mode.
+
 ---
 
 For more details, see the main repository README or contact the maintainers.

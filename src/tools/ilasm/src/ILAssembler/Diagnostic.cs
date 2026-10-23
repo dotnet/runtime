@@ -79,6 +79,8 @@ public static class DiagnosticIds
     public const string LocalScopeWithoutInstructions = "ILA0058";
     public const string LocalNameDeclaredTwiceInScope = "ILA0059";
     public const string LocalSlotNamedTwiceInScope = "ILA0060";
+    public const string DuplicateEntryPoint = "ILA0063";
+    public const string InstanceEntryPoint = "ILA0064";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -144,4 +146,6 @@ internal static class DiagnosticMessageTemplates
     public const string LocalScopeWithoutInstructions = "Local var '{0}' is declared in a scope that has no instructions; a PDB local scope must not be empty";
     public const string LocalNameDeclaredTwiceInScope = "Local var '{0}' is already declared in this scope";
     public const string LocalSlotNamedTwiceInScope = "Local var '{0}': slot {1} is already named '{2}' in this scope";
+    public const string DuplicateEntryPoint = "Multiple entry points declared";
+    public const string InstanceEntryPoint = "Entry point method must be static";
 }
