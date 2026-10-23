@@ -70,7 +70,7 @@ namespace ILAssembler
             }
 
             BlobBuilder ilStream = new();
-            Blob mvidFixup = _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames, _options.Deterministic, _options.Fold);
+            Blob mvidFixup = _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames, out ImmutableArray<DataLocation> mappedFields, _options.Deterministic, _options.Fold);
             // MetadataRootBuilder only supports module-wide validation suppression, which is
             // required because wrapped GenericParam numbers intentionally violate table ordering.
             bool suppressMetadataValidation =
@@ -144,10 +144,13 @@ namespace ILAssembler
                 ? GetDeterministicContentId
                 : null;
 
-            // Use custom PE builder if we have vtable fixups, exports, or data label reference fixups
+            // Separate data sections and native artifacts require patching after their RVAs are known.
             if (validatedVTableFixups.Length > 0 ||
                 validatedExports.Length > 0 ||
-                validatedDataLabelFixups.Length > 0)
+                validatedDataLabelFixups.Length > 0 ||
+                mappedFields.Any(location => location.Section != DataSection.Data) ||
+                _tlsData.Count > 0 ||
+                _cilData.Count > 0)
             {
                 ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> vtableFixupInfos =
                     BuildVTableFixupInfos(
@@ -175,7 +178,10 @@ namespace ILAssembler
                     deterministicIdProvider: deterministicIdProvider,
                     vtableFixups: vtableFixupInfos,
                     exports: exports,
-                    dataLabelFixups: validatedDataLabelFixups);
+                    dataLabelFixups: validatedDataLabelFixups,
+                    tlsData: _tlsData,
+                    cilData: _cilData,
+                    mappedFields: mappedFields);
 
                 return (_diagnostics.ToImmutable(), new CompilationResult(peBuilder, mvidFixup, portablePdb));
             }
@@ -255,7 +261,7 @@ namespace ILAssembler
                     continue;
                 }
 
-                if (!_mappedFieldDataNames.TryGetValue(entry.DataLabel, out int dataOffset))
+                if (!_mappedFieldDataNames.TryGetValue(entry.DataLabel, out DataLocation dataLocation))
                 {
                     ReportError(
                         DiagnosticIds.LabelNotFound,
@@ -264,7 +270,7 @@ namespace ILAssembler
                     continue;
                 }
 
-                int availableBytes = GetAvailableMappedFieldDataBytes(dataOffset);
+                int availableBytes = GetAvailableMappedFieldDataBytes(dataLocation);
                 int requiredBytes = checked(
                     entry.SlotCount * VTableFixupSupport.GetSlotSize(entry.Flags));
                 if (requiredBytes > availableBytes)
@@ -280,24 +286,25 @@ namespace ILAssembler
                     continue;
                 }
 
-                builder.Add(new ValidatedVTableFixup(i + 1, entry, dataOffset));
+                builder.Add(new ValidatedVTableFixup(i + 1, entry, dataLocation));
             }
 
             return builder.ToImmutable();
         }
 
-        private int GetAvailableMappedFieldDataBytes(int dataOffset)
+        private int GetAvailableMappedFieldDataBytes(DataLocation location)
         {
-            int endOffset = _mappedFieldData.Count;
-            foreach (int otherOffset in _mappedFieldDataNames.Values)
+            int endOffset = GetDataBuilder(location.Section).Count;
+            foreach (DataLocation other in _mappedFieldDataNames.Values)
             {
-                if (otherOffset > dataOffset && otherOffset < endOffset)
+                if (other.Section == location.Section &&
+                    other.Offset > location.Offset && other.Offset < endOffset)
                 {
-                    endOffset = otherOffset;
+                    endOffset = other.Offset;
                 }
             }
 
-            return endOffset - dataOffset;
+            return endOffset - location.Offset;
         }
 
         private ImmutableArray<VTableExportPEBuilder.DataLabelFixup> ValidateDataLabelFixups()
@@ -308,7 +315,7 @@ namespace ILAssembler
 
             foreach (CILParser.DataLabelReferenceValue reference in _mappedFieldDataReferenceFixups)
             {
-                if (!_mappedFieldDataNames.TryGetValue(reference.TargetLabel, out int targetOffset))
+                if (!_mappedFieldDataNames.TryGetValue(reference.TargetLabel, out DataLocation target))
                 {
                     ReportError(
                         DiagnosticIds.LabelNotFound,
@@ -320,8 +327,8 @@ namespace ILAssembler
                 }
 
                 builder.Add(new VTableExportPEBuilder.DataLabelFixup(
-                    reference.DataOffset,
-                    targetOffset,
+                    new DataLocation(reference.Section, reference.DataOffset),
+                    target,
                     reference.PointerSize));
             }
 
@@ -523,7 +530,7 @@ namespace ILAssembler
                 }
 
                 builder.Add(new VTableExportPEBuilder.VTableFixupInfo(
-                    fixup.DataOffset,
+                    fixup.DataLocation,
                     fixup.Entry.SlotCount,
                     fixup.Entry.Flags,
                     methodTokens.MoveToImmutable()));
