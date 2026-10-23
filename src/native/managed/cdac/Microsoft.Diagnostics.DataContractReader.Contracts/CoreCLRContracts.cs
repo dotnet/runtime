@@ -68,6 +68,7 @@ public static class CoreCLRContracts
                 RuntimeInfoArchitecture.Arm => new GCInfo_1<ARMGCInfoTraits>(t),
                 RuntimeInfoArchitecture.LoongArch64 => new GCInfo_1<LoongArch64GCInfoTraits>(t),
                 RuntimeInfoArchitecture.RiscV64 => new GCInfo_1<RISCV64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.Wasm => new GCInfo_1<WasmGCInfoTraits>(t),
                 _ => default(GCInfo),
             };
         });
@@ -82,9 +83,9 @@ public static class CoreCLRContracts
     /// <summary>
     /// Eagerly validates that every contract required by the cDAC data-access interfaces can be
     /// provided for the target. Contract availability is checked without instantiating the
-    /// contracts; <see cref="IRuntimeInfo"/> is read to determine the target operating system so
-    /// that OS-specific contracts are validated only when the target platform actually uses them.
-    /// In-box (main-descriptor) contracts are required unconditionally. Contracts published by a
+    /// contracts except for <see cref="IRuntimeInfo"/> and <see cref="IFeatureFlags"/>, which are read
+    /// so that platform- and feature-specific contracts are validated only when the target uses them.
+    /// Other in-box (main-descriptor) contracts are required unconditionally. Contracts published by a
     /// sub-descriptor are version-checked always, but their absence is tolerated while their
     /// sub-descriptor is still pending.
     /// </summary>
@@ -124,7 +125,6 @@ public static class CoreCLRContracts
         Validate<ILoader>(registry);
         Validate<INotifications>(registry);
         Validate<IObject>(registry);
-        Validate<IPrecodeStubs>(registry);
         Validate<IReJIT>(registry);
         Validate<IRuntimeInfo>(registry);
         Validate<IRuntimeTypeSystem>(registry);
@@ -133,6 +133,11 @@ public static class CoreCLRContracts
         Validate<IStressLog>(registry);
         Validate<ISyncBlock>(registry);
         Validate<IThread>(registry);
+
+        if (!registry.FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints))
+        {
+            Validate<IPrecodeStubs>(registry);
+        }
 
         // ExternalMemoryHandles was introduced in .NET 12. Readers built from this source may still
         // inspect .NET 11 targets, which do not advertise the contract.

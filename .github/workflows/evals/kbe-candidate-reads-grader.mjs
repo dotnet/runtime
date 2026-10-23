@@ -99,14 +99,21 @@ function isSearchHarnessCall(event) {
         return false;
     }
 
-    const normalizedCommand = command.replaceAll("\\", "/");
+    const normalizedCommand = command
+        .replaceAll("\\", "/")
+        .replaceAll("\r\n", "\n")
+        .replaceAll("\r", "\n");
     const normalizedPath = (process.env.KBE_SEARCH_HELPER ?? trustedHelperPath).replaceAll("\\", "/");
     const escapedPath = normalizedPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const commandBoundary = String.raw`(?:^\s*|(?:&&|\|\||[;\n])\s*)`;
     const invocation = new RegExp(
-        `^\\s*node(?:\\.exe)?\\s+(?:"${escapedPath}"|'${escapedPath}'|${escapedPath})(?:\\s|$)`,
+        `${commandBoundary}node(?:\\.exe)?\\s+(?:"${escapedPath}"|'${escapedPath}'|${escapedPath})(?:\\s|$)`,
+    );
+    const environmentInvocation = new RegExp(
+        `${commandBoundary}node(?:\\.exe)?\\s+"\\$KBE_SEARCH_HELPER"(?:\\s|$)`,
     );
 
-    return invocation.test(normalizedCommand);
+    return invocation.test(normalizedCommand) || environmentInvocation.test(command);
 }
 
 function isIssueReadCall(event) {

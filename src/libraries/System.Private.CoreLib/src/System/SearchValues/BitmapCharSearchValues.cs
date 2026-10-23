@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
@@ -53,49 +52,46 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<char> span) =>
-            IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref MemoryMarshal.GetReference(span), span.Length);
+            IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAnyExcept(ReadOnlySpan<char> span) =>
-            IndexOfAny<IndexOfAnyAsciiSearcher.Negate>(ref MemoryMarshal.GetReference(span), span.Length);
+            IndexOfAny<IndexOfAnyAsciiSearcher.Negate>(span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int LastIndexOfAny(ReadOnlySpan<char> span) =>
-            LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref MemoryMarshal.GetReference(span), span.Length);
+            LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int LastIndexOfAnyExcept(ReadOnlySpan<char> span) =>
-            LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate>(ref MemoryMarshal.GetReference(span), span.Length);
+            LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate>(span);
 
-        private int IndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength)
+        private int IndexOfAny<TNegator>(ReadOnlySpan<char> span)
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
-            ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
-            ref char cur = ref searchSpace;
             uint[] bitmap = _bitmap;
 
-            while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
+            for (int i = 0; i < span.Length; i++)
             {
-                char c = cur;
+                char c = span[i];
                 if (TNegator.NegateIfNeeded(Contains(bitmap, c)))
                 {
-                    return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
+                    return i;
                 }
-
-                cur = ref Unsafe.Add(ref cur, 1);
             }
 
             return -1;
         }
 
-        private int LastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength)
+        private int LastIndexOfAny<TNegator>(ReadOnlySpan<char> span)
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
             uint[] bitmap = _bitmap;
+            int searchSpaceLength = span.Length;
 
             while (--searchSpaceLength >= 0)
             {
-                char c = Unsafe.Add(ref searchSpace, searchSpaceLength);
+                char c = span[searchSpaceLength];
                 if (TNegator.NegateIfNeeded(Contains(bitmap, c)))
                 {
                     break;

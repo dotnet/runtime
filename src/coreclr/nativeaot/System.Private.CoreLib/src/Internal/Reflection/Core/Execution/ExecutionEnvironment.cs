@@ -89,16 +89,16 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         // Non-public methods
         //==============================================================================================
-        internal MethodBaseInvoker GetMethodInvoker(RuntimeTypeInfo declaringType, QMethodDefinition methodHandle, RuntimeTypeInfo[] genericMethodTypeArguments, MemberInfo exceptionPertainant, out Exception exception)
+        internal MethodBaseInvoker GetMethodInvoker(RuntimeTypeInfo declaringType, QMethodDefinition methodHandle, RuntimeTypeInfo[] genericMethodTypeArguments, MemberInfo exceptionPertainant, int parameterCount, out Exception exception)
         {
             exception = null;
 
             if (declaringType.ContainsGenericParameters)
-                return new OpenMethodInvoker();
+                return new OpenMethodInvoker(parameterCount);
             for (int i = 0; i < genericMethodTypeArguments.Length; i++)
             {
                 if (genericMethodTypeArguments[i].ContainsGenericParameters)
-                    return new OpenMethodInvoker();
+                    return new OpenMethodInvoker(parameterCount);
             }
 
             RuntimeTypeHandle typeDefinitionHandle = declaringType.TypeHandle;

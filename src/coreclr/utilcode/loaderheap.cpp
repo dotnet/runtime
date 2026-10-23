@@ -109,28 +109,6 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
 
 #endif // #ifndef DACCESS_COMPILE
 
-#if 0
-// Disables access to all pages in the heap - useful when trying to determine if someone is
-// accessing something in the low frequency heap
-void UnlockedLoaderHeap::DebugGuardHeap()
-{
-    WRAPPER_NO_CONTRACT;
-    LoaderHeapBlock *pSearch, *pNext;
-
-    for (pSearch = m_pFirstBlock; pSearch; pSearch = pNext)
-    {
-        void *  pResult;
-        void *  pVirtualAddress;
-
-        pVirtualAddress = pSearch->pVirtualAddress;
-        pNext = pSearch->pNext;
-
-        pResult = ClrVirtualAlloc(pVirtualAddress, pSearch->dwVirtualSize, MEM_COMMIT, PAGE_NOACCESS);
-        _ASSERTE(pResult != NULL);
-    }
-}
-#endif
-
 size_t UnlockedLoaderHeap::GetBytesAvailReservedRegion()
 {
     LIMITED_METHOD_CONTRACT;
@@ -779,55 +757,6 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequestedSize,
 
 }
 #endif // #ifndef DACCESS_COMPILE
-
-
-#ifdef _DEBUG
-
-void UnlockedLoaderHeap::DumpFreeList()
-{
-    LIMITED_METHOD_CONTRACT;
-    if (m_pFirstFreeBlock == NULL)
-    {
-        minipal_log_print_info("FREEDUMP: FreeList is empty\n");
-    }
-    else
-    {
-        InlineSString<128> buf;
-        LoaderHeapFreeBlock *pBlock = m_pFirstFreeBlock;
-        while (pBlock != NULL)
-        {
-            size_t dwsize = pBlock->m_dwSize;
-            BOOL ccbad = FALSE;
-            BOOL sizeunaligned = FALSE;
-
-            if ( 0 != (dwsize & ALLOC_ALIGN_CONSTANT) )
-            {
-                sizeunaligned = TRUE;
-            }
-
-            for (size_t i = sizeof(LoaderHeapFreeBlock); i < dwsize; i++)
-            {
-                if ( ((BYTE*)pBlock)[i] != 0xcc )
-                {
-                    ccbad = TRUE;
-                    break;
-                }
-            }
-
-            buf.Printf("Addr = %pxh, Size = %xh", pBlock, ((ULONG)dwsize));
-            if (ccbad) buf.AppendUTF8(" *** ERROR: NOT CC'd ***");
-            if (sizeunaligned) buf.AppendUTF8(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
-            buf.AppendUTF8("\n");
-
-            minipal_log_print_info("%s", buf.GetUTF8());
-            buf.Clear();
-
-            pBlock = pBlock->m_pNext;
-        }
-    }
-}
-
-#endif //_DEBUG
 
 #ifndef DACCESS_COMPILE
 /*static*/ void LoaderHeapFreeBlock::InsertFreeBlock(LoaderHeapFreeBlock **ppHead, void *pMem, size_t dwTotalSize, UnlockedLoaderHeap *pHeap)
