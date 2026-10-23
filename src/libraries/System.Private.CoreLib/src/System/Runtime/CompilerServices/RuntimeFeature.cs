@@ -89,19 +89,19 @@ namespace System.Runtime.CompilerServices
 #endif
 
 #if FEATURE_WASM_MANAGED_THREADS
-        internal static void ThrowIfMultithreadingIsNotSupported()
+        internal static void ThrowIfBlockingIsNotSupported()
         {
             System.Threading.Thread.AssureBlockingPossible();
         }
 #elif !FEATURE_MULTITHREADING
         [DoesNotReturn]
-        internal static void ThrowIfMultithreadingIsNotSupported()
+        internal static void ThrowIfBlockingIsNotSupported()
         {
             throw new PlatformNotSupportedException();
         }
 #else
         [Conditional("unnecessary")]
-        internal static void ThrowIfMultithreadingIsNotSupported()
+        internal static void ThrowIfBlockingIsNotSupported()
         {
         }
 #endif
