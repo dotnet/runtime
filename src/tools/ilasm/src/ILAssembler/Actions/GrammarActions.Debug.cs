@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using Antlr4.Runtime;
 
 namespace ILAssembler;
@@ -20,7 +21,7 @@ internal sealed partial class GrammarActions
         IToken? path)
     {
         int lineNumber = ParseInt32(line);
-        return CreateSourceDirective(autoIncrement, lineNumber, 0, lineNumber, 0, path);
+        return CreateSourceDirective(autoIncrement, lineNumber, 0, lineNumber, null, path);
     }
 
     internal SourceDirectiveValue CreateSourceColumn(
@@ -36,7 +37,7 @@ internal sealed partial class GrammarActions
             lineNumber,
             columnNumber,
             lineNumber,
-            columnNumber,
+            null,
             path);
     }
 
@@ -70,7 +71,7 @@ internal sealed partial class GrammarActions
             ParseInt32(startLine),
             columnNumber,
             ParseInt32(endLine),
-            columnNumber,
+            null,
             path);
     }
 
@@ -94,14 +95,15 @@ internal sealed partial class GrammarActions
         int startLine,
         int startColumn,
         int endLine,
-        int endColumn,
+        int? endColumn,
         IToken? path)
         => new(
             autoIncrement,
             startLine,
             startColumn,
             endLine,
-            endColumn,
+            endColumn ?? (startLine == SequencePoint.HiddenLine && endLine == SequencePoint.HiddenLine &&
+                startColumn == 0 ? 0 : ushort.MaxValue),
             path is null ? null : StringHelpers.ParseQuotedString(path.Text));
 
     internal void EndSourceDirective(
@@ -145,14 +147,45 @@ internal sealed partial class GrammarActions
             state.Document = _pdbDocuments.GetOrAdd(value.DocumentPath, _currentLanguageGuid);
         }
 
-        int endColumn = value.EndColumn;
-        if (value.EndLine == value.StartLine && endColumn == value.StartColumn)
+        state.HasInvalidDirective = GeneratesPdb && !ValidateSourceDirective(value, directiveToken);
+        state.DirectiveCoordinates = (value.StartLine, value.StartColumn, value.EndLine, value.EndColumn);
+        _lastSequencePointSpan = null;
+    }
+
+    private bool ValidateSourceDirective(SourceDirectiveValue value, IToken directiveToken)
+    {
+        // Portable PDB, Sequence Points: docs/design/specs/PortablePdb-Metadata.md#sequence-points-blob.
+        const int MaximumLine = 0x1fffffff;
+        string? message = null;
+        if (value.StartLine == SequencePoint.HiddenLine || value.EndLine == SequencePoint.HiddenLine)
         {
-            endColumn++;
+            if (value.StartLine != SequencePoint.HiddenLine || value.EndLine != SequencePoint.HiddenLine ||
+                value.StartColumn != 0 || value.EndColumn != 0)
+            {
+                message = DiagnosticMessageTemplates.InvalidHiddenSequencePoint;
+            }
+        }
+        else if ((uint)value.StartLine > MaximumLine || (uint)value.EndLine > MaximumLine)
+        {
+            message = DiagnosticMessageTemplates.SequencePointLineOutOfRange;
+        }
+        else if ((uint)value.StartColumn > ushort.MaxValue || (uint)value.EndColumn > ushort.MaxValue)
+        {
+            message = DiagnosticMessageTemplates.SequencePointColumnOutOfRange;
+        }
+        else if (value.EndLine < value.StartLine ||
+            (value.EndLine == value.StartLine && value.EndColumn <= value.StartColumn))
+        {
+            message = DiagnosticMessageTemplates.SequencePointReversedRange;
         }
 
-        state.DirectiveCoordinates = (value.StartLine, value.StartColumn, value.EndLine, endColumn);
-        _lastSequencePointSpan = null;
+        if (message is not null)
+        {
+            ReportError(DiagnosticIds.InvalidSequencePoint, message, directiveToken);
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -184,6 +217,12 @@ internal sealed partial class GrammarActions
         }
 
         SourceLineState state = GetSourceLineState(opcodeToken);
+        if (state.HasInvalidDirective)
+        {
+            // An invalid range may not be representable in the sequence-points blob, even in error-tolerant mode.
+            return;
+        }
+
         int document = state.Document ??= _pdbDocuments.GetOrAdd(state.SourceName, _currentLanguageGuid);
         (int startLine, int startColumn, int endLine, int endColumn) =
             state.DirectiveCoordinates ?? (opcodeToken.Line, 1, opcodeToken.Line, 2);
@@ -250,6 +289,8 @@ internal sealed partial class GrammarActions
         /// source, or <see langword="null"/> when none has been.
         /// </summary>
         public (int StartLine, int StartColumn, int EndLine, int EndColumn)? DirectiveCoordinates { get; set; }
+
+        public bool HasInvalidDirective { get; set; }
     }
 
     /// <summary>The document and source span of a recorded sequence point.</summary>

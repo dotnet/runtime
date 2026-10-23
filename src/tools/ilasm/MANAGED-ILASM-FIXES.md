@@ -3,6 +3,8 @@
 | Fixed issue | ilasm behavior | Managed ILASM behavior |
 | --- | --- | --- |
 | Pseudoattribute lowering is opt-in | Automatically lowers recognized pseudo custom attributes. | Preserves custom attributes unchanged by default; `--pseudoattributes` enables lowering and the pseudoattribute-specific fixes below. |
+| Partly specified `.line` end columns | Fails to assemble partly specified `.line` directives when producing a Portable PDB. | Defaults an omitted end column to `0xffff`; explicit end columns are preserved and validated. Hidden sequence points retain columns `0,0`. |
+| Invalid sequence-point coordinates | Warns and fails the method body for invalid coordinates. | Reports `ILA0061` at the `.line` or `#line` directive when producing a PDB: line and column values must fit the Portable PDB format, ranges must be ordered, and hidden points require both lines `0xFEEFEE` and columns `0,0`. Assembly fails unless error-tolerant mode is enabled; in that mode the instructions are retained but points from invalid directives are omitted, since some invalid ranges cannot be encoded. |
 | `FloatingPointInstruction_ByteForms_EmitExpectedConstants` | Rejects the `bytearray` operand for floating-point constants. | Accepts byte-array forms for floating-point instruction constants. |
 | `LabelBasedFilterRegion_EmitsExactExceptionRegionBounds` | Rejects the label-based filter region as undefined or structurally separated. | Emits the label-based filter region with the requested bounds. |
 | `Ldtoken_NumericTokenEmittedCorrectly` | Rejects a numeric metadata token as an `ldtoken` operand. | Accepts and emits a numeric metadata token operand for `ldtoken`. |

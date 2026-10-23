@@ -67,6 +67,170 @@ namespace ILAssembler.Tests
         private static PortablePdbTestReader CompileWithIncludes(string source, params (string Name, string Text)[] includes)
             => Compile(new Options { Debug = true }, [new SourceText(source, "test.il")], includes);
 
+        [Theory]
+        [InlineData("10,9 : 1,2")]
+        [InlineData("10,10 : 2,1")]
+        [InlineData("10,10 : 2,2")]
+        [InlineData("10,10 : 0,0")]
+        [InlineData("10,10 : -1,2")]
+        [InlineData("10,10 : 1,-1")]
+        [InlineData("10,10 : 65536,65537")]
+        [InlineData("10,10 : 1,65536")]
+        [InlineData("10,11 : 70000,1")]
+        [InlineData("-1,10 : 1,2")]
+        [InlineData("10,-1 : 1,2")]
+        [InlineData("536870912,536870912 : 1,2")]
+        [InlineData("10,536870912 : 1,2")]
+        [InlineData("0xFEEFEE,0xFEEFEE : 1,2")]
+        [InlineData("0xFEEFEE,0xFEEFEE : 0,1")]
+        [InlineData("0xFEEFEE,0xFEEFEE : 1,0")]
+        [InlineData("0xFEEFEE,0xFEEFEF : 0,0")]
+        [InlineData("10,0xFEEFEE : 0,0")]
+        [InlineData("10 : 65535")]
+        [InlineData("0xFEEFEE : 1")]
+        public void InvalidLineDirective_ReportsErrorAtTheDirective(string coordinates)
+        {
+            string source = Program(Method("M", $".line {coordinates} 'a.cs'\nnop\nret"));
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
+                DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options { Debug = true });
+
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal("ILA0061", error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Contains("sequence point", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal("test.il", error.Location.Source.Path);
+            Assert.Equal(source.IndexOf(".line", StringComparison.Ordinal), error.Location.Span.Start);
+            Assert.Equal(5, error.Location.Span.Length);
+            Assert.Null(result);
+        }
+
+        [Theory]
+        [InlineData("10", 10, 0, 10)]
+        [InlineData("10 : 5", 10, 5, 10)]
+        [InlineData("10,11 : 5", 10, 5, 11)]
+        [InlineData("10 : 65534", 10, 65534, 10)]
+        [InlineData("10,10 : 1,65535", 10, 1, 10)]
+        [InlineData("10,11 : 65535,65535", 10, 65535, 11)]
+        public void OmittedOrMaximumEndColumn_IsEncodedAsMaximumColumn(string coordinates, int startLine, int startColumn, int endLine)
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", $".line {coordinates} 'a.cs'\nret")));
+            BlobReader blob = pdb.Pdb.GetBlobReader(pdb.GetDebugInformation("M").SequencePointsBlob);
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(endLine - startLine, blob.ReadCompressedInteger());
+            Assert.Equal(0xffff - startColumn, endLine == startLine
+                ? blob.ReadCompressedInteger()
+                : blob.ReadCompressedSignedInteger());
+            Assert.Equal(startLine, blob.ReadCompressedInteger());
+            Assert.Equal(startColumn, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.RemainingBytes);
+        }
+
+        [Theory]
+        [InlineData("10,10 : 0,1", 10, 0, 10, 1)]
+        [InlineData("10,11 : 9,1", 10, 9, 11, 1)]
+        [InlineData("10,11 : 5,5", 10, 5, 11, 5)]
+        [InlineData("10,10 : 1,65534", 10, 1, 10, 65534)]
+        [InlineData("0xFEEFEE,0xFEEFEE : 0,0", 0xFEEFEE, 0, 0xFEEFEE, 0)]
+        [InlineData("0xFEEFEE", 0xFEEFEE, 0, 0xFEEFEE, 0)]
+        [InlineData("0xFEEFEE : 0", 0xFEEFEE, 0, 0xFEEFEE, 0)]
+        [InlineData("0xFEEFEE,0xFEEFEE : 0", 0xFEEFEE, 0, 0xFEEFEE, 0)]
+        public void ValidLineDirective_PreservesCoordinates(string coordinates, int startLine, int startColumn, int endLine, int endColumn)
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", $".line {coordinates} 'a.cs'\nret")));
+
+            Assert.Equal(new[] { (0, startLine, startColumn, endLine, endColumn, "a.cs") }, Points(pdb, "M"));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void InvalidLineDirective_WithErrorTolerance_OmitsOnlyItsSequencePoints(bool errorTolerant)
+        {
+            string source = Program(Method("M", """
+                .line 10,10 : 1,2 'a.cs'
+                nop
+                .line 20,19 : 1,2 'a.cs'
+                nop
+                nop
+                .line 30,30 : 3,4 'a.cs'
+                ret
+                """));
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { Debug = true, ErrorTolerant = errorTolerant });
+            Assert.Equal("ILA0061", Assert.Single(diagnostics).Id);
+            if (errorTolerant)
+            {
+                using var pdb = new PortablePdbTestReader(Assert.IsType<CompilationResult>(result));
+                Assert.Equal(new[] { (0, 10, 1, 10, 2, "a.cs"), (3, 30, 3, 30, 4, "a.cs") }, Points(pdb, "M"));
+            }
+            else
+            {
+                Assert.Null(result);
+            }
+        }
+
+        [Fact]
+        public void InvalidLineDirective_WithoutAPdb_DoesNotAffectAssembly()
+        {
+            string source = Program(Method("M", ".line 10,9 : 70000,0 'a.cs'\nret"));
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
+
+            Assert.Null(result.PortablePdb);
+        }
+
+        [Theory]
+        [InlineData(true, null, false)]
+        [InlineData(false, DebugMode.Impl, false)]
+        [InlineData(false, DebugMode.Opt, false)]
+        [InlineData(false, null, true)]
+        public void InvalidLineDirective_IsValidatedForEveryPdbSwitch(bool debug, DebugMode? debugMode, bool pdbSwitch)
+        {
+            string source = Program(".line 10,9 : 1,2 'a.cs'\n" + Method("M", "ret"));
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { Debug = debug, DebugMode = debugMode, Pdb = pdbSwitch });
+
+            Assert.Equal("ILA0061", Assert.Single(diagnostics).Id);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void InvalidHashLineDirective_IsValidated()
+        {
+            string source = Program(Method("M", "#line 10,9 : 1,2 'a.cs'\nret"));
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
+                DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options { Debug = true });
+
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal("ILA0061", error.Id);
+            Assert.Equal(source.IndexOf("#line", StringComparison.Ordinal), error.Location.Span.Start);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void InvalidLineDirectiveInAnInclude_ReportsTheIncludedSource()
+        {
+            const string IncludedSource = ".line 10,9 : 1,2 'a.cs'\nnop";
+            string source = Program(Method("M", "#include \"inc.il\"\nret"));
+            var (diagnostics, result) = new DocumentCompiler().Compile(
+                new SourceText(source, "test.il"),
+                path =>
+                {
+                    Assert.Equal("inc.il", path);
+                    return new SourceText(IncludedSource, path);
+                },
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { Debug = true });
+
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal("ILA0061", error.Id);
+            Assert.Equal("inc.il", error.Location.Source.Path);
+            Assert.Equal(IncludedSource, error.Location.Source.Text);
+            Assert.Equal(0, error.Location.Span.Start);
+            Assert.Equal(5, error.Location.Span.Length);
+            Assert.Null(result);
+        }
+
         [Fact]
         public void MethodWithoutLineDirectives_HasAPointOnTheSourceLineOfEachInstruction()
         {
