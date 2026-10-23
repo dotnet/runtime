@@ -44,9 +44,11 @@ sidecar associations, and ordered search directories. Overridden command generat
 directories that do not match the model bypass caching.
 
 Runtime per-library, shared-framework, and out-of-band targets supply their repository root with
-logical identity `/_/`. SDK publish targets forward initialized `@(SourceRoot)` items. Root
-forwarding does not normalize upstream assemblies or enable symbol preservation or compiler path
-mapping.
+logical identity `/_/`. SDK publish targets forward existing `@(SourceRoot)` items without
+initializing or changing their mappings. They must already carry stable logical `MappedPath`
+metadata; the SDK normally produces it when `DeterministicSourcePaths=true`, such as deterministic
+CI builds. Ordinary local SDK builds without usable mappings run uncached. Root forwarding does not
+normalize upstream assemblies or enable symbol preservation or compiler path mapping.
 
 ## Input discovery and eligibility
 
@@ -98,6 +100,10 @@ readable. Inventory every top-level `.dll`, `.exe`, and `.winmd` candidate in ea
 including supported sidecars. Preserve directory order and leave linker resolution
 unchanged; adding, changing, or removing even a shadowed candidate invalidates identity. Other SDK
 options supplied through `ExtraArgs` remain unsupported.
+
+Bypass `ExtraArgs` containing backslashes immediately before quotes, including even-length runs.
+The supported tokenizer does not model the linker's escape rules; leave those invocations
+unchanged rather than reconstruct different argument boundaries.
 
 Unreadable directories, uninspectable assemblies (including PE images without managed metadata), and
 other input-read failures bypass caching with diagnostics. Required files must be readable; normal

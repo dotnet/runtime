@@ -217,15 +217,17 @@ namespace ILLink.Tasks.Tests
         [InlineData(@"\\server\share\")]
         [InlineData(@"\")]
         [InlineData(@"C:\directory\\")]
-        public void QuotedPathsPreserveTrailingBackslashes(string path)
+        public void QuotedPathsPreserveTrailingSeparators(string path)
         {
             MethodInfo quote = typeof(ILLink).GetMethod("Quote", BindingFlags.Static | BindingFlags.NonPublic);
             string quotedPath = (string)quote.Invoke(null, new object[] { path });
-            using var response = new StringReader("-d " + quotedPath + "\n--ignore-link-attributes true");
+            MethodInfo adjust = typeof(ToolTask).GetMethod("AdjustCommandsForOperatingSystem", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
+            string commands = (string)adjust.Invoke(new MockTask(), new object[] { "-d " + quotedPath + "\n--ignore-link-attributes true" });
+            using var response = new StringReader(commands);
             var arguments = new Queue<string>();
             Driver.ParseResponseFile(response, arguments);
 
-            Assert.Equal(new[] { "-d", path, "--ignore-link-attributes", "true" }, arguments);
+            Assert.Equal(new[] { "-d", path.Replace('\\', Path.DirectorySeparatorChar), "--ignore-link-attributes", "true" }, arguments);
         }
 
         [Theory]
@@ -1291,6 +1293,37 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
+        [InlineData(1, false)]
+        [InlineData(2, false)]
+        [InlineData(1, true)]
+        [InlineData(2, true)]
+        public void CacheKeyBypassesEscapedQuotesInExtraArgs(int trailingBackslashes, bool disjointRoots)
+        {
+            using var test = new OutputDirectoryTest();
+            using var outside = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            if (disjointRoots)
+            {
+                test.Task.SourceRoots = test.Task.SourceRoots.Append(
+                    new TaskItem(outside.Root, new Dictionary<string, string> { { "MappedPath", "/_1/" } })).ToArray();
+            }
+            string directory = Path.Combine(test.Root, "search" + new string('\\', trailingBackslashes));
+            Directory.CreateDirectory(directory);
+            test.Task.ExtraArgs = $"--ignore-link-attributes true -d \"{directory}\"";
+            string originalResponse = test.Task.GetResponseFileCommands();
+            MethodInfo parse = typeof(ILLink).GetMethod("TryAddCacheableExtraArgsInputs", BindingFlags.Instance | BindingFlags.NonPublic);
+            object[] arguments = { new SortedSet<string>(StringComparer.Ordinal), new SortedSet<string>(StringComparer.Ordinal), null };
+
+            Assert.False((bool)parse.Invoke(test.Task, arguments));
+            Assert.False(test.Task.TryGetCacheKey(host, out string key));
+            Assert.Empty(key);
+            Assert.Null(test.Task.CacheInvocation);
+            Assert.Equal(originalResponse, test.Task.GetResponseFileCommands());
+            Assert.Contains(test.BuildEngine.Messages, message =>
+                message.Message.StartsWith("ILLink cache bypassed: extra arguments are not supported."));
+        }
+
+        [Theory]
         [InlineData("descriptor", "nested/Dependency")]
         [InlineData("descriptor", "nested/Dependency, Version=1.0.0.0")]
         [InlineData("attributes", "../Dependency")]
@@ -1767,11 +1800,15 @@ namespace ILLink.Tasks.Tests
             }, corruptEntry.ToString()).Dispose();
         }
 
-        [Fact]
-        public void CacheKeySharesEquivalentRootsAndKeepsArgumentOrder()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void CacheKeySharesEquivalentRootsAndKeepsArgumentOrder(bool disjointRoots)
         {
             using var first = new OutputDirectoryTest();
             using var second = new OutputDirectoryTest();
+            using var firstSearch = new OutputDirectoryTest();
+            using var secondSearch = new OutputDirectoryTest();
             string firstHost = PrepareCacheKeyTest(first);
             string secondHost = PrepareCacheKeyTest(second);
             foreach (string file in Directory.GetFiles(first.Root, "*", SearchOption.AllDirectories))
@@ -1781,18 +1818,27 @@ namespace ILLink.Tasks.Tests
                 Directory.CreateDirectory(Path.GetDirectoryName(destination));
                 File.Copy(file, destination, overwrite: true);
             }
-            foreach (var test in new[] { first, second })
+            foreach (var (test, search) in new[] { (first, firstSearch), (second, secondSearch) })
             {
-                Directory.CreateDirectory(Path.Combine(test.Root, "first search"));
-                Directory.CreateDirectory(Path.Combine(test.Root, "second search"));
-                test.Task.ExtraArgs = $"--ignore-link-attributes true --substitutions \"{test.Root}/roots.xml\" -d \"{test.Root}/first search\" -d \"{test.Root}/second search\"";
+                string searchRoot = disjointRoots ? search.Root : test.Root;
+                if (disjointRoots)
+                {
+                    test.Task.SourceRoots = test.Task.SourceRoots.Append(
+                        new TaskItem(searchRoot, new Dictionary<string, string> { { "MappedPath", "/_1/" } })).ToArray();
+                }
+                Directory.CreateDirectory(Path.Combine(searchRoot, "first search"));
+                Directory.CreateDirectory(Path.Combine(searchRoot, "second search"));
+                test.Task.ExtraArgs = $"--ignore-link-attributes true --substitutions \"{test.Root}/roots.xml\" -d \"{searchRoot}/first search\" -d \"{searchRoot}/second search\"";
             }
             Assert.NotEqual(first.Task.GetResponseFileCommands(), second.Task.GetResponseFileCommands());
             Assert.True(first.Task.TryGetCacheKey(firstHost, out string firstKey));
             Assert.True(second.Task.TryGetCacheKey(secondHost, out string secondKey));
             Assert.Equal(firstKey, secondKey);
+            Assert.Equal(disjointRoots, first.Task.CacheInvocation is null);
+            Assert.Equal(disjointRoots, second.Task.CacheInvocation is null);
 
-            second.Task.ExtraArgs = $"--ignore-link-attributes true --substitutions \"{second.Root}/roots.xml\" -d \"{second.Root}/second search\" -d \"{second.Root}/first search\"";
+            string secondSearchRoot = disjointRoots ? secondSearch.Root : second.Root;
+            second.Task.ExtraArgs = $"--ignore-link-attributes true --substitutions \"{second.Root}/roots.xml\" -d \"{secondSearchRoot}/second search\" -d \"{secondSearchRoot}/first search\"";
             Assert.True(second.Task.TryGetCacheKey(secondHost, out string reordered));
             Assert.NotEqual(firstKey, reordered);
         }

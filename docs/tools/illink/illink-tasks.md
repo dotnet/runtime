@@ -85,6 +85,8 @@ dependency-dump options, and explicit task environment overrides. The only suppo
 `--link-attributes FILE`, `--substitutions FILE`, or `-d DIRECTORY` pairs. Referenced files
 and search-directory assembly candidates are content-hashed, including shadowed candidates.
 Other options still run the linker normally, uncached.
+Arguments containing backslashes immediately before quotes also bypass caching because
+the supported tokenizer does not model the linker's escape rules.
 Inherited environment variables are not tracked; disable caching
 when they affect outputs or dependencies beyond the keyed inputs, or require tool-execution
 side effects such as startup hooks or profiling. Unreadable inputs or linker files also
@@ -98,8 +100,11 @@ also bypass caching because they can escape the declared search-directory invent
 Portable PDB emission requires already-normalized input paths and
 explicit `PreserveSymbolPaths=true`. Neither symbol preservation nor deterministic compiler
 paths are enabled automatically. Copy actions also require shareable input paths.
-The SDK forwards `@(SourceRoot)`; runtime library targets supply the repository root without
-changing how inputs are compiled. Normal runtime trimming uses structured task parameters
+The SDK forwards existing `@(SourceRoot)` items and requires their `MappedPath` metadata to
+already use stable logical prefixes. The SDK normally supplies these mappings when
+`DeterministicSourcePaths=true`, such as deterministic CI builds; ordinary local SDK builds
+without usable mappings run uncached. Runtime library targets supply the repository root
+without changing how inputs are compiled. Normal runtime trimming uses structured task parameters
 and supported extra arguments; custom arguments and input/symbol eligibility checks can
 still cause a cache bypass. See the
 [cache design](../../design/tools/illink/task-cache.md) for identity and eligibility details.

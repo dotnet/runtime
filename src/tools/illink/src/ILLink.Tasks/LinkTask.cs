@@ -600,6 +600,10 @@ namespace ILLink.Tasks
             if (arguments.IsEmpty)
                 return true;
 
+            // This tokenizer does not model the linker's backslash-before-quote escapes.
+            if (arguments.IndexOf("\\\"".AsSpan()) >= 0)
+                return false;
+
             // The runtime library builds pass this policy through ExtraArgs. Keep the
             // supported shape narrow so arbitrary linker arguments continue to bypass caching.
             if (!TryReadArgument(ref arguments, out string option) ||
@@ -880,8 +884,12 @@ namespace ILLink.Tasks
 
         private static string Quote(string path)
         {
-            // Double trailing backslashes so they do not escape the closing quote.
             int trailingBackslashes = path.Length - path.TrimEnd('\\').Length;
+            // ToolTask's Unix normalization preserves the last backslash before a quote as an escape.
+            if (Path.DirectorySeparatorChar == '/')
+                return $"\"{path.TrimEnd('\\')}{new string('/', trailingBackslashes)}\"";
+
+            // Double trailing backslashes so they do not escape the closing quote on Windows.
             return $"\"{path}{new string('\\', trailingBackslashes)}\"";
         }
 
