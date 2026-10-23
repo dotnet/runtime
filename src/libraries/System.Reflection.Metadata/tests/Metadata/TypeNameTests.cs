@@ -798,6 +798,38 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal("Declaring", nested.DeclaringType.DeclaringType.Name);
             Assert.Equal("Ns", nested.DeclaringType.DeclaringType.Namespace);
             Assert.Equal(3, nested.GetNodeCount());
+            Assert.Same(deep, nested.DeclaringType);
+            Assert.Same(declaring, deep.DeclaringType);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void CreateSimpleTypeName_NestedDerivedNames(bool fullNameFirst)
+        {
+            TypeName nested = TypeName.CreateSimpleTypeName("Nested", TypeName.CreateSimpleTypeName("Ns.Declaring"));
+            if (fullNameFirst)
+            {
+                Assert.Equal("Ns.Declaring+Nested", nested.FullName);
+            }
+
+            TypeName array = nested.MakeSZArrayTypeName();
+            Assert.Equal("Nested[]", array.Name);
+            Assert.Equal("Ns.Declaring+Nested[]", array.FullName);
+
+            TypeName generic = nested.MakeGenericTypeName(ImmutableArray.Create(TypeName.Parse("Arg".AsSpan())));
+            Assert.Equal("Nested", generic.Name);
+            Assert.Equal("Ns.Declaring+Nested[[Arg]]", generic.FullName);
+
+            AssemblyNameInfo assemblyName = new("Lib");
+            TypeName withAssembly = nested.WithAssemblyName(assemblyName);
+            Assert.Equal("Nested", withAssembly.Name);
+            Assert.Equal("Ns.Declaring+Nested", withAssembly.FullName);
+            Assert.Equal("Ns.Declaring+Nested, Lib", withAssembly.AssemblyQualifiedName);
+            Assert.Same(assemblyName, withAssembly.DeclaringType.AssemblyName);
+            Assert.Equal("Nested[]", withAssembly.MakeSZArrayTypeName().Name);
+
+            Assert.Equal("Ns.Declaring+Nested", nested.AssemblyQualifiedName);
         }
 
         [Theory]

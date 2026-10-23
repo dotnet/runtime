@@ -226,6 +226,13 @@ namespace System.Reflection.Metadata
                     GetElementType().AppendFullName(ref builder);
                     TypeNameParserHelpers.AppendRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
                 }
+                else if (IsNested)
+                {
+                    // Nested types created by CreateSimpleTypeName store only their own name.
+                    _declaringType.AppendFullName(ref builder);
+                    builder.Append('+');
+                    builder.Append(_name);
+                }
                 else
                 {
                     Debug.Fail("Pre-allocated full name should have been provided in the ctor");
@@ -338,6 +345,10 @@ namespace System.Reflection.Metadata
             {
                 GetElementType().AppendName(ref builder);
                 TypeNameParserHelpers.AppendRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
+            }
+            else if (_name is not null)
+            {
+                builder.Append(_name);
             }
             else
             {
@@ -610,7 +621,10 @@ namespace System.Reflection.Metadata
                 elementOrGenericType: null,
                 declaringType: declaringType,
                 genericTypeArguments: ImmutableArray<TypeName>.Empty,
-                nestedNameLength: _nestedNameLength);
+                nestedNameLength: _nestedNameLength)
+            {
+                _name = _name,
+            };
         }
 
         /// <summary>
@@ -652,13 +666,15 @@ namespace System.Reflection.Metadata
                 throw new ArgumentException(SR.Arg_NestedTypeAssemblyInfo, nameof(assemblyInfo));
             }
 
-            string declaringFullName = declaringType.FullName;
-            if (declaringType._nestedNameLength != declaringFullName.Length)
+            // The full name is built on first use of FullName.
+            return new TypeName(fullName: null,
+                assemblyName: declaringType.AssemblyName,
+                elementOrGenericType: null,
+                declaringType: declaringType,
+                genericTypeArguments: ImmutableArray<TypeName>.Empty)
             {
-                declaringType = new TypeName(declaringFullName, declaringType.AssemblyName, declaringType: declaringType._declaringType, nestedNameLength: declaringFullName.Length);
-            }
-
-            return new TypeName(declaringFullName + "+" + escapedName, declaringType.AssemblyName, declaringType: declaringType);
+                _name = escapedName,
+            };
         }
 
         /// <summary>
