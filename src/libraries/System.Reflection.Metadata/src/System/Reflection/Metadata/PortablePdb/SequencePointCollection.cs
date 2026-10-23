@@ -170,7 +170,7 @@ namespace System.Reflection.Metadata
             private static ushort AddColumns(ushort value, int delta)
             {
                 int result = unchecked(value + delta);
-                if (result < 0 || result >= ushort.MaxValue)
+                if (result < 0 || result > ushort.MaxValue)
                 {
                     Throw.SequencePointValueOutOfRange();
                 }

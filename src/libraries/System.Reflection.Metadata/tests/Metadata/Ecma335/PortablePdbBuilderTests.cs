@@ -9,6 +9,137 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 {
     public class PortablePdbBuilderTests
     {
+        [Theory]
+        [InlineData(0, true)]
+        [InlineData(65534, true)]
+        [InlineData(65535, true)]
+        [InlineData(65536, false)]
+        [InlineData(0x1fffffff, false)]
+        public void SequencePoints_InitialColumn(int startColumn, bool valid)
+        {
+            var points = new BlobBuilder();
+            points.WriteCompressedInteger(0); // local signature
+            points.WriteCompressedInteger(0); // IL offset
+            points.WriteCompressedInteger(1); // delta lines
+            points.WriteCompressedSignedInteger(0); // delta columns
+            points.WriteCompressedInteger(1); // start line
+            points.WriteCompressedInteger(startColumn);
+
+            using var provider = CreateSequencePointsPdb(points);
+            var enumerator = provider.GetMetadataReader().GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(1)).GetSequencePoints().GetEnumerator();
+            if (valid)
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(startColumn, enumerator.Current.StartColumn);
+                Assert.Equal(startColumn, enumerator.Current.EndColumn);
+                Assert.False(enumerator.MoveNext());
+            }
+            else
+            {
+                Assert.Throws<BadImageFormatException>(() => enumerator.MoveNext());
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 1, 65533, true)]
+        [InlineData(0, 1, 65534, true)]
+        [InlineData(0, 1, 65535, false)]
+        [InlineData(0, 65535, 0x1fffffff, false)]
+        [InlineData(1, 1, 65533, true)]
+        [InlineData(1, 1, 65534, true)]
+        [InlineData(1, 1, 65535, false)]
+        [InlineData(1, 65535, -65535, true)]
+        [InlineData(1, 65535, -65536, false)]
+        [InlineData(1, 65535, 0x0fffffff, false)]
+        [InlineData(1, 0, -0x10000000, false)]
+        public void SequencePoints_EndColumn(int deltaLines, int startColumn, int deltaColumns, bool valid)
+        {
+            var points = new BlobBuilder();
+            points.WriteCompressedInteger(0); // local signature
+            points.WriteCompressedInteger(0); // IL offset
+            points.WriteCompressedInteger(deltaLines);
+            if (deltaLines == 0)
+            {
+                points.WriteCompressedInteger(deltaColumns);
+            }
+            else
+            {
+                points.WriteCompressedSignedInteger(deltaColumns);
+            }
+            points.WriteCompressedInteger(1); // start line
+            points.WriteCompressedInteger(startColumn);
+
+            using var provider = CreateSequencePointsPdb(points);
+            var enumerator = provider.GetMetadataReader().GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(1)).GetSequencePoints().GetEnumerator();
+            if (valid)
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(startColumn, enumerator.Current.StartColumn);
+                Assert.Equal(startColumn + deltaColumns, enumerator.Current.EndColumn);
+                Assert.False(enumerator.MoveNext());
+            }
+            else
+            {
+                Assert.Throws<BadImageFormatException>(() => enumerator.MoveNext());
+            }
+        }
+
+        [Theory]
+        [InlineData(1, -1, true)]
+        [InlineData(1, 65533, true)]
+        [InlineData(1, 65534, true)]
+        [InlineData(1, 65535, false)]
+        [InlineData(1, -2, false)]
+        [InlineData(65535, -65535, true)]
+        [InlineData(65535, -65536, false)]
+        [InlineData(65535, 0x0fffffff, false)]
+        [InlineData(0, -0x10000000, false)]
+        public void SequencePoints_StartColumnDelta(int startColumn, int deltaColumns, bool valid)
+        {
+            var points = new BlobBuilder();
+            points.WriteCompressedInteger(0); // local signature
+            points.WriteCompressedInteger(0); // IL offset
+            points.WriteCompressedInteger(1); // delta lines
+            points.WriteCompressedSignedInteger(0); // delta columns
+            points.WriteCompressedInteger(1); // start line
+            points.WriteCompressedInteger(startColumn);
+            points.WriteCompressedInteger(1); // delta IL offset
+            points.WriteCompressedInteger(1); // delta lines
+            points.WriteCompressedSignedInteger(0); // delta columns
+            points.WriteCompressedSignedInteger(1); // delta start line
+            points.WriteCompressedSignedInteger(deltaColumns);
+
+            using var provider = CreateSequencePointsPdb(points);
+            var enumerator = provider.GetMetadataReader().GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(1)).GetSequencePoints().GetEnumerator();
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(startColumn, enumerator.Current.StartColumn);
+            if (valid)
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(startColumn + deltaColumns, enumerator.Current.StartColumn);
+                Assert.Equal(startColumn + deltaColumns, enumerator.Current.EndColumn);
+                Assert.False(enumerator.MoveNext());
+            }
+            else
+            {
+                Assert.Throws<BadImageFormatException>(() => enumerator.MoveNext());
+            }
+        }
+
+        private static MetadataReaderProvider CreateSequencePointsPdb(BlobBuilder points)
+        {
+            var metadata = new MetadataBuilder();
+            DocumentHandle document = metadata.AddDocument(metadata.GetOrAddDocumentName("test.cs"), default, default, default);
+            metadata.AddMethodDebugInformation(document, metadata.GetOrAddBlob(points));
+            var rowCounts = new int[MetadataTokens.TableCount];
+            rowCounts[(int)TableIndex.MethodDef] = 1;
+            var pdb = new PortablePdbBuilder(metadata, ImmutableArray.Create(rowCounts), default);
+            var image = new BlobBuilder();
+            pdb.Serialize(image);
+
+            return MetadataReaderProvider.FromPortablePdbImage(image.ToImmutableArray());
+        }
+
         [Fact]
         public void Ctor_Errors()
         {
