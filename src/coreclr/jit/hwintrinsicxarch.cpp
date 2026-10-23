@@ -491,6 +491,14 @@ CORINFO_InstructionSet Compiler::lookupIsa(const char* className,
 
 //------------------------------------------------------------------------
 // IsEmbRoundingEnabled: Check whether an intrinsic overload has an embedded rounding operand.
+//
+// Arguments:
+//    intrinsicId -- The intrinsic ID.
+//    numArgs     -- The number of operands.
+//
+// Return Value:
+//    true if the overload has an embedded rounding operand; otherwise, false.
+//
 bool HWIntrinsicInfo::IsEmbRoundingEnabled(NamedIntrinsic intrinsicId, size_t numArgs)
 {
     if (!IsEmbRoundingCompatible(intrinsicId))
