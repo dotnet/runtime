@@ -131,7 +131,7 @@ namespace System.Text.RegularExpressions.Symbolic
     }
 
     /// <summary>Provides stack-local access to a node and its owning builder.</summary>
-    internal readonly struct SymbolicRegexNodeContext<TSet>
+    internal readonly struct SymbolicRegexNodeContext<TSet> : IEquatable<SymbolicRegexNodeContext<TSet>>
         where TSet : IComparable<TSet>, IEquatable<TSet>
     {
         internal const string EmptyCharClass = "[]";
@@ -220,8 +220,10 @@ namespace System.Text.RegularExpressions.Symbolic
         public static bool operator ==(SymbolicRegexNode<TSet> left, SymbolicRegexNodeContext<TSet> right) => left.Id == right._id;
         public static bool operator !=(SymbolicRegexNode<TSet> left, SymbolicRegexNodeContext<TSet> right) => left.Id != right._id;
 
+        public bool Equals(SymbolicRegexNodeContext<TSet> other) => _id == other._id;
+
         public override bool Equals([NotNullWhen(true)] object? obj) =>
-            obj is SymbolicRegexNodeContext<TSet> other && _id == other._id;
+            obj is SymbolicRegexNodeContext<TSet> other && Equals(other);
 
         public override int GetHashCode() => _id;
 
