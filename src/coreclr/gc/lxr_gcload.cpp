@@ -105,7 +105,8 @@ LXR_EXPORT int32_t GC_LxrPrototype_Collect(uint32_t kind)
     {
         return static_cast<int32_t>(LxrRcResult::InvalidArgument);
     }
-    return static_cast<int32_t>(Heap->CollectPrototype(static_cast<LxrPauseKind>(kind)));
+    // P26 (F8). This entry point is a synchronous collection for tests, like a user collection: it returns after the lazy work.
+    return static_cast<int32_t>(Heap->CollectPrototype(static_cast<LxrPauseKind>(kind), true));
 }
 
 LXR_EXPORT int32_t GC_LxrPrototype_HoldTrace(int32_t hold)

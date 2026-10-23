@@ -11,6 +11,9 @@
 #include <minipal/utils.h>
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
 #include <chrono>
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+#include <thread>
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
 
 namespace
@@ -4897,6 +4900,16 @@ void LxrReferenceCounting::Execute(LxrWorkPacket* packet, size_t worker, void* c
         default: group = LxrPauseTimers::MatureSweep; break;
     }
     PacketScope packetTimer(engine->m_pause_timers, group, timed);
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    if (work->kind == WorkKind::Decrements || work->kind == WorkKind::PreviousRoots || work->kind == WorkKind::MatureSweep)
+    {
+        uint32_t delay = engine->m_lazy_delay_us.load(std::memory_order_acquire);
+        if (delay != 0 && packet->GetStage() == LxrWorkBucketStage::Unconstrained)
+        {
+            std::this_thread::sleep_for(std::chrono::microseconds(delay));
+        }
+    }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     switch (work->kind)
     {
         case WorkKind::Slots:

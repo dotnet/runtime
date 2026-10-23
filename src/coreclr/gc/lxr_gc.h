@@ -129,7 +129,7 @@ public:
     ObjectReferenceEnumerationParameters* GetObjectReferenceEnumerationParameters() override;
     ObjectHeaderBitsParameters* GetObjectHeaderBitsParameters() override;
 
-    LxrRcResult CollectPrototype(LxrPauseKind kind);
+    LxrRcResult CollectPrototype(LxrPauseKind kind, bool waitForLazy = false);
     LxrRcResult HoldPrototypeTrace(bool hold);
     LxrRcResult ArmPrototypeScan(OBJECTHANDLE handle);
     LxrRcResult ArmPrototypeLifetime(OBJECTHANDLE handle);
@@ -213,7 +213,7 @@ private:
     void CountScanWork(size_t metric);
     bool FrozenContains(uintptr_t address, bool retired) const;
     void ScanFrozenRoots();
-    LxrRcResult CollectLocked(LxrPauseKind kind, bool forcedBlocking = false);
+    LxrRcResult CollectLocked(LxrPauseKind kind, bool forcedBlocking = false, bool waitForLazy = false);
     bool EnterCollectionLock();
     void LeaveCollectionLock(bool cooperative);
     void ValidateWalk(const char* operation) const;
@@ -238,6 +238,8 @@ private:
     LxrPolicyConfiguration m_policy_configuration{};
     LxrRcConfiguration m_heap_configuration{};
     bool m_fast_enabled = true;
+    // P26 (F8). Wait for the lazy decrements and the lazy sweep after every pause (the behaviour before F8).
+    bool m_wait_for_lazy = false;
     size_t m_native_plane_limit = 0;
     size_t m_hard_limit = 0;
     std::atomic<LxrCollectionCause> m_collection_cause{LxrCollectionCause::None};

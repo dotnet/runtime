@@ -3798,6 +3798,264 @@ namespace
         Check(engine.DetachMutator(fixture.mutator) == LxrRcResult::Success, "F1 stress fixture detaches");
     }
 
+    // P26 (F8). The thread that made a pause does not wait for the lazy decrements and the lazy sweep (the Java LXR runs them on
+    // its workers while the program runs). This test is the F1 stress with no Drain after the pause: the program allocates,
+    // stores and reads while the lazy work of the last pause is still pending (each lazy packet sleeps first). After every
+    // pause each reachable object must be counted, owned and linked as in the model, and no new object may take the memory
+    // of a reachable one. At the end a Full pause and a drain must leave exactly the reachable objects alive (the oracle
+    // knows every byte). Control LXR_F8_WAIT_CONTROL: the pause drains, so no round can overlap with lazy work, and the
+    // overlap check fails.
+    void ValidateF8Stress(uint32_t seed, bool nursery)
+    {
+        F1Fixture fixture;
+        if (!InitializeF1(fixture, nursery))
+        {
+            return;
+        }
+        LxrReferenceCounting& engine = fixture.engine;
+        engine.SetLazyDelayForTest(300);
+        Type node(32, 2);
+        std::mt19937 random(seed);
+        std::vector<Object*> object;
+        std::vector<std::array<int, 2>> field;
+        std::vector<int> root;
+        auto reach = [&]()
+        {
+            std::vector<bool> seen(object.size(), false);
+            std::vector<int> stack(root.begin(), root.end());
+            while (!stack.empty())
+            {
+                int index = stack.back();
+                stack.pop_back();
+                if (index < 0 || seen[index])
+                {
+                    continue;
+                }
+                seen[index] = true;
+                for (int target : field[index])
+                {
+                    stack.push_back(target);
+                }
+            }
+            return seen;
+        };
+        auto pick = [&](const std::vector<int>& from) { return from[random() % from.size()]; };
+        auto liveList = [&](const std::vector<bool>& seen)
+        {
+            std::vector<int> list;
+            for (size_t index = 0; index < seen.size(); index++)
+            {
+                if (seen[index])
+                {
+                    list.push_back(static_cast<int>(index));
+                }
+            }
+            return list;
+        };
+        auto link = [&](int source, size_t slot, int target)
+        {
+            field[source][slot] = target;
+            return Store(engine, fixture.mutator, Field(object[source], slot), target < 0 ? nullptr : object[target]);
+        };
+        Object* first = Allocate(engine, fixture.mutator, node);
+        if (first == nullptr)
+        {
+            return;
+        }
+        object.push_back(first);
+        field.push_back({-1, -1});
+        root.push_back(0);
+        size_t overlapRounds = 0;
+        size_t traces = 0;
+        size_t cycleSweeps = 0;
+        for (size_t round = 0; round < 60; round++)
+        {
+            overlapRounds += engine.GetLazyPendingForTest() != 0 ? 1 : 0;
+            std::vector<int> live = liveList(reach());
+            size_t newborn = 20 + random() % 40;
+            for (size_t count = 0; count < newborn; count++)
+            {
+                Object* created = Allocate(engine, fixture.mutator, node);
+                if (created == nullptr)
+                {
+                    return;
+                }
+                // A new object must not sit on the memory of an object that the model still reaches.
+                for (size_t index = 0; index < object.size(); index++)
+                {
+                    if (object[index] == created)
+                    {
+                        Check(false, "F8 stress: a new allocation took the address of a reachable object");
+                        return;
+                    }
+                }
+                int index = static_cast<int>(object.size());
+                object.push_back(created);
+                field.push_back({-1, -1});
+                int parent = pick(live);
+                if (!Check(link(parent, random() % 2, index), "F8 stress newborn links"))
+                {
+                    return;
+                }
+                if (random() % 2 == 0 && !Check(link(index, random() % 2, pick(live)), "F8 stress newborn points back"))
+                {
+                    return;
+                }
+                live.push_back(index);
+            }
+            size_t changes = 20 + random() % 40;
+            for (size_t count = 0; count < changes; count++)
+            {
+                int source = pick(live);
+                int target = random() % 4 == 0 ? -1 : pick(live);
+                if (!Check(link(source, random() % 2, target), "F8 stress store"))
+                {
+                    return;
+                }
+            }
+            std::vector<bool> seen = reach();
+            std::vector<int> reachable = liveList(seen);
+            root.clear();
+            size_t roots = 1 + random() % 5;
+            for (size_t count = 0; count < roots; count++)
+            {
+                root.push_back(pick(reachable));
+            }
+            seen = reach();
+            for (size_t index = 0; index < object.size(); index++)
+            {
+                if (!seen[index])
+                {
+                    object[index] = nullptr;
+                    field[index] = {-1, -1};
+                }
+            }
+            fixture.roots.objects.clear();
+            for (int index : root)
+            {
+                fixture.roots.objects.push_back(object[index]);
+            }
+            LxrTracePhase phase = engine.GetTracePhase();
+            uint32_t choice = random() % 10;
+            LxrPauseKind kind = LxrPauseKind::RefCount;
+            if (phase == LxrTracePhase::Inactive)
+            {
+                kind = choice < 5 ? LxrPauseKind::RefCount : choice < 9 ? LxrPauseKind::InitialMark : LxrPauseKind::Full;
+            }
+            else if (phase == LxrTracePhase::Concurrent)
+            {
+                kind = choice < 4 ? LxrPauseKind::RefCount : LxrPauseKind::FinalMark;
+            }
+            traces += kind == LxrPauseKind::InitialMark ? 1 : 0;
+            cycleSweeps += kind == LxrPauseKind::FinalMark || kind == LxrPauseKind::Full ? 1 : 0;
+            LxrReferenceCounting& pauseEngine = engine;
+            LxrRcResult paused = kind == LxrPauseKind::InitialMark
+                ? pauseEngine.BeginTrace(CaptureMoving, &fixture.roots, Timeout)
+                : kind == LxrPauseKind::FinalMark
+                    ? pauseEngine.FinishTrace(CaptureMoving, &fixture.roots, Timeout)
+                    : kind == LxrPauseKind::Full
+                        ? pauseEngine.CollectFull(CaptureMoving, &fixture.roots, Timeout)
+                        : pauseEngine.Collect(CaptureMoving, &fixture.roots, Timeout);
+            if (!Check(paused == LxrRcResult::Success, "F8 pause completes"))
+            {
+                std::fprintf(stderr, "F8 pause failure=%u\n", static_cast<unsigned>(engine.GetFailure()));
+                return;
+            }
+#if defined(LXR_F8_WAIT_CONTROL)
+            // Control: the behaviour before F8. The thread waits for the lazy work after the pause.
+            if (kind != LxrPauseKind::InitialMark && !Check(engine.Drain(Timeout) == LxrRcResult::Success, "F8 control drains"))
+            {
+                return;
+            }
+#endif // LXR_F8_WAIT_CONTROL
+            if (nursery)
+            {
+                // The pause may have moved young objects. Follow the real graph from the moved roots.
+                std::vector<bool> done(object.size(), false);
+                std::vector<int> stack;
+                for (size_t index = 0; index < root.size(); index++)
+                {
+                    object[root[index]] = fixture.roots.objects[index];
+                    stack.push_back(root[index]);
+                }
+                while (!stack.empty())
+                {
+                    int index = stack.back();
+                    stack.pop_back();
+                    if (done[index])
+                    {
+                        continue;
+                    }
+                    done[index] = true;
+                    for (size_t slot = 0; slot < 2; slot++)
+                    {
+                        int target = field[index][slot];
+                        if (target >= 0)
+                        {
+                            object[target] = *Field(object[index], slot);
+                            stack.push_back(target);
+                        }
+                    }
+                }
+            }
+            size_t wrong = 0;
+            for (size_t index = 0; index < object.size(); index++)
+            {
+                if (object[index] == nullptr)
+                {
+                    continue;
+                }
+                bool ok = Count(engine, object[index]) != 0 && engine.GetObjectExtent(object[index]) == 32 &&
+                    engine.IsObjectStart(object[index]);
+                for (size_t slot = 0; slot < 2; slot++)
+                {
+                    int target = field[index][slot];
+                    ok = ok && *Field(object[index], slot) == (target < 0 ? nullptr : object[target]);
+                }
+                wrong += ok ? 0 : 1;
+            }
+            if (!Check(wrong == 0, "F8 stress: every reachable object is counted, owned and linked while lazy work runs"))
+            {
+                std::fprintf(stderr, "seed %u round %zu kind %u wrong %zu\n", seed, round,
+                    static_cast<unsigned>(kind), wrong);
+                return;
+            }
+        }
+        // End: one Full pause with the roots, a drain, and the oracle has to agree with the model.
+        std::vector<bool> seen = reach();
+        size_t reachableCount = 0;
+        for (size_t index = 0; index < seen.size(); index++)
+        {
+            reachableCount += seen[index] ? 1 : 0;
+        }
+        fixture.roots.objects.clear();
+        for (int index : root)
+        {
+            fixture.roots.objects.push_back(object[index]);
+        }
+        if (engine.GetTracePhase() == LxrTracePhase::Concurrent &&
+            !Check(engine.FinishTrace(CaptureMoving, &fixture.roots, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success, "F8 the last trace ends"))
+        {
+            return;
+        }
+        if (!Check(engine.Drain(Timeout) == LxrRcResult::Success &&
+                engine.CollectFull(CaptureMoving, &fixture.roots, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success, "F8 the final Full pause and drain complete"))
+        {
+            return;
+        }
+        std::printf("f8_stress seed=%u nursery=%d overlap_rounds=%zu initial_marks=%zu cycle_sweeps=%zu live=%zu reachable=%zu\n",
+            seed, nursery ? 1 : 0, overlapRounds, traces, cycleSweeps,
+            static_cast<size_t>(engine.GetLiveBytes() / 32), reachableCount);
+        Check(engine.GetLiveBytes() == reachableCount * 32,
+            "F8 stress: after the drain exactly the reachable objects are alive (no leak, no early free)");
+        Check(overlapRounds >= 15, "F8 stress: the program ran in many rounds while lazy work was still pending");
+        Check(traces >= 2 && cycleSweeps >= 2, "F8 stress runs trace cycles and cycle sweeps while lazy work is pending");
+        Check(engine.GetFailure() == LxrRcResult::Success, "F8 stress: the engine did not fault");
+        Check(engine.DetachMutator(fixture.mutator) == LxrRcResult::Success, "F8 stress fixture detaches");
+    }
+
     // P25 (F5). The emergency rule needs the pages that hold data. Where survivors stay in place, the blocks of a heap that
     // holds little live data are all non-free, and a count of blocks says "full". The occupied figure (blocks minus the free
     // lines of the reusable blocks) says how much data there is. For a dense heap both figures agree, so a heap that really
@@ -8631,6 +8889,17 @@ int main(int argc, char** argv)
         }
         ValidateF2ShutdownWithBacklog();
         std::printf("%s: %d/%d F2 pause walk checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
+    if (argc == 2 && strcmp(argv[1], "--f8-lazy") == 0)
+    {
+        for (uint32_t seed = 1; seed <= 6; seed++)
+        {
+            ValidateF8Stress(seed, false);
+            ValidateF8Stress(seed, true);
+        }
+        std::printf("%s: %d/%d F8 lazy decrement checks\n",
             Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
         return Failures == 0 ? 0 : 1;
     }

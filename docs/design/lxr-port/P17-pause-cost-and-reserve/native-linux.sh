@@ -30,7 +30,7 @@ failed=0
 for sel in "" --log-storage --mature --mature-remset --mature-reader --mature-retained-owner --mature-released-candidate \
     --mature-headroom --mature-completed-scan --mature-remset-whole --mature-remset-wrap --mature-remset-same-shape \
     --mature-remset-boundaries --nursery --nursery-reader --root-batching --trace-batching --aux-retirement \
-    --object-planes --storage-diagnostics --lifetime --p8-policy --p8-storage --trace --first-store-churn --inline-metadata --lazy-large-release --s3-bookkeeping --s4-sweep --s5b-overshoot --s6-registry --s7-pins --fresh-block-race --d2-spans --f1-trace --f5-policy --f4-scheduler --f2-pause --f4b-scheduler; do
+    --object-planes --storage-diagnostics --lifetime --p8-policy --p8-storage --trace --first-store-churn --inline-metadata --lazy-large-release --s3-bookkeeping --s4-sweep --s5b-overshoot --s6-registry --s7-pins --fresh-block-race --d2-spans --f1-trace --f5-policy --f4-scheduler --f2-pause --f4b-scheduler --f8-lazy; do
   name=${sel:-default}
   timeout 1500 "$OUT/lxr-rc-validation" $sel > "$OUT/run$name.log" 2>&1
   code=$?

@@ -335,6 +335,7 @@ HRESULT LxrGcHeap::Initialize()
         !ReadBooleanSetting("LXRNoMutatorLineRecycling", &noMutatorRecycling) ||
         !ReadBooleanSetting("LXROvershootToSpace", &overshoot) ||
         !ReadBooleanSetting("LXRLazyDecrements", &configuration.lazyDecrements) ||
+        !ReadBooleanSetting("LXRWaitForLazy", &m_wait_for_lazy) ||
         !ReadBooleanSetting("LXRFastAllocation", &m_fast_enabled) ||
         !ReadBooleanSetting("LXREvacuateNursery", &configuration.evacuateNursery) ||
         !ReadBooleanSetting("LXREvacuateMature", &configuration.evacuateMature) ||
@@ -719,7 +720,7 @@ LxrRcResult LxrGcHeap::TryGrow(bool large, size_t size)
     {
         result = CollectLocked(m_policy.Select(
             m_engine.GetTracePhase() == LxrTracePhase::Concurrent, m_engine.IsTraceExhausted(),
-            false, false, m_concurrent_enabled.load()), m_policy.EmergencyHint());
+            false, false, m_concurrent_enabled.load()), m_policy.EmergencyHint(), true);
         if (result == LxrRcResult::Success)
         {
             result = m_engine.GetGrowthResult();
@@ -917,7 +918,7 @@ void LxrGcHeap::LeaveCollectionLock(bool cooperative)
     }
 }
 
-LxrRcResult LxrGcHeap::CollectLocked(LxrPauseKind kind, bool forcedBlocking)
+LxrRcResult LxrGcHeap::CollectLocked(LxrPauseKind kind, bool forcedBlocking, bool waitForLazy)
 {
     if (m_shutdown.load(std::memory_order_acquire))
     {
@@ -958,9 +959,23 @@ LxrRcResult LxrGcHeap::CollectLocked(LxrPauseKind kind, bool forcedBlocking)
     }
     if (result == LxrRcResult::Success && kind != LxrPauseKind::InitialMark)
     {
-        LxrPhaseScope postDrain(m_engine.GetPauseTimers(), LxrPauseTimers::PostDrain);
-        result = m_engine.GetTracePhase() == LxrTracePhase::Concurrent
-            ? LxrRcResult::Success : m_engine.Drain(Timeout);
+        // P26 (F8). The Java LXR runs the lazy decrements and the lazy sweep on its workers while the program runs, and
+        // nothing waits for them (plan/lxr/global.rs: schedule_collection only logs when the previous lazy jobs are not
+        // finished). So the thread that made the pause goes back to the program at once. It waits for the lazy work only
+        // when a decision needs its result: a Full pause or a forced or emergency collection (the Java LXR does their
+        // decrements inside the pause), a caller that asks for it (a wait for the concurrent collection, a growth), the
+        // next collection (UpdatePolicyHints, because the log banks are reused) and an allocation that found no memory
+        // (Alloc waits for the lazy sweep before it collects). LXRWaitForLazy restores the old wait after every pause.
+        bool wait = waitForLazy || forcedBlocking || kind == LxrPauseKind::Full || m_wait_for_lazy;
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F8_WAIT_CONTROL)
+        wait = true;
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F8_WAIT_CONTROL
+        if (wait)
+        {
+            LxrPhaseScope postDrain(m_engine.GetPauseTimers(), LxrPauseTimers::PostDrain);
+            result = m_engine.GetTracePhase() == LxrTracePhase::Concurrent
+                ? LxrRcResult::Success : m_engine.Drain(Timeout);
+        }
     }
     m_last_gc_duration.store(GetNow() - m_last_gc_start.load());
     if (result == LxrRcResult::Success && m_engine.GetTracePhase() == LxrTracePhase::Inactive)
@@ -974,10 +989,10 @@ LxrRcResult LxrGcHeap::CollectLocked(LxrPauseKind kind, bool forcedBlocking)
     return result;
 }
 
-LxrRcResult LxrGcHeap::CollectPrototype(LxrPauseKind kind)
+LxrRcResult LxrGcHeap::CollectPrototype(LxrPauseKind kind, bool waitForLazy)
 {
     bool cooperative = EnterCollectionLock();
-    LxrRcResult result = CollectLocked(kind);
+    LxrRcResult result = CollectLocked(kind, false, waitForLazy);
     LeaveCollectionLock(cooperative);
     return result;
 }
@@ -1045,6 +1060,12 @@ LxrRcResult LxrGcHeap::FinishLazy(LxrReferenceCounting* engine, void* context)
     if (heap->m_finalization_deferred.exchange(false, std::memory_order_seq_cst))
     {
         GCToEEInterface::EnableFinalization(heap->m_registry.GetPendingCount() != 0);
+    }
+    // The lazy sweep of a FinalMark pause is no longer awaited by the pause (F8), so the end of the concurrent collection
+    // is announced here, when the sweep has cleared the trace phase.
+    if (engine->GetTracePhase() == LxrTracePhase::Inactive)
+    {
+        heap->m_concurrent_done.Set();
     }
     size_t mature;
     LxrRcResult result = engine->GetOccupiedPages(&mature);
@@ -1702,7 +1723,7 @@ void LxrGcHeap::TemporaryDisableConcurrentGC()
 void LxrGcHeap::WaitUntilConcurrentGCComplete()
 {
     if (!m_shutdown.load() && IsConcurrentGCInProgress() &&
-        CollectPrototype(LxrPauseKind::FinalMark) != LxrRcResult::Success)
+        CollectPrototype(LxrPauseKind::FinalMark, true) != LxrRcResult::Success)
     {
         Fatal("LXR concurrent-completion wait failed.");
     }

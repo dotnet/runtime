@@ -597,6 +597,11 @@ public:
     LxrRcResult QueueTraceBacklogForTest(Object* object, size_t count);
     bool IsTraceGateBlockedForTest() const { return m_gate_blocked.load(std::memory_order_acquire); }
     uint64_t GetTracePendingForTest() const { return m_trace_pending.load(std::memory_order_acquire); }
+    // P26 (F8) tests. Packets of the lazy decrements and the lazy sweep that have not finished (the Unconstrained stage).
+    uint64_t GetLazyPendingForTest() const { return m_scheduler.GetStageOutstanding(LxrWorkBucketStage::Unconstrained); }
+    // Every lazy packet (decrements, previous roots, mature sweep) sleeps this long before it runs, so a test can keep lazy work
+    // pending while the mutators run.
+    void SetLazyDelayForTest(uint32_t microseconds) { m_lazy_delay_us.store(microseconds, std::memory_order_release); }
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
 
 private:
@@ -943,6 +948,7 @@ private:
     std::atomic<uint64_t> m_remembered_payload_reads{0};
     std::atomic<uintptr_t> m_mature_scan_receipt[6]{};
     std::atomic<bool> m_gate_armed{false};
+    std::atomic<uint32_t> m_lazy_delay_us{0};
     std::atomic<bool> m_trace_loop_off{false};
     std::atomic<bool> m_gate_blocked{false};
     std::atomic<int64_t> m_gate_remaining{0};
