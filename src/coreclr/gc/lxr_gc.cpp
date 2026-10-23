@@ -280,7 +280,8 @@ HRESULT LxrGcHeap::Initialize()
     {
         return E_OUTOFMEMORY;
     }
-    size_t bits = 8;
+    // P28 (F10). The default is 2 bits, as in the Java LXR (util/rc.rs: LOG_REF_COUNT_BITS = 1). The setting takes 2, 4 or 8.
+    size_t bits = 2;
     if (!ReadSetting("LXRRCBits", &bits, 10, 8))
     {
         return E_FAIL;
