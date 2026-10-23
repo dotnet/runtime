@@ -196,7 +196,8 @@ class EMPTY_BASES SHash : public TRAITS
     element_t Lookup(key_t key) const;
 
     // Read-only pointer-based lookup. Use Update to modify an existing element.
-
+    // The returned pointer refers to table storage and is invalidated by reallocation,
+    // removal of the element, or clearing the table.
     const element_t* LookupPtr(key_t key) const;
 
     // Update the first matching element in place, returning false if no match exists.

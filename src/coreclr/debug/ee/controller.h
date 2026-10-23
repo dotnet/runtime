@@ -363,8 +363,7 @@ enum DebuggerPatchKind { PATCH_KIND_IL_PRIMARY, PATCH_KIND_IL_REPLICA, PATCH_KIN
 // this should contain all the info that's needed over the course of a
 // patch's lifetime.
 //
-// FREEHASHENTRY entry:  Three ULONGs, this is required
-//      by the underlying hashtable implementation
+// ULONG iPrev, iNext, iFree:  Slot indices for the patch chains and free list.
 //  DWORD opcode:  A nonzero opcode && address field means that
 //      the patch has been applied to something. This may not be a full
 //      opcode, it is possible it is a partial opcode.
@@ -419,7 +418,9 @@ struct DebuggerControllerPatch
     friend class DebuggerPatchTable;
     friend class DebuggerController;
 
-    FREEHASHENTRY           entry;
+    ULONG                   iPrev;
+    ULONG                   iNext;
+    ULONG                   iFree;
     DebuggerController      *controller;
     DebuggerFunctionKey     key;
     SIZE_T                  offset;
@@ -729,19 +730,19 @@ private:
         LIMITED_METHOD_DAC_CONTRACT;
         const DebuggerPatchListEntry *entry = m_patchLists.LookupPtr(key);
         return entry == nullptr || entry->first == DPT_INVALID_SLOT ? nullptr
-            : dac_cast<PTR_DebuggerControllerPatch>(EntryPtr(entry->first));
+            : EntryPtr(entry->first);
     }
 
-    HASHENTRY *EntryPtr(ULONG index)
+    DebuggerControllerPatch *EntryPtr(ULONG index)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return dac_cast<PTR_HASHENTRY>(m_pcEntries + index * sizeof(DebuggerControllerPatch));
+        return dac_cast<PTR_DebuggerControllerPatch>(m_pcEntries + index * sizeof(DebuggerControllerPatch));
     }
 
-    ULONG ItemIndex(HASHENTRY *entry)
+    ULONG ItemIndex(DebuggerControllerPatch *patch)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return static_cast<ULONG>((dac_cast<TADDR>(entry) - m_pcEntries) / sizeof(DebuggerControllerPatch));
+        return static_cast<ULONG>((dac_cast<TADDR>(patch) - m_pcEntries) / sizeof(DebuggerControllerPatch));
     }
 
 #ifndef DACCESS_COMPILE
@@ -855,33 +856,32 @@ public:
     DebuggerControllerPatch *GetNextPatch(DebuggerControllerPatch *prev);
 
     // Find the first patch in the patch table, and store
-    //      index info in info.  Along with GetNextPatch, this can
-    //      iterate through the whole patch table.  Note that since the
-    //      table operates by iterating over its slots. If you add an entry while iterating
+    //      the next slot index in pIndex. Along with GetNextPatch, this can
+    //      iterate through the whole patch table by scanning its slots.
+    //      If you add an entry while iterating
     //      through the table, you may or may not iterate across
     //      the new entries.  You will iterate through all the entries
     //      that were present at the beginning of the run.  You
     //      safely delete anything you've already iterated by, anything
     //      else is kinda risky.
-    DebuggerControllerPatch * GetFirstPatch(HASHFIND * pInfo)
+    DebuggerControllerPatch *GetFirstPatch(ULONG *pIndex)
     {
         SUPPORTS_DAC;
 
-        pInfo->iNext = 0;
-        return GetNextPatch(pInfo);
+        *pIndex = 0;
+        return GetNextPatch(pIndex);
     }
 
     // Along with GetFirstPatch, this can iterate through
     //      the whole patch table.  See GetFirstPatch for more info
     //      on the rules of iterating through the table.
-    DebuggerControllerPatch * GetNextPatch(HASHFIND * pInfo)
+    DebuggerControllerPatch *GetNextPatch(ULONG *pIndex)
     {
         SUPPORTS_DAC;
 
-        while (pInfo->iNext < m_iEntries)
+        while (*pIndex < m_iEntries)
         {
-            DebuggerControllerPatch *patch =
-                dac_cast<PTR_DebuggerControllerPatch>(EntryPtr(pInfo->iNext++));
+            DebuggerControllerPatch *patch = EntryPtr((*pIndex)++);
             if (!patch->IsFree())
                 return patch;
         }
@@ -890,7 +890,7 @@ public:
 
     // Used by DebuggerController to translate an index
     //      of a patch into a direct pointer.
-    inline HASHENTRY * GetEntryPtr(ULONG iEntry)
+    inline DebuggerControllerPatch *GetEntryPtr(ULONG iEntry)
     {
         SUPPORTS_DAC;
 
@@ -899,11 +899,11 @@ public:
 
     // Used by DebuggerController to grab indices of patches
     //      rather than holding direct pointers to them.
-    inline ULONG GetItemIndex(HASHENTRY * p)
+    inline ULONG GetItemIndex(DebuggerControllerPatch *patch)
     {
         SUPPORTS_DAC;
 
-        return ItemIndex(p);
+        return ItemIndex(patch);
     }
 
     // Count how many patches are in the table.

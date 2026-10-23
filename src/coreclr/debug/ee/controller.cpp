@@ -280,9 +280,6 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBu
 
 #ifndef DACCESS_COMPILE
 static_assert(std::is_trivially_copyable<DebuggerControllerPatch>::value);
-static_assert(offsetof(DebuggerControllerPatch, entry) == 0);
-static_assert(offsetof(FREEHASHENTRY, iPrev) == offsetof(HASHENTRY, iPrev));
-static_assert(offsetof(FREEHASHENTRY, iNext) == offsetof(HASHENTRY, iNext));
 
 DebuggerPatchTable::~DebuggerPatchTable()
 {
@@ -322,10 +319,10 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatch(DebuggerPatchKey key)
         m_pcEntries = reinterpret_cast<TADDR>(memory);
         for (ULONG index = m_iEntries; index < count.Value(); index++)
         {
-            DebuggerControllerPatch *patch = reinterpret_cast<DebuggerControllerPatch *>(EntryPtr(index));
-            patch->entry.iFree = index + 1;
+            DebuggerControllerPatch *patch = EntryPtr(index);
+            patch->iFree = index + 1;
         }
-        reinterpret_cast<DebuggerControllerPatch *>(EntryPtr(count.Value() - 1))->entry.iFree = DPT_INVALID_SLOT;
+        EntryPtr(count.Value() - 1)->iFree = DPT_INVALID_SLOT;
         m_iFree = m_iEntries;
         m_iEntries = count.Value();
     }
@@ -333,13 +330,13 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatch(DebuggerPatchKey key)
     // Allocate the index before taking a slot so OOM leaves the table unchanged.
     EnsureList(key);
     ULONG index = m_iFree;
-    DebuggerControllerPatch *patch = reinterpret_cast<DebuggerControllerPatch *>(EntryPtr(index));
-    m_iFree = patch->entry.iFree;
-    memset(patch, 0, sizeof(*patch));
-    patch->entry.iPrev = DPT_INVALID_SLOT;
+    DebuggerControllerPatch *patch = EntryPtr(index);
+    m_iFree = patch->iFree;
+    *patch = {};
+    patch->iPrev = DPT_INVALID_SLOT;
     bool updated = m_patchLists.Update(key, [&](DebuggerPatchListEntry &list)
     {
-        patch->entry.iNext = list.first;
+        patch->iNext = list.first;
         if (list.first != DPT_INVALID_SLOT)
             EntryPtr(list.first)->iPrev = index;
         list.first = index;
@@ -350,11 +347,11 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatch(DebuggerPatchKey key)
 
 void DebuggerPatchTable::LinkPatch(DebuggerControllerPatch *patch)
 {
-    ULONG index = ItemIndex(reinterpret_cast<HASHENTRY *>(patch));
-    patch->entry.iPrev = DPT_INVALID_SLOT;
+    ULONG index = ItemIndex(patch);
+    patch->iPrev = DPT_INVALID_SLOT;
     bool updated = m_patchLists.Update(Key(patch), [&](DebuggerPatchListEntry &list)
     {
-        patch->entry.iNext = list.first;
+        patch->iNext = list.first;
         if (list.first != DPT_INVALID_SLOT)
             EntryPtr(list.first)->iPrev = index;
         list.first = index;
@@ -430,12 +427,12 @@ void DebuggerPatchTable::SpliceOutOfList(DebuggerControllerPatch *patch)
     _ASSERTE(m_patchLists.LookupPtr(key) != nullptr);
 
     // Fix up pointers to chain
-    if (patch->entry.iPrev == DPT_INVALID_SLOT)
+    if (patch->iPrev == DPT_INVALID_SLOT)
     {
         // The first patch shouldn't have anything behind it.
-        _ASSERTE(patch->entry.iPrev == DPT_INVALID_SLOT);
+        _ASSERTE(patch->iPrev == DPT_INVALID_SLOT);
 
-        if (patch->entry.iNext == DPT_INVALID_SLOT)
+        if (patch->iNext == DPT_INVALID_SLOT)
         {
             m_patchLists.Remove(key);
         }
@@ -443,39 +440,39 @@ void DebuggerPatchTable::SpliceOutOfList(DebuggerControllerPatch *patch)
         {
             bool updated = m_patchLists.Update(key, [&](DebuggerPatchListEntry &entry)
             {
-                entry.first = patch->entry.iNext;
+                entry.first = patch->iNext;
             });
             _ASSERTE(updated);
         }
     }
 
-    if (patch->entry.iNext != DPT_INVALID_SLOT)
+    if (patch->iNext != DPT_INVALID_SLOT)
     {
-        EntryPtr(patch->entry.iNext)->iPrev = patch->entry.iPrev;
+        EntryPtr(patch->iNext)->iPrev = patch->iPrev;
     }
 
-    if (patch->entry.iPrev != DPT_INVALID_SLOT)
+    if (patch->iPrev != DPT_INVALID_SLOT)
     {
-        EntryPtr(patch->entry.iPrev)->iNext = patch->entry.iNext;
+        EntryPtr(patch->iPrev)->iNext = patch->iNext;
     }
 
-    patch->entry.iNext = DPT_INVALID_SLOT;
-    patch->entry.iPrev = DPT_INVALID_SLOT;
+    patch->iNext = DPT_INVALID_SLOT;
+    patch->iPrev = DPT_INVALID_SLOT;
 }
 
 void DebuggerPatchTable::SpliceInBackOf(DebuggerControllerPatch *patchAppend,
                                         DebuggerControllerPatch *patchEnd)
 {
-    ULONG iAppend = ItemIndex((HASHENTRY*)patchAppend);
-    ULONG iEnd = ItemIndex((HASHENTRY*)patchEnd);
+    ULONG iAppend = ItemIndex(patchAppend);
+    ULONG iEnd = ItemIndex(patchEnd);
 
-    patchAppend->entry.iPrev = iEnd;
-    patchAppend->entry.iNext = patchEnd->entry.iNext;
+    patchAppend->iPrev = iEnd;
+    patchAppend->iNext = patchEnd->iNext;
 
-    if (patchAppend->entry.iNext != DPT_INVALID_SLOT)
-        EntryPtr(patchAppend->entry.iNext)->iPrev = iAppend;
+    if (patchAppend->iNext != DPT_INVALID_SLOT)
+        EntryPtr(patchAppend->iNext)->iPrev = iAppend;
 
-    patchEnd->entry.iNext = iAppend;
+    patchEnd->iNext = iAppend;
 }
 #endif
 
@@ -956,15 +953,15 @@ void DebuggerPatchTable::RemovePatch(DebuggerControllerPatch *patch)
 
     SpliceOutOfList(patch);
     patch->refCount = 0;
-    patch->entry.iFree = m_iFree;
-    m_iFree = ItemIndex(reinterpret_cast<HASHENTRY *>(patch));
+    patch->iFree = m_iFree;
+    m_iFree = ItemIndex(patch);
 }
 
 DebuggerControllerPatch *DebuggerPatchTable::GetNextPatch(DebuggerControllerPatch *prev)
 {
-    ULONG next = prev->entry.iNext;
+    ULONG next = prev->iNext;
     return next == DPT_INVALID_SLOT ? nullptr
-        : dac_cast<PTR_DebuggerControllerPatch>(EntryPtr(next));
+        : EntryPtr(next);
 }
 
 // Count how many patches are in the table.
@@ -1291,10 +1288,10 @@ void DebuggerController::DisableAll()
         //
         if (!IsAtProcessExit())
         {
-            HASHFIND f;
-            for (DebuggerControllerPatch *patch = g_patches->GetFirstPatch(&f);
+            ULONG patchIndex;
+            for (DebuggerControllerPatch *patch = g_patches->GetFirstPatch(&patchIndex);
                  patch != NULL;
-                 patch = g_patches->GetNextPatch(&f))
+                 patch = g_patches->GetNextPatch(&patchIndex))
             {
                 if (patch->controller == this)
                 {
@@ -2173,7 +2170,7 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
 
         // We have to keep the index here instead of the pointer.  The loop below adds more patches,
         // which may cause the patch table to grow and move.
-        ULONG primaryIndex = g_patches->GetItemIndex((HASHENTRY*)primary);
+        ULONG primaryIndex = g_patches->GetItemIndex(primary);
 
         // Iterate through every existing NativeCodeBlob (with the same EnC version).
         // This includes generics + prejitted code.
@@ -2212,7 +2209,7 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
                 {
                     fVersionMatch = TRUE;
 
-                    primary = (DebuggerControllerPatch *)g_patches->GetEntryPtr(primaryIndex);
+                    primary = g_patches->GetEntryPtr(primaryIndex);
 
                     // <REVISIT_TODO> If we're missing JIT info for any then
                     // we won't have applied the bp to every instantiation.  That should probably be reported
@@ -2398,10 +2395,10 @@ void DebuggerController::RemovePatchesFromModule(Module *pModule, AppDomain *pAp
 
     // First find all patches of interest
     DebuggerController::ControllerLockHolder ch;
-    HASHFIND f;
-    for (DebuggerControllerPatch *patch = g_patches->GetFirstPatch(&f);
+    ULONG patchIndex;
+    for (DebuggerControllerPatch *patch = g_patches->GetFirstPatch(&patchIndex);
          patch != NULL;
-         patch = g_patches->GetNextPatch(&f))
+         patch = g_patches->GetNextPatch(&patchIndex))
     {
         // Skip patches not in the specified domain
         if ((pAppDomain != NULL) && (patch->pAppDomain != pAppDomain))
@@ -2456,10 +2453,10 @@ bool DebuggerController::ModuleHasPatches( Module* pModule )
     }
 
     // First find all patches of interest
-    HASHFIND f;
-    for (DebuggerControllerPatch *patch = g_patches->GetFirstPatch(&f);
+    ULONG patchIndex;
+    for (DebuggerControllerPatch *patch = g_patches->GetFirstPatch(&patchIndex);
          patch != NULL;
-         patch = g_patches->GetNextPatch(&f))
+         patch = g_patches->GetNextPatch(&patchIndex))
     {
         //
         // This mirrors logic in code:DebuggerController::RemovePatchesFromModule
@@ -2906,11 +2903,11 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         // Annoyingly, TriggerPatch may add patches, which may cause
         // the patch table to move, which may, in turn, invalidate
         // the patch (and patchNext) pointers.  Store indices, instead.
-        iEvent = g_patches->GetItemIndex( (HASHENTRY *)patch );
+        iEvent = g_patches->GetItemIndex(patch);
 
         if (patchNext != NULL)
         {
-            iEventNext = g_patches->GetItemIndex((HASHENTRY *)patchNext);
+            iEventNext = g_patches->GetItemIndex(patchNext);
         }
 
         if (MatchPatch(thread, context, patch))
@@ -2945,16 +2942,14 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
                 tpr == TPR_TRIGGER_ONLY_THIS_AND_LOOP)
             {
                 // Make sure we've still got a valid pointer.
-                patch = (DebuggerControllerPatch *)
-                    DebuggerController::g_patches->GetEntryPtr( iEvent );
+                patch = DebuggerController::g_patches->GetEntryPtr(iEvent);
 
                 pDcq->dcqEnqueue(patch->controller, TRUE); // <REVISIT_TODO>@todo Return value</REVISIT_TODO>
             }
 
             // Make sure we've got a valid pointer in case TriggerPatch
             // returned false but still caused the table to move.
-            patch = (DebuggerControllerPatch *)
-                g_patches->GetEntryPtr( iEvent );
+            patch = g_patches->GetEntryPtr(iEvent);
 
             // A patch can be deleted as a result of it's being triggered.
             // The actual deletion of the patch is delayed until after the
@@ -2965,7 +2960,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
             // "deleted" flag didn't get set when we iterate the patches in DisableAll().
             patchNext = g_patches->GetNextPatch(patch);
             if (patchNext != NULL)
-                iEventNext = g_patches->GetItemIndex((HASHENTRY *)patchNext);
+                iEventNext = g_patches->GetItemIndex(patchNext);
 
             // Note that ReleasePatch() actually removes the patch if its ref count
             // reaches 0 after the release.
@@ -2986,8 +2981,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         }
         else if (patchNext != NULL)
         {
-            patch = (DebuggerControllerPatch *)
-                g_patches->GetEntryPtr(iEventNext);
+            patch = g_patches->GetEntryPtr(iEventNext);
         }
         else
         {

@@ -1337,34 +1337,6 @@ public:
 };
 
 //*****************************************************************************
-// The information that the hash table implementation stores at the beginning
-// of every record that can be but in the hash table.
-//*****************************************************************************
-typedef DPTR(struct HASHENTRY) PTR_HASHENTRY;
-struct HASHENTRY
-{
-    ULONG      iPrev;                  // Previous bucket in the chain.
-    ULONG      iNext;                  // Next bucket in the chain.
-};
-
-typedef DPTR(struct FREEHASHENTRY) PTR_FREEHASHENTRY;
-struct FREEHASHENTRY : HASHENTRY
-{
-    ULONG      iFree;
-};
-
-//*****************************************************************************
-// Used by the FindFirst/FindNextEntry functions.  These api's allow you to
-// do a sequential scan of all entries.
-//*****************************************************************************
-struct HASHFIND
-{
-    ULONG      iBucket;            // The next bucket to look in.
-    ULONG      iNext;
-};
-
-
-//*****************************************************************************
 //*****************************************************************************
 
 inline COUNT_T HashCOUNT_T(COUNT_T currentHash, COUNT_T data)

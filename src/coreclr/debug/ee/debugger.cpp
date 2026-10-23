@@ -4651,7 +4651,7 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
     CONTRACTL_END;
 
     HRESULT     hr =                S_OK;
-    HASHFIND    hf;
+    ULONG       patchIndex;
     SIZE_T      *pidTableEntry =    NULL;
     SIZE_T      pidInCaseTableMoves;
     Module      *pModule =          g_pEEInterface->MethodDescGetModule(fd);
@@ -4676,9 +4676,9 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
         DebuggerPatchTable *pPatchTable = DebuggerController::GetPatchTable();
         GetBPMappingDuplicates()->Clear(); //dups are tracked per-version
 
-        for (DebuggerControllerPatch *dcp = pPatchTable->GetFirstPatch(&hf);
+        for (DebuggerControllerPatch *dcp = pPatchTable->GetFirstPatch(&patchIndex);
              dcp != NULL;
-             dcp = pPatchTable->GetNextPatch( &hf ))
+             dcp = pPatchTable->GetNextPatch(&patchIndex))
         {
             LOG((LF_CORDB, LL_INFO10000, "D::MABFP: Got patch %p, patchId:0x%zx\n", dcp, dcp->patchId));
 
