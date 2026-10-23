@@ -363,13 +363,20 @@ internal static partial class Program
         GC.KeepAlive(destinations);
     }
 
+    // P28 (F10). With counts of 2 bits a count of 3 is sticky, and a root counts at every pause before the root of the pause
+    // before it is taken away. The graph is therefore held by the handle alone (no local variable of the caller is a second root
+    // while the collection runs), so that the parent never reaches 3 and its death is an RC death.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static GCHandle AllocateDeletionHandle()
+    {
+        return GCHandle.Alloc(new Node(307) { Next = new Node(311) { Next = new Node(313) } });
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static GCHandle CreateDeletionGraph()
     {
-        Node parent = new(307) { Next = new Node(311) { Next = new Node(313) } };
-        GCHandle handle = GCHandle.Alloc(parent);
+        GCHandle handle = AllocateDeletionHandle();
         ForceFull();
-        GC.KeepAlive(parent);
         return handle;
     }
 

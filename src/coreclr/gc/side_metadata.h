@@ -706,11 +706,16 @@ inline SideMetadataUpdateStatus SideMetadataAccessor::IncrementSaturating(
         {
             uint8_t oldValue = static_cast<uint8_t>((oldByte & mask) >> byteShift);
             *previous = oldValue;
+#ifdef LXR_F10_NO_SATURATE_CONTROL
+            // Control: a count at its maximum wraps to zero instead of staying.
+            uint8_t newByte = static_cast<uint8_t>((oldByte & ~mask) | (((oldValue + 1) & m_value_mask) << byteShift));
+#else
             if (oldValue == m_value_mask)
             {
                 return SideMetadataUpdateStatus::Saturated;
             }
             uint8_t newByte = static_cast<uint8_t>((oldByte & ~mask) | ((oldValue + 1) << byteShift));
+#endif // LXR_F10_NO_SATURATE_CONTROL
 #ifdef LXR_F10_BYTE_PLAIN_CONTROL
             // Control: the byte is written with a plain store, so an update of a neighbour can be lost.
             VolatileStoreWithoutBarrier(const_cast<uint8_t*>(byte), newByte);

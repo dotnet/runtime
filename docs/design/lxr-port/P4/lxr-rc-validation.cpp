@@ -3088,6 +3088,53 @@ namespace
             Check(engine.Drain(Timeout) == LxrRcResult::Success, "trace release ownership drains");
     }
 
+    // P28 (F10). Counts of 2 bits are the default, so a count reaches its maximum (3) with a few references. More references than
+    // the maximum must leave the count at the maximum (no wrap to a small value), the object must then stay alive through all
+    // decrements (sticky), and only the trace may reclaim it. The control makes an increment at the maximum wrap to zero.
+    void ValidateF10Overflow(uint8_t bits)
+    {
+        Type leaf(24, 0);
+        LxrReferenceCounting engine;
+        int identity;
+        LxrRcMutator* mutator;
+        if (!Initialize(engine, bits, &mutator, &identity))
+        {
+            return;
+        }
+        Object* shared = Allocate(engine, mutator, leaf);
+        Object* single = Allocate(engine, mutator, leaf);
+        Object* neighbour = Allocate(engine, mutator, leaf);
+        if (shared == nullptr || single == nullptr || neighbour == nullptr)
+        {
+            return;
+        }
+        uintptr_t maximum = (static_cast<uintptr_t>(1) << bits) - 1;
+        std::vector<Object*> roots(maximum + 7, shared);
+        roots.insert(roots.begin() + 2, single);
+        roots.push_back(neighbour);
+        if (!Epoch(engine, roots))
+        {
+            return;
+        }
+        Check(Count(engine, shared) == maximum, "more references than the maximum leave the count at the maximum");
+        Check(Count(engine, single) == 1 && Count(engine, neighbour) == 1,
+            "the counts next to a saturated count are not changed");
+        if (!Epoch(engine, {}))
+        {
+            return;
+        }
+        Check(Count(engine, single) == 0 && Count(engine, neighbour) == 0, "ordinary counts reach zero");
+        Check(Count(engine, shared) == maximum && engine.IsObjectStart(shared),
+            "a stuck object survives every decrement");
+        if (!TracePause(engine, {}, LxrPauseKind::Full))
+        {
+            return;
+        }
+        Check(Count(engine, shared) == 0 && !engine.IsObjectStart(shared),
+            "the trace reclaims a stuck object that is not reachable");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "overflow owner detaches");
+    }
+
     void ValidateCycleReclamation(uint8_t bits)
     {
         Type link(24, 1);
@@ -8977,6 +9024,16 @@ int main(int argc, char** argv)
             Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
         return Failures == 0 ? 0 : 1;
     }
+    if (argc == 2 && strcmp(argv[1], "--f10-rc") == 0)
+    {
+        for (uint8_t bits : {2, 4, 8})
+        {
+            ValidateF10Overflow(bits);
+        }
+        std::printf("%s: %d/%d F10 count width checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
     if (argc == 2 && strcmp(argv[1], "--f5-policy") == 0)
     {
         ValidateF5OccupiedPages(false);
@@ -9011,6 +9068,7 @@ int main(int argc, char** argv)
         ValidateStickyAndCycles(bits);
         ValidateLargeObjects(bits);
         ValidateCycleReclamation(bits);
+        ValidateF10Overflow(bits);
     }
     for (size_t fields : {1023, 1024, 1025, 4097})
     {
