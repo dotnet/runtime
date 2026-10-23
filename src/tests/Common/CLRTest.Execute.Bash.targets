@@ -283,7 +283,7 @@ fi
            configuration and the out-of-process test protocol variables
            from the host. wasmtime keeps the first value given for a variable,
            so it comes last and cannot override the guest settings. -->
-      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y -S http --dir "$PWD::/" --dir "$CORE_ROOT::/core" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true ${__WasiR2RArgs} ${__WasiEnvArgs} "$__WasiCorerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y -S http --dir "$PWD::/" --dir "$CORE_ROOT::/core" "${__WasiUploadArgs[@]}" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true ${__WasiR2RArgs} ${__WasiEnvArgs} "$__WasiCorerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
       <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMins</WatcherRunFile>
       <!-- WASI has no watchdog binary in Core_Root (skipped in
            src/coreclr/CMakeLists.txt for wasm targets); use coreutils
@@ -386,6 +386,7 @@ run_out_of_process_tests() {
     # Keep the status file next to the test so a sandboxed test host can write it.
     local oop_status="${PWD}/${oop_assembly}.outofprocess-result.status.$$"
     local oop_exit
+    local oop_missing_wrapper_reason=
 
     rm -f "$oop_result" "$oop_output" "$oop_result_tmp" "$oop_status"
     : > "$oop_output"
@@ -398,14 +399,18 @@ run_out_of_process_tests() {
     else
       # allTargets runners can include tests whose target-specific wrapper was not generated.
       oop_exit=0
-      echo "Test executable '${PWD}/${oop_wrapper}' was not found on this platform." > "$oop_status"
+      oop_missing_wrapper_reason="Test executable '${PWD}/${oop_wrapper}' was not found on this platform."
     fi
 
     {
       echo 2
       echo "$oop_result_token"
       echo "$oop_exit"
-      if [ -f "$oop_status" ]
+      if [ -n "$oop_missing_wrapper_reason" ]
+      then
+        echo Skip
+        echo "$oop_missing_wrapper_reason"
+      elif [ -f "$oop_status" ]
       then
         echo Skip
         cat "$oop_status"
@@ -528,8 +533,29 @@ CLRTestExitCode=$?
       <!-- A WASI guest cannot start processes, so out-of-process tests are run by this script. -->
       <BashRunHostedTest Condition="'$(TargetOS)' == 'wasi'"><![CDATA[
 run_wasi_test() {
-  echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
-  $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
+  local -a __WasiUploadArgs=()
+  if [ -n "${HELIX_WORKITEM_UPLOAD_ROOT:-}" ]
+  then
+    __WasiUploadArgs=(
+      --dir "$HELIX_WORKITEM_UPLOAD_ROOT::/helix-upload"
+      --env HELIX_WORKITEM_UPLOAD_ROOT=/helix-upload
+    )
+  fi
+
+  local -a wasi_launcher=()
+  if [ -n "$CLRCustomTestLauncher" ]
+  then
+    wasi_launcher=($CLRCustomTestLauncher "$PWD/")
+  elif [ "$_RunWithWatcher" == 1 ]
+  then
+    wasi_launcher=($(WatcherRunFile) $(CLRTestRunFile))
+  else
+    wasi_launcher=($_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile))
+  fi
+
+  printf '%q ' "${wasi_launcher[@]}" "$ExePath" "${CLRTestExecutionArguments[@]}"
+  echo
+  "${wasi_launcher[@]}" "$ExePath" "${CLRTestExecutionArguments[@]}"
 }
 
 $(BashRunOutOfProcessTestsFunction)
