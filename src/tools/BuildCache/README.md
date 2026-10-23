@@ -3,6 +3,8 @@
 `dotnet-build-cache` is a .NET tool for maintaining experimental MSBuild invocation caches.
 Its commands and the cache format may change without notice. Use the tool built from the same
 revision as the task. It does not manage Roslyn/csc or native compiler caches.
+The [shared cache README](../../tasks/Common/InvocationCache/README.md) describes the task contract,
+storage format, and lifecycle; this document covers the maintenance CLI.
 
 ```sh
 dotnet build-cache purge --cache illink --before 2026-10-01T12:00:00Z
