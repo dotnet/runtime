@@ -24,8 +24,7 @@ public class Runtime_136304
         Assert.Equal(Vector512<float>.Zero, Test(a, b, b, FloatRoundingMode.ToZero));
     }
 
-    // Embedded masking over an embedded-rounding intrinsic with a non-constant rounding mode
-    // needs internal registers for the rounding mode jump table.
+    // A non-constant rounding mode must use the managed fallback before embedded masking.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Vector512<float> Test(Vector512<float> a, Vector512<float> b, Vector512<float> c, FloatRoundingMode mode)
     {

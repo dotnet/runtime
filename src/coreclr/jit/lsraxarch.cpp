@@ -2561,16 +2561,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
                     assert(!op2->isRMWHWIntrinsic(m_compiler));
 
-                    GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
-
-                    if (embOp->OperIsEmbRoundingEnabled() && !embOp->Op(embOp->GetOperandCount())->IsCnsIntOrI())
-                    {
-                        // Codegen emits the embedded op, so the jump table fallback for
-                        // the rounding mode needs its internal registers on that node.
-                        buildInternalIntRegisterDefForNode(embOp);
-                        buildInternalIntRegisterDefForNode(embOp);
-                    }
-
                     if (isRMW)
                     {
                         assert(!op1->isContained());

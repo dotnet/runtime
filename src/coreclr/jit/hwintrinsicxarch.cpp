@@ -490,6 +490,93 @@ CORINFO_InstructionSet Compiler::lookupIsa(const char* className,
 }
 
 //------------------------------------------------------------------------
+// IsEmbRoundingEnabled: Check whether an intrinsic overload has an embedded rounding operand.
+bool HWIntrinsicInfo::IsEmbRoundingEnabled(NamedIntrinsic intrinsicId, size_t numArgs)
+{
+    if (!IsEmbRoundingCompatible(intrinsicId))
+    {
+        return false;
+    }
+
+    switch (intrinsicId)
+    {
+        // These intrinsics only have the embedded rounding enabled implementation.
+        case NI_AVX512_AddScalar:
+        case NI_AVX512_DivideScalar:
+        case NI_AVX512_MultiplyScalar:
+        case NI_AVX512_SubtractScalar:
+        case NI_AVX512_SqrtScalar:
+        {
+            return true;
+        }
+
+        case NI_AVX512_FusedMultiplyAdd:
+        case NI_AVX512_FusedMultiplyAddScalar:
+        case NI_AVX512_FusedMultiplyAddNegated:
+        case NI_AVX512_FusedMultiplyAddNegatedScalar:
+        case NI_AVX512_FusedMultiplyAddSubtract:
+        case NI_AVX512_FusedMultiplySubtract:
+        case NI_AVX512_FusedMultiplySubtractAdd:
+        case NI_AVX512_FusedMultiplySubtractNegated:
+        case NI_AVX512_FusedMultiplySubtractNegatedScalar:
+        case NI_AVX512_FusedMultiplySubtractScalar:
+        case NI_AVX10v1_FusedMultiplyAddScalar:
+        {
+            return numArgs == 4;
+        }
+
+        case NI_AVX512_Add:
+        case NI_AVX512_Divide:
+        case NI_AVX512_Multiply:
+        case NI_AVX512_Subtract:
+
+        case NI_AVX512_Scale:
+        case NI_AVX512_ScaleScalar:
+
+        case NI_AVX512_ConvertScalarToVector128Single:
+#if defined(TARGET_AMD64)
+        case NI_AVX512_X64_ConvertScalarToVector128Double:
+        case NI_AVX512_X64_ConvertScalarToVector128Single:
+#endif // TARGET_AMD64
+        case NI_AVX10v1_AddScalar:
+        case NI_AVX10v1_DivideScalar:
+        case NI_AVX10v1_MultiplyScalar:
+        case NI_AVX10v1_SubtractScalar:
+        case NI_AVX10v1_ConvertScalarToVector128Half:
+        case NI_AVX10v1_ConvertScalarToVector128Single:
+        case NI_AVX10v1_ConvertScalarToVector128Double:
+        {
+            return numArgs == 3;
+        }
+
+        case NI_AVX512_ConvertToInt32:
+        case NI_AVX512_ConvertToUInt32:
+        case NI_AVX512_ConvertToVector256Int32:
+        case NI_AVX512_ConvertToVector256Single:
+        case NI_AVX512_ConvertToVector256UInt32:
+        case NI_AVX512_ConvertToVector512Double:
+        case NI_AVX512_ConvertToVector512Int32:
+        case NI_AVX512_ConvertToVector512Int64:
+        case NI_AVX512_ConvertToVector512Single:
+        case NI_AVX512_ConvertToVector512UInt32:
+        case NI_AVX512_ConvertToVector512UInt64:
+        case NI_AVX512_Sqrt:
+#if defined(TARGET_AMD64)
+        case NI_AVX512_X64_ConvertToInt64:
+        case NI_AVX512_X64_ConvertToUInt64:
+#endif // TARGET_AMD64
+        case NI_AVX10v2_ConvertToSByteWithSaturationAndZeroExtendToInt32:
+        case NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32:
+        {
+            return numArgs == 2;
+        }
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
 // lookupImmUpperBound: Gets the upper bound for the imm-value of a given NamedIntrinsic
 //
 // Arguments:
@@ -2752,7 +2839,8 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
                                     GenTree**         immOp1Ptr,
                                     GenTree**         immOp2Ptr)
 {
-    if ((sig->numArgs > 0) && HWIntrinsicInfo::isImmOp(intrinsic, impStackTop().val))
+    if ((sig->numArgs > 0) && (HWIntrinsicInfo::isImmOp(intrinsic, impStackTop().val) ||
+                               HWIntrinsicInfo::IsEmbRoundingEnabled(intrinsic, sig->numArgs)))
     {
         // NOTE: The following code assumes that for all intrinsics
         // taking an immediate operand, that operand will be last.
