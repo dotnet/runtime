@@ -355,15 +355,17 @@ HRESULT LxrGcHeap::Initialize()
         return E_FAIL;
     }
     // P25 (F4). The worker count of the Java LXR (ParallelGCThreads) from the number of processors. A setting of 0 or no
-    // setting selects the rule. The Java LXR runs the concurrent trace on ConcGCThreads of these workers (LxrWorkerPolicy::
-    // ConcurrentThreads, 3 of 13). That default is NOT used here: the cost of our pause still follows the trace backlog (F2 is
-    // open), and with 3 trace workers the trace of list suffix does not end (Measured: 12.8 s against 4.4 s). So the trace
-    // may use every worker unless LXRConcGCThreads is set.
+    // setting selects the rule. P26 (F2, F4b). The concurrent trace runs on ConcGCThreads of these workers, as in the Java LXR
+    // (LxrWorkerPolicy::ConcurrentThreads, 3 of 13). This became the default when a pause no longer walks the trace backlog:
+    // Measured, list suffix nursery with 3 trace workers needs the same time as with all workers. LXRConcGCThreads overrides it.
     configuration.workers = gcThreads != 0
         ? gcThreads : LxrWorkerPolicy::ParallelThreads(GCToEEInterface::GetCurrentProcessCpuCount());
-    configuration.concurrentTraceWorkers = concurrentThreads != 0
-        ? (concurrentThreads < configuration.workers ? concurrentThreads : configuration.workers)
-        : configuration.workers;
+    size_t defaultConcurrent = LxrWorkerPolicy::ConcurrentThreads(configuration.workers);
+    configuration.concurrentTraceWorkers = concurrentThreads != 0 ? concurrentThreads : defaultConcurrent;
+    if (configuration.concurrentTraceWorkers > configuration.workers)
+    {
+        configuration.concurrentTraceWorkers = configuration.workers;
+    }
     m_engine.GetPauseTimers().Configure(phaseTimers);
     for (const char* unsupported : {
             "LXRMaxPauseMillis", "LXRTransparentHugepage",
