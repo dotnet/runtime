@@ -1843,7 +1843,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using X509Certificate2 certificate = publicCertificate.CopyWithPrivateKey(key);
 
             byte[] pkcs12 = new X509Certificate2Collection(certificate).Export(X509ContentType.Pkcs12)!;
-             (int certs, int keys) = ExportTests.VerifyPkcs12(
+            (int certs, int keys) = ExportTests.VerifyPkcs12(
                 pkcs12,
                 null,
                 expectedIterations: 2000,
