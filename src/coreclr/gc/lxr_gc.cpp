@@ -357,11 +357,11 @@ HRESULT LxrGcHeap::Initialize()
     }
     // P25 (F4). The worker count of the Java LXR (ParallelGCThreads) from the number of processors. A setting of 0 or no
     // setting selects the rule. P26 (F2, F4b). The concurrent trace runs on ConcGCThreads of these workers, as in the Java LXR
-    // (LxrWorkerPolicy::ConcurrentThreads, 3 of 13). This became the default when a pause no longer walks the trace backlog:
+    // (LxrWorkerPolicy::ConcurrentThreads, 3 of 13), with a floor of 2 on small machines. This became the default when a pause no longer walks the trace backlog:
     // Measured, list suffix nursery with 3 trace workers needs the same time as with all workers. LXRConcGCThreads overrides it.
     configuration.workers = gcThreads != 0
         ? gcThreads : LxrWorkerPolicy::ParallelThreads(GCToEEInterface::GetCurrentProcessCpuCount());
-    size_t defaultConcurrent = LxrWorkerPolicy::ConcurrentThreads(configuration.workers);
+    size_t defaultConcurrent = LxrWorkerPolicy::DefaultConcurrentTraceThreads(configuration.workers);
     configuration.concurrentTraceWorkers = concurrentThreads != 0 ? concurrentThreads : defaultConcurrent;
     if (configuration.concurrentTraceWorkers > configuration.workers)
     {

@@ -4465,6 +4465,20 @@ namespace
         engine.StopWorkers();
     }
 
+    // A glance at the trace limit of the collector: the Java rule, with a floor of 2 trace workers on small machines.
+    void ValidateF4bTraceLimitDefault()
+    {
+        struct Row { size_t workers; size_t java; size_t expected; };
+        constexpr Row Rows[] = {{1, 1, 1}, {2, 1, 2}, {4, 1, 2}, {6, 2, 2}, {8, 2, 2}, {9, 2, 2}, {13, 3, 3}, {26, 7, 7}, {64, 16, 16}};
+        for (const Row& row : Rows)
+        {
+            Check(LxrWorkerPolicy::ConcurrentThreads(row.workers) == row.java,
+                "F4b the Java rule for the concurrent trace workers (ParallelGCThreads + 2) / 4");
+            Check(LxrWorkerPolicy::DefaultConcurrentTraceThreads(row.workers) == row.expected,
+                "F4b the default trace limit is the Java rule with a floor of 2 workers on a machine with 2 or more");
+        }
+    }
+
     // P26 (F4b). The trace packet loops over its children (the Java LXR trace loop, cm.rs: do_work). A chain of objects is
     // traced by a few packets, not by one packet for each object. Control LXR_F4B_NO_TRACE_LOOP_CONTROL: the packet ends
     // after its own objects.
@@ -8906,6 +8920,7 @@ int main(int argc, char** argv)
     if (argc == 2 && strcmp(argv[1], "--f4b-scheduler") == 0)
     {
         ValidateF4bTraceLoop();
+        ValidateF4bTraceLimitDefault();
         ValidateF4bStealing();
         ValidateF4bStress();
         ValidateF4bPauseKeepsTracePackets();
