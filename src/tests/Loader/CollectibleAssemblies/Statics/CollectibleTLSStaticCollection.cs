@@ -160,7 +160,7 @@ namespace CollectibleThreadStaticShutdownRace
                 nameof(ThreadStaticInFlightDataAfterUnload.Set));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
         public static void CleanupCollectibleThreadStaticsWhileStartingThreads()
         {
             using var stop = new ManualResetEventSlim();
