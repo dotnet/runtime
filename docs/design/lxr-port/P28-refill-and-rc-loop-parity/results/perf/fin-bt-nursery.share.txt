@@ -1,0 +1,28 @@
+samples: kernel 30.3%, user 69.7%
+symbol                                            self%all  incl%all  self%usr  incl%usr
+TryCopyNursery                                        6.14      8.87      8.81     12.73
+DecrementWithDeathCore                                1.71      3.07      2.45      4.41
+ProcessIncrement                                      1.70     13.99      2.44     20.08
+IsNurseryFast                                         1.37      1.37      1.97      1.97
+LxrGcHeap::Alloc                                      0.34     16.38      0.49     23.51
+ImmixAllocationManager::AcquireBlock                  0.34      1.02      0.49      1.46
+ImmixAllocationManager::PrepareFreshBlock             0.00      2.05      0.00      2.94
+SideMetadataManager::ResetRangeQuiescentCore          1.02      1.02      1.46      1.46
+SideMetadataManager::ResetRangeQuiescent              1.02      1.02      1.46      1.46
+ImmixBumpAllocator::TryRefill                         0.00     12.97      0.00     18.62
+ProcessIncrementWork                                  0.68     13.99      0.98     20.08
+ProcessDecrements                                     0.00      3.07      0.00      4.41
+ImmixBlockManager::TryAcquire                         0.68      0.68      0.98      0.98
+top self symbols:
+   16.72% [kernel.kallsyms] _raw_spin_unlock_irqrestore                                                               
+    7.85% libc.so.6 __memset_evex_unaligned_erms                                                              
+    6.14% libclrlxrgc.so LxrReferenceCounting::TryCopyNursery                                                      
+    3.75% libcoreclr.so 0x00000000003a1b8b                                                                        
+    2.73% [kernel.kallsyms] finish_task_switch.isra.0                                                                 
+    2.73% ld-linux-x86-64.so.2 __tls_get_addr                                                                            
+    1.71% [kernel.kallsyms] do_user_addr_fault                                                                        
+    1.71% libclrlxrgc.so ReferenceCountTable::DecrementWithDeathCore<true>                                         
+    1.71% libcoreclr.so 0x00000000003a1b96                                                                        
+    1.37% libclrlxrgc.so ImmixBlockManager::IsNurseryFast                                                          
+    1.37% libclrlxrgc.so SideMetadataManager::GetLocationUnchecked                                                 
+    1.37% libcoreclr.so 0x000000000004f230                                                                        

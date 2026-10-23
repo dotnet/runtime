@@ -1,0 +1,3 @@
+Debug LXR_F10_SHARED_COPY_COUNTERS_CONTROL default exit=0 :: PASS: 23714/23714 integrated P4 checks
+Debug LXR_F10_SHARED_COPY_COUNTERS_CONTROL --nursery exit=1 :: FAIL: 150/165 moving nursery checks
+Debug LXR_F10_SHARED_COPY_COUNTERS_CONTROL --f4-scheduler exit=0 :: PASS: 3547/3547 F4 scheduler and recursion checks

@@ -1,0 +1,31 @@
+samples: kernel 12.5%, user 87.5%
+symbol                                            self%all  incl%all  self%usr  incl%usr
+TryCopyNursery                                        6.79     24.77      7.76     28.31
+DecrementWithDeathCore                                0.59      1.61      0.67      1.84
+ProcessIncrement                                      3.22     31.14      3.68     35.58
+IsNurseryFast                                         1.08      1.61      1.23      1.84
+LxrGcHeap::Alloc                                      0.36     21.23      0.41     24.26
+ImmixAllocationManager::AcquireBlock                  8.50     15.58      9.71     17.80
+ImmixAllocationManager::IsLineDead                    4.13      4.30      4.72      4.91
+ImmixAllocationManager::TryFindNextHole               0.46      4.89      0.53      5.59
+ImmixAllocationManager::PrepareRecycledHole           0.10      3.08      0.11      3.52
+ImmixAllocationManager::InitializeFieldLogRange       0.13      4.46      0.15      5.10
+SideMetadataManager::ResetRangeQuiescentCore          6.00      6.53      6.86      7.46
+SideMetadataManager::ResetRangeQuiescent              6.13      6.53      7.00      7.46
+ImmixBumpAllocator::TryRefill                         0.16     25.16      0.18     28.75
+ProcessIncrementWork                                  0.92     31.14      1.05     35.58
+ProcessDecrements                                     0.00      2.13      0.00      2.43
+ImmixBlockManager::TryAcquire                         2.89      7.02      3.30      8.02
+top self symbols:
+    8.50% libclrlxrgc.so ImmixAllocationManager::AcquireBlock                                                      
+    6.79% libclrlxrgc.so LxrReferenceCounting::TryCopyNursery                                                      
+    6.00% libclrlxrgc.so SideMetadataManager::ResetRangeQuiescentCore                                              
+    5.91% [kernel.kallsyms] _raw_spin_unlock_irqrestore                                                               
+    4.69% libc.so.6 __memset_evex_unaligned_erms                                                              
+    4.13% libclrlxrgc.so ImmixAllocationManager::IsLineDead                                                        
+    3.08% [kernel.kallsyms] clear_page_erms                                                                           
+    2.89% libclrlxrgc.so ImmixBlockManager::TryAcquire                                                             
+    2.30% libclrlxrgc.so LxrReferenceCounting::ProcessIncrement                                                    
+    2.23% libclrlxrgc.so LxrReferenceCounting::ProcessTraceObject                                                  
+    1.44% libclrlxrgc.so ImmixBlockManager::Unlock                                                                 
+    1.31% libclrlxrgc.so ImmixBlockManager::TryLock                                                                

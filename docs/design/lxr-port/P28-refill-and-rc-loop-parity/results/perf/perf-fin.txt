@@ -1,0 +1,94 @@
+[ perf record: Captured and wrote 0.322 MB /root/p28/perf/fin-rq-nursery.data (1762 samples) ]
+== fin-rq-nursery
+samples: kernel 17.4%, user 82.6%
+symbol                                            self%all  incl%all  self%usr  incl%usr
+TryCopyNursery                                        4.65      6.47      5.63      7.83
+DecrementWithDeathCore                                1.14      3.06      1.38      3.70
+ProcessIncrement                                      1.47      9.93      1.78     12.02
+IsNurseryFast                                         0.17      0.23      0.21      0.28
+LxrGcHeap::Alloc                                      0.17     23.78      0.21     28.78
+ImmixAllocationManager::AcquireBlock                  0.62      1.31      0.75      1.59
+ImmixAllocationManager::TryFindNextHole               1.99      2.04      2.41      2.47
+ImmixAllocationManager::PrepareFreshBlock             0.06      2.04      0.07      2.47
+ImmixAllocationManager::PrepareRecycledHole           3.12      3.97      3.78      4.81
+SideMetadataManager::ResetRangeQuiescentCore          0.34      0.34      0.41      0.41
+SideMetadataManager::ResetRangeQuiescent              0.34      0.34      0.41      0.41
+ImmixBumpAllocator::TryRefill                         0.51     17.99      0.62     21.77
+ProcessIncrementWork                                  1.02      9.93      1.23     12.02
+ProcessDecrements                                     0.17      3.75      0.21      4.54
+ImmixBlockManager::TryAcquire                         0.17      0.68      0.21      0.82
+top self symbols:
+   11.07% [kernel.kallsyms] _raw_spin_unlock_irqrestore                                                               
+    7.95% libc.so.6 __memset_evex_unaligned_erms                                                              
+    4.65% libclrlxrgc.so LxrReferenceCounting::TryCopyNursery                                                      
+    3.12% libclrlxrgc.so ImmixAllocationManager::PrepareRecycledHole                                               
+    2.84% libclrlxrgc.so LxrReferenceCounting::ProcessTraceObject                                                  
+    1.99% libclrlxrgc.so ImmixAllocationManager::TryFindNextHole                                                   
+    1.76% [kernel.kallsyms] finish_task_switch.isra.0                                                                 
+    1.36% [kernel.kallsyms] clear_page_erms                                                                           
+    1.31% libclrlxrgc.so LxrReferenceCounting::Allocate                                                            
+    1.14% libclrlxrgc.so ReferenceCountTable::DecrementWithDeathCore<true>                                         
+    1.08% libclrlxrgc.so SideMetadataManager::FillRangeBytes                                                       
+    1.02% libclrlxrgc.so LxrReferenceCounting::ProcessIncrementWork                                                
+[ perf record: Captured and wrote 0.568 MB /root/p28/perf/fin-ls-nursery.data (4110 samples) ]
+== fin-ls-nursery
+samples: kernel 6.9%, user 93.1%
+symbol                                            self%all  incl%all  self%usr  incl%usr
+TryCopyNursery                                       12.31     17.76     13.23     19.08
+DecrementWithDeathCore                               18.88     28.05     20.28     30.14
+ProcessIncrement                                      5.38     35.91      5.78     38.58
+IsNurseryFast                                         0.73      0.80      0.78      0.86
+LxrGcHeap::Alloc                                      0.32      6.74      0.34      7.24
+ImmixAllocationManager::AcquireBlock                  0.07      0.17      0.08      0.18
+ImmixAllocationManager::TryFindNextHole               0.92      0.92      0.99      0.99
+ImmixAllocationManager::PrepareFreshBlock             0.00      0.05      0.00      0.05
+ImmixAllocationManager::PrepareRecycledHole           2.02      2.58      2.17      2.77
+SideMetadataManager::ResetRangeQuiescentCore          0.00      0.02      0.00      0.02
+SideMetadataManager::ResetRangeQuiescent              0.00      0.02      0.00      0.02
+ImmixBumpAllocator::TryRefill                         0.07      4.06      0.08      4.36
+ProcessIncrementWork                                  0.90     35.91      0.97     38.58
+ProcessDecrements                                     0.39     32.26      0.42     34.66
+ImmixBlockManager::TryAcquire                         0.05      0.10      0.05      0.11
+top self symbols:
+   18.88% libclrlxrgc.so ReferenceCountTable::DecrementWithDeathCore<true>                                         
+   12.31% libclrlxrgc.so LxrReferenceCounting::TryCopyNursery                                                      
+    4.48% libclrlxrgc.so LxrReferenceCounting::ProcessIncrement                                                    
+    4.40% [kernel.kallsyms] _raw_spin_unlock_irqrestore                                                               
+    3.38% libclrlxrgc.so LxrReferenceCounting::ProcessChildIncrements                                              
+    3.28% libclrlxrgc.so LxrReferenceCounting::ProcessDecrementEntry                                               
+    3.11% libclrlxrgc.so LxrReferenceCounting::ResolveForwarded                                                    
+    3.09% libclrlxrgc.so LxrReferenceCounting::Death                                                               
+    3.02% libclrlxrgc.so ReferenceCountTable::IncrementFast                                                        
+    2.70% libclrlxrgc.so LxrReferenceCounting::ScanDecrements(Object*, LxrReferenceCounting::ReferenceBatch*, unsig
+    2.65% libclrlxrgc.so LxrReferenceCounting::ScanIncrements(Object*, bool, LxrReferenceCounting::ReferenceBatch*,
+    2.02% libclrlxrgc.so ImmixAllocationManager::PrepareRecycledHole                                               
+[ perf record: Captured and wrote 0.105 MB /root/p28/perf/fin-bt-nursery.data (293 samples) ]
+== fin-bt-nursery
+samples: kernel 30.3%, user 69.7%
+symbol                                            self%all  incl%all  self%usr  incl%usr
+TryCopyNursery                                        6.14      8.87      8.81     12.73
+DecrementWithDeathCore                                1.71      3.07      2.45      4.41
+ProcessIncrement                                      1.70     13.99      2.44     20.08
+IsNurseryFast                                         1.37      1.37      1.97      1.97
+LxrGcHeap::Alloc                                      0.34     16.38      0.49     23.51
+ImmixAllocationManager::AcquireBlock                  0.34      1.02      0.49      1.46
+ImmixAllocationManager::PrepareFreshBlock             0.00      2.05      0.00      2.94
+SideMetadataManager::ResetRangeQuiescentCore          1.02      1.02      1.46      1.46
+SideMetadataManager::ResetRangeQuiescent              1.02      1.02      1.46      1.46
+ImmixBumpAllocator::TryRefill                         0.00     12.97      0.00     18.62
+ProcessIncrementWork                                  0.68     13.99      0.98     20.08
+ProcessDecrements                                     0.00      3.07      0.00      4.41
+ImmixBlockManager::TryAcquire                         0.68      0.68      0.98      0.98
+top self symbols:
+   16.72% [kernel.kallsyms] _raw_spin_unlock_irqrestore                                                               
+    7.85% libc.so.6 __memset_evex_unaligned_erms                                                              
+    6.14% libclrlxrgc.so LxrReferenceCounting::TryCopyNursery                                                      
+    3.75% libcoreclr.so 0x00000000003a1b8b                                                                        
+    2.73% [kernel.kallsyms] finish_task_switch.isra.0                                                                 
+    2.73% ld-linux-x86-64.so.2 __tls_get_addr                                                                            
+    1.71% [kernel.kallsyms] do_user_addr_fault                                                                        
+    1.71% libclrlxrgc.so ReferenceCountTable::DecrementWithDeathCore<true>                                         
+    1.71% libcoreclr.so 0x00000000003a1b96                                                                        
+    1.37% libclrlxrgc.so ImmixBlockManager::IsNurseryFast                                                          
+    1.37% libclrlxrgc.so SideMetadataManager::GetLocationUnchecked                                                 
+    1.37% libcoreclr.so 0x000000000004f230                                                                        

@@ -1,0 +1,7 @@
+workload     arm            frame                     wall     cpu      gc   pauses   full  checksums
+binarytrees  lxr-nursery    p28-f10c-Release-linux    0.54    1.35    0.15       19      0  14985972  (wall runs: 0.55 0.54 0.47 0.56 0.47)
+binarytrees  lxr-nursery    p28-f10d-Release-linux    0.54    1.33    0.15       19      0  14985972  (wall runs: 0.53 0.47 0.54 0.54 0.54)
+listsuffix   lxr-nursery    p28-f10c-Release-linux    2.87    7.80    0.78       55      0  301262627042  (wall runs: 3.01 2.85 2.83 2.89 2.87)
+listsuffix   lxr-nursery    p28-f10d-Release-linux    2.95    7.98    0.81       56      0  301262627042  (wall runs: 2.83 2.90 3.01 2.97 2.95)
+requests     lxr-nursery    p28-f10c-Release-linux    2.82    3.71    0.50       67      0  317308156512  (wall runs: 2.77 2.82 2.82 2.91 2.85)
+requests     lxr-nursery    p28-f10d-Release-linux    2.82    3.75    0.47       66      0  317308156512  (wall runs: 2.73 2.94 2.77 2.87 2.82)

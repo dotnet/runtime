@@ -1,0 +1,12 @@
+baseline exit=0 :: PASS: Linux x64 Immix allocation validation
+LXR_F9_SCAN_ONE_WORD_CONTROL exit=1 :: failing lines=8 :: FAIL: f9 the lazy hole search returns the holes of the eager search of the Java LXR|
+LXR_F9_EAGER_SCAN_CONTROL exit=1 :: failing lines=5 :: FAIL: f9 one search reads only the lines from the search line to the end of the hole|FAIL: f9 the search of one hole read 10 lines of 128|
+LXR_F9_CLEAR_AT_REFILL_CONTROL exit=1 :: failing lines=3 :: FAIL: f9 a dirty free block is reported and not handed out|FAIL: f9 the refill does not clear a count that it found|
+LXR_F9_NO_VERIFY_CONTROL exit=1 :: failing lines=2 :: FAIL: f9 a dirty free block is reported and not handed out|
+LXR_F9_PREFILTER_CONTROL exit=1 :: failing lines=1 :: FAIL: every block that is not free is taken and given back|
+LXR_F9_NO_CURSOR_RESET_CONTROL exit=1 :: failing lines=3 :: FAIL: f9 the block is found after the cursors are reset|FAIL: reclaimed block selected|FAIL: reclaimed fresh refill ready|
+LXR_F10_PLAIN_STORE_CONTROL exit=1 :: failing lines=1 :: FAIL: f10 a store followed by a load of another location is not reordered (no both-zero outcome)|
+LXR_F10_BYTE_PLAIN_CONTROL exit=1 :: failing lines=6 :: FAIL: f10 a count at its maximum is sticky: no increment, no decrement|FAIL: f10 counts that share a byte keep their values under concurrent updates|FAIL: f10 the neighbours of a saturated count are unchanged|
+LXR_F10_NO_SATURATE_CONTROL exit=1 :: failing lines=3 :: FAIL: f10 a count at its maximum is sticky: no increment, no decrement|
+LXR_F10_PREFETCH_OFFBYONE_CONTROL exit=1 :: failing lines=4 :: FAIL: f10 a packet of 9 entries prefetches the ninth|FAIL: f10 prefetch of flagged entries (roots): the flag bit is removed|FAIL: f10 prefetch of object entries: the object of entry i + 8, none past the end, none for null|
+controls failed=0

@@ -1,0 +1,37 @@
+workload     arm            extra                   n  wall s   cpu s   gc s pauses full rss MiB wall xWKS cpu xWKS
+binarytrees  wks                                    3    0.34    0.25   0.08     87    0      54       1.0      1.0
+binarytrees  server                                 3    0.35    0.28   0.05     68    0      67       1.0      1.1
+binarytrees  lxr-nonmoving                          3    0.48    0.67   0.08     17    0      93       1.4      2.6
+binarytrees  lxr-nursery                            3    0.58    1.24   0.16     19    0      94       1.7      4.9
+requests     wks                                    3    1.71    1.56   0.23    277    0      83       1.0      1.0
+requests     server                                 3    1.84    1.92   0.28    274    0      87       1.1      1.2
+requests     lxr-nonmoving                          3    3.33    4.15   0.35     58    0     144       1.9      2.7
+requests     lxr-nursery                            3    3.59    5.37   0.91     66    0     144       2.1      3.4
+listsuffix   wks                                    3    3.81    3.86   2.14    192    0      67       1.0      1.0
+listsuffix   server                                 3    1.61    2.01   0.66     51    0      74       0.4      0.5
+listsuffix   lxr-nonmoving                          3    3.22   10.27   1.03     56    0      97       0.8      2.7
+listsuffix   lxr-nursery                            3    4.38   13.80   1.72     57    0      97       1.2      3.6
+binarytrees checksums [14985972] failed runs 0
+requests checksums [317308156512] failed runs 0
+listsuffix checksums [301262627042] failed runs 0
+== binarytrees lxr-nonmoving
+  RefCount     n= 17 median=    4.51 ms  max=   10.59 ms
+== binarytrees lxr-nursery
+  RefCount     n= 18 median=    5.84 ms  max=   32.75 ms
+  InitialMark  n=  1 median=   15.50 ms  max=   15.50 ms
+== requests lxr-nonmoving
+  RefCount     n= 55 median=    7.77 ms  max=    9.07 ms
+  InitialMark  n=  1 median=    7.30 ms  max=    7.30 ms
+  FinalMark    n=  1 median=    8.55 ms  max=    8.55 ms
+== requests lxr-nursery
+  RefCount     n= 61 median=   14.09 ms  max=   51.52 ms
+  InitialMark  n=  2 median=   14.66 ms  max=   15.20 ms
+  FinalMark    n=  2 median=   14.91 ms  max=   16.05 ms
+== listsuffix lxr-nonmoving
+  RefCount     n= 75 median=   16.49 ms  max=   35.29 ms
+  InitialMark  n=  2 median=   21.70 ms  max=   22.69 ms
+  FinalMark    n=  2 median=   21.05 ms  max=   25.26 ms
+== listsuffix lxr-nursery
+  RefCount     n= 53 median=   24.06 ms  max=   52.66 ms
+  InitialMark  n=  1 median=   81.61 ms  max=   81.61 ms
+  FinalMark    n=  1 median=   27.90 ms  max=   27.90 ms

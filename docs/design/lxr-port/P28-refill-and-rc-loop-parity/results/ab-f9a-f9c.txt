@@ -1,0 +1,13 @@
+workload     arm            frame                     wall     cpu      gc   pauses   full  checksums
+binarytrees  lxr-nonmoving  p28-f9a-Release-linux     0.48    0.65    0.09       17      0  14985972  (wall runs: 0.55 0.46 0.48)
+binarytrees  lxr-nonmoving  p28-f9c-Release-linux     0.45    0.57    0.07       17      0  14985972  (wall runs: 0.45 0.44 0.45)
+binarytrees  lxr-nursery    p28-f9a-Release-linux     0.53    0.95    0.15       18      0  14985972  (wall runs: 0.61 0.52 0.53)
+binarytrees  lxr-nursery    p28-f9c-Release-linux     0.54    1.27    0.15       19      0  14985972  (wall runs: 0.54 0.54 0.55)
+listsuffix   lxr-nonmoving  p28-f9a-Release-linux     3.27   10.77    1.05       56      0  301262627042  (wall runs: 3.37 3.27 3.22)
+listsuffix   lxr-nonmoving  p28-f9c-Release-linux     2.82    7.90    0.70       56      0  301262627042  (wall runs: 2.82 2.76 3.02)
+listsuffix   lxr-nursery    p28-f9a-Release-linux     4.05   13.42    1.62       54      0  301262627042  (wall runs: 4.12 4.05 3.97)
+listsuffix   lxr-nursery    p28-f9c-Release-linux     3.30    9.87    1.04       54      0  301262627042  (wall runs: 3.22 3.30 3.39)
+requests     lxr-nonmoving  p28-f9a-Release-linux     3.19    3.91    0.40       58      0  317308156512  (wall runs: 3.15 3.23 3.19)
+requests     lxr-nonmoving  p28-f9c-Release-linux     2.82    3.21    0.31       58      0  317308156512  (wall runs: 2.81 2.87 2.82)
+requests     lxr-nursery    p28-f9a-Release-linux     3.56    5.35    0.94       66      0  317308156512  (wall runs: 3.56 3.56 3.40)
+requests     lxr-nursery    p28-f9c-Release-linux     3.13    4.59    0.67       66      0  317308156512  (wall runs: 3.12 3.17 3.13)

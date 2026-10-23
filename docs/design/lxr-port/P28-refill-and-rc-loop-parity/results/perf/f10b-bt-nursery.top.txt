@@ -1,0 +1,40 @@
+    15.66%  libclrlxrgc.so                [.] LxrReferenceCounting::TryCopyNursery                                                                                               -      -            
+     8.60%  [kernel.kallsyms]             [k] _raw_spin_unlock_irqrestore                                                                                                        -      -            
+     7.70%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessIncrement                                                                                             -      -            
+     5.52%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessDecrementEntry                                                                                        -      -            
+     4.24%  libclrlxrgc.so                [.] LxrReferenceCounting::CommitCopyRecord                                                                                             -      -            
+     4.11%  libclrlxrgc.so                [.] ReferenceCountTable::DecrementWithDeathCore<true>                                                                                  -      -            
+     3.34%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessIncrementWork                                                                                         -      -            
+     2.82%  [kernel.kallsyms]             [k] clear_page_erms                                                                                                                    -      -            
+     2.82%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessTraceObject                                                                                           -      -            
+     2.82%  libclrlxrgc.so                [.] LxrReferenceCounting::ScanTraceLocked                                                                                              -      -            
+     2.57%  libc.so.6                     [.] __memset_evex_unaligned_erms                                                                                                       -      -            
+     2.57%  libclrlxrgc.so                [.] LxrReferenceCounting::FinishDyingTraceObject                                                                                       -      -            
+     2.57%  libclrlxrgc.so                [.] LxrReferenceCounting::ReserveCopyRecord                                                                                            -      -            
+     1.80%  memfd:doublemapper (deleted)  [.] 0x00000000001351f0                                                                                                                 -      -            
+     1.67%  libclrlxrgc.so                [.] SideMetadataManager::GetLocation                                                                                                   -      -            
+     1.54%  [kernel.kallsyms]             [k] finish_task_switch.isra.0                                                                                                          -      -            
+     1.54%  ld-linux-x86-64.so.2          [.] __tls_get_addr                                                                                                                     -      -            
+     1.41%  libclrlxrgc.so                [.] LxrReferenceCounting::ScanIncrements                                                                                               -      -            
+     0.90%  libclrlxrgc.so                [.] SideMetadataManager::Store                                                                                                         -      -            
+     0.90%  libcoreclr.so                 [.] 0x00000000003a1b8b                                                                                                                 -      -            
+     0.77%  libclrlxrgc.so                [.] LxrReferenceCounting::ResolveForwarded                                                                                             -      -            
+     0.77%  memfd:doublemapper (deleted)  [.] 0x0000000000020020                                                                                                                 -      -            
+     0.77%  memfd:doublemapper (deleted)  [.] 0x000000000002003e                                                                                                                 -      -            
+     0.64%  libclrlxrgc.so                [.] LxrReferenceCounting::AllocateCopy                                                                                                 -      -            
+     0.64%  memfd:doublemapper (deleted)  [.] 0x00000000001351e0                                                                                                                 -      -            
+     0.64%  memfd:doublemapper (deleted)  [.] 0x00000000001351ff                                                                                                                 -      -            
+     0.51%  libclrlxrgc.so                [.] LxrReferenceCounting::Death                                                                                                        -      -            
+     0.51%  libclrlxrgc.so                [.] LxrReferenceCounting::RetireForwardedSources                                                                                       -      -            
+     0.51%  libcoreclr.so                 [.] 0x000000000004f230                                                                                                                 -      -            
+     0.51%  memfd:doublemapper (deleted)  [.] 0x0000000000020033                                                                                                                 -      -            
+     0.39%  [kernel.kallsyms]             [k] do_user_addr_fault                                                                                                                 -      -            
+     0.39%  libclrlxrgc.so                [.] ImmixBlockManager::IsNurseryFast                                                                                                   -      -            
+     0.39%  libclrlxrgc.so                [.] LxrReferenceCounting::IsMarked                                                                                                     -      -            
+     0.39%  libclrlxrgc.so                [.] LxrReferenceCounting::RememberMatureSlot                                                                                           -      -            
+     0.39%  libclrlxrgc.so                [.] LxrReferenceCounting::ScanDecrements                                                                                               -      -            
+     0.39%  libclrlxrgc.so                [.] ReferenceCountTable::IncrementFast                                                                                                 -      -            
+     0.39%  libclrlxrgc.so                [.] ReferenceCountTable::InitializeObjectQuiescent                                                                                     -      -            
+     0.39%  libclrlxrgc.so                [.] ReferenceCountTable::ValidateAddress                                                                                               -      -            
+     0.39%  libclrlxrgc.so                [.] SideMetadataAccessor::Store                                                                                                        -      -            
+     0.39%  memfd:doublemapper (deleted)  [.] 0x0000000000020040                                                                                                                 -      -            

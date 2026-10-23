@@ -1,0 +1,40 @@
+    16.72%  [kernel.kallsyms]             [k] _raw_spin_unlock_irqrestore                                                                                                 -      -            
+     7.85%  libc.so.6                     [.] __memset_evex_unaligned_erms                                                                                                -      -            
+     6.14%  libclrlxrgc.so                [.] LxrReferenceCounting::TryCopyNursery                                                                                        -      -            
+     3.75%  libcoreclr.so                 [.] 0x00000000003a1b8b                                                                                                          -      -            
+     2.73%  [kernel.kallsyms]             [k] finish_task_switch.isra.0                                                                                                   -      -            
+     2.73%  ld-linux-x86-64.so.2          [.] __tls_get_addr                                                                                                              -      -            
+     2.39%  memfd:doublemapper (deleted)  [.] 0x00000000001351f0                                                                                                          -      -            
+     1.71%  [kernel.kallsyms]             [k] do_user_addr_fault                                                                                                          -      -            
+     1.71%  libclrlxrgc.so                [.] ReferenceCountTable::DecrementWithDeathCore<true>                                                                           -      -            
+     1.71%  libcoreclr.so                 [.] 0x00000000003a1b96                                                                                                          -      -            
+     1.71%  memfd:doublemapper (deleted)  [.] 0x000000000013512e                                                                                                          -      -            
+     1.71%  memfd:doublemapper (deleted)  [.] 0x00000000001351e0                                                                                                          -      -            
+     1.37%  libclrlxrgc.so                [.] ImmixBlockManager::IsNurseryFast                                                                                            -      -            
+     1.37%  libclrlxrgc.so                [.] SideMetadataManager::GetLocationUnchecked                                                                                   -      -            
+     1.37%  libcoreclr.so                 [.] 0x000000000004f230                                                                                                          -      -            
+     1.37%  memfd:doublemapper (deleted)  [.] 0x000000000002003e                                                                                                          -      -            
+     1.02%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessIncrement                                                                                      -      -            
+     1.02%  libclrlxrgc.so                [.] LxrReferenceCounting::RetireForwardedSources                                                                                -      -            
+     1.02%  libclrlxrgc.so                [.] SideMetadataManager::ResetRangeQuiescentCore                                                                                -      -            
+     1.02%  libcoreclr.so                 [.] 0x00000000003a1b70                                                                                                          -      -            
+     1.02%  libcoreclr.so                 [.] 0x00000000003a1b9c                                                                                                          -      -            
+     1.02%  memfd:doublemapper (deleted)  [.] 0x0000000000020033                                                                                                          -      -            
+     1.02%  memfd:doublemapper (deleted)  [.] 0x0000000000135120                                                                                                          -      -            
+     0.68%  [kernel.kallsyms]             [k] get_mem_cgroup_from_mm                                                                                                      -      -            
+     0.68%  [kernel.kallsyms]             [k] hyperv_flush_tlb_multi                                                                                                      -      -            
+     0.68%  libclrlxrgc.so                [.] ImmixBlockManager::TryAcquire                                                                                               -      -            
+     0.68%  libclrlxrgc.so                [.] ImmixBlockManager::TryPromoteInPlace                                                                                        -      -            
+     0.68%  libclrlxrgc.so                [.] LxrReferenceCounting::ProcessIncrementWork                                                                                  -      -            
+     0.68%  libclrlxrgc.so                [.] LxrReferenceCounting::ScanDecrements                                                                                        -      -            
+     0.68%  libclrlxrgc.so                [.] LxrReferenceCounting::ScanIncrements                                                                                        -      -            
+     0.68%  memfd:doublemapper (deleted)  [.] 0x0000000000020020                                                                                                          -      -            
+     0.68%  memfd:doublemapper (deleted)  [.] 0x0000000000020040                                                                                                          -      -            
+     0.68%  memfd:doublemapper (deleted)  [.] 0x0000000000135198                                                                                                          -      -            
+     0.34%  [kernel.kallsyms]             [k] ___pte_offset_map                                                                                                           -      -            
+     0.34%  [kernel.kallsyms]             [k] __do_sys_newfstatat                                                                                                         -      -            
+     0.34%  [kernel.kallsyms]             [k] __get_unmapped_area                                                                                                         -      -            
+     0.34%  [kernel.kallsyms]             [k] __get_user_8                                                                                                                -      -            
+     0.34%  [kernel.kallsyms]             [k] __handle_mm_fault                                                                                                           -      -            
+     0.34%  [kernel.kallsyms]             [k] __list_del_entry_valid_or_report                                                                                            -      -            
+     0.34%  [kernel.kallsyms]             [k] __perf_addr_filters_adjust                                                                                                  -      -            

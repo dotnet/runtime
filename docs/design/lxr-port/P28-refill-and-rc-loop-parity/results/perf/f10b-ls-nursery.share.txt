@@ -1,0 +1,30 @@
+samples: kernel 6.7%, user 93.3%
+symbol                                            self%all  incl%all  self%usr  incl%usr
+TryCopyNursery                                       14.07     21.24     15.08     22.77
+DecrementWithDeathCore                               16.61     25.78     17.81     27.64
+ProcessIncrement                                     10.79     40.21     11.57     43.11
+IsNurseryFast                                         1.06      1.30      1.14      1.39
+LxrGcHeap::Alloc                                      0.30      6.13      0.32      6.57
+ImmixAllocationManager::AcquireBlock                  0.09      0.19      0.10      0.20
+ImmixAllocationManager::TryFindNextHole               0.67      0.67      0.72      0.72
+ImmixAllocationManager::PrepareFreshBlock             0.00      0.02      0.00      0.02
+ImmixAllocationManager::PrepareRecycledHole           1.55      1.99      1.66      2.13
+SideMetadataManager::ResetRangeQuiescentCore          0.02      0.02      0.02      0.02
+SideMetadataManager::ResetRangeQuiescent              0.02      0.02      0.02      0.02
+ImmixBumpAllocator::TryRefill                         0.02      3.24      0.02      3.47
+ProcessIncrementWork                                  3.29     40.21      3.53     43.11
+ProcessDecrements                                     0.16     29.48      0.17     31.60
+ImmixBlockManager::TryAcquire                         0.02      0.09      0.02      0.10
+top self symbols:
+   16.61% libclrlxrgc.so ReferenceCountTable::DecrementWithDeathCore<true>                                         
+   14.07% libclrlxrgc.so LxrReferenceCounting::TryCopyNursery                                                      
+    7.50% libclrlxrgc.so LxrReferenceCounting::ProcessIncrement                                                    
+    5.58% libclrlxrgc.so LxrReferenceCounting::ScanDecrements                                                      
+    4.19% [kernel.kallsyms] _raw_spin_unlock_irqrestore                                                               
+    4.12% libclrlxrgc.so LxrReferenceCounting::ResolveForwarded                                                    
+    3.29% libclrlxrgc.so LxrReferenceCounting::ProcessIncrementWork                                                
+    3.01% libclrlxrgc.so ReferenceCountTable::IncrementFast                                                        
+    2.80% libclrlxrgc.so LxrReferenceCounting::ProcessDecrementEntry                                               
+    2.34% libclrlxrgc.so LxrReferenceCounting::Death                                                               
+    1.69% libclrlxrgc.so LxrReferenceCounting::MarkPromotedStart                                                   
+    1.55% libclrlxrgc.so ImmixAllocationManager::PrepareRecycledHole                                               

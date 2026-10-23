@@ -1,0 +1,27 @@
+samples: kernel 16.2%, user 83.8%
+symbol                                            self%all  incl%all  self%usr  incl%usr
+TryCopyNursery                                       15.66     28.24     18.69     33.70
+DecrementWithDeathCore                                4.11      7.83      4.91      9.34
+ProcessIncrement                                     11.04     42.36     13.18     50.55
+IsNurseryFast                                         0.39      0.39      0.47      0.47
+LxrGcHeap::Alloc                                      0.00      7.19      0.00      8.58
+ImmixAllocationManager::AcquireBlock                  0.00      0.13      0.00      0.16
+ImmixAllocationManager::PrepareFreshBlock             0.13      0.77      0.16      0.92
+SideMetadataManager::ResetRangeQuiescentCore          0.13      0.13      0.16      0.16
+SideMetadataManager::ResetRangeQuiescent              0.13      0.13      0.16      0.16
+ImmixBumpAllocator::TryRefill                         0.13      6.16      0.16      7.35
+ProcessIncrementWork                                  3.34     42.36      3.99     50.55
+ProcessDecrements                                     0.26     14.51      0.31     17.32
+top self symbols:
+   15.66% libclrlxrgc.so LxrReferenceCounting::TryCopyNursery                                                      
+    8.60% [kernel.kallsyms] _raw_spin_unlock_irqrestore                                                               
+    7.70% libclrlxrgc.so LxrReferenceCounting::ProcessIncrement                                                    
+    5.52% libclrlxrgc.so LxrReferenceCounting::ProcessDecrementEntry                                               
+    4.24% libclrlxrgc.so LxrReferenceCounting::CommitCopyRecord                                                    
+    4.11% libclrlxrgc.so ReferenceCountTable::DecrementWithDeathCore<true>                                         
+    3.34% libclrlxrgc.so LxrReferenceCounting::ProcessIncrementWork                                                
+    2.82% [kernel.kallsyms] clear_page_erms                                                                           
+    2.82% libclrlxrgc.so LxrReferenceCounting::ProcessTraceObject                                                  
+    2.82% libclrlxrgc.so LxrReferenceCounting::ScanTraceLocked                                                     
+    2.57% libc.so.6 __memset_evex_unaligned_erms                                                              
+    2.57% libclrlxrgc.so LxrReferenceCounting::FinishDyingTraceObject                                              

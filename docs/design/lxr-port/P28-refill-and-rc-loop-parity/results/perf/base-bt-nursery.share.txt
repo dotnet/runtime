@@ -1,0 +1,30 @@
+samples: kernel 14.6%, user 85.4%
+symbol                                            self%all  incl%all  self%usr  incl%usr
+TryCopyNursery                                       16.73     32.19     19.59     37.69
+DecrementWithDeathCore                                4.44      6.84      5.20      8.01
+ProcessIncrement                                      7.35     47.28      8.61     55.36
+IsNurseryFast                                         3.42      4.06      4.00      4.75
+LxrGcHeap::Alloc                                      0.00      8.37      0.00      9.80
+ImmixAllocationManager::AcquireBlock                  1.77      2.53      2.07      2.96
+ImmixAllocationManager::IsLineDead                    0.25      0.25      0.29      0.29
+ImmixAllocationManager::TryFindNextHole               0.00      0.25      0.00      0.29
+ImmixAllocationManager::InitializeFieldLogRange       0.00      0.51      0.00      0.60
+SideMetadataManager::ResetRangeQuiescentCore          2.03      2.28      2.38      2.67
+SideMetadataManager::ResetRangeQuiescent              2.16      2.28      2.53      2.67
+ImmixBumpAllocator::TryRefill                         0.00      4.18      0.00      4.89
+ProcessIncrementWork                                  1.01     47.28      1.18     55.36
+ProcessDecrements                                     0.00      9.00      0.00     10.54
+ImmixBlockManager::TryAcquire                         0.38      0.76      0.44      0.89
+top self symbols:
+   16.73% libclrlxrgc.so LxrReferenceCounting::TryCopyNursery                  -      -            
+    6.72% [kernel.kallsyms] _raw_spin_unlock_irqrestore                           -      -            
+    6.34% libclrlxrgc.so LxrReferenceCounting::ProcessIncrement                -      -            
+    4.44% libclrlxrgc.so ReferenceCountTable::DecrementWithDeathCore<true>     -      -            
+    3.68% libclrlxrgc.so LxrReferenceCounting::ProcessTraceObject              -      -            
+    3.42% libclrlxrgc.so ImmixBlockManager::IsNurseryFast                      -      -            
+    3.17% [kernel.kallsyms] clear_page_erms                                       -      -            
+    3.17% libc.so.6 __memset_evex_unaligned_erms                          -      -            
+    2.92% libclrlxrgc.so LxrReferenceCounting::CommitCopyRecord                -      -            
+    2.03% libclrlxrgc.so SideMetadataManager::ResetRangeQuiescentCore          -      -            
+    1.77% libclrlxrgc.so ImmixAllocationManager::AcquireBlock                  -      -            
+    1.77% libclrlxrgc.so LxrReferenceCounting::FinishDyingTraceObject          -      -            

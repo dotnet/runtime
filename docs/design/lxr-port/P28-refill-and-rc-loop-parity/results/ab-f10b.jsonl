@@ -1,0 +1,54 @@
+p28-f9d-Release-linux 0 binarytrees lxr-nonmoving  wall=0.54 cpu=0.73 gc=0.07 pauses=17 full=0 checksum=14985972
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 0 binarytrees lxr-nonmoving DOTNET_LXRRCBits=8 wall=0.47 cpu=0.71 gc=0.07 pauses=17 full=0 checksum=14985972
+p28-f10b-Release-linux 0 binarytrees lxr-nonmoving  wall=0.43 cpu=0.65 gc=0.07 pauses=17 full=0 checksum=14985972
+p28-f9d-Release-linux 0 binarytrees lxr-nursery  wall=0.47 cpu=0.74 gc=0.11 pauses=18 full=0 checksum=14985972
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 0 binarytrees lxr-nursery DOTNET_LXRRCBits=8 wall=0.47 cpu=0.68 gc=0.10 pauses=18 full=0 checksum=14985972
+p28-f10b-Release-linux 0 binarytrees lxr-nursery  wall=0.56 cpu=1.33 gc=0.15 pauses=19 full=0 checksum=14985972
+p28-f9d-Release-linux 0 requests lxr-nonmoving  wall=2.71 cpu=3.09 gc=0.27 pauses=58 full=0 checksum=317308156512
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 0 requests lxr-nonmoving DOTNET_LXRRCBits=8 wall=2.69 cpu=3.03 gc=0.25 pauses=59 full=0 checksum=317308156512
+p28-f10b-Release-linux 0 requests lxr-nonmoving  wall=2.61 cpu=2.93 gc=0.24 pauses=58 full=0 checksum=317308156512
+p28-f9d-Release-linux 0 requests lxr-nursery  wall=2.75 cpu=3.67 gc=0.49 pauses=66 full=0 checksum=317308156512
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 0 requests lxr-nursery DOTNET_LXRRCBits=8 wall=2.83 cpu=3.82 gc=0.50 pauses=67 full=0 checksum=317308156512
+p28-f10b-Release-linux 0 requests lxr-nursery  wall=2.82 cpu=3.77 gc=0.49 pauses=66 full=0 checksum=317308156512
+p28-f9d-Release-linux 0 listsuffix lxr-nonmoving  wall=2.52 cpu=7.19 gc=0.63 pauses=56 full=0 checksum=301262627042
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 0 listsuffix lxr-nonmoving DOTNET_LXRRCBits=8 wall=2.43 cpu=6.66 gc=0.50 pauses=56 full=0 checksum=301262627042
+p28-f10b-Release-linux 0 listsuffix lxr-nonmoving  wall=2.36 cpu=6.45 gc=0.51 pauses=56 full=0 checksum=301262627042
+p28-f9d-Release-linux 0 listsuffix lxr-nursery  wall=3.31 cpu=9.66 gc=1.06 pauses=59 full=0 checksum=301262627042
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 0 listsuffix lxr-nursery DOTNET_LXRRCBits=8 wall=2.96 cpu=8.43 gc=0.84 pauses=56 full=0 checksum=301262627042
+p28-f10b-Release-linux 0 listsuffix lxr-nursery  wall=2.86 cpu=7.83 gc=0.77 pauses=59 full=0 checksum=301262627042
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 1 binarytrees lxr-nonmoving DOTNET_LXRRCBits=8 wall=0.45 cpu=0.71 gc=0.07 pauses=17 full=0 checksum=14985972
+p28-f10b-Release-linux 1 binarytrees lxr-nonmoving  wall=0.46 cpu=0.74 gc=0.07 pauses=17 full=0 checksum=14985972
+p28-f9d-Release-linux 1 binarytrees lxr-nonmoving  wall=0.46 cpu=0.78 gc=0.08 pauses=17 full=0 checksum=14985972
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 1 binarytrees lxr-nursery DOTNET_LXRRCBits=8 wall=0.57 cpu=1.45 gc=0.16 pauses=19 full=0 checksum=14985972
+p28-f10b-Release-linux 1 binarytrees lxr-nursery  wall=0.55 cpu=1.37 gc=0.15 pauses=19 full=0 checksum=14985972
+p28-f9d-Release-linux 1 binarytrees lxr-nursery  wall=0.52 cpu=1.30 gc=0.14 pauses=19 full=0 checksum=14985972
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 1 requests lxr-nonmoving DOTNET_LXRRCBits=8 wall=2.72 cpu=3.07 gc=0.25 pauses=58 full=0 checksum=317308156512
+p28-f10b-Release-linux 1 requests lxr-nonmoving  wall=2.69 cpu=3.00 gc=0.25 pauses=58 full=0 checksum=317308156512
+p28-f9d-Release-linux 1 requests lxr-nonmoving  wall=2.78 cpu=3.16 gc=0.27 pauses=58 full=0 checksum=317308156512
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 1 requests lxr-nursery DOTNET_LXRRCBits=8 wall=2.81 cpu=3.85 gc=0.49 pauses=68 full=0 checksum=317308156512
+p28-f10b-Release-linux 1 requests lxr-nursery  wall=2.70 cpu=3.65 gc=0.48 pauses=68 full=0 checksum=317308156512
+p28-f9d-Release-linux 1 requests lxr-nursery  wall=2.84 cpu=3.86 gc=0.50 pauses=66 full=0 checksum=317308156512
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 1 listsuffix lxr-nonmoving DOTNET_LXRRCBits=8 wall=2.53 cpu=7.02 gc=0.55 pauses=56 full=0 checksum=301262627042
+p28-f10b-Release-linux 1 listsuffix lxr-nonmoving  wall=2.32 cpu=6.26 gc=0.47 pauses=56 full=0 checksum=301262627042
+p28-f9d-Release-linux 1 listsuffix lxr-nonmoving  wall=2.58 cpu=7.44 gc=0.68 pauses=56 full=0 checksum=301262627042
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 1 listsuffix lxr-nursery DOTNET_LXRRCBits=8 wall=2.91 cpu=8.11 gc=0.79 pauses=56 full=0 checksum=301262627042
+p28-f10b-Release-linux 1 listsuffix lxr-nursery  wall=2.84 cpu=8.17 gc=0.80 pauses=55 full=0 checksum=301262627042
+p28-f9d-Release-linux 1 listsuffix lxr-nursery  wall=3.02 cpu=8.75 gc=0.96 pauses=57 full=0 checksum=301262627042
+p28-f10b-Release-linux 2 binarytrees lxr-nonmoving  wall=0.44 cpu=0.69 gc=0.07 pauses=17 full=0 checksum=14985972
+p28-f9d-Release-linux 2 binarytrees lxr-nonmoving  wall=0.46 cpu=0.73 gc=0.07 pauses=17 full=0 checksum=14985972
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 2 binarytrees lxr-nonmoving DOTNET_LXRRCBits=8 wall=0.45 cpu=0.69 gc=0.07 pauses=17 full=0 checksum=14985972
+p28-f10b-Release-linux 2 binarytrees lxr-nursery  wall=0.53 cpu=1.33 gc=0.15 pauses=19 full=0 checksum=14985972
+p28-f9d-Release-linux 2 binarytrees lxr-nursery  wall=0.53 cpu=1.19 gc=0.14 pauses=19 full=0 checksum=14985972
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 2 binarytrees lxr-nursery DOTNET_LXRRCBits=8 wall=0.54 cpu=1.38 gc=0.15 pauses=19 full=0 checksum=14985972
+p28-f10b-Release-linux 2 requests lxr-nonmoving  wall=2.63 cpu=2.98 gc=0.25 pauses=58 full=0 checksum=317308156512
+p28-f9d-Release-linux 2 requests lxr-nonmoving  wall=2.71 cpu=3.12 gc=0.28 pauses=58 full=0 checksum=317308156512
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 2 requests lxr-nonmoving DOTNET_LXRRCBits=8 wall=2.69 cpu=3.03 gc=0.24 pauses=58 full=0 checksum=317308156512
+p28-f10b-Release-linux 2 requests lxr-nursery  wall=2.74 cpu=3.68 gc=0.49 pauses=67 full=0 checksum=317308156512
+p28-f9d-Release-linux 2 requests lxr-nursery  wall=2.93 cpu=3.96 gc=0.52 pauses=66 full=0 checksum=317308156512
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 2 requests lxr-nursery DOTNET_LXRRCBits=8 wall=2.79 cpu=3.85 gc=0.50 pauses=67 full=0 checksum=317308156512
+p28-f10b-Release-linux 2 listsuffix lxr-nonmoving  wall=2.30 cpu=6.26 gc=0.47 pauses=56 full=0 checksum=301262627042
+p28-f9d-Release-linux 2 listsuffix lxr-nonmoving  wall=2.65 cpu=7.71 gc=0.70 pauses=56 full=0 checksum=301262627042
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 2 listsuffix lxr-nonmoving DOTNET_LXRRCBits=8 wall=2.48 cpu=6.82 gc=0.53 pauses=56 full=0 checksum=301262627042
+p28-f10b-Release-linux 2 listsuffix lxr-nursery  wall=2.89 cpu=7.97 gc=0.80 pauses=58 full=0 checksum=301262627042
+p28-f9d-Release-linux 2 listsuffix lxr-nursery  wall=3.17 cpu=9.21 gc=1.02 pauses=60 full=0 checksum=301262627042
+p28-f10b-Release-linux@DOTNET_LXRRCBits=8 2 listsuffix lxr-nursery DOTNET_LXRRCBits=8 wall=2.88 cpu=8.00 gc=0.78 pauses=56 full=0 checksum=301262627042

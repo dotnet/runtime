@@ -5,6 +5,19 @@
 **Branch:** `kkokosa-lxr-integrated` (local). It is one linear series on top of `dotnet/runtime` main.
 **Source of the work:** the stack that ends at P17 S6 (`kkokosa-lxr-s6-finalizer-registry`, `69e02a55607`).
 
+## Update P28 (branch `kkokosa-lxr-f9-f10-parity`)
+
+This update is on top of P26 (`e05f55b959e`). Eight local commits (`F9:` and `F10:`). The details are in `P28-refill-and-rc-loop-parity/README.md`. The rule of this work: do what the Java LXR does, in the same way; keep only the differences that .NET forces.
+
+- **F9 (code).** The hole search reads the count words as `RCArray::is_dead` does and reads only one hole. The refill no longer clears the count and straddle planes (it checks that they are zero in Debug builds).
+  The block search has forward-only cursors that are reset at each pause; every non-free block is a candidate. **Measured:** `AcquireBlock` 8.5 percent of the requests nursery samples becomes 0.6; `ResetRangeQuiescentCore` 6.0 and 10.1 percent become about 0.
+- **F10 (code).** An acquire load is a plain load (no fences). Counts use a byte compare-exchange. An in-place promotion fills the unlog bits by lines. **The default count width is 2 bits** (the Java default; P24 row 10 said "per 16 bytes"; the Java count is per 8 bytes).
+  Software prefetch with step 8 in the increment, decrement and trace loops. Counted children are incremented in place. Copy counters are per worker. **Measured:** the acquire load and the 2-bit default were the large wins; prefetch and the order of the per-object checks had no effect.
+- **Final numbers (same session as the base build, x WKS):** wall 1.3/1.4 (binary trees), 1.4/1.4 (requests), 0.6/0.7 (list suffix) for nonmoving/nursery; CPU 1.7 to 3.4 times WKS. The base build of the same session: 1.4/1.7, 1.9/2.1, 0.8/1.2.
+- **Tests (Measured).** One new native selector `--f10-rc` and new P2.4 tests with 10 controls, 7 engine controls; 41 native selectors pass on Linux Debug and Release and on Windows Release; 90 managed cells pass with the Debug collector (one managed test had an 8-bit count assumption and was changed). The stock helper hash is unchanged (`46cee8bd87fd6252f5265267148d0a34`).
+- **Not done:** the mark table zeroing is not in parallel packets as in the Java LXR; block batches of 32 and per-thread block lists; TSan; Windows Debug.
+- **Share files:** `C:\Users\konradkokosa\lxr-integrated-share\kkokosa-lxr-f9-f10-parity.bundle` and `patches\`. The P26 set is in `previous\kkokosa-lxr-scheduler-f2-f4b-f8\`.
+
 ## Update P26 (branch `kkokosa-lxr-scheduler-f2-f4b-f8`)
 
 This update is on top of P25 (`c3352e76067`). Six local commits. The details are in `P26-scheduler-and-lazy-decrements/README.md`.
