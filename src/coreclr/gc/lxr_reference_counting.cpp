@@ -5,6 +5,7 @@
 #include "gcenv.h"
 #include "gcref.h"
 #include "lxr_reference_counting.h"
+#include "lxr_prefetch.h"
 
 #include <new>
 #include <algorithm>
@@ -599,7 +600,12 @@ struct alignas(64) LxrReferenceCounting::CopyLog
 
 namespace
 {
-    constexpr size_t PromotedBytes = Epochs + 1;
+    // P28 (F10). The copy counters are per worker, as the survival counters of the Java LXR (SurvivalRatioPredictorLocal: a local
+    // copy that is summed when it is read), not three shared atomics that every worker adds to for every copied object.
+    constexpr size_t CopiedObjects = Epochs + 1;
+    constexpr size_t CopiedBytes = Epochs + 2;
+    constexpr size_t PauseCopiedBytes = Epochs + 3;
+    constexpr size_t PromotedBytes = Epochs + 4;
     static_assert(PromotedBytes < 24);
 }
 
@@ -2560,6 +2566,7 @@ void LxrReferenceCounting::Suspend(void* context)
     for (size_t worker = 0; worker <= engine->m_configuration.workers; worker++)
     {
         engine->m_worker_counters[worker].values[PromotedBytes].store(0, std::memory_order_relaxed);
+        engine->m_worker_counters[worker].values[PauseCopiedBytes].store(0, std::memory_order_relaxed);
     }
     for (std::atomic<uint64_t>& walk : engine->m_walk)
     {
@@ -3121,9 +3128,9 @@ LxrRcResult LxrReferenceCounting::RelocateRoot(Object** slot, bool interior, boo
 LxrNurseryMetrics LxrReferenceCounting::GetNurseryMetrics() const
 {
     return {
-        m_nursery_metrics[0].load(), m_nursery_metrics[1].load(), m_nursery_metrics[2].load(),
+        SumWorker(CopiedObjects), SumWorker(CopiedBytes), m_nursery_metrics[2].load(),
         m_nursery_metrics[3].load(), m_nursery_metrics[4].load(), m_nursery_metrics[5].load(),
-        m_pause_copied_bytes.load(),
+        m_pause_copied_bytes.load() + SumWorker(PauseCopiedBytes),
     };
 }
 
@@ -3832,7 +3839,16 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
     Object* copy = Reference(copyStart);
     {
         CostScope cost(this, 1);
-        result = FromMetadata(m_counts.InitializeObjectQuiescent(copyStart, size));
+        // P28 (F10). The destination is a range that a copy refill has prepared (the ValidObject plane is clear; the counts and the
+        // straddle marks are zero, F9). The Java LXR does nothing to the metadata of the destination before it counts the copy
+        // (rc.rs: process_inc_and_evacuate: inc(new)), so only the ValidObject bit (forced by .NET) is set; Debug builds check
+        // the range as before.
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F10_COPY_NO_VALID_CONTROL)
+        // Control: the copy gets no ValidObject bit.
+        result = LxrRcResult::Success;
+#else
+        result = FromMetadata(m_counts.RegisterObjectInClearedSpan(copyStart, size));
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F10_COPY_NO_VALID_CONTROL
         SideMetadataUpdateStatus updated;
         if (result == LxrRcResult::Success)
         {
@@ -3863,9 +3879,13 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
     Interlocked::ExchangePointer(forwarding, copy);
     // Destination RC/VO/extent/flags and the full copied header precede publication.
     header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 3);
-    m_nursery_metrics[0].fetch_add(1, std::memory_order_relaxed);
-    m_nursery_metrics[1].fetch_add(size, std::memory_order_relaxed);
-    m_pause_copied_bytes.fetch_add(size, std::memory_order_relaxed);
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F10_SHARED_COPY_COUNTERS_CONTROL)
+    // Control: the copy counters are not counted.
+#else
+    CountWorker(worker, CopiedObjects, 1);
+    CountWorker(worker, CopiedBytes, size);
+    CountWorker(worker, PauseCopiedBytes, size);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F10_SHARED_COPY_COUNTERS_CONTROL
     *destination = copy;
     *copied = true;
     return LxrRcResult::Success;
@@ -3923,7 +3943,11 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
     bool copied = false;
     bool incrementedInPlace = false;
     uintptr_t previous = 0;
-    if (m_configuration.evacuateNursery && IsImmix(start) && object == source)
+    // P28 (F10). The order of the Java LXR (rc.rs: process_inc_and_evacuate, dont_evacuate): an object that has a count is
+    // not evacuated and is counted where it is, before anything else is asked of it.
+    uintptr_t existing = 0;
+    if (m_configuration.evacuateNursery && IsImmix(start) && object == source &&
+        FromMetadata(m_counts.LoadFast(start, &existing)) == LxrRcResult::Success && existing == 0)
     {
         LxrRcResult copying = TryCopyNursery(object, &object, worker, &copied, &incrementedInPlace, &previous);
         if (copying != LxrRcResult::Success)
@@ -4085,6 +4109,43 @@ LxrRcResult LxrReferenceCounting::ScanIncrements(
             {
                 continue;
             }
+            // P28 (F10). As in the Java LXR (rc.rs: scan_nursery_object) a child that has a count already is counted here, from
+            // its count alone, and only a child without a count (a young object) becomes a slot for the next level. The header
+            // of an old child is not read. The block of the child must not be a source of the mature evacuation (a source can be
+            // forwarded, and the slot would need the copy); large objects take the longer path.
+            uintptr_t childStart = Start(child);
+            uintptr_t childCount;
+            if (IsImmix(childStart) && !IsMatureCandidate(childStart) &&
+                FromMetadata(m_counts.LoadFast(childStart, &childCount)) == LxrRcResult::Success && childCount != 0)
+            {
+                CountWorker(worker, IncrementEntries, 1);
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F10_INLINE_NO_INC_CONTROL)
+                // Control: the increment of a counted child is left out.
+                if (false)
+#else
+                if (childCount != m_counts.GetMaximumCount())
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F10_INLINE_NO_INC_CONTROL
+                {
+                    uintptr_t previous;
+                    SideMetadataUpdateStatus status;
+                    result = FromMetadata(m_counts.IncrementFast(childStart, &previous, &status));
+                    if (result != LxrRcResult::Success)
+                    {
+                        return false;
+                    }
+                }
+                if (trace && NeedsIncrementTrace(childStart))
+                {
+                    uintptr_t target = reinterpret_cast<uintptr_t>(child);
+                    m_increment_traces.fetch_add(1, std::memory_order_relaxed);
+                    result = QueueTrace(&target, 1);
+                    if (result != LxrRcResult::Success)
+                    {
+                        return false;
+                    }
+                }
+                continue;
+            }
             result = RememberMatureSlot(first + index, child);
             if (result != LxrRcResult::Success)
             {
@@ -4111,6 +4172,10 @@ LxrRcResult LxrReferenceCounting::ScanDecrements(Object* object, ReferenceBatch*
 {
     LxrRcResult result = LxrRcResult::Success;
     CountWorker(worker, ObjectScans, 1);
+    // P28 (F10). As in the Java LXR (rc.rs: process_dead_object) a child whose count is zero or at the maximum gets no decrement,
+    // so it is not queued. During a trace every child of a dead object belongs to the snapshot and is queued.
+    const bool queueAll = m_marking.load(std::memory_order_acquire);
+    const uintptr_t maximumCount = m_counts.GetMaximumCount();
     GCReferenceRanges::Enumerate(object, [&](Object** first, size_t length)
     {
         for (size_t index = 0; index < length; index++)
@@ -4124,6 +4189,19 @@ LxrRcResult LxrReferenceCounting::ScanDecrements(Object* object, ReferenceBatch*
             if (result != LxrRcResult::Success)
             {
                 return false;
+            }
+            if (!queueAll && OwnsAddress(Start(child)))
+            {
+                uintptr_t childCount = m_rc_metadata.Load(Start(child), SideMetadataMemoryOrder::Relaxed);
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F10_SKIP_DECS_CONTROL)
+                // Control: the skip is too wide: a child with count 1 gets no decrement either.
+                if (childCount <= 1 || childCount == maximumCount)
+#else
+                if (childCount == 0 || childCount == maximumCount)
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_F10_SKIP_DECS_CONTROL
+                {
+                    continue;
+                }
             }
             result = children->Append(reinterpret_cast<uintptr_t>(child), true);
             if (result != LxrRcResult::Success)
@@ -4235,6 +4313,8 @@ LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* p
         {
             return result;
         }
+        // The Java LXR prefetches the object of the entry that is 8 ahead (rc.rs: process_decs).
+        LxrPrefetch::Ahead(work->references, packet->GetReferenceCount(), index, false, previousRoot ? 1 : 0);
     }
 #if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NO_RECURSION_CONTROL)
     // Control: the behaviour before P25 (F4). The children of dead objects become a new packet.
@@ -4265,6 +4345,7 @@ LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* p
             {
                 return result;
             }
+            LxrPrefetch::Ahead(objects, count, index, false);
         }
     }
     return LxrRcResult::Success;
@@ -5123,6 +5204,10 @@ LxrRcResult LxrReferenceCounting::ProcessIncrementWork(Work* work, size_t worker
         {
             *ownedSlot = object;
         }
+        // The Java LXR prefetches the object of the entry that is 8 ahead (rc.rs: process_incs).
+        LxrPrefetch::Ahead(
+            work->references, work->packet.GetReferenceCount(), index, ownedSlot != nullptr,
+            work->kind == WorkKind::Roots ? 1 : 0);
     }
 #if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_F4_NO_RECURSION_CONTROL)
     // Control: the behaviour before P25 (F4). The children of the packet become a new packet: one packet for each level.
@@ -5164,6 +5249,7 @@ LxrRcResult LxrReferenceCounting::ProcessChildIncrements(ReferenceBatch* childre
                 }
             }
             *slot = object;
+            LxrPrefetch::Ahead(slots, count, index, true);
         }
     }
     return LxrRcResult::Success;
@@ -6710,6 +6796,8 @@ LxrRcResult LxrReferenceCounting::ProcessTraceWork(Work* work, TraceBatch* targe
             {
                 break;
             }
+            // The Java LXR prefetches the object that is 8 ahead in its trace loops too (cm.rs).
+            LxrPrefetch::Ahead(work->references, work->packet.GetReferenceCount(), index, false);
         }
     }
     // P26 (F4b). The Java LXR trace packet loops: it traces its objects, swaps in the children that it found, and goes on
@@ -6731,6 +6819,7 @@ LxrRcResult LxrReferenceCounting::ProcessTraceWork(Work* work, TraceBatch* targe
             {
                 break;
             }
+            LxrPrefetch::Ahead(level, levelCount, index, false);
             if ((index & 255) == 255 && index + 1 < levelCount && ShouldStopTraceLoop())
             {
                 for (size_t rest = index + 1; rest < levelCount && result == LxrRcResult::Success; rest++)

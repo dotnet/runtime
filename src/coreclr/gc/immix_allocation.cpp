@@ -758,7 +758,7 @@ SideMetadataResult ImmixAllocationManager::InitializeFieldLogRange(
     }
 #endif // LXR_F9_TEST_HOOKS && LXR_F9_CLEAR_AT_REFILL_CONTROL
 #if (defined(_DEBUG) || defined(LXR_F9_TEST_HOOKS)) && !defined(LXR_F9_NO_VERIFY_CONTROL)
-    if (!copy)
+    // A range that the collector takes for copies has the same invariant (F10: the copy of a nursery object does not clear it).
     {
         bool zero = false;
         SideMetadataResult result = m_metadata->IsRangeZero(

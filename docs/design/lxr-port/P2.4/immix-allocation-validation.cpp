@@ -4,6 +4,8 @@
 #include "../../../../src/coreclr/gc/env/common.h"
 #include "../../../../src/coreclr/gc/env/gcenv.h"
 #include "../../../../src/coreclr/gc/immix_allocation.h"
+#define LXR_F10_PREFETCH_TEST_HOOK
+#include "../../../../src/coreclr/gc/lxr_prefetch.h"
 
 #include <atomic>
 #include <stdio.h>
@@ -1541,6 +1543,66 @@ namespace
             LoadMetadata(fixture, LxrSideMetadataKind::ReferenceCount, address + sizeof(uintptr_t)) == 1);
     }
 
+    // P28 (F10). The prefetch of the Java LXR loops: while entry i is processed, the object of entry i + 8 is prefetched; nothing past
+    // the end, nothing for a null reference; a slot is read for its reference. The hook records the addresses that are prefetched.
+    std::vector<const void*> s_prefetched;
+    void RecordPrefetch(const void* address)
+    {
+        s_prefetched.push_back(address);
+    }
+
+    void TestF10Prefetch()
+    {
+        LxrPrefetch::HookRef() = RecordPrefetch;
+        constexpr size_t Count = 40;
+        std::vector<uintptr_t> cells(Count + 1);
+        std::vector<uintptr_t> objects(Count);
+        std::vector<uintptr_t> slots(Count);
+        for (size_t i = 0; i < Count; i++)
+        {
+            objects[i] = i % 11 == 9 ? 0 : reinterpret_cast<uintptr_t>(&cells[i]);
+            cells[i] = objects[i];
+            slots[i] = reinterpret_cast<uintptr_t>(&cells[i]);
+        }
+        auto run = [&](const std::vector<uintptr_t>& entries, size_t count, bool slotEntries, uintptr_t mask)
+        {
+            s_prefetched.clear();
+            for (size_t i = 0; i < count; i++)
+            {
+                LxrPrefetch::Ahead(entries.data(), count, i, slotEntries, mask);
+            }
+            return s_prefetched;
+        };
+        auto expected = [&](size_t count)
+        {
+            std::vector<const void*> list;
+            for (size_t i = LxrPrefetch::Step; i < count; i++)
+            {
+                if (objects[i] != 0)
+                {
+                    list.push_back(reinterpret_cast<const void*>(objects[i]));
+                }
+            }
+            return list;
+        };
+        Expect("f10 prefetch step is 8", LxrPrefetch::Step == 8);
+        Expect("f10 prefetch of object entries: the object of entry i + 8, none past the end, none for null",
+            run(objects, Count, false, 0) == expected(Count));
+        Expect("f10 prefetch of slot entries: the object that the slot of entry i + 8 holds",
+            run(slots, Count, true, 0) == expected(Count));
+        std::vector<uintptr_t> flagged = objects;
+        for (uintptr_t& entry : flagged)
+        {
+            entry |= entry != 0 ? 1 : 0;
+        }
+        Expect("f10 prefetch of flagged entries (roots): the flag bit is removed",
+            run(flagged, Count, false, 1) == expected(Count));
+        Expect("f10 a packet of 8 entries or less prefetches nothing", run(objects, LxrPrefetch::Step, false, 0).empty() &&
+            run(objects, 3, false, 0).empty());
+        Expect("f10 a packet of 9 entries prefetches the ninth", run(objects, 9, false, 0) == expected(9));
+        LxrPrefetch::HookRef() = nullptr;
+    }
+
     void TestPhaseAndContention()
     {
         {
@@ -1999,6 +2061,7 @@ int main()
     TestF9DirtyRangeIsReported();
     TestF9Cursors();
     TestF10LoadOrder();
+    TestF10Prefetch();
     TestF10ByteCompareExchange(1);
     TestF10ByteCompareExchange(2);
     TestF10ByteCompareExchange(3);

@@ -330,7 +330,7 @@ if(FEATURE_STANDALONE_GC)
       large_object_space.cpp lxr_work_packet.cpp lxr_work_scheduler.cpp
       lxr_completion_counter.cpp lxr_pause_schedule.cpp lxr_pause_coordinator.cpp
       lxr_reference_counting.cpp lxr_finalizer_registry.h lxr_finalizer_pause.h lxr_pin_list.h lxr_young_spans.h lxr_gc.cpp lxr_gc.h lxr_gcload.cpp
-      lxr_write_barrier.cpp lxr_write_barrier.h lxr_worker_policy.h
+      lxr_write_barrier.cpp lxr_write_barrier.h lxr_worker_policy.h lxr_prefetch.h
       $<TARGET_OBJECTS:lxr_writebarrier>)
     add_dependencies(clrlxrgc eventing_headers)
     target_link_libraries(clrlxrgc PRIVATE ${GC_LINK_LIBRARIES})
