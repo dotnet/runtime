@@ -99,7 +99,7 @@ static char& __unbox_z = __stop___unbox;
 
 #endif // _MSC_VER
 
-extern "C" bool RhInitialize(bool isDll);
+extern "C" bool RhInitialize(bool isLibrary);
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 extern "C" bool RhRegisterOSModule(void * pModule,
@@ -189,9 +189,9 @@ static int InitializeRuntime()
 {
     if (!RhInitialize(
 #ifdef NATIVEAOT_DLL
-        /* isDll */ true
+        /* isLibrary */ true
 #else
-        /* isDll */ false
+        /* isLibrary */ false
 #endif
         ))
         return -1;

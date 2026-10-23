@@ -962,8 +962,9 @@ UInt32_BOOL PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect
     int unixProtect = W32toUnixAccessControl(protect);
 
     // mprotect expects the address to be page-aligned
-    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, OS_PAGE_SIZE);
-    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, OS_PAGE_SIZE) - pPageStart;
+    size_t pageSize = (size_t)sysconf(_SC_PAGE_SIZE);
+    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, pageSize);
+    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, pageSize) - pPageStart;
 
     return mprotect(pPageStart, memSize, unixProtect) == 0;
 }
