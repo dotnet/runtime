@@ -31,6 +31,7 @@ Copyright (c) .NET Foundation. All rights reserved.
          available before any interpreted call needs them. Without a profile the partial switch is omitted
          and the full closure is compiled (unchanged behavior). -->
     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmReadyToRunProfile)' != ''">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--instruction-set:relaxed-simd</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
   <!-- Optional external method profile (.mibc) that selects the eager partial subset. Flows into the base
@@ -38,6 +39,12 @@ Copyright (c) .NET Foundation. All rights reserved.
        switch above it compiles just the profiled methods. Absent, the eager image is the full closure. -->
   <ItemGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmReadyToRunProfile)' != ''">
     <PublishReadyToRunPgoFiles Include="$(WasmReadyToRunProfile)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
+    <RuntimeHostConfigurationOption Include="System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"
+                                    Value="true"
+                                    Trim="true" />
   </ItemGroup>
 
   <!-- Prebuilt R2R probe directory for ConvertDllsToWebcil. PublishTrimmed is deliberately not consulted:

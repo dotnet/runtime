@@ -455,7 +455,8 @@ namespace Mono.Linker.Steps
                 AssemblyDefinition? assembly;
                 try
                 {
-                    assembly = _context.TryResolve(AssemblyNameReference.Parse(assemblyName));
+                    AssemblyNameReference? reference = LinkContext.TryParseAssemblyName(assemblyName);
+                    assembly = reference is null ? null : _context.TryResolve(reference);
                     if (assembly == null)
                     {
                         LogWarning(nav, DiagnosticId.XmlCouldNotResolveAssemblyForAttribute, assemblyName, attributeFullName);

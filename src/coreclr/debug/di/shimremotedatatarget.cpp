@@ -248,32 +248,32 @@ HRESULT STDMETHODCALLTYPE
 ShimRemoteDataTarget::GetPlatform(
         CorDebugPlatform *pPlatform)
 {
-#ifdef TARGET_UNIX
-     #if defined(TARGET_X86)
+#ifdef HOST_UNIX
+     #if defined(HOST_X86)
          *pPlatform = CORDB_PLATFORM_POSIX_X86;
-     #elif defined(TARGET_AMD64)
+     #elif defined(HOST_AMD64)
          *pPlatform = CORDB_PLATFORM_POSIX_AMD64;
-     #elif defined(TARGET_ARM)
+     #elif defined(HOST_ARM)
          *pPlatform = CORDB_PLATFORM_POSIX_ARM;
-     #elif defined(TARGET_ARM64)
+     #elif defined(HOST_ARM64)
          *pPlatform = CORDB_PLATFORM_POSIX_ARM64;
-     #elif defined(TARGET_LOONGARCH64)
+     #elif defined(HOST_LOONGARCH64)
          *pPlatform = CORDB_PLATFORM_POSIX_LOONGARCH64;
-     #elif defined(TARGET_RISCV64)
+     #elif defined(HOST_RISCV64)
          *pPlatform = CORDB_PLATFORM_POSIX_RISCV64;
      #else
          #error Unknown Processor.
      #endif
 #else
-    #if defined(TARGET_X86)
+    #if defined(HOST_X86)
         *pPlatform = CORDB_PLATFORM_WINDOWS_X86;
-    #elif defined(TARGET_AMD64)
+    #elif defined(HOST_AMD64)
         *pPlatform = CORDB_PLATFORM_WINDOWS_AMD64;
-    #elif defined(TARGET_ARM)
+    #elif defined(HOST_ARM)
         *pPlatform = CORDB_PLATFORM_WINDOWS_ARM;
-    #elif defined(TARGET_ARM64)
+    #elif defined(HOST_ARM64)
         *pPlatform = CORDB_PLATFORM_WINDOWS_ARM64;
-    #elif defined(TARGET_LOONGARCH64)
+    #elif defined(HOST_LOONGARCH64)
         *pPlatform = CORDB_PLATFORM_WINDOWS_LOONGARCH64;
     #else
         #error Unknown Processor.
@@ -342,7 +342,7 @@ ShimRemoteDataTarget::ReadVirtual(
         // pread on /proc/<pid>/mem treats the offset as a file position, not a virtual address,
         // so the kernel does not apply TBI -- tagged pointers cause EINVAL.
         // See https://www.kernel.org/doc/html/latest/arch/arm64/tagged-address-abi.html
-#ifdef TARGET_ARM64
+#ifdef HOST_ARM64
         address &= 0x00FFFFFFFFFFFFFFULL;
 #endif
         ssize_t r = pread((int)m_memoryHandle, pBuffer, cbRequestSize, (off_t)address);
