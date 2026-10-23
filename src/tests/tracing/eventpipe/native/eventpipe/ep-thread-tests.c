@@ -415,9 +415,10 @@ test_thread_session_state (void)
 	ep_raise_error_if_nok (current_session_state == NULL);
 
 ep_on_exit:
-	if (session)
+	if (session) {
 		ep_session_close (session);
-	ep_session_dec_ref (session);
+		ep_session_dec_ref (session);
+	}
 	ep_event_free (ep_event);
 	ep_delete_provider (provider);
 	ep_provider_config_fini (current_provider_config);

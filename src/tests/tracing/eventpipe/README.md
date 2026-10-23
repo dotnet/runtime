@@ -114,7 +114,7 @@ return IpcTraceTest.RunAndValidateEventCounts(
 | Directory | Contents |
 |-----------|----------|
 | `common/` | Shared infrastructure (`IpcTraceTest`, `DiagnosticsClient`, helpers) |
-| `native/` | Native container unit tests and shared native-test runner |
+| `native/` | Native EventPipe and container unit tests, managed launchers, and shared native-test runner |
 | `eventsvalidation/` | Tests that validate specific event types and payloads |
 | `providervalidation/` | Tests that validate provider registration and event counts |
 | `rundownvalidation/` | Tests for rundown event correctness |

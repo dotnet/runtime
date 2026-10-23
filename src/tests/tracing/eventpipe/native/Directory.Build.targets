@@ -1,4 +1,4 @@
 <Project>
-  <!-- Native component tests do not need the parent EventPipe targets' managed logging dependencies. -->
+  <!-- Native component tests use the root test build configuration instead of the managed tracing test configuration. -->
   <Import Project="$(MSBuildThisFileDirectory)..\..\..\Directory.Build.targets" />
 </Project>

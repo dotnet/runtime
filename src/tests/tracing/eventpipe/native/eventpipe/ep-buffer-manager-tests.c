@@ -63,9 +63,10 @@ buffer_manager_fini (
 
 	// buffer_manager owned by session.
 	EP_ASSERT (buffer_manager == NULL || buffer_manager == ep_session_get_buffer_manager (session));
-	if (session)
+	if (session) {
 		ep_session_close (session);
-	ep_session_dec_ref (session);
+		ep_session_dec_ref (session);
+	}
 }
 
 static
