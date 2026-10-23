@@ -205,6 +205,19 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void ReverseBitsTest()
+        {
+            Assert.Equal(0x80, BinaryIntegerHelper<byte>.ReverseBits(0x01));
+            Assert.Equal(0xC4, BinaryIntegerHelper<byte>.ReverseBits(0x23));
+            Assert.Equal(0xA2, BinaryIntegerHelper<byte>.ReverseBits(0x45));
+            Assert.Equal(0xE6, BinaryIntegerHelper<byte>.ReverseBits(0x67));
+            Assert.Equal(0x91, BinaryIntegerHelper<byte>.ReverseBits(0x89));
+            Assert.Equal(0xD5, BinaryIntegerHelper<byte>.ReverseBits(0xAB));
+            Assert.Equal(0xB3, BinaryIntegerHelper<byte>.ReverseBits(0xCD));
+            Assert.Equal(0xF7, BinaryIntegerHelper<byte>.ReverseBits(0xEF));
+        }
+
+        [Fact]
         public static void RotateLeftTest()
         {
             Assert.Equal((byte)0x00, BinaryIntegerHelper<byte>.RotateLeft((byte)0x00, 1));
