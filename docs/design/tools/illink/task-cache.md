@@ -1,4 +1,4 @@
-# ILLink task cache: v1 decisions
+# ILLink task cache decisions
 
 These are design decisions. Eligible task invocations compute a content-based key, restore a cached output directory on a hit, or run ILLink and store successful results.
 
@@ -7,7 +7,7 @@ The feature is experimental. Its configuration and behavior may change or be rem
 ## Scope and configuration
 
 - Cache complete ILLink invocations in the MSBuild task, not in the linker command-line implementation.
-- Keep v1 simple. Reuse results at the same input/output paths; defer cross-worktree reuse and retain absolute paths in cache identity.
+- Keep the experiment simple. Reuse results at the same input/output paths; defer cross-worktree reuse and retain absolute paths in cache identity.
 - Enable caching only through the `ILLINK_EXPERIMENTAL_CACHE` environment variable set to `true` (case-insensitive). Unset, empty, or `false` disables caching; invalid boolean values disable caching with a diagnostic. Disabled caching performs no cache I/O, even if a cache directory already exists.
 - Use the optional `ILLINK_EXPERIMENTAL_CACHE_PATH` environment variable for the directory override. Unset or empty selects the platform default. Selecting a directory does not enable caching, and path values are never interpreted as booleans.
 - Use platform-specific default directories: `$XDG_CACHE_HOME/illink` on Linux/other XDG Unix, falling back to `$HOME/.cache/illink`; `$HOME/Library/Caches/illink` on macOS; `LocalApplicationData/illink` on Windows.
@@ -20,37 +20,68 @@ The feature is experimental. Its configuration and behavior may change or be rem
 
 Configuration, cache execution flow, storage, manifest validation, publication, and directory restoration are shared
 sources under `src/tasks/Common/InvocationCache`, compiled into the task assembly.
-The task supplies ILLink's environment-variable names, cache-directory name, and
-diagnostic label, and retains input identity and invocation eligibility. The extraction preserves
-the v1 entry format, writer mutex names, diagnostics, and purge behavior.
+The task supplies ILLink's environment-variable names and display name, and
+describes the invocation's inputs, context, and owned outputs.
+All consumers use the same experimental `v1` storage format. Compatibility
+is not guaranteed within this version while all consumers are controlled together.
+Task keys include the task assembly's content hash, so changes to the embedded
+storage implementation invalidate entries without changing the namespace.
+The task declares one owned-directory `InvocationOutputs` contract for
+restoration and storage. Normal execution independently prepares the same output
+directory without referencing the cache contract.
 
 ```csharp
 internal sealed partial class InvocationCache
 {
-    internal static InvocationCache? TryCreateFromEnvironment(TaskLoggingHelper log, string toolName,
-        string enabledEnvironmentVariable, string pathEnvironmentVariable, string cacheDirectoryName);
+    internal static InvocationCache? TryCreateFromEnvironment(TaskLoggingHelper log,
+        InvocationCacheConfiguration configuration);
     internal static InvocationCache? TryCreate(string? cacheDirectory, TaskLoggingHelper log,
-        string toolName, string cacheDirectoryName);
-    internal static int Execute(InvocationCache? cache, DateTime outputTimestampUtc,
-        Func<InvocationCacheRequest?> getInvocation, Func<string?, int> execute,
-        Action? onRestored = null);
-    internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc);
-    internal void Store(string inputHash, string outputDirectory);
+        string toolName);
+    internal static int ExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
+        Func<InvocationDescription?> describeInvocation, Func<int> executeNormally);
+    internal static int ExecutePrepared(InvocationCache? cache, DateTime outputTimestampUtc,
+        InvocationCacheRequest? request, Func<int> execute);
+    internal bool TryRestore(string inputHash, InvocationOutputs outputs, DateTime outputTimestampUtc);
+    internal void Store(string inputHash, InvocationOutputs outputs);
 }
 ```
 
-- The task owns input identity and execution. Its private `TryComputeCacheKey` combines command-line and response-file arguments with input-content and toolchain identity; inability to compute a key bypasses caching with a diagnostic.
-- `InvocationCache.Execute` shares the cache lifecycle: ask the task for an `InvocationCacheRequest` (key and output directory) only when configured, try restoration, otherwise execute normally, and store only after exit code zero with no logged errors. Task callbacks retain eligibility, key construction, and output preparation. Bypassing caching still invokes the task's normal execution callback with a null directory; an eligible miss passes the declared directory.
-- `TryCreate` resolves the cache directory and returns null with a diagnostic if initialization cannot proceed.
+- The task owns invocation eligibility, input discovery, and execution. Its private `DescribeInvocation` returns an `InvocationDescription` with typed `InvocationInputs` and `InvocationOutputs` declarations plus effective arguments and task-specific context strings. Metadata inspection and toolchain-specific eligibility checks stay in the task; no content hashing, cache-version markers, or cache operations occur there.
+- `InvocationInputs.FromFiles` declares ordered input files; `InvocationOutputs.FromFiles` declares owned output files, and `InvocationOutputs.FromDirectory` declares an owned directory. Both types are data-only path declarations, with no required/optional flags, cleanup methods, cache-location checks, or storage indexing. Cache-location checks, restoration, and storage indexing belong to the shared cache implementation; preparation before execution belongs to the tool logic.
+- Participating tasks keep `ExecuteTool` as a single `ExecuteCached` call supplying an `InvocationCacheConfiguration` and parameterless callbacks that capture arguments and call the task's named `DescribeInvocation` and `ExecuteNormally` methods. The shared contract does not depend on ToolTask's argument shape. Configuration holds the display name and environment-variable names, not their values, so it can be a static readonly field without capturing process settings. The shared adapter resolves the environment lazily on each execution and returns directly to normal execution when no cache is available, without collecting a description. A null description or fingerprinting failure also returns directly to normal execution. Invalid output declarations, including cache/output overlap, throw before normal execution can prepare or delete outputs. After collecting and validating the description, the shared layer captures the UTC timestamp immediately before computing the content-based key, including common host/culture context. Missing inputs have an explicit absence marker; other read failures bypass caching with diagnostics. The configured tool name is used for logging and, lowercased with `ToLowerInvariant`, for the platform-specific default cache directory.
+- `ExecuteNormally` uses no cache types or helpers and never branches on eligibility; it performs the task's ordinary output preparation and tool execution. ILLink's unconditional directory cleanup uses ordinary filesystem operations here, not a cache-only hook.
+- `ExecuteCached` delegates cache-specific work to `TryExecuteCached` and has one normal-execution fallback when that helper declines caching. The try helper returns true when the cache-enabled path handled the invocation, including a compiler miss with a nonzero exit code; it does not retry a failed compilation through the fallback.
+- `ExecutePrepared` implements the underlying restore/execute/store lifecycle using the shared layer's computed key and declared outputs. A null cache or request bypasses caching. Otherwise the helper tries restoration, calls the tool's execution callback on a miss or restore-failure fallback, and stores only after exit code zero with no logged errors. The callback owns output preparation and its error handling. Declared file outputs are recorded as present or absent, without imposing extra tool-success conditions. A hit reproduces absence by deleting stale destination files.
+- `TryCreate` resolves the cache directory and returns null with a diagnostic if initialization cannot proceed, including when the resolved location is an existing file.
 - `TryRestore` combines lookup and restoration. True means complete restoration. Missing entries and expected I/O, access, or invalid-cache-data failures return false with appropriate logging and fall back to normal linking. Copies overwrite existing files and are not rolled back if a later copy fails. Unexpected exceptions propagate.
 - `Store` is best-effort. Lock contention and existing entries are normal skips; expected cache I/O failures are logged without failing a successful link. Unexpected exceptions propagate.
 - Expected restore/store failures are `IOException`, `UnauthorizedAccessException`, `InvalidDataException`, and `FormatException`, not every exception. Invalid helper arguments remain programming errors.
 - After normal task validation, resolve the cache directory before computing the key so an unusable configuration does not trigger input inspection or hashing. If resolution succeeds, compute the key once and attempt restoration. On a hit, skip linking; otherwise link normally and store only with exit code zero and no logged errors. A failed restore never substitutes for a successful fallback link.
 
+## Output preparation ownership
+
+For now, tool logic owns output cleanup whenever the tool executes, including cache
+misses, bypasses, and fallback after failed restoration. The cache owns cleanup and
+reconciliation when restoring a hit. This applies equally to declared files and
+owned directories; output shape does not determine cleanup ownership. Tool logic
+must ensure stale outputs are not captured as results of the current invocation,
+including optional outputs that are no longer produced.
+
+Keep preparation with the tool's existing execution and error handling rather
+than cleaning twice or introducing cache-aware preparation flags and callbacks.
+ILLink already deletes and recreates its output directory during normal execution.
+The cache must not repeat that preparation before calling it.
+
+In the future, shared build-execution infrastructure could own preparation,
+execution, and restoration, with tools only declaring inputs and outputs. That
+would provide one place to prepare outputs regardless of cache configuration.
+This extraction does not introduce that execution layer or transfer preparation
+out of the tool logic.
+
 ## Execution and publication
 
-- Cache operations do not support cancellation in v1, including key computation, validation, restoration, and storage. Assume they are fast relative to actual linker execution, and keep synchronous filesystem operations without cancellation polling or chunked cancellable I/O. A cancellation request may arrive while these operations finish, and a cache hit may return success without observing it. Normal linker execution retains `ToolTask`'s existing subprocess cancellation behavior.
-- Check the cache before normal tool execution. On a hit, validate the complete entry, then delete/recreate the destination and copy the cached tree. On any miss or restore failure, the normal execution path deletes/recreates the directory before running ILLink; no separate rollback or failure-cleanup path is needed.
+- Cache operations do not support cancellation, including key computation, validation, restoration, and storage. Assume they are fast relative to actual linker execution, and keep synchronous filesystem operations without cancellation polling or chunked cancellable I/O. A cancellation request may arrive while these operations finish, and a cache hit may return success without observing it. Normal linker execution retains `ToolTask`'s existing subprocess cancellation behavior.
+- Check the cache before normal tool execution. On a hit, validate the complete entry, then delete/recreate the destination and copy the cached tree. On any eligible miss or restore failure, normal execution prepares the outputs. ILLink deletes/recreates its directory exactly once during normal execution, including when caching is disabled; no separate rollback or failure-cleanup path is needed.
 - The task owns its output directory, including when caching is disabled. Normal-execution cleanup failures fail the task. Rely on the supplied `OutputDirectory` parameter without additional task path/input validation; callers must provide a dedicated directory. The command-line linker retains its existing nonempty-directory behavior.
 - ILLink writes to its normal output directory. After successful linking, copy results into the cache; do not redirect linker output to a temporary directory.
 - Let cache misses compute independently. Scheduling and execution times are nondeterministic, and steps can fail or be aborted; one computation must not block another's progress.
@@ -64,7 +95,7 @@ internal sealed partial class InvocationCache
 - Use a named `System.Threading.Mutex` derived from the resolved cache-directory path and input hash. An abandoned mutex grants ownership; recheck the entry and use fresh staging. This coordinates processes on one machine, not writers on different machines sharing a network directory.
 - Support concurrent task invocations with distinct output directories sharing a cache directory. Concurrent linking to the same output directory is unsupported.
 - Treat missing or unreadable cache data as a failed restore, never a successful hit.
-- Start without replaying warnings or other linker diagnostics on cache hits. This is an intentional v1 limitation.
+- Start without replaying warnings or other linker diagnostics on cache hits. This extraction caches file outputs only; support for non-file task outputs is left to consumers that need it.
 
 ## Input identity and eligibility
 
@@ -74,14 +105,14 @@ internal sealed partial class InvocationCache
 - Continue hashing the task assembly and selected dotnet host executable. Do not enumerate or hash the host's installed hostfxr/shared-runtime trees: doing so makes lookup cost scale with every installed framework/version, including ones unrelated to the link. Runtime/tool files supplied as linker inputs remain content-hashed.
 - Defer identifying the runtime that executes ILLink; do not include a runtime version or framework description in the key. The task runs in MSBuild, so its CoreLib informational version and framework description are not reliable identities for the child linker's runtime. The runtimeconfig describes requested frameworks and roll-forward policy, not the exact resolved CoreLib. Finding that CoreLib would require resolved-runtime information from the caller, host-resolution plumbing, or an additional process; defer that complexity and startup cost.
 - This deliberately accepts that runtime installation changes not represented by other keyed inputs may reuse an entry; callers needing invalidation for those changes must clear or isolate the cache.
-- Include platform, architecture, and culture. Do not enumerate or hash inherited environment variables, or bypass caching based on them. This deliberately keeps v1 simple rather than maintaining a partial list of runtime/loader settings. Environment changes are reflected only when they change other keyed inputs, such as the selected host path or culture. Callers must disable caching when inherited settings introduce otherwise untracked dependencies, affect outputs, or require tool-execution side effects (for example, startup hooks or profilers).
-- Bypass caching for arbitrary `ExtraArgs`, custom steps/data, dependency-dump options, and explicit `ToolTask.EnvironmentVariables` overrides. These are caller-supplied inputs that v1 does not model in its key and can introduce undeclared dependencies, external outputs, or side effects. The supported `ExtraArgs` shape for runtime's library builds is `--ignore-link-attributes true` followed by zero or more `--link-attributes FILE`, `--substitutions FILE`, or `-d DIRECTORY` pairs. Hash every referenced XML file and every top-level `.dll`, `.exe`, and `.winmd` candidate in each search directory, including assembly sidecars/modules/resources. Preserve directory order in the arguments and leave linker resolution unchanged; adding, changing, or removing candidates invalidates the key, including shadowed candidates. An unreadable directory or uninspectable candidate bypasses caching. All other SDK options passed through `ExtraArgs` remain subject to the bypass.
-- Log and bypass caching if required files cannot be read or an input assembly cannot be inspected, including PE images without managed metadata. Normal linking determines whether those inputs are acceptable. Input files must remain stable during hashing and linking.
+- Include platform, architecture, and culture. Do not enumerate or hash inherited environment variables, or bypass caching based on them. This deliberately keeps the experiment simple rather than maintaining a partial list of runtime/loader settings. Environment changes are reflected only when they change other keyed inputs, such as the selected host path or culture. Callers must disable caching when inherited settings introduce otherwise untracked dependencies, affect outputs, or require tool-execution side effects (for example, startup hooks or profilers).
+- Bypass caching for arbitrary `ExtraArgs`, custom steps/data, dependency-dump options, and explicit `ToolTask.EnvironmentVariables` overrides. These are caller-supplied inputs that the experiment does not model in its key and can introduce undeclared dependencies, external outputs, or side effects. The supported `ExtraArgs` shape for runtime's library builds is `--ignore-link-attributes true` followed by zero or more `--link-attributes FILE`, `--substitutions FILE`, or `-d DIRECTORY` pairs. Require the explicit XML files to be readable and hash them, together with every top-level `.dll`, `.exe`, and `.winmd` candidate in each search directory, including assembly sidecars/modules/resources. Preserve directory order in the arguments and leave linker resolution unchanged; adding, changing, or removing candidates invalidates the key, including shadowed candidates. An unreadable directory or uninspectable candidate bypasses caching. All other SDK options passed through `ExtraArgs` remain subject to the bypass.
+- Record declared input absence explicitly; log and bypass caching on other read failures or if an input assembly cannot be inspected, including PE images without managed metadata. Normal linking determines whether those inputs are acceptable. Input files must remain stable from discovery through hashing and linking.
 
 ## Entry layout
 
-- Store entries under `<cache>/v1/<input-hash>/`, with a binary `manifest`, an `outputs/` tree, and a `last-used` UTC timestamp in invariant round-trip (`O`) text format.
-- The manifest records the format version, output paths, lengths, and SHA-256 content hashes. Validate it and every listed file before starting restoration.
+- Store entries under `<cache>/v1/<input-hash>/`, with a binary `manifest`, its raw SHA-256 digest in `manifest.sha256`, an `outputs/` tree, and a `last-used` UTC timestamp in invariant round-trip (`O`) text format.
+- Both output contracts use the same manifest encoding: format version, output-contract kind, file count, then each file's storage name and presence flag, followed by its length and SHA-256 content hash when present. Owned-directory entries use relative storage names and contain every listed file; file-set entries use declaration indices and can record absent files. Validate the manifest checksum, contract kind, inventory, every listed payload, and end of stream before modifying outputs.
 - Copy the complete output tree without special-casing filenames. The MSBuild target owns `<output-directory>.semaphore` (normally `linked.semaphore`) and invalidates it before the incremental skip decision when that directory is missing. There is no special migration or exclusion for old in-directory `Link.semaphore` files; ordinary whole-directory cleanup and caching apply to them. Empty directories are not recorded.
 - The restore helper replaces the destination tree after entry validation. Copy failures can leave partial results, which the task's normal execution cleanup removes before fallback linking. Publication is atomic; restoration is not.
 - Assume ILLink outputs are not symbolic links; do not check for them. Cache and output directories must not contain each other.
@@ -89,11 +120,11 @@ internal sealed partial class InvocationCache
 
 ## Cache lifetime
 
-- No automatic eviction or size policy during linking. Users may manually wipe the cache directory or explicitly run the experimental `dotnet-illink-cache purge` tool.
-- Purge enumeration, marker parsing, cutoff comparison, deletion, and reporting are source-shared in `InvocationCachePurge`. The ILLink CLI supplies the `v1` layout and ILLink diagnostic label; command parsing and packaging remain tool-specific.
+- No automatic eviction or size policy during linking. Users may manually wipe the cache directory or explicitly run the shared experimental `dotnet build-cache purge --cache illink` tool.
+- Purge enumeration, marker parsing, cutoff comparison, deletion, and reporting are source-shared in `InvocationCachePurge`. The ILLink CLI supplies the shared current layout (`v1`) and ILLink diagnostic label; command parsing and packaging remain tool-specific.
 - Do not repair or replace corrupt published entries. Restoration falls back to linking, but storage still skips an existing entry until the user removes it.
 - No `created` bookkeeping marker. The `last-used` marker records usage for explicit post-build maintenance.
-- Purge requires an explicit cache root and UTC cutoff. Only published SHA-256 entry directories in `v1` are considered; delete entries whose last-used time is strictly older than the cutoff and retain equality. Leave staging directories and other layouts alone. Report per-entry maintenance errors and continue, then return nonzero if maintenance failed.
+- Purge requires a named cache or explicit cache root, and a UTC cutoff. Named `illink` and `crossgen2` caches use an explicit `--cache-directory` first, then the corresponding path environment variable, then the platform default shared with the tasks. Maintenance ignores boolean cache enablement, rejects invalid selections, and never creates missing directories. Only published SHA-256 entry directories in `v1` are considered; delete entries whose last-used time is strictly older than the cutoff and retain equality. Purge does not read manifests, so obsolete or incompatible entries in the same namespace are eligible for deletion. Leave staging directories and other layouts alone. Report per-entry maintenance errors and continue, then return nonzero if maintenance failed.
 - For a missing, malformed, non-UTC, or unreadable marker, report the fallback and use the entry directory's creation time instead. This may purge a recently used entry or retain a stale one if restoring a cache snapshot resets directory creation times. Do not migrate or repair the marker.
 - Purge must not run during any build using the cache. Do not add purge locks or change reader locking; coordination with active readers/writers remains a separate follow-up, as does protection against manual deletion.
 - Only the `CoreLib_Libraries_AnalyzersLinker` CI job opts into ILLink caching through `setup-build-caches.yml`, on Windows and Unix x64/arm64. Roslyn and sccache remain gated by platform. Restore a job-private Azure cache, record build start, run linking and all post-build steps, then purge against that timestamp before uploading the next snapshot. This job explicitly enables `RunILLinkInBuild` and builds the `tools.illink` subset for the maintenance tool; building `ILLink.Tasks` through a library project reference does not build it. Purge only after a successful build; skip maintenance when no versioned cache directory exists and report a missing tool. Preserve tool diagnostics but do not fail the build for maintenance errors. Only purge once all users have exited; incremental skips and unreached work in failed builds do not refresh usage. See the [CI recipe and wiring](../../../tools/illink/illink-tasks.md#ci-purge-ordering).
