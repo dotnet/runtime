@@ -1278,7 +1278,7 @@ namespace ILLink.Tasks.Tests
             Assert.False(test.Task.TryGetCacheKey(host, out string key));
             Assert.Empty(key);
             Assert.Contains(test.BuildEngine.Messages, message =>
-                message.Message.StartsWith("ILLink cache bypassed: invocation could not be described:"));
+                message.Message.StartsWith("ILLink cache bypassed: input identity could not be computed:"));
         }
 
         [Fact]
@@ -1394,7 +1394,7 @@ namespace ILLink.Tasks.Tests
             Assert.False(test.Task.TryGetCacheKey(host, out string key));
             Assert.Empty(key);
             Assert.Contains(test.BuildEngine.Messages, message =>
-                message.Message.StartsWith("ILLink cache bypassed: invocation could not be described:"));
+                message.Message.StartsWith("ILLink cache bypassed: input identity could not be computed:"));
         }
 
         [Theory]
@@ -1731,7 +1731,7 @@ namespace ILLink.Tasks.Tests
                 if (bool.Parse(enabled))
                 {
                     Assert.Contains(test.BuildEngine.Messages, message =>
-                        message.Message.StartsWith("ILLink cache bypassed: invocation could not be described:") &&
+                        message.Message.StartsWith("ILLink cache bypassed: input identity could not be computed:") &&
                         message.Message.Contains("no managed metadata"));
                 }
                 else
