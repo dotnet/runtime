@@ -9,6 +9,11 @@
   <Import Project="$(MSBuildThisFileDirectory)/Common/disableversioncheck.targets"
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
+  <PropertyGroup Condition="'$(Language)' == 'IL' and '$(ILAsmToolPath)' != ''">
+    <!-- The IL SDK uses ILAsmToolPath for both tools. Keep ildasm in the original directory. -->
+    <_IlasmDir>$([MSBuild]::NormalizeDirectory('$(ILAsmToolPath)', 'managed-ilasm'))</_IlasmDir>
+  </PropertyGroup>
+
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' == 'true' and '$(HasMergedInTests)' != 'true'">true</DisableProjectBuild>

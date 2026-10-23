@@ -66,7 +66,10 @@ jobs:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
       - name: liveRuntimeBuildParams
-        value: 'libs+clr.iltools -c Release -ci'
+        ${{ if eq(parameters.testGroup, 'ilasm') }}:
+          value: 'clr+libs -c Release -ci'
+        ${{ else }}:
+          value: 'libs+clr.iltools -c Release -ci'
 
       - name: runtimeFlavorArgs
         value: ''
@@ -113,6 +116,9 @@ jobs:
     # Build managed test components
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout $(buildConfig) -arch $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testFilterArg) ci /p:TargetOS=AnyOS
       displayName: Build managed test components
+      ${{ if eq(parameters.testGroup, 'ilasm') }}:
+        env:
+          ILAsmToolPath: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).Release
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
       - script: |

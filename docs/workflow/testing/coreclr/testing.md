@@ -4,6 +4,7 @@
 * [Overview](#overview)
 * [Building the Core_Root](#building-the-core_root)
 * [Building the Tests](#building-the-tests)
+  * [Building IL Tests with Live Managed ilasm](#building-il-tests-with-live-managed-ilasm)
   * [Building an Individual Test](#building-an-individual-test)
   * [Building a Test Directory](#building-a-test-directory)
   * [Building a Test Subtree](#building-a-test-subtree)
@@ -79,6 +80,34 @@ One of the most important attributes tests have is their **priority**. By defaul
 ```cmd
 .\src\tests\build.cmd skipmanaged
 ```
+
+### Building IL Tests with Live Managed ilasm
+
+By default, IL tests use the native ilasm from the restored NuGet package. To build them
+with the live managed ilasm instead, set `ILAsmToolPath` to the CoreCLR output directory
+for the **build host's** OS and architecture. This directory must contain the published
+managed assembler at `managed-ilasm/ilasm` (`managed-ilasm\ilasm.exe` on Windows) and
+the native `ildasm` alongside the other CoreCLR binaries. Build the `clr.tools` subset
+to publish managed ilasm before building the tests.
+
+For example, with a Windows x64 Checked build:
+
+```cmd
+.\src\tests\build.cmd checked /p:ILAsmToolPath=C:\runtime\artifacts\bin\coreclr\windows.x64.Checked
+```
+
+For paths containing spaces, set `ILAsmToolPath` as an environment variable instead;
+`build.cmd` does not support quoted command-line property values containing spaces.
+
+The override selects managed ilasm only for IL test compilation; ildasm continues to
+use the original directory. It also applies to individual `.ilproj` builds and to
+the existing source-build configurations that set `ILAsmToolPath` automatically.
+
+The IL tools CI pipeline (`eng/pipelines/coreclr/ilasm.yml`) builds the shared AnyOS
+test assemblies with live managed ilasm. Its `ilasm` test group first builds
+`clr+libs` in Release for the build host, then sets `ILAsmToolPath` to that host's
+CoreCLR output directory for test compilation. Other test groups keep using the
+packaged native assembler.
 
 ### Building an Individual Test
 

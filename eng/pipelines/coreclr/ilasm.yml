@@ -9,6 +9,8 @@ pr:
     - internal/release/*
   paths:
     include:
+    - eng/pipelines/common/templates/runtimes/build-test-job.yml
+    - eng/pipelines/coreclr/ilasm.yml
     - src/coreclr/ilasm/*
     - src/coreclr/ildasm/*
     - src/tools/ilasm/*

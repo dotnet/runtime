@@ -17,7 +17,7 @@ tokens { IncludedFileEof, SyntheticIncludedFileEof }
 
 INT32: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
 INT64: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
-FLOAT64: '-'? ([0-9]+ ('.' [0-9]+ ([eE] [+\-]? [0-9]+)? | [eE] [+\-]? [0-9]+) | '.' [0-9]+ ([eE] [+\-]? [0-9]+)?);
+FLOAT64: '-'? ([0-9]+ ('.' [0-9]+ ([eE] [+\-]? [0-9]+)? | '.'? [eE] [+\-]? [0-9]+) | '.' [0-9]+ ([eE] [+\-]? [0-9]+)?);
 // Blob hex bytes are parsed via the hexbyte parser rule; the HEXBYTE lexer token is defined later in this grammar.
 DCOLON: '::';
 ELLIPSIS: '...';
@@ -324,6 +324,9 @@ INSTR_BRTARGET:
 	'br.s'
 	| 'brfalse.s'
 	| 'brtrue.s'
+	| 'brnull.s'
+	| 'brzero.s'
+	| 'brinst.s'
 	| 'beq.s'
 	| 'bge.s'
 	| 'bgt.s'
@@ -337,6 +340,9 @@ INSTR_BRTARGET:
 	| 'br'
 	| 'brfalse'
 	| 'brtrue'
+	| 'brnull'
+	| 'brzero'
+	| 'brinst'
 	| 'beq'
 	| 'bge'
 	| 'bgt'
@@ -364,6 +370,8 @@ INSTR_TYPE:
 	| 'ldelema'
 	| 'ldelem'
 	| 'stelem'
+	| 'ldelem.any'
+	| 'stelem.any'
 	| 'unbox.any'
 	| 'refanyval'
 	| 'mkrefany'
@@ -1068,6 +1076,7 @@ locals [System.Collections.Immutable.ImmutableArray<CILParser.SignatureArgumentV
 :
 	'(' (argument = sigArg {_localctx.Builder.Add($argument.Value);} ',')*
 		lastArgument = sigArg {_localctx.Builder.Add($lastArgument.Value);} ')'
+	| '(' ')'
 	| '()'
 ;
 finally {_localctx.Value = _localctx.Builder.ToImmutable();}
@@ -2695,3 +2704,6 @@ manifestResDecl returns [CILParser.ManifestResourceDeclarationValue? Value]:
 			$attribute.Value,
 			$attribute.start);}
 	| compControl;
+
+/* Namespaces reuse decls without requiring the end of the input document. */
+document: decls EOF;
