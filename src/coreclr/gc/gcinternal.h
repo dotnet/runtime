@@ -12,7 +12,7 @@
 #include "gcdesc.h"
 #include "softwarewritewatch.h"
 #include "handletable.h"
-#include "handletable.inl"
+#include "gchandletableimpl.h"
 #include "gcenv.inl"
 #include "gceventstatus.h"
 #include <minipal/memorybarrierprocesswide.h>
@@ -1112,7 +1112,7 @@ public:
 #endif //DOUBLY_LINKED_FL
     }
 
-    void UnsetFree()
+    void UnsetFree(size_t object_size)
     {
         size_t size = free_object_base_size - plug_skew;
 
@@ -1120,6 +1120,15 @@ public:
         PTR_PTR m = (PTR_PTR) this;
         for (size_t i = 0; i < size / sizeof(PTR_PTR); i++)
             *(m++) = 0;
+
+#ifdef DOUBLY_LINKED_FL
+        if (object_size >= min_free_list)
+        {
+            free_list_prev (this) = 0;
+        }
+#else
+        UNREFERENCED_PARAMETER(object_size);
+#endif //DOUBLY_LINKED_FL
     }
 
     BOOL IsFree () const

@@ -369,6 +369,116 @@ namespace System.Net.Security.Tests
             }
         }
 
+        public enum ServerCertificateSource
+        {
+            Direct,
+            SelectionCallback,
+            OptionsCallback
+        }
+
+        public static IEnumerable<object[]> EmptyHandshakeRecordData()
+        {
+            foreach (ServerCertificateSource certificateSource in Enum.GetValues<ServerCertificateSource>())
+            {
+                foreach (bool useAsync in new[] { false, true })
+                {
+                    if (!useAsync && certificateSource == ServerCertificateSource.OptionsCallback)
+                    {
+                        continue;
+                    }
+
+                    yield return new object[] { certificateSource, useAsync, int.MaxValue, false };
+                    yield return new object[] { certificateSource, useAsync, 1, false };
+                    yield return new object[] { certificateSource, useAsync, int.MaxValue, true };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EmptyHandshakeRecordData))]
+        public Task ServerAuthenticate_EmptyHandshakeRecord_ThrowsIOException(
+            ServerCertificateSource certificateSource, bool useAsync, int maxReadSize, bool trailingData) =>
+            AuthenticateEmptyHandshakeRecord(_serverCertificate, certificateSource, useAsync, maxReadSize, trailingData);
+
+        internal static async Task AuthenticateEmptyHandshakeRecord(
+            X509Certificate2 certificate, ServerCertificateSource certificateSource, bool useAsync, int maxReadSize, bool trailingData)
+        {
+            byte[] record = trailingData
+                ? [0x16, 0x03, 0x01, 0x00, 0x00, 0x01]
+                : [0x16, 0x03, 0x01, 0x00, 0x00];
+            using var input = new MemoryStream(record);
+            using var transport = new DelegateDelegatingStream(input)
+            {
+                ReadSpanFunc = Read,
+                ReadAsyncMemoryFunc = (buffer, _) => new ValueTask<int>(Read(buffer.Span))
+            };
+            using var server = new SslStream(transport);
+            bool callbackInvoked = false;
+            var options = new SslServerAuthenticationOptions
+            {
+                // Exercise managed framing rather than Apple's Network Framework handshake.
+                EnabledSslProtocols = SslProtocols.Tls12
+            };
+            if (certificateSource == ServerCertificateSource.SelectionCallback)
+            {
+                options.ServerCertificateSelectionCallback = (_, _) =>
+                {
+                    callbackInvoked = true;
+                    return certificate;
+                };
+            }
+            else
+            {
+                options.ServerCertificate = certificate;
+            }
+
+            if (certificateSource == ServerCertificateSource.OptionsCallback)
+            {
+                await Assert.ThrowsAsync<IOException>(() => server.AuthenticateAsServerAsync((_, _, _, _) =>
+                {
+                    callbackInvoked = true;
+                    return new ValueTask<SslServerAuthenticationOptions>(options);
+                }, null));
+            }
+            else if (useAsync)
+            {
+                await Assert.ThrowsAsync<IOException>(() => server.AuthenticateAsServerAsync(options));
+            }
+            else
+            {
+                Assert.Throws<IOException>(() => server.AuthenticateAsServer(options));
+            }
+
+            Assert.False(callbackInvoked);
+            Assert.False(server.IsAuthenticated);
+
+            int Read(Span<byte> buffer)
+            {
+                // Reject the record without an additional read that could mask the failure with EOF.
+                Assert.True(buffer.IsEmpty || input.Position < input.Length);
+                return input.Read(buffer.Slice(0, Math.Min(buffer.Length, maxReadSize)));
+            }
+        }
+
+        [Fact]
+        public async Task ServerAsyncAuthenticate_EmptyHandshakeRecordWithoutEof_ThrowsIOException()
+        {
+            (Stream client, Stream server) = TestHelper.GetConnectedStreams();
+            using (client)
+            using (var ssl = new SslStream(server))
+            {
+                await client.WriteAsync(new byte[] { 0x16, 0x03, 0x01, 0x00, 0x00 });
+                await Assert.ThrowsAsync<IOException>(() =>
+                    ssl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = _serverCertificate,
+                        EnabledSslProtocols = SslProtocols.Tls12
+                    })
+                        .WaitAsync(TestConfiguration.PassingTestTimeout));
+                Assert.False(ssl.IsAuthenticated);
+            }
+        }
+
         public static IEnumerable<object[]> ProtocolMismatchData()
         {
             var supportedProtocols = new SslProtocolSupport.SupportedSslProtocolsTestData();

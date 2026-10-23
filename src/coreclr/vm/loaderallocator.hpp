@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
-**
 ** Header:  LoaderAllocator.hpp
 **
-
-**
 ** Purpose: Implements collection of loader heaps
-**
-**
 ===========================================================*/
 
 #ifndef __LoaderAllocator_h__
@@ -394,7 +389,9 @@ protected:
     Volatile<PgoManager *> m_pgoManager;
 #endif // FEATURE_PGO
 
+#ifdef FEATURE_MULTITHREADING
     SArray<TLSIndex> m_tlsIndices;
+#endif // FEATURE_MULTITHREADING
 
 public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
@@ -439,11 +436,13 @@ protected:
 
     PTR_VirtualCallStubManager m_pVirtualCallStubManager;
 
+#ifdef FEATURE_MULTITHREADING
 public:
     SArray<TLSIndex>& GetTLSIndexList()
     {
         return m_tlsIndices;
     }
+#endif // FEATURE_MULTITHREADING
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;
@@ -602,7 +601,7 @@ public:
     // Adds reference if the native object is alive  - code:#AssemblyPhases.
     // Returns TRUE if the reference was added.
     BOOL AddReferenceIfAlive();
-    BOOL Release();
+    BOOL Release() noexcept;
     // Checks if the native object is alive - see code:#AssemblyPhases.
     BOOL IsAlive() { LIMITED_METHOD_DAC_CONTRACT; return (m_cReferences != (UINT32)0); }
     // Checks if managed scout is alive - see code:#AssemblyPhases.
@@ -767,11 +766,6 @@ public:
     }
 #endif // FEATURE_PGO
 #endif // !defined(DACCESS_COMPILE)
-
-
-    // This function is only safe to call if the handle is known to be a handle in a collectible
-    // LoaderAllocator, and the handle is allocated, and the LoaderAllocator is also not collected.
-    FORCEINLINE OBJECTREF GetHandleValueFastCannotFailType2(LOADERHANDLE handle);
 
     // These functions are designed to be used for maximum performance to access handle values
     // The GetHandleValueFast will handle the scenario where a loader allocator pointer does not

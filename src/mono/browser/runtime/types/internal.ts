@@ -116,9 +116,16 @@ export interface AssetEntryInternal extends AssetEntry {
     isCore?: boolean
 }
 
+export type LoaderCallbacks = {
+    configLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
+    dotnetReady?: () => void | Promise<void>;
+    downloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+}
+
 export type LoaderHelpers = {
     gitHash: string,
     config: MonoConfigInternal;
+    callbacks: LoaderCallbacks;
     diagnosticTracing: boolean;
 
     maxParallelDownloads: number;
@@ -165,7 +172,6 @@ export type LoaderHelpers = {
     err(message: string): void;
 
     retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
-    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     installUnhandledErrorHandler: () => void;
 
     loadBootResource?: LoadBootResourceCallback;
@@ -445,7 +451,6 @@ export declare interface EmscriptenModuleInternal {
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
-    onConfigLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
     safeSetTimeout(func: Function, timeout: number): number;
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;

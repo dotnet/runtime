@@ -164,6 +164,11 @@ namespace System.Reflection.Tests
             VerifyIsAssignableFrom("int? int", typeof(int?).Project().GetTypeInfo(), typeof(int).Project().GetTypeInfo(), true);
             VerifyIsAssignableFrom("T? T", typeof(Nullable<>).Project().MakeGenericType(theT.AsType()).GetTypeInfo(), theT, false);
 
+            TypeInfo openNullable = typeof(Nullable<>).Project().GetTypeInfo();
+            VerifyIsAssignableFrom("Nullable<> int", openNullable, typeof(int).Project().GetTypeInfo(), false);
+            VerifyIsAssignableFrom("Nullable<> int?", openNullable, typeof(int?).Project().GetTypeInfo(), false);
+            VerifyIsAssignableFrom("Nullable<> Nullable<>", openNullable, openNullable, true);
+
             VerifyIsAssignableFrom("int int?", typeof(int).Project().GetTypeInfo(), typeof(int?).GetTypeInfo(), false);
             VerifyIsAssignableFrom("T T?", theT, typeof(Nullable<>).Project().MakeGenericType(theT.AsType()).GetTypeInfo(), false);
         }

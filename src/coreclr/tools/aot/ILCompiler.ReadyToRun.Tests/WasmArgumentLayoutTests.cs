@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 
 using crossgen2::ILCompiler;
+using crossgen2::ILCompiler.DependencyAnalysis;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
 using crossgen2::ILCompiler.PortableCallHelpers;
@@ -53,6 +54,32 @@ public class WasmArgumentLayoutTests
     public WasmArgumentLayoutTests(ITestOutputHelper output)
     {
         _output = output;
+    }
+
+    [Theory]
+    [InlineData(0, -1, 1)]
+    [InlineData(1, -3, 1)]
+    [InlineData(31, -63, 1)]
+    [InlineData(32, -65, 2)]
+    [InlineData(4095, -8191, 2)]
+    [InlineData(4096, -8193, 3)]
+    [InlineData(1073741823, -2147483647, 5)]
+    public unsafe void ManagedHelperFrameIdentityRelocation(int index, int identity, int encodedSize)
+    {
+        Assert.Equal(identity, checked(-(index * 2 + 1)));
+        Assert.Equal((uint)index, (~(uint)identity) >> 1);
+        RelocType type = RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB;
+        Assert.True(Relocation.IsVariableLength(type));
+        Assert.Equal(5, Relocation.GetSize(type));
+        Assert.Equal(encodedSize, Relocation.ActualSize(type, identity));
+        byte[] buffer = new byte[Relocation.GetSize(type)];
+        fixed (byte* bytes = buffer)
+        {
+            Relocation.WriteValue(type, bytes, identity);
+            Assert.Equal(identity, Relocation.ReadValue(type, bytes));
+            Assert.Equal(encodedSize, Relocation.WriteVariableLengthValue(type, bytes, identity));
+            Assert.Equal(identity, Relocation.ReadValue(type, bytes));
+        }
     }
 
     [Theory]
@@ -268,6 +295,22 @@ public class WasmArgumentLayoutTests
         }
 
         throw new InvalidOperationException($"No single-argument {type.Name.ToString()}.{methodName} overload in System.Private.CoreLib");
+    }
+
+    [Theory]
+    [InlineData(MethodSignatureFlags.None, "iip")]
+    [InlineData(MethodSignatureFlags.CallingConventionVarargs, "iip")]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConventionCdecl, "ii")]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConventionStdCall, "ii")]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConventionThisCall, "ii")]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConvention, "ii")]
+    public void SignatureCallingConventionSelectsLowering(MethodSignatureFlags callingConvention, string expectedSignature)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc int32Type = context.GetWellKnownType(WellKnownType.Int32);
+        MethodSignature signature = new MethodSignature(callingConvention | MethodSignatureFlags.Static, 0, int32Type, [int32Type]);
+
+        Assert.Equal(expectedSignature, WasmLowering.GetSignature(signature, WasmLowering.LoweringFlags.None).SignatureString);
     }
 
     [Theory]
@@ -887,28 +930,6 @@ public class WasmArgumentLayoutTests
         AssertPortableCallHelpersGeneratorRejects(source, $"has unsupported signature token '{expectedToken}'");
     }
 
-    [Fact]
-    public void PortableCallHelpersGeneratorRejectsHiddenReturnBufferCallbacks()
-    {
-        string source = """
-            using System.Runtime.InteropServices;
-
-            public struct Pair
-            {
-                public int First;
-                public int Second;
-            }
-
-            public static class Exports
-            {
-                [UnmanagedCallersOnly(EntryPoint = "callback")]
-                public static Pair Handle(int value) => default;
-            }
-            """;
-
-        AssertPortableCallHelpersGeneratorRejects(source, "uses a hidden return buffer");
-    }
-
     private void AssertPortableCallHelpersGeneratorRejects(string source, string expectedError)
     {
         string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -1029,6 +1050,153 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
+    /// The interpreter looks up a thunk for each unmanaged <c>calli</c> by signature, so the generator
+    /// has to emit one for every function pointer signature an app calls through, whatever the
+    /// calling convention spelling.
+    /// </summary>
+    [Fact]
+    public void PortableCallHelpersGeneratorEmitsThunksForUnmanagedCalliSites()
+    {
+        string source = """
+            public struct FloatPair
+            {
+                public float X;
+                public float Y;
+            }
+
+            public static unsafe class Calls
+            {
+                public static FloatPair MemberFunction(delegate* unmanaged[Cdecl, MemberFunction]<void*, long, FloatPair> fn)
+                    => fn(null, 1);
+
+                public static int ThisCall(delegate* unmanaged[Thiscall]<void*, double, double, double, int> fn)
+                    => fn(null, 1, 2, 3);
+
+                public static double Managed(delegate*<int, int, int, int, int, int, double> fn)
+                    => fn(1, 2, 3, 4, 5, 6);
+
+                public static T Generic<T>(delegate* unmanaged<T> fn)
+                    => fn();
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Calls.dll"), allowUnsafe: true);
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: true));
+
+            Assert.True(exitCode == 0, log.ToString());
+
+            string thunks = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-interp-to-managed.cpp"));
+            Assert.Contains("\"MS8il\"", thunks);
+            Assert.Contains("\"Miiddd\"", thunks);
+            Assert.DoesNotContain("\"Mdiiiiii\"", thunks);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
+    /// Native code calls a reverse thunk with the wasm C ABI, which returns a struct it cannot pass as a
+    /// single scalar through a hidden leading pointer instead of a return value. The thunk has to take
+    /// that pointer and hand it to the interpreter as the return buffer, or the indirect call from
+    /// native code traps with a signature mismatch.
+    /// </summary>
+    [Fact]
+    public void PortableCallHelpersGeneratorReturnsStructsThroughHiddenPointerInReverseThunks()
+    {
+        string source = """
+            using System.Runtime.InteropServices;
+
+            public struct FloatPair
+            {
+                public float X;
+                public float Y;
+            }
+
+            public struct Width
+            {
+                public float Value;
+            }
+
+            public static class Callbacks
+            {
+                [UnmanagedCallersOnly]
+                public static FloatPair GetPair(nint self, int unused) => default;
+
+                [UnmanagedCallersOnly]
+                public static Width GetWidth(nint self) => default;
+
+                [UnmanagedCallersOnly(EntryPoint = "export_pair")]
+                public static FloatPair ExportPair(int value) => default;
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            Assert.True(exitCode == 0, log.ToString());
+
+            string reverse = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-reverse.cpp"));
+            Assert.Contains("static void Call_Callbacks__Callbacks_GetPair_I32_I32_RetS8(void * sret, void * arg0, int32_t arg1)", reverse);
+            Assert.Contains("static float Call_Callbacks__Callbacks_GetWidth_I32_RetF32(void * arg0)", reverse);
+            Assert.Contains("extern \"C\" void export_pair(void * sret, int32_t arg0)", reverse);
+            Assert.Contains("Call_Callbacks__Callbacks_ExportPair_I32_RetS8(sret, arg0);", reverse);
+            Assert.Contains("(int8_t*)sret, (PCODE)&Call_Callbacks__Callbacks_GetPair_I32_I32_RetS8", reverse);
+            Assert.Contains("((void(*)(void *, int32_t))r2r)(sret, arg0);", reverse);
+            Assert.DoesNotContain("RetS8(void * arg", reverse);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
     /// The generated wrapper only needs to reach the R2R native entrypoint for callbacks exported by
     /// name: native code calls the extern "C" export (and thus the wrapper) directly. Every other
     /// reverse thunk is handed out by the runtime, which already prefers R2R code before falling back to
@@ -1101,13 +1269,13 @@ public class WasmArgumentLayoutTests
     /// Builds an input assembly for the generator to scan. It references the same CoreLib the context
     /// reads, so the attributes it applies are the ones the type system will resolve.
     /// </summary>
-    private static string CompileCallbackAssembly(string source, string outputPath)
+    private static string CompileCallbackAssembly(string source, string outputPath, bool allowUnsafe = false)
     {
         CSharpCompilation compilation = CSharpCompilation.Create(
             Path.GetFileNameWithoutExtension(outputPath),
             new[] { CSharpSyntaxTree.ParseText(source) },
             new[] { MetadataReference.CreateFromFile(TestPaths.SystemPrivateCoreLibPath) },
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe));
 
         EmitResult result = compilation.Emit(outputPath);
         Assert.True(result.Success,
@@ -1141,7 +1309,7 @@ public class WasmArgumentLayoutTests
         }
 
         // Wasm cannot generate code at runtime, matching what crossgen2's Program computes for this target.
-        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: false, instructionSetSupport, oldTypeSystemContext: null)
+        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: false, targetIsSingleThreaded: true, instructionSetSupport, oldTypeSystemContext: null)
         {
             InputFilePaths = inputFilePaths,
             ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),

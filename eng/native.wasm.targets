@@ -56,12 +56,14 @@
     <BrowserHostInvariantGlobalization Condition="'$(BrowserHostInvariantGlobalization)' == ''">false</BrowserHostInvariantGlobalization>
     <BrowserHostInvariantTimezone Condition="'$(BrowserHostInvariantTimezone)' == ''">false</BrowserHostInvariantTimezone>
     <BrowserHostEnableDiagnostics Condition="'$(BrowserHostEnableDiagnostics)' == ''">false</BrowserHostEnableDiagnostics>
+    <BrowserHostEnableRelaxedSimd Condition="'$(BrowserHostEnableRelaxedSimd)' == ''">false</BrowserHostEnableRelaxedSimd>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
     <_CoreCLRPropertyThatTriggersRelinking Include="InvariantGlobalization" RuntimePackValue="$(BrowserHostInvariantGlobalization)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="InvariantTimezone" RuntimePackValue="$(BrowserHostInvariantTimezone)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="EnableDiagnostics" RuntimePackValue="$(BrowserHostEnableDiagnostics)" />
+    <_CoreCLRPropertyThatTriggersRelinking Include="WasmEnableRelaxedSimd" RuntimePackValue="$(BrowserHostEnableRelaxedSimd)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="WasmInitialHeapSize" RuntimePackValue="$(BrowserHostInitialHeapSize)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="EmccMaximumHeapSize" RuntimePackValue="$(BrowserHostMaximumHeapSize)" />
     <_CoreCLRPropertyThatTriggersRelinking Include="EmccStackSize" RuntimePackValue="$(BrowserHostStackSize)" />
@@ -82,13 +84,13 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
       <NativeCMakeArg Include="-cmakeargs &quot;-DGEN_PINVOKE=1&quot;" />
-      <!-- Initial WASI bring-up disables EventPipe / diagnostic-server PAL
-           via FEATURE_PERFTRACING=0 in src/coreclr/CMakeLists.txt; the
-           PERFTRACING_DISABLE_* flags are unused while PERFTRACING is off
-           but kept for symmetry with browser-CoreCLR and for when we
-           re-enable PERFTRACING in a follow-up. -->
+      <!-- WASI has no AF_UNIX sockets, so build the TCP flavor of the diagnostic
+           server PAL. Listen and connect ports stay disabled until a WASI
+           transport is validated; EventPipe works in-process only. -->
+      <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_PAL_TCP=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_CONNECT_PORTS=1&quot;" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureMultithreading)' != 'true'">
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_THREADS=1&quot;" />
@@ -147,14 +149,46 @@
       <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
       <EmccExportedFunction Include="___async_continuation" />
     </ItemGroup>
+
+    <!-- Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare aborts a debug build early. -->
+    <ItemGroup>
+      <_EmccIncomingModuleJSAPI Include="ENVIRONMENT" />
+      <_EmccIncomingModuleJSAPI Include="arguments" />
+      <_EmccIncomingModuleJSAPI Include="canvas" />
+      <_EmccIncomingModuleJSAPI Include="dynamicLibraries" />
+      <_EmccIncomingModuleJSAPI Include="elementPointerLock" />
+      <_EmccIncomingModuleJSAPI Include="instantiateWasm" />
+      <_EmccIncomingModuleJSAPI Include="locateFile" />
+      <_EmccIncomingModuleJSAPI Include="monitorRunDependencies" />
+      <_EmccIncomingModuleJSAPI Include="noExitRuntime" />
+      <_EmccIncomingModuleJSAPI Include="noInitialRun" />
+      <_EmccIncomingModuleJSAPI Include="onAbort" />
+      <_EmccIncomingModuleJSAPI Include="onExit" />
+      <_EmccIncomingModuleJSAPI Include="onRuntimeInitialized" />
+      <_EmccIncomingModuleJSAPI Include="postRun" />
+      <_EmccIncomingModuleJSAPI Include="preInit" />
+      <_EmccIncomingModuleJSAPI Include="preRun" />
+      <_EmccIncomingModuleJSAPI Include="print" />
+      <_EmccIncomingModuleJSAPI Include="printErr" />
+      <_EmccIncomingModuleJSAPI Include="setStatus" />
+      <_EmccIncomingModuleJSAPI Include="statusMessage" />
+      <_EmccIncomingModuleJSAPI Include="stderr" />
+      <_EmccIncomingModuleJSAPI Include="stdin" />
+      <_EmccIncomingModuleJSAPI Include="stdout" />
+      <_EmccIncomingModuleJSAPI Include="thisProgram" />
+      <_EmccIncomingModuleJSAPI Include="wasm" />
+      <_EmccIncomingModuleJSAPI Include="websocket" />
+    </ItemGroup>
     <PropertyGroup>
       <_EmccExportedRuntimeMethods>@(EmccExportedRuntimeMethod -> '%(Identity)',',')</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
+      <_EmccIncomingModuleJSAPIs>@(_EmccIncomingModuleJSAPI -> '%(Identity)',',')</_EmccIncomingModuleJSAPIs>
     </PropertyGroup>
 
     <ItemGroup>
       <NativeCMakeArg Condition="'$(TargetsBrowser)' == 'true'" Include="-cmakeargs &quot;-DCMAKE_EMCC_EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)&quot;" />
       <NativeCMakeArg Condition="'$(TargetsBrowser)' == 'true'" Include="-cmakeargs &quot;-DCMAKE_EMCC_EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)&quot;" />
+      <NativeCMakeArg Condition="'$(TargetsBrowser)' == 'true'" Include="-cmakeargs &quot;-DCMAKE_EMCC_INCOMING_MODULE_JS_API=$(_EmccIncomingModuleJSAPIs)&quot;" />
     </ItemGroup>
 
   </Target>

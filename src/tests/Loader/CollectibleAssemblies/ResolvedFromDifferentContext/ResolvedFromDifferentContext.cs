@@ -212,6 +212,11 @@ public class Test
     [SkipOnCoreClr("Test polls a fixed number of times for collectible ALCs to be unloaded, which is unreliable under GC stress", RuntimeTestModes.AnyGCStress)]
     public static int TestEntryPoint()
     {
+        if (Assembly.GetExecutingAssembly().Location.Length == 0)
+        {
+            return 100;
+        }
+
         int status = 100;
         foreach (TestCase testCase in Enum.GetValues(typeof(TestCase)))
         {

@@ -48,13 +48,12 @@ HRESULT CordbType::GetStaticFieldValue(mdFieldDef fieldDef,
             ThrowHR(E_INVALIDARG);
         }
 
-        pImport = m_pClass->GetModule()->GetMetaDataImporter(); // throws
-
         if (((m_elementType != ELEMENT_TYPE_CLASS) && (m_elementType != ELEMENT_TYPE_VALUETYPE)) || (m_pClass == NULL))
         {
             ThrowHR(E_INVALIDARG);
         }
 
+        pImport = m_pClass->GetModule()->GetMetaDataImporter(); // throws
 
 
         BOOL fSyncBlockField = FALSE;
@@ -2726,7 +2725,6 @@ void CordbType::GatherTypeDataForInstantiation(unsigned int genericArgsCount, IC
     }
 }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
 // checks if the type requires 8-byte alignment. the algorithm used here
 // was adapted from AdjustArgPtrForAlignment() in bcltype/VarArgsNative.cpp
 HRESULT CordbType::RequiresAlign8(BOOL* isRequired)
@@ -2770,7 +2768,6 @@ HRESULT CordbType::RequiresAlign8(BOOL* isRequired)
 
     return hr;
 }
-#endif
 
 /* ------------------------------------------------------------------------- *
  * TypeParameter Enumerator class
