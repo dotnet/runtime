@@ -38,6 +38,7 @@ namespace ILAssembler
         private readonly BlobBuilder _cilData = new();
         private readonly Dictionary<string, DataLocation> _mappedFieldDataNames = new();
         private readonly List<CILParser.DataLabelReferenceValue> _mappedFieldDataReferenceFixups = new();
+        private bool _hasNonCilData;
         private readonly BlobBuilder _manifestResources = new();
         private int _syntaxErrorCount;
 

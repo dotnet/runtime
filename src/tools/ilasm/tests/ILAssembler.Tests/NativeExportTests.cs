@@ -189,10 +189,9 @@ namespace ILAssembler.Tests
                 .ToDictionary(field => reader.GetString(field.Name), field => field.GetRelativeVirtualAddress());
             Assert.Equal(".text", GetContainingSection(pe, fields["CilField"]).Name);
             Assert.Equal(".text", GetContainingSection(pe, fields["CilReference"]).Name);
-            string regularSection = tls || vtable ? ".sdata" : ".text";
-            Assert.Equal(regularSection, GetContainingSection(pe, fields["RegularField"]).Name);
-            Assert.Equal(regularSection, GetContainingSection(pe, fields["RegularReference"]).Name);
-            Assert.Equal(regularSection, GetContainingSection(pe, fields["VTableField"]).Name);
+            Assert.Equal(".sdata", GetContainingSection(pe, fields["RegularField"]).Name);
+            Assert.Equal(".sdata", GetContainingSection(pe, fields["RegularReference"]).Name);
+            Assert.Equal(".sdata", GetContainingSection(pe, fields["VTableField"]).Name);
             Assert.Equal(0x12345678, ReadInt32(pe, fields["CilField"]));
             Assert.Equal(0x55667788, ReadInt32(pe, fields["RegularField"]));
             Assert.Equal(vtable ? 0x06000001 : 0, ReadInt32(pe, fields["VTableField"]));

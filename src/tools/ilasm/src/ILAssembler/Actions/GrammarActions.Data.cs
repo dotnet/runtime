@@ -34,6 +34,7 @@ internal sealed partial class GrammarActions
             return;
         }
 
+        _hasNonCilData |= builder.Section != DataSection.Cil;
         BlobBuilder data = GetDataBuilder(builder.Section);
         int declarationOffset = data.Count;
         if (builder.Name is not null && !_mappedFieldDataNames.ContainsKey(builder.Name))

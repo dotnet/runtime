@@ -40,7 +40,7 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
     private readonly ImmutableArray<DataLocation> _mappedFields;
     private readonly ImmutableArray<DataLabelFixup> _dataLabelFixups;
     private readonly string _dllName;
-    private readonly bool _moveMappedFieldDataToSData;
+    private readonly bool _hasSDataSection;
     private readonly List<ExportStubInfo> _exportStubs = new();
     private readonly DataLayout[] _dataLayouts = new DataLayout[DataSectionCount];
 
@@ -124,7 +124,11 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
             ? ImmutableArray<DataLabelFixup>.Empty
             : dataLabelFixups;
         _dllName = dllName ?? "output.dll";
-        _moveMappedFieldDataToSData = !_vtableFixups.IsEmpty || HasTlsData;
+        _hasSDataSection =
+            mappedFieldData is { Count: > 0 } ||
+            _mappedFields.Any(location => location.Section == DataSection.Data) ||
+            !_vtableFixups.IsEmpty ||
+            HasTlsData;
     }
 
     private bool HasTlsData => (_tlsData?.Count ?? 0) > 0;
@@ -167,7 +171,7 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
             Section section = baseSections[i];
             builder.Add(section);
 
-            if (i == 0 && _moveMappedFieldDataToSData)
+            if (i == 0 && _hasSDataSection)
             {
                 builder.Add(new Section(
                     SDataSectionName,
@@ -208,14 +212,9 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
                 BlobBuilder textBuilder = base.SerializeSection(name, location);
                 _textSectionBuilder = textBuilder;
                 _textSectionRva = location.RelativeVirtualAddress;
-                if (!_moveMappedFieldDataToSData)
-                {
-                    WriteData(textBuilder, DataSection.Data, location.RelativeVirtualAddress);
-                }
-
                 WriteData(textBuilder, DataSection.Cil, location.RelativeVirtualAddress);
                 SerializeExportStubs(textBuilder, location.RelativeVirtualAddress);
-                if (!_moveMappedFieldDataToSData)
+                if (!_hasSDataSection)
                 {
                     PatchDataLayout();
                 }

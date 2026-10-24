@@ -41,6 +41,8 @@ namespace ILAssembler.Tests
             using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
             MetadataReader reader = pe.GetMetadataReader();
             FieldDefinition field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+            Assert.Equal(".sdata", pe.PEHeaders.SectionHeaders[
+                pe.PEHeaders.GetContainingSectionIndex(field.GetRelativeVirtualAddress())].Name);
             Assert.Equal(new byte[] { 42, 0, 0, 0 }, ReadData(pe, field, sizeof(int)));
         }
 
@@ -268,7 +270,7 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
-        [InlineData("", ".text")]
+        [InlineData("", ".sdata")]
         [InlineData("cil", ".text")]
         [InlineData("tls", ".tls")]
         public void DataSection_PreservesAnonymousAndMethodScopedData(string section, string expectedSection)
@@ -295,26 +297,34 @@ namespace ILAssembler.Tests
             Assert.Equal(42, BitConverter.ToInt32(ReadData(pe, fields[0], sizeof(int))));
             Assert.Equal(1234, BitConverter.ToInt16(ReadData(pe, fields[1], sizeof(short))));
             Assert.Equal(section != "tls", pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
-            if (section != "tls")
+            if (section == "cil")
             {
                 Assert.DoesNotContain(pe.PEHeaders.SectionHeaders, header => header.Name is ".sdata" or ".tls");
             }
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        public void AnonymousTlsData_EmitsNativeArtifactsOnlyForNonemptyData(int count)
+        [InlineData("", 0)]
+        [InlineData("", 1)]
+        [InlineData("cil", 0)]
+        [InlineData("cil", 1)]
+        [InlineData("tls", 0)]
+        [InlineData("tls", 1)]
+        public void AnonymousData_EmitsSectionsOnlyForNonemptyNonCilData(string section, int count)
         {
             string source = $$"""
                 .assembly test { }
-                .data tls int32[{{count}}]
+                .data {{section}} int32[{{count}}]
                 """;
 
             using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
-            Assert.Equal(count != 0, pe.PEHeaders.SectionHeaders.Any(section => section.Name == ".tls"));
-            Assert.Equal(count != 0, pe.PEHeaders.PEHeader!.ThreadLocalStorageTableDirectory.Size != 0);
-            Assert.Equal(count == 0, pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
+            bool hasTlsData = section == "tls" && count != 0;
+            Assert.Equal(hasTlsData, pe.PEHeaders.SectionHeaders.Any(header => header.Name == ".tls"));
+            Assert.Equal(hasTlsData, pe.PEHeaders.PEHeader!.ThreadLocalStorageTableDirectory.Size != 0);
+            Assert.Equal(!hasTlsData, pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
+            Assert.Equal(
+                section != "cil" && count != 0,
+                pe.PEHeaders.SectionHeaders.Any(header => header.Name == ".sdata"));
         }
 
         [Fact]
@@ -448,7 +458,7 @@ namespace ILAssembler.Tests
 
             Assert.Equal(".text", pe.PEHeaders.SectionHeaders[
                 pe.PEHeaders.GetContainingSectionIndex(cilRva)].Name);
-            Assert.Equal(".text", pe.PEHeaders.SectionHeaders[
+            Assert.Equal(".sdata", pe.PEHeaders.SectionHeaders[
                 pe.PEHeaders.GetContainingSectionIndex(targetRva)].Name);
             Assert.Equal(targetRva + sizeof(int), parenthesizedRva);
             Assert.Equal(0x22, Assert.Single(ReadData(pe, fields["CilValue"], 1)));

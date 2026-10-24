@@ -148,9 +148,7 @@ namespace ILAssembler
             if (validatedVTableFixups.Length > 0 ||
                 validatedExports.Length > 0 ||
                 validatedDataLabelFixups.Length > 0 ||
-                mappedFields.Any(location => location.Section != DataSection.Data) ||
-                _tlsData.Count > 0 ||
-                _cilData.Count > 0)
+                _hasNonCilData)
             {
                 ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> vtableFixupInfos =
                     BuildVTableFixupInfos(
@@ -197,7 +195,7 @@ namespace ILAssembler
                 header,
                 rootBuilder,
                 ilStream,
-                _mappedFieldData,
+                _cilData,
                 _manifestResources,
                 flags: standardCorFlags,
                 entryPoint: entryPoint,
