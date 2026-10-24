@@ -2640,7 +2640,25 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
 }
 
 //------------------------------------------------------------------------
-// optAssertionVNIsSubtype: see if a VN is known to be a subtype of castTo
+// optAssertionVNIsSubtype: memoizing wrapper around the recursive worker.
+//
+// Without memoization the walk below is O(fan-in ^ depth): the same merge is reachable
+// by exponentially many paths, and nothing remembers that it has already been answered
+// (dotnet/runtime#133857). The memo belongs to this one query and dies with it.
+//
+// Only "proved" is stored. A `false` may mean "budget exhausted", which is not a
+// property of the key -- the same key can be false at depth 3 and true at depth 9 -- so
+// caching it would serve a failure where a proof existed. A `true` is a real derivation
+// and stays valid at any depth and on any path, cyclic or not.
+//
+bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget)
+{
+    SubtypeMemoMap* memo = nullptr;
+    return optAssertionVNIsSubtypeWorker(objVN, castToVN, assertions, budget, memo);
+}
+
+//------------------------------------------------------------------------
+// optAssertionVNIsSubtypeWorker: see if a VN is known to be a subtype of castTo
 //    using the given assertion set, VN-level type info, and assertions that
 //    reach via PHI definitions.
 //
@@ -2654,7 +2672,8 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
 // Return Value:
 //   True if the VN is known to be a subtype of castTo.
 //
-bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget)
+bool Compiler::optAssertionVNIsSubtypeWorker(
+    ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget, SubtypeMemoMap*& memo)
 {
     if ((budget <= 0) || (objVN == ValueNumStore::NoVN))
     {
@@ -2717,12 +2736,34 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT
         }
     }
 
-    // For PHI-defs, walk reaching assertions/VNs and recursively check.
-    return optVisitReachingAssertions(objVN,
-                                      [this, castToVN, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
-        return optAssertionVNIsSubtype(reachingVN, castToVN, reachingAssertions, budget - 1) ? AssertVisit::Continue
-                                                                                             : AssertVisit::Abort;
+    // For PHI-defs, walk reaching assertions/VNs and recursively check. The walk reads
+    // each edge's own assertion set rather than ours, so its answer depends only on the
+    // value and the claim, and `memo` (owned by the top-level frame) scopes it to one
+    // query. Presence in the memo is the proof: only `true` is ever stored.
+    const SubtypeKey key = {objVN, castToVN};
+
+    if ((memo != nullptr) && memo->Lookup(key))
+    {
+        return true;
+    }
+
+    const bool proved = optVisitReachingAssertions(objVN, [this, castToVN, budget,
+                                                           &memo](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+        return optAssertionVNIsSubtypeWorker(reachingVN, castToVN, reachingAssertions, budget - 1, memo)
+                   ? AssertVisit::Continue
+                   : AssertVisit::Abort;
     }) == AssertVisit::Continue;
+
+    if (proved)
+    {
+        if (memo == nullptr)
+        {
+            memo = new (this, CMK_AssertionProp) SubtypeMemoMap(getAllocator(CMK_AssertionProp));
+        }
+        memo->Set(key, true);
+    }
+
+    return proved;
 }
 
 //------------------------------------------------------------------------------
