@@ -1066,5 +1066,155 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(stream, destDir, overwriteFiles: true));
             Assert.False(File.Exists(Path.Combine(destDir, "d")), "File should not have been created outside destination.");
         }
+
+        public static bool CanCreateDirectoryLinksForHardLinkValidation
+        {
+            get
+            {
+                if (!MountHelper.CanCreateHardLinks)
+                {
+                    return false;
+                }
+
+                if (!OperatingSystem.IsWindows())
+                {
+                    return MountHelper.CanCreateSymbolicLinks;
+                }
+
+                using TempDirectory root = new TempDirectory();
+                string target = Path.Join(root.Path, "target");
+                Directory.CreateDirectory(target);
+
+                return MountHelper.CreateJunction(Path.Join(root.Path, "junction"), target);
+            }
+        }
+
+        private static void CreateDirectoryLink(string path, string target)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.True(MountHelper.CreateJunction(path, target));
+            }
+            else
+            {
+                Directory.CreateSymbolicLink(path, target);
+            }
+        }
+
+        [ConditionalTheory(typeof(TarFile_ExtractToDirectory_File_Tests), nameof(CanCreateDirectoryLinksForHardLinkValidation))]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task ExtractToDirectory_HardLinkTargetDirectoryIsCheckedForEachEntry(bool async)
+        {
+            using TempDirectory root = new TempDirectory();
+            string destination = Path.Join(root.Path, "destination");
+            string outside = Path.Join(root.Path, "outside");
+            Directory.CreateDirectory(destination);
+            Directory.CreateDirectory(outside);
+            File.WriteAllText(Path.Join(outside, "target.txt"), "outside");
+            using MemoryStream archive = new MemoryStream();
+            long changePosition;
+            using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                using MemoryStream data = new MemoryStream([1, 2, 3]);
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "directory/target.txt") { DataStream = data });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.HardLink, "seed-link.txt") { LinkName = "directory/target.txt" });
+                changePosition = archive.Position;
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.HardLink, "alias.txt") { LinkName = "directory/target.txt" });
+            }
+
+            using RootChangeStream source = new RootChangeStream(archive.ToArray(), changePosition, () =>
+            {
+                Directory.Move(Path.Join(destination, "directory"), Path.Join(destination, "saved"));
+                CreateDirectoryLink(Path.Join(destination, "directory"), outside);
+            });
+
+            await Assert.ThrowsAsync<IOException>(() => ExtractToDirectory(source, destination, overwriteFiles: false, async));
+
+            Assert.False(Path.Exists(Path.Join(destination, "alias.txt")));
+            Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(Path.Join(destination, "seed-link.txt")));
+            Assert.Equal("outside", File.ReadAllText(Path.Join(outside, "target.txt")));
+            Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(Path.Join(destination, "saved", "target.txt")));
+        }
+
+        [ConditionalTheory(typeof(TarFile_ExtractToDirectory_File_Tests), nameof(CanCreateDirectoryLinksForHardLinkValidation))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task ExtractToDirectory_HardLinkTargetThroughRetargetedRootIsChecked(bool ancestorLink, bool async)
+        {
+            using TempDirectory root = new TempDirectory();
+            string first = Path.Join(root.Path, "first");
+            string second = Path.Join(root.Path, "second");
+            string firstDestination = ancestorLink ? Path.Join(first, "destination") : first;
+            string secondDestination = ancestorLink ? Path.Join(second, "destination") : second;
+            string outside = Path.Join(root.Path, "outside");
+            Directory.CreateDirectory(Path.Join(firstDestination, "directory"));
+            Directory.CreateDirectory(secondDestination);
+            Directory.CreateDirectory(outside);
+            File.WriteAllText(Path.Join(firstDestination, "directory", "target.txt"), "inside");
+            File.WriteAllText(Path.Join(outside, "target.txt"), "outside");
+            CreateDirectoryLink(Path.Join(secondDestination, "directory"), outside);
+            string rootLink = Path.Join(root.Path, "root-link");
+            CreateDirectoryLink(rootLink, first);
+            string destination = ancestorLink ? Path.Join(rootLink, "destination") : rootLink;
+            using MemoryStream archive = new MemoryStream();
+            long changePosition;
+            using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                using MemoryStream data = new MemoryStream([1, 2, 3]);
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "seed.txt") { DataStream = data });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.HardLink, "seed-link.txt") { LinkName = "seed.txt" });
+                changePosition = archive.Position;
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.HardLink, "alias.txt") { LinkName = "directory/target.txt" });
+            }
+
+            using RootChangeStream source = new RootChangeStream(archive.ToArray(), changePosition, () =>
+            {
+                Directory.Delete(rootLink);
+                CreateDirectoryLink(rootLink, second);
+            });
+
+            await Assert.ThrowsAsync<IOException>(() => ExtractToDirectory(source, destination, overwriteFiles: false, async));
+
+            Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(Path.Join(firstDestination, "seed-link.txt")));
+            Assert.False(Path.Exists(Path.Join(secondDestination, "alias.txt")));
+            Assert.Equal("outside", File.ReadAllText(Path.Join(outside, "target.txt")));
+        }
+
+        private sealed class RootChangeStream : MemoryStream
+        {
+            private readonly long _changePosition;
+            private readonly Action _changeRoot;
+            private bool _changed;
+
+            internal RootChangeStream(byte[] data, long changePosition, Action changeRoot)
+                : base(data, writable: false)
+            {
+                _changePosition = changePosition;
+                _changeRoot = changeRoot;
+            }
+
+            public override int Read(Span<byte> buffer)
+            {
+                ChangeRootIfNeeded();
+                return base.Read(buffer);
+            }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                ChangeRootIfNeeded();
+                return base.ReadAsync(buffer, cancellationToken);
+            }
+
+            private void ChangeRootIfNeeded()
+            {
+                if (!_changed && Position >= _changePosition)
+                {
+                    _changed = true;
+                    _changeRoot();
+                }
+            }
+        }
     }
 }
