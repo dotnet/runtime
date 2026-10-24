@@ -112,4 +112,53 @@ public class DebugLevelTests : WasmTemplateTestsBase
         RunResult result = await RunForPublishWithWebServer(options);
         AssertDebugLevel(result.TestOutput, -1);
     }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(false)]
+    [InlineData(true)]
+    [TestCategory("no-workload")]
+    public void BuildAfterTrimmedPublishUsesMatchingSymbols(bool removeSymbols)
+    {
+        Configuration configuration = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(
+            configuration,
+            aot: false,
+            asset: TestAsset.WasmBasicTestApp,
+            idPrefix: "DebugLevelTests_TrimmedSymbols",
+            extraProperties: $"""
+                <PublishTrimmed>true</PublishTrimmed>
+                <TrimmerRemoveSymbols>{removeSymbols.ToString().ToLowerInvariant()}</TrimmerRemoveSymbols>
+                <WasmDebugLevel>1</WasmDebugLevel>
+                <WasmBuildNative>false</WasmBuildNative>
+                """,
+            insertAtEnd: """
+                <Target Name="WriteBuildSymbols"
+                        AfterTargets="_ComputeWasmBuildCandidates"
+                        Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+                  <WriteLinesToFile File="$(IntermediateOutputPath)build-symbols.txt"
+                                    Lines="@(_BuildAssetsCandidates->WithMetadataValue('Extension', '.pdb')->'%(FullPath)')"
+                                    Overwrite="true" />
+                </Target>
+                """);
+
+        PublishProject(info, configuration, new PublishOptions(UseCache: false));
+        BuildProject(info, configuration, new BuildOptions(
+            UseCache: false,
+            AssertAppBundle: false,
+            ExtraMSBuildArgs: "-p:WasmBuildOnlyAfterPublish=true"));
+
+        string objDir = GetObjDir(configuration);
+        string[] symbols = File.ReadAllLines(Path.Combine(objDir, "build-symbols.txt"));
+        if (removeSymbols)
+        {
+            Assert.Empty(symbols);
+        }
+        else
+        {
+            string linkedDir = Path.Combine(objDir, "linked");
+            Assert.Contains(Path.Combine(linkedDir, $"{info.ProjectName}.pdb"), symbols);
+            Assert.Contains(Path.Combine(linkedDir, "ResourceLibrary.pdb"), symbols);
+            Assert.All(symbols, path => Assert.Equal(Path.Combine(linkedDir, Path.GetFileName(path)), path));
+        }
+    }
 }
