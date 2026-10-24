@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -32,7 +34,16 @@ internal sealed class Snapshot
         EnsureOutside(source, temporary.Path);
         string name = directory ? "payload" : System.IO.Path.GetFileName(source);
         string staged = System.IO.Path.Combine(temporary.Path, name);
-        Copy(source, staged);
+        if (directory)
+        {
+            Copy(source, staged);
+        }
+        else
+        {
+            NormalizeArchive(source, staged);
+            File.SetLastWriteTimeUtc(staged, s_timestamp);
+            File.SetUnixFileMode(staged, File.GetUnixFileMode(source));
+        }
         string digest = Hash(staged);
         string parent = System.IO.Path.Combine(cache, "inputs", "v1");
         Directory.CreateDirectory(parent);
@@ -109,6 +120,51 @@ internal sealed class Snapshot
         return Convert.ToHexStringLower(SHA256.HashData(manifest.GetBuffer().AsSpan(0, checked((int)manifest.Length))));
     }
 
+    internal static string HashFile(string path)
+    {
+        using FileStream file = File.OpenRead(path);
+        return Convert.ToHexStringLower(SHA256.HashData(file));
+    }
+
+    private static void NormalizeArchive(string source, string destination)
+    {
+        using ZipArchive input = ZipFile.OpenRead(source);
+        Dictionary<string, ZipArchiveEntry> paths = new(StringComparer.Ordinal);
+        foreach (ZipArchiveEntry entry in input.Entries)
+        {
+            string path = entry.FullName.TrimEnd('/');
+            ValidateRelativePath(path);
+            if (path.Split('/').Any(string.IsNullOrEmpty) || entry.FullName.EndsWith("//", StringComparison.Ordinal) ||
+                path.Contains('\0') || !paths.TryAdd(path, entry) ||
+                (entry.FullName.EndsWith('/') && entry.Length != 0))
+            {
+                throw new InvalidDataException($"Invalid or duplicate ZIP entry '{entry.FullName}' in '{source}'.");
+            }
+        }
+        foreach (string path in paths.Keys)
+        {
+            for (int separator = path.IndexOf('/'); separator >= 0; separator = path.IndexOf('/', separator + 1))
+            {
+                if (paths.TryGetValue(path[..separator], out ZipArchiveEntry? parent) && !parent.FullName.EndsWith('/'))
+                {
+                    throw new InvalidDataException($"ZIP entry '{path}' has a non-directory parent in '{source}'.");
+                }
+            }
+        }
+
+        using FileStream file = new(destination, FileMode.CreateNew, FileAccess.Write);
+        using ZipArchive output = new(file, ZipArchiveMode.Create);
+        foreach (ZipArchiveEntry entry in input.Entries.OrderBy(e => e.FullName, StringComparer.Ordinal))
+        {
+            ZipArchiveEntry normalized = output.CreateEntry(entry.FullName, CompressionLevel.Fastest);
+            normalized.LastWriteTime = new DateTimeOffset(s_timestamp);
+            normalized.ExternalAttributes = entry.ExternalAttributes;
+            using Stream contents = entry.Open();
+            using Stream target = normalized.Open();
+            contents.CopyTo(target);
+        }
+    }
+
     private static void WriteTree(Utf8JsonWriter writer, string path, string relative)
     {
         FileAttributes attributes = File.GetAttributes(path);
@@ -120,8 +176,7 @@ internal sealed class Snapshot
         writer.WriteNumberValue((int)File.GetUnixFileMode(path));
         if (!directory)
         {
-            using FileStream file = File.OpenRead(path);
-            writer.WriteStringValue(Convert.ToHexStringLower(SHA256.HashData(file)));
+            writer.WriteStringValue(HashFile(path));
         }
         writer.WriteEndArray();
         if (directory)

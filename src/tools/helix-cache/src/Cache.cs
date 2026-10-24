@@ -40,6 +40,7 @@ internal sealed class Cache
                     Command = item.Command,
                     PreCommands = [.. item.PreCommands],
                     PostCommands = [.. item.PostCommands],
+                    CommandGeneratorDigest = item.CommandGeneratorDigest,
                     Environment = new(item.Environment, StringComparer.Ordinal),
                     TimeoutSeconds = item.TimeoutSeconds,
                     ExpectedExitCode = item.ExpectedExitCode,

@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Validate">
-  <Import Project="$(HelixCacheShadowDirectory)/submission.props" />
+  <Import Project="$(HelixCacheShadowDirectory)/submission.props" Condition="'$(HelixCacheShadowDirectory)' != ''" />
 
   <PropertyGroup>
     <HelixTargetQueue>$(ShadowQueue)</HelixTargetQueue>
+    <HelixCacheSdkPackage>$([System.IO.Path]::GetFullPath('$(MicrosoftDotNetHelixSdkTasksAssembly)/../../../microsoft.dotnet.helix.sdk.$(MicrosoftDotNetHelixSdkPackageVersion).nupkg'))</HelixCacheSdkPackage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,10 +21,15 @@
            Text="Expected a prepared System.Memory.Data.Tests shadow submission." />
     <Error Condition="!Exists('$(ShadowPayload)') or !Exists('$(ShadowRuntime)')"
            Text="Frozen shadow payload archives are missing." />
+    <GetFileHash Files="$(HelixCacheSdkPackage)" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="HelixCacheSdkDigest" />
+    </GetFileHash>
+    <Error Condition="'$(ShadowCommandGeneratorDigest)' == '' or '$(HelixCacheSdkDigest)' != '$(ShadowCommandGeneratorDigest)'"
+           Text="The Helix SDK package differs from the command generator fingerprint recorded by prepare." />
   </Target>
 
   <Target Name="Submit" DependsOnTargets="Validate">
-    <!-- Invoke the SDK task directly so it cannot inject unrecorded reporters or commands. -->
+    <!-- The SDK still generates a command wrapper; prepare fingerprints its package and Validate checks it. -->
     <SendHelixJob Type="test/functional/helix-cache-shadow/"
                   TargetQueue="$(ShadowQueue)"
                   Creator="$(ShadowCreator)"

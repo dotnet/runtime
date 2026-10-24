@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -80,6 +81,7 @@ public sealed class CacheTests
     [InlineData("timeout")]
     [InlineData("exitCode")]
     [InlineData("environment")]
+    [InlineData("commandGenerator")]
     public void ExecutionChangesInvalidateKey(string field)
     {
         using CacheFixture f = new();
@@ -92,6 +94,7 @@ public sealed class CacheTests
             "timeout" => f.Item with { TimeoutSeconds = 61 },
             "exitCode" => f.Item with { ExpectedExitCode = 100 },
             "environment" => f.Item with { Environment = new() { ["FIRST"] = "changed" } },
+            "commandGenerator" => f.Item with { CommandGeneratorDigest = new string('a', 64) },
             _ => throw new InvalidOperationException(),
         };
         Assert.NotEqual(baseline, f.Lookup().Execution.Key);
@@ -174,15 +177,132 @@ public sealed class CacheTests
     {
         using CacheFixture f = new();
         string baseline = f.Lookup().Execution.Key;
-        File.WriteAllText(f.Archive, "new archive");
+        CacheFixture.WriteArchive(f.Archive, [("shared.txt", "changed payload", CacheFixture.ArchiveFileMode)]);
         Assert.NotEqual(baseline, f.Lookup().Execution.Key);
-        File.WriteAllText(f.Archive, "opaque archive bytes");
+        CacheFixture.WriteArchive(f.Archive, [("shared.txt", "shared payload", CacheFixture.ArchiveFileMode)]);
         f.Item.CorrelationPayloads[0] = f.Item.CorrelationPayloads[0] with { Destination = "other" };
         Assert.NotEqual(baseline, f.Lookup().Execution.Key);
         f.Item.CorrelationPayloads.Add(new Payload { Path = f.Archive, Destination = "second" });
         string before = f.Lookup().Execution.Key;
         f.Item.CorrelationPayloads.Reverse();
         Assert.NotEqual(before, f.Lookup().Execution.Key);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RepackedArchivesReuseFrozenBytesAndResults(bool workItemPayload)
+    {
+        using CacheFixture f = new();
+        if (workItemPayload)
+        {
+            f.Item = f.Item with { Payload = new Payload { Path = f.Archive } };
+        }
+        (string, string, int)[] entries =
+        [
+            ("run.sh", "#!/bin/sh\nexit 0\n", CacheFixture.ArchiveExecutableMode),
+            ("data.txt", "payload", CacheFixture.ArchiveFileMode),
+            ("empty/", "", CacheFixture.ArchiveDirectoryMode),
+            ("link", "data.txt", CacheFixture.ArchiveLinkMode),
+        ];
+        CacheFixture.WriteArchive(f.Archive, entries);
+        byte[] original = File.ReadAllBytes(f.Archive);
+        LookupEntry first = f.Lookup();
+        string frozen = first.Execution.CorrelationPayloadPaths[0];
+        Assert.Equal(original, File.ReadAllBytes(f.Archive));
+        f.CreateResults(first.Execution);
+        f.Store(first.Execution);
+
+        CacheFixture.WriteArchive(f.Archive, entries, repack: true);
+        Assert.False(original.SequenceEqual(File.ReadAllBytes(f.Archive)));
+        LookupEntry second = f.Lookup();
+        Assert.Equal(first.Execution.Key, second.Execution.Key);
+        Assert.Equal(LookupStatus.Hit, second.Status);
+        Assert.Equal(frozen, second.Execution.CorrelationPayloadPaths[0]);
+        using ZipArchive archive = ZipFile.OpenRead(frozen);
+        Assert.Equal(["data.txt", "empty/", "link", "run.sh"], archive.Entries.Select(e => e.FullName));
+        Assert.All(archive.Entries, e => Assert.Equal(new DateTime(2000, 1, 1), e.LastWriteTime.DateTime));
+        foreach ((string name, string content, int mode) in entries)
+        {
+            ZipArchiveEntry entry = archive.GetEntry(name)!;
+            Assert.Equal(mode << 16, entry.ExternalAttributes);
+            using StreamReader reader = new(entry.Open());
+            Assert.Equal(content, reader.ReadToEnd());
+        }
+    }
+
+    [Theory]
+    [InlineData("content")]
+    [InlineData("mode")]
+    [InlineData("emptyDirectory")]
+    [InlineData("linkTarget")]
+    public void ArchiveExecutionChangesInvalidateKey(string change)
+    {
+        using CacheFixture f = new();
+        (string, string, int)[] entries =
+        [
+            ("run.sh", "original", CacheFixture.ArchiveExecutableMode),
+            ("link", "run.sh", CacheFixture.ArchiveLinkMode),
+        ];
+        CacheFixture.WriteArchive(f.Archive, entries);
+        string before = f.Lookup().Execution.Key;
+        entries = change switch
+        {
+            "content" => [("run.sh", "changed", CacheFixture.ArchiveExecutableMode), entries[1]],
+            "mode" => [("run.sh", "original", CacheFixture.ArchiveFileMode), entries[1]],
+            "emptyDirectory" => [.. entries, ("empty/", "", CacheFixture.ArchiveDirectoryMode)],
+            "linkTarget" => [entries[0], ("link", "other", CacheFixture.ArchiveLinkMode)],
+            _ => throw new InvalidOperationException(),
+        };
+        CacheFixture.WriteArchive(f.Archive, entries);
+        Assert.NotEqual(before, f.Lookup().Execution.Key);
+    }
+
+    [Theory]
+    [InlineData("../outside", "other")]
+    [InlineData("/absolute", "other")]
+    [InlineData("a//b", "other")]
+    [InlineData("a\\b", "other")]
+    [InlineData("same", "same")]
+    [InlineData("same", "same/")]
+    [InlineData("parent", "parent/child")]
+    public void AmbiguousArchivePathsAreRejected(string first, string second)
+    {
+        using CacheFixture f = new();
+        CacheFixture.WriteArchive(f.Archive, [(first, "", CacheFixture.ArchiveFileMode), (second, "", CacheFixture.ArchiveFileMode)]);
+        f.Lookup(success: false);
+    }
+
+    [Fact]
+    public void InvalidArchivesAreRejected()
+    {
+        using CacheFixture f = new();
+        File.WriteAllText(f.Archive, "not a ZIP archive");
+        f.Lookup(success: false);
+    }
+
+    [Fact]
+    public void NativePrepareFingerprintsTheCommandGeneratorPackage()
+    {
+        using CacheFixture f = new();
+        string package = Path.Combine(f.Root, "sdk.nupkg");
+        File.WriteAllText(package, "command generator");
+        string first = Prepare("first");
+        string relocated = Path.Combine(f.Root, "relocated.nupkg");
+        File.Copy(package, relocated);
+        package = relocated;
+        Assert.Equal(first, Prepare("relocated"));
+        File.AppendAllText(package, " changed");
+        Assert.NotEqual(first, Prepare("changed"));
+
+        string Prepare(string name)
+        {
+            string output = Path.Combine(f.Root, name);
+            f.Invoke(true, "prepare", "--cache", f.CacheDirectory, "--output", output, "--payload", f.Archive,
+                "--runtime", f.Archive, "--queue", f.Queues[0].QueueId, "--helix-sdk", package,
+                "--queue-info", f.Write("queues.json", f.Queues, HelixJsonContext.Default.ListHelixQueue));
+            return CacheFixture.ShadowLookup(output).Execution.Key;
+        }
     }
 
     [Theory]
@@ -338,6 +458,7 @@ public sealed class CacheTests
     [InlineData("nullCommand")]
     [InlineData("timeout")]
     [InlineData("nullCorrelation")]
+    [InlineData("commandGenerator")]
     public void InvalidManifestsAreRejected(string mutation)
     {
         using CacheFixture f = new();
@@ -353,6 +474,7 @@ public sealed class CacheTests
             case "nullCommand": item["command"] = null; break;
             case "timeout": item["timeoutSeconds"] = 0; break;
             case "nullCorrelation": item["correlationPayloads"]![0] = null; break;
+            case "commandGenerator": item["commandGeneratorDigest"] = "invalid"; break;
             default: throw new InvalidOperationException();
         }
         string path = Path.Combine(f.Root, "invalid.json");
@@ -415,7 +537,7 @@ public sealed class CacheTests
         using CacheFixture f = new();
         string output = Path.Combine(f.Root, "native-shadow");
         f.Invoke(true, "prepare", "--cache", f.CacheDirectory, "--output", output, "--payload", f.Archive,
-            "--runtime", f.Archive, "--queue", f.Queues[0].QueueId,
+            "--runtime", f.Archive, "--queue", f.Queues[0].QueueId, "--helix-sdk", f.Archive,
             "--queue-info", f.Write("queues.json", f.Queues, HelixJsonContext.Default.ListHelixQueue));
         LookupEntry entry = CacheFixture.ShadowLookup(output);
         Assert.Equal(LookupStatus.Miss, entry.Status);

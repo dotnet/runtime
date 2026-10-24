@@ -69,13 +69,14 @@ internal sealed record WorkItem
     public required string Command { get; init; }
     public List<string> PreCommands { get; init; } = [];
     public List<string> PostCommands { get; init; } = [];
+    public string? CommandGeneratorDigest { get; init; }
     public Dictionary<string, string> Environment { get; init; } = [];
     public required int TimeoutSeconds { get; init; }
     public required int ExpectedExitCode { get; init; }
 
     internal void Validate()
     {
-        ValidateExecution(Command, TimeoutSeconds, PreCommands, PostCommands, Environment);
+        ValidateExecution(Command, TimeoutSeconds, PreCommands, PostCommands, Environment, CommandGeneratorDigest);
         if (Queues.Count == 0 || Queues.Any(string.IsNullOrWhiteSpace) ||
             Queues.Distinct(StringComparer.Ordinal).Count() != Queues.Count)
         {
@@ -93,13 +94,17 @@ internal sealed record WorkItem
     }
 
     internal static void ValidateExecution(string command, int timeoutSeconds, List<string> preCommands,
-        List<string> postCommands, Dictionary<string, string> environment)
+        List<string> postCommands, Dictionary<string, string> environment, string? commandGeneratorDigest)
     {
         if (string.IsNullOrWhiteSpace(command) || timeoutSeconds <= 0 ||
             preCommands.Any(c => c is null) || postCommands.Any(c => c is null) ||
             environment.Any(p => string.IsNullOrEmpty(p.Key) || p.Value is null))
         {
             throw new InvalidDataException("Execution requires a nonempty command, positive timeout, nonnull commands and environment values.");
+        }
+        if (commandGeneratorDigest is not null && !Cache.IsDigest(commandGeneratorDigest))
+        {
+            throw new InvalidDataException("A command generator digest must be a lowercase SHA-256 digest.");
         }
     }
 }
@@ -156,6 +161,7 @@ internal sealed record ExecutionInputs
     public required string Command { get; init; }
     public required List<string> PreCommands { get; init; }
     public required List<string> PostCommands { get; init; }
+    public string? CommandGeneratorDigest { get; init; }
     public required Dictionary<string, string> Environment { get; init; }
     public required int TimeoutSeconds { get; init; }
     public required int ExpectedExitCode { get; init; }
@@ -172,7 +178,8 @@ internal sealed record ExecutionRecord
     internal void Validate()
     {
         Cache.ValidateVersion(SchemaVersion);
-        WorkItem.ValidateExecution(Inputs.Command, Inputs.TimeoutSeconds, Inputs.PreCommands, Inputs.PostCommands, Inputs.Environment);
+        WorkItem.ValidateExecution(Inputs.Command, Inputs.TimeoutSeconds, Inputs.PreCommands, Inputs.PostCommands, Inputs.Environment,
+            Inputs.CommandGeneratorDigest);
         Inputs.Payload.Validate();
         foreach (PayloadIdentity payload in Inputs.CorrelationPayloads)
         {

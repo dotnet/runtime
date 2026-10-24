@@ -12,7 +12,7 @@ namespace HelixCache;
 internal abstract record Command(string CacheDirectory);
 internal sealed record LookupCommand(string Manifest, string CacheDirectory, string Output, string? QueueInfo) : Command(CacheDirectory);
 internal sealed record StoreCommand(string Manifest, string CacheDirectory, string Results) : Command(CacheDirectory);
-internal sealed record PrepareCommand(string CacheDirectory, string Output, string Payload, string Runtime, string Queue, string? QueueInfo) : Command(CacheDirectory);
+internal sealed record PrepareCommand(string CacheDirectory, string Output, string Payload, string Runtime, string Queue, string HelixSdk, string? QueueInfo) : Command(CacheDirectory);
 internal sealed record CollectCommand(string CacheDirectory, string Output, TimeSpan Wait) : Command(CacheDirectory);
 
 internal static class CommandLine
@@ -20,7 +20,7 @@ internal static class CommandLine
     internal const string Usage = """
         Usage: helix-cache lookup submission.json --cache DIRECTORY --output lookup.json [--queue-info queues.json]
                helix-cache store execution.json --results DIRECTORY --cache DIRECTORY
-               helix-cache prepare --cache DIRECTORY --output DIRECTORY --payload tests.zip --runtime runtime.zip --queue QUEUE [--queue-info queues.json]
+               helix-cache prepare --cache DIRECTORY --output DIRECTORY --payload tests.zip --runtime runtime.zip --queue QUEUE --helix-sdk SDK.nupkg [--queue-info queues.json]
                helix-cache collect --cache DIRECTORY --output DIRECTORY [--wait-seconds SECONDS]
         Only Linux x64 queues and digest-pinned container references are supported.
         """;
@@ -59,7 +59,7 @@ internal static class CommandLine
             "lookup" => new LookupCommand(args[1], cache, Required("--output"), Optional("--queue-info")),
             "store" => new StoreCommand(args[1], cache, Required("--results")),
             "prepare" => new PrepareCommand(cache, Required("--output"), Required("--payload"),
-                Required("--runtime"), Required("--queue"), Optional("--queue-info")),
+                Required("--runtime"), Required("--queue"), Required("--helix-sdk"), Optional("--queue-info")),
             "collect" => new CollectCommand(cache, Required("--output"), ParseWait(Optional("--wait-seconds"))),
             _ => throw new UnreachableException(),
         };

@@ -72,10 +72,14 @@ Example `submission.json`:
 ```
 
 Input paths are relative to the submission manifest. A payload is either a ZIP
-archive (hashed as opaque bytes) or a directory. Directory snapshots preserve
-Unix modes and empty directories and normalize filesystem timestamps. Symlinks
-in directory inputs/results are rejected; put linked payloads in an archive.
-Shared inputs are captured once per invocation.
+archive or a directory. ZIP snapshots are rewritten in ordinal entry order with
+fixed timestamps and compression, preserving file contents, external attributes
+(including Unix modes and symlinks), and empty directories. Duplicate paths,
+traversal, and file/directory conflicts are rejected. Directory snapshots preserve
+Unix modes and empty directories and normalize filesystem timestamps. Symlinks in
+directory inputs/results are rejected; put linked payloads in an archive. Shared
+inputs are captured once per invocation. Only frozen archives are rewritten;
+original archives are never changed.
 
 The tool resolves the actual host queue, requires an available Linux AMD64 queue,
 and fingerprints its declared image, ordered provisioning recipe and workspace
@@ -145,7 +149,8 @@ with cached results are outside this prototype.
 ## Azure Pipelines shadow validation
 
 Queue `eng/pipelines/runtime.yml` with its `helixCacheShadow` boolean parameter
-enabled. The default is **false**. The additional steps run only in the public
+enabled. This draft temporarily defaults to **true** for validation; disable it
+before merging. The additional steps run only in the public
 project's Linux x64 `CoreCLR_AllSubsets` job, after its normal submissions.
 They use the existing build's `System.Memory.Data.Tests.zip` and runtime archive
 and submit one additional work item to `AzureLinux.3.Amd64.Open`.
@@ -157,10 +162,17 @@ entries are persisted; frozen input snapshots are recreated in each job.
 Existing Azure Pipelines branch/PR cache scoping applies.
 
 All orchestration runs in the C# NativeAOT executable. Its `prepare` command
-records the full command, upload post-command, timeout and queue, runs native
-lookup, and exports frozen paths to `submission.props`.
+records the full command, upload post-command, timeout, queue and SHA-256 digest
+of the pinned Helix SDK package, runs native lookup, and exports frozen paths to
+`submission.props`. `--helix-sdk` must identify that installed SDK's `.nupkg`.
 `eng/testing/helix-cache-shadow.proj` submits those exact archives through the
-pinned Helix SDK without injecting extra reporters. Its default target only
+pinned Helix SDK without injecting extra reporters. The SDK generates its own
+command wrapper, including chmod and exit-code handling; its package digest
+participates in the key as `commandGeneratorDigest`, and submission checks the
+installed package against that digest. The generated UUID script directory is
+not stable and is not fingerprinted literally. This assumes those random wrapper
+paths are irrelevant to the tests; it is not a byte-for-byte fingerprint of every
+SDK-generated archive. Its default target only
 validates inputs; submission requires **`-t:Submit`**, which waits for completion
 and cancels the submitted job on task cancellation.
 
@@ -185,26 +197,30 @@ by this first shadow lane.
 For local preparation without submitting, after building the archives:
 
 ```sh
+sdk="$(dotnet msbuild eng/testing/helix-cache-shadow.proj -nologo -getProperty:HelixCacheSdkPackage)"
 artifacts/tools/helix-cache/helix-cache prepare \
   --cache artifacts/tmp/helix-cache \
   --output artifacts/log/Release/helix-cache-shadow \
   --payload artifacts/helix/tests/linux.AnyCPU.Release/System.Memory.Data.Tests.zip \
   --runtime artifacts/helix/runtime/test-runtime-net11.0-linux-Release-x64.zip \
-  --queue AzureLinux.3.Amd64.Open
+  --queue AzureLinux.3.Amd64.Open --helix-sdk "$sdk"
 dotnet msbuild eng/testing/helix-cache-shadow.proj -t:Validate \
   -p:HelixCacheShadowDirectory="$PWD/artifacts/log/Release/helix-cache-shadow"
 ```
 
 The integration suite mocks public completion/file endpoints; live submission,
-cross-build restoration and unchanged-rebuild hit rates require the opt-in CI
-run. ZIPs are currently hashed byte-for-byte, so archive timestamps or other
-nondeterministic build outputs can prevent reuse despite unchanged sources.
+cross-build restoration and unchanged-rebuild hit rates require shadow validation.
+Repacking unchanged ZIP members no longer changes the frozen bytes or key.
+Changed binary contents, permissions, paths, and other execution inputs still
+invalidate results, even when source changes appear unrelated to a test.
 
 ## Cache contract
 
 Keys include the schema namespace, work-item name, target queue, declared Linux
 environment, payload identities and destinations, ordered correlation overlays,
-commands, environment overrides, timeout and expected exit code. Object
+commands, an optional command-generator digest, environment overrides, timeout
+and expected exit code. Callers that inject generated commands must fingerprint
+their generator or provide its actual frozen output. Object
 properties are sorted ordinally; command and overlay order is preserved. Local
 absolute paths and result timestamps are not key material.
 

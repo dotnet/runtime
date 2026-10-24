@@ -43,10 +43,12 @@ steps:
         -nologo -p:Configuration=$(_BuildConfig) -getProperty:NetCoreAppCurrentBuildSettings)"
       archives="$("$dotnet" msbuild "$(Build.SourcesDirectory)/src/libraries/System.Memory.Data/tests/System.Memory.Data.Tests.csproj" \
         -nologo -p:Configuration=$(_BuildConfig) -getProperty:TestArchiveTestsDir)"
+      sdk="$("$dotnet" msbuild "$(Build.SourcesDirectory)/eng/testing/helix-cache-shadow.proj" \
+        -nologo -getProperty:HelixCacheSdkPackage)"
       "$executable" prepare --cache "$cache" --output "$output" \
         --payload "$archives/System.Memory.Data.Tests.zip" \
         --runtime "$(Build.SourcesDirectory)/artifacts/helix/runtime/test-runtime-$settings.zip" \
-        --queue AzureLinux.3.Amd64.Open
+        --queue AzureLinux.3.Amd64.Open --helix-sdk "$sdk"
 
       # A cache hit never bypasses this submission.
       "$dotnet" msbuild "$(Build.SourcesDirectory)/eng/testing/helix-cache-shadow.proj" -t:Submit \

@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
@@ -14,6 +16,10 @@ namespace HelixCache.Tests;
 
 internal sealed class CacheFixture : IDisposable
 {
+    internal const int ArchiveFileMode = 0x81A4;
+    internal const int ArchiveExecutableMode = 0x81ED;
+    internal const int ArchiveDirectoryMode = 0x41ED;
+    internal const int ArchiveLinkMode = 0xA1FF;
     private const UnixFileMode ExecutableMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
         UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
     internal const string FirstJob = "00000000-0000-0000-0000-000000000001";
@@ -44,7 +50,7 @@ internal sealed class CacheFixture : IDisposable
         File.WriteAllText(Path.Combine(PayloadDirectory, "run.sh"), "#!/bin/sh\nexit 0\n");
         File.SetUnixFileMode(Path.Combine(PayloadDirectory, "run.sh"), ExecutableMode);
         Archive = Path.Combine(Root, "shared.zip");
-        File.WriteAllText(Archive, "opaque archive bytes");
+        WriteArchive(Archive, [("shared.txt", "shared payload", ArchiveFileMode)]);
         Queues = [new HelixQueue
         {
             QueueId = "linux.test.open", Architecture = "AMD64", OperatingSystemGroup = "linux", IsAvailable = true,
@@ -65,6 +71,20 @@ internal sealed class CacheFixture : IDisposable
                 TimeoutSeconds = 60, ExpectedExitCode = 0,
             }],
         };
+    }
+
+    internal static void WriteArchive(string path, (string Name, string Content, int Mode)[] entries, bool repack = false)
+    {
+        using FileStream file = File.Create(path);
+        using ZipArchive archive = new(file, ZipArchiveMode.Create);
+        foreach ((string name, string content, int mode) in repack ? entries.Reverse() : entries)
+        {
+            ZipArchiveEntry entry = archive.CreateEntry(name, repack ? CompressionLevel.NoCompression : CompressionLevel.Optimal);
+            entry.LastWriteTime = new DateTimeOffset(repack ? 2025 : 2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+            entry.ExternalAttributes = mode << 16;
+            using StreamWriter writer = new(entry.Open());
+            writer.Write(content);
+        }
     }
 
     internal string Write<T>(string name, T value, JsonTypeInfo<T> type)
@@ -111,7 +131,7 @@ internal sealed class CacheFixture : IDisposable
     internal string Prepare(string name = "shadow")
     {
         string output = Path.Combine(Root, name);
-        ShadowValidation.Prepare(new Cache(CacheDirectory), output, Archive, Archive, Queues[0].QueueId, new LinuxEnvironment(Queues));
+        ShadowValidation.Prepare(new Cache(CacheDirectory), output, Archive, Archive, Queues[0].QueueId, Archive, new LinuxEnvironment(Queues));
         return output;
     }
 

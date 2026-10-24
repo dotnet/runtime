@@ -86,7 +86,8 @@ internal static class Program
             case PrepareCommand prepare:
             {
                 LinuxEnvironment environment = await LinuxEnvironment.LoadAsync(prepare.QueueInfo, helix, cancellationToken);
-                LookupEntry entry = ShadowValidation.Prepare(cache, prepare.Output, prepare.Payload, prepare.Runtime, prepare.Queue, environment);
+                LookupEntry entry = ShadowValidation.Prepare(cache, prepare.Output, prepare.Payload, prepare.Runtime, prepare.Queue,
+                    prepare.HelixSdk, environment);
                 Console.WriteLine($"Helix cache shadow: {entry.Status.ToString().ToLowerInvariant()} {entry.Execution.Key}; execution will NOT be skipped.");
                 break;
             }

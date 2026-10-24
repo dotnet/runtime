@@ -19,7 +19,8 @@ internal static class ShadowValidation
     internal const string Command = "bash ./RunTests.sh --runtime-path \"$HELIX_CORRELATION_PAYLOAD\"";
     internal const string PostCommand = "cp testResults.xml \"$HELIX_WORKITEM_UPLOAD_ROOT/testResults.xml\"";
 
-    internal static LookupEntry Prepare(Cache cache, string output, string payload, string runtime, string queue, LinuxEnvironment environment)
+    internal static LookupEntry Prepare(Cache cache, string output, string payload, string runtime, string queue, string helixSdk,
+        LinuxEnvironment environment)
     {
         payload = Path.GetFullPath(payload);
         runtime = Path.GetFullPath(runtime);
@@ -46,6 +47,7 @@ internal static class ShadowValidation
                 CorrelationPayloads = [new Payload { Path = runtime }],
                 Command = Command,
                 PostCommands = [PostCommand],
+                CommandGeneratorDigest = Snapshot.HashFile(helixSdk),
                 TimeoutSeconds = 900,
                 ExpectedExitCode = 0,
             }],
@@ -154,6 +156,7 @@ internal static class ShadowValidation
             ["ShadowRuntime"] = execution.CorrelationPayloadPaths[0],
             ["ShadowCommand"] = execution.Inputs.Command,
             ["ShadowPostCommand"] = execution.Inputs.PostCommands[0],
+            ["ShadowCommandGeneratorDigest"] = execution.Inputs.CommandGeneratorDigest!,
             ["ShadowTimeout"] = TimeSpan.FromSeconds(execution.Inputs.TimeoutSeconds).ToString("c", CultureInfo.InvariantCulture),
         })
         {
