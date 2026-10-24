@@ -1232,8 +1232,21 @@ EXTERN_C uint32_t QCALLTYPE RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, 
 }
 #endif // TARGET_UNIX
 
+#ifdef TARGET_UNIX
+bool InitGSCookie();
+#endif
+
 EXTERN_C void RhSetRuntimeInitializationCallback(int (*fPtr)())
 {
+#ifdef TARGET_UNIX
+    // In a DLL, GSCookies are read before reverse p/invoke transition (and runtime initialization) so we need to initialize them earlier than runtime.
+    if (!InitGSCookie())
+    {
+        PalPrintFatalError("\nFatal error. .NET runtime failed to initialize.\n");
+        RhFailFast();
+    }
+#endif
+
     g_RuntimeInitializationCallback = fPtr;
 }
 

@@ -43,8 +43,6 @@ if(CLR_CMAKE_TARGET_WASI)
   # Cross-compile try_run() answers — wasm32 binaries cannot execute on
   # the build host, so pre-seed the cache.
   set(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1 CACHE STRING "" FORCE)
-  set(HAVE_WORKING_GETTIMEOFDAY_EXITCODE 0 CACHE STRING "" FORCE)
-  set(HAVE_WORKING_CLOCK_GETTIME_EXITCODE 0 CACHE STRING "" FORCE)
   set(HAVE_PROCFS_STATM_EXITCODE 1 CACHE STRING "" FORCE)
 endif()
 

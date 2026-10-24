@@ -809,6 +809,8 @@ namespace Internal.JitInterface
                         return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.InterfaceDispatchGuarded);
                     return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.InterfaceDispatch);
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.Wasm32)
+                        return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.ResolveInterfaceMethod);
                     return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.ResolveInterfaceMethodFast);
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
@@ -1631,10 +1633,14 @@ namespace Internal.JitInterface
                 // move that assert to some place later though.
                 targetIsFatFunctionPointer = true;
             }
-            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
-                && targetMethod.OwningType.IsInterface)
+            else if (targetMethod.OwningType.IsInterface
+                && ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
+                    || _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.Wasm32))
             {
-                pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
+                bool isWasm = _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.Wasm32;
+                pResult->kind = isWasm
+                    ? CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN
+                    : CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
@@ -1648,7 +1654,8 @@ namespace Internal.JitInterface
                 else
                 {
                     pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
-                    pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
+                    pResult->codePointerOrStubLookup.constLookup.accessType =
+                        isWasm ? InfoAccessType.IAT_VALUE : InfoAccessType.IAT_PVALUE;
 #pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
                     pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
                         _compilation.NodeFactory.DispatchCell(targetMethod
@@ -1659,7 +1666,7 @@ namespace Internal.JitInterface
 #pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly
                 }
 
-                pResult->nullInstanceCheck = false;
+                pResult->nullInstanceCheck = isWasm;
             }
             else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
             {

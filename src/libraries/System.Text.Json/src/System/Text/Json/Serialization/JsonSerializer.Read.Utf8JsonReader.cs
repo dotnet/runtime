@@ -439,8 +439,8 @@ namespace System.Text.Json
 
                             valueSequence = originalSequence.Slice(reader.TokenStartIndex, payloadLength);
                             Debug.Assert(
-                                valueSequence.First.Span[0] == (byte)'"',
-                                $"Calculated sequence starts with {valueSequence.First.Span[0]}");
+                                valueSequence.FirstSpan[0] == (byte)'"',
+                                $"Calculated sequence starts with {valueSequence.FirstSpan[0]}");
 
                             Debug.Assert(
                                 valueSequence.ToArray()[payloadLength - 1] == (byte)'"',
@@ -454,7 +454,7 @@ namespace System.Text.Json
 
                     default:
                         byte displayByte = reader.HasValueSequence
-                            ? reader.ValueSequence.First.Span[0]
+                            ? reader.ValueSequence.FirstSpan[0]
                             : reader.ValueSpan[0];
 
                         ThrowHelper.ThrowJsonReaderException(

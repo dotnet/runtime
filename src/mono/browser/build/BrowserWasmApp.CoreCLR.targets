@@ -14,7 +14,7 @@
     Architecture:
       Setup emscripten → Compile native sources (EmccCompile) → Link (emcc) → Register outputs
 
-    Link flags mirror src/native/corehost/browserhost/CMakeLists.txt.
+    The prebuilt browserhost also uses these native link targets.
   -->
 
   <!-- ======================== Properties ======================== -->
@@ -39,9 +39,11 @@
     <_CoreCLRInvalidSIMD Condition="'$(WasmEnableSIMD)' != '' and '$(WasmEnableSIMD)' != 'true'">true</_CoreCLRInvalidSIMD>
     <WasmEnableExceptionHandling>true</WasmEnableExceptionHandling>
     <WasmEnableSIMD>true</WasmEnableSIMD>
+    <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">false</WasmEnableRelaxedSimd>
     <WasmClang>emcc</WasmClang>
 
     <_WasmDefaultFlags>-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128</_WasmDefaultFlags>
+    <_WasmDefaultFlags Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(_WasmDefaultFlags) -mrelaxed-simd</_WasmDefaultFlags>
 
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Build</WasmBuildAppAfterThisTarget>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
@@ -71,6 +73,12 @@
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
+    <RuntimeHostConfigurationOption Include="System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"
+                                    Value="true"
+                                    Trim="true" />
+  </ItemGroup>
 
   <!-- EmccInitialHeapSize is the documented browser property (src/mono/browser/README.md) and
        EmccTotalMemory is its legacy alias; the Mono path collapses both into WasmInitialHeapSize
@@ -542,6 +550,10 @@
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=0" Condition="'$(WasmCachePath)' != '' and '$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=1" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=0" Condition="'$(WasmEnableRelaxedSimd)' != 'true'" />
     </ItemGroup>
   </Target>
 
@@ -587,6 +599,7 @@
       <_EmccCommonFlags Include="-fwasm-exceptions" />
       <_EmccCommonFlags Include="-sWASM_LEGACY_EXCEPTIONS=0" />
       <_EmccCommonFlags Include="-msimd128" />
+      <_EmccCommonFlags Include="-mrelaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -817,9 +830,9 @@
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
     </PropertyGroup>
 
-    <!-- CoreCLR static libraries from the runtime pack (order matches CMakeLists.txt) -->
+    <!-- CoreCLR static libraries from the runtime pack -->
     <ItemGroup>
-      <!-- Browser host (linked first, as in CMakeLists.txt) -->
+      <!-- Browser host -->
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libBrowserHost.a" />
 
       <!-- CoreCLR runtime engine -->
@@ -860,7 +873,7 @@
       <_CoreCLRJsLibrary Include="@(WasmExtraJSFile)" Kind="%(WasmExtraJSFile.Kind)" Condition="'%(WasmExtraJSFile.Kind)' != ''" />
     </ItemGroup>
 
-    <!-- Build link arguments matching browserhost/CMakeLists.txt -->
+    <!-- Build link arguments shared by the prebuilt browserhost and app relinks -->
     <ItemGroup>
       <_EmccLinkStepArgs Include="$(EmccLinkOptimizationFlag)" />
       <_EmccLinkStepArgs Include="@(_EmccCommonFlags)" />
@@ -883,7 +896,7 @@
       <_EmccLinkStepArgs Include="-s EXPORT_NAME=createDotnetRuntime" />
       <_EmccLinkStepArgs Include="-s ENVIRONMENT=web,webview,worker,node,shell" />
 
-      <!-- Symbol handling (strict undefined checks in Debug only, matching CMakeLists.txt) -->
+      <!-- Symbol handling (strict undefined checks in Debug only) -->
       <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s LLD_REPORT_UNDEFINED" />
       <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s ERROR_ON_UNDEFINED_SYMBOLS=1" />
       <_EmccLinkStepArgs Include="--emit-symbol-map" />
@@ -937,7 +950,7 @@
 
   <Target Name="_CoreCLRLinkNative"
           Inputs="@(_WasmLinkDependencies)"
-          Outputs="$(_WasmIntermediateOutputPath)dotnet.native.js;$(_WasmIntermediateOutputPath)dotnet.native.wasm"
+          Outputs="$(_WasmIntermediateOutputPath)dotnet.native.js;$(_WasmIntermediateOutputPath)dotnet.native.wasm;$(_WasmIntermediateOutputPath)dotnet.native.js.symbols"
           Returns="@(FileWrites)">
 
     <Message Text="Linking CoreCLR WASM with initial memory $(WasmInitialHeapSize) bytes." Importance="High" />

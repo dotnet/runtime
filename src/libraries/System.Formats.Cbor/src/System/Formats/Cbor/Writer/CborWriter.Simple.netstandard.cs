@@ -37,7 +37,7 @@ namespace System.Formats.Cbor
         internal static bool TryConvertSingleToHalf(float value, out ushort result)
         {
             result = HalfHelpers.FloatToHalf(value);
-            return float.IsNaN(value) || CborHelpers.SingleToInt32Bits(HalfHelpers.HalfToFloat(result)) == CborHelpers.SingleToInt32Bits(value);
+            return float.IsNaN(value) || BitConverter.SingleToInt32Bits(HalfHelpers.HalfToFloat(result)) == BitConverter.SingleToInt32Bits(value);
         }
     }
 }

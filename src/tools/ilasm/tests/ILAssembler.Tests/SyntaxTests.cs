@@ -464,7 +464,7 @@ namespace ILAssembler.Tests
                 source,
                 new Options { ErrorTolerant = true });
 
-            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.Parser);
         }
 
         private static object CreateGrammarActions()
@@ -703,7 +703,7 @@ namespace ILAssembler.Tests
 
             var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
             // Parser should report a syntax error for the repeated int32 tokens
-            Assert.Contains(diagnostics, d => d.Id == "Parser");
+            Assert.Contains(diagnostics, d => d.Id == DiagnosticIds.Parser);
         }
 
     }
