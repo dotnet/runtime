@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CMakeProjectReference and CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <Optimize>True</Optimize>
+    <!-- Browser CoreCLR links native test assets into a test-specific corerun. -->
+    <CLRTestTargetUnsupported Condition="('$(TargetsWasm)' == 'true' or '$(TargetsMobile)' == 'true') and ('$(TargetsBrowser)' != 'true' or '$(RuntimeFlavor)' != 'coreclr')">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+    <Compile Include="$(MSBuildProjectName).cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_CallCountingDelayMs" Value="0" />
+    <!-- By default only hot R2R code gets an optimized instrumented tier. This test is IL-only, so
+         without this the instrumented tier is MinOpts, SpanHelpers.Memmove/SequenceEqual are never
+         inlined into the probes, and no value histogram is recorded for them. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO_InstrumentedTierAlwaysOptimized" Value="1" />
+  </ItemGroup>
+</Project>
