@@ -37,13 +37,18 @@ namespace System.Numerics.Tensors
             where T : IExponentialFunctions<T>
         {
             private const double NaturalLog2 = 0.6931471805599453;
+            private const double Log2Of2 = 1.0;
+
+            // For float, 2^x is below half the smallest subnormal for x < -150 and above float.MaxValue for x >= 128.
+            private const float MinArgument = -151f;
+            private const float MaxArgument = 129f;
 
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Exp2(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => ExpOperator<T>.Invoke(x * Vector128.Create(T.CreateTruncating(NaturalLog2)));
-            public static Vector256<T> Invoke(Vector256<T> x) => ExpOperator<T>.Invoke(x * Vector256.Create(T.CreateTruncating(NaturalLog2)));
-            public static Vector512<T> Invoke(Vector512<T> x) => ExpOperator<T>.Invoke(x * Vector512.Create(T.CreateTruncating(NaturalLog2)));
+            public static Vector128<T> Invoke(Vector128<T> x) => ExpOperator<T>.InvokeScaled(x, NaturalLog2, Log2Of2, MinArgument, MaxArgument);
+            public static Vector256<T> Invoke(Vector256<T> x) => ExpOperator<T>.InvokeScaled(x, NaturalLog2, Log2Of2, MinArgument, MaxArgument);
+            public static Vector512<T> Invoke(Vector512<T> x) => ExpOperator<T>.InvokeScaled(x, NaturalLog2, Log2Of2, MinArgument, MaxArgument);
         }
     }
 }
