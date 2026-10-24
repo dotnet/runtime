@@ -1042,11 +1042,13 @@ CDAC_TYPE_END(ImageDataDirectory)
 
 CDAC_TYPE_BEGIN(RuntimeFunction)
 CDAC_TYPE_SIZE(sizeof(RUNTIME_FUNCTION))
+#ifndef TARGET_WASM
 CDAC_TYPE_FIELD(RuntimeFunction, T_UINT32, BeginAddress, offsetof(RUNTIME_FUNCTION, BeginAddress))
 #ifdef TARGET_AMD64
 CDAC_TYPE_FIELD(RuntimeFunction, T_UINT32, EndAddress, offsetof(RUNTIME_FUNCTION, EndAddress))
 #endif
 CDAC_TYPE_FIELD(RuntimeFunction, T_UINT32, UnwindData, offsetof(RUNTIME_FUNCTION, UnwindData))
+#endif // TARGET_WASM
 CDAC_TYPE_END(RuntimeFunction)
 
 CDAC_TYPE_BEGIN(UnwindInfo)

@@ -627,10 +627,10 @@ void FlushWriteBarrierInstructionCache()
 ULONG
 RtlpGetFunctionEndAddress (
     _In_ PT_RUNTIME_FUNCTION FunctionEntry,
-    _In_ TADDR ImageBase
+    _In_ TADDR GCInfoBase
     )
 {
-    PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
+    PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(RUNTIME_FUNCTION__GetUnwindDataOffset(FunctionEntry) + GCInfoBase);
     DecodeULEB128AsU32(&pUnwindData); // Skip the count of bytes to unwind
     uint32_t logicalVirtualIPLength = DecodeULEB128AsU32(&pUnwindData) * 2; // Read the function length in virtual IP units, then multiply by 2 to report them as even numbers.
     return logicalVirtualIPLength + RUNTIME_FUNCTION__BeginAddress(FunctionEntry);
@@ -1874,7 +1874,7 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
     }
 }
 
-static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase, PRUNTIME_FUNCTION FunctionEntry, bool callerIsNative = false)
+static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR GCInfoBase, PRUNTIME_FUNCTION FunctionEntry, bool callerIsNative = false)
 {
     TADDR sp = *pSP;
     TADDR fp = GetWasmFramePointerFromStackPointer_Internal(sp);
@@ -1885,7 +1885,7 @@ static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase,
     }
     else
     {
-        PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
+        PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(RUNTIME_FUNCTION__GetUnwindDataOffset(FunctionEntry) + GCInfoBase);
         *pSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
         // A reverse-pinvoke frame's caller is native, not an R2R shadow frame; leave the IP unset so the walk
         // continues via the Frame chain instead of reading the native caller SP as a shadow frame.
@@ -1909,7 +1909,7 @@ TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC)
 PEXCEPTION_ROUTINE
 RtlVirtualUnwind (
     _In_ DWORD HandlerType,
-    _In_ DWORD ImageBase,
+    _In_ DWORD GCInfoBase,
     _In_ DWORD ControlPc,
     _In_ PRUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
@@ -1921,7 +1921,7 @@ RtlVirtualUnwind (
     _ASSERTE(FunctionEntry != NULL);
     _ASSERTE(HandlerType == 0);
     _ASSERTE(ExecutionManager::IsVirtualIP(ControlPc));
-    _ASSERTE(ImageBase != 0);
+    _ASSERTE(GCInfoBase != 0);
 
     // CoreCLR callers currently do not use HandlerData or EstablisherFrame on WASM,
     // so we set them to 0. If future callers require them, proper unwinding support
@@ -1945,7 +1945,7 @@ RtlVirtualUnwind (
         }
     }
 
-    WasmUnwindStackFrameCore((TADDR*)&ContextRecord->InterpreterSP, (TADDR*)&ContextRecord->InterpreterIP, ImageBase, FunctionEntry, callerIsNative);
+    WasmUnwindStackFrameCore((TADDR*)&ContextRecord->InterpreterSP, (TADDR*)&ContextRecord->InterpreterIP, GCInfoBase, FunctionEntry, callerIsNative);
 
     if (ContextRecord->InterpreterSP != 0)
     {

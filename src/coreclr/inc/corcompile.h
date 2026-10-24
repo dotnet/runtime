@@ -57,8 +57,7 @@ inline ReadyToRunCrossModuleInlineFlags operator &( const ReadyToRunCrossModuleI
 }
 
 #ifdef TARGET_WASM
-// why was it defined only for x86 before?
-typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
+typedef DPTR(T_RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 #endif
 
 #ifdef TARGET_X86
