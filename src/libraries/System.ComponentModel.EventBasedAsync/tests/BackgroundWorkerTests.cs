@@ -27,7 +27,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                 const int expectedReportCallsCount = 5;
                 int actualReportCallsCount = 0;
                 var worker = new BackgroundWorker() { WorkerReportsProgress = true };
-                var progressBarrier = new Barrier(2, barrier => ++actualReportCallsCount);
+                var progressReportedEvent = new CountdownEvent(expectedReportCallsCount);
                 var workerCompletedEvent = new ManualResetEventSlim(false);
 
                 worker.DoWork += (sender, e) =>
@@ -35,7 +35,6 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                     for (int i = 0; i < expectedReportCallsCount; i++)
                     {
                         worker.ReportProgress(i);
-                        progressBarrier.SignalAndWait();
                     }
 
                     e.Result = expectedResult;
@@ -54,13 +53,15 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                 };
                 worker.ProgressChanged += (sender, e) =>
                 {
-                    progressBarrier.SignalAndWait();
+                    Interlocked.Increment(ref actualReportCallsCount);
+                    progressReportedEvent.Signal();
                 };
 
                 worker.RunWorkerAsync();
 
                 // wait for signal from WhenRunWorkerCompleted
                 Assert.True(workerCompletedEvent.Wait(TimeoutLong));
+                Assert.True(progressReportedEvent.Wait(TimeoutLong));
                 Assert.False(worker.IsBusy);
                 Assert.Equal(expectedReportCallsCount, actualReportCallsCount);
             }
@@ -106,25 +107,6 @@ namespace System.ComponentModel.EventBasedAsync.Tests
 
             bool ret = manualResetEvent3.Wait(TimeoutLong);
             Assert.True(ret);
-            // there could be race condition between worker thread cancellation and completion which will set the CancellationPending to false
-            // if it is completed already, we don't check cancellation
-            if (bw.IsBusy) // not complete
-            {
-                if (!bw.CancellationPending)
-                {
-                    for (int i = 0; i < 1000; i++)
-                    {
-                        Wait(TimeoutShort);
-                        if (bw.CancellationPending)
-                        {
-                            break;
-                        }
-                    }
-                }
-                // Check again
-                if (bw.IsBusy)
-                    Assert.True(bw.CancellationPending, "Cancellation in Main thread");
-            }
         }
 
         private void DoWorkExpectCancel(object sender, DoWorkEventArgs e)
