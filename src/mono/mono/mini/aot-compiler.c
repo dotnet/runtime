@@ -3334,7 +3334,7 @@ emit_offset_table (MonoAotCompile *acfg, const char *symbol, MonoAotFileTable ta
 
 	index_offsets = g_new0 (guint32, ngroups);
 
-	buf_size = noffsets * 4;
+	buf_size = noffsets * 5;
 	p = buf = (guint8 *)g_malloc0 (buf_size);
 
 	current_offset = 0;
@@ -3351,6 +3351,7 @@ emit_offset_table (MonoAotCompile *acfg, const char *symbol, MonoAotFileTable ta
 		}
 		current_offset = offsets [i];
 	}
+	g_assert (p - buf <= buf_size);
 	data_buf = buf;
 	data_p = p;
 
