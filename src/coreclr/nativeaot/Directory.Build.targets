@@ -10,4 +10,14 @@
   </PropertyGroup>
   
   <Import Project="..\Directory.Build.targets" />
+
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true' and '$(Restore)' != 'true'">
+    <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build"
+                      AdditionalProperties="$(ClrRuntimeBuildSubsets);$(TargetCxxLibraryProperties)" />
+    <ProjectReferenceTargets Include="GetTargetPath" Targets="Build" />
+  </ItemGroup>
 </Project>
