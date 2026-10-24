@@ -13,6 +13,7 @@
 #include <limits.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -60,6 +61,10 @@
 #ifdef __FreeBSD__
 #include <sys/types.h>
 #include <sys/param.h>
+#include <sys/sysctl.h>
+#endif
+
+#ifdef __OpenBSD__
 #include <sys/sysctl.h>
 #endif
 
@@ -1359,4 +1364,197 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
+}
+
+#if defined(TARGET_BROWSER) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__HAIKU__)
+// Packs the arguments into a single NULL-terminated allocation that can be released with one free().
+static char** PackCommandLine(int32_t count, const char* const* args, int32_t* argc)
+{
+    size_t stringBytes = 0;
+    for (int32_t i = 0; i < count; i++)
+    {
+        stringBytes += strlen(args[i]) + 1;
+    }
+
+    char** result = (char**)malloc(((size_t)count + 1) * sizeof(char*) + stringBytes);
+    if (result == NULL)
+    {
+        return NULL;
+    }
+
+    char* strings = (char*)(result + count + 1);
+    for (int32_t i = 0; i < count; i++)
+    {
+        size_t length = strlen(args[i]) + 1;
+        memcpy(strings, args[i], length);
+        result[i] = strings;
+        strings += length;
+    }
+
+    result[count] = NULL;
+    *argc = count;
+    return result;
+}
+#endif
+
+#if defined(__linux__) || defined(__sun) || defined(__FreeBSD__)
+// Packs into a single NULL-terminated allocation up to maxCount arguments stored back to back as
+// NUL-terminated strings, so that it can be released with one free().
+static char** PackNulSeparatedCommandLine(const char* buffer, size_t length, int32_t maxCount, int32_t* argc)
+{
+    int32_t count = 0;
+    size_t used = 0;
+    while (used < length && count < maxCount)
+    {
+        const char* end = (const char*)memchr(buffer + used, '\0', length - used);
+        used = end != NULL ? (size_t)(end - buffer) + 1 : length;
+        count++;
+    }
+
+    char** result = (char**)malloc(((size_t)count + 1) * sizeof(char*) + used + 1);
+    if (result == NULL)
+    {
+        return NULL;
+    }
+
+    char* strings = (char*)(result + count + 1);
+    memcpy(strings, buffer, used);
+    strings[used] = '\0';
+
+    for (int32_t i = 0; i < count; i++)
+    {
+        result[i] = strings;
+        strings += strlen(strings) + 1;
+    }
+
+    result[count] = NULL;
+    *argc = count;
+    return result;
+}
+#endif
+
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
+// Returns a malloc'ed buffer with the sysctl value, or NULL on failure.
+static char* ReadSysctl(int* mib, u_int mibLength, size_t* length)
+{
+    *length = 0;
+    if (sysctl(mib, mibLength, NULL, length, NULL, 0) != 0 || *length == 0)
+    {
+        return NULL;
+    }
+
+    char* buffer = (char*)malloc(*length);
+    if (buffer != NULL && sysctl(mib, mibLength, buffer, length, NULL, 0) != 0)
+    {
+        free(buffer);
+        buffer = NULL;
+    }
+
+    return buffer;
+}
+#endif
+
+#if defined(__HAIKU__)
+extern int __libc_argc;
+extern char** __libc_argv;
+#endif
+
+char** SystemNative_GetCommandLine(int32_t* argc)
+{
+    *argc = 0;
+
+#if defined(TARGET_BROWSER)
+    static const char* const browserArgs[] = { "/" }; // keep in sync with browserVirtualAppBase in minipal_getexepath
+    return PackCommandLine(1, browserArgs, argc);
+#elif defined(__linux__) || defined(__sun)
+    int fd;
+    while ((fd = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC)) < 0 && errno == EINTR);
+    if (fd < 0)
+    {
+        return NULL;
+    }
+
+    size_t capacity = 4096;
+    size_t length = 0;
+    char* buffer = (char*)malloc(capacity);
+    while (buffer != NULL)
+    {
+        ssize_t bytesRead;
+        while ((bytesRead = read(fd, buffer + length, capacity - length)) < 0 && errno == EINTR);
+        if (bytesRead <= 0)
+        {
+            if (bytesRead < 0)
+            {
+                free(buffer);
+                buffer = NULL;
+            }
+            break;
+        }
+
+        length += (size_t)bytesRead;
+        if (length == capacity)
+        {
+            capacity *= 2;
+            char* newBuffer = (char*)realloc(buffer, capacity);
+            if (newBuffer == NULL)
+            {
+                free(buffer);
+            }
+            buffer = newBuffer;
+        }
+    }
+    close(fd);
+
+    if (buffer == NULL)
+    {
+        return NULL;
+    }
+
+    char** result = PackNulSeparatedCommandLine(buffer, length, INT32_MAX, argc);
+    free(buffer);
+    return result;
+#elif defined(__FreeBSD__)
+    int mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_ARGS, getpid() };
+    size_t length;
+    char* buffer = ReadSysctl(mib, 4, &length);
+    if (buffer == NULL)
+    {
+        return NULL;
+    }
+
+    char** result = PackNulSeparatedCommandLine(buffer, length, INT32_MAX, argc);
+    free(buffer);
+    return result;
+#elif defined(__OpenBSD__)
+    int mib[] = { CTL_KERN, KERN_PROC_ARGS, getpid(), KERN_PROC_ARGV };
+    size_t length;
+    char* buffer = ReadSysctl(mib, 4, &length);
+    if (buffer == NULL)
+    {
+        return NULL;
+    }
+
+    // The buffer starts with a NULL-terminated argv array pointing into the rest of the buffer.
+    char** args = (char**)buffer;
+    int32_t count = 0;
+    while (args[count] != NULL)
+    {
+        count++;
+    }
+
+    char** result = PackCommandLine(count, (const char* const*)args, argc);
+    free(buffer);
+    return result;
+#elif defined(__APPLE__)
+    return PackCommandLine(*_NSGetArgc(), (const char* const*)*_NSGetArgv(), argc);
+#elif defined(__HAIKU__)
+    return PackCommandLine(__libc_argc, (const char* const*)__libc_argv, argc);
+#else
+    return NULL;
+#endif
+}
+
+void SystemNative_FreeCommandLine(char** buffer)
+{
+    free(buffer);
 }
