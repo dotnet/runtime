@@ -5,10 +5,18 @@
 
 trigger: none
 
+parameters:
+  - name: runAndroidContainerTests
+    displayName: Run the CoreCLR and library container validation only
+    type: boolean
+    default: false
+
 variables:
   - template: /eng/pipelines/common/variables.yml
   - name: enableHelixJobMonitor
     value: true
+  - name: androidContainerHelixQueue
+    value: (Android.29.Amd64.Open)Ubuntu.2204.Amd64.Android.Multi.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-android-29-amd64@sha256:193e6d0ce33f6d8b9c10170ef8a197683c0fa4fe75fe5f1e3199318e8fb84d03
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -23,8 +31,68 @@ extends:
             timeoutInMinutes: 540
             allowNoHelixJobs: true
 
-      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
-        parameters:
-          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-          isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
-          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+      - ${{ if parameters.runAndroidContainerTests }}:
+        - template: /eng/pipelines/common/xplat-setup.yml
+          parameters:
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
+            osGroup: android
+            archType: x64
+            targetRid: android-x64
+            platform: android_x64
+            container: android
+            variables:
+              - name: priorityArg
+                value: ''
+              - name: runtimeFlavorArgs
+                value: ''
+              - name: runtimeVariantArg
+                value: ''
+              - name: librariesConfigurationArg
+                value: ''
+            jobParameters:
+              buildConfig: Release
+              runtimeFlavor: coreclr
+              nameSuffix: Container_CoreCLR_RuntimeTests
+              buildArgs: -s clr+libs -c Release
+              timeoutInMinutes: 240
+              helixQueues:
+                - $(androidContainerHelixQueue)
+              postBuildSteps:
+                - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+                  parameters:
+                    testBuildArgs: test JIT/Directed/Directed_r.csproj
+                - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+                  parameters:
+                    displayName: Run CoreCLR JIT tests in the Android container
+                    creator: $(Build.DefinitionName)
+                    helixBuild: $(Build.BuildNumber)
+                    helixSource: ci/dotnet/runtime/$(Build.SourceBranch)
+                    helixType: test/functional/cli/
+                    publishTestResults: true
+                    useHelixMonitor: true
+                    scenarios:
+                      - normal
+                    timeoutPerTestInMinutes: 10
+                    timeoutPerTestCollectionInMinutes: 30
+                    helixProjectArguments: $(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj
+                - script: >
+                    ./dotnet.sh build
+                    src/libraries/System.Numerics.Vectors/tests/System.Numerics.Vectors.Tests.csproj
+                    -c Release
+                    /p:TargetOS=android
+                    /p:TargetArchitecture=x64
+                    /p:RuntimeFlavor=CoreCLR
+                    /p:ArchiveTests=true
+                  displayName: Build library tests for the Android container
+                - template: /eng/pipelines/libraries/helix.yml
+                  parameters:
+                    creator: $(Build.DefinitionName)
+                    testRunNamePrefixSuffix: CoreCLR_Release_Container_Libraries
+                    useHelixMonitor: true
+
+      - ${{ if not(parameters.runAndroidContainerTests) }}:
+        - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
+          parameters:
+            isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+            isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
