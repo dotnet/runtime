@@ -62,15 +62,7 @@
         bne     LOCAL_LABEL(RaceRetry_\entries)
 
         // Load the MethodTable from the object instance in x0.
-#ifdef TARGET_APPLE
-// Apple's linker has issues which break unwind info if
-// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
-.cfi_endproc
-#endif
         ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
-#ifdef TARGET_APPLE
-.cfi_startproc
-#endif
         ldr     x10, [x0]
 
     .global CurrentEntry
