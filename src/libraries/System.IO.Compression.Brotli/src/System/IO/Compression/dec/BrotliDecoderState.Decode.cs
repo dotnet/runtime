@@ -670,7 +670,7 @@ internal sealed partial class BrotliDecoderState
             _codeLengthCodeLengths[codeLenIdx] = (byte)v;
             if (v != 0)
             {
-                space = space - (32u >> (int)v);
+                space -= 32u >> (int)v;
                 ++numCodes;
                 ++_codeLengthHisto[(int)v];
                 if (space - 1u >= 32u)
@@ -1635,8 +1635,8 @@ internal sealed partial class BrotliDecoderState
                 distOffset[i] = baseValue + j;
                 ++i;
             }
-            bits = bits + half;
-            half = half ^ 1;
+            bits += half;
+            half ^= 1;
         }
     }
 
