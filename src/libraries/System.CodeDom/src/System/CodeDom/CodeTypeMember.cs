@@ -8,7 +8,16 @@ namespace System.CodeDom
         public string Name
         {
             get => field ?? string.Empty;
-            set => field = value;
+            set
+            {
+                // Explicit implementations are excluded from the overload index. The VB generator
+                // temporarily renames them while emitting their Implements clause.
+                bool changed = this is CodeMemberMethod { IsMethodIdentityTracked: true, PrivateImplementationType: null } &&
+                    !string.Equals(field, value, StringComparison.Ordinal);
+                field = value;
+                if (changed)
+                    CodeMemberMethod.InvalidateMethodIdentity();
+            }
         }
 
         public MemberAttributes Attributes { get; set; } = MemberAttributes.Private | MemberAttributes.Final;
