@@ -65,6 +65,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         public virtual void AddOutputDirectory(NPath directory)
         {
+            Options.OutputFileName = directory.ToString();
         }
 
         public virtual void AddLinkXmlFile(string file)
@@ -166,6 +167,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
             else if (flag == "--typemap-entry-assembly")
             {
                 Options.TypeMapEntryAssembly = values[0];
+            }
+            else if (flag == "--output-typemaps")
+            {
+                Options.TypeMapFileName = values[0];
             }
             else if (flag == "--singlewarn")
             {

@@ -22,6 +22,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public Dictionary<int, bool> WarningsAsErrors = new Dictionary<int, bool>();
         public List<string> SuppressedWarningCategories = new List<string>();
         public bool DisableGeneratedCodeHeuristics;
+        public string? OutputFileName;
         public string? TypeMapEntryAssembly;
+        public string? TypeMapFileName;
     }
 }
