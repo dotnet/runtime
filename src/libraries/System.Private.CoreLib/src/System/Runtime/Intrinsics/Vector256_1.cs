@@ -25,6 +25,7 @@ namespace System.Runtime.Intrinsics
     /// <summary>Represents a 256-bit vector of a specified numeric type that is suitable for low-level optimization of parallel algorithms.</summary>
     /// <typeparam name="T">The type of the elements in the vector.</typeparam>
     [Intrinsic]
+    [SuppressReadyToRunCanonicalRooting]
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(Vector256DebugView<>))]
     [StructLayout(LayoutKind.Sequential, Size = Vector256.Size)]

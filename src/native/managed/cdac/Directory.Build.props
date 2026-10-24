@@ -1,5 +1,9 @@
 <Project>
     <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..\'))" />
+    <PropertyGroup>
+      <CDacSourceManifestRoot Condition="'$(CDacSourceManifestRoot)' == ''">$(RepoRoot)</CDacSourceManifestRoot>
+    </PropertyGroup>
+    <Import Project="SourceManifest.props" />
 
     <PropertyGroup>
       <!-- Source-build and bootstrap NativeAOT publishing on community platforms require toolchain assets that are not in the released SDK. -->
@@ -27,4 +31,17 @@
         <_Parameter1>NETCDAC0001</_Parameter1>
       </AssemblyAttribute>
     </ItemGroup>
+
+    <Target Name="_ValidateCDacSourceManifest" BeforeTargets="CoreCompile">
+      <ItemGroup>
+        <_CDacSourceManifestFile Include="@(CDacSourceManifestSource)">
+          <ManifestFullPath>$([MSBuild]::NormalizePath('$(CDacSourceManifestRoot)', '%(Identity)'))</ManifestFullPath>
+        </_CDacSourceManifestFile>
+        <_CDacLinkedCompile Include="@(Compile)" Condition="'%(Compile.Link)' != ''" />
+        <_CDacUnlistedLinkedCompile Include="@(_CDacLinkedCompile->'%(FullPath)')"
+                                    Exclude="@(_CDacSourceManifestFile->'%(ManifestFullPath)')" />
+      </ItemGroup>
+      <Error Condition="'@(_CDacUnlistedLinkedCompile)' != ''"
+             Text="Linked Compile source(s) must be listed in SourceManifest.props: @(_CDacUnlistedLinkedCompile, ', ')" />
+    </Target>
 </Project>
