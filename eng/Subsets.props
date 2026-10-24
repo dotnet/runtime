@@ -410,6 +410,7 @@
     <_CrossToolSubset Condition="'$(BuildHostILTools)' == 'true'" Include="ClrILToolsSubset=true" />
   </ItemGroup>
 
+  <!-- Consumers reuse this item's metadata to select the same native producer instance. -->
   <ItemGroup Condition="'$(_BuildAnyCrossArch)' == 'true' and '@(_CrossToolSubset)' != ''">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
@@ -422,6 +423,7 @@
                             BuildSubdirectory=$(BuildArchitecture);
                             ClrCrossComponentsBuild=true"
       UndefineProperties="EnableNativeSanitizers"
+      CoreClrNativeBuild="CrossComponents"
       Category="clr" />
   </ItemGroup>
 

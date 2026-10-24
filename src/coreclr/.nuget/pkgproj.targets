@@ -12,6 +12,57 @@
 
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
 
+  <ItemGroup Condition="'$(Restore)' != 'true' and '$(PackageTargetRuntime)' != '' and '$(IsLineupPackage)' != 'true'">
+    <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"
+                      Condition="'$(PackCrossComponent)' != 'true' and '$(ClrRuntimeBuildSubsets)' != ''"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build"
+                      BuildOrderOnly="true"
+                      AdditionalProperties="$(ClrRuntimeBuildSubsets);$(TargetCxxLibraryProperties)"
+                      GlobalPropertiesToRemove="PackageTargetRuntime;Platform;PackCrossComponent" />
+    <ProjectReference Include="@(ProjectToBuild->WithMetadataValue('CoreClrNativeBuild', 'CrossComponents'))"
+                      Condition="'$(PackCrossComponent)' == 'true'"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build"
+                      BuildOrderOnly="true"
+                      GlobalPropertiesToRemove="PackageTargetRuntime;Platform;PackCrossComponent" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <BuildDependsOn>BuildNativeProjectReferences;$(BuildDependsOn)</BuildDependsOn>
+  </PropertyGroup>
+
+  <Target Name="BuildNativeProjectReferences"
+          Condition="'$(BuildPackageLibraryReferences)' == 'true' and '$(DesignTimeBuild)' != 'true'">
+    <MSBuild Projects="@(ProjectReference->WithMetadataValue('BuildOrderOnly', 'true'))"
+             Targets="Build"
+             BuildInParallel="$(BuildInParallel)"
+             RemoveProperties="%(ProjectReference.GlobalPropertiesToRemove);%(ProjectReference.UndefineProperties)" />
+  </Target>
+
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true' and '$(BuildPackageLibraryReferences)' == 'true'">
+    <ProjectReferenceTargets Include="Build" Targets="Build" />
+    <ProjectReferenceTargets Include="Pack" Targets="Build" />
+  </ItemGroup>
+
+  <!-- A native producer orders the graph but is not a NuGet package dependency. -->
+  <Target Name="RemoveBuildOrderOnlyPackageDependencies"
+          AfterTargets="_GetProjectClosure">
+    <ItemGroup>
+      <_ProjectReferenceClosure Remove="@(_ProjectReferenceClosure)" Condition="'%(_ProjectReferenceClosure.BuildOrderOnly)' == 'true'" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true' and '$(IsLineupPackage)' == 'true'">
+    <!-- Identity packages query other RIDs for metadata, not their native binaries. -->
+    <ProjectReferenceTargets Remove="Build;Pack" />
+    <ProjectReferenceTargets Include="Build;Pack" Targets="GetPackageIdentity;GetPackageFiles;DetermineRuntimeDependencies" />
+  </ItemGroup>
+
   <!--
     Finds symbol files and injects them into the package build.
   -->
