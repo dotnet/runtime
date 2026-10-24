@@ -149,6 +149,11 @@ struct READYTORUN_SECTION
     DWORD                   Type;           // READYTORUN_SECTION_XXX
     IMAGE_DATA_DIRECTORY    Section;
 };
+
+struct IMAGE_DATA_DIRECTORY {
+    uint32_t   VirtualAddress;
+    uint32_t   Size;
+}
 ```
 
 The `READYTORUN_CORE_HEADER` structure is immediately followed by an array of `READYTORUN_SECTION` records
@@ -475,13 +480,31 @@ IPs or PortableEntryPoint structures.
 
 ## ReadyToRunSectionType.MethodDefEntryPoints
 
-This section contains a native format sparse array (see 4 Native Format) that maps methoddef rows to
-method entrypoints. Methoddef is used as index into the array. The element of the array is index of the
-method in `RuntimeFunctions`, followed by list of slots that need to be filled before the method
+This section contains a [native format sparse array](#sparse-array) that maps methoddef rows to
+method entrypoints. Methoddef is used as index into the array. Each element encodes the index of the
+method in `RuntimeFunctions` and an optional list of slots that need to be filled before the method
 can start executing.
 
-The index of the method is left-shifted by 1 bit with the low bit indicating whether a list of slots
-to fix up follows. The list of slots is encoded as follows (same encoding as used by NGen):
+Each element begins with a native-format unsigned integer. Its decoded value contains the method
+index and flags indicating whether a fixup list is present and how to locate it:
+
+| Decoded value | Meaning | Following data |
+|:--------------|:--------|:---------------|
+| `methodIndex << 1` | Bit 0 is clear: no fixup list. | None. |
+| `(methodIndex << 2) \| 1` | Bits 0-1 are `01`: inline fixup list. | The fixup-list bytes immediately follow the encoded integer. |
+| `(methodIndex << 2) \| 3` | Bits 0-1 are `11`: reference to a previously emitted fixup list. | A native-format unsigned integer encoding the backward byte distance to the fixup list. |
+
+For the backward-reference form, the distance is measured from the start of the encoded distance
+field to the start of the earlier fixup list:
+
+```text
+fixupListOffset = distanceFieldOffset - decodedDistance
+```
+
+This allows multiple entrypoint records to share the same fixup list. The backward reference is part
+of the entrypoint record, not part of the fixup list's section and slot index encoding.
+
+The fixup list itself is encoded as follows (same encoding as used by NGen):
 
 ```
 READYTORUN_IMPORT_SECTIONS absolute index
@@ -585,6 +608,10 @@ hash code calculation is implemented in
 [vm/versionresilienthashcode.cpp](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/vm/versionresilienthashcode.cpp#L126);
 the value, represented by the `EntryPointWithBlobVertex` class, stores the method index in the
 runtime function table, the fixups blob and a blob encoding the method signature.
+
+The method index and optional fixup list use the same entrypoint encoding described in
+[MethodDefEntryPoints](#readytorunsectiontypemethoddefentrypoints), including backward references
+to previously emitted fixup lists.
 
 **Note:** In contrast to non-generic method entrypoints, this section is image-wide for
 composite R2R images. It represents all generics needed by all assemblies within the composite
