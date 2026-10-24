@@ -5006,6 +5006,57 @@ namespace System
             return span.Length;
         }
 
+        /// <summary>Finds the length of any common suffix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <returns>The length of the common suffix shared by the two spans. If there's no shared suffix, 0 is returned.</returns>
+        public static int CommonSuffixLength<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other)
+        {
+            int length = Math.Min(span.Length, other.Length);
+            span = span.Slice(span.Length - length);
+            other = other.Slice(other.Length - length);
+
+            for (int i = length - 1; i >= 0; i--)
+            {
+                if (!EqualityComparer<T>.Default.Equals(span[i], other[i]))
+                {
+                    return length - i - 1;
+                }
+            }
+
+            return length;
+        }
+
+        /// <summary>Finds the length of any common suffix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <returns>The length of the common suffix shared by the two spans. If there's no shared suffix, 0 is returned.</returns>
+        public static int CommonSuffixLength<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer)
+        {
+            if (typeof(T).IsValueType && (comparer is null || comparer == EqualityComparer<T>.Default))
+            {
+                return CommonSuffixLength(span, other);
+            }
+
+            int length = Math.Min(span.Length, other.Length);
+            span = span.Slice(span.Length - length);
+            other = other.Slice(other.Length - length);
+
+            comparer ??= EqualityComparer<T>.Default;
+            for (int i = length - 1; i >= 0; i--)
+            {
+                if (!comparer.Equals(span[i], other[i]))
+                {
+                    return length - i - 1;
+                }
+            }
+
+            return length;
+        }
+
         /// <summary>Determines if one span is longer than the other, and slices the longer one to match the length of the shorter.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void SliceLongerSpanToMatchShorterLength<T>(ref ReadOnlySpan<T> span, ref ReadOnlySpan<T> other)
