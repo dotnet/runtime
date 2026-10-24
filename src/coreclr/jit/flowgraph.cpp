@@ -4330,7 +4330,8 @@ void Compiler::fgWasmMarkCyclesForPolls()
         if (succ->bbPreorderNum <= block->bbPreorderNum && (succ->bbPostorderNum == UINT_MAX))
         {
             succ->SetFlags(BBF_NEEDS_GCPOLL);
-            JITDUMP("Marking block " FMT_BB " as needing a GC poll due to back-edge from " FMT_BB "\n", succ->bbNum, block->bbNum);
+            JITDUMP("Marking block " FMT_BB " as needing a GC poll due to back-edge from " FMT_BB "\n", succ->bbNum,
+                    block->bbNum);
         }
     };
 
@@ -4344,7 +4345,8 @@ void Compiler::fgWasmMarkCyclesForPolls()
     // We want to use the GCSafePointSuccessorEnumerator here, as it will create
     // pseudo-edges from tail call -> entry block so we can detect implicit cycles
     // which may be formed through tail calls.
-    fgRunDfs<GCSafePointSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge)>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
+    fgRunDfs<GCSafePointSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder),
+             decltype(visitEdge)>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
 }
 
 //------------------------------------------------------------------------------
