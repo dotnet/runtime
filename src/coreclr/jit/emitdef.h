@@ -18,6 +18,8 @@
 #include "emitriscv64.h"
 #elif defined(TARGET_WASM)
 #include "emitwasm.h"
+#elif defined(TARGET_INTERP)
+#include "emitinterp.h"
 #else
 #error Unsupported or unset target architecture
 #endif

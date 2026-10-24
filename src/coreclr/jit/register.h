@@ -15,6 +15,8 @@
 #include "registerriscv64.h"
 #elif defined(TARGET_WASM)
 #include "registerwasm.h"
+#elif defined(TARGET_INTERP)
+#include "registerinterp.h"
 #else
 #error Unsupported or unset target architecture
 #endif

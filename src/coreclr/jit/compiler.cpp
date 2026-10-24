@@ -5020,6 +5020,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
 #endif
 
+#ifdef TARGET_INTERP
+    // Interpreter bytecode is generated from rationalized LIR. The native backend phases
+    // (lowering, register allocation, block layout and codegen) do not run for this target yet.
+    activePhaseChecks = PhaseChecks::CHECK_NONE;
+    activePhaseDumps  = PhaseDumps::DUMP_NONE;
+
+    genInterpCode(methodCodePtr, methodCodeSize);
+#else // !TARGET_INTERP
     // Assign registers to variables, etc.
 
     // Create the RA before Lowering, so that Lowering can call RA methods for
@@ -5119,6 +5127,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         m_regAlloc->dumpLsraStatsCsv(jitstdout());
     }
 #endif // TRACK_LSRA_STATS
+#endif // !TARGET_INTERP
 
     // We're done -- set the active phase to the last phase
     // (which isn't really a phase)
@@ -6357,6 +6366,15 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
     }
 
 #endif // DEBUG
+
+#ifdef TARGET_INTERP
+    // Methods that are not opted in fall back to the next code generator.
+    if (!compIsForInlining() &&
+        !JitConfig.Interpreter().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+    {
+        return CORJIT_SKIPPED;
+    }
+#endif // TARGET_INTERP
 
     /* Setup an error trap */
 

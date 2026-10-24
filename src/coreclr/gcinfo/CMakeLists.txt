@@ -96,3 +96,8 @@ if (CLR_CMAKE_TARGET_ARCH_WASM)
   create_gcinfo_lib(TARGET gcinfo_universal_wasm OS universal ARCH wasm)
   install_clr(TARGETS gcinfo_unix_wasm DESTINATIONS sharedFramework COMPONENT runtime)
 endif (CLR_CMAKE_TARGET_ARCH_WASM)
+
+# Mirrors the architectures that enable FEATURE_INTERPRETER in clrfeatures.cmake.
+if (NOT CLR_CMAKE_TARGET_ANDROID AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_RISCV64 OR CLR_CMAKE_TARGET_ARCH_LOONGARCH64))
+  create_gcinfo_lib(TARGET gcinfo_universal_interp OS universal ARCH interp)
+endif()
