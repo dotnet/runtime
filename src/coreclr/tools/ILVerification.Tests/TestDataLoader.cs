@@ -174,6 +174,102 @@ namespace ILVerification.Tests
             return error;
         }
 
+        /// <summary>
+        /// Returns all methods that contain valid or invalid IL, as for <see cref="GetMethodsWithValidIL"/> and
+        /// <see cref="GetMethodsWithInvalidIL"/>, with the errors expected when verifying with
+        /// <see cref="VerifierOptions.ValidationOnly"/> set. These are the errors in the method name, unless an
+        /// Invalid method name ends with the following suffix:
+        /// _Validation_[Valid | ExpectedVerifierError1.ExpectedVerifierError2....ExpectedVerifierErrorN]
+        /// E.g.: 'LocAlloc_Invalid_Unverifiable_Validation_Valid'
+        /// </summary>
+        public static IEnumerable<object[]> GetMethodsForValidationOnlyMode()
+        {
+            var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
+            {
+                if (mparams.Length == 2 && mparams[1] == "Valid")
+                {
+                    return new ValidationOnlyTestCase
+                    {
+                        MetadataToken = MetadataTokens.GetToken(methodHandle),
+                        ExpectedVerifierErrors = new List<VerifierError>()
+                    };
+                }
+                if (mparams.Length == 3 && mparams[1] == "Invalid")
+                {
+                    var verificationErrors = new List<VerifierError>();
+                    foreach (var item in mparams[2].Split('.'))
+                    {
+                        if (Enum.TryParse(item, out VerifierError expectedError))
+                        {
+                            verificationErrors.Add(expectedError);
+                        }
+                    }
+
+                    return new ValidationOnlyTestCase
+                    {
+                        MetadataToken = MetadataTokens.GetToken(methodHandle),
+                        ExpectedVerifierErrors = verificationErrors
+                    };
+                }
+                return null;
+            });
+            return GetTestMethodsFromDll(methodSelector);
+        }
+
+        private const string ValidationSuffix = "_Validation_";
+
+        /// <summary>
+        /// Splits a test method name into the parts that the selectors take (see the examples below), or returns null
+        /// if the name does not follow the naming convention. <paramref name="validationErrors"/> gets the errors of
+        /// a '_Validation_' suffix, or null without one. A malformed suffix throws, so no method silently drops out.
+        /// </summary>
+        private static string[] SplitTestMethodName(string methodName, out List<VerifierError> validationErrors)
+        {
+            validationErrors = null;
+            var name = methodName;
+            var validationIndex = methodName.LastIndexOf(ValidationSuffix, StringComparison.Ordinal);
+            if (validationIndex >= 0)
+            {
+                name = methodName.Substring(0, validationIndex);
+                if (name.Contains(ValidationSuffix, StringComparison.Ordinal))
+                    throw new ArgumentException($"Test '{methodName}' has more than one '{ValidationSuffix}' suffix.");
+
+                validationErrors = new List<VerifierError>();
+                var errors = methodName.Substring(validationIndex + ValidationSuffix.Length);
+                if (errors != "Valid")
+                {
+                    foreach (var item in errors.Split('.'))
+                    {
+                        validationErrors.Add(ParseExpectedError(item, methodName));
+                    }
+                }
+            }
+
+            string[] mparams = null;
+            var index = name.LastIndexOf("_Valid", StringComparison.Ordinal);
+            if (index < 0)
+                index = name.LastIndexOf("_Invalid", StringComparison.Ordinal);
+            if (index >= 0)
+            {
+                var substring = name.Substring(index + 1);
+                var split = substring.Split('_');
+                mparams = new string[split.Length + 1];
+                split.CopyTo(mparams, 1);
+                mparams[0] = name.Substring(0, index);
+                // examples of methodName to mparams transformation:
+                //   * `get_Property` -> [ 'get_Property' ]
+                //   * `CheckSomething_Valid` -> [ 'CheckSomething', 'Valid' ]
+                //   * 'WrongMethod_Invalid_BranchOutOfTry' -> [ 'WrongMethod', 'Invalid', 'BranchOutOfTry' ]
+                //   * 'MoreWrongMethod_Invalid_TypeAccess.InitOnly' -> [ 'MoreWrongMethod', 'Invalid', 'TypeAccess', 'InitOnly' ]
+                //   * 'special.set_MyProperty.set_MyProperty_Invalid_InitOnly' -> [ 'special.set_MyProperty.set_MyProperty', 'Invalid', 'InitOnly' ]
+            }
+
+            if (validationErrors != null && (mparams == null || mparams.Length != 3 || mparams[1] != "Invalid"))
+                throw new ArgumentException($"Test '{methodName}' has a '{ValidationSuffix}' suffix, but only an Invalid test can have one.");
+
+            return mparams;
+        }
+
         private static List<TestCase[]> GetTestMethodsFromDll(Func<string[], MethodDefinitionHandle, TestCase> methodSelector)
         {
             var retVal = new List<TestCase[]>();
@@ -190,23 +286,10 @@ namespace ILVerification.Tests
                     if (!methodName.Contains('_', StringComparison.Ordinal))
                         continue;
 
-                    var index = methodName.LastIndexOf("_Valid", StringComparison.Ordinal);
-                    if (index < 0)
-                        index = methodName.LastIndexOf("_Invalid", StringComparison.Ordinal);
-                    if (index < 0)
+                    // The errors expected in validation-only mode, if they differ from the errors before the suffix.
+                    string[] mparams = SplitTestMethodName(methodName, out List<VerifierError> validationErrors);
+                    if (mparams == null)
                         continue;
-
-                    var substring = methodName.Substring(index + 1);
-                    var split = substring.Split('_');
-                    string[] mparams = new string[split.Length + 1];
-                    split.CopyTo(mparams, 1);
-                    mparams[0] = methodName.Substring(0, index);
-                    // examples of methodName to mparams transformation:
-                    //   * `get_Property` -> [ 'get_Property' ]
-                    //   * `CheckSomething_Valid` -> [ 'CheckSomething', 'Valid' ]
-                    //   * 'WrongMethod_Invalid_BranchOutOfTry' -> [ 'WrongMethod', 'Invalid', 'BranchOutOfTry' ]
-                    //   * 'MoreWrongMethod_Invalid_TypeAccess.InitOnly' -> [ 'MoreWrongMethod', 'Invalid', 'TypeAccess', 'InitOnly' ]
-                    //   * 'special.set_MyProperty.set_MyProperty_Invalid_InitOnly' -> [ 'special.set_MyProperty.set_MyProperty', 'Invalid', 'InitOnly' ]
 
                     var specialMethodHandle = HandleSpecialTests(mparams, method);
                     var newItem = methodSelector(mparams, specialMethodHandle);
@@ -216,6 +299,9 @@ namespace ILVerification.Tests
                         newItem.TestName = mparams[0];
                         newItem.MethodName = methodName;
                         newItem.ModuleName = testDllName;
+
+                        if (validationErrors != null && newItem is ValidationOnlyTestCase validationOnlyTestCase)
+                            validationOnlyTestCase.ExpectedVerifierErrors = validationErrors;
 
                         retVal.Add(new[] { newItem });
                     }
@@ -400,6 +486,17 @@ namespace ILVerification.Tests
             errorsString.Append(")");
 
             return errorsString.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Describes a test case with a method and the VerifierErrors expected in validation-only mode
+    /// </summary>
+    public class ValidationOnlyTestCase : InvalidILTestCase
+    {
+        public override string ToString()
+        {
+            return base.ToString() + " [validation-only]";
         }
     }
 
