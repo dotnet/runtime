@@ -161,6 +161,9 @@ C_FUNC(\Name):
 
 // Reserve 64 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
 .macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs
+    // No-op without an FPU; the caller reserves the slots either way, so frame
+    // offsets are unaffected. Same for the other FP sequences in this file.
+#if __riscv_flen >= 64
     fsd  fa0, (\ofs)(\reg)
     fsd  fa1, (\ofs + 8)(\reg)
     fsd  fa2, (\ofs + 16)(\reg)
@@ -169,6 +172,7 @@ C_FUNC(\Name):
     fsd  fa5, (\ofs + 40)(\reg)
     fsd  fa6, (\ofs + 48)(\reg)
     fsd  fa7, (\ofs + 56)(\reg)
+#endif
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_FLOAT_CALLEESAVED_REGISTERS
@@ -199,6 +203,7 @@ C_FUNC(\Name):
 .endm
 
 .macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs
+#if __riscv_flen >= 64
     fld  fa0, (\ofs)(\reg)
     fld  fa1, (\ofs + 8)(\reg)
     fld  fa2, (\ofs + 16)(\reg)
@@ -207,6 +212,7 @@ C_FUNC(\Name):
     fld  fa5, (\ofs + 40)(\reg)
     fld  fa6, (\ofs + 48)(\reg)
     fld  fa7, (\ofs + 56)(\reg)
+#endif
 .endm
 
 .macro RESTORE_FLOAT_CALLEESAVED_REGISTERS reg, ofs
@@ -310,6 +316,7 @@ C_FUNC(\Name):
 
     // Save callee-saved floating point registers if requested (fs0-fs11)
     .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+#if __riscv_flen >= 64
         fsd     fs0, (__PWTB_FloatCalleeSavedRegisters)(sp)
         fsd     fs1, (__PWTB_FloatCalleeSavedRegisters + 8)(sp)
         fsd     fs2, (__PWTB_FloatCalleeSavedRegisters + 16)(sp)
@@ -322,6 +329,7 @@ C_FUNC(\Name):
         fsd     fs9, (__PWTB_FloatCalleeSavedRegisters + 72)(sp)
         fsd     fs10, (__PWTB_FloatCalleeSavedRegisters + 80)(sp)
         fsd     fs11, (__PWTB_FloatCalleeSavedRegisters + 88)(sp)
+#endif
     .endif
 
 .endm
@@ -405,6 +413,7 @@ C_FUNC(\Name):
 
     // Save FP callee-saved registers (fs0-fs11 = f8,f9,f18-f27) at offset 0
     // RISC-V FP callee-saved: fs0=f8, fs1=f9, fs2-fs11=f18-f27
+#if __riscv_flen >= 64
     fsd   fs0,  0(sp)   // f8
     fsd   fs1,  8(sp)   // f9
     fsd   fs2,  16(sp)  // f18
@@ -417,6 +426,7 @@ C_FUNC(\Name):
     fsd   fs9,  72(sp)  // f25
     fsd   fs10, 80(sp)  // f26
     fsd   fs11, 88(sp)  // f27
+#endif
 
     // Set target to TransitionBlock pointer
     addi  \target, sp, 160

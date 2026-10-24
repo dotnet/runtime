@@ -89,6 +89,7 @@
         PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, STACK_SIZE
 
         # Floating point registers
+#if __riscv_flen >= 64
         fsd         fa0, FLOAT_ARG_OFFSET(sp)
         fsd         fa1, FLOAT_ARG_OFFSET + 0x08(sp)
         fsd         fa2, FLOAT_ARG_OFFSET + 0x10(sp)
@@ -97,6 +98,7 @@
         fsd         fa5, FLOAT_ARG_OFFSET + 0x28(sp)
         fsd         fa6, FLOAT_ARG_OFFSET + 0x30(sp)
         fsd         fa7, FLOAT_ARG_OFFSET + 0x38(sp)
+#endif
 
         # Space for return block data (0x10 bytes)
 
@@ -113,6 +115,7 @@
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
         PREPARE_EXTERNAL_VAR RhpFpTrashValues, a1
 
+#if __riscv_flen >= 64
         fld fa0, 0x00(a1)
         fld fa1, 0x08(a1)
         fld fa2, 0x10(a1)
@@ -121,6 +124,7 @@
         fld fa5, 0x28(a1)
         fld fa6, 0x30(a1)
         fld fa7, 0x38(a1)
+#endif
 
         PREPARE_EXTERNAL_VAR RhpIntegerTrashValues, a1
 
@@ -143,6 +147,7 @@ ALTERNATE_ENTRY ReturnFrom\FunctionName
         mv          t2, a0
 
         # Restore floating point registers
+#if __riscv_flen >= 64
         fld         fa0, FLOAT_ARG_OFFSET(sp)
         fld         fa1, FLOAT_ARG_OFFSET + 0x08(sp)
         fld         fa2, FLOAT_ARG_OFFSET + 0x10(sp)
@@ -151,6 +156,7 @@ ALTERNATE_ENTRY ReturnFrom\FunctionName
         fld         fa5, FLOAT_ARG_OFFSET + 0x28(sp)
         fld         fa6, FLOAT_ARG_OFFSET + 0x30(sp)
         fld         fa7, FLOAT_ARG_OFFSET + 0x38(sp)
+#endif
 
         # Restore the argument registers
         ld          a0, ARGUMENT_REGISTERS_OFFSET(sp)
