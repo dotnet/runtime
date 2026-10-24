@@ -414,7 +414,6 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree**             use,
 
         case NI_Vector_Shuffle:
         case NI_Vector_ShuffleNative:
-        case NI_Vector_ShuffleNativeFallback:
         {
             assert(operandCount == 2);
             assert(((*use)->gtFlags & GTF_REVERSE_OPS) == 0); // gtNewSimdShuffleNode with reverse ops is not supported
