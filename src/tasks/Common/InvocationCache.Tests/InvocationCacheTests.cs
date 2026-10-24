@@ -711,7 +711,9 @@ public class InvocationCacheTests
                 {
                     executions++;
                     return 42;
-                }));
+                },
+                readMetadata: _ => Assert.Fail("Invalid outputs must not read cache metadata."),
+                writeMetadata: _ => Assert.Fail("Invalid outputs must not write cache metadata.")));
 
         Assert.Equal(nameof(outputs), exception.ParamName);
         Assert.Equal(0, executions);
@@ -720,7 +722,7 @@ public class InvocationCacheTests
     }, shape).Dispose();
 
     [Fact]
-    public void SharedTaskAdapterBypassesUnreadableInputWithoutCacheCleanup() => RemoteExecutor.Invoke(static () =>
+    public void SharedTaskAdapterBypassesUnreadableInputWithoutCacheCleanupOrMetadata() => RemoteExecutor.Invoke(static () =>
     {
         using var test = new CacheTestDirectory();
         Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
@@ -738,7 +740,9 @@ public class InvocationCacheTests
                 executions++;
                 Assert.Equal("untouched", File.ReadAllText(stale));
                 return 42;
-            });
+            },
+            readMetadata: _ => Assert.Fail("Bypass must not read cache metadata."),
+            writeMetadata: _ => Assert.Fail("Bypass must not write cache metadata."));
 
         Assert.Equal(42, result);
         Assert.Equal(1, executions);
@@ -778,6 +782,37 @@ public class InvocationCacheTests
             : InvocationOutputs.FromFiles(
                 Path.Combine(directory, "image.dll"),
                 Path.Combine(directory, "symbols", "image.pdb"));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SharedCacheValidatesMetadataBeforeModifyingOutputs(bool ownedDirectory)
+    {
+        using var test = new CacheTestDirectory();
+        InvocationCache cache = test.Cache;
+        test.WriteSource("image.dll", "cached");
+        cache.Store(CacheTestDirectory.Key, Contract(test.Source), writer => writer.Write(123));
+        Directory.CreateDirectory(test.Output);
+        string image = Path.Combine(test.Output, "image.dll");
+        File.WriteAllText(image, "untouched");
+
+        Assert.False(cache.TryRestore(CacheTestDirectory.Key, Contract(test.Output), CacheTestDirectory.Timestamp,
+            reader =>
+            {
+                Assert.Equal(123, reader.ReadInt32());
+                throw new InvalidDataException("Invalid tool metadata.");
+            }));
+        Assert.Equal("untouched", File.ReadAllText(image));
+        Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("Invalid tool metadata.") is true);
+
+        Assert.True(cache.TryRestore(CacheTestDirectory.Key, Contract(test.Output), CacheTestDirectory.Timestamp,
+            reader => Assert.Equal(123, reader.ReadInt32())));
+        Assert.Equal("cached", File.ReadAllText(image));
+
+        InvocationOutputs Contract(string directory) => ownedDirectory
+            ? InvocationOutputs.FromDirectory(directory)
+            : InvocationOutputs.FromFiles(Path.Combine(directory, "image.dll"));
     }
 
     [Fact]
@@ -878,7 +913,7 @@ public class InvocationCacheTests
         test.WriteSource("image.dll", "image");
         InvocationOutputs source = ownedDirectory ? test.SourceOutputs
             : InvocationOutputs.FromFiles(Path.Combine(test.Source, "image.dll"));
-        test.Cache.Store(CacheTestDirectory.Key, source);
+        test.Cache.Store(CacheTestDirectory.Key, source, writer => writer.Write(123));
 
         Assert.Equal("v1", InvocationCacheEntry.VersionDirectory);
         byte[] manifestBytes = File.ReadAllBytes(Path.Combine(test.Entry, "manifest"));
@@ -892,6 +927,7 @@ public class InvocationCacheTests
         byte[] image = File.ReadAllBytes(Path.Combine(test.Source, "image.dll"));
         Assert.Equal(image.Length, manifest.ReadInt64());
         Assert.Equal(SHA256.HashData(image), manifest.ReadBytes(32));
+        Assert.Equal(123, manifest.ReadInt32());
         Assert.Equal(manifest.BaseStream.Length, manifest.BaseStream.Position);
     }
 
@@ -1000,7 +1036,9 @@ public class InvocationCacheTests
                 Directory.Delete(test.Output, recursive: true);
                 Directory.CreateDirectory(test.Output);
                 return 42;
-            });
+            },
+            readMetadata: _ => Assert.Fail("Bypass must not read cache metadata."),
+            writeMetadata: _ => Assert.Fail("Bypass must not write cache metadata."));
 
         Assert.Equal(42, exitCode);
         Assert.Equal(1, executions);
@@ -1042,10 +1080,20 @@ public class InvocationCacheTests
                 Directory.CreateDirectory(test.Output);
                 File.WriteAllText(image, "computed");
                 return 0;
+            },
+            readMetadata: reader =>
+            {
+                events.Add("read");
+                Assert.Equal(123, reader.ReadInt32());
+            },
+            writeMetadata: writer =>
+            {
+                events.Add("write");
+                writer.Write(123);
             });
 
         Assert.Equal(0, Run());
-        Assert.Equal(new[] { "execute" }, events);
+        Assert.Equal(new[] { "execute", "write" }, events);
         Assert.True(Directory.Exists(test.Entry));
         events.Clear();
         File.WriteAllText(image, "outdated");
@@ -1055,7 +1103,7 @@ public class InvocationCacheTests
 
         Assert.Equal(0, Run());
 
-        Assert.Empty(events);
+        Assert.Equal(new[] { "read" }, events);
         Assert.Equal("computed", File.ReadAllText(image));
         Assert.False(File.Exists(symbols));
         Assert.Equal(!ownedDirectory, File.Exists(neighbor));
@@ -1080,17 +1128,27 @@ public class InvocationCacheTests
                 if (logError)
                     test.Log.LogError("Expected compiler error.");
                 return exitCode;
-            });
+            },
+            writeMetadata: _ => Assert.Fail("Failed execution must not publish metadata."));
 
         Assert.Equal(exitCode, result);
         Assert.Equal(1, executions);
         Assert.False(Directory.Exists(test.Entry));
     }
 
-    [Fact]
-    public void SharedExecutionPropagatesTaskExceptions()
+    [Theory]
+    [InlineData("execute")]
+    [InlineData("read")]
+    [InlineData("write")]
+    public void SharedExecutionPropagatesTaskExceptions(string phase)
     {
         using var test = new CacheTestDirectory();
+        if (phase == "read")
+        {
+            test.WriteSource("image.dll", "cached");
+            test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs);
+        }
+
         int executions = 0;
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
             InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp,
@@ -1098,12 +1156,26 @@ public class InvocationCacheTests
                 () =>
                 {
                     executions++;
-                    throw new InvalidOperationException("execute");
+                    if (phase == "execute")
+                        throw new InvalidOperationException(phase);
+                    Directory.CreateDirectory(test.Output);
+                    File.WriteAllText(Path.Combine(test.Output, "image.dll"), "produced");
+                    return 0;
+                },
+                readMetadata: _ =>
+                {
+                    if (phase == "read")
+                        throw new InvalidOperationException(phase);
+                },
+                writeMetadata: _ =>
+                {
+                    if (phase == "write")
+                        throw new InvalidOperationException(phase);
                 }));
 
-        Assert.Equal("execute", exception.Message);
-        Assert.Equal(1, executions);
-        Assert.False(Directory.Exists(test.Entry));
+        Assert.Equal(phase, exception.Message);
+        Assert.Equal(phase is "execute" or "write" ? 1 : 0, executions);
+        Assert.Equal(phase == "read", Directory.Exists(test.Entry));
     }
 
     [Fact]
@@ -1129,6 +1201,36 @@ public class InvocationCacheTests
                 File.WriteAllText(Path.Combine(test.Output, "image.dll"), "recomputed");
                 return 0;
             }));
+
+        Assert.Equal(1, executions);
+        Assert.False(File.Exists(stale));
+        Assert.Equal("recomputed", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
+        Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("restore failed") is true);
+    }
+
+    [Fact]
+    public void SharedExecutionFallsBackAfterMetadataFailure()
+    {
+        using var test = new CacheTestDirectory();
+        test.WriteSource("image.dll", "cached");
+        test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs, writer => writer.Write(123));
+        Directory.CreateDirectory(test.Output);
+        string stale = Path.Combine(test.Output, "stale.dll");
+        File.WriteAllText(stale, "stale");
+        int executions = 0;
+
+        Assert.Equal(0, InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp,
+            new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs),
+            () =>
+            {
+                executions++;
+                Assert.Equal("stale", File.ReadAllText(stale));
+                Directory.Delete(test.Output, recursive: true);
+                Directory.CreateDirectory(test.Output);
+                File.WriteAllText(Path.Combine(test.Output, "image.dll"), "recomputed");
+                return 0;
+            },
+            readMetadata: _ => throw new InvalidDataException("Invalid tool metadata.")));
 
         Assert.Equal(1, executions);
         Assert.False(File.Exists(stale));

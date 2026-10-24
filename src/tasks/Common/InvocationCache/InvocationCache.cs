@@ -47,12 +47,14 @@ internal sealed partial class InvocationCache
     }
 
     internal static int ExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
-        Func<InvocationDescription?> describeInvocation, Func<int> executeNormally)
-        => TryExecuteCached(log, configuration, describeInvocation, executeNormally, out int exitCode)
+        Func<InvocationDescription?> describeInvocation, Func<int> executeNormally,
+        Action<BinaryReader>? readMetadata = null, Action<BinaryWriter>? writeMetadata = null)
+        => TryExecuteCached(log, configuration, describeInvocation, executeNormally, out int exitCode, readMetadata, writeMetadata)
             ? exitCode : executeNormally();
 
     private static bool TryExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
-        Func<InvocationDescription?> describeInvocation, Func<int> executeNormally, out int exitCode)
+        Func<InvocationDescription?> describeInvocation, Func<int> executeNormally, out int exitCode,
+        Action<BinaryReader>? readMetadata = null, Action<BinaryWriter>? writeMetadata = null)
     {
         exitCode = 0;
         InvocationCache? cache = TryCreateFromEnvironment(log, configuration);
@@ -70,30 +72,33 @@ internal sealed partial class InvocationCache
             return false;
 
         exitCode = ExecutePrepared(cache, outputTimestampUtc,
-            new InvocationCacheRequest(key, invocation.Outputs), executeNormally);
+            new InvocationCacheRequest(key, invocation.Outputs), executeNormally,
+            readMetadata, writeMetadata);
         return true;
     }
 
     internal static int ExecutePrepared(InvocationCache? cache, DateTime outputTimestampUtc,
         InvocationCacheRequest? request,
-        Func<int> execute)
+        Func<int> execute,
+        Action<BinaryReader>? readMetadata = null, Action<BinaryWriter>? writeMetadata = null)
     {
         if (cache is null || request is null)
             return execute();
 
         string key = request.Value.Key;
         InvocationOutputs outputs = request.Value.Outputs;
-        if (cache.TryRestore(key, outputs, outputTimestampUtc))
+        if (cache.TryRestore(key, outputs, outputTimestampUtc, readMetadata))
             return 0;
 
         int exitCode = execute();
         if (exitCode == 0 && !cache._log.HasLoggedErrors)
-            cache.Store(key, outputs);
+            cache.Store(key, outputs, writeMetadata);
 
         return exitCode;
     }
 
-    internal bool TryRestore(string inputHash, InvocationOutputs outputs, DateTime outputTimestampUtc)
+    internal bool TryRestore(string inputHash, InvocationOutputs outputs, DateTime outputTimestampUtc,
+        Action<BinaryReader>? readMetadata = null)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
         ValidateOutputs(outputs);
@@ -108,7 +113,7 @@ internal sealed partial class InvocationCache
 
         try
         {
-            List<(string Name, bool Present)> files = ReadManifest(entryDirectory, outputs);
+            List<(string Name, bool Present)> files = ReadManifest(entryDirectory, outputs, readMetadata);
 
             // Check the entire entry before modifying outputs. Copies can still fail if the cache is wiped concurrently.
             if (outputs.DirectoryPath is not null)
@@ -143,7 +148,7 @@ internal sealed partial class InvocationCache
         }
     }
 
-    internal void Store(string inputHash, InvocationOutputs outputs)
+    internal void Store(string inputHash, InvocationOutputs outputs, Action<BinaryWriter>? writeMetadata = null)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
         ValidateOutputs(outputs);
@@ -212,6 +217,7 @@ internal sealed partial class InvocationCache
                             manifest.Write(HashFile(cachedFile));
                         }
                     }
+                    writeMetadata?.Invoke(manifest);
                 }
                 File.WriteAllBytes(Path.Combine(stagingDirectory, "manifest.sha256"), HashFile(Path.Combine(stagingDirectory, "manifest")));
 
@@ -282,7 +288,7 @@ internal sealed partial class InvocationCache
 #endif
     }
 
-    private List<(string Name, bool Present)> ReadManifest(string entryDirectory, InvocationOutputs outputs)
+    private List<(string Name, bool Present)> ReadManifest(string entryDirectory, InvocationOutputs outputs, Action<BinaryReader>? readMetadata)
     {
         bool fileSet = outputs.DirectoryPath is null;
         if (!File.ReadAllBytes(Path.Combine(entryDirectory, "manifest.sha256")).SequenceEqual(HashFile(Path.Combine(entryDirectory, "manifest"))))
@@ -325,6 +331,7 @@ internal sealed partial class InvocationCache
             files.Add((relativePath, present));
         }
 
+        readMetadata?.Invoke(manifest);
         if (manifest.BaseStream.Position != manifest.BaseStream.Length)
             throw new InvalidDataException($"Unexpected data in {_toolName} cache manifest.");
 

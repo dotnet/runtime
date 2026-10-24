@@ -33,6 +33,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\InvocationCache\InvocationCache.Configuration.cs" Link="InvocationCache\InvocationCache.Configuration.cs" />
+    <Compile Include="..\Common\InvocationCache\InvocationCache.cs" Link="InvocationCache\InvocationCache.cs" />
+    <Compile Include="..\Common\InvocationCache\InvocationCache.Identity.cs" Link="InvocationCache\InvocationCache.Identity.cs" />
+    <Compile Include="..\Common\InvocationCache\InvocationCache.Outputs.cs" Link="InvocationCache\InvocationCache.Outputs.cs" />
+    <Compile Include="..\Common\InvocationCache\InvocationCacheConfiguration.cs" Link="InvocationCache\InvocationCacheConfiguration.cs" />
+    <Compile Include="..\Common\InvocationCache\InvocationCacheEntry.cs" Link="InvocationCache\InvocationCacheEntry.cs" />
+    <Compile Include="..\Common\InvocationCache\InvocationOutputs.cs" Link="InvocationCache\InvocationOutputs.cs" />
+    <Compile Include="..\Common\InvocationCache\InvocationDescription.cs" Link="InvocationCache\InvocationDescription.cs" />
+    <Compile Include="..\Common\InvocationCache\InvocationInputs.cs" Link="InvocationCache\InvocationInputs.cs" />
+    <InternalsVisibleTo Include="Crossgen2Tasks.Tests" />
     <Content Include="Microsoft.NET.CrossGen.targets" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="ShimFilesSimulatingLogicInSdkRepo/Microsoft.NET.CrossGen.props"
       Link="Microsoft.NET.CrossGen.props"

@@ -13,6 +13,7 @@ Call `InvocationCache.ExecuteCached` with:
 - A description callback returning ordered input paths, effective arguments/context, and an owned
   directory or file set through `InvocationDescription`. Return null for unsupported invocations.
 - A normal-execution callback that prepares outputs and runs the tool independently of caching.
+- Optional `readMetadata`/`writeMetadata` callbacks to serialize non-file task outputs.
 
 The task must inventory all relevant inputs and toolchain files, including its own assembly. The
 shared layer hashes declared files with SHA-256; it does not interpret arguments or discover
@@ -32,7 +33,7 @@ Restoration is not transactional. Empty directories are not preserved, and symbo
 checked.
 
 Keys retain absolute input/output paths and execution context; cross-worktree reuse is not promised.
-Hits do not replay diagnostics or non-file task outputs. Cache operations do not observe cancellation.
+Hits do not replay diagnostics or other execution side effects. Cache operations do not observe cancellation.
 Consumers must bypass invocations whose dependencies or required side effects cannot be modeled.
 
 Entries are staged locally and published atomically. Concurrent processes on one machine may share
