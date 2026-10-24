@@ -5,7 +5,7 @@
     <PackageDescription>Internal toolchain package not meant for direct consumption. Please do not reference directly.</PackageDescription>
   </PropertyGroup>
 
-  <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles" Returns="@(PackageFile)">
+  <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles" DependsOnTargets="CalculateWorkloadSdkVersion" Returns="@(PackageFile)">
     <Error Condition="'$(SdkBandVersionForWorkload_FromRuntimeVersions)' == ''"
            Text="%24(SdkBandVersionForWorkload_FromRuntimeVersions) is not set" />
 
