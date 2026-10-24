@@ -342,7 +342,8 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (buildOptions.ExtraBuildEnvironmentVariables is null)
             buildOptions = buildOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
 
-        buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
+        // Validation only. The Emscripten workload manifest from the validation VMR build ships net12 packs and these tests target net11.0.
+        buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "true";
 
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(configuration, info.ProjectName, buildOptions);
 
