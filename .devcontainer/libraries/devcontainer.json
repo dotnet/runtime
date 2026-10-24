@@ -2,6 +2,7 @@
 {
 	"name": "Libraries/Runtime development (prebuilt)",
 	"build": {
+		"context": "../..",
 		"dockerfile": "../Dockerfile",
 		"args": {
 			"VARIANT": "11.0-resolute"
