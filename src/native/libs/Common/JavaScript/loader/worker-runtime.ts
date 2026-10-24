@@ -18,6 +18,7 @@ import { HostBuilder } from "./host-builder";
 import {
     createSignalingBuffer,
     notifyMemoryGrowth,
+    MemoryViewManager,
     OFFSET_COMMAND_SIGNAL,
     OFFSET_COMMAND_RESULT,
     OFFSET_COMMAND_PROMISE_ID,
@@ -32,6 +33,8 @@ import {
     RING_ENTRY_SIGNAL,
     wakeMain,
 } from "./shared-signaling";
+import type { WorkerModuleImportsMessage } from "./worker-imports";
+import { createWorkerJSImportInvoker } from "./worker-imports";
 
 // -----------------------------------------------------------
 // Init message types (exchanged via postMessage during Phase A)
@@ -135,7 +138,7 @@ export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promis
             return result;
         };
 
-        runWorkerEventLoop(signalView, runtime);
+        runWorkerEventLoop(signalView, runtime, new MemoryViewManager(wasmMemory, signalView));
 
         // Post "ready" back to main thread
         const readyMsg: WorkerReadyMessage = {
@@ -169,11 +172,17 @@ export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promis
 // OFFSET_WAKEUP_WORKER to wake the shared-memory loop.
 // -----------------------------------------------------------
 
-function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI): void {
+function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryViews: MemoryViewManager): void {
     let closing = false;
     let commandRunning = false;
 
-    self.addEventListener("message", (ev: MessageEvent<WorkerCommandMessage>): void => {
+    self.addEventListener("message", (ev: MessageEvent<WorkerCommandMessage | WorkerModuleImportsMessage>): void => {
+        if (ev.data.type === "imports" && !closing) {
+            for (const entry of ev.data.functions) {
+                runtime.INTERNAL.registerWorkerJSImport(ev.data.moduleName, entry.name, createWorkerJSImportInvoker(signalView, memoryViews, entry.handle));
+            }
+            return;
+        }
         if (ev.data.type !== "command" || closing) return;
         const command = ev.data;
         if (commandRunning && command.commandId !== CommandId.EXIT) {

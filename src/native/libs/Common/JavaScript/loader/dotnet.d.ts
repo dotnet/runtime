@@ -51,7 +51,9 @@ interface DotnetHostBuilder {
     /**
      * Configures the runtime to start on a dedicated web worker.
      * The main thread gets a proxy supporting runMain, runMainAndExit, and exit.
-     * JS interop, heap access, and diagnostics are not yet supported by the proxy.
+     * UI imports currently support one Int32 argument and an Int32 result.
+     * Register each module once, before running managed code.
+     * JS exports, heap access, and diagnostics are not yet supported by the proxy.
      * Requires COOP/COEP headers and SharedArrayBuffer support.
      */
     withWorker(options?: WorkerOptions): DotnetHostBuilder;

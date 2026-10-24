@@ -24,7 +24,7 @@ export const enum CommandId {
 }
 
 // Layout version — bump when the signaling buffer layout changes
-export const SIGNALING_VERSION = 1;
+export const SIGNALING_VERSION = 2;
 
 // Number of entries in the JSImport ring buffer (worker → main)
 export const JSIMPORT_RING_CAPACITY = 16;
@@ -70,7 +70,10 @@ export const OFFSET_JSEXPORT_RING = OFFSET_JSEXPORT_HEAD + 2;
 export const OFFSET_FRAME_PTRS = OFFSET_JSEXPORT_RING + JSEXPORT_RING_CAPACITY * RING_ENTRY_SIZE;
 
 // Total signaling buffer size in Int32 elements
-export const SIGNALING_BUFFER_INT32_SIZE = OFFSET_FRAME_PTRS + FRAME_RING_CAPACITY;
+export const OFFSET_JSIMPORT_ERROR_LENGTH = OFFSET_FRAME_PTRS + FRAME_RING_CAPACITY;
+export const OFFSET_JSIMPORT_ERROR_TEXT = OFFSET_JSIMPORT_ERROR_LENGTH + 1;
+export const JSIMPORT_ERROR_CAPACITY = 4096;
+export const SIGNALING_BUFFER_INT32_SIZE = OFFSET_JSIMPORT_ERROR_TEXT + JSIMPORT_ERROR_CAPACITY;
 
 // Total signaling buffer size in bytes (Int32Array element = 4 bytes)
 export const SIGNALING_BUFFER_BYTE_SIZE = SIGNALING_BUFFER_INT32_SIZE * 4;

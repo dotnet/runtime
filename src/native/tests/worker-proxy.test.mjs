@@ -14,6 +14,14 @@ async function createFixture(options = {}) {
     const calls = [];
     const errors = [];
     const workerListeners = [];
+    const imports = new Map();
+    let uiApi;
+    const atomics = Object.create(Atomics);
+    atomics.wait = (array, index, expected) => {
+        uiApi.INTERNAL.workerImports.processPending();
+        assert.notEqual(Atomics.load(array, index), expected, "UI dispatch must wake the synchronous worker wait");
+        return "not-equal";
+    };
     const memory = new WebAssembly.Memory({ initial: 1, maximum: 4, shared: options.sharedMemory ?? true });
     const allocations = new Set();
     let nextPointer = 1024;
@@ -36,9 +44,15 @@ async function createFixture(options = {}) {
     const termination = new Promise(resolve => terminated = resolve);
     const runtime = {
         runtimeBuildInfo: {},
+        INTERNAL: {
+            registerWorkerJSImport: (moduleName, functionName, invoke) => {
+                if (!imports.has(moduleName)) imports.set(moduleName, new Map());
+                imports.get(moduleName).set(functionName, invoke);
+            },
+        },
         runMain: async (...args) => {
             calls.push(["runMain", ...args]);
-            return options.runMain ? await options.runMain() : 42;
+            return options.runMain ? await options.runMain(imports) : 42;
         },
         runMainAndExit: async (...args) => {
             calls.push(["runMainAndExit", ...args]);
@@ -51,7 +65,7 @@ async function createFixture(options = {}) {
     };
     let bootstrapWorkerRuntime;
     const context = createContext({
-        AbortController, Atomics, SharedArrayBuffer, setTimeout, clearTimeout,
+        AbortController, Atomics: atomics, SharedArrayBuffer, setTimeout, clearTimeout,
         self: {
             addEventListener: (_type, listener) => workerListeners.push(listener),
             postMessage: data => {
@@ -96,6 +110,7 @@ async function createFixture(options = {}) {
 
     const cache = new Map();
     const stubs = {
+        "../types": {},
         "./bootstrap": { scriptUrl: "https://example.test/dotnet.js" },
         "./config": { mergeLoaderConfig: () => {} },
         "./host-builder": { HostBuilder: class { async create() { return runtime; } } },
@@ -132,9 +147,116 @@ async function createFixture(options = {}) {
     const proxyModule = await load("./worker-proxy");
     await proxyModule.evaluate();
     return {
-        workers, calls, errors, termination, memory, module, allocations,
-        create: (config = { workerOptions: { timeoutMs: 1000 } }) => proxyModule.namespace.createWorkerProxy(config),
+        workers, calls, errors, termination, memory, module, allocations, imports,
+        create: async (config = { workerOptions: { timeoutMs: 1000 } }) => {
+            uiApi = await proxyModule.namespace.createWorkerProxy(config);
+            return uiApi;
+        },
     };
+}
+
+test("scalar UI imports reuse shared frames across ring wraparound", { timeout: 3000 }, async () => {
+    let fixture;
+    let invocations = 0;
+    fixture = await createFixture({
+        runMain: imports => {
+            const invoke = imports.get("main.js").get("Test.update");
+            const pointer = fixture.module._malloc(3 * 32);
+            try {
+                for (let value = 0; value < 65; value++) {
+                    const heap = new Int32Array(fixture.memory.buffer);
+                    heap[(pointer + 2 * 32) / 4] = value;
+                    assert.equal(invoke(pointer), value + 1);
+                    assert.equal(heap[(pointer + 32) / 4], value + 1);
+                }
+            } finally {
+                fixture.module._free(pointer);
+            }
+            return 0;
+        },
+    });
+    const api = await fixture.create();
+    try {
+        api.setModuleImports("main.js", {
+            Test: {
+                increment: 1,
+                update(value) {
+                    invocations++;
+                    return value + this.increment;
+                },
+            },
+        });
+        assert.equal(await api.runMain(), 0);
+        assert.equal(invocations, 65);
+        assert.equal(fixture.imports.get("main.js").size, 1);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+for (const failure of ["exception", "long-exception", "async-result"]) {
+    test(`UI import ${failure} reports an error and reclaims its slot`, { timeout: 3000 }, async () => {
+        let fixture;
+        let shouldFail = true;
+        fixture = await createFixture({
+            runMain: imports => {
+                const invoke = imports.get("main.js").get("update");
+                const pointer = fixture.module._malloc(3 * 32);
+                try {
+                    const expected = failure === "exception" ? /UI import failed \u03bb/
+                        : failure === "long-exception" ? /error message exceeds/
+                        : /synchronous Int32/;
+                    assert.throws(() => invoke(pointer), expected);
+                    shouldFail = false;
+                    assert.equal(invoke(pointer), 42);
+                } finally {
+                    fixture.module._free(pointer);
+                }
+                return 0;
+            },
+        });
+        const api = await fixture.create();
+        try {
+            api.setModuleImports("main.js", {
+                update: () => {
+                    if (!shouldFail) return 42;
+                    if (failure === "async-result") return Promise.resolve(42);
+                    throw new Error(failure === "long-exception" ? "x".repeat(5000) : "UI import failed \u03bb");
+                },
+            });
+            assert.equal(await api.runMain(), 0);
+        } finally {
+            api.exit(0);
+            await fixture.termination;
+        }
+    });
+}
+
+for (const result of [null, undefined]) {
+    test(`UI import preserves the ST ${String(result)} result`, { timeout: 3000 }, async () => {
+        let fixture;
+        fixture = await createFixture({
+            runMain: imports => {
+                const pointer = fixture.module._malloc(3 * 32);
+                try {
+                    assert.equal(imports.get("main.js").get("update")(pointer), null);
+                    assert.equal(new Uint8Array(fixture.memory.buffer)[pointer + 32 + 12], 0);
+                } finally {
+                    fixture.module._free(pointer);
+                }
+                return 0;
+            },
+        });
+        const api = await fixture.create();
+        try {
+            api.setModuleImports("main.js", { update: () => result });
+            assert.equal(await api.runMain(), 0);
+        } finally {
+            api.exit(0);
+            await fixture.termination;
+        }
+    });
 }
 
 for (const grow of [false, true]) {

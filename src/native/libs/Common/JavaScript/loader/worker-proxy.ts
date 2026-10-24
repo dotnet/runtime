@@ -31,6 +31,7 @@ import type { WorkerCommandMessage, WorkerInitMessage, WorkerToMainMessage } fro
 import { scriptUrl } from "./bootstrap";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { dotnetLogger, Module } from "./cross-module";
+import { createWorkerJSImportDispatcher } from "./worker-imports";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -123,8 +124,10 @@ function buildProxyRuntimeAPI(
     let exited: Error | undefined;
     let exiting = false;
     let exitRequested = false;
+    const workerImports = createWorkerJSImportDispatcher(signalView, memoryViews, message => worker.postMessage(message), terminate);
 
     registerFailureHandler(error => {
+        workerImports.stop();
         exited = error;
         pendingCommand?.abort(error);
         wakeMain(signalView);
@@ -191,11 +194,15 @@ function buildProxyRuntimeAPI(
         runtimeBuildInfo,
 
         // Stubs — not yet supported in proxy mode
-        INTERNAL: { workerMemoryViews: memoryViews },
+        INTERNAL: { workerMemoryViews: memoryViews, workerImports },
         Module,
         runtimeId: 0,
         getAssemblyExports: notSupported("getAssemblyExports"),
-        setModuleImports: notSupported("setModuleImports"),
+        setModuleImports: (moduleName: string, moduleImports: unknown): void => {
+            if (exiting || exited) throw exited ?? new Error("withWorker(): runtime is exiting");
+            if (pendingCommand) throw new Error("withWorker(): register module imports before running managed code");
+            workerImports.setModuleImports(moduleName, moduleImports);
+        },
         invokeLibraryInitializers: notSupported("invokeLibraryInitializers"),
 
         // Memory APIs — not supported in proxy mode
