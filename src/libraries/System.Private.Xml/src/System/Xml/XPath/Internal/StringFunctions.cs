@@ -9,6 +9,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
+using System.Xml.Xsl.Runtime;
 
 namespace MS.Internal.Xml.XPath
 {
@@ -225,31 +226,7 @@ namespace MS.Internal.Xml.XPath
                 Debug.Assert(nodeIterator!.Current != null);
                 value = nodeIterator.Current.Value;
             }
-            int modifyPos = -1;
-            char[] chars = value.ToCharArray();
-            bool firstSpace = false; // Start false to trim the beginning
-
-            for (int comparePos = 0; comparePos < chars.Length; comparePos++)
-            {
-                if (!XmlCharType.IsWhiteSpace(chars[comparePos]))
-                {
-                    firstSpace = true;
-                    modifyPos++;
-                    chars[modifyPos] = chars[comparePos];
-                }
-                else if (firstSpace)
-                {
-                    firstSpace = false;
-                    modifyPos++;
-                    chars[modifyPos] = ' ';
-                }
-            }
-
-            // Trim end
-            if (modifyPos > -1 && chars[modifyPos] == ' ')
-                modifyPos--;
-
-            return new string(chars, 0, modifyPos + 1);
+            return XsltFunctions.NormalizeSpace(value);
         }
 
         private string Translate(XPathNodeIterator nodeIterator)
@@ -258,28 +235,7 @@ namespace MS.Internal.Xml.XPath
             string value = _argList[0].Evaluate(nodeIterator).ToString()!;
             string mapFrom = _argList[1].Evaluate(nodeIterator).ToString()!;
             string mapTo = _argList[2].Evaluate(nodeIterator).ToString()!;
-            int modifyPos = -1;
-            char[] chars = value.ToCharArray();
-
-            for (int comparePos = 0; comparePos < chars.Length; comparePos++)
-            {
-                int index = mapFrom.IndexOf(chars[comparePos]);
-                if (index != -1)
-                {
-                    if (index < mapTo.Length)
-                    {
-                        modifyPos++;
-                        chars[modifyPos] = mapTo[index];
-                    }
-                }
-                else
-                {
-                    modifyPos++;
-                    chars[modifyPos] = chars[comparePos];
-                }
-            }
-
-            return new string(chars, 0, modifyPos + 1);
+            return XsltFunctions.Translate(value, mapFrom, mapTo);
         }
 
         public override XPathNodeIterator Clone() { return new StringFunctions(this); }
