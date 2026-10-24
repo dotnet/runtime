@@ -237,12 +237,30 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static nuint DivRem(nuint hi, nuint lo, nuint divisor, out nuint remainder)
         {
+            Debug.Assert(hi < divisor || divisor == 0);
+            // Callers ensure hi < divisor, so the quotient fits in one limb.
+            // Use the widening divide before splitting into smaller divisions;
+            // it produces both the quotient and remainder in one instruction.
+#pragma warning disable SYSLIB5004 // X86Base.DivRem is experimental
+            if (X86Base.X64.IsSupported)
+            {
+                (ulong q, ulong r) = X86Base.X64.DivRem(lo, hi, divisor);
+                remainder = (nuint)r;
+                return (nuint)q;
+            }
+
+            if (nint.Size == 4 && X86Base.IsSupported)
+            {
+                (uint q, uint r) = X86Base.DivRem((uint)lo, (uint)hi, (uint)divisor);
+                remainder = r;
+                return q;
+            }
+#pragma warning restore SYSLIB5004
+
             if (nint.Size == 8)
             {
                 // Compute (hi * 2^64 + lo) / divisor.
                 // hi < divisor is guaranteed by callers, so quotient fits in 64 bits.
-                Debug.Assert(hi < (ulong)divisor || divisor == 0);
-
                 if (hi == 0)
                 {
                     (ulong q, ulong r) = Math.DivRem(lo, (ulong)divisor);
@@ -267,18 +285,9 @@ namespace System.Numerics
                 }
 
                 {
-#pragma warning disable SYSLIB5004 // X86Base.DivRem is experimental
-                    if (X86Base.X64.IsSupported)
-                    {
-                        (ulong q, ulong r) = X86Base.X64.DivRem(lo, hi, divisor);
-                        remainder = (nuint)r;
-                        return (nuint)q;
-                    }
-#pragma warning restore SYSLIB5004
-
                     UInt128 value = ((UInt128)(ulong)hi << 64) | (ulong)lo;
-                    UInt128 digit = value / (ulong)divisor;
-                    remainder = (nuint)(ulong)(value - digit * (ulong)divisor);
+                    (UInt128 digit, UInt128 rem) = UInt128.DivRem(value, (ulong)divisor);
+                    remainder = (nuint)(ulong)rem;
                     return (nuint)(ulong)digit;
                 }
             }
