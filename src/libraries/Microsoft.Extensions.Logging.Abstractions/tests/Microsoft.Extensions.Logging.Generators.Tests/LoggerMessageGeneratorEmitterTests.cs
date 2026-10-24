@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 using SourceGenerators.Tests;
 using Xunit;
 
@@ -30,6 +32,104 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 Assert.True(src.Contains("WithDiagnostics") ? !d.IsEmpty : d.IsEmpty);
                 Assert.Single(r);
             }
+        }
+
+        public static IEnumerable<object[]> ConditionalDeclarationTriviaData()
+        {
+            string[] sources =
+            [
+                """
+                public static partial class LoggingMethodModifiers
+                {
+                    [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Value {value}")]
+                    public
+                #if TRIVIA_BRANCH
+                    static partial void Log(ILogger logger, int value);
+                #else
+                    static partial void Log(ILogger logger, int value);
+                #endif
+                }
+                """,
+                """
+                public static partial class LoggingTargetTypeParameters<
+                #if TRIVIA_BRANCH
+                    T>
+                #else
+                    T>
+                #endif
+                {
+                    [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Value {value}")]
+                    public static partial void Log(ILogger logger, int value);
+                }
+                """,
+                """
+                public partial class LoggingOuterTypeParameters<
+                #if TRIVIA_BRANCH
+                    T>
+                #else
+                    T>
+                #endif
+                {
+                    public static partial class Logger
+                    {
+                        [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Value {value}")]
+                        public static partial void Log(ILogger logger, int value);
+                    }
+                }
+                """,
+                """
+                public partial class @class<
+                #if TRIVIA_BRANCH
+                    [Parameter] T, @event>
+                #else
+                    [Parameter] U, @return>
+                #endif
+                {
+                    public static partial class Logger<
+                #if TRIVIA_BRANCH
+                        [Parameter] V, @struct>
+                #else
+                        [Parameter] W, @int>
+                #endif
+                    {
+                        [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Value {value}")]
+                        public /* modifier trivia */
+                #if TRIVIA_BRANCH
+                        static partial void Log(ILogger logger, int value);
+                #else
+                        static partial void Log(ILogger logger, long value);
+                #endif
+                    }
+                }
+
+                [System.AttributeUsage(System.AttributeTargets.GenericParameter)]
+                public sealed class ParameterAttribute : System.Attribute { }
+                """
+            ];
+
+            foreach (string source in sources)
+            {
+                yield return new object[] { source, true };
+                yield return new object[] { source, false };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ConditionalDeclarationTriviaData))]
+        public void ConditionalDeclarationTrivia_Compiles(string source, bool branchDefined)
+        {
+            source = (branchDefined ? "#define TRIVIA_BRANCH\n" : "") +
+                "using Microsoft.Extensions.Logging;\n" + source;
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            Assert.Empty(compilation.SyntaxTrees.Single().GetDiagnostics());
+
+            var (diagnostics, generatedSources) = RoslynTestUtils.RunGenerator(compilation, new LoggerMessageGenerator());
+            Assert.Empty(diagnostics);
+            GeneratedSourceResult generatedSource = Assert.Single(generatedSources);
+            compilation = compilation.AddSyntaxTrees(generatedSource.SyntaxTree);
+
+            using var stream = new MemoryStream();
+            Assert.Empty(compilation.Emit(stream).Diagnostics);
         }
 
         [Fact]
