@@ -1125,6 +1125,231 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task AesEntry_DeflateFinishesWithUnreadEncryptedData_ValidatesAuthentication(bool async, bool updateMode)
+        {
+            const string Password = "PLACEHOLDER";
+
+            byte[] plaintext = new byte[4097];
+            new Random(42).NextBytes(plaintext);
+
+            using var archiveStream = new MemoryStream();
+            ZipArchive createArchive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry createEntry = createArchive.CreateEntry("payload.bin", CompressionLevel.SmallestSize, Password, ZipEncryptionMethod.Aes256);
+            await using (Stream entryStream = async ? await createEntry.OpenAsync() : createEntry.Open())
+            {
+                if (async)
+                {
+                    await entryStream.WriteAsync(plaintext);
+                }
+                else
+                {
+                    entryStream.Write(plaintext);
+                }
+            }
+            await DisposeZipArchive(async, createArchive);
+
+            byte[] malformedArchive = AddTrailingEncryptedData(archiveStream.ToArray(), 16 * 1024);
+            using var malformedArchiveStream = new MemoryStream(malformedArchive);
+            ZipArchive readArchive = await CreateZipArchive(
+                async,
+                malformedArchiveStream,
+                updateMode ? ZipArchiveMode.Update : ZipArchiveMode.Read);
+
+            if (updateMode)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(async () => await OpenEntryStream(async, readArchive.Entries[0], Password));
+            }
+            else
+            {
+                await using Stream readStream = await OpenEntryStream(async, readArchive.Entries[0], Password);
+                if (async)
+                {
+                    await Assert.ThrowsAsync<InvalidDataException>(() => readStream.CopyToAsync(Stream.Null));
+                }
+                else
+                {
+                    Assert.Throws<InvalidDataException>(() => readStream.CopyTo(Stream.Null));
+                }
+            }
+
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task AesEntry_BeginRead_UsesAsynchronousArchiveReads()
+        {
+            const string Password = "PLACEHOLDER";
+            byte[] plaintext = "Hello, authenticated world!"u8.ToArray();
+
+            await using var archiveStream = new MemoryStream();
+            using (var createArchive = new ZipArchive(archiveStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                ZipArchiveEntry createEntry = createArchive.CreateEntry(
+                    "payload.bin",
+                    CompressionLevel.SmallestSize,
+                    Password,
+                    ZipEncryptionMethod.Aes256);
+                using Stream entryStream = createEntry.Open();
+                entryStream.Write(plaintext);
+            }
+
+            archiveStream.Position = 0;
+            await using var noSyncStream = new NoSyncCallsStream(archiveStream);
+            await using ZipArchive readArchive = await ZipArchive.CreateAsync(
+                noSyncStream,
+                ZipArchiveMode.Read,
+                leaveOpen: true,
+                entryNameEncoding: null);
+            await using Stream readStream = await readArchive.Entries[0].OpenAsync(Password.AsSpan());
+
+            byte[] buffer = new byte[plaintext.Length];
+            IAsyncResult asyncResult = readStream.BeginRead(buffer, 0, buffer.Length, null, null);
+
+            Assert.Equal(plaintext.Length, readStream.EndRead(asyncResult));
+            Assert.Equal(plaintext, buffer);
+        }
+
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task AesEmptyStoredEntry_ValidatesAuthentication(bool async, bool updateMode, bool corruptAuthenticationCode)
+        {
+            const string Password = "PLACEHOLDER";
+
+            using var archiveStream = new MemoryStream();
+            ZipArchive createArchive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry createEntry = createArchive.CreateEntry(
+                "empty.bin",
+                CompressionLevel.NoCompression,
+                Password,
+                ZipEncryptionMethod.Aes256);
+            await using (async ? await createEntry.OpenAsync() : createEntry.Open())
+            {
+            }
+            await DisposeZipArchive(async, createArchive);
+
+            byte[] archiveBytes = archiveStream.ToArray();
+            if (corruptAuthenticationCode)
+            {
+                (int encryptedDataOffset, int compressedSize, _, _, _) = GetEncryptedEntryLayout(archiveBytes);
+                archiveBytes[encryptedDataOffset + compressedSize - 1] ^= 0xFF;
+            }
+
+            using var readStream = new MemoryStream(archiveBytes);
+            ZipArchive readArchive = await CreateZipArchive(
+                async,
+                readStream,
+                updateMode ? ZipArchiveMode.Update : ZipArchiveMode.Read);
+
+            if (updateMode)
+            {
+                if (corruptAuthenticationCode)
+                {
+                    await Assert.ThrowsAsync<InvalidDataException>(async () => await OpenEntryStream(async, readArchive.Entries[0], Password));
+                }
+                else
+                {
+                    await using Stream entryStream = await OpenEntryStream(async, readArchive.Entries[0], Password);
+                    Assert.Equal(0, entryStream.Length);
+                }
+            }
+            else
+            {
+                await using Stream entryStream = await OpenEntryStream(async, readArchive.Entries[0], Password);
+                byte[] buffer = new byte[1];
+                if (corruptAuthenticationCode)
+                {
+                    if (async)
+                    {
+                        await Assert.ThrowsAsync<InvalidDataException>(async () => await entryStream.ReadAsync(buffer));
+                    }
+                    else
+                    {
+                        Assert.Throws<InvalidDataException>(() => entryStream.Read(buffer));
+                    }
+                }
+                else
+                {
+                    int bytesRead = async
+                        ? await entryStream.ReadAsync(buffer)
+                        : entryStream.Read(buffer);
+                    Assert.Equal(0, bytesRead);
+                }
+            }
+
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        private static byte[] AddTrailingEncryptedData(byte[] archive, int trailingDataLength)
+        {
+            const int AuthenticationCodeSize = 10;
+            const int CentralDirectoryCompressedSizeOffset = 20;
+            const int EndOfCentralDirectoryOffsetOffset = 16;
+            const int LocalHeaderCompressedSizeOffset = 18;
+
+            (int encryptedDataOffset, int compressedSize, int localHeaderOffset, int centralDirectoryOffset, int endOfCentralDirectoryOffset) =
+                GetEncryptedEntryLayout(archive);
+            int authenticationCodeOffset = encryptedDataOffset + compressedSize - AuthenticationCodeSize;
+
+            byte[] malformedArchive = new byte[archive.Length + trailingDataLength];
+            archive.AsSpan(0, authenticationCodeOffset).CopyTo(malformedArchive);
+            archive.AsSpan(authenticationCodeOffset).CopyTo(malformedArchive.AsSpan(authenticationCodeOffset + trailingDataLength));
+
+            int newCentralDirectoryOffset = centralDirectoryOffset + trailingDataLength;
+            int newEndOfCentralDirectoryOffset = endOfCentralDirectoryOffset + trailingDataLength;
+            int newCompressedSize = checked(compressedSize + trailingDataLength);
+
+            BinaryPrimitives.WriteInt32LittleEndian(
+                malformedArchive.AsSpan(localHeaderOffset + LocalHeaderCompressedSizeOffset), newCompressedSize);
+            BinaryPrimitives.WriteInt32LittleEndian(
+                malformedArchive.AsSpan(newCentralDirectoryOffset + CentralDirectoryCompressedSizeOffset), newCompressedSize);
+            BinaryPrimitives.WriteInt32LittleEndian(
+                malformedArchive.AsSpan(newEndOfCentralDirectoryOffset + EndOfCentralDirectoryOffsetOffset), newCentralDirectoryOffset);
+
+            return malformedArchive;
+        }
+
+        private static (int EncryptedDataOffset, int CompressedSize, int LocalHeaderOffset, int CentralDirectoryOffset, int EndOfCentralDirectoryOffset)
+            GetEncryptedEntryLayout(byte[] archive)
+        {
+            const int CentralDirectoryCompressedSizeOffset = 20;
+            const int CentralDirectoryLocalHeaderOffset = 42;
+            const int EndOfCentralDirectoryOffsetOffset = 16;
+            const int LocalHeaderExtraFieldLengthOffset = 28;
+            const int LocalHeaderFileNameLengthOffset = 26;
+            const int LocalHeaderLength = 30;
+
+            ReadOnlySpan<byte> endOfCentralDirectorySignature = [0x50, 0x4B, 0x05, 0x06];
+            int endOfCentralDirectoryOffset = archive.AsSpan().LastIndexOf(endOfCentralDirectorySignature);
+            Assert.True(endOfCentralDirectoryOffset >= 0);
+
+            int centralDirectoryOffset = BinaryPrimitives.ReadInt32LittleEndian(
+                archive.AsSpan(endOfCentralDirectoryOffset + EndOfCentralDirectoryOffsetOffset));
+            int compressedSize = BinaryPrimitives.ReadInt32LittleEndian(
+                archive.AsSpan(centralDirectoryOffset + CentralDirectoryCompressedSizeOffset));
+            int localHeaderOffset = BinaryPrimitives.ReadInt32LittleEndian(
+                archive.AsSpan(centralDirectoryOffset + CentralDirectoryLocalHeaderOffset));
+            int fileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(
+                archive.AsSpan(localHeaderOffset + LocalHeaderFileNameLengthOffset));
+            int extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(
+                archive.AsSpan(localHeaderOffset + LocalHeaderExtraFieldLengthOffset));
+            int encryptedDataOffset = localHeaderOffset + LocalHeaderLength + fileNameLength + extraFieldLength;
+
+            return (encryptedDataOffset, compressedSize, localHeaderOffset, centralDirectoryOffset, endOfCentralDirectoryOffset);
+        }
+
+        [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
         public async Task DecryptEntries_SamePassword_7Zip(bool async)

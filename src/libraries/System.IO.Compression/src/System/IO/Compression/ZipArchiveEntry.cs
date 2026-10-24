@@ -1164,7 +1164,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Wraps a (possibly decrypted) stream with decompression and CRC validation.
+        /// Wraps a (possibly decrypted) stream with decompression and entry integrity validation.
         /// Shared by both sync and async read paths.
         /// </summary>
         private Stream BuildDecompressionPipeline(Stream streamToDecompress)
@@ -1173,12 +1173,16 @@ namespace System.IO.Compression
 
             // AE-2 encrypted entries store CRC as 0 so skip CRC validation for those.
             // AE-1 version entries store a valid CRC.
-            if (IsAesEncrypted && _aeVersion == 2)
+            Stream payloadStream = IsAesEncrypted && _aeVersion == 2
+                ? decompressedStream
+                : new CrcValidatingReadStream(decompressedStream, _crc32, _uncompressedSize);
+
+            if (IsAesEncrypted)
             {
-                return decompressedStream;
+                payloadStream = WinZipAesStream.CreateAuthenticatedStream(payloadStream, streamToDecompress, _uncompressedSize);
             }
 
-            return new CrcValidatingReadStream(decompressedStream, _crc32, _uncompressedSize);
+            return payloadStream;
         }
 
         private WrappedStream OpenInWriteMode()
