@@ -3,6 +3,8 @@
 
 // Ported from the Brotli reference implementation (https://github.com/google/brotli), c/common/constants.h.
 
+using System.Diagnostics;
+
 namespace System.IO.Compression;
 
 /// <summary>Constants of the Brotli format (RFC 7932).</summary>
@@ -90,8 +92,7 @@ internal static class BrotliConstants
         uint forbiddenDistance = maxDistance + 1;
         // Subtract "directly" encoded region.
         uint offset = forbiddenDistance - ndirect - 1;
-        uint ndistbits = 0;
-        uint tmp;
+        uint ndistbits;
         uint half;
         uint group;
         // Postfix for the last dcode in the group.
@@ -100,16 +101,9 @@ internal static class BrotliConstants
         uint start;
         // Remove postfix and "head-start".
         offset = (offset >> (int)npostfix) + 4;
-        // Calculate the number of distance bits.
-        tmp = offset / 2;
-        // Poor-man's log2floor, to avoid extra dependencies.
-        while (tmp != 0)
-        {
-            ndistbits++;
-            tmp >>= 1;
-        }
-        // One bit is covered with subrange addressing ("half").
-        ndistbits--;
+        // Calculate the number of distance bits; one bit is covered with subrange addressing ("half").
+        Debug.Assert(offset / 2 != 0);
+        ndistbits = uint.Log2(offset / 2);
         // Find subrange.
         half = (offset >> (int)ndistbits) & 1;
         // Calculate the "group" part of dcode.

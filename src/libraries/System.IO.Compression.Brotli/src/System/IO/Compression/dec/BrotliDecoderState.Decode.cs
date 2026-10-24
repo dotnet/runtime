@@ -371,16 +371,8 @@ internal sealed partial class BrotliDecoderState
         return SafeDecodeSymbol(table, ref br, out result);
     }
 
-    private static uint Log2Floor(uint x)
-    {
-        uint result = 0;
-        while (x != 0)
-        {
-            x >>= 1;
-            ++result;
-        }
-        return result;
-    }
+    /// <summary>Returns the number of significant bits in <paramref name="x"/> (named after the reference implementation).</summary>
+    private static uint Log2Floor(uint x) => 32 - uint.LeadingZeroCount(x);
 
     /// <summary>
     /// Reads (s->symbol + 1) symbols. Totally 1..4 symbols are read, 1..11 bits each.

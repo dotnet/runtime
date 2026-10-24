@@ -87,7 +87,7 @@ internal static class Quality
 
     public static void SanitizeParams(ref EncoderParams p)
     {
-        p.Quality = Math.Min(BrotliConstants.MaxQuality, Math.Max(BrotliConstants.MinQuality, p.Quality));
+        p.Quality = Math.Clamp(p.Quality, BrotliConstants.MinQuality, BrotliConstants.MaxQuality);
         if (p.Quality <= MaxQualityForStaticEntropyCodes)
         {
             p.LargeWindow = false;
@@ -128,7 +128,7 @@ internal static class Quality
         }
         else
         {
-            lgblock = Math.Min(BrotliConstants.MaxInputBlockBits, Math.Max(BrotliConstants.MinInputBlockBits, lgblock));
+            lgblock = Math.Clamp(lgblock, BrotliConstants.MinInputBlockBits, BrotliConstants.MaxInputBlockBits);
         }
         return lgblock;
     }

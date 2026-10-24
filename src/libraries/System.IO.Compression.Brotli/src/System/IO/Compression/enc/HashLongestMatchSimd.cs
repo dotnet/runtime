@@ -5,7 +5,6 @@
 // and c/enc/matching_tag_mask.h.
 
 using System.Buffers.Binary;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -27,12 +26,12 @@ internal static class MatchingTagMask
         {
             ushort value = (ushort)MatchMask(tagBucket, 0, comparisonMask);
             count &= 0x0F;
-            return (ushort)((value >> count) | (value << ((0 - count) & 0x0F)));
+            return ushort.RotateRight(value, count);
         }
         if (chunkCount == 2)
         {
             uint value = MatchMask(tagBucket, 0, comparisonMask) | (MatchMask(tagBucket, 16, comparisonMask) << 16);
-            return BitOperations.RotateRight(value, count & 0x1F);
+            return uint.RotateRight(value, count);
         }
 
         ulong matches = 0;
@@ -40,7 +39,7 @@ internal static class MatchingTagMask
         {
             matches |= (ulong)MatchMask(tagBucket, 16 * i, comparisonMask) << (16 * i);
         }
-        return BitOperations.RotateRight(matches, count & 0x3F);
+        return ulong.RotateRight(matches, count);
     }
 
     /// <summary>Returns the 16-bit mask of the bytes of the 16-byte chunk at <paramref name="offset"/> that are equal to the tag.</summary>

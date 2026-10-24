@@ -656,14 +656,7 @@ internal static class BrotliBitStream
             }
         }
 
-        {
-            nuint maxBitsCounter = alphabetSize - 1;
-            while (maxBitsCounter != 0)
-            {
-                maxBitsCounter >>= 1;
-                ++maxBits;
-            }
-        }
+        maxBits += (nuint)(64 - ulong.LeadingZeroCount((ulong)(alphabetSize - 1)));
 
         if (count <= 1)
         {

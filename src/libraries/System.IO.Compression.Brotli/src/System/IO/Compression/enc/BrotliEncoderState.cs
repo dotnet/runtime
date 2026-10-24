@@ -4,6 +4,7 @@
 // Ported from the Brotli reference implementation (https://github.com/google/brotli), c/enc/encode.c and c/enc/state.h.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
 
 namespace System.IO.Compression;
@@ -754,7 +755,7 @@ internal sealed class BrotliEncoderState
         }
 
         Debug.Assert(storageIx <= 14);
-        lastBytes = (ushort)((storage[1] << 8) | storage[0]);
+        lastBytes = BinaryPrimitives.ReadUInt16LittleEndian(storage);
         lastBytesBits = (byte)storageIx;
         if (parameters.Quality <= Quality.MaxQualityForStaticEntropyCodes)
         {
@@ -805,8 +806,7 @@ internal sealed class BrotliEncoderState
         {
             // Restore the distance cache and last byte.
             savedDistCache.Slice(0, 4).CopyTo(distCache);
-            storage[0] = (byte)lastBytes;
-            storage[1] = (byte)(lastBytes >> 8);
+            BinaryPrimitives.WriteUInt16LittleEndian(storage, lastBytes);
             storageIx = lastBytesBits;
             BrotliBitStream.StoreUncompressedMetaBlock(isLast, data, wrappedLastFlushPos, mask, bytes, ref storageIx, storage);
         }
@@ -1075,8 +1075,7 @@ internal sealed class BrotliEncoderState
                     Debug.Assert(_lastBytesBits <= 14);
                     _lastBytes |= (ushort)(3u << _lastBytesBits);
                     _lastBytesBits = (byte)(_lastBytesBits + 2u);
-                    _tinyBuf[0] = (byte)_lastBytes;
-                    _tinyBuf[1] = (byte)(_lastBytes >> 8);
+                    BinaryPrimitives.WriteUInt16LittleEndian(_tinyBuf, _lastBytes);
                     _nextOut = _tinyBuf;
                     _nextOutOffset = 0;
                     _availableOut = (_lastBytesBits + 7u) >> 3;
@@ -1130,8 +1129,7 @@ internal sealed class BrotliEncoderState
         {
             nuint storageIx = _lastBytesBits;
             Span<byte> storage = GetBrotliStorage(2 * bytes + 503);
-            storage[0] = (byte)_lastBytes;
-            storage[1] = (byte)(_lastBytes >> 8);
+            BinaryPrimitives.WriteUInt16LittleEndian(storage, _lastBytes);
             Span<int> table = GetHashTable(_params.Quality, bytes, out nuint tableSize);
             ReadOnlySpan<byte> fragment = data.Slice((int)(wrappedLastProcessedPos & mask), (int)bytes);
             if (_params.Quality == Quality.FastOnePassCompressionQuality)
@@ -1257,8 +1255,7 @@ internal sealed class BrotliEncoderState
             uint metablockSize = (uint)(_inputPos - _lastFlushPos);
             Span<byte> storage = GetBrotliStorage(2 * metablockSize + 503);
             nuint storageIx = _lastBytesBits;
-            storage[0] = (byte)_lastBytes;
-            storage[1] = (byte)(_lastBytes >> 8);
+            BinaryPrimitives.WriteUInt16LittleEndian(storage, _lastBytes);
             WriteMetaBlockInternal(data, mask, _lastFlushPos, metablockSize, isLast, literalContextMode, _params,
                 _prevByte, _prevByte2, _numLiterals, _numCommands, commands.AsSpan(0, (int)_numCommands),
                 _savedDistCache, _distCache, ref storageIx, storage);
@@ -1299,8 +1296,7 @@ internal sealed class BrotliEncoderState
     {
         nuint storageIx;
         storageIx = _lastBytesBits;
-        header[0] = (byte)_lastBytes;
-        header[1] = (byte)(_lastBytes >> 8);
+        BinaryPrimitives.WriteUInt16LittleEndian(header, _lastBytes);
         _lastBytes = 0;
         _lastBytesBits = 0;
 
@@ -1592,8 +1588,7 @@ internal sealed class BrotliEncoderState
                     inplace = false;
                     storage = GetBrotliStorage(maxOutSize);
                 }
-                storage[0] = (byte)_lastBytes;
-                storage[1] = (byte)(_lastBytes >> 8);
+                BinaryPrimitives.WriteUInt16LittleEndian(storage, _lastBytes);
                 Span<int> table = GetHashTable(_params.Quality, blockSize, out nuint tableSize);
 
                 if (_params.Quality == Quality.FastOnePassCompressionQuality)
