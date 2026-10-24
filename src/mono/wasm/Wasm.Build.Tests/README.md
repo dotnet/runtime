@@ -67,6 +67,23 @@ For this, the builds get cached using `ProjectInfo` as the key.
 - `SHOW_BUILD_OUTPUT` - will show the build output to the console
 - `SKIP_PROJECT_CLEANUP` - won't remove the temporary project directories generated for the tests
 
+## Appsettings coverage
+
+`AppSettingsTests` covers environment selection for build and publish, including
+MSBuild and JavaScript overrides. It also exercises the internal appsettings APIs
+on both CoreCLR and Mono:
+
+- `INTERNAL.getAppSettingsFiles()` returns the manifest-listed VFS filenames for
+  the resolved application environment, with base settings before
+  environment-specific settings and no duplicates.
+- `INTERNAL.getAppSettingsBytes(fileName)` reads the current VFS contents as a
+  `Uint8Array`, or returns `undefined` for a missing file. Empty files return an
+  empty array; other filesystem errors propagate.
+
+These APIs do not change downloading or VFS placement. `Blazor.AppsettingsTests`
+checks that existing managed VFS access and the internal APIs both work in a
+Blazor application. Managed JSON parsing remains the consumer's responsibility.
+
 ## How to add tests
 
 Blazor specific tests should be located in `Blazor` directory. New test classes are picked up automatically - the per-class Helix work item list is generated from the built test assembly, so there is no list to update. Annotate classes and test methods that only apply to one runtime with `[TestCategory("mono")]` or `[TestCategory("coreclr")]`, and they will be left out of the other flavor's runs. If you are adding a new test to an existing class, make sure it does not prolong the execution time significantly. Tests run on parallel on CI and having one class running much longer than the average prolongs the total execution time.
