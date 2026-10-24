@@ -57,6 +57,28 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
+#if defined(TARGET_WASM)
+// Stack VarLoc records use the reserved ambient SP register number, not a wasm local.
+static_assert(REG_FPBASE == REG_SPBASE);
+static_assert(REG_FPBASE == REG_NA);
+static_assert(static_cast<int>(REG_NA) == static_cast<int>(ICorDebugInfo::REGNUM_AMBIENT_SP));
+static_assert(static_cast<int>(ICorDebugInfo::REGNUM_AMBIENT_SP) == 2);
+
+//------------------------------------------------------------------------
+// siWasmDebugRegNum: Encode a wasm local as a debug-info register number.
+//
+// Arguments:
+//    reg - the JIT register representing a wasm local.
+//
+// Return Value:
+//    The wasm local index biased past the reserved debug-info register numbers.
+//
+static regNumber siWasmDebugRegNum(regNumber reg)
+{
+    return static_cast<regNumber>(ICorDebugInfo::WASM_LOCAL_REGNUM_BASE + WasmRegToIndex(reg));
+}
+#endif // defined(TARGET_WASM)
+
 //============================================================================
 //           siVarLoc functions
 //============================================================================
@@ -207,6 +229,30 @@ void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumb
 {
     // Note: mask registers (K0-K7) and XMM16+ are accepted but will produce
     // VLT_INVALID since they can't be encoded in debug info.
+
+#if defined(TARGET_WASM)
+    if (reg == REG_NA)
+    {
+        vlType = VLT_INVALID;
+        return;
+    }
+
+    assert(genIsValidReg(reg));
+
+    if (otherReg == REG_NA)
+    {
+        vlType       = VLT_REG;
+        vlReg.vlrReg = siWasmDebugRegNum(reg);
+    }
+    else
+    {
+        assert(genIsValidReg(otherReg));
+        vlType            = VLT_REG_REG;
+        vlRegReg.vlrrReg1 = siWasmDebugRegNum(reg);
+        vlRegReg.vlrrReg2 = siWasmDebugRegNum(otherReg);
+    }
+    return;
+#endif // defined(TARGET_WASM)
 
     if (otherReg == REG_NA)
     {
@@ -462,6 +508,12 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
 void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
     const LclVarDsc* varDsc, var_types type, regNumber baseReg, int offset, bool isFramePointerUsed)
 {
+#if defined(TARGET_WASM)
+    this->vlType       = VLT_REG;
+    this->vlReg.vlrReg = siWasmDebugRegNum(varDsc->GetRegNum());
+    return;
+#endif // defined(TARGET_WASM)
+
     switch (type)
     {
         case TYP_INT:
@@ -623,7 +675,11 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
     {
         case VLT_REG:
         case VLT_REG_BYREF:
+#if defined(TARGET_WASM)
+            printf("$%u", (unsigned)varLoc->vlReg.vlrReg - ICorDebugInfo::WASM_LOCAL_REGNUM_BASE);
+#else
             printf("%s", getRegName(varLoc->vlReg.vlrReg));
+#endif
             if (varLoc->vlType == VLT_REG_BYREF)
             {
                 printf(" byref");
@@ -1589,6 +1645,10 @@ void CodeGen::siInit()
     siLastEndOffs = 0;
 
     m_compiler->compResetScopeLists();
+
+#if defined(TARGET_WASM)
+    siWasmScopesOpened = false;
+#endif // defined(TARGET_WASM)
 }
 
 /*****************************************************************************
@@ -1674,11 +1734,35 @@ void CodeGen::siBeginBlock(BasicBlock* block)
 void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned int lastBlockILEndOffset)
 {
 #if defined(TARGET_WASM)
-    // TODO-WASM: Wasm structured control flow
-    // requirements are incompatible with debug codegen's
-    // desire to keep blocks in increasing IL offset
-    // order. Figure out the proper scope manipulations.
-    //
+    // Wasm is compiled only ahead of time, where getVars reports no explicit ranges, so every
+    // scope covers the whole method. Our elimination of irreducible flow does not emit blocks in
+    // increasing IL offset order, so open all scopes in the first emitted block.
+    if (m_compiler->opts.OptimizationDisabled() && !siWasmScopesOpened)
+    {
+        siWasmScopesOpened = true;
+
+        for (unsigned i = 0; i < m_compiler->info.compVarScopesCount; i++)
+        {
+            VarScopeDsc* varScope = &m_compiler->info.compVarScopes[i];
+            assert(varScope->vsdLifeBeg == 0);
+
+            LclVarDsc* lclVarDsc = m_compiler->lvaGetDesc(varScope->vsdVarNum);
+
+            // Only report locals that were referenced, if we're not doing debug codegen
+            if (m_compiler->opts.compDbgCode || (lclVarDsc->lvRefCnt() > 0))
+            {
+                JITDUMP("Scope info: opening scope, LVnum=%u [%03X..%03X)\n", varScope->vsdLVnum, varScope->vsdLifeBeg,
+                        varScope->vsdLifeEnd);
+
+                varLiveKeeper->siStartVariableLiveRange(lclVarDsc, varScope->vsdVarNum);
+            }
+            else
+            {
+                JITDUMP("Skipping open scope for V%02u, unreferenced\n", varScope->vsdVarNum);
+            }
+        }
+    }
+
     return;
 #endif // defined(TARGET_WASM)
 
