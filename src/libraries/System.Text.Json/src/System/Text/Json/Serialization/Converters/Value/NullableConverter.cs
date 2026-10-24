@@ -29,9 +29,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
         {
-            // IsContinuation can be false when resuming the last suspended frame.
-            if (!state.IsContinuation && reader.TokenType == JsonTokenType.Null &&
-                state.Current.ObjectState == StackFrameObjectState.None)
+            if (reader.TokenType == JsonTokenType.Null && reader.CurrentDepth == state.Current.OriginalDepth)
             {
                 value = null;
                 return true;
