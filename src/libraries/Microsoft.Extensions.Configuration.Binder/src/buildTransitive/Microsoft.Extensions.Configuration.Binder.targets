@@ -4,6 +4,22 @@
         <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <EnableConfigurationBindingGeneratorTypeConverters Condition="'$(EnableConfigurationBindingGeneratorTypeConverters)' == ''">false</EnableConfigurationBindingGeneratorTypeConverters>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <CompilerVisibleProperty Include="EnableConfigurationBindingGeneratorTypeConverters" />
+        <CompilerVisibleProperty Include="PublishAot" />
+        <CompilerVisibleProperty Include="PublishTrimmed" />
+    </ItemGroup>
+
+    <Target Name="_Microsoft_Extensions_Configuration_Binder_ValidateTypeConverters"
+            BeforeTargets="CoreCompile">
+        <Error Condition="'$(EnableConfigurationBindingGeneratorTypeConverters)' != 'true' and '$(EnableConfigurationBindingGeneratorTypeConverters)' != 'false'"
+               Text="EnableConfigurationBindingGeneratorTypeConverters must be 'true' or 'false'." />
+    </Target>
+
     <Target Name="_Microsoft_Extensions_Configuration_Binder_RemoveAnalyzer"
             Condition="'$(EnableConfigurationBindingGenerator)' != 'true'"
             AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets">

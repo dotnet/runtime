@@ -32,6 +32,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public INamedTypeSymbol? ConfigurationBinder { get; }
         public INamedTypeSymbol? ConfigurationIgnoreAttribute { get; }
         public INamedTypeSymbol? ConfigurationKeyNameAttribute { get; }
+        public INamedTypeSymbol? TypeConverterAttribute { get; }
         public INamedTypeSymbol? OptionsBuilderConfigurationExtensions { get; }
         public INamedTypeSymbol? OptionsBuilderOfT { get; }
         public INamedTypeSymbol? OptionsBuilderOfT_Unbound { get; }
@@ -91,6 +92,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             ConfigurationBinder = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.ConfigurationBinder");
             ConfigurationIgnoreAttribute = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.ConfigurationIgnoreAttribute");
             ConfigurationKeyNameAttribute = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.ConfigurationKeyNameAttribute");
+            TypeConverterAttribute = compilation.GetBestTypeByMetadataName("System.ComponentModel.TypeConverterAttribute");
             IConfiguration = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.IConfiguration");
             IConfigurationSection = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.IConfigurationSection");
             IServiceCollection = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.DependencyInjection.IServiceCollection");
