@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 32
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -82,6 +82,7 @@
 // method's ReadyToRun entry point and fixups.
 // R2R Version 31.1 adds READYTORUN_FLAG_SINGLE_THREADED, which records that the image lays out [ThreadStatic] fields as regular statics
 // for a runtime built without FEATURE_MULTITHREADING.
+// R2R Version 32.1 adds READYTORUN_HELPER_WasmProfSamplepoint (used on WebAssembly)
 
 struct READYTORUN_CORE_HEADER
 {
@@ -528,6 +529,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_InitClass                 = 0x116,
     READYTORUN_HELPER_InitInstClass             = 0x117,
     READYTORUN_HELPER_R2RToInterpreter          = 0x118,
+    READYTORUN_HELPER_WasmProfSamplepoint       = 0x119,
 };
 
 #include "readytoruninstructionset.h"
