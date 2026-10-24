@@ -13,9 +13,14 @@ export interface DotnetHostBuilder {
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
     /**
-     * @deprecated This method is no longer supported and will be removed in a future version.
+     * Configures the runtime to start on a dedicated web worker.
+     * The main thread gets a proxy supporting runMain, runMainAndExit, and exit.
+     * UI imports currently support one Int32 argument and an Int32 result.
+     * Register each module once, before running managed code.
+     * JS exports, heap access, and diagnostics are not yet supported by the proxy.
+     * Requires COOP/COEP headers and SharedArrayBuffer support.
      */
-    withConfigSrc(configSrc: string): DotnetHostBuilder;
+    withWorker(options?: WorkerOptions): DotnetHostBuilder;
     /**
      * "command line" arguments for the Main() method.
      * @param args
@@ -206,6 +211,19 @@ export type LoaderConfig = {
      * Note: RuntimeAPI.runMain() and RuntimeAPI.runMainAndExit() will replace this value, if they provide it.
      */
     applicationArguments?: string[];
+    /**
+     * Configures the runtime to start on a dedicated web worker.
+     * Requires COOP/COEP headers and SharedArrayBuffer support.
+     */
+    workerOptions?: WorkerOptions;
+};
+export type WorkerOptions = {
+    /**
+     * Timeout in milliseconds for the worker to initialize and respond.
+     * If the worker doesn't post a "ready" message within this time, create() rejects and the worker is terminated.
+     * Default is 30000 (30 seconds).
+     */
+    timeoutMs?: number;
 };
 export type ResourceExtensions = {
     [extensionName: string]: ResourceList;

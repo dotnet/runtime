@@ -12,13 +12,35 @@ import type { DotnetHostBuilder } from "./types";
 
 import { HostBuilder } from "./host-builder";
 import { initPolyfillsEarly } from "./polyfills";
-import { exit } from "./exit";
+import { exit as loaderExit } from "./exit";
 import { dotnetInitializeModule } from ".";
+import { ENVIRONMENT_IS_WEB_WORKER, ENVIRONMENT_IS_SIDECAR } from "./per-module";
+import { waitForInitMessage, bootstrapWorkerRuntime } from "./worker-runtime";
+import { dotnetApi } from "../cross-module";
 
 dotnetInitializeModule();
 await initPolyfillsEarly();
 
-export const dotnet: DotnetHostBuilder | undefined = new HostBuilder() as DotnetHostBuilder;
-export { exit };
+const exit = (exitCode: number, reason: any): void => {
+    if (dotnetApi && dotnetApi.exit) {
+        dotnetApi.exit(exitCode, reason);
+    } else {
+        loaderExit(exitCode, reason);
+    }
+};
 
-dotnet.withConfig(/*! dotnetBootConfig */{});
+let _dotnet: DotnetHostBuilder | undefined;
+if (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR) {
+    // Dedicated worker spawned by withWorker(): wait for init message
+    // from main thread, then bootstrap the runtime with shared WebAssembly.Memory.
+    // ENVIRONMENT_IS_SIDECAR workers (Emscripten pthreads) continue normal startup.
+    const initMsg = await waitForInitMessage();
+    await bootstrapWorkerRuntime(initMsg);
+    // dotnet export is undefined in worker context
+} else {
+    _dotnet = new HostBuilder() as DotnetHostBuilder;
+    _dotnet.withConfig(/*! dotnetBootConfig */{});
+}
+
+export const dotnet = _dotnet;
+export { exit };

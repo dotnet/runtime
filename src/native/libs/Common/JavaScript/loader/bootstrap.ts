@@ -5,11 +5,12 @@ import { exceptionsFinal, simd } from "wasm-feature-detect";
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, globalThisAny } from "./per-module";
 import { dotnetAssert } from "./cross-module";
+import { loaderConfig } from "./config";
 
 const scriptUrlQuery = /*! webpackIgnore: true */import.meta.url;
 const queryIndex = scriptUrlQuery.indexOf("?");
 const modulesUniqueQuery = queryIndex > 0 ? scriptUrlQuery.substring(queryIndex) : "";
-const scriptUrl = normalizeFileUrl(scriptUrlQuery);
+export const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
 
 export async function validateEngineFeatures(): Promise<void> {
@@ -23,6 +24,20 @@ export async function validateEngineFeatures(): Promise<void> {
             const v8v = globalThisAny.version();
             const v8MajorVersion = parseInt(v8v.split(".")[0], 10);
             dotnetAssert.check(v8MajorVersion >= 14, "This V8 shell is too old. Please use a modern version.");
+        }
+    }
+    if (loaderConfig.workerOptions) {
+        if (typeof globalThis.Worker === "undefined") {
+            throw new Error("Worker is not available. withWorker() requires a JS engine with Worker support.");
+        }
+        if (typeof SharedArrayBuffer === "undefined") {
+            throw new Error("SharedArrayBuffer is not available. withWorker() requires cross-origin isolation (COOP/COEP headers).");
+        }
+        if (!globalThis.crossOriginIsolated) {
+            throw new Error("crossOriginIsolated is false. withWorker() requires Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy headers.");
+        }
+        if (typeof Atomics === "undefined" || typeof Atomics.waitAsync !== "function") {
+            throw new Error("Atomics.waitAsync is not available. withWorker() requires a browser with Atomics.waitAsync support.");
         }
     }
 }
@@ -79,5 +94,4 @@ export function makeURLAbsoluteWithApplicationBase(url: string) {
     }
     return url;
 }
-
 

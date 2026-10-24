@@ -414,6 +414,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <ItemGroup>
     <_WasmWebcilStampProperty Include="_WasmEnableWebcil" />
     <_WasmWebcilStampProperty Include="_WasmWebcilVersion" />
+    <_WasmWebcilStampProperty Include="WasmEnableSharedMemory" />
     <_WasmWebcilStampProperty Include="PublishReadyToRun" />
     <_WasmWebcilStampProperty Include="_WasmBuildPrebuiltR2RDirectory" />
   </ItemGroup>
@@ -456,7 +457,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     Inputs="@(_WasmDllBuildCandidates);$(IntermediateOutputPath)wasm-webcil-build.stamp;$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')">
 
-    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-build.stamp">
+    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" WasmEnableSharedMemory="$(WasmEnableSharedMemory)" PrebuiltR2RDirectory="$(_WasmBuildPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-build.stamp">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedWebcilOutputs" />
     </ConvertDllsToWebcil>
@@ -1133,6 +1134,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishWebcilStampInput Include="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)" />
       <_WasmPublishWebcilStampLine Include="_WasmEnableWebcil=$(_WasmEnableWebcil)" />
       <_WasmPublishWebcilStampLine Include="_WasmWebcilVersion=$(_WasmWebcilVersion)" />
+      <_WasmPublishWebcilStampLine Include="WasmEnableSharedMemory=$(WasmEnableSharedMemory)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRun=$(PublishReadyToRun)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRunComposite=$(PublishReadyToRunComposite)" />
       <_WasmPublishWebcilStampLine Include="_WasmPublishPrebuiltR2RDirectory=$(_WasmPublishPrebuiltR2RDirectory)" />
@@ -1147,7 +1149,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <FileWrites Include="$(IntermediateOutputPath)wasm-webcil-publish.stamp" />
     </ItemGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-publish.stamp">
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" WasmEnableSharedMemory="$(WasmEnableSharedMemory)" PrebuiltR2RDirectory="$(_WasmPublishPrebuiltR2RDirectory)" ConversionStamp="$(IntermediateOutputPath)wasm-webcil-publish.stamp">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FilesToTouch" ItemName="_WasmConvertedPublishWebcilOutputs" />

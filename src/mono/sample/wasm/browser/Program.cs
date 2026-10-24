@@ -12,12 +12,33 @@ namespace Sample
     {
         public static Task<int> Main(string[] args)
         {
-            DisplayMeaning(42);
+            Console.WriteLine("Hello from WASM!");
+            Console.WriteLine($"Arguments: {string.Join(", ", args)}");
+            for (int value = 0; value < 64; value++)
+            {
+                int result = DisplayMeaning(value);
+                if (result != value + 1)
+                    throw new InvalidOperationException($"UI import returned {result} for {value}.");
+            }
+            try
+            {
+                DisplayMeaning(-1);
+                throw new InvalidOperationException("Expected a JSException from the UI import.");
+            }
+            catch (JSException exception) when (exception.Message.Contains("M2 import failure", StringComparison.Ordinal))
+            {
+                Console.WriteLine("Expected UI import exception received.");
+            }
+            if (DisplayMeaning(-2) != 0 || DisplayMeaning(-3) != 0)
+                throw new InvalidOperationException("Null and undefined UI results must marshal to zero.");
+            if (DisplayMeaning(42) != 43)
+                throw new InvalidOperationException("UI import did not recover after an exception.");
+            Console.WriteLine("UI import round trips completed.");
             return Task.FromResult(0);
         }
 
         [JSImport("Sample.Test.displayMeaning", "main.js")]
-        internal static partial void DisplayMeaning(int meaning);
+        internal static partial int DisplayMeaning(int meaning);
 
         [JSExport]
         internal static async Task PrintMeaning(Task<int> meaningPromise)

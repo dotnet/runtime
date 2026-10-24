@@ -17,6 +17,17 @@ import { wrapAsCancelablePromise } from "./cancelable-promise";
 
 export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
+type WorkerImportInvoker = (args: JSMarshalerArguments) => number | null;
+const workerImports = new Map<string, Map<string, WorkerImportInvoker>>();
+
+export function registerWorkerJSImport(moduleName: string, functionName: string, invoke: WorkerImportInvoker): void {
+    let functions = workerImports.get(moduleName);
+    if (!functions) {
+        functions = new Map();
+        workerImports.set(moduleName, functions);
+    }
+    functions.set(functionName, invoke);
+}
 
 export function setModuleImports(moduleName: string, moduleImports: any): void {
     importedModules.set(moduleName, moduleImports);
@@ -54,8 +65,19 @@ function bindJsImport(signature: JSFunctionSignature): Function {
 
     dotnetLogger.debug(() => `Binding [JSImport] ${jsFunctionName} from ${jsModuleName} module`);
 
-    const fn = lookupJsImport(jsFunctionName, jsModuleName);
     const argsCount = getSignatureArgumentCount(signature);
+    const workerInvoke = workerImports.get(jsModuleName)?.get(jsFunctionName);
+    let currentWorkerArgs: JSMarshalerArguments | undefined;
+    if (workerInvoke && (argsCount !== 1 || getSignatureType(getSig(signature, 2)) !== MarshalerType.Int32
+        || getSignatureType(getSig(signature, 1)) !== MarshalerType.Int32)) {
+        throw new Error("withWorker(): UI imports currently support only one Int32 argument and an Int32 result");
+    }
+    const fn = workerInvoke
+        ? () => {
+            if (currentWorkerArgs === undefined) throw new Error("withWorker(): UI import argument frame is missing");
+            return workerInvoke(currentWorkerArgs);
+        }
+        : lookupJsImport(jsFunctionName, jsModuleName);
 
     const argMarshalers: (BoundMarshalerToJs)[] = new Array(argsCount);
     const argCleanup: (Function | undefined)[] = new Array(argsCount);
@@ -126,6 +148,19 @@ function bindJsImport(signature: JSFunctionSignature): Function {
         } catch (ex) {
             jsInteropState.cspPolicy = true;
         }
+    }
+
+    if (workerInvoke) {
+        const inner = wrappedFn;
+        wrappedFn = (args: JSMarshalerArguments): void => {
+            const previous = currentWorkerArgs;
+            currentWorkerArgs = args;
+            try {
+                inner(args);
+            } finally {
+                currentWorkerArgs = previous;
+            }
+        };
     }
 
     (<any>wrappedFn)[importedJsFunctionSymbol] = closure;

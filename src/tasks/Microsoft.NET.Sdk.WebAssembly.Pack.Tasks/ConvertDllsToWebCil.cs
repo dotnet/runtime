@@ -26,6 +26,7 @@ public class ConvertDllsToWebcil : Task
     [Required]
     public bool IsEnabled { get; set; }
 
+    public bool WasmEnableSharedMemory { get; set; }
     public string? ConversionStamp { get; set; }
 
     /// <summary>
@@ -208,7 +209,7 @@ public class ConvertDllsToWebcil : Task
         {
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
-            var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter, webcilVersion: WebcilVersion);
+            var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter, webcilVersion: WebcilVersion, wasmEnableSharedMemory: WasmEnableSharedMemory);
             webcilWriter.ConvertToWebcil();
 
             if (!Directory.Exists(candidatePath))
