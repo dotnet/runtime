@@ -220,6 +220,12 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(other, nameof(other));
 
+                if (ReferenceEquals(other, this))
+                {
+                    Clear();
+                    return;
+                }
+
                 foreach (T item in other)
                 {
                     this.Root = this.Root.Remove(item, _comparer, out _);
