@@ -131,6 +131,8 @@ namespace Wasm.Build.Tests
             EnvVars["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
             EnvVars["EM_WORKAROUND_PYTHON_BUG_34780"] = "1";
+            // Validation only. The Emscripten workload manifest from the validation VMR build ships net12 packs and these tests target net11.0.
+            EnvVars["TreatPreviousAsCurrent"] = "true";
 
             if (!UseWebcil)
             {
