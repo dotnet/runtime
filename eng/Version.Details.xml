@@ -45,9 +45,9 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>6fa58a2ef810f82b3197d69763cedfb34c88b9fd</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-11.0.100.Transport" Version="11.0.100-rtm.26521.105">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-11.0.100.Transport" Version="11.0.100-rtm.26523.122">
       <Uri>https://github.com/dotnet/dotnet</Uri>
-      <Sha>6fa58a2ef810f82b3197d69763cedfb34c88b9fd</Sha>
+      <Sha>2b5a4387dbee6181159f53c9ab1ada19a5ebe720</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Runtime.Emscripten.Internal" Version="11.0.0">
       <Uri>https://github.com/dotnet/dotnet</Uri>
@@ -385,37 +385,37 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>6fa58a2ef810f82b3197d69763cedfb34c88b9fd</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26517.3">
-      <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>1ab9161aaf6814d105d3aa78c752bfd222e0946e</Sha>
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26523.2">
+      <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-node</Uri>
+      <Sha>8c288428de44adaab8f60963302d0ab511eb5887</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26517.3">
-      <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>1ab9161aaf6814d105d3aa78c752bfd222e0946e</Sha>
+    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26523.2">
+      <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-node</Uri>
+      <Sha>8c288428de44adaab8f60963302d0ab511eb5887</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26517.3">
-      <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>1ab9161aaf6814d105d3aa78c752bfd222e0946e</Sha>
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26523.2">
+      <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-node</Uri>
+      <Sha>8c288428de44adaab8f60963302d0ab511eb5887</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26517.3">
-      <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>1ab9161aaf6814d105d3aa78c752bfd222e0946e</Sha>
+    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26523.2">
+      <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-node</Uri>
+      <Sha>8c288428de44adaab8f60963302d0ab511eb5887</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26517.3">
-      <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>1ab9161aaf6814d105d3aa78c752bfd222e0946e</Sha>
+    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26523.2">
+      <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-node</Uri>
+      <Sha>8c288428de44adaab8f60963302d0ab511eb5887</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26517.3">
-      <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>1ab9161aaf6814d105d3aa78c752bfd222e0946e</Sha>
+    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26523.2">
+      <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-node</Uri>
+      <Sha>8c288428de44adaab8f60963302d0ab511eb5887</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26517.3">
-      <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>1ab9161aaf6814d105d3aa78c752bfd222e0946e</Sha>
+    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26523.2">
+      <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-node</Uri>
+      <Sha>8c288428de44adaab8f60963302d0ab511eb5887</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26517.3">
-      <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>1ab9161aaf6814d105d3aa78c752bfd222e0946e</Sha>
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="11.0.0-alpha.1.26523.2">
+      <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-node</Uri>
+      <Sha>8c288428de44adaab8f60963302d0ab511eb5887</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.HostModel.TestData" Version="11.0.0-beta.26506.3">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
