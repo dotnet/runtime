@@ -2777,13 +2777,23 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
             continue;
         }
 
-        // TODO-CQ: Float -> !float extractions are not supported
-        // TODO-CQ: Float -> float extractions with non-zero offset is not supported
+#ifdef FEATURE_SIMD
+        if (varTypeIsSIMD(segment.GetRegisterType()) &&
+            (varTypeIsSIMD(fld) ? (fld->GetLclOffs() != segment.Offset)
+                                : (((fld->GetLclOffs() - segment.Offset) % genTypeSize(fld)) != 0)))
+        {
+            continue;
+        }
+#endif // FEATURE_SIMD
+
+#ifdef TARGET_ARM
+        // The scalar extraction below can require TYP_LONG bitcasts, which long decomposition does not support.
         if (genIsValidFloatReg(segment.GetRegister()) &&
             (!varTypeUsesFloatReg(fld) || (fld->GetLclOffs() != segment.Offset)))
         {
             continue;
         }
+#endif // TARGET_ARM
 
         // Found a register segment this field is contained in
         regSegment = &segment;
@@ -2863,26 +2873,39 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
 
     GenTree* value = m_compiler->gtNewLclVarNode(remappedLclNum);
 
-#ifdef TARGET_WASM
-    if (varTypeIsSIMD(value) && !varTypeIsSIMD(fld))
-    {
-        // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
-        const unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
-        const unsigned scalarSize = genTypeSize(fld);
-        assert((laneOffset % scalarSize) == 0);
+    bool useSimdGetElement = false;
+#ifdef FEATURE_SIMD
+    useSimdGetElement = varTypeIsSIMD(value) && !varTypeIsSIMD(fld);
 
-        const unsigned laneIndex = laneOffset / scalarSize;
-        value                    = m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value,
-                                                                       m_compiler->gtNewIconNode(static_cast<ssize_t>(laneIndex)),
-                                                                       fld->TypeGet(), genTypeSize(value));
+#ifndef TARGET_WASM
+    if (!useSimdGetElement && varTypeIsFloating(value) && varTypeIsFloating(fld) &&
+        (fld->GetLclOffs() != regSegment->Offset) &&
+        (((fld->GetLclOffs() - regSegment->Offset) % genTypeSize(fld)) == 0))
+    {
+        assert(value->TypeIs(TYP_DOUBLE));
+        assert(fld->TypeIs(TYP_FLOAT));
+        value->gtType     = TYP_SIMD8;
+        useSimdGetElement = true;
     }
-    else if (varTypeUsesFloatReg(value))
-#else
-    if (varTypeUsesFloatReg(value))
-#endif // TARGET_WASM
-    {
-        assert(fld->GetLclOffs() == regSegment->Offset);
+#endif // !TARGET_WASM
+#endif // FEATURE_SIMD
 
+    if (useSimdGetElement)
+    {
+#ifdef FEATURE_SIMD
+        unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
+        assert((laneOffset % genTypeSize(fld)) == 0);
+
+        unsigned laneIndex = laneOffset / genTypeSize(fld);
+        value =
+            m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value, m_compiler->gtNewIconNode((ssize_t)laneIndex),
+                                                fld->TypeGet(), genTypeSize(value));
+#else
+        unreached();
+#endif // FEATURE_SIMD
+    }
+    else if (varTypeUsesFloatReg(value) && varTypeUsesFloatReg(fld) && (fld->GetLclOffs() == regSegment->Offset))
+    {
         value->gtType = fld->TypeGet();
 
 #ifdef FEATURE_SIMD
@@ -2897,6 +2920,11 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
     }
     else
     {
+        if (varTypeUsesFloatReg(value))
+        {
+            value = m_compiler->gtNewBitCastNode(genTypeSize(value) == 8 ? TYP_LONG : TYP_INT, value);
+        }
+
         var_types registerType = value->TypeGet();
 
         if (fld->GetLclOffs() > regSegment->Offset)

@@ -3413,15 +3413,22 @@ bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigne
             continue;
         }
 
-        if (!genIsValidIntReg(seg.GetRegister()) && varTypeUsesFloatReg(accessType))
+#ifdef FEATURE_SIMD
+        if (varTypeIsSIMD(seg.GetRegisterType()) &&
+            (varTypeIsSIMD(accessType) ? (offset != seg.Offset)
+                                       : (((offset - seg.Offset) % genTypeSize(accessType)) != 0)))
         {
             continue;
         }
+#endif // FEATURE_SIMD
 
-        if (genIsValidFloatReg(seg.GetRegister()) && (offset != seg.Offset))
+#ifdef TARGET_ARM
+        // The scalar extraction in rationalization can require TYP_LONG nodes, which are not legal after decomposition.
+        if (genIsValidFloatReg(seg.GetRegister()) && (!varTypeUsesFloatReg(accessType) || (offset != seg.Offset)))
         {
             continue;
         }
+#endif // TARGET_ARM
 
         return true;
     }
