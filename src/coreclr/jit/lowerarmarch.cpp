@@ -102,9 +102,10 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_XORR:
             case GT_XAND:
             case GT_XADD:
-                return m_compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics)
-                           ? false
-                           : emitter::emitIns_valid_imm_for_add(immVal, size);
+                // The LSE forms of these have no immediate encoding, so only the ldaxr/stlxr
+                // sequences can make use of a contained immediate.
+                return (m_compiler->compGetAtomicsImplForNode(parentNode) == Compiler::AtomicsImpl::LlSc) &&
+                       emitter::emitIns_valid_imm_for_add(immVal, size);
 #elif defined(TARGET_ARM)
                 return emitter::emitIns_valid_imm_for_add(immVal, flags);
 #endif
