@@ -36,8 +36,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <PropertyGroup>
       <UseSystemZlib Condition="'$(UseSystemZlib)' == '' and !Exists('$(IlcFrameworkNativePath)libz.a')">true</UseSystemZlib>
-      <!-- Use libbrotlicommon.a as the sentinel for the three brotli libs. -->
-      <UseSystemBrotli Condition="'$(UseSystemBrotli)' == '' and !Exists('$(IlcFrameworkNativePath)libbrotlicommon.a')">true</UseSystemBrotli>
       <UseSystemZstd Condition="'$(UseSystemZstd)' == '' and !Exists('$(IlcFrameworkNativePath)libzstd.a')">true</UseSystemZstd>
 
       <FullRuntimeName>libRuntime.WorkstationGC</FullRuntimeName>
@@ -194,13 +192,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(UseSystemZlib)' != 'true'" Include="$(IlcFrameworkNativePath)libz.a" />
     </ItemGroup>
 
-    <!-- brotli must be added after System.IO.Compression.Native and brotlicommon must be added last, order matters. -->
-    <ItemGroup Condition="'$(UseSystemBrotli)' != 'true'">
-      <NativeLibrary Include="$(IlcFrameworkNativePath)libbrotlienc.a" />
-      <NativeLibrary Include="$(IlcFrameworkNativePath)libbrotlidec.a" />
-      <NativeLibrary Include="$(IlcFrameworkNativePath)libbrotlicommon.a" />
-    </ItemGroup>
-
     <ItemGroup>
       <!-- zstd must be added after System.IO.Compression.Native due to dependency. -->
       <NativeLibrary Condition="'$(UseSystemZstd)' != 'true'" Include="$(IlcFrameworkNativePath)libzstd.a" />
@@ -244,7 +235,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeSystemLibrary Include="swiftCore" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="swiftFoundation" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="z" Condition="'$(UseSystemZlib)' == 'true'" />
-      <NativeSystemLibrary Include="brotlienc;brotlidec;brotlicommon" Condition="'$(UseSystemBrotli)' == 'true'" />
       <NativeSystemLibrary Include="zstd" Condition="'$(UseSystemZstd)' == 'true'" />
       <NativeSystemLibrary Include="rt" Condition="'$(_IsApplePlatform)' != 'true' and '$(_linuxLibcFlavor)' != 'bionic' and '$(_targetOS)' != 'openbsd'" />
       <NativeSystemLibrary Include="log" Condition="'$(_linuxLibcFlavor)' == 'bionic'" />

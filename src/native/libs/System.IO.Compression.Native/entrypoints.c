@@ -7,11 +7,6 @@
 #include "pal_zlib.h"
 
 #if !defined(TARGET_BROWSER)
-#include <brotli/decode.h>
-#include <brotli/encode.h>
-#include <brotli/port.h>
-#include <brotli/types.h>
-
 #define ZSTD_STATIC_LINKING_ONLY
 #include <zstd.h>
 #include <zdict.h>
@@ -19,20 +14,6 @@
 
 static const Entry s_compressionNative[] =
 {
-#if !defined(TARGET_BROWSER)
-    DllImportEntry(BrotliDecoderCreateInstance)
-    DllImportEntry(BrotliDecoderDecompress)
-    DllImportEntry(BrotliDecoderDecompressStream)
-    DllImportEntry(BrotliDecoderDestroyInstance)
-    DllImportEntry(BrotliDecoderIsFinished)
-    DllImportEntry(BrotliEncoderCompress)
-    DllImportEntry(BrotliEncoderCompressStream)
-    DllImportEntry(BrotliEncoderCreateInstance)
-    DllImportEntry(BrotliEncoderDestroyInstance)
-    DllImportEntry(BrotliEncoderHasMoreOutput)
-    DllImportEntry(BrotliEncoderMaxCompressedSize)
-    DllImportEntry(BrotliEncoderSetParameter)
-#endif // !TARGET_BROWSER
     DllImportEntry(CompressionNative_Crc32)
     DllImportEntry(CompressionNative_Deflate)
     DllImportEntry(CompressionNative_DeflateEnd)

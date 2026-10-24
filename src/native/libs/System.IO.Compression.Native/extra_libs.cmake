@@ -20,13 +20,6 @@ macro(append_extra_compression_libs NativeLibsExtra)
   endif ()
   list(APPEND ${NativeLibsExtra} ${ZLIB_LIBRARIES})
 
-  if (CLR_CMAKE_USE_SYSTEM_BROTLI AND NOT CLR_CMAKE_TARGET_BROWSER)
-    find_library(BROTLIDEC brotlidec REQUIRED)
-    find_library(BROTLIENC brotlienc REQUIRED)
-
-    list(APPEND ${NativeLibsExtra} ${BROTLIDEC} ${BROTLIENC})
-  endif ()
-
   if (CLR_CMAKE_USE_SYSTEM_ZSTD)
     find_library(ZSTD zstd REQUIRED)
     list(APPEND ${NativeLibsExtra} ${ZSTD})

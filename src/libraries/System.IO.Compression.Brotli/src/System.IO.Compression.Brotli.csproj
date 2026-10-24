@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 
@@ -13,32 +12,59 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
-    <Compile Include="$(CommonPath)Interop\Interop.Brotli.cs" />
-    <!-- The native compression lib uses a BROTLI_BOOL type analogous to the Windows BOOL type -->
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" />
-    <Compile Include="System\IO\Compression\enc\BrotliCompressionOptions.cs" />
-    <Compile Include="System\IO\Compression\enc\BrotliStream.Compress.cs" />
-    <Compile Include="System\IO\Compression\dec\BrotliStream.Decompress.cs" />
+    <Compile Include="System\IO\Compression\BrotliStream.cs" />
     <Compile Include="System\IO\Compression\BrotliUtils.cs" />
+    <Compile Include="System\IO\Compression\common\BrotliConstants.cs" />
+    <Compile Include="System\IO\Compression\common\BrotliContext.cs" />
+    <Compile Include="System\IO\Compression\common\BrotliDictionary.cs" />
+    <Compile Include="System\IO\Compression\common\BrotliTransforms.cs" />
+    <Compile Include="System\IO\Compression\dec\BitReader.cs" />
     <Compile Include="System\IO\Compression\dec\BrotliDecoder.cs" />
+    <Compile Include="System\IO\Compression\dec\BrotliDecoderState.Decode.cs" />
+    <Compile Include="System\IO\Compression\dec\BrotliDecoderState.ProcessCommands.cs" />
+    <Compile Include="System\IO\Compression\dec\BrotliDecoderState.ProcessCommandsFast.cs" />
+    <Compile Include="System\IO\Compression\dec\BrotliDecoderState.cs" />
+    <Compile Include="System\IO\Compression\dec\BrotliStream.Decompress.cs" />
+    <Compile Include="System\IO\Compression\dec\Huffman.cs" />
+    <Compile Include="System\IO\Compression\dec\Prefix.cs" />
+    <Compile Include="System\IO\Compression\enc\BackwardReferences.cs" />
+    <Compile Include="System\IO\Compression\enc\BackwardReferencesHq.cs" />
+    <Compile Include="System\IO\Compression\enc\BitCost.cs" />
+    <Compile Include="System\IO\Compression\enc\BitWriter.cs" />
+    <Compile Include="System\IO\Compression\enc\BlockSplitter.cs" />
+    <Compile Include="System\IO\Compression\enc\BrotliBitStream.cs" />
+    <Compile Include="System\IO\Compression\enc\BrotliCompressionOptions.cs" />
     <Compile Include="System\IO\Compression\enc\BrotliEncoder.cs" />
     <Compile Include="System\IO\Compression\enc\BrotliEncoderOperation.cs" />
     <Compile Include="System\IO\Compression\enc\BrotliEncoderParameter.cs" />
-    <Compile Include="System\IO\Compression\BrotliStream.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBrotliHandle.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeBrotliHandle.cs" />
-  </ItemGroup>
-
-  <!-- Windows specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
-  </ItemGroup>
-
-  <!-- Unix and WASI specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'wasi'">
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
-             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="System\IO\Compression\enc\BrotliEncoderState.cs" />
+    <Compile Include="System\IO\Compression\enc\BrotliStream.Compress.cs" />
+    <Compile Include="System\IO\Compression\enc\Cluster.cs" />
+    <Compile Include="System\IO\Compression\enc\Command.cs" />
+    <Compile Include="System\IO\Compression\enc\CompressFragment.cs" />
+    <Compile Include="System\IO\Compression\enc\CompressFragmentTwoPass.cs" />
+    <Compile Include="System\IO\Compression\enc\DictionaryHash.cs" />
+    <Compile Include="System\IO\Compression\enc\EncoderDictionary.cs" />
+    <Compile Include="System\IO\Compression\enc\EncoderParams.cs" />
+    <Compile Include="System\IO\Compression\enc\EntropyEncode.cs" />
+    <Compile Include="System\IO\Compression\enc\EntropyEncodeStatic.cs" />
+    <Compile Include="System\IO\Compression\enc\FastLog.cs" />
+    <Compile Include="System\IO\Compression\enc\FindMatchLength.cs" />
+    <Compile Include="System\IO\Compression\enc\Hash.cs" />
+    <Compile Include="System\IO\Compression\enc\HashForgetfulChain.cs" />
+    <Compile Include="System\IO\Compression\enc\HashLongestMatch.cs" />
+    <Compile Include="System\IO\Compression\enc\HashLongestMatch64.cs" />
+    <Compile Include="System\IO\Compression\enc\HashLongestMatch64Simd.cs" />
+    <Compile Include="System\IO\Compression\enc\HashLongestMatchQuickly.cs" />
+    <Compile Include="System\IO\Compression\enc\HashLongestMatchSimd.cs" />
+    <Compile Include="System\IO\Compression\enc\HashToBinaryTree.cs" />
+    <Compile Include="System\IO\Compression\enc\Histogram.cs" />
+    <Compile Include="System\IO\Compression\enc\LiteralCost.cs" />
+    <Compile Include="System\IO\Compression\enc\Metablock.cs" />
+    <Compile Include="System\IO\Compression\enc\RingBuffer.cs" />
+    <Compile Include="System\IO\Compression\enc\StaticDict.cs" />
+    <Compile Include="System\IO\Compression\enc\StaticDictLut.cs" />
+    <Compile Include="System\IO\Compression\enc\Utf8Util.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,7 +72,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression\src\System.IO.Compression.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Intrinsics\src\System.Runtime.Intrinsics.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 

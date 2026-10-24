@@ -16,16 +16,6 @@
       "component": {
         "type": "git",
         "git": {
-          "repositoryUrl": "https://github.com/google/brotli",
-          "commitHash": "ed738e842d2fbdf2d6459e39267a633c4a9b2f5d"
-        }
-      },
-      "developmentDependency": false
-    },
-    {
-      "component": {
-        "type": "git",
-        "git": {
           "repositoryUrl": "https://github.com/libunwind/libunwind",
           "commitHash": "b3ca1b59a795a617877c01fe5d299ab7a07ff29d"
         }

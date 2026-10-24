@@ -192,7 +192,6 @@
       <DirectPInvoke Include="libSystem.Native" />
       <DirectPInvoke Include="libSystem.IO.Compression.Native" />
       <DirectPInvoke Include="libSystem.Security.Cryptography.Native.Android" />
-      <DirectPInvoke Include="libbrotlienc;libbrotlidec" />
     </ItemGroup>
 
     <PropertyGroup>

@@ -32,9 +32,6 @@ target_link_libraries(dotnet
     ${NATIVE_BIN_DIR}/libicui18n.a
     ${NATIVE_BIN_DIR}/libz.a
     ${NATIVE_BIN_DIR}/libzstd.a
-    ${NATIVE_BIN_DIR}/libbrotlienc.a
-    ${NATIVE_BIN_DIR}/libbrotlidec.a
-    ${NATIVE_BIN_DIR}/libbrotlicommon.a
 )
 
 set_target_properties(dotnet PROPERTIES

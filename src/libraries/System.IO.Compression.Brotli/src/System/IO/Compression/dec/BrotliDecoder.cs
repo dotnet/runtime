@@ -3,22 +3,18 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Compression
 {
     /// <summary>Provides non-allocating, performant Brotli decompression methods. The methods decompress in a single pass without using a <see cref="System.IO.Compression.BrotliStream" /> instance.</summary>
     public struct BrotliDecoder : IDisposable
     {
-        private SafeBrotliDecoderHandle? _state;
+        private BrotliDecoderState? _state;
         private bool _disposed;
 
         internal void InitializeDecoder()
         {
-            _state = Interop.Brotli.BrotliDecoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-            if (_state.IsInvalid)
-                throw new IOException(SR.BrotliDecoder_Create);
+            _state = new BrotliDecoderState();
         }
 
         internal void EnsureInitialized()
@@ -26,6 +22,8 @@ namespace System.IO.Compression
             EnsureNotDisposed();
             if (_state == null)
                 InitializeDecoder();
+            else if (_state.IsDisposed) // disposed through a copy of this struct
+                throw new ObjectDisposedException(nameof(BrotliDecoder), SR.BrotliDecoder_Disposed);
         }
 
         /// <summary>Releases all resources used by the current Brotli decoder instance.</summary>
@@ -59,50 +57,40 @@ namespace System.IO.Compression
 
             bytesConsumed = 0;
             bytesWritten = 0;
-            if (Interop.Brotli.BrotliDecoderIsFinished(_state) != Interop.BOOL.FALSE)
+            if (_state.IsFinished)
                 return OperationStatus.Done;
-            nuint availableOutput = (nuint)destination.Length;
-            nuint availableInput = (nuint)source.Length;
-            unsafe
+
+            while (destination.Length > 0)
             {
-                // We can freely cast between int and nuint (.NET size_t equivalent) for two reasons:
-                // 1. Interop Brotli functions will always return an availableInput/Output value lower or equal to the one passed to the function
-                // 2. Span's have a maximum length of the int boundary.
-                while ((int)availableOutput > 0)
+                BrotliDecoderResult result = _state.DecompressStream(source, destination, out int consumed, out int written);
+                if (result == BrotliDecoderResult.Error)
                 {
-                    fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
-                    fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
-                    {
-                        int brotliResult = Interop.Brotli.BrotliDecoderDecompressStream(_state, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _);
-                        if (brotliResult == 0) // Error
-                        {
-                            return OperationStatus.InvalidData;
-                        }
-
-                        Debug.Assert(availableInput <= (nuint)source.Length);
-                        Debug.Assert(availableOutput <= (nuint)destination.Length);
-
-                        bytesConsumed += source.Length - (int)availableInput;
-                        bytesWritten += destination.Length - (int)availableOutput;
-
-                        switch (brotliResult)
-                        {
-                            case 1: // Success
-                                return OperationStatus.Done;
-                            case 3: // NeedsMoreOutput
-                                return OperationStatus.DestinationTooSmall;
-                            case 2: // NeedsMoreInput
-                            default:
-                                source = source.Slice(source.Length - (int)availableInput);
-                                destination = destination.Slice(destination.Length - (int)availableOutput);
-                                if (brotliResult == 2 && source.Length == 0)
-                                    return OperationStatus.NeedMoreData;
-                                break;
-                        }
-                    }
+                    return OperationStatus.InvalidData;
                 }
-                return OperationStatus.DestinationTooSmall;
+
+                Debug.Assert(consumed <= source.Length);
+                Debug.Assert(written <= destination.Length);
+
+                bytesConsumed += consumed;
+                bytesWritten += written;
+
+                switch (result)
+                {
+                    case BrotliDecoderResult.Success:
+                        return OperationStatus.Done;
+                    case BrotliDecoderResult.NeedsMoreOutput:
+                        return OperationStatus.DestinationTooSmall;
+                    case BrotliDecoderResult.NeedsMoreInput:
+                    default:
+                        source = source.Slice(consumed);
+                        destination = destination.Slice(written);
+                        if (result == BrotliDecoderResult.NeedsMoreInput && source.Length == 0)
+                            return OperationStatus.NeedMoreData;
+                        break;
+                }
             }
+
+            return OperationStatus.DestinationTooSmall;
         }
 
         /// <summary>Attempts to decompress data that was compressed with the Brotli algorithm.</summary>
@@ -111,19 +99,11 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">The total number of bytes that were written in the <paramref name="destination" />.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
         /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, with <paramref name="bytesWritten" /> being zero or greater than zero but less than the expected total.</remarks>
-        public static unsafe bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        public static bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
-            fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
-            {
-                nuint availableOutput = (nuint)destination.Length;
-                bool success = Interop.Brotli.BrotliDecoderDecompress((nuint)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
-
-                Debug.Assert(success ? availableOutput <= (nuint)destination.Length : availableOutput == 0);
-
-                bytesWritten = (int)availableOutput;
-                return success;
-            }
+            bool success = BrotliDecoderState.Decompress(source, destination, out bytesWritten);
+            Debug.Assert(bytesWritten <= destination.Length);
+            return success;
         }
     }
 }

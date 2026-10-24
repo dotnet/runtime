@@ -420,10 +420,6 @@
       <_WasiHostLibsPost Include="$(WasiCoreCLRNativeRuntimeDir)libminipal.a" />
       <_WasiHostLibsPost Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libz.a" />
       <_WasiHostLibsPost Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libzstd.a" />
-      <!-- brotlienc/brotlidec depend on brotlicommon, so it goes last. -->
-      <_WasiHostLibsPost Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libbrotlienc.a" />
-      <_WasiHostLibsPost Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libbrotlidec.a" />
-      <_WasiHostLibsPost Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libbrotlicommon.a" />
     </ItemGroup>
 
     <PropertyGroup>

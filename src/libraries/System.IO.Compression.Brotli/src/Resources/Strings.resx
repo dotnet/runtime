@@ -133,9 +133,6 @@
     <value>Only one asynchronous reader or writer is allowed time at one time.</value>
   </data>
   <!-- BrotliEncoder -->
-  <data name="BrotliEncoder_Create" xml:space="preserve">
-    <value>Failed to create BrotliEncoder instance</value>
-  </data>
   <data name="BrotliEncoder_Disposed" xml:space="preserve">
     <value>Can not access a closed Encoder.</value>
   </data>
@@ -149,9 +146,6 @@
     <value>The BrotliEncoder {0} can not be changed at current encoder state.</value>
   </data>
   <!-- BrotliDecoder -->
-  <data name="BrotliDecoder_Create" xml:space="preserve">
-    <value>Failed to create BrotliDecoder instance</value>
-  </data>
   <data name="BrotliDecoder_Disposed" xml:space="preserve">
     <value>Can not access a closed Decoder.</value>
   </data>

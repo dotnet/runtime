@@ -3,15 +3,13 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Compression
 {
     /// <summary>Provides methods and static methods to encode and decode data in a streamless, non-allocating, and performant manner using the Brotli data format specification.</summary>
     public partial struct BrotliEncoder : IDisposable
     {
-        internal SafeBrotliEncoderHandle? _state;
+        internal BrotliEncoderState? _state;
         private bool _disposed;
 
         /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliEncoder" /> structure using the specified quality and window.</summary>
@@ -20,28 +18,23 @@ namespace System.IO.Compression
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="quality" /> is not between the minimum value of 0 and the maximum value of 11.
         /// -or-
         /// <paramref name="window" /> is not between the minimum value of 10 and the maximum value of 24.</exception>
-        /// <exception cref="System.IO.IOException">Failed to create the <see cref="System.IO.Compression.BrotliEncoder" /> instance.</exception>
         public BrotliEncoder(int quality, int window)
         {
             _disposed = false;
-            _state = Interop.Brotli.BrotliEncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-            if (_state.IsInvalid)
-                throw new IOException(SR.BrotliEncoder_Create);
+            _state = new BrotliEncoderState();
             SetQuality(quality);
             SetWindow(window);
         }
 
         /// <summary>
-        /// Performs a lazy initialization of the native encoder using the default Quality and Window values:
+        /// Performs a lazy initialization of the encoder using the default Quality and Window values:
         /// BROTLI_DEFAULT_WINDOW 22
         /// BROTLI_DEFAULT_QUALITY 11
         /// </summary>
         internal void InitializeEncoder()
         {
             EnsureNotDisposed();
-            _state = Interop.Brotli.BrotliEncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-            if (_state.IsInvalid)
-                throw new IOException(SR.BrotliEncoder_Create);
+            _state = new BrotliEncoderState();
         }
 
         internal void EnsureInitialized()
@@ -51,9 +44,13 @@ namespace System.IO.Compression
             {
                 InitializeEncoder();
             }
+            else if (_state.IsDisposed) // disposed through a copy of this struct
+            {
+                throw new ObjectDisposedException(nameof(BrotliEncoder), SR.BrotliEncoder_Disposed);
+            }
         }
 
-        /// <summary>Frees and disposes unmanaged resources.</summary>
+        /// <summary>Releases all resources used by the current Brotli encoder instance.</summary>
         public void Dispose()
         {
             _disposed = true;
@@ -69,16 +66,16 @@ namespace System.IO.Compression
         internal void SetQuality(int quality)
         {
             EnsureNotDisposed();
-            if (_state == null || _state.IsInvalid || _state.IsClosed)
+            if (_state == null || _state.IsDisposed)
             {
                 InitializeEncoder();
-                Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
+                Debug.Assert(_state != null && !_state.IsDisposed);
             }
             if (quality < BrotliUtils.Quality_Min || quality > BrotliUtils.Quality_Max)
             {
                 throw new ArgumentOutOfRangeException(nameof(quality), SR.Format(SR.BrotliEncoder_Quality, quality, 0, BrotliUtils.Quality_Max));
             }
-            if (Interop.Brotli.BrotliEncoderSetParameter(_state, BrotliEncoderParameter.Quality, (uint)quality) == Interop.BOOL.FALSE)
+            if (!_state.SetParameter(BrotliEncoderParameter.Quality, (uint)quality))
             {
                 throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Quality"));
             }
@@ -87,16 +84,16 @@ namespace System.IO.Compression
         internal void SetWindow(int window)
         {
             EnsureNotDisposed();
-            if (_state == null || _state.IsInvalid || _state.IsClosed)
+            if (_state == null || _state.IsDisposed)
             {
                 InitializeEncoder();
-                Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
+                Debug.Assert(_state != null && !_state.IsDisposed);
             }
             if (window < BrotliUtils.WindowBits_Min || window > BrotliUtils.WindowBits_Max)
             {
                 throw new ArgumentOutOfRangeException(nameof(window), SR.Format(SR.BrotliEncoder_Window, window, BrotliUtils.WindowBits_Min, BrotliUtils.WindowBits_Max));
             }
-            if (Interop.Brotli.BrotliEncoderSetParameter(_state, BrotliEncoderParameter.LGWin, (uint)window) == Interop.BOOL.FALSE)
+            if (!_state.SetParameter(BrotliEncoderParameter.LGWin, (uint)window))
             {
                 throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Window"));
             }
@@ -111,7 +108,7 @@ namespace System.IO.Compression
         {
             ArgumentOutOfRangeException.ThrowIfNegative(inputSize);
 
-            nuint result = Interop.Brotli.BrotliEncoderMaxCompressedSize((nuint)inputSize);
+            nuint result = BrotliEncoderState.MaxCompressedSize((nuint)inputSize);
             if (result > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(inputSize));
@@ -146,42 +143,30 @@ namespace System.IO.Compression
 
             bytesWritten = 0;
             bytesConsumed = 0;
-            nuint availableOutput = (nuint)destination.Length;
-            nuint availableInput = (nuint)source.Length;
-            unsafe
+            while (destination.Length > 0)
             {
-                // We can freely cast between int and nuint (.NET size_t equivalent) for two reasons:
-                // 1. Interop Brotli functions will always return an availableInput/Output value lower or equal to the one passed to the function
-                // 2. Span's have a maximum length of the int boundary.
-                while ((int)availableOutput > 0)
+                if (!_state.CompressStream(operation, source, destination, out int consumed, out int written))
                 {
-                    fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
-                    fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
-                    {
-                        if (Interop.Brotli.BrotliEncoderCompressStream(_state, operation, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _) == Interop.BOOL.FALSE)
-                        {
-                            return OperationStatus.InvalidData;
-                        }
-
-                        Debug.Assert(availableInput <= (nuint)source.Length);
-                        Debug.Assert(availableOutput <= (nuint)destination.Length);
-
-                        bytesConsumed += source.Length - (int)availableInput;
-                        bytesWritten += destination.Length - (int)availableOutput;
-
-                        // no bytes written, no remaining input to give to the encoder, and no output in need of retrieving means we are Done
-                        if ((int)availableOutput == destination.Length && Interop.Brotli.BrotliEncoderHasMoreOutput(_state) == Interop.BOOL.FALSE && availableInput == 0)
-                        {
-                            return OperationStatus.Done;
-                        }
-
-                        source = source.Slice(source.Length - (int)availableInput);
-                        destination = destination.Slice(destination.Length - (int)availableOutput);
-                    }
+                    return OperationStatus.InvalidData;
                 }
 
-                return OperationStatus.DestinationTooSmall;
+                Debug.Assert(consumed <= source.Length);
+                Debug.Assert(written <= destination.Length);
+
+                bytesConsumed += consumed;
+                bytesWritten += written;
+
+                // no bytes written, no remaining input to give to the encoder, and no output in need of retrieving means we are Done
+                if (written == 0 && !_state.HasMoreOutput && consumed == source.Length)
+                {
+                    return OperationStatus.Done;
+                }
+
+                source = source.Slice(consumed);
+                destination = destination.Slice(written);
             }
+
+            return OperationStatus.DestinationTooSmall;
         }
 
         /// <summary>Tries to compress a source byte span into a destination span.</summary>
@@ -209,20 +194,9 @@ namespace System.IO.Compression
                 throw new ArgumentOutOfRangeException(nameof(window), SR.Format(SR.BrotliEncoder_Window, window, BrotliUtils.WindowBits_Min, BrotliUtils.WindowBits_Max));
             }
 
-            unsafe
-            {
-                fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
-                fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
-                {
-                    nuint availableOutput = (nuint)destination.Length;
-                    bool success = Interop.Brotli.BrotliEncoderCompress(quality, window, /*BrotliEncoderMode*/ 0, (nuint)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
-
-                    Debug.Assert(success ? availableOutput <= (nuint)destination.Length : availableOutput == 0);
-
-                    bytesWritten = (int)availableOutput;
-                    return success;
-                }
-            }
+            bool success = BrotliEncoderState.Compress(quality, window, EncoderMode.Generic, source, destination, out bytesWritten);
+            Debug.Assert(success ? bytesWritten <= destination.Length : bytesWritten == 0);
+            return success;
         }
     }
 }

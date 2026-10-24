@@ -247,7 +247,6 @@
       <DirectPInvokes Include="libSystem.IO.Compression.Native" />
       <DirectPInvokes Include="libSystem.Net.Security.Native" />
       <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Apple" />
-      <DirectPInvokes Include="libbrotlienc;libbrotlidec" />
     </ItemGroup>
 
     <PropertyGroup>
