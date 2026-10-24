@@ -229,10 +229,10 @@ extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(uint3
 
 #ifdef _DEBUG
 // Answers whether the code at handlerFrameControlPC lives in a ReadyToRun image compiled with
-// --verify-gc-mode-transitions, and so ends its catch resumption points with a call to
-// CORINFO_HELP_JIT_RESUME_AFTER_CATCH. Only such an image can lift a GC mode switch restriction
-// once managed code resumes; forbidding switches for any other resume target would leave them
-// forbidden for the rest of the thread's life.
+// --verify-gc-mode-transitions, and so is known to end its catch resumption points with a call to
+// CORINFO_HELP_JIT_RESUME_AFTER_CATCH. Only for such an image is it known that the restriction is
+// lifted once managed code resumes; forbidding switches for any other resume target could leave
+// them forbidden for the rest of the thread's life.
 bool ResumeTargetVerifiesGCModeTransitions(PCODE handlerFrameControlPC)
 {
     LIMITED_METHOD_CONTRACT;
