@@ -688,6 +688,20 @@ namespace System.Threading
             return aborted;
         }
 
+        // int-returning wrappers for UnsafeAccessor consumers that cannot use
+        // UnsafeAccessorTypeAttribute with value types (see dotnet/runtime#121655).
+        public int StartAsyncReadAsInt(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
+            => (int)StartAsyncRead(operation, observedSequenceNumber, cancellationToken);
+
+        public int StartAsyncWriteAsInt(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
+            => (int)StartAsyncWrite(operation, observedSequenceNumber, cancellationToken);
+
+        public int ReadAsInt(Operation operation, int observedSequenceNumber, int timeout)
+            => (int)Read(operation, observedSequenceNumber, timeout);
+
+        public int WriteAsInt(Operation operation, int observedSequenceNumber, int timeout)
+            => (int)Write(operation, observedSequenceNumber, timeout);
+
         // Called on the epoll thread, speculatively tries to process inline events and errors,
         // and returns any remaining events that remain to be processed.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
