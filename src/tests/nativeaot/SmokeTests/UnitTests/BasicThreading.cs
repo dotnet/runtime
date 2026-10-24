@@ -22,13 +22,8 @@ class BasicThreading
         if (ThreadStaticAlignmentTest.Run() != Pass)
             return Fail;
 
-        if (!OperatingSystem.IsAndroid())
-        {
-            // Disabled on Android: https://github.com/dotnet/runtime/issues/121451
-
-            if (ThreadTest.Run() != Pass)
-                return Fail;
-        }
+        if (ThreadTest.Run() != Pass)
+            return Fail;
 
         if (TimerTest.Run() != Pass)
             return Fail;
@@ -457,7 +452,10 @@ class ThreadTest
     {
         // Thread created using Thread.Start
         var t_event = new AutoResetEvent(false);
-        var t = new Thread(() => t_event.WaitOne());
+        var t = new Thread(() => {
+            Expect(!Thread.CurrentThread.IsBackground, "Expected CurrentThread.IsBackground == false");
+            t_event.WaitOne();
+        });
 
         t.Start();
         s_startedThreads.Add(t);
@@ -478,9 +476,6 @@ class ThreadTest
         Thread stoppedResurrected = Resurrector.CreateStoppedResurrected();
         ExpectException<ThreadStateException>(() => Console.WriteLine(stoppedResurrected.IsBackground),
             "Expected ThreadStateException for stoppedResurrected.IsBackground");
-
-        // Main thread
-        Expect(!Thread.CurrentThread.IsBackground, "Expected CurrentThread.IsBackground == false");
 
         ExpectPassed(nameof(TestIsBackgroundProperty), 6);
     }
