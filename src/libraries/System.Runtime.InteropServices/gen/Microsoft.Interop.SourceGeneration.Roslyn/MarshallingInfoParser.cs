@@ -315,7 +315,7 @@ namespace Microsoft.Interop
             {
                 _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.CyclicalCountInfo), elementName);
                 // Create a dummy value for the invalid marshalling. We're already in an error state, so try to not report extraneous diagnostics.
-                info = new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance);
+                info = new TypePositionInfo(WellKnownTypeInfo.Void, NoMarshallingInfo.Instance);
                 return true;
             }
             finally
@@ -344,7 +344,7 @@ namespace Microsoft.Interop
             {
                 _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.CyclicalCountInfo), paramName);
                 // Create a dummy value for the invalid marshalling. We're already in an error state, so try to not report extraneous diagnostics.
-                info = new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance);
+                info = new TypePositionInfo(WellKnownTypeInfo.Void, NoMarshallingInfo.Instance);
                 return true;
             }
             finally

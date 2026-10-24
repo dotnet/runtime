@@ -221,7 +221,7 @@ namespace Microsoft.Interop
             ErrorHandlingInfo? errorHandlingInfo = preserveSig
                 ? null
                 : new ErrorHandlingInfo(
-                    SpecialTypeInfo.Int32,
+                    WellKnownTypeInfo.Int32,
                     new ManagedHResultExceptionMarshallingInfo(owningInterfaceInfo.InterfaceId),
                     ErrorHandlingLocation.HiddenReturnValue);
 
@@ -243,7 +243,7 @@ namespace Microsoft.Interop
             {
                 TypePositionInfo? managedReturnInfo = signatureContext.ElementTypeInformation.FirstOrDefault(e => e.IsManagedReturnPosition);
                 if (managedReturnInfo is not null
-                    && ((managedReturnInfo.ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Int32 or SpecialType.System_Enum } or EnumTypeInfo
+                    && ((managedReturnInfo.ManagedType is WellKnownTypeInfo { SpecialType: WellKnownType.System_Int32 or WellKnownType.System_Enum } or EnumTypeInfo
                             && managedReturnInfo.MarshallingAttributeInfo.Equals(NoMarshallingInfo.Instance))
                         || IsHResultLikeType(managedReturnInfo.ManagedType)))
                 {
