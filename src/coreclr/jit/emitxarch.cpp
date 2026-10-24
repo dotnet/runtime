@@ -16964,8 +16964,8 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     }
 
     // The 'mov' opcode is special
-    bool isSignExtendingMov = (size == EA_8BYTE) && FitsIn<int32_t>(val) && !id->idIsCnsReloc();
-    if ((ins == INS_mov) && isSignExtendingMov)
+    bool isSignExtendingMov = (ins == INS_mov) && (size == EA_8BYTE) && FitsIn<int32_t>(val) && !id->idIsCnsReloc();
+    if (isSignExtendingMov)
     {
         // This is INS_mov and will not take VEX prefix
         assert(!TakesVexPrefix(ins));

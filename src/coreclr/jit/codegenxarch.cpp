@@ -8771,8 +8771,14 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitIns_R_I(INS_mov, EA_4BYTE, REG_EAX, 0xE0);
 
-    // JIT tend to compress imm64 to imm32 if higher half is all-zero, make sure this test checks the path for imm64.
-    theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_RAX, 0xFFFF000000000000);
+    // mov r64, imm64
+    theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_RAX, 0xFF000FFFFFF00FF0);
+
+    // Compressed: mov r32, imm32
+    theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_RAX, 0x0000000000000FFF);
+
+    // Compressed: mov r64, imm32 (sign-extending)
+    theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_RAX, 0xFFFFFFFFFFFFFFFF);
 
     // shf reg, cl
     theEmitter->emitIns_R(INS_rol, EA_4BYTE, REG_EAX);
