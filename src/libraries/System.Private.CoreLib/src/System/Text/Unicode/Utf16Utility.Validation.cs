@@ -14,26 +14,41 @@ namespace System.Text.Unicode
     {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static nuint GetSurrogateMask(Vector128<ushort> cmp)
+        private static nuint GetSurrogateMask<TVector>(TVector cmp)
+            where TVector : unmanaged, ISimdVector<TVector, ushort>
         {
             // Convert the comparison result to a scalar surrogate mask.
             // The elements in 'cmp' should be either all bits set or zero.
+
+            if (typeof(TVector) == typeof(Vector512<ushort>))
+            {
+                return (nuint)Unsafe.BitCast<TVector, Vector512<ushort>>(cmp).ExtractMostSignificantBits();
+            }
+
+            if (typeof(TVector) == typeof(Vector256<ushort>))
+            {
+                return Unsafe.BitCast<TVector, Vector256<ushort>>(cmp).ExtractMostSignificantBits();
+            }
+
+            Debug.Assert(typeof(TVector) == typeof(Vector128<ushort>));
+            Vector128<ushort> cmp128 = Unsafe.BitCast<TVector, Vector128<ushort>>(cmp);
 
             if (AdvSimd.Arm64.IsSupported)
             {
                 // Since ExtractMostSignificantBits is very slow on AdvSimd,
                 // we use a 64-bit value to encode the mask, where each byte represents one element:
                 //   0x01 for all bits set, 0x00 for zero.
-                ulong mask = AdvSimd.Arm64.UnzipOdd(cmp.AsByte(), cmp.AsByte()).AsUInt64().ToScalar();
+                ulong mask = AdvSimd.Arm64.UnzipOdd(cmp128.AsByte(), cmp128.AsByte()).AsUInt64().ToScalar();
                 return (nuint)(mask & 0x0101010101010101u);
             }
 
             // Otherwise, encode the mask with 8-bits (one byte), where each bit represents one element.
-            return cmp.ExtractMostSignificantBits();
+            return cmp128.ExtractMostSignificantBits();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsSurrogatesMatch(nuint maskHigh, nuint maskLow)
+        private static bool IsSurrogatesMatch<TVector>(nuint maskHigh, nuint maskLow)
+            where TVector : unmanaged, ISimdVector<TVector, ushort>
         {
             // Make sure that each high surrogate is followed by a low surrogate character,
             // and each low surrogate follows a high surrogate character.
@@ -47,19 +62,60 @@ namespace System.Text.Unicode
                 return (maskHigh << 8) == maskLow;
             }
             // Each surrogate character is 1 bit apart.
-            return (byte)(maskHigh << 1) == (byte)maskLow;
+            uint mask = uint.MaxValue >> (32 - TVector.ElementCount);
+            return ((maskHigh << 1) & mask) == maskLow;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsLastCharHighSurrogate(nuint maskHigh)
+        private static bool IsLastCharHighSurrogate<TVector>(nuint maskHigh)
+            where TVector : unmanaged, ISimdVector<TVector, ushort>
         {
             if (AdvSimd.Arm64.IsSupported)
             {
                 // Check if the top byte is not zero.
                 return (maskHigh >>> 56) != 0;
             }
-            // Check if the top bit (of a byte) is not zero.
-            return ((byte)maskHigh >>> 7) != 0;
+            // Check if the last lane is a high surrogate.
+            return (maskHigh >>> (TVector.ElementCount - 1)) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TVector AddSaturate<TVector>(TVector left, TVector right)
+            where TVector : unmanaged, ISimdVector<TVector, ushort>
+        {
+            if (typeof(TVector) == typeof(Vector512<ushort>))
+            {
+                return Unsafe.BitCast<Vector512<ushort>, TVector>(Vector512.AddSaturate(
+                    Unsafe.BitCast<TVector, Vector512<ushort>>(left), Unsafe.BitCast<TVector, Vector512<ushort>>(right)));
+            }
+
+            if (typeof(TVector) == typeof(Vector256<ushort>))
+            {
+                return Unsafe.BitCast<Vector256<ushort>, TVector>(Vector256.AddSaturate(
+                    Unsafe.BitCast<TVector, Vector256<ushort>>(left), Unsafe.BitCast<TVector, Vector256<ushort>>(right)));
+            }
+
+            Debug.Assert(typeof(TVector) == typeof(Vector128<ushort>));
+            return Unsafe.BitCast<Vector128<ushort>, TVector>(Vector128.AddSaturate(
+                Unsafe.BitCast<TVector, Vector128<ushort>>(left), Unsafe.BitCast<TVector, Vector128<ushort>>(right)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong ExtractMostSignificantByteBits<TVector>(TVector vector)
+            where TVector : unmanaged, ISimdVector<TVector, ushort>
+        {
+            if (typeof(TVector) == typeof(Vector512<ushort>))
+            {
+                return Unsafe.BitCast<TVector, Vector512<byte>>(vector).ExtractMostSignificantBits();
+            }
+
+            if (typeof(TVector) == typeof(Vector256<ushort>))
+            {
+                return Unsafe.BitCast<TVector, Vector256<byte>>(vector).ExtractMostSignificantBits();
+            }
+
+            Debug.Assert(typeof(TVector) == typeof(Vector128<ushort>));
+            return Unsafe.BitCast<TVector, Vector128<byte>>(vector).ExtractMostSignificantBits();
         }
 
         // Returns &inputBuffer[inputLength] if the input buffer is valid.
@@ -91,6 +147,22 @@ namespace System.Text.Unicode
                 return pInputBuffer;
             }
 
+            if (Vector512.IsHardwareAccelerated && inputLength >= 2 * Vector512<ushort>.Count)
+            {
+                return GetPointerToFirstInvalidChar_Vector<Vector512<ushort>>(pInputBuffer, inputLength, out utf8CodeUnitCountAdjustment, out scalarCountAdjustment);
+            }
+
+            if (Vector256.IsHardwareAccelerated && inputLength >= 2 * Vector256<ushort>.Count)
+            {
+                return GetPointerToFirstInvalidChar_Vector<Vector256<ushort>>(pInputBuffer, inputLength, out utf8CodeUnitCountAdjustment, out scalarCountAdjustment);
+            }
+
+            return GetPointerToFirstInvalidChar_Vector<Vector128<ushort>>(pInputBuffer, inputLength, out utf8CodeUnitCountAdjustment, out scalarCountAdjustment);
+        }
+
+        private static char* GetPointerToFirstInvalidChar_Vector<TVector>(char* pInputBuffer, int inputLength, out long utf8CodeUnitCountAdjustment, out int scalarCountAdjustment)
+            where TVector : unmanaged, ISimdVector<TVector, ushort>
+        {
             // If we got here, it means we saw some non-ASCII data, so within our
             // vectorized code paths below we'll handle all non-surrogate UTF-16
             // code points branchlessly. We'll only branch if we see surrogates.
@@ -108,21 +180,21 @@ namespace System.Text.Unicode
             int tempScalarCountAdjustment = 0;
             char* pEndOfInputBuffer = pInputBuffer + (uint)inputLength;
 
-            if (Vector128.IsHardwareAccelerated)
+            if (TVector.IsHardwareAccelerated)
             {
-                if (inputLength >= Vector128<ushort>.Count)
+                if (inputLength >= TVector.ElementCount)
                 {
-                    Vector128<ushort> vector0080 = Vector128.Create<ushort>(0x0080);
-                    Vector128<ushort> vector0400 = Vector128.Create<ushort>(0x0400);
-                    Vector128<ushort> vector0800 = Vector128.Create<ushort>(0x0800);
-                    Vector128<ushort> vectorD800 = Vector128.Create<ushort>(0xD800);
+                    TVector vector0080 = TVector.Create(0x0080);
+                    TVector vector0400 = TVector.Create(0x0400);
+                    TVector vector0800 = TVector.Create(0x0800);
+                    TVector vectorD800 = TVector.Create(0xD800);
 
-                    char* pHighestAddressWhereCanReadOneVector = pEndOfInputBuffer - Vector128<ushort>.Count;
+                    char* pHighestAddressWhereCanReadOneVector = pEndOfInputBuffer - TVector.ElementCount;
                     Debug.Assert(pHighestAddressWhereCanReadOneVector >= pInputBuffer);
 
                     do
                     {
-                        Vector128<ushort> utf16Data = Vector128.Load((ushort*)pInputBuffer);
+                        TVector utf16Data = TVector.Load((ushort*)pInputBuffer);
 
                         // Calculate the popcnt for UTF-8 adjustments, which is the number of *additional*
                         // UTF-8 bytes that each UTF-16 code unit requires as it expands.
@@ -155,24 +227,24 @@ namespace System.Text.Unicode
                             // elements together to produce the number of *additional* UTF-8 code units
                             // required to represent this UTF-16 data.
 
-                            Vector128<ushort> twoOrMoreUtf8Bytes = Vector128.GreaterThanOrEqual(utf16Data, vector0080);
-                            Vector128<ushort> threeOrMoreUtf8Bytes = Vector128.GreaterThanOrEqual(utf16Data, vector0800);
-                            Vector128<ushort> sumVector = Vector128<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes;
-                            popcnt = Vector128.Sum(sumVector);
+                            TVector twoOrMoreUtf8Bytes = TVector.GreaterThanOrEqual(utf16Data, vector0080);
+                            TVector threeOrMoreUtf8Bytes = TVector.GreaterThanOrEqual(utf16Data, vector0800);
+                            TVector sumVector = TVector.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes;
+                            popcnt = TVector.Sum(sumVector);
                         }
                         else
                         {
-                            Vector128<ushort> vector7800 = Vector128.Create<ushort>(0x7800);
+                            TVector vector7800 = TVector.Create(0x7800);
 
                             // Sets the 0x0080 bit of each element in 'charIsNonAscii' if the corresponding
                             // input was 0x0080 <= [value]. (i.e., [value] is non-ASCII.)
 
-                            Vector128<ushort> charIsNonAscii = Vector128.Min(utf16Data, vector0080);
+                            TVector charIsNonAscii = TVector.Min(utf16Data, vector0080);
 
 #if DEBUG
                             // Quick check to ensure we didn't accidentally set the 0x8000 bit of any element.
-                            uint debugMask = charIsNonAscii.AsByte().ExtractMostSignificantBits();
-                            Debug.Assert((debugMask & 0b_1010_1010_1010_1010) == 0, "Shouldn't have set the 0x8000 bit of any element in 'charIsNonAscii'.");
+                            ulong debugMask = ExtractMostSignificantByteBits(charIsNonAscii);
+                            Debug.Assert((debugMask & 0xAAAA_AAAA_AAAA_AAAAul) == 0, "Shouldn't have set the 0x8000 bit of any element in 'charIsNonAscii'.");
 #endif // DEBUG
 
                             // Sets the 0x8080 bits of each element in 'charIsNonAscii' if the corresponding
@@ -182,7 +254,7 @@ namespace System.Text.Unicode
                             // bit for 1-byte or 2-byte elements. The 0x0080 bit will already have been set for non-ASCII (2-byte
                             // and 3-byte) elements.
 
-                            Vector128<ushort> charIsThreeByteUtf8Encoded = Vector128.AddSaturate(utf16Data, vector7800);
+                            TVector charIsThreeByteUtf8Encoded = AddSaturate(utf16Data, vector7800);
 
                             // Each even bit of mask will be 1 only if the char was >= 0x0080,
                             // and each odd bit of mask will be 1 only if the char was >= 0x0800.
@@ -196,29 +268,29 @@ namespace System.Text.Unicode
                             //              ^   ^-- set if char[0] is non-ASCII
                             //              `-- set if char[1] is non-ASCII
 
-                            uint mask = (charIsNonAscii | charIsThreeByteUtf8Encoded).AsByte().ExtractMostSignificantBits();
+                            ulong mask = ExtractMostSignificantByteBits(charIsNonAscii | charIsThreeByteUtf8Encoded);
                             popcnt = (uint)BitOperations.PopCount(mask); // on x64, perform zero-extension for free
                         }
 
                         // Now check for surrogates.
 
                         utf16Data -= vectorD800;
-                        nuint maskSurr = GetSurrogateMask(Vector128.LessThan(utf16Data, vector0800));
+                        nuint maskSurr = GetSurrogateMask(TVector.LessThan(utf16Data, vector0800));
                         if (maskSurr != 0)
                         {
                             // Get the surrogate masks for high and low surrogates.
                             // A high surrogate will be less than 0x0400 after subtracting by 0xD800.
                             // A low surrogate is a surrogate that is not a high surrogate.
 
-                            nuint maskHigh = GetSurrogateMask(Vector128.LessThan(utf16Data, vector0400));
+                            nuint maskHigh = GetSurrogateMask(TVector.LessThan(utf16Data, vector0400));
                             nuint maskLow  = ~maskHigh & maskSurr;
 
-                            if (!IsSurrogatesMatch(maskHigh, maskLow))
+                            if (!IsSurrogatesMatch<TVector>(maskHigh, maskLow))
                             {
                                 break; // error: mismatched surrogate pair; break out of vectorized logic
                             }
 
-                            if (IsLastCharHighSurrogate(maskHigh))
+                            if (IsLastCharHighSurrogate<TVector>(maskHigh))
                             {
                                 // There was a standalone high surrogate at the end of the vector.
                                 // We'll adjust our counters so that we don't consider this char consumed.
@@ -246,9 +318,19 @@ namespace System.Text.Unicode
                         }
 
                         tempUtf8CodeUnitCountAdjustment += popcnt;
-                        pInputBuffer += Vector128<ushort>.Count;
+                        pInputBuffer += TVector.ElementCount;
                     } while (pInputBuffer <= pHighestAddressWhereCanReadOneVector);
                 }
+            }
+
+            // Keep the scalar remainder small even when the main loop uses wider vectors.
+            if (typeof(TVector) != typeof(Vector128<ushort>) && pEndOfInputBuffer - pInputBuffer >= Vector128<ushort>.Count)
+            {
+                pInputBuffer = GetPointerToFirstInvalidChar_Vector<Vector128<ushort>>(
+                    pInputBuffer, (int)(pEndOfInputBuffer - pInputBuffer), out utf8CodeUnitCountAdjustment, out scalarCountAdjustment);
+                utf8CodeUnitCountAdjustment += tempUtf8CodeUnitCountAdjustment;
+                scalarCountAdjustment += tempScalarCountAdjustment;
+                return pInputBuffer;
             }
 
             // Vectorization isn't supported on our current platform, or the input was too small to benefit
