@@ -4326,9 +4326,9 @@ void Compiler::fgWasmMarkCyclesForPolls()
     };
 
     auto visitEdge = [](BasicBlock* block, BasicBlock* succ) {
+        // If we have a back-edge; mark the target of the back-edge (which is the cycle "header") as needing a poll
         if (succ->bbPreorderNum <= block->bbPreorderNum && (succ->bbPostorderNum == UINT_MAX))
         {
-            // We have a back-edge; mark the target of the back-edge (which is the cycle "header") as needing a poll
             succ->SetFlags(BBF_NEEDS_GCPOLL);
             JITDUMP("Marking block " FMT_BB " as needing a GC poll due to back-edge from " FMT_BB "\n", succ->bbNum, block->bbNum);
         }
@@ -4340,6 +4340,7 @@ void Compiler::fgWasmMarkCyclesForPolls()
         entryBlocks.push_back(block);
     }
 
+    fgInvalidateDfsTree();
     // We want to use the GCSafePointSuccessorEnumerator here, as it will create
     // pseudo-edges from tail call -> entry block so we can detect implicit cycles
     // which may be formed through tail calls.
