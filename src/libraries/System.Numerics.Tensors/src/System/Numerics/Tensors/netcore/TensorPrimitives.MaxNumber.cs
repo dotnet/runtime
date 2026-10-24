@@ -99,6 +99,8 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
 
+            public static bool PropagatesNaNs => false;
+
             public static T Invoke(T x, T y) => T.MaxNumber(x, y);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
