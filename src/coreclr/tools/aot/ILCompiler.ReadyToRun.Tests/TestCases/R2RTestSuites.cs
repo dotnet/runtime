@@ -31,6 +31,69 @@ public class R2RTestSuites
     }
 
     [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void TypeTokensOnlyRequireFixupsWhenReferencedByCode(bool composite, bool optimize)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(TypeTokensOnlyRequireFixupsWhenReferencedByCode),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+        List<Crossgen2Option> options = new();
+        if (composite)
+            options.Add(Crossgen2Option.Composite);
+        if (optimize)
+            options.Add(Crossgen2Option.Optimize);
+
+        List<string> additionalArgs = new();
+        if (!optimize)
+            additionalArgs.Add("--optimize-disabled");
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(TypeTokensOnlyRequireFixupsWhenReferencedByCode),
+            [
+                new(nameof(TypeTokensOnlyRequireFixupsWhenReferencedByCode), [new CrossgenAssembly(input)])
+                {
+                    Options = options,
+                    AdditionalArgs = additionalArgs,
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            foreach (string name in new[] { "FoldTypeTokenEquality", "FoldTypeTokenInequality" })
+            {
+                ReadyToRunMethod method = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+                if (optimize)
+                {
+                    Assert.DoesNotContain(method.Fixups ?? Array.Empty<FixupCell>(),
+                        fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
+                }
+            }
+
+            foreach (string name in new[] { "ReadTypeToken", "ReadTypeTokenHandle", "ReadConstructedTypeToken" })
+            {
+                ReadyToRunMethod method = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+                string expectedType = name == "ReadConstructedTypeToken"
+                    ? "Webcil.WasmWebcilModule+LdtokenHolder`1"
+                    : "Webcil.WasmWebcilModule+LdtokenType";
+                SignatureFormattingOptions formatting = new();
+                Assert.Contains(method.Fixups ?? Array.Empty<FixupCell>(),
+                    fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                        fixup.Signature.ToString(formatting).Contains(expectedType, StringComparison.Ordinal));
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(false, false, false)]
     [InlineData(false, true, false)]
     [InlineData(true, false, false)]
