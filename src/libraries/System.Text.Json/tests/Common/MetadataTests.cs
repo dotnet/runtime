@@ -54,6 +54,18 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(ClassWithDefaultCtor))]
         [InlineData(typeof(StructWithDefaultCtor))]
+        public void TypeWithConstructor_CreateObject_ReturnsInstanceOfType(Type type)
+        {
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type);
+            Assert.NotNull(typeInfo.CreateObject);
+            object? instance = typeInfo.CreateObject();
+            Assert.NotNull(instance);
+            Assert.IsType(type, instance);
+        }
+
+        [Theory]
+        [InlineData(typeof(ClassWithDefaultCtor))]
+        [InlineData(typeof(StructWithDefaultCtor))]
         [InlineData(typeof(ClassWithParameterizedCtor))]
         [InlineData(typeof(ClassWithMultipleConstructors))]
         [InlineData(typeof(DerivedClassWithShadowingProperties))]
