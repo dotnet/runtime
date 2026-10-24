@@ -2496,7 +2496,7 @@ extern "C" void QCALLTYPE ModuleHandle_ResolveField(QCall::ModuleHandle pModule,
     return;
 }
 
-extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pModule, const char* name, byte* sig, INT32 sigLen, QCall::ObjectHandleOnStack resolver, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError)
+extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pModule, const char* name, byte* sig, INT32 sigLen, QCall::ObjectHandleOnStack resolver, BOOL isDiagnosticsHidden, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -2523,6 +2523,11 @@ extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pMod
     // pNewMD now owns pSig and pName.
     pSig.SuppressRelease();
     pName.SuppressRelease();
+
+    if (isDiagnosticsHidden)
+    {
+        pNewMD->SetFlags(DynamicMethodDesc::FlagIsDiagnosticsHidden);
+    }
 
     {
         GCX_COOP();

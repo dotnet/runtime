@@ -27,6 +27,8 @@
 #include "generics.h"
 #include "stackwalk.h"
 #include "hostinformation.h"
+#include "externalmemoryhandle.h"
+#include "loaderallocator.hpp"
 
 #define PORTABLE_PDB_MINOR_VERSION              20557
 #define IMAGE_DEBUG_TYPE_EMBEDDED_PORTABLE_PDB  17
@@ -1021,6 +1023,302 @@ extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached()
     return FALSE;
 #endif
 }
+
+#ifdef DEBUGGING_SUPPORTED
+void FreeFuncEvalTemporaryResult(DebuggerFuncEvalContext* pContext)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (pContext->ppTemporaryResult != nullptr && *pContext->ppTemporaryResult != nullptr)
+    {
+        ExternalMemoryHandle::Remove(*pContext->ppTemporaryResult DEBUG_ARG(false));
+        *pContext->ppTemporaryResult = nullptr;
+        delete[] static_cast<BYTE*>(pContext->pResultData);
+        pContext->pResultData = nullptr;
+    }
+}
+
+void ValidateFuncEvalReturnType(bool isNewObject, MethodTable* pMT)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // COMPAT: Abstract/static class construction forces class initialization and returns null.
+    if (isNewObject && pMT->IsInterface())
+    {
+        COMPlusThrow(kMemberAccessException, W("Acc_CreateInterface"));
+    }
+    if (pMT == g_pStringClass)
+    {
+        if (isNewObject)
+        {
+            COMPlusThrow(kArgumentException, W("Argument_CannotCreateString"));
+        }
+    }
+    else if (pMT == g_TypedReferenceMT)
+    {
+        COMPlusThrow(kArgumentException, W("Argument_CannotCreateTypedReference"));
+    }
+}
+
+namespace
+{
+    void ResolveFuncEvalMethod(DebuggerFuncEvalContext* pContext)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+
+        DebuggerFuncEvalData* data = pContext->pData;
+        SIZE_T size;
+        if (!ClrSafeInt<SIZE_T>::multiply(data->genericArgsCount, sizeof(TypeHandle), size))
+        {
+            ThrowHR(COR_E_OVERFLOW);
+        }
+        TypeHandle* types = size == 0 ? nullptr : static_cast<TypeHandle*>(_alloca(size));
+        if (!g_pDebugInterface->ReadFuncEvalTypeHandles(pContext->pEval, types, data->genericArgsCount))
+        {
+            COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
+        }
+
+        Instantiation classInstantiation;
+        Instantiation methodInstantiation;
+        mdTypeDef typeDef = 0;
+        TypeHandle ownerType;
+        if (data->genericArgsCount != 0)
+        {
+            if (FAILED(data->pModule->GetMDImport()->GetParentToken(data->methodToken, &typeDef)))
+            {
+                COMPlusThrowHR(E_INVALIDARG);
+            }
+
+            // Debugger type arguments contain the class instantiation followed by the method instantiation.
+            TypeHandle classType = ClassLoader::LoadTypeDefOrRefThrowing(
+                data->pModule, typeDef, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef);
+            uint32_t classArgumentCount = classType.GetNumGenericArgs();
+            if (data->genericArgsCount < classArgumentCount)
+            {
+                COMPlusThrowHR(COR_E_TARGETPARAMCOUNT);
+            }
+            uint32_t methodArgumentCount = data->genericArgsCount - classArgumentCount;
+            classInstantiation = Instantiation(classArgumentCount == 0 ? nullptr : types, classArgumentCount);
+            methodInstantiation = Instantiation(
+                methodArgumentCount == 0 ? nullptr : types + classArgumentCount, methodArgumentCount);
+
+#ifdef FEATURE_COMINTEROP
+            if (!classInstantiation.IsEmpty())
+            {
+                ownerType = ClassLoader::LoadGenericInstantiationThrowing(data->pModule, typeDef, classInstantiation);
+            }
+#endif // FEATURE_COMINTEROP
+        }
+
+        MethodDesc* method = MemberLoader::GetMethodDescFromMethodDef(
+            data->pModule, data->methodToken, classInstantiation, methodInstantiation);
+        _ASSERTE(method != nullptr);
+        // A shared MethodDesc does not identify the exact declaring type.
+        if (!classInstantiation.IsEmpty() && ownerType.IsNull())
+        {
+            ownerType = ClassLoader::LoadGenericInstantiationThrowing(data->pModule, typeDef, classInstantiation);
+        }
+        *data->pOwnerType = ownerType.IsNull() ? TypeHandle(method->GetMethodTable()) : ownerType;
+        *data->ppMethod = method;
+        ValidateFuncEvalReturnType(data->isNewObject, method->GetMethodTable());
+        if (data->isNewObject && !method->IsCtor())
+        {
+            COMPlusThrow(kArgumentException, W("Arg_NoDefCTorWithoutTypeName"));
+        }
+        method->EnsureActive();
+        MethodTable* owner = data->pOwnerType->GetMethodTable();
+        owner->EnsureInstanceActive();
+        owner->CheckRunClassInitThrowing();
+        if (data->isNewObject)
+        {
+            *data->pResultType = data->genericArgsCount == 0
+                ? TypeHandle(method->GetMethodTable())
+                : ClassLoader::LoadGenericInstantiationThrowing(
+                    method->GetModule(), method->GetMethodTable()->GetCl(),
+                    Instantiation(types, data->genericArgsCount));
+        }
+    }
+}
+
+// Function evaluation entrypoints require an active debugger-owned evaluation.
+extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
+    DebuggerFuncEvalContext* pContext,
+    QCall::ObjectHandleOnStack declaringType, QCall::ObjectHandleOnStack methodOwner,
+    QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+    _ASSERTE(g_pDebugInterface != nullptr);
+    ResolveFuncEvalMethod(pContext);
+    DebuggerFuncEvalData* data = pContext->pData;
+    MethodDesc* method = *data->ppMethod;
+    MetaSig sig(method);
+    if (!isCallConv(sig.GetCallingConvention(), IMAGE_CEE_CS_CALLCONV_DEFAULT))
+    {
+        COMPlusThrow(kArgumentException, W("Argument_CORDBBadVarArgCallConv"));
+    }
+    pContext->parameterCount = sig.NumFixedArgs();
+    pContext->flags = (data->isNewObject ? FuncEvalNewObject : 0) |
+        (method->IsStatic() ? FuncEvalStatic : 0) |
+        (method->IsVtableMethod() ? FuncEvalVirtual : 0) |
+        (method->IsInterface() ? FuncEvalInterface : 0) |
+        (method->IsSharedByGenericInstantiations() ? FuncEvalShared : 0);
+    {
+        GCX_COOP();
+        OBJECTREF loaderAllocator = method->GetLoaderAllocator()->GetExposedObject();
+        GCPROTECT_BEGIN(loaderAllocator);
+        methodOwner.Set(method->AllocateStubMethodInfo());
+        declaringType.Set(data->pOwnerType->GetManagedClassObject());
+        if (data->isNewObject)
+        {
+            MethodTable* resultMT = data->pResultType->GetMethodTable();
+            resultMT->EnsureInstanceActive();
+            ValidateFuncEvalReturnType(true, resultMT);
+            if (data->pResultType->IsByRefLike())
+            {
+                pContext->pResultData =
+                    g_pDebugInterface->AllocateFuncEvalExternalResult(pContext->pEval, *data->pResultType);
+                pContext->flags |= FuncEvalExternalResult;
+            }
+        }
+        GCPROTECT_END();
+    }
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
+    DebuggerFuncEvalContext* pContext, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+    _ASSERTE(g_pDebugInterface != nullptr);
+    DebuggerFuncEvalData* data = pContext->pData;
+    MetaSig sig(*data->ppMethod);
+    pContext->returnElementType = sig.GetReturnType();
+    if (!data->isNewObject)
+    {
+        *data->pResultType = sig.GetRetTypeHandleThrowing();
+    }
+    {
+        GCX_COOP();
+        TypeHandle resultType = *data->pResultType;
+        if (resultType.IsByRefLike())
+        {
+            if ((pContext->flags & FuncEvalExternalResult) == 0)
+            {
+                resultType.GetMethodTable()->EnsureInstanceActive();
+                pContext->pResultData =
+                    g_pDebugInterface->AllocateFuncEvalExternalResult(pContext->pEval, resultType);
+                pContext->flags |= FuncEvalExternalResult;
+            }
+        }
+        else if (pContext->returnElementType == ELEMENT_TYPE_VALUETYPE ||
+                 ((pContext->flags & FuncEvalNewObject) != 0 && resultType.IsValueType()))
+        {
+            MethodTable* pMT = resultType.GetMethodTable();
+            pMT->EnsureInstanceActive();
+            _ASSERTE(*pContext->ppTemporaryResult == nullptr);
+            SIZE_T size = pMT->GetNumInstanceFieldBytes();
+            NewArrayHolder<BYTE> memory(new BYTE[size]);
+            memset(memory.GetValue(), 0, size);
+            ExternalMemoryHandle* handle = ExternalMemoryHandle::Add(resultType, memory.GetValue());
+            pContext->pResultData = memory.GetValue();
+            *pContext->ppTemporaryResult = handle;
+            memory.SuppressRelease();
+            pContext->flags |= FuncEvalValueTypeResult;
+        }
+        if (pContext->returnElementType == ELEMENT_TYPE_BYREF)
+        {
+            _ASSERTE(*pContext->ppResult == nullptr);
+            g_pDebugInterface->ProtectFuncEvalByRefResult(pContext->pEval, resultType, pContext->ppResult);
+            pContext->pResultByRefs = reinterpret_cast<void**>(data->pResult);
+        }
+    }
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
+    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack type,
+    QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+    _ASSERTE(g_pDebugInterface != nullptr);
+    TypeHandle th = g_pDebugInterface->GetFuncEvalArgumentType(pContext->pEval, index);
+    if (th.IsNull())
+    {
+        COMPlusThrow(kArgumentException, W("Argument_BadObjRef"));
+    }
+    {
+        GCX_COOP();
+        type.Set(th.GetManagedClassObject());
+    }
+    END_QCALL;
+}
+
+extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+    _ASSERTE(g_pDebugInterface != nullptr);
+    return g_pDebugInterface->ReadFuncEvalPrimitiveRegister(pContext, index, pValue);
+}
+
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalObjectRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack value,
+    QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+    _ASSERTE(g_pDebugInterface != nullptr);
+    {
+        GCX_COOP();
+        _ASSERTE(index < pContext->argumentCount);
+        OBJECTREF object = value.Get();
+        GCPROTECT_BEGIN(object);
+        g_pDebugInterface->WriteFuncEvalRegister(pContext->pEval, index, ObjToArgSlot(object));
+        GCPROTECT_END();
+    }
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, void* pValue, UINT32 size,
+    QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+    _ASSERTE(g_pDebugInterface != nullptr);
+    {
+        GCX_COOP();
+        _ASSERTE(index < pContext->argumentCount);
+        _ASSERTE(size <= sizeof(UINT64));
+#ifdef _DEBUG
+        const DebuggerFuncEvalArgument& argument = pContext->pArguments[index];
+        _ASSERTE(argument.elementType != ELEMENT_TYPE_CLASS && argument.elementType != ELEMENT_TYPE_OBJECT &&
+            argument.elementType != ELEMENT_TYPE_STRING && argument.elementType != ELEMENT_TYPE_ARRAY &&
+            argument.elementType != ELEMENT_TYPE_SZARRAY);
+#endif // _DEBUG
+        UINT64 bits = 0;
+        memcpyNoGCRefs(ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&bits), size), pValue, size);
+        g_pDebugInterface->WriteFuncEvalRegister(pContext->pEval, index, bits);
+    }
+    END_QCALL;
+}
+#endif // DEBUGGING_SUPPORTED
+
 #endif // !DACCESS_COMPILE
 
 void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,

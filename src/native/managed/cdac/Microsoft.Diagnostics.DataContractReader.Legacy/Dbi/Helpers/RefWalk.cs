@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -20,6 +21,9 @@ internal sealed class RefWalk : IEnum<DacGcReference>
 
     public IEnumerator<DacGcReference> Enumerator { get; }
     public nuint LegacyHandle { get; set; } = 0;
+#if DEBUG
+    internal RefWalkHandlePrefixValidator HandlePrefixValidator { get; } = new();
+#endif
 
     public RefWalk(Target target, bool walkStacks, CorGCReferenceType handleWalkMask)
     {
@@ -192,5 +196,51 @@ internal sealed class RefWalk : IEnum<DacGcReference>
 
             threadAddr = threadData.NextThread;
         }
+    }
+}
+
+internal sealed class RefWalkHandlePrefixValidator
+{
+    private readonly HashSet<(CorGCReferenceType Type, ulong Domain, ulong Object, ulong ExtraData)> _cdac = [];
+    private readonly HashSet<(CorGCReferenceType Type, ulong Domain, ulong Object, ulong ExtraData)> _legacy = [];
+    private bool _cdacComplete;
+    private bool _legacyComplete;
+    private bool _validated;
+
+    internal bool NeedsLegacyBatch => _cdacComplete && !_legacyComplete;
+
+    internal void AddBatch(ReadOnlySpan<DacGcReference> references, bool legacy, bool endOfWalk)
+    {
+        ref bool complete = ref (legacy ? ref _legacyComplete : ref _cdacComplete);
+        if (complete)
+            return;
+
+        HashSet<(CorGCReferenceType Type, ulong Domain, ulong Object, ulong ExtraData)> roots =
+            legacy ? _legacy : _cdac;
+        foreach (DacGcReference reference in references)
+        {
+            if (reference.dwType == CorGCReferenceType.CorReferenceStack)
+            {
+                complete = true;
+                break;
+            }
+
+            roots.Add((reference.dwType, reference.vmDomain, reference.objHnd, reference.i64ExtraData));
+        }
+
+        complete |= endOfWalk;
+    }
+
+    internal bool TryCompare(out bool matches)
+    {
+        matches = false;
+        if (_validated || !_cdacComplete || !_legacyComplete)
+            return false;
+
+        _validated = true;
+        matches = _cdac.SetEquals(_legacy);
+        _cdac.Clear();
+        _legacy.Clear();
+        return true;
     }
 }
