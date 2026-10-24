@@ -139,6 +139,137 @@ namespace System.Net.Security.Tests
             Assert.Equal(TlsHandshakeType.ClientHello, info.HandshakeType);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        public void TlsFrameHelper_FragmentedHello_PreservesMetadata(int helloKind)
+        {
+            byte[] hello = helloKind switch
+            {
+                0 => s_validClientHello,
+                1 => s_Tls12ClientHello,
+                2 => s_Tls13ClientHello,
+                3 => s_Tls12ServerHello,
+                _ => s_TlsClientHelloNoExtensions
+            };
+            var options = AllExtensions | TlsFrameHelper.ProcessingOptions.RawApplicationProtocol;
+            TlsFrameHelper.TlsFrameInfo expected = default;
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(hello, ref expected, options));
+
+            for (int fragmentSize = 1; fragmentSize <= hello.Length - TlsFrameHelper.HeaderSize; fragmentSize++)
+            {
+                byte[] fragmented = FragmentHello(hello, fragmentSize);
+                byte[] original = (byte[])fragmented.Clone();
+                TlsFrameHelper.TlsFrameInfo actual = default;
+
+                Assert.True(TlsFrameHelper.TryGetFrameInfo(fragmented, ref actual, out int frameLength, options), $"Fragment size: {fragmentSize}");
+                Assert.Equal(fragmented.Length, frameLength);
+                Assert.Equal(expected.HandshakeType, actual.HandshakeType);
+                Assert.Equal(expected.TargetName, actual.TargetName);
+                Assert.Equal(expected.SupportedVersions, actual.SupportedVersions);
+                Assert.Equal(expected.ApplicationProtocols, actual.ApplicationProtocols);
+                Assert.Equal(expected.RawApplicationProtocols, actual.RawApplicationProtocols);
+                Assert.Equal(original, fragmented);
+            }
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(58)]
+        public void TlsFrameHelper_FragmentedHello_TruncatedDataHasNoServerName(int fragmentSize)
+        {
+            byte[] fragmented = FragmentHello(s_Tls13ClientHello, fragmentSize);
+            for (int length = 0; length < fragmented.Length; length++)
+            {
+                TlsFrameHelper.TlsFrameInfo info = default;
+                Assert.False(TlsFrameHelper.TryGetFrameInfo(fragmented.AsSpan(0, length), ref info, AllExtensions));
+                Assert.Null(info.TargetName);
+            }
+        }
+
+        [Theory]
+        [InlineData((byte)TlsContentType.Alert)]
+        [InlineData((byte)TlsContentType.ChangeCipherSpec)]
+        [InlineData((byte)TlsContentType.AppData)]
+        public void TlsFrameHelper_FragmentedHello_InterleavedRecordFails(byte contentType)
+        {
+            const int FragmentSize = 58;
+            byte[] fragmented = FragmentHello(s_Tls13ClientHello, FragmentSize);
+            fragmented[TlsFrameHelper.HeaderSize + FragmentSize] = contentType;
+            TlsFrameHelper.TlsFrameInfo info = default;
+
+            Assert.False(TlsFrameHelper.TryGetFrameInfo(fragmented, ref info, AllExtensions));
+            Assert.Null(info.TargetName);
+        }
+
+        [Fact]
+        public void TlsFrameHelper_FragmentedHello_LargerThanRecordLimit()
+        {
+            byte[] hello = CreatePaddedClientHello(20 * 1024);
+            byte[] fragmented = FragmentHello(hello, 16 * 1024);
+            TlsFrameHelper.TlsFrameInfo info = default;
+
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(fragmented, ref info, AllExtensions));
+            Assert.Equal(new string('a', 19), info.TargetName);
+        }
+
+        [Fact]
+        public void TlsFrameHelper_FragmentedHello_TrailingRecordIsNotConsumed()
+        {
+            byte[] hello = FragmentHello(s_Tls13ClientHello, 58);
+            byte[] frames = new byte[hello.Length + 7];
+            hello.CopyTo(frames, 0);
+            new byte[] { 21, 3, 3, 0, 2, 2, 40 }.CopyTo(frames, hello.Length);
+            TlsFrameHelper.TlsFrameInfo info = default;
+
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(frames, ref info, out int frameLength, AllExtensions));
+            Assert.Equal(hello.Length, frameLength);
+            Assert.Equal("10.211.55.2", info.TargetName);
+        }
+
+        internal static byte[] CreatePaddedClientHello(int paddingLength)
+        {
+            const int HostNameLength = 19;
+            byte[] original = CreateClientHello(HostNameLength);
+            byte[] hello = new byte[original.Length + 4 + paddingLength];
+            original.CopyTo(hello, 0);
+            int handshakeLength = hello.Length - 9;
+            hello[6] = (byte)(handshakeLength >> 16);
+            hello[7] = (byte)(handshakeLength >> 8);
+            hello[8] = (byte)handshakeLength;
+            BinaryPrimitives.WriteUInt16BigEndian(hello.AsSpan(3), checked((ushort)(hello.Length - TlsFrameHelper.HeaderSize)));
+            BinaryPrimitives.WriteUInt16BigEndian(hello.AsSpan(50), checked((ushort)(HostNameLength + 9 + 4 + paddingLength)));
+            BinaryPrimitives.WriteUInt16BigEndian(hello.AsSpan(original.Length), 21); // padding extension
+            BinaryPrimitives.WriteUInt16BigEndian(hello.AsSpan(original.Length + 2), checked((ushort)paddingLength));
+
+            return hello;
+        }
+
+        internal static ReadOnlySpan<byte> ClientHello => s_Tls13ClientHello;
+
+        internal static byte[] FragmentHello(ReadOnlySpan<byte> hello, int fragmentSize)
+        {
+            ReadOnlySpan<byte> payload = hello.Slice(TlsFrameHelper.HeaderSize);
+            int recordCount = (payload.Length + fragmentSize - 1) / fragmentSize;
+            byte[] fragmented = new byte[checked(payload.Length + recordCount * TlsFrameHelper.HeaderSize)];
+            int offset = 0;
+
+            while (!payload.IsEmpty)
+            {
+                int length = Math.Min(fragmentSize, payload.Length);
+                hello.Slice(0, 3).CopyTo(fragmented.AsSpan(offset));
+                BinaryPrimitives.WriteUInt16BigEndian(fragmented.AsSpan(offset + 3), checked((ushort)length));
+                payload.Slice(0, length).CopyTo(fragmented.AsSpan(offset + TlsFrameHelper.HeaderSize));
+                offset += TlsFrameHelper.HeaderSize + length;
+                payload = payload.Slice(length);
+            }
+
+            return fragmented;
+        }
+
         public static IEnumerable<object[]> InvalidClientHelloData()
         {
             int id = 0;

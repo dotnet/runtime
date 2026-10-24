@@ -106,6 +106,7 @@ namespace System.Net.Security
         private bool _remoteCertificateRejected;
         private SslClientHelloInfo? _clientHelloInfo;
         private byte[]? _clientHelloBytesBuffered;
+        private TlsFrameHelper.HandshakeFrame _clientHelloFrame;
         // Session-local credentials handle. Non-null once SetClientCertificateContext
         // has been called; from that point on, this session's PAL calls route through
         // ActiveCredentialsRef() and never touch the shared TlsContext.CredentialsHandle.
@@ -572,7 +573,7 @@ namespace System.Net.Security
 
         /// <summary>
         /// Server-side only. Returns the number of bytes in the captured raw ClientHello
-        /// record (5-byte TLS record header plus the ClientHello handshake message), or
+        /// records, including their TLS record headers, or
         /// 0 if unavailable. Callers use this to size a destination buffer for
         /// <see cref="TryGetClientHelloBytes"/>.
         /// </summary>
@@ -597,9 +598,9 @@ namespace System.Net.Security
         }
 
         /// <summary>
-        /// Server-side only. Copies the captured raw ClientHello record into
+        /// Server-side only. Copies the captured raw ClientHello records into
         /// <paramref name="destination"/>. Returns <see langword="true"/> when the full
-        /// record was written; <see langword="false"/> if the destination is too small
+        /// records were written; <see langword="false"/> if the destination is too small
         /// or the ClientHello is not available.
         /// </summary>
         /// <param name="destination">Buffer that receives the ClientHello bytes.</param>
@@ -936,7 +937,21 @@ namespace System.Net.Security
                     throw new IOException(SR.net_io_decrypt);
                 }
 
-                if (input.Length < frameHeader.Length)
+#pragma warning disable CS0618 // Ssl2 is obsolete.
+                if (_context.IsServer && _clientHelloBytesBuffered is null && frameHeader.Version != SslProtocols.Ssl2)
+#pragma warning restore CS0618
+                {
+                    OperationStatus status = _clientHelloFrame.Process(input, out _);
+                    if (status == OperationStatus.NeedMoreData)
+                    {
+                        return TlsOperationStatus.NeedMoreData;
+                    }
+                    if (status != OperationStatus.Done)
+                    {
+                        throw new AuthenticationException(SR.net_ssl_io_frame);
+                    }
+                }
+                else if (input.Length < frameHeader.Length)
                 {
                     return TlsOperationStatus.NeedMoreData;
                 }
@@ -950,10 +965,8 @@ namespace System.Net.Security
                 {
                     // Parse and capture the ClientHello managed-side so the ClientHelloInfo /
                     // TargetHostName / GetClientHelloBytes surface is consistent across paths.
-                    // We check on every call while _clientHelloBytesBuffered is null because the
-                    // first ProcessHandshake call may pass only a partial CH record - OpenSSL will
-                    // allocate _securityContext even on partial input and return WantRead, so we
-                    // can't rely on _securityContext being null as our re-entry gate.
+                    // The framing guard retains progress across incomplete prefixes and only
+                    // allows a complete ClientHello through to parsing and credential selection.
                     if (_clientHelloBytesBuffered is null)
                     {
                         SslClientHelloInfo? parsed = TryParseClientHello(input, out int frameLength);
@@ -972,10 +985,9 @@ namespace System.Net.Security
                             // parse), silently skip capture; the session continues to work,
                             // GetClientHelloLength just reports 0.
                         }
-                        else if (_securityContext is null)
+                        else
                         {
-                            // No CH parse-able yet and no PAL context yet - wait for more bytes.
-                            return TlsOperationStatus.NeedMoreData;
+                            throw new AuthenticationException(SR.net_ssl_io_frame);
                         }
                     }
 
@@ -1685,9 +1697,9 @@ namespace System.Net.Security
         // deferred-options path; does not mutate session state.
         private static SslClientHelloInfo? TryParseClientHello(ReadOnlySpan<byte> input, out int frameLength)
         {
-            frameLength = 0;
             TlsFrameHelper.TlsFrameInfo frameInfo = default;
-            if (!TlsFrameHelper.TryGetFrameInfo(input, ref frameInfo))
+            if (!TlsFrameHelper.TryGetFrameInfo(input, ref frameInfo, out frameLength,
+                TlsFrameHelper.ProcessingOptions.ServerName | TlsFrameHelper.ProcessingOptions.Versions))
             {
                 return null;
             }
@@ -1697,7 +1709,6 @@ namespace System.Net.Security
                 return null;
             }
 
-            frameLength = frameInfo.Header.Length;
             return new SslClientHelloInfo(frameInfo.TargetName ?? string.Empty, frameInfo.SupportedVersions);
         }
 
