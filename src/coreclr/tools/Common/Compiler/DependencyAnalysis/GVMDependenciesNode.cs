@@ -172,6 +172,10 @@ namespace ILCompiler.DependencyAnalysis
                                 // Static virtuals cannot be further overridden so this is an impl use. Otherwise it's a virtual slot use.
                                 if (implementingMethodInstantiation.Signature.IsStatic)
                                 {
+#if READYTORUN
+                                    if (factory.CanBeInGenericCycle(canonImpl))
+                                        continue;
+#endif
                                     DependencyNodeCore<NodeFactory> node = GetVirtualMethodImplNode(factory, canonImpl);
                                     if (node != null)
                                         dynamicDependencies.Add(new CombinedDependencyListEntry(node, null, "ImplementingMethodInstantiation"));

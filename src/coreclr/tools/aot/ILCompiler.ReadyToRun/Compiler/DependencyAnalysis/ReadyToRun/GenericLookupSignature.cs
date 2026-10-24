@@ -145,6 +145,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (_typeArgument != null)
                     factory.AddVirtualMethodDiscoveryDependencies(ref dependencies, _typeArgument);
             }
+            else if (factory.CompilationCurrentPhase == 0 &&
+                _fixupKind == ReadyToRunFixupKind.MethodEntry &&
+                _methodArgument?.ConstrainedType is not null)
+            {
+                MethodDesc method = _methodArgument.Method;
+                if (method.IsVirtual && method.Signature.IsStatic && method.OwningType.IsInterface)
+                {
+                    MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    dependencies ??= new DependencyList();
+                    if (!canonMethod.HasInstantiation)
+                    {
+                        dependencies.Add(factory.VirtualMethodUse(canonMethod), "Static interface dictionary slot use");
+                    }
+                    else if (!factory.CanBeInGenericCycle(method))
+                    {
+                        dependencies.Add(factory.GVMDependencies(canonMethod), "Generic static interface dictionary slot use");
+                    }
+                }
+            }
 
             return dependencies;
         }

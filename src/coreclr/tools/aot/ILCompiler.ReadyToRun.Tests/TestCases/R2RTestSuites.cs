@@ -2845,6 +2845,47 @@ public class R2RTestSuites
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StaticInterfaceGenericLookup(bool optimize)
+    {
+        var library = new CompiledAssembly
+        {
+            AssemblyName = nameof(StaticInterfaceGenericLookup),
+            SourceResourceNames = ["VirtualMethodGenerics/GenericLookup.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(StaticInterfaceGenericLookup),
+            [
+                new(nameof(StaticInterfaceGenericLookup), [new CrossgenAssembly(library)])
+                {
+                    Options = optimize ? [Crossgen2Option.Optimize] : [],
+                    AdditionalArgs = ["--parallelism", optimize ? "8" : "1"],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StaticLookup`2<__Canon,__Canon>", "ClassLookup", out string diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StaticLookup`2<__Canon,__Canon>", "ThisLookup", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StaticFactory", "Create", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StaticValueFactory", "Create", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StaticBase`1<__Canon>", "Create", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ExplicitStaticFactory", "IStaticFactory<System.String>.Create", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ExplicitStaticFactory", "IStaticFactory<System.Object>.Create", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "IStaticDefault`1<__Canon>", "Default", out diag), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StaticGenericFactory", "Echo", out diag, ["__Canon"]), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StaticGenericFactory", "Echo", out diag, ["int"]), diag);
+            Assert.False(R2RAssert.HasCompiledMethod(reader, "StaticFactory", "Unused", out diag), diag);
+            Assert.False(R2RAssert.HasCompiledMethod(reader, "UndiscoveredStaticFactory", "Create", out diag), diag);
+            Assert.False(R2RAssert.HasCompiledMethod(reader, "CyclicStaticGenericFactory", "Echo", out diag, ["int"]), diag);
+            Assert.False(R2RAssert.HasCompiledMethod(reader, "CyclicStaticGenericForwarder`1<__Canon>", "Echo", out diag, ["int"]), diag);
+        }
+    }
+
     [Fact]
     public void MissingVirtualSignature()
     {
