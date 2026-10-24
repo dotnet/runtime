@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using System.Collections.Generic;
 
 namespace System.SpanTests
 {
@@ -27,6 +28,16 @@ namespace System.SpanTests
             Assert.Equal(7, new ReadOnlySpan<int>(source).LastIndexOf(value));
             Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(7, new ReadOnlySpan<int>(source).LastIndexOf(value, comparer)));
             Assert.Equal(-1, new ReadOnlySpan<int>(source).LastIndexOf(value, GetFalseEqualityComparer<int>()));
+        }
+
+        [Fact]
+        public static void LastIndexOfSequenceUsesCustomComparer()
+        {
+            ReadOnlySpan<byte> source = [1, 2, 3];
+            ReadOnlySpan<byte> value = [9];
+            IEqualityComparer<byte> comparer = EqualityComparer<byte>.Create(static (_, _) => true, static _ => 0);
+
+            Assert.Equal(2, source.LastIndexOf(value, comparer));
         }
 
         [Fact]
