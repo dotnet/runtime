@@ -421,41 +421,6 @@ int32_t InterpCompiler::GetInsLength(InterpInst *ins)
     return len;
 }
 
-void InterpCompiler::ForEachInsSVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int32_t*, void*))
-{
-    int numSVars = g_interpOpSVars[ins->opcode];
-    if (numSVars)
-    {
-        for (int i = 0; i < numSVars; i++)
-        {
-            if (ins->sVars [i] == CALL_ARGS_SVAR)
-            {
-                if (ins->info.pCallInfo && ins->info.pCallInfo->pCallArgs) {
-                    int32_t *callArgs = ins->info.pCallInfo->pCallArgs;
-                    while (*callArgs != CALL_ARGS_TERMINATOR)
-                    {
-                        (this->*callback) (callArgs, pData);
-                        callArgs++;
-                    }
-                }
-            }
-            else
-            {
-                (this->*callback) (&ins->sVars[i], pData);
-            }
-        }
-    }
-}
-
-void InterpCompiler::ForEachInsVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int32_t*, void*))
-{
-    ForEachInsSVar(ins, pData, callback);
-
-    if (g_interpOpDVars [ins->opcode])
-        (this->*callback) (&ins->dVar, pData);
-}
-
-
 InterpBasicBlock* InterpCompiler::AllocBB(int32_t ilOffset)
 {
     InterpBasicBlock *bb = new (getAllocator(IMK_BasicBlock)) InterpBasicBlock(m_BBCount, ilOffset);
