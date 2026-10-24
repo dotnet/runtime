@@ -2,6 +2,13 @@
 
 This directory contains the ILAssembler tool and its build instructions.
 
+## Diagnostics
+
+Compiler diagnostics use `file(line,col) : severity ILAxxxx : message`, with
+one-based source line and column numbers. Diagnostics do not include the source
+file's contents. The `-ERR` option continues to suppress compiler diagnostics
+while attempting to emit output despite errors.
+
 ## Build Instructions
 
 ### Regular Builds

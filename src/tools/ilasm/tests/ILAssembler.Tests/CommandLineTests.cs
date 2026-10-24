@@ -3,13 +3,100 @@
 
 using System;
 using System.CommandLine;
+using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace ILAssembler.Tests;
 
 public class CommandLineTests
 {
+    [Theory]
+    [InlineData("", 0, "input.il(1,1)")]
+    [InlineData("abc", 0, "input.il(1,1)")]
+    [InlineData("abc", 3, "input.il(1,4)")]
+    [InlineData("abc\n  def", 6, "input.il(2,3)")]
+    [InlineData("abc\r\n  def", 7, "input.il(2,3)")]
+    [InlineData("abc\n\n", 5, "input.il(3,1)")]
+    [InlineData("\tdef", 1, "input.il(1,2)")]
+    public void DiagnosticLocation_UsesOneBasedLineAndColumn(string text, int start, string expected)
+    {
+        var location = new Location(new SourceSpan(start, 0), new SourceText(text, "input.il"));
+
+        Assert.Equal(expected, location.ToString());
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task Diagnostics_UseSourceCoordinatesAndPreserveErrorTolerance(bool warning, bool errorTolerant)
+    {
+        string directory = Directory.CreateTempSubdirectory("ilasm-diagnostics-").FullName;
+        try
+        {
+            string input = Path.Combine(directory, "input.il");
+            string output = Path.Combine(directory, "output.dll");
+            string source = warning
+                ? """
+                    .assembly Test {}
+                    .method static void M() {
+                      .locals ([0] int32 a)
+                      {
+                        .locals ([0] int32 b)
+                        nop
+                      }
+                      ret
+                    }
+                    """
+                : """
+                    .assembly extern System.Runtime {}
+                    .assembly Test {}
+                      .class public Value extends [System.Runtime]System.ValueType {}
+                    """;
+            File.WriteAllText(input, source);
+            var startInfo = new ProcessStartInfo(Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") ?? "dotnet")
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            };
+            startInfo.ArgumentList.Add(typeof(Program).Assembly.Location);
+            startInfo.ArgumentList.Add("-nologo");
+            startInfo.ArgumentList.Add("-quiet");
+            startInfo.ArgumentList.Add("-dll");
+            startInfo.ArgumentList.Add($"-output={output}");
+            if (errorTolerant)
+            {
+                startInfo.ArgumentList.Add("-ERR");
+            }
+            startInfo.ArgumentList.Add(input);
+
+            using Process process = Process.Start(startInfo)!;
+            Task<string> stdout = process.StandardOutput.ReadToEndAsync();
+            Task<string> stderr = process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+            string diagnosticOutput = await stdout;
+            string errorOutput = await stderr;
+
+            Assert.Equal(warning || errorTolerant ? 0 : 1, process.ExitCode);
+            Assert.Equal(warning || errorTolerant, File.Exists(output));
+            string expected = warning
+                ? $"{input}(5,5) : warning ILA0054 : Local var slot 0 is in use"
+                : $"{input}(3,17) : error ILA0002 : The value type 'Value' is unsealed; implicitly sealed.";
+            Assert.Equal(errorTolerant ? "" : expected + Environment.NewLine, diagnosticOutput);
+            Assert.Equal(warning || errorTolerant ? "" : "***** FAILURE *****" + Environment.NewLine, errorOutput);
+            Assert.DoesNotContain(".assembly", diagnosticOutput);
+            Assert.DoesNotContain("SourceText", diagnosticOutput);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public void Pseudoattributes_ModernOptionIsOptIn()
     {

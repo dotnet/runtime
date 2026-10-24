@@ -41,5 +41,23 @@ public record Location(SourceSpan Span, SourceText Source)
         return new SourceSpan(start, length);
     }
 
-    public override string ToString() => $"{Source.Path}({Span.Start},{Span.Length})";
+    public override string ToString()
+    {
+        int line = 1;
+        int column = 1;
+        for (int i = 0; i < Span.Start && i < Source.Text.Length; i++)
+        {
+            if (Source.Text[i] == '\n')
+            {
+                line++;
+                column = 1;
+            }
+            else
+            {
+                column++;
+            }
+        }
+
+        return $"{Source.Path}({line},{column})";
+    }
 }
