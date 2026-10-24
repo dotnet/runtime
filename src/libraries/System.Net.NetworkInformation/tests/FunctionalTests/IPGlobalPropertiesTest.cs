@@ -3,15 +3,19 @@
 
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    public class IPGlobalPropertiesTest
+    public partial class IPGlobalPropertiesTest
     {
+        private const int OperationNotPermitted = 1; // EPERM on macOS.
+        private const int RemoteTimeoutMilliseconds = 10_000;
         private readonly ITestOutputHelper _log;
 
         public static IEnumerable<object[]> Loopbacks()
@@ -31,6 +35,56 @@ namespace System.Net.NetworkInformation.Tests
         {
             _log = output;
         }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [InlineData(nameof(IPGlobalProperties.GetActiveTcpConnections), "pcbcount")]
+        [InlineData(nameof(IPGlobalProperties.GetActiveTcpConnections), "pcblist")]
+        [InlineData(nameof(IPGlobalProperties.GetActiveTcpListeners), "pcbcount")]
+        [InlineData(nameof(IPGlobalProperties.GetActiveTcpListeners), "pcblist")]
+        [InlineData(nameof(IPGlobalProperties.GetActiveUdpListeners), "pcbcount")]
+        [InlineData(nameof(IPGlobalProperties.GetActiveUdpListeners), "pcblist")]
+        public void IPGlobalProperties_SysctlDenied_ThrowsNetworkInformationException(string methodName, string queryName)
+        {
+            // This uses macOS's deprecated raw-profile sandbox API and requires an unsandboxed test host.
+            // A fresh child isolates the irreversible restriction but cannot escape an inherited sandbox.
+            RemoteExecutor.Invoke(static (methodName, queryName) =>
+            {
+                string protocol = methodName == nameof(IPGlobalProperties.GetActiveUdpListeners) ? "udp" : "tcp";
+                string profile = $"(version 1)(allow default)(deny sysctl-read (sysctl-name \"net.inet.{protocol}.{queryName}\"))";
+                int result = SandboxInit(profile, 0, out nint errorBuffer);
+                try
+                {
+                    Assert.True(result == 0, Marshal.PtrToStringUTF8(errorBuffer));
+                }
+                finally
+                {
+                    if (errorBuffer != 0)
+                    {
+                        SandboxFreeError(errorBuffer);
+                    }
+                }
+
+                IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
+                Func<Array> query = methodName switch
+                {
+                    nameof(IPGlobalProperties.GetActiveTcpConnections) => properties.GetActiveTcpConnections,
+                    nameof(IPGlobalProperties.GetActiveTcpListeners) => properties.GetActiveTcpListeners,
+                    nameof(IPGlobalProperties.GetActiveUdpListeners) => properties.GetActiveUdpListeners,
+                    _ => throw new InvalidOperationException(methodName)
+                };
+
+                Marshal.SetLastPInvokeError(0);
+                NetworkInformationException exception = Assert.Throws<NetworkInformationException>(() => query());
+                Assert.Equal(OperationNotPermitted, exception.ErrorCode);
+            }, methodName, queryName, new RemoteInvokeOptions { TimeOut = RemoteTimeoutMilliseconds }).Dispose();
+        }
+
+        [LibraryImport("/usr/lib/libsandbox.dylib", EntryPoint = "sandbox_init", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int SandboxInit(string profile, ulong flags, out nint errorBuffer);
+
+        [LibraryImport("/usr/lib/libsandbox.dylib", EntryPoint = "sandbox_free_error")]
+        private static partial void SandboxFreeError(nint errorBuffer);
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Expected behavior is different on Android")]
