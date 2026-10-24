@@ -30,7 +30,8 @@ namespace Internal.JitInterface
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
 
-        private int SizeOfReversePInvokeTransitionFrame => 2 * PointerSize;
+        internal const int ReversePInvokeTransitionFramePointerCount = 2;
+        private int SizeOfReversePInvokeTransitionFrame => ReversePInvokeTransitionFramePointerCount * PointerSize;
 
         private RyuJitCompilation _compilation;
         private MethodDebugInformation _debugInfo;
