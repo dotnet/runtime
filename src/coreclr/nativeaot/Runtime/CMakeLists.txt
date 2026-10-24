@@ -208,6 +208,7 @@ else()
     list(APPEND COMMON_RUNTIME_SOURCES
       wasm/MiscStubs.cpp
       wasm/PInvoke.cpp
+      wasm/WasmCodeManager.cpp
       ${RUNTIME_DIR}/wasm/writebarriers.cpp
       ${GC_DIR}/wasm/gcenv.cpp
     )
