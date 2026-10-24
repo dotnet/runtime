@@ -95,7 +95,7 @@ namespace ILAssembler
         private static bool ParseIntegerValue(ReadOnlySpan<char> value, out long result)
             => ParseIntegerValue(value, out result, out _);
 
-        private static bool ParseIntegerValue(ReadOnlySpan<char> value, out long result, out bool invalidOctal)
+        private static bool ParseIntegerValue(ReadOnlySpan<char> value, out long result, out bool invalidOctal, bool restrictToInt32 = false)
         {
             NumberStyles parseStyle = NumberStyles.None;
             bool negate = false;
@@ -131,8 +131,23 @@ namespace ILAssembler
 
                     result += digitValue;
                 }
+
+                // uint.MaxValue has 11 octal digits; longer magnitudes may have wrapped past 64 bits.
+                if (restrictToInt32 && (value.TrimStart('0').Length > 11 ||
+                    result > (negate ? -(long)int.MinValue : uint.MaxValue)))
+                {
+                    return false;
+                }
+
                 if (negate) result = -result;
                 return true;
+            }
+
+            if (restrictToInt32)
+            {
+                bool parsed = uint.TryParse(value, parseStyle, CultureInfo.InvariantCulture, out uint magnitude);
+                result = negate ? -(long)magnitude : magnitude;
+                return parsed && result >= int.MinValue;
             }
 
             bool success = long.TryParse(value.ToString(), parseStyle, CultureInfo.InvariantCulture, out result);
@@ -185,13 +200,13 @@ namespace ILAssembler
         internal int ParseInt32(IToken token)
         {
             ReadOnlySpan<char> value = token.Text.AsSpan();
-            if (!ParseIntegerValue(value, out long num, out bool invalidOctal))
+            if (!ParseIntegerValue(value, out long num, out bool invalidOctal, restrictToInt32: true))
             {
                 ReportIntegerParseError(token, invalidOctal);
                 return 0;
             }
 
-            return (int)num;
+            return unchecked((int)num);
         }
 
 
