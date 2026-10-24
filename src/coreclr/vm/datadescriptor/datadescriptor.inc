@@ -942,6 +942,7 @@ CDAC_TYPE_INDETERMINATE(PlatformMetadata)
 CDAC_TYPE_FIELD(PlatformMetadata, TYPE(PrecodeMachineDescriptor), PrecodeMachineDescriptor, offsetof(CDacPlatformMetadata, precode))
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_FIELD(PlatformMetadata, T_UINT8, CodePointerFlags, offsetof(CDacPlatformMetadata, codePointerFlags))
+CDAC_TYPE_FIELD(PlatformMetadata, T_UINT64, PointerAuthenticationMask, offsetof(CDacPlatformMetadata, pointerAuthenticationMask))
 CDAC_TYPE_END(PlatformMetadata)
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS

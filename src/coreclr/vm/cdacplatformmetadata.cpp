@@ -8,10 +8,17 @@ GVAL_IMPL(CDacPlatformMetadata, g_cdacPlatformMetadata);
 #ifndef DACCESS_COMPILE
 void CDacPlatformMetadata::Init()
 {
+    (&g_cdacPlatformMetadata)->pointerAuthenticationMask = 0;
 #if defined(TARGET_ARM)
     (&g_cdacPlatformMetadata)->codePointerFlags = CDacCodePointerFlags::HasArm32ThumbBit;
-#elif defined(TARGET_ARM64) && defined(TARGET_APPLE)
-    // TODO set HasArm64PtrAuth if arm64e
+#elif defined(TARGET_ARM64)
+    // R2R code may use PAC even when JitPacEnabled is false.
+    // Bit 55 selects the VA range and is not part of PAC. See InsertPAC():
+    // https://developer.arm.com/documentation/ddi0602/latest/Shared-Pseudocode/aarch64-functions-pac
+    // XPACLRI accounts for VA size and pointer tagging; XOR gives the PAC mask.
+    const uintptr_t probe = ~(uintptr_t(1) << 55);
+    (&g_cdacPlatformMetadata)->pointerAuthenticationMask =
+        probe ^ reinterpret_cast<uintptr_t>(PacStripPtr(reinterpret_cast<void*>(probe)));
     (&g_cdacPlatformMetadata)->codePointerFlags = CDacCodePointerFlags::None;
 #else
     (&g_cdacPlatformMetadata)->codePointerFlags = CDacCodePointerFlags::None;
