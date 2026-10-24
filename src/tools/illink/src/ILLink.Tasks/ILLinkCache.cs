@@ -96,7 +96,8 @@ internal sealed class ILLinkCache
             : Path.Combine(home, ".cache", "illink");
     }
 
-    internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc)
+    internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc,
+        Action<string, MessageImportance>? logOutput = null)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
         outputDirectory = ValidateOutputDirectory(outputDirectory);
@@ -109,9 +110,10 @@ internal sealed class ILLinkCache
             return false;
         }
 
+        List<(string Line, MessageImportance Importance)> output;
         try
         {
-            List<string> files = ReadManifest(entryDirectory);
+            List<string> files = ReadManifest(entryDirectory, out output);
 
             // Check the entire entry before modifying outputs. Copies can still fail if the cache is wiped concurrently.
             if (Directory.Exists(outputDirectory))
@@ -128,16 +130,22 @@ internal sealed class ILLinkCache
 
             UpdateLastUsed(entryDirectory);
             _log.LogMessage(MessageImportance.Low, $"ILLink cache hit: {inputHash}");
-            return true;
         }
         catch (Exception ex) when (IsCacheFailure(ex))
         {
             _log.LogMessage(MessageImportance.Low, $"ILLink cache restore failed for '{inputHash}'; running ILLink normally: {ex.Message}");
             return false;
         }
+
+        // Logging must not turn a completed restore into a retry that duplicates diagnostics.
+        foreach (var line in output)
+            logOutput?.Invoke(line.Line, line.Importance);
+
+        return true;
     }
 
-    internal void Store(string inputHash, string outputDirectory)
+    internal void Store(string inputHash, string outputDirectory,
+        IReadOnlyList<(string Line, MessageImportance Importance)>? output = null)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
         outputDirectory = ValidateOutputDirectory(outputDirectory);
@@ -193,6 +201,22 @@ internal sealed class ILLinkCache
                         manifest.Write(new FileInfo(cachedFile).Length);
                         manifest.Write(HashFile(cachedFile));
                     }
+
+                    string diagnosticsPath = Path.Combine(stagingDirectory, "diagnostics");
+                    using (var diagnostics = new BinaryWriter(File.Create(diagnosticsPath)))
+                    {
+                        diagnostics.Write(output?.Count ?? 0);
+                        if (output is not null)
+                        {
+                            foreach (var line in output)
+                            {
+                                diagnostics.Write(line.Line);
+                                diagnostics.Write((int)line.Importance);
+                            }
+                        }
+                    }
+                    manifest.Write(new FileInfo(diagnosticsPath).Length);
+                    manifest.Write(HashFile(diagnosticsPath));
                 }
 
                 ILLinkCacheEntry.WriteLastUsed(Path.Combine(stagingDirectory, ILLinkCacheEntry.LastUsedFileName));
@@ -285,7 +309,8 @@ internal sealed class ILLinkCache
         }
     }
 
-    private static List<string> ReadManifest(string entryDirectory)
+    private static List<string> ReadManifest(string entryDirectory,
+        out List<(string Line, MessageImportance Importance)> output)
     {
         using var manifest = new BinaryReader(File.OpenRead(Path.Combine(entryDirectory, "manifest")));
         if (manifest.ReadInt32() != FormatVersion)
@@ -316,8 +341,33 @@ internal sealed class ILLinkCache
             files.Add(relativePath);
         }
 
+        string diagnosticsPath = Path.Combine(entryDirectory, "diagnostics");
+        long diagnosticsLength = manifest.ReadInt64();
+        byte[] diagnosticsHash = manifest.ReadBytes(32);
+        if (diagnosticsHash.Length != 32 || new FileInfo(diagnosticsPath).Length != diagnosticsLength ||
+            !diagnosticsHash.SequenceEqual(HashFile(diagnosticsPath)))
+            throw new InvalidDataException("Invalid ILLink cache diagnostics.");
+
         if (manifest.BaseStream.Position != manifest.BaseStream.Length)
             throw new InvalidDataException("Unexpected data in ILLink cache manifest.");
+
+        using var diagnostics = new BinaryReader(File.OpenRead(diagnosticsPath));
+        int count = diagnostics.ReadInt32();
+        if (count < 0 || count > diagnostics.BaseStream.Length - diagnostics.BaseStream.Position)
+            throw new InvalidDataException("Invalid ILLink cache diagnostic count.");
+
+        output = new List<(string Line, MessageImportance Importance)>();
+        for (int i = 0; i < count; i++)
+        {
+            string line = diagnostics.ReadString();
+            var importance = (MessageImportance)diagnostics.ReadInt32();
+            if (importance is not (MessageImportance.High or MessageImportance.Normal or MessageImportance.Low))
+                throw new InvalidDataException("Invalid ILLink cache diagnostic importance.");
+
+            output.Add((line, importance));
+        }
+        if (diagnostics.BaseStream.Position != diagnostics.BaseStream.Length)
+            throw new InvalidDataException("Unexpected data in ILLink cache diagnostics.");
 
         return files;
     }

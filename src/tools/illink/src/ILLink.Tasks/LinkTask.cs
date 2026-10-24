@@ -243,6 +243,7 @@ namespace ILLink.Tasks
         private const string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
 
         private string _dotnetPath;
+        private List<(string Line, MessageImportance Importance)> _cachedOutput;
 
         private string DotNetPath
         {
@@ -276,8 +277,8 @@ namespace ILLink.Tasks
             if (cache is not null && !TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out inputHash))
                 cache = null;
 
-            if (cache is not null && cache.TryRestore(inputHash, OutputDirectory.ItemSpec, outputTimestampUtc))
-                return 0;
+            if (cache is not null && cache.TryRestore(inputHash, OutputDirectory.ItemSpec, outputTimestampUtc, LogEventsFromTextOutput))
+                return Log.HasLoggedErrors ? -1 : 0;
 
             try
             {
@@ -293,11 +294,26 @@ namespace ILLink.Tasks
                 return -1;
             }
 
-            int exitCode = base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
-            if (exitCode == 0 && !Log.HasLoggedErrors && cache is not null)
-                cache.Store(inputHash, OutputDirectory.ItemSpec);
+            _cachedOutput = cache is not null ? new List<(string Line, MessageImportance Importance)>() : null;
+            try
+            {
+                int exitCode = base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+                if (exitCode == 0 && !Log.HasLoggedErrors && cache is not null)
+                    cache.Store(inputHash, OutputDirectory.ItemSpec, _cachedOutput);
 
-            return exitCode;
+                return exitCode;
+            }
+            finally
+            {
+                _cachedOutput = null;
+            }
+        }
+
+        protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
+        {
+            // Preserve the compiler text before MSBuild applies its current warning policy.
+            _cachedOutput?.Add((singleLine, messageImportance));
+            base.LogEventsFromTextOutput(singleLine, messageImportance);
         }
 
         private bool TryComputeCacheKey(string pathToTool, string commandLineCommands, string responseFileCommands, out string inputHash)
