@@ -29,6 +29,7 @@
 #include <minipal/guid.h>
 #include <minipal/strings.h>
 #include <minipal/time.h>
+#include <minipal.h>
 
 #ifdef TARGET_UNIX
 #include <sys/time.h>
@@ -1414,7 +1415,7 @@ uint8_t *
 ep_rt_valloc0 (size_t buffer_size)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return reinterpret_cast<uint8_t *>(ClrVirtualAlloc (NULL, buffer_size, MEM_COMMIT, PAGE_READWRITE));
+	return reinterpret_cast<uint8_t *>(VMToOSInterface::AllocateMemory (NULL, buffer_size, VMToOSInterface::MemoryProtection::ReadWrite));
 }
 
 static
@@ -1427,7 +1428,7 @@ ep_rt_vfree (
 	STATIC_CONTRACT_NOTHROW;
 
 	if (buffer)
-		ClrVirtualFree (buffer, 0, MEM_RELEASE);
+		VMToOSInterface::ReleaseMemoryReservation (buffer, buffer_size);
 }
 
 static

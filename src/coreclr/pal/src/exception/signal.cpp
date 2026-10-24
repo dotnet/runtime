@@ -32,7 +32,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #if !HAVE_MACH_EXCEPTIONS
 #include "pal/init.h"
 #include "pal/debug.h"
-#include "pal/virtual.h"
+#include <minipal/ospagesize.h>
 #include "pal/utils.h"
 
 #include <string.h>
@@ -218,7 +218,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         // Allocate the minimal stack necessary for handling stack overflow
         int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 9 * 4096;
         // Align the size to virtual page size and add one virtual page as a stack guard
-        stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
+        stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, minipal_getpagesize()) + minipal_getpagesize();
         int flags = MAP_ANONYMOUS | MAP_PRIVATE;
 #ifdef MAP_STACK
         flags |= MAP_STACK;
@@ -231,7 +231,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
 
 #ifndef TARGET_WASM
         // create a guard page for the alternate stack
-        int st = mprotect((void*)g_stackOverflowHandlerStack, GetVirtualPageSize(), PROT_NONE);
+        int st = mprotect((void*)g_stackOverflowHandlerStack, minipal_getpagesize(), PROT_NONE);
         if (st != 0)
         {
             munmap((void*)g_stackOverflowHandlerStack, stackOverflowStackSize);
@@ -684,7 +684,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
         // If the failure address is at most one page above or below the stack pointer,
         // we have a stack overflow.
-        if ((failureAddress - (sp - GetVirtualPageSize())) < 2 * GetVirtualPageSize())
+        if ((failureAddress - (sp - minipal_getpagesize())) < 2 * minipal_getpagesize())
         {
             if (GetCurrentPalThread())
             {
