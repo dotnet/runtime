@@ -8,6 +8,7 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.Runtime;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -47,17 +48,14 @@ namespace ILCompiler.DependencyAnalysis
                 return ObjectNodeSection.DataSection;
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            var result = new DependencyList();
-
             // VTable slots of implemented interfaces are consulted during emission
             foreach (TypeDesc runtimeInterface in _type.RuntimeInterfaces)
             {
-                result.Add(factory.VTable(runtimeInterface), "Interface for a dispatch map");
+                sink.Add(factory.VTable(runtimeInterface), "Interface for a dispatch map");
             }
 
-            return result;
         }
 
         /// <summary>
