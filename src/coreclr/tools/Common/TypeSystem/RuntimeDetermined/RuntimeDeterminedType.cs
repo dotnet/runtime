@@ -104,7 +104,11 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return new Utf8Span(System.Text.Encoding.UTF8.GetBytes(_runtimeDeterminedDetailsType.Name))
+                // Metadata parameter names can collide after symbol sanitization; use their signature identity instead.
+                string parameterName = string.Concat(
+                    _runtimeDeterminedDetailsType.Kind == GenericParameterKind.Type ? "T" : "M",
+                    _runtimeDeterminedDetailsType.Index.ToStringInvariant());
+                return new Utf8Span(System.Text.Encoding.UTF8.GetBytes(parameterName))
                     .Append("_"u8, _rawCanonType.Namespace);
             }
         }

@@ -352,6 +352,22 @@ public class R2RTestSuites
     }
 
     [Fact]
+    public void GenericParameterNamesDoNotCollide()
+    {
+        var assembly = new CompiledAssembly
+        {
+            AssemblyName = nameof(GenericParameterNamesDoNotCollide),
+            SourceResourceNames = ["VirtualMethodGenerics/GenericParameterNames.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(GenericParameterNamesDoNotCollide),
+            [
+                new(nameof(GenericParameterNamesDoNotCollide), [new CrossgenAssembly(assembly)])
+            ]));
+    }
+
+    [Fact]
     public void GenericTypeConstraintsAllowVariantParameters()
     {
         var genericTypeConstraints = new CompiledAssembly
