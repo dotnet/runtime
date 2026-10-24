@@ -1271,6 +1271,29 @@ namespace System.Reflection.Tests
         private interface IStaticInterface
         {
             public static virtual string? StaticVirtual(string? s) => s;
+            public static virtual LargeStruct StaticVirtualLargeStruct(string s) => new LargeStruct { A = s.Length, B = 2, C = 3, D = 4 };
+        }
+
+        private struct LargeStruct
+        {
+            public long A, B, C, D;
+        }
+
+        private interface IStaticAbstractLargeStruct
+        {
+            static abstract LargeStruct StaticAbstractLargeStruct(string s);
+        }
+
+        private interface IStaticAbstractFirstCaseTwins
+        {
+            static abstract int Twin();
+            static virtual int twin() => 2;
+        }
+
+        private interface IStaticVirtualFirstCaseTwins
+        {
+            static virtual int twin() => 2;
+            static abstract int Twin();
         }
 
         [Fact]
@@ -1282,6 +1305,196 @@ namespace System.Reflection.Tests
             Func<string?, string?> methodDelegate = miStaticVirtual.CreateDelegate<Func<string?, string?>>();
             string? returnValue = methodDelegate(testString);
             Assert.Equal(testString, returnValue);
+        }
+
+        [Fact]
+        public void Invoke_StaticVirtual()
+        {
+            MethodInfo miStaticVirtual = GetMethod(typeof(IStaticInterface), nameof(IStaticInterface.StaticVirtual));
+            const string testString = "test";
+
+            Assert.Equal(testString, miStaticVirtual.Invoke(null, new object[] { testString }));
+        }
+
+        // Mono's delegate binding is not changed by this fix
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public void CreateDelegate_StaticVirtual_ClosedOverFirstArgument()
+        {
+            MethodInfo miStaticVirtual = GetMethod(typeof(IStaticInterface), nameof(IStaticInterface.StaticVirtual));
+            const string testString = "test";
+
+            Func<string?> methodDelegate = miStaticVirtual.CreateDelegate<Func<string?>>(testString);
+            Assert.Equal(testString, methodDelegate());
+        }
+
+        // A struct returned through a hidden buffer takes another path when a delegate closes over a static method
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public void CreateDelegate_StaticVirtual_ClosedOverFirstArgument_LargeStructReturn()
+        {
+            MethodInfo miStaticVirtual = GetMethod(typeof(IStaticInterface), nameof(IStaticInterface.StaticVirtualLargeStruct));
+
+            Func<LargeStruct> methodDelegate = miStaticVirtual.CreateDelegate<Func<LargeStruct>>("test");
+            LargeStruct returnValue = methodDelegate();
+            Assert.Equal(4, returnValue.A);
+            Assert.Equal(2, returnValue.B);
+            Assert.Equal(3, returnValue.C);
+            Assert.Equal(4, returnValue.D);
+        }
+
+        // Mono binds delegates without checking for static abstract methods
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public void CreateDelegate_StaticAbstract_ThrowsMemberAccessException()
+        {
+            MethodInfo noArgs = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.NoArgs));
+            Assert.Throws<MemberAccessException>(() => noArgs.CreateDelegate<Action>());
+            Assert.Throws<MemberAccessException>(() => Delegate.CreateDelegate(typeof(Action), noArgs, throwOnBindFailure: false));
+            Assert.Throws<MemberAccessException>(() => Delegate.CreateDelegate(typeof(Action), null, noArgs, throwOnBindFailure: false));
+
+            MethodInfo oneArg = GetMethod(typeof(IStaticAbstractMethods<int>), nameof(IStaticAbstractMethods<int>.OneArg));
+            Assert.Throws<MemberAccessException>(() => oneArg.CreateDelegate<Func<int, int>>());
+
+            MethodInfo genericNoArgs = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.GenericNoArgs)).MakeGenericMethod(typeof(int));
+            Assert.Throws<MemberAccessException>(() => genericNoArgs.CreateDelegate<Action>());
+
+            // Instantiated over a reference type
+            MethodInfo genericNoArgsString = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.GenericNoArgs)).MakeGenericMethod(typeof(string));
+            Assert.Throws<MemberAccessException>(() => genericNoArgsString.CreateDelegate<Action>());
+            MethodInfo oneStringArg = GetMethod(typeof(IStaticAbstractMethods<string>), nameof(IStaticAbstractMethods<string>.OneArg));
+            Assert.Throws<MemberAccessException>(() => oneStringArg.CreateDelegate<Func<string, string>>());
+
+            // Closed over the first argument
+            Assert.Throws<MemberAccessException>(() => oneStringArg.CreateDelegate<Func<string>>("test"));
+            Assert.Throws<MemberAccessException>(() => Delegate.CreateDelegate(typeof(Func<string>), "test", oneStringArg, throwOnBindFailure: false));
+            Assert.Throws<MemberAccessException>(() => oneStringArg.CreateDelegate<Func<string>>(null));
+            MethodInfo largeStruct = GetMethod(typeof(IStaticAbstractLargeStruct), nameof(IStaticAbstractLargeStruct.StaticAbstractLargeStruct));
+            Assert.Throws<MemberAccessException>(() => largeStruct.CreateDelegate<Func<LargeStruct>>("test"));
+            Assert.Throws<MemberAccessException>(() => oneArg.CreateDelegate<Func<int>>(42));
+
+            // The method is checked before the delegate signature, also on an open generic type or over an open type argument
+            Assert.Throws<MemberAccessException>(() => noArgs.CreateDelegate<Action<int>>());
+            Assert.Throws<MemberAccessException>(() => Delegate.CreateDelegate(typeof(Action<int>), noArgs, throwOnBindFailure: false));
+            MethodInfo openOneArg = GetMethod(typeof(IStaticAbstractMethods<>), nameof(IStaticAbstractMethods<int>.OneArg));
+            Assert.Throws<MemberAccessException>(() => openOneArg.CreateDelegate<Func<int, int>>());
+            Assert.Throws<MemberAccessException>(() => Delegate.CreateDelegate(typeof(Func<int, int>), openOneArg, throwOnBindFailure: false));
+            MethodInfo genericDefinition = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.GenericNoArgs));
+            MethodInfo openArgument = genericDefinition.MakeGenericMethod(typeof(IStaticAbstractMethods<>).GetGenericArguments()[0]);
+            Assert.Throws<MemberAccessException>(() => openArgument.CreateDelegate<Action>());
+        }
+
+        // The generic method definition check comes first
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136099", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void CreateDelegate_StaticAbstractGenericMethodDefinition_ThrowsArgumentException()
+        {
+            MethodInfo genericDefinition = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.GenericNoArgs));
+            Assert.Throws<ArgumentException>(() => genericDefinition.CreateDelegate<Action>());
+            Assert.Throws<ArgumentException>(() => Delegate.CreateDelegate(typeof(Action), genericDefinition, throwOnBindFailure: false));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public void CreateDelegate_ByName_StaticAbstract_DoesNotBind()
+        {
+            Assert.Throws<ArgumentException>(() => Delegate.CreateDelegate(typeof(Action), typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.NoArgs)));
+            Assert.Null(Delegate.CreateDelegate(typeof(Action), typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.NoArgs), ignoreCase: false, throwOnBindFailure: false));
+            Assert.Throws<ArgumentException>(() => Delegate.CreateDelegate(typeof(Func<int, int>), typeof(IStaticAbstractMethods<int>), nameof(IStaticAbstractMethods<int>.OneArg)));
+
+            // A static virtual method with a body still binds by name
+            Func<string?, string?> byName = (Func<string?, string?>)Delegate.CreateDelegate(typeof(Func<string?, string?>), typeof(IStaticInterface), nameof(IStaticInterface.StaticVirtual));
+            Assert.Equal("test", byName("test"));
+        }
+
+        // A case-insensitive match skips the static abstract method whatever the declaration order
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136098", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void CreateDelegate_ByName_IgnoreCase_SkipsStaticAbstract()
+        {
+            foreach (Type type in new[] { typeof(IStaticAbstractFirstCaseTwins), typeof(IStaticVirtualFirstCaseTwins) })
+            {
+                Func<int> byName = (Func<int>)Delegate.CreateDelegate(typeof(Func<int>), type, "Twin", ignoreCase: true);
+                Assert.Equal(2, byName());
+
+                byName = (Func<int>)Delegate.CreateDelegate(typeof(Func<int>), type, "Twin", ignoreCase: true, throwOnBindFailure: false)!;
+                Assert.Equal(2, byName());
+            }
+        }
+
+        // A static abstract method in an abstract class, sealed or not, or in a sealed interface is rejected as one in an
+        // interface. The method comes from its token: Type.GetMethod would list the type's methods, and a Checked CoreLib
+        // asserts there that a non-virtual method of a class isn't abstract.
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [InlineData(TypeAttributes.Public | TypeAttributes.Abstract, (MethodAttributes)0)]
+        [InlineData(TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed, (MethodAttributes)0)]
+        [InlineData(TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract | TypeAttributes.Sealed, MethodAttributes.Virtual)]
+        public void CreateDelegate_EmittedStaticAbstract_ThrowsMemberAccessException(TypeAttributes typeAttributes, MethodAttributes virtualAttribute)
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName(nameof(CreateDelegate_EmittedStaticAbstract_ThrowsMemberAccessException)), AssemblyBuilderAccess.RunAndCollect);
+            TypeBuilder typeBuilder = assembly.DefineDynamicModule("Module").DefineType("Target", typeAttributes);
+            MethodBuilder methodBuilder = typeBuilder.DefineMethod(
+                "M", MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.Abstract | virtualAttribute,
+                typeof(int), Type.EmptyTypes);
+            Type type = typeBuilder.CreateType()!;
+            MethodInfo method = (MethodInfo)type.Module.ResolveMethod(methodBuilder.MetadataToken)!;
+
+            Assert.Throws<MemberAccessException>(() => method.CreateDelegate<Func<int>>());
+            Assert.Throws<ArgumentException>(() => Delegate.CreateDelegate(typeof(Func<int>), type, "M"));
+            Assert.Null(Delegate.CreateDelegate(typeof(Func<int>), type, "M", ignoreCase: false, throwOnBindFailure: false));
+        }
+
+        // As for an abstract instance method: an entry point on CoreCLR, PlatformNotSupportedException on NativeAOT
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public void GetFunctionPointer_StaticAbstract_MatchesAbstractMethod()
+        {
+            MethodInfo[] methods =
+            {
+                GetMethod(typeof(MI_AbstractBaseClass), nameof(MI_AbstractBaseClass.AbstractMethod)),
+                GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.NoArgs)),
+                GetMethod(typeof(IStaticAbstractMethods<int>), nameof(IStaticAbstractMethods<int>.OneArg)),
+                GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.GenericNoArgs)).MakeGenericMethod(typeof(string)),
+            };
+
+            foreach (MethodInfo method in methods)
+            {
+                if (PlatformDetection.IsNativeAot)
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => method.MethodHandle.GetFunctionPointer());
+                }
+                else
+                {
+                    Assert.NotEqual(IntPtr.Zero, method.MethodHandle.GetFunctionPointer());
+                }
+            }
+
+            // On an open generic type or a generic method definition the open generic error comes first, as for any other method
+            MethodInfo openOneArg = GetMethod(typeof(IStaticAbstractMethods<>), nameof(IStaticAbstractMethods<int>.OneArg));
+            Assert.Throws<InvalidOperationException>(() => openOneArg.MethodHandle.GetFunctionPointer());
+            MethodInfo genericDefinition = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.GenericNoArgs));
+            Assert.Throws<InvalidOperationException>(() => genericDefinition.MethodHandle.GetFunctionPointer());
+
+            // A static virtual method with a body still has an address
+            Assert.NotEqual(IntPtr.Zero, GetMethod(typeof(IStaticInterface), nameof(IStaticInterface.StaticVirtual)).MethodHandle.GetFunctionPointer());
+        }
+
+        [Fact]
+        public void Invoke_StaticAbstract_WrongArgumentCount_ThrowsMemberAccessException()
+        {
+            // MethodInfo.Invoke rejects a method it can't invoke before it checks the argument count
+            MethodInfo oneArg = GetMethod(typeof(IStaticAbstractMethods<int>), nameof(IStaticAbstractMethods<int>.OneArg));
+            Assert.Throws<MemberAccessException>(() => oneArg.Invoke(null, null));
+            Assert.Throws<MemberAccessException>(() => oneArg.Invoke(null, new object[] { 42, 43 }));
+        }
+
+        [Fact]
+        public void Invoke_StaticAbstract_OpenGeneric_ThrowsInvalidOperationException()
+        {
+            MethodInfo openOneArg = GetMethod(typeof(IStaticAbstractMethods<>), nameof(IStaticAbstractMethods<int>.OneArg));
+            Assert.Throws<InvalidOperationException>(() => openOneArg.Invoke(null, new object[] { 42 }));
+
+            // A generic method definition, and the method constructed over an open type argument
+            MethodInfo genericNoArgs = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.GenericNoArgs));
+            Assert.Throws<InvalidOperationException>(() => genericNoArgs.Invoke(null, null));
+            MethodInfo openArgument = genericNoArgs.MakeGenericMethod(typeof(IStaticAbstractMethods<>).GetGenericArguments()[0]);
+            Assert.Throws<InvalidOperationException>(() => openArgument.Invoke(null, null));
         }
 
         [Theory]

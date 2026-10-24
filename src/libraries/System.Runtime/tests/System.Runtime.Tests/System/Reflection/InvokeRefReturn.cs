@@ -91,6 +91,23 @@ namespace System.Reflection.Tests
             }
         }
 
+        [Fact]
+        public static void TestByRefLikeRefReturn_AbstractMethod()
+        {
+            // An abstract method is rejected as one with a body is
+            ByRefLikeRefReturningClass target = new ByRefLikeRefReturningClass();
+            MethodInfo[] methods =
+            {
+                typeof(ByRefLikeRefReturningBase).GetMethod(nameof(ByRefLikeRefReturningBase.AbstractMethod)),
+                typeof(IByRefLikeRefReturning).GetMethod(nameof(IByRefLikeRefReturning.InterfaceMethod)),
+            };
+
+            foreach (MethodInfo mi in methods)
+            {
+                Assert.Throws<NotSupportedException>(() => mi.Invoke(target, null));
+            }
+        }
+
         public static IEnumerable<object[]> RefReturnInvokeTestData
         {
             get
@@ -159,6 +176,22 @@ namespace System.Reflection.Tests
         }
 
         public ref struct ByRefLike { }
+
+        private interface IByRefLikeRefReturning
+        {
+            ref ByRefLike InterfaceMethod();
+        }
+
+        private abstract class ByRefLikeRefReturningBase
+        {
+            public abstract ref ByRefLike AbstractMethod();
+        }
+
+        private sealed class ByRefLikeRefReturningClass : ByRefLikeRefReturningBase, IByRefLikeRefReturning
+        {
+            public override ref ByRefLike AbstractMethod() => throw new InvalidOperationException();
+            public ref ByRefLike InterfaceMethod() => throw new InvalidOperationException();
+        }
 
         private sealed class TestClass<T>
         {

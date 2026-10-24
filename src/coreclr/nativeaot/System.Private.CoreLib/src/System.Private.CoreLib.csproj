@@ -443,6 +443,7 @@
     <Compile Include="System\Reflection\Runtime\MethodInfos\IRuntimeMethodCommon.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeNamedMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeSyntheticMethodInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\StaticAbstractMethodInvoker.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\SyntheticMethodId.cs" />
     <Compile Include="System\Reflection\Runtime\Modules\RuntimeModule.cs" />
     <Compile Include="System\Reflection\Runtime\Modules\NativeFormat\NativeFormatRuntimeModule.cs" />

@@ -1097,6 +1097,16 @@ public:
 #endif // FEATURE_DEFAULT_INTERFACES
     }
 
+    // Is this a static abstract method (it has no implementation to call)
+    inline BOOL IsStaticAbstract()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        // Only abstract types (interfaces included) can declare an abstract method, and the type's flags are cached,
+        // unlike the method's attributes.
+        return IsStatic() && GetMethodTable()->IsAbstract() && IsAbstract();
+    }
+
     inline BOOL HasNonVtableSlot();
 
     void SetHasNonVtableSlot()
