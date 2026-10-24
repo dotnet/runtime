@@ -505,7 +505,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree**             use,
 #if defined(TARGET_XARCH)
             immOp1 = operands[operandCount - 1];
 
-            if (!HWIntrinsicInfo::isImmOp(intrinsicId, immOp1))
+            if (!HWIntrinsicInfo::isImmOp(intrinsicId, immOp1) && !hwintrinsic->OperIsEmbRoundingEnabled())
             {
                 break;
             }
