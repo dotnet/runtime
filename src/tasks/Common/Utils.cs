@@ -59,8 +59,14 @@ internal static class Utils
                                         string? label=null)
     {
         string scriptFileName = CreateTemporaryBatchFile(command);
+        // The script path lives under the temp directory, which is typically inside the user
+        // profile (e.g. C:\Users\John(US)\AppData\Local\Temp\...). If that path contains cmd
+        // special characters such as '(' or ')', `cmd /c "<path>"` strips the surrounding quotes
+        // (because it sees special chars between the two quotes) and then mis-parses the now
+        // unquoted path at the first parenthesis. Use `/S` together with an extra pair of quotes
+        // so cmd strips only the outermost quotes and runs the still-quoted path verbatim.
         (string shell, string args) = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                                                    ? ("cmd", $"/c \"{scriptFileName}\"")
+                                                    ? ("cmd", $"/S /c \"\"{scriptFileName}\"\"")
                                                     : ("/bin/sh", $"\"{scriptFileName}\"");
 
         string msgPrefix = label == null ? string.Empty : $"[{label}] ";
