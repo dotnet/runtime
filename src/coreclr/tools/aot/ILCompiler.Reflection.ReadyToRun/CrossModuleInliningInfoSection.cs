@@ -272,9 +272,21 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             _localMethodMap ??= BuildLocalMethodMap();
 
-            return _localMethodMap.TryGetValue((moduleIndex, rid), out string name)
-                ? name
-                : $"<MethodDef 0x{RidToMethodDef((int)rid):X8}>";
+            if (_localMethodMap.TryGetValue((moduleIndex, rid), out string name))
+                return name;
+
+            // Inlinees that have no compiled body of their own (e.g. AggressiveInlining helpers) are not in the
+            // map; name them from the image's own metadata when it isn't a composite.
+            if (!_r2r.Composite && moduleIndex == 0 &&
+                _r2r.GetGlobalMetadata()?.MetadataReader is MetadataReader mdReader &&
+                rid <= (uint)mdReader.GetTableRowCount(TableIndex.MethodDef))
+            {
+                MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)rid));
+                TypeDefinition typeDef = mdReader.GetTypeDefinition(methodDef.GetDeclaringType());
+                return $"{mdReader.GetString(typeDef.Name)}.{mdReader.GetString(methodDef.Name)}";
+            }
+
+            return $"<MethodDef 0x{RidToMethodDef((int)rid):X8}>";
         }
 
         private ReadyToRunImportSection FindILBodyImportSection()

@@ -18,7 +18,9 @@ namespace System.Threading
         private static bool s_pumpRunning;
 
         // Runs the queued jobs and returns true if any remain queued.
+#if CORECLR
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WasiRunJobs")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool RunJobs();

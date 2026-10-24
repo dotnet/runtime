@@ -5,7 +5,6 @@ namespace System.IO.Compression
 {
     /// <summary>Provides decompression options to be used with Zstandard decompression.</summary>
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardDecompressionOptions
     {
 

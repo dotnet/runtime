@@ -26,8 +26,16 @@ internal sealed partial class GrammarActions
     private readonly Dictionary<int, (int Slot, IToken Token)> _explicitLocalSlots = new();
 
     /// <summary>
+    /// The name tokens of the named locals of the <c>.locals</c> directive being parsed, keyed by the position of
+    /// the argument in the directive. <see cref="CreateSignatureArgument"/> records them, <see cref="DeclareLocals"/>
+    /// gives them to the PDB's <see cref="EntityRegistry.LocalVariableRecord"/>s as their locations, and
+    /// <see cref="EndLocalsDirective"/> clears them.
+    /// </summary>
+    private readonly Dictionary<int, IToken> _localNameTokens = new();
+
+    /// <summary>
     /// Returns the arguments of a <c>.locals</c> directive with <see cref="SignatureArgumentValue.Slot"/> set from
-    /// the recorded <c>[n]</c> elements. As in native ilasm, <c>[-1]</c> means "no explicit slot". Any other value
+    /// the recorded <c>[n]</c> elements. <c>[-1]</c> means "no explicit slot". Any other value
     /// outside [0, <see cref="MaximumLocalSlot"/>] is reported, naming the value as written in the source, and
     /// ignored, so the local takes the next free slot (which <see cref="DeclareLocals"/> checks in turn). The
     /// range is checked on the literal as written, so a literal too large for 32 bits is reported too rather than
@@ -137,20 +145,19 @@ internal sealed partial class GrammarActions
     /// Declares the locals of a <c>.locals</c> directive in the innermost open lexical scope, in order.
     /// </summary>
     /// <remarks>
-    /// This follows native ilasm's <c>EmitLocals</c>. A local without an explicit slot takes the next slot after
-    /// the highest one declared so far in the method. A local with slot <c>n</c> takes slot <c>n</c>; when
-    /// <c>n</c> is past the end of the slot table, the slots before it are added without a type, to be typed by a
-    /// later declaration. Declaring a slot that already exists is allowed: if the slot is in use
-    /// (<see cref="LocalSlot.InScope"/>), the declaration is reported as a warning, and if its type differs from
-    /// the slot's, as an error. Either way the slot takes the new type. A slot freed when its scope closed may be
-    /// declared again with the same type without a diagnostic; that is how a method can have fewer slots than
-    /// local declarations. A local that would take the next slot when that is past
-    /// <see cref="MaximumLocalSlot"/> (a slot after 65535) is reported and not declared: no local instruction
-    /// could name it, and the PDB could not record it. A <c>...</c> sentinel in the list is not a local: as in
-    /// native ilasm, it takes no slot. That is only a <c>...</c> standing alone as an argument; in
-    /// <c>... int32 a</c> the sentinel is part of the type, and the argument is a local like any other.
-    /// A named local is added to the scope's names unless the scope already has a local with that name, so the
-    /// first declaration of a name in a scope is the one that name refers to.
+    /// A local without an explicit slot takes the next slot after the highest one declared so far in the method.
+    /// A local with slot <c>n</c> takes slot <c>n</c>; when <c>n</c> is past the end of the slot table, the slots
+    /// before it are added without a type, to be typed by a later declaration. Declaring a slot that already
+    /// exists is allowed: if the slot is in use (<see cref="LocalSlot.InScope"/>), the declaration is reported
+    /// as a warning, and if its type differs from the slot's, as an error. Either way the slot takes the new
+    /// type. A slot freed when its scope closed may be declared again with the same type without a diagnostic;
+    /// that is how a method can have fewer slots than local declarations. A local that would take the next slot
+    /// when that is past <see cref="MaximumLocalSlot"/> (a slot after 65535) is reported and not declared: no
+    /// local instruction could name it, and the PDB could not record it. A <c>...</c> sentinel in the list is not
+    /// a local: it takes no slot. That is only a <c>...</c> standing alone as an argument; in <c>... int32 a</c>
+    /// the sentinel is part of the type, and the argument is a local like any other. A named local is added to
+    /// the scope's names unless the scope already has a local with that name, so the first declaration of a name
+    /// in a scope is the one that name refers to.
     /// </remarks>
     private void DeclareLocals(
         CurrentMethodContext method,
@@ -217,7 +224,11 @@ internal sealed partial class GrammarActions
                 scope.Names.TryAdd(local.Name, index);
                 if (GeneratesPdb)
                 {
-                    scope.Variables.Add(new EntityRegistry.LocalVariableRecord(local.Name, index));
+                    IToken nameToken = _localNameTokens.TryGetValue(i, out IToken? token) ? token : context.Start;
+                    scope.Variables.Add(new EntityRegistry.LocalVariableRecord(
+                        local.Name,
+                        index,
+                        Location.From(nameToken, _documents)));
                 }
             }
         }
@@ -260,8 +271,8 @@ internal sealed partial class GrammarActions
     }
 
     /// <summary>
-    /// Sets the method body's local signature from the slot table: one entry per slot, in slot order. A slot that
-    /// no declaration typed is reported, as native ilasm does, and written as <c>int32</c> so the signature stays
+    /// Sets the method body's local signature from the slot table: one entry per slot, in slot order.
+    /// A slot that no declaration typed is reported and written as <c>int32</c> so the signature stays
     /// well-formed for error-tolerant output.
     /// </summary>
     private void EmitLocalSignature(CurrentMethodContext method)
@@ -315,10 +326,10 @@ internal sealed partial class GrammarActions
         public BlobBuilder? Type { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the slot is in use, which makes declaring it again a warning. As in native ilasm,
-        /// which keeps one such flag per slot, every declaration of the slot sets it and the closing of any scope
-        /// that declared the slot clears it. So when a block declares a slot that an enclosing scope also declared
-        /// and then closes, the slot is no longer in use, although the enclosing scope is still open.
+        /// Gets or sets whether the slot is in use, which makes declaring it again a warning. There is one
+        /// such flag per slot: every declaration of the slot sets it and the closing of any scope that declared
+        /// the slot clears it. So when a block declares a slot that an enclosing scope also declared and then
+        /// closes, the slot is no longer in use, although the enclosing scope is still open.
         /// </summary>
         public bool InScope { get; set; }
     }
@@ -346,7 +357,7 @@ internal sealed partial class GrammarActions
 
         /// <summary>
         /// Gets the named locals declared in this scope, in declaration order, including a second declaration of a
-        /// name or a slot, from which the scope's LocalVariable rows are chosen. Filled only when a PDB is requested
+        /// name or a slot; each gets a LocalVariable row. Filled only when a PDB is requested
         /// (<see cref="GeneratesPdb"/>).
         /// </summary>
         public List<EntityRegistry.LocalVariableRecord> Variables { get; } = new();

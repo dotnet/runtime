@@ -2247,8 +2247,9 @@ namespace ILAssembler
             }
 
             /// <summary>
-            /// Gets the index in the compilation's <see cref="PdbDocumentTable"/> of the document that was current
-            /// when the directive that produced this point was applied.
+            /// Gets the index in the compilation's <see cref="PdbDocumentTable"/> of the point's document: the
+            /// <c>.il</c> source the instruction is in when no <c>.line</c> directive is in effect, otherwise the
+            /// current document of that source.
             /// </summary>
             public int DocumentIndex { get; }
             public int ILOffset { get; }
@@ -2256,19 +2257,13 @@ namespace ILAssembler
             public int StartColumn { get; }
             public int EndLine { get; }
             public int EndColumn { get; }
-
-            /// <summary>
-            /// Creates a hidden sequence point (used for compiler-generated code).
-            /// </summary>
-            public static SequencePoint Hidden(int documentIndex, int ilOffset) => new(documentIndex, ilOffset, 0xFEEFEE, 0, 0xFEEFEE, 0);
-
-            public bool IsHidden => StartLine == 0xFEEFEE;
+            public bool IsHidden => StartLine == System.Reflection.Metadata.SequencePoint.HiddenLine;
         }
 
         /// <summary>
-        /// Debug information for a method: the sequence points recorded from its <c>.line</c> and <c>#line</c>
-        /// directives, in increasing IL offset order, with at most one point per offset, and the local signature
-        /// of its body. The points of one method may belong to different documents.
+        /// Debug information for a method: the sequence points recorded as its instructions were emitted, in
+        /// increasing IL offset order, with at most one point per offset, and the local signature of its body. The
+        /// points of one method may belong to different documents. Points are recorded only when a PDB is requested.
         /// </summary>
         public sealed class MethodDebugInfo
         {
@@ -2284,8 +2279,9 @@ namespace ILAssembler
             /// <summary>
             /// Gets the lexical scopes of the method body, in the order they closed: each <c>{ }</c> block, then the
             /// root scope, which spans the whole body and holds the method-level <c>.locals</c>. The PDB gets a
-            /// LocalScope row for each scope that is not empty and declares a named local. Recorded only when a PDB
-            /// is requested; otherwise empty.
+            /// LocalScope row for each scope that declares a named local, as declared, and an empty scope or a
+            /// repeated name or slot is reported (<c>AddLocalScopes</c>). Recorded only when a PDB is requested;
+            /// otherwise empty, so none of this is checked without a PDB.
             /// </summary>
             public List<LocalScopeRecord> LocalScopes { get; } = new();
         }
@@ -2310,7 +2306,8 @@ namespace ILAssembler
         /// <summary>A named local declared in a lexical scope.</summary>
         /// <param name="Name">The name of the local.</param>
         /// <param name="Slot">Its slot in the method's local signature.</param>
-        public readonly record struct LocalVariableRecord(string Name, int Slot);
+        /// <param name="Location">Where the local is declared: its name in the <c>.locals</c> directive.</param>
+        public readonly record struct LocalVariableRecord(string Name, int Slot, Location Location);
 
         /// <summary>
         /// A deferred exception region entry. Stored during parsing and applied to the

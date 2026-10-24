@@ -49,14 +49,14 @@ internal sealed class WasmR2RInfo : IWasmR2RInfo
     public bool TryGetUnwindData(TargetCodePointer controlPC, out TargetPointer unwindDataAddress)
     {
         unwindDataAddress = TargetPointer.Null;
-        if (!_executionManager.TryGetUnwindInfo(
-            controlPC,
-            out TargetPointer runtimeFunctionAddress,
-            out TargetPointer unwindInfoBaseAddress))
-        {
+        if (_executionManager.GetCodeBlockHandle(controlPC) is not CodeBlockHandle codeBlock)
             return false;
-        }
 
+        TargetPointer runtimeFunctionAddress = _executionManager.GetUnwindInfo(codeBlock);
+        if (runtimeFunctionAddress == TargetPointer.Null)
+            return false;
+
+        TargetPointer unwindInfoBaseAddress = _executionManager.GetUnwindInfoBaseAddress(codeBlock);
         RuntimeFunction runtimeFunction = _target.ProcessedData.GetOrAdd<RuntimeFunction>(runtimeFunctionAddress);
         unwindDataAddress = unwindInfoBaseAddress + runtimeFunction.UnwindData;
         return true;

@@ -49,24 +49,14 @@ public class WasmUnwinderTests
     {
         public Dictionary<ulong, (TargetPointer RuntimeFunction, TargetPointer BaseAddress)> UnwindInfo { get; } = new();
 
-        public bool TryGetUnwindInfo(
-            TargetCodePointer controlPC,
-            out TargetPointer runtimeFunction,
-            out TargetPointer unwindInfoBaseAddress)
-        {
-            if (UnwindInfo.TryGetValue(
-                controlPC.Value,
-                out (TargetPointer RuntimeFunction, TargetPointer BaseAddress) info))
-            {
-                runtimeFunction = info.RuntimeFunction;
-                unwindInfoBaseAddress = info.BaseAddress;
-                return true;
-            }
+        public CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip)
+            => UnwindInfo.ContainsKey(ip.Value) ? new CodeBlockHandle(ip.AsTargetPointer) : null;
 
-            runtimeFunction = TargetPointer.Null;
-            unwindInfoBaseAddress = TargetPointer.Null;
-            return false;
-        }
+        public TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle)
+            => UnwindInfo[codeInfoHandle.Address.Value].RuntimeFunction;
+
+        public TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle)
+            => UnwindInfo[codeInfoHandle.Address.Value].BaseAddress;
     }
 
     private static TestPlaceholderTarget CreateTarget(MockMemorySpace.HeapFragment[] fragments)
@@ -225,6 +215,36 @@ public class WasmUnwinderTests
         Assert.True(unwinder.TryUnwindOneFrame(ref sp, new TargetCodePointer(LeafControlPc), out TargetCodePointer ip));
         Assert.Equal(callerBase, sp.Value);
         Assert.Equal(VirtualIpBase + 14, ip.Value); // caller local VIP 7*2
+    }
+
+    [Fact]
+    public void WasmContext_UnwindCallerWithoutVirtualIp_PreservesStackPointerAndClearsIPAndFP()
+    {
+        const uint leafFrameSize = 0x20;
+        ulong callerBase = FramesBase + leafFrameSize;
+
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[LeafControlPc] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
+            Frame(callerBase, FuncIndexCaller, 7, "nonR2RCaller"),
+            Blob(BlobsBase, [(byte)leafFrameSize], "leafUnwind"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+        WasmContext context = new()
+        {
+            StackPointer = new TargetPointer(FramesBase),
+            InstructionPointer = new TargetCodePointer(LeafControlPc),
+            FramePointer = new TargetPointer(FramesBase),
+        };
+
+        context.Unwind(unwinder);
+
+        Assert.Equal(callerBase, context.StackPointer.Value);
+        Assert.Equal(TargetCodePointer.Null, context.InstructionPointer);
+        Assert.Equal(TargetPointer.Null, context.FramePointer);
     }
 
     [Fact]

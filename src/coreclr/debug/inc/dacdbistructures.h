@@ -653,17 +653,17 @@ public:
     // initialize various fields of an instance of FieldData from information in a FieldDesc
     void Initialize(BOOL fIsStatic, BOOL fIsPrimitive, mdFieldDef mdToken);
 #else
-    HRESULT GetFieldSignature(class CordbModule * pModule, /*OUT*/ SigParser * pSigParser);
+    HRESULT GetFieldSignature(class CordbModule * pModule, /*OUT*/ SigParser * pSigParser) const;
 #endif
 
     // clear various fields for a new instance of FieldData
     void ClearFields();
 
     // Make sure it's okay to get or set an instance field offset.
-    BOOL OkToGetOrSetInstanceOffset();
+    BOOL OkToGetOrSetInstanceOffset() const;
 
     // Make sure it's okay to get or set a static field address.
-    BOOL OkToGetOrSetStaticAddress();
+    BOOL OkToGetOrSetStaticAddress() const;
 
     // If this is an instance field, store its offset
     void SetInstanceOffset( ULONG64 offset );
@@ -674,11 +674,11 @@ public:
     // If this is an instance field, return its offset
     // Note that this offset is always a real offset (possibly larger than 22 bits), which isn't
     // necessarily the same as the overloaded FieldDesc.dwOffset field.
-    CORDB_ADDRESS  GetInstanceOffset();
+    CORDB_ADDRESS  GetInstanceOffset() const;
 
     // If this is a "normal" static, get its absolute address
     // TLS and context-specific statics are "special".
-    CORDB_ADDRESS GetStaticAddress();
+    CORDB_ADDRESS GetStaticAddress() const;
 
 //
 // Data members
@@ -704,10 +704,10 @@ private:
                                               // the object.
     CORDB_ADDRESS   m_pFldStaticAddress;      // The absolute target address of a static field
 
-    PCCOR_SIGNATURE m_fldSignatureCache;      // This is passed across as null. It is a RS-only cache, and SHOULD
-                                              // NEVER BE ACCESSED DIRECTLY!
-    ULONG           m_fldSignatureCacheSize;  // This is passed across as 0. It is a RS-only cache, and SHOULD
-                                              // NEVER BE ACCESSED DIRECTLY!
+    mutable PCCOR_SIGNATURE m_fldSignatureCache;     // This is passed across as null. It is a RS-only cache, and SHOULD
+                                                    // NEVER BE ACCESSED DIRECTLY!
+    mutable ULONG           m_fldSignatureCacheSize; // This is passed across as 0. It is a RS-only cache, and SHOULD
+                                                    // NEVER BE ACCESSED DIRECTLY!
 public:
     VMPTR_FieldDesc m_vmFieldDesc;
 

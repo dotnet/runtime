@@ -21,6 +21,29 @@ namespace ILAssembler.Tests
 {
     public class MethodTests
     {
+        [Theory]
+        [InlineData("()")]
+        [InlineData("( )")]
+        [InlineData("(\t)")]
+        [InlineData("(\r\n)")]
+        [InlineData("(/* no arguments */)")]
+        public void EmptyParameterLists_AllowWhitespace(string arguments)
+        {
+            string source = $$"""
+                .assembly test {}
+                .method public static void M{{arguments}} cil managed
+                {
+                    call void M{{arguments}}
+                    ret
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinition method = reader.GetMethodDefinition(Assert.Single(reader.MethodDefinitions));
+            Assert.Equal(new byte[] { 0, 0, 1 }, reader.GetBlobBytes(method.Signature));
+            Assert.Equal(new byte[] { 0x28, 1, 0, 0, 6, 0x2A }, pe.GetMethodBody(method.RelativeVirtualAddress).GetILBytes());
+        }
 
         [Fact]
         public void Diagnostic_AbstractMethodNotInAbstractType()
@@ -764,7 +787,7 @@ namespace ILAssembler.Tests
                 _ => default!,
                 new Options());
 
-            Assert.Contains(malformedDiagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.Contains(malformedDiagnostics, diagnostic => diagnostic.Id == DiagnosticIds.Parser);
             Assert.Empty(validDiagnostics);
             Assert.NotNull(result);
             var image = new BlobBuilder();

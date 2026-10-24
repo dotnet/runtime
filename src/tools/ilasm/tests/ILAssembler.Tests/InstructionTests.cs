@@ -57,6 +57,9 @@ namespace ILAssembler.Tests
             { "br", 0x38, 0x2B },
             { "brfalse", 0x39, 0x2C },
             { "brtrue", 0x3A, 0x2D },
+            { "brnull", 0x39, 0x2C },
+            { "brzero", 0x39, 0x2C },
+            { "brinst", 0x3A, 0x2D },
             { "beq", 0x3B, 0x2E },
             { "bge", 0x3C, 0x2F },
             { "bgt", 0x3D, 0x30 },
@@ -69,6 +72,24 @@ namespace ILAssembler.Tests
             { "blt.un", 0x44, 0x37 },
             { "leave", 0xDD, 0xDE },
         };
+
+        [Theory]
+        [InlineData("ldind.u8", "ldind.i8", 0x4C)]
+        [InlineData("ldelem.u8", "ldelem.i8", 0x96)]
+        [InlineData("ldelem.any int32", "ldelem int32", 0xA3)]
+        [InlineData("stelem.any int32", "stelem int32", 0xA4)]
+        [InlineData("ldc.i4.M1", "ldc.i4.m1", 0x15)]
+        [InlineData("endfault", "endfinally", 0xDC)]
+        public void InstructionAliases_EmitCanonicalEncoding(string alias, string canonical, byte opcode)
+        {
+            foreach (bool optimize in new[] { false, true })
+            {
+                var options = new Options { Optimize = optimize };
+                byte[] actual = DocumentCompilerTestHelpers.CompileMethodIL($"{alias}\nret", options);
+                Assert.Equal(opcode, actual[0]);
+                Assert.Equal(DocumentCompilerTestHelpers.CompileMethodIL($"{canonical}\nret", options), actual);
+            }
+        }
 
         [Theory]
         [MemberData(nameof(IntegerConstants))]
@@ -622,7 +643,7 @@ namespace ILAssembler.Tests
                 },
                 new Options { ErrorTolerant = true });
 
-            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.Parser);
             Assert.NotNull(result);
 
             BlobBuilder image = new();
@@ -668,7 +689,7 @@ namespace ILAssembler.Tests
                 },
                 new Options { ErrorTolerant = true });
 
-            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.Parser);
             Assert.NotNull(result);
 
             BlobBuilder image = new();
@@ -1369,6 +1390,12 @@ namespace ILAssembler.Tests
         [InlineData("ldc.r8", "1.5", 1.5)]
         [InlineData("ldc.r8", ".5", 0.5)]
         [InlineData("ldc.r8", "5e+1", 50.0)]
+        [InlineData("ldc.r4", "1.e-010", 1e-10)]
+        [InlineData("ldc.r4", "-1.e+010", -1e10)]
+        [InlineData("ldc.r8", "1.e-010", 1e-10)]
+        [InlineData("ldc.r8", "1.E+010", 1e10)]
+        [InlineData("ldc.r8", "-1.e010", -1e10)]
+        [InlineData("ldc.r8", "1.", 1.0)]
         [InlineData("ldc.r8", "-1.25e-2", -0.0125)]
         [InlineData("ldc.r8", "float32(0x3F800000)", 1.0)]
         public void FloatingPointInstruction_TextAndFloat32BitForms_EmitExpectedValue(
