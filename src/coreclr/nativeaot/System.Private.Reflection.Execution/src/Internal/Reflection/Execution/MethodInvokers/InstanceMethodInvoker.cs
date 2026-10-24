@@ -24,7 +24,11 @@ namespace Internal.Reflection.Execution.MethodInvokers
 
             if (methodInvokeInfo.Method.IsConstructor && !methodInvokeInfo.Method.IsStatic)
             {
-                if (RuntimeAugments.IsByRefLike(declaringTypeHandle))
+                if (methodInvokeInfo.Method.DeclaringType.IsAbstract)
+                {
+                    _allocatorMethod = &ThrowAbstractConstructorException;
+                }
+                else if (RuntimeAugments.IsByRefLike(declaringTypeHandle))
                 {
                     _allocatorMethod = &ThrowTargetException;
                 }
@@ -40,12 +44,27 @@ namespace Internal.Reflection.Execution.MethodInvokers
             throw new TargetException();
         }
 
+        private static object ThrowAbstractConstructorException(IntPtr declaringType)
+        {
+            throw new MemberAccessException(SR.Format(SR.Acc_CreateAbstEx, Type.GetTypeFromHandle(RuntimeTypeHandle.FromIntPtr(declaringType)).FullName));
+        }
+
+        private void ValidateThis(object? thisObject)
+        {
+            if (thisObject is null && MethodInvokeInfo.Method.IsConstructor && MethodInvokeInfo.Method.DeclaringType.IsAbstract)
+            {
+                ThrowAbstractConstructorException(_declaringTypeHandle.Value);
+            }
+
+            ValidateThis(thisObject, _declaringTypeHandle);
+        }
+
         [DebuggerGuidedStepThrough]
         protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
             {
-                ValidateThis(thisObject, _declaringTypeHandle);
+                ValidateThis(thisObject);
             }
 
             object? result = MethodInvokeInfo.Invoke(
@@ -63,7 +82,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         {
             if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
             {
-                ValidateThis(thisObject, _declaringTypeHandle);
+                ValidateThis(thisObject);
             }
 
             object? result = MethodInvokeInfo.Invoke(
@@ -79,7 +98,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         {
             if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
             {
-                ValidateThis(thisObject, _declaringTypeHandle);
+                ValidateThis(thisObject);
             }
 
             object? result = MethodInvokeInfo.InvokeDirectWithFewArgs(
