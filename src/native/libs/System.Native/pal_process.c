@@ -23,7 +23,7 @@
 #endif
 #include <fcntl.h>
 
-#if defined(__linux__)
+#if defined(__linux__) && !defined(TARGET_OPENHARMONY)
 #if !HAVE_CLOSE_RANGE
 #include <sys/syscall.h>
 #if !defined(__NR_close_range)
@@ -229,8 +229,12 @@ handler_from_sigaction (struct sigaction *sa)
     }
 }
 
-#if HAVE_FDWALK
-// Callback used with fdwalk() on Illumos/Solaris to set FD_CLOEXEC on all file descriptors >= 3.
+#if defined(TARGET_OPENHARMONY)
+#include <dirent.h>
+#endif
+
+#if HAVE_FDWALK || defined(TARGET_OPENHARMONY)
+// Sets FD_CLOEXEC on fd if it is >= 3; fdwalk() callback on Illumos/Solaris, /proc/self/fd walker on OpenHarmony.
 static int SetCloexecForFd(void* context, int fd)
 {
     (void)context;
@@ -243,6 +247,41 @@ static int SetCloexecForFd(void* context, int fd)
         }
     }
     return 0;
+}
+#endif
+
+#if defined(TARGET_OPENHARMONY)
+// Runs in the vfork()ed child, so it must not allocate: read /proc/self/fd with getdents()
+// into a stack buffer instead of opendir()/readdir().
+static int SetCloexecForOpenFds(void)
+{
+    int dirFd = open("/proc/self/fd", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (dirFd < 0)
+    {
+        return -1;
+    }
+
+    struct dirent buffer[16];
+    int bytes;
+    while ((bytes = getdents(dirFd, buffer, sizeof(buffer))) > 0)
+    {
+        for (int offset = 0; offset < bytes;)
+        {
+            struct dirent* entry = (struct dirent*)(void*)((char*)buffer + offset);
+            offset += entry->d_reclen;
+
+            int fd = 0;
+            for (const char* c = entry->d_name; *c >= '0' && *c <= '9'; c++)
+            {
+                fd = fd * 10 + (*c - '0');
+            }
+
+            SetCloexecForFd(NULL, fd); // "." and ".." parse as 0 and are skipped
+        }
+    }
+
+    close(dirFd);
+    return bytes == 0 ? 0 : -1;
 }
 #endif
 
@@ -264,7 +303,10 @@ static int32_t RestrictHandleInheritance(int32_t* inheritedFds, int32_t inherite
     // Using closefrom() or close_range() with flag 0 (direct close) would destroy this pipe.
 
     int result;
-#if HAVE_CLOSE_RANGE
+#if defined(TARGET_OPENHARMONY)
+    // OpenHarmony's app seccomp policy does not allow close_range and traps it with SIGSYS.
+    result = SetCloexecForOpenFds();
+#elif HAVE_CLOSE_RANGE
     // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).
     result = close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC);
 #elif defined(__NR_close_range)
