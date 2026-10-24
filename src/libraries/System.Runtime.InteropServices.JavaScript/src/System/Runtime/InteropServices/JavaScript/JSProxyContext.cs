@@ -26,8 +26,13 @@ namespace System.Runtime.InteropServices.JavaScript
         private readonly List<nint> JSVHandleFreeList = new();
         // Guarded by lock (this) in the multi-threaded build: BindManagedFunction can register an export
         // into another thread's context via BindingContextOrMain, concurrently with CallJSExport reading it.
-        private readonly Dictionary<int, Action<IntPtr>> JSExportByHandle = new Dictionary<int, Action<IntPtr>>();
+        private readonly Dictionary<int, JSExportEntry> JSExportByHandle = new Dictionary<int, JSExportEntry>();
         private int NextJSExportHandle = 1;
+
+        internal unsafe readonly struct JSExportEntry(delegate*<JSMarshalerArgument*, void> callback)
+        {
+            internal readonly delegate*<JSMarshalerArgument*, void> Callback = callback;
+        }
 
         public int PromiseHolderCount
         {
@@ -291,25 +296,25 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // Registration can run on a thread other than the one owning this context, see BindingContextOrMain.
-        public int AllocJSExportHandle(Action<IntPtr> wrapper)
+        public int AllocJSExportHandle(JSExportEntry entry)
         {
 #if FEATURE_WASM_MANAGED_THREADS
             lock (this)
 #endif
             {
                 int methodHandle = NextJSExportHandle++;
-                JSExportByHandle[methodHandle] = wrapper;
+                JSExportByHandle[methodHandle] = entry;
                 return methodHandle;
             }
         }
 
-        public bool TryGetJSExport(int methodHandle, [MaybeNullWhen(false)] out Action<IntPtr> wrapper)
+        public bool TryGetJSExport(int methodHandle, out JSExportEntry entry)
         {
 #if FEATURE_WASM_MANAGED_THREADS
             lock (this)
 #endif
             {
-                return JSExportByHandle.TryGetValue(methodHandle, out wrapper);
+                return JSExportByHandle.TryGetValue(methodHandle, out entry);
             }
         }
 

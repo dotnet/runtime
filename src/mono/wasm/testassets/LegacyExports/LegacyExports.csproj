@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Keep the released generator even when the SDK's default targeting pack advances. -->
+    <KnownFrameworkReference Update="Microsoft.NETCore.App">
+      <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == 'net10.0'">10.0.0</TargetingPackVersion>
+    </KnownFrameworkReference>
+  </ItemGroup>
+</Project>

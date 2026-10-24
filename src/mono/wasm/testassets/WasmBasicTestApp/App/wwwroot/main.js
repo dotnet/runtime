@@ -281,6 +281,30 @@ const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith
 // Run the test case
 try {
     switch (testCase) {
+        case "LegacyJSExports": {
+            const legacy = (await getAssemblyExports("LegacyExports.dll")).LegacyExports.Exports;
+            const check = (condition, message) => {
+                if (!condition) throw new Error(message);
+            };
+            check(legacy.Add(17, 25) === 42, "Legacy integer export failed");
+            check(legacy.Add(-17, 4) === -13, "Repeated legacy export invocation failed");
+            const text = "Legacy exports: \u9FC0 \uD83D\uDE00";
+            check(legacy.Echo(text) === text, "Legacy string export failed");
+            const value = { name: "legacy", value: 42 };
+            check(legacy.EchoObject(value) === value, "Legacy JSObject export failed");
+            check(legacy.Nested.Negate(17) === -17, "Legacy nested export failed");
+            let exceptionMessage;
+            try {
+                legacy.Throw();
+            } catch (error) {
+                exceptionMessage = error.message;
+            }
+            check(exceptionMessage === "Legacy export exception", "Legacy exception propagation failed");
+            check(await legacy.AddAsync(19, 23) === 42, "Legacy async export failed");
+            testOutput("Legacy JSExports passed");
+            exit(0);
+            break;
+        }
         case "SatelliteAssembliesTest":
             await exports.SatelliteAssembliesTest.Run(params.get("loadAllSatelliteResources") !== "true");
             exit(0);

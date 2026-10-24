@@ -74,3 +74,10 @@ Blazor specific tests should be located in `Blazor` directory. New test classes 
 Native relinking tests can run on both runtimes. For theories that also cover Mono AOT, use runtime-aware test data to keep the non-AOT cases on CoreCLR without removing the existing Mono cases. Incremental rebuild assertions must track the appropriate runtime's generated files: CoreCLR uses the portable call-helper sources and objects rather than Mono's P/Invoke tables and driver objects.
 
 If you want to test templating mechanism, use `CreateWasmTemplateProject`. Otherwise, use `CopyTestAsset` with either `WasmBasicTestApp` or `BlazorBasicTestApp`, adding your custom `TestScenario` or using a generic `DotnetRun` scenario in case of WASM app and adding a page with test in case of Blazor app. Bigger snippets of code should be saved in `src/mono/wasm/testassets` and placed in the application using methods: `ReplaceFile` or `File.Move`. Replacing existing small parts of code with custom lines is done with `UpdateFile`.
+
+`LibraryInitializerTests.JSExportFromNet10Library` checks binary compatibility with the released
+.NET 10 JSExport generator. It builds the `LegacyExports` library against the pinned 10.0.0
+targeting pack, without the in-tree pack overrides, then references its DLL from a trimmed
+current-framework browser app. The targeting pack (including its generator) is restored as needed;
+no .NET 10 SDK or browser workload is required. The test runs in the `no-workload` CI lane for
+both runtime flavors.
