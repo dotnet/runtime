@@ -65,7 +65,7 @@ internal sealed partial class GrammarActions
         if (!isNewType)
         {
             // A reference that precedes the first declaration creates the entity without declaring it.
-            if (typeDefinition.IsDeclared)
+            if (typeDefinition.IsDefined)
             {
                 MergeTypeDefinition(context, header, typeDefinition);
             }
@@ -75,7 +75,7 @@ internal sealed partial class GrammarActions
             }
         }
 
-        typeDefinition.IsDeclared = true;
+        typeDefinition.IsDefined = true;
         return typeDefinition;
     }
 
