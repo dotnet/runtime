@@ -237,10 +237,11 @@ JS_ENGINES = [NODE_JS]
           DependsOnTargets="AcquireEmscriptenSdkUnconditional" />
 
   <!-- Validation only. Fails the build when the provisioned Node or npm is not the expected version, which
-       also catches a stale shared cache entry that still holds the previous Node. -->
+       also catches a stale shared cache entry that still holds the previous Node. Cross compiler legs that only
+       generate browser offsets provision no Node, so only browser builds are checked. -->
   <Target Name="_ValidateNode423Toolchain"
           AfterTargets="AcquireEmscriptenSdkUnconditional"
-          Condition="'$(EMSDK_PATH)' != ''">
+          Condition="'$(EMSDK_PATH)' != '' and '$(TargetsBrowser)' == 'true'">
     <PropertyGroup>
       <_NodeValidationRoot>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)'))node/</_NodeValidationRoot>
       <_NodeValidationExe>$(_NodeValidationRoot)bin/node</_NodeValidationExe>

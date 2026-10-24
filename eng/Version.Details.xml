@@ -45,9 +45,9 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>6fa58a2ef810f82b3197d69763cedfb34c88b9fd</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-11.0.100.Transport" Version="11.0.100-rtm.26521.105">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-11.0.100.Transport" Version="11.0.100-rtm.26523.122">
       <Uri>https://github.com/dotnet/dotnet</Uri>
-      <Sha>6fa58a2ef810f82b3197d69763cedfb34c88b9fd</Sha>
+      <Sha>2b5a4387dbee6181159f53c9ab1ada19a5ebe720</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Runtime.Emscripten.Internal" Version="11.0.0">
       <Uri>https://github.com/dotnet/dotnet</Uri>
