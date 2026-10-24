@@ -2141,6 +2141,9 @@
   <data name="EventSource_DataDescriptorsOutOfRange" xml:space="preserve">
     <value>Data descriptors are out of range.</value>
   </data>
+  <data name="EventSource_DisposeInsideCallback" xml:space="preserve">
+    <value>EventSource cannot be disposed from an EventSource callback while one of its callbacks is in progress.</value>
+  </data>
   <data name="EventSource_DuplicateStringKey" xml:space="preserve">
     <value>Multiple definitions for string "{0}".</value>
   </data>
