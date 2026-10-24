@@ -1361,7 +1361,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ValidateBufferArguments(buffer, offset, size);
-            ArgumentNullException.ThrowIfNull(remoteEP);
+            ValidateSendToEndpointAndState(remoteEP, nameof(remoteEP));
 
             ValidateBlockingMode();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} size:{size} remoteEP:{remoteEP}");
@@ -1444,7 +1444,7 @@ namespace System.Net.Sockets
             if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
             ThrowIfDisposed();
-            ArgumentNullException.ThrowIfNull(remoteEP);
+            ValidateSendToEndpointAndState(remoteEP, nameof(remoteEP));
 
             ValidateBlockingMode();
 
@@ -3285,6 +3285,11 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
             }
 
+            if (endPointSnapshot is not null && !CanTryAddressFamily(endPointSnapshot.AddressFamily))
+            {
+                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, endPointSnapshot.AddressFamily, _addressFamily), nameof(e));
+            }
+
             if (e._socketAddress != null && endPointSnapshot is IPEndPoint ipep && e._socketAddress.Family == endPointSnapshot?.AddressFamily)
             {
                 // we have matching SocketAddress. Since this is only used internally, it is ok to overwrite it without
@@ -3989,6 +3994,24 @@ namespace System.Net.Sockets
             if (_rightEndPoint == null)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustbind);
+            }
+        }
+
+        // Validates that the remoteEndPoint is compatible with the Socket so that a SendTo call won't fail deep
+        // inside the OS PAL with a SocketError.InvalidArgument. This mirrors the address-family guard already
+        // applied to the ReceiveFrom/ReceiveMessageFrom methods so the SendTo family behaves consistently.
+        private void ValidateSendToEndpointAndState(EndPoint remoteEndPoint, string remoteEndPointArgumentName)
+        {
+            ArgumentNullException.ThrowIfNull(remoteEndPoint, remoteEndPointArgumentName);
+
+            if (remoteEndPoint is DnsEndPoint)
+            {
+                throw new ArgumentException(SR.Format(SR.net_sockets_invalid_dnsendpoint, remoteEndPointArgumentName), remoteEndPointArgumentName);
+            }
+
+            if (!CanTryAddressFamily(remoteEndPoint.AddressFamily))
+            {
+                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, remoteEndPoint.AddressFamily, _addressFamily), remoteEndPointArgumentName);
             }
         }
 
