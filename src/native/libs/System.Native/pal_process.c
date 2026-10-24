@@ -64,7 +64,7 @@
 #include <sys/sysctl.h>
 #endif
 
-#if defined(__APPLE__) || defined(__OpenBSD__)
+#ifdef __OpenBSD__
 #include <sys/sysctl.h>
 #endif
 
@@ -1366,7 +1366,7 @@ char* SystemNative_GetProcessPath(void)
     return minipal_getexepath();
 }
 
-#if defined(TARGET_BROWSER) || defined(__OpenBSD__) || defined(__HAIKU__)
+#if defined(TARGET_BROWSER) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__HAIKU__)
 // Packs the arguments into a single NULL-terminated allocation that can be released with one free().
 static char** PackCommandLine(int32_t count, const char* const* args, int32_t* argc)
 {
@@ -1397,8 +1397,8 @@ static char** PackCommandLine(int32_t count, const char* const* args, int32_t* a
 }
 #endif
 
-#if !defined(TARGET_BROWSER) && (defined(__linux__) || defined(__sun) || defined(__FreeBSD__) || defined(__APPLE__))
-// Packs into a single NULL-terminated allocation up to maxCount arguments stored back to back as up to maxCount arguments stored back to back as
+#if defined(__linux__) || defined(__sun) || defined(__FreeBSD__)
+// Packs into a single NULL-terminated allocation up to maxCount arguments stored back to back as
 // NUL-terminated strings, so that it can be released with one free().
 static char** PackNulSeparatedCommandLine(const char* buffer, size_t length, int32_t maxCount, int32_t* argc)
 {
@@ -1433,7 +1433,7 @@ static char** PackNulSeparatedCommandLine(const char* buffer, size_t length, int
 }
 #endif
 
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__OpenBSD__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
 // Returns a malloc'ed buffer with the sysctl value, or NULL on failure.
 static char* ReadSysctl(int* mib, u_int mibLength, size_t* length)
 {
@@ -1546,35 +1546,7 @@ char** SystemNative_GetCommandLine(int32_t* argc)
     free(buffer);
     return result;
 #elif defined(__APPLE__)
-    int mib[] = { CTL_KERN, KERN_PROCARGS2, getpid() };
-    size_t length;
-    char* buffer = ReadSysctl(mib, 3, &length);
-    if (buffer == NULL)
-    {
-        return NULL;
-    }
-
-    // Layout: int argc, executable path, NUL padding, then argc NUL-terminated arguments.
-    char** result = NULL;
-    int count;
-    if (length > sizeof(count))
-    {
-        memcpy(&count, buffer, sizeof(count));
-        const char* end = buffer + length;
-        const char* args = (const char*)memchr(buffer + sizeof(count), '\0', length - sizeof(count));
-        if (args != NULL)
-        {
-            while (args < end && *args == '\0')
-            {
-                args++;
-            }
-
-            result = PackNulSeparatedCommandLine(args, (size_t)(end - args), count, argc);
-        }
-    }
-
-    free(buffer);
-    return result;
+    return PackCommandLine(*_NSGetArgc(), (const char* const*)*_NSGetArgv(), argc);
 #elif defined(__HAIKU__)
     return PackCommandLine(__libc_argc, (const char* const*)__libc_argv, argc);
 #else
