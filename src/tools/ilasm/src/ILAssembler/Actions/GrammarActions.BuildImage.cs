@@ -331,6 +331,11 @@ namespace ILAssembler
         private ImmutableArray<ValidatedVTableAssociation> ValidateVTableAssociations(
             ImmutableArray<ValidatedVTableFixup> validatedVTableFixups)
         {
+            if (_vtableFixups.Count == 0)
+            {
+                return ImmutableArray<ValidatedVTableAssociation>.Empty;
+            }
+
             var fixupsByOriginalIndex = new Dictionary<int, (int SerializedIndex, ValidatedVTableFixup Fixup)>(
                 validatedVTableFixups.Length);
             for (int i = 0; i < validatedVTableFixups.Length; i++)
