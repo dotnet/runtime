@@ -1550,14 +1550,16 @@ namespace System
 
                 string remoteUrl = info.RemoteUrl ??= GetParts(components, UriFormat.SafeUnescaped);
 
-                if (IsFile)
-                {
-                    return StringComparer.OrdinalIgnoreCase.GetHashCode(remoteUrl);
-                }
-                else
-                {
-                    return remoteUrl.GetHashCode();
-                }
+                int hashCode = IsFile ?
+                    StringComparer.OrdinalIgnoreCase.GetHashCode(remoteUrl) :
+                    remoteUrl.GetHashCode();
+
+                // Custom parsers define identity through HttpRequestUrl and may return it without
+                // initializing the host. ScopeId can remain null until Host or IdnHost is accessed,
+                // so including it could change the hash after those properties populate the cache.
+                return HostType == Flags.IPv6HostType && _syntax.IsSimple && info.ScopeId is string scopeId ?
+                    HashCode.Combine(hashCode, scopeId) :
+                    hashCode;
             }
         }
 
@@ -1760,7 +1762,8 @@ namespace System
             if (NotAny(Flags.AllUriInfoSet) || other.NotAny(Flags.AllUriInfoSet))
             {
                 // Try raw compare for _strings as the last chance to keep the working set small
-                if (string.Equals(_string, other._string, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                // Keep IPv6 scope IDs case-sensitive even when UNC/DOS paths ignore case.
+                if (string.Equals(_string, other._string, IsUncOrDosPath && HostType != Flags.IPv6HostType ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -1851,7 +1854,24 @@ namespace System
             string otherUrl = otherInfo.RemoteUrl ??= other.GetParts(components, UriFormat.SafeUnescaped);
 
             // if IsUncOrDosPath is true then we ignore case in the path comparison
-            return string.Equals(selfUrl, otherUrl, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            if (!string.Equals(selfUrl, otherUrl, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            // Scope IDs are omitted from HttpRequestUrl and must be compared separately.
+            if (HostType == Flags.IPv6HostType || other.HostType == Flags.IPv6HostType)
+            {
+                // Custom parsers define equality through HttpRequestUrl.
+                string? selfScopeId = HostType == Flags.IPv6HostType && _syntax.IsSimple ? selfInfo.ScopeId : null;
+                string? otherScopeId = other.HostType == Flags.IPv6HostType && other._syntax.IsSimple ? otherInfo.ScopeId : null;
+                if (selfScopeId != otherScopeId)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public Uri MakeRelativeUri(Uri uri)
