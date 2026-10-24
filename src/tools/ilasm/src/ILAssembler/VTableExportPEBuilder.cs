@@ -16,15 +16,18 @@ namespace ILAssembler;
 
 /// <summary>
 /// A PE builder that extends <see cref="ILAssemblerPEBuilder"/> with VTable fixups,
-/// unmanaged exports, and data label reference fixups.
+/// unmanaged exports, TLS data, and data label reference fixups.
 /// </summary>
 internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
 {
     private const string RelocationSectionName = ".reloc";
     private const string SDataSectionName = ".sdata";
     private const string TextSectionName = ".text";
+    private const string TlsSectionName = ".tls";
+    private const int DataSectionCount = 3;
     private const int ExportDirectoryHeaderSize = 40;
     private const int RelocationPageSize = 0x1000;
+    private const int TlsDirectoryAddressCount = 4;
     private const ushort ImageRelBasedAbsolute = 0;
     private const ushort ImageRelBasedHighLow = 3;
     private const ushort ImageRelBasedDir64 = 10;
@@ -32,24 +35,32 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
     private readonly ImmutableArray<VTableFixupInfo> _vtableFixups;
     private readonly ImmutableArray<ExportInfo> _exports;
     private readonly BlobBuilder? _mappedFieldData;
+    private readonly BlobBuilder? _tlsData;
+    private readonly BlobBuilder? _cilData;
+    private readonly ImmutableArray<DataLocation> _mappedFields;
     private readonly ImmutableArray<DataLabelFixup> _dataLabelFixups;
     private readonly string _dllName;
-    private readonly bool _moveMappedFieldDataToSData;
+    private readonly bool _hasSDataSection;
     private readonly List<ExportStubInfo> _exportStubs = new();
+    private readonly DataLayout[] _dataLayouts = new DataLayout[DataSectionCount];
 
     private BlobBuilder? _textSectionBuilder;
     private int _textSectionRva;
-    private int _managedTextSize;
-    private int _mappedFieldDataRva;
     private int _vtableFixupsRva;
     private int _vtableFixupsSize;
+    private Blob _vtableDirectoryFixup;
     private int _exportDirectoryRva;
     private int _exportDirectorySize;
     private int _relocationDirectoryRva;
     private int _relocationDirectorySize;
+    private Blob _tlsDirectoryFixup;
+    private int _tlsDirectoryRva;
+    private int _tlsDirectorySize;
+    private int _tlsIndexRva;
+    private int _tlsCallbacksRva;
 
     public readonly record struct VTableFixupInfo(
-        int DataOffset,
+        DataLocation DataLocation,
         int SlotCount,
         ushort Flags,
         ImmutableArray<int> MethodTokens);
@@ -61,9 +72,11 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
         int VTableSlotIndex);
 
     public readonly record struct DataLabelFixup(
-        int DataOffset,
-        int TargetOffset,
+        DataLocation Source,
+        DataLocation Target,
         int PointerSize);
+
+    private readonly record struct DataLayout(Blob Data, int Rva);
 
     private readonly record struct ExportStubInfo(int StubRva, int AddressRva, Blob AddressFixup);
 
@@ -84,30 +97,61 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
         ImmutableArray<VTableFixupInfo> vtableFixups = default,
         ImmutableArray<ExportInfo> exports = default,
         ImmutableArray<DataLabelFixup> dataLabelFixups = default,
-        string? dllName = null)
+        string? dllName = null,
+        BlobBuilder? tlsData = null,
+        BlobBuilder? cilData = null,
+        ImmutableArray<DataLocation> mappedFields = default)
         : base(
             header,
             metadataRootBuilder,
             ilStream,
-            mappedFieldData: vtableFixups.IsDefaultOrEmpty ? mappedFieldData : null,
+            mappedFieldData: null,
             managedResources,
             nativeResources,
             debugDirectoryBuilder,
             strongNameSignatureSize,
             entryPoint,
-            vtableFixups.IsDefaultOrEmpty && dataLabelFixups.IsDefaultOrEmpty
-                ? flags
-                : (flags & ~CorFlags.ILOnly),
+            GetCorFlags(header.Machine, flags, vtableFixups, dataLabelFixups, tlsData),
             deterministicIdProvider)
     {
         _vtableFixups = vtableFixups.IsDefault ? ImmutableArray<VTableFixupInfo>.Empty : vtableFixups;
         _exports = exports.IsDefault ? ImmutableArray<ExportInfo>.Empty : exports;
         _mappedFieldData = mappedFieldData;
+        _tlsData = tlsData;
+        _cilData = cilData;
+        _mappedFields = mappedFields.IsDefault ? ImmutableArray<DataLocation>.Empty : mappedFields;
         _dataLabelFixups = dataLabelFixups.IsDefault
             ? ImmutableArray<DataLabelFixup>.Empty
             : dataLabelFixups;
         _dllName = dllName ?? "output.dll";
-        _moveMappedFieldDataToSData = !_vtableFixups.IsEmpty;
+        _hasSDataSection =
+            mappedFieldData is { Count: > 0 } ||
+            _mappedFields.Any(location => location.Section == DataSection.Data) ||
+            !_vtableFixups.IsEmpty ||
+            HasTlsData;
+    }
+
+    private bool HasTlsData => (_tlsData?.Count ?? 0) > 0;
+
+    private static CorFlags GetCorFlags(
+        Machine machine,
+        CorFlags flags,
+        ImmutableArray<VTableFixupInfo> vtableFixups,
+        ImmutableArray<DataLabelFixup> dataLabelFixups,
+        BlobBuilder? tlsData)
+    {
+        if (!vtableFixups.IsDefaultOrEmpty || !dataLabelFixups.IsDefaultOrEmpty ||
+            (tlsData?.Count ?? 0) > 0)
+        {
+            flags &= ~CorFlags.ILOnly;
+        }
+
+        if ((tlsData?.Count ?? 0) > 0 && machine == Machine.I386)
+        {
+            flags |= CorFlags.Requires32Bit;
+        }
+
+        return flags;
     }
 
     internal static bool IsExportMachineSupported(Machine machine) =>
@@ -120,14 +164,14 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
     {
         ImmutableArray<Section> baseSections = base.CreateSections();
         bool hasRelocationSection = false;
-        var builder = ImmutableArray.CreateBuilder<Section>(baseSections.Length + 2);
+        var builder = ImmutableArray.CreateBuilder<Section>(baseSections.Length + 3);
 
         for (int i = 0; i < baseSections.Length; i++)
         {
             Section section = baseSections[i];
             builder.Add(section);
 
-            if (i == 0 && _moveMappedFieldDataToSData)
+            if (i == 0 && _hasSDataSection)
             {
                 builder.Add(new Section(
                     SDataSectionName,
@@ -136,10 +180,19 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
                     SectionCharacteristics.ContainsInitializedData));
             }
 
+            if (i == 0 && HasTlsData)
+            {
+                builder.Add(new Section(
+                    TlsSectionName,
+                    SectionCharacteristics.MemRead |
+                    SectionCharacteristics.MemWrite |
+                    SectionCharacteristics.ContainsInitializedData));
+            }
+
             hasRelocationSection |= section.Name == RelocationSectionName;
         }
 
-        if ((_exports.Length > 0 || !_dataLabelFixups.IsEmpty) && !hasRelocationSection)
+        if ((_exports.Length > 0 || !_dataLabelFixups.IsEmpty || HasTlsData) && !hasRelocationSection)
         {
             builder.Add(new Section(
                 RelocationSectionName,
@@ -159,23 +212,23 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
                 BlobBuilder textBuilder = base.SerializeSection(name, location);
                 _textSectionBuilder = textBuilder;
                 _textSectionRva = location.RelativeVirtualAddress;
-                _managedTextSize = textBuilder.Count;
-                if (!_moveMappedFieldDataToSData && (_mappedFieldData?.Count ?? 0) > 0)
+                WriteData(textBuilder, DataSection.Cil, location.RelativeVirtualAddress);
+                SerializeExportStubs(textBuilder, location.RelativeVirtualAddress);
+                if (!_hasSDataSection)
                 {
-                    _mappedFieldDataRva =
-                        location.RelativeVirtualAddress +
-                        textBuilder.Count -
-                        _mappedFieldData!.Count;
-                    ApplyDataLabelFixups(
-                        textBuilder,
-                        _mappedFieldDataRva - location.RelativeVirtualAddress);
+                    PatchDataLayout();
                 }
 
-                SerializeExportStubs(textBuilder, location.RelativeVirtualAddress);
                 return textBuilder;
 
             case SDataSectionName:
                 return SerializeSDataSection(location);
+
+            case TlsSectionName:
+                var tlsBuilder = new BlobBuilder();
+                WriteData(tlsBuilder, DataSection.Tls, location.RelativeVirtualAddress);
+                PatchDataLayout();
+                return tlsBuilder;
 
             case RelocationSectionName:
                 return SerializeRelocationSection(location);
@@ -199,6 +252,11 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
             directories.BaseRelocationTable = new DirectoryEntry(
                 _relocationDirectoryRva,
                 _relocationDirectorySize);
+        }
+
+        if (HasTlsData)
+        {
+            directories.ThreadLocalStorageTable = new DirectoryEntry(_tlsDirectoryRva, _tlsDirectorySize);
         }
 
         return directories;
@@ -266,39 +324,15 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
     {
         var builder = new BlobBuilder();
         int vtableDirectorySize = checked(_vtableFixups.Length * 8);
-        int mappedFieldDataOffset = Align(vtableDirectorySize, ManagedPEBuilder.MappedFieldDataAlignment);
-        _mappedFieldDataRva = location.RelativeVirtualAddress + mappedFieldDataOffset;
 
         if (_vtableFixups.Length > 0)
         {
             _vtableFixupsRva = location.RelativeVirtualAddress;
             _vtableFixupsSize = vtableDirectorySize;
-
-            foreach (VTableFixupInfo fixup in _vtableFixups)
-            {
-                builder.WriteInt32(_mappedFieldDataRva + fixup.DataOffset);
-                builder.WriteUInt16((ushort)fixup.SlotCount);
-                builder.WriteUInt16(fixup.Flags);
-            }
+            _vtableDirectoryFixup = builder.ReserveBytes(vtableDirectorySize);
         }
 
-        if (_mappedFieldData is not null)
-        {
-            if (_mappedFieldData.Count > 0)
-            {
-                builder.Align(ManagedPEBuilder.MappedFieldDataAlignment);
-                Debug.Assert(builder.Count == mappedFieldDataOffset);
-
-                ApplyDataLabelFixups(_mappedFieldData, dataOffset: 0);
-                byte[] mappedFieldData = _mappedFieldData.ToArray();
-                ApplyVTableTokens(mappedFieldData);
-                builder.WriteBytes(mappedFieldData);
-            }
-
-            PatchMappedFieldRvas();
-        }
-
-        PatchExportStubAddresses();
+        WriteData(builder, DataSection.Data, location.RelativeVirtualAddress);
 
         if (_exports.Length > 0)
         {
@@ -306,11 +340,107 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
             SerializeExportDirectory(builder, location.RelativeVirtualAddress);
         }
 
+        if (HasTlsData)
+        {
+            // IMAGE_TLS_DIRECTORY contains four VAs followed by two DWORDs (PE/COFF section 6.7).
+            int pointerSize = VTableFixupSupport.GetPointerSize(Header.Machine);
+            builder.Align(pointerSize);
+            _tlsDirectoryRva = location.RelativeVirtualAddress + builder.Count;
+            _tlsDirectorySize = (TlsDirectoryAddressCount * pointerSize) + (2 * sizeof(uint));
+            _tlsDirectoryFixup = builder.ReserveBytes(_tlsDirectorySize);
+            _tlsCallbacksRva = location.RelativeVirtualAddress + builder.Count;
+            builder.WriteBytes(0, pointerSize);
+            _tlsIndexRva = location.RelativeVirtualAddress + builder.Count;
+            builder.WriteUInt32(0);
+        }
+        else
+        {
+            PatchDataLayout();
+        }
+
         PatchCorHeaderVTableFixups();
         return builder;
     }
 
-    private void ApplyDataLabelFixups(BlobBuilder builder, int dataOffset)
+    private BlobBuilder? GetDataSource(DataSection section) => section switch
+    {
+        DataSection.Data => _mappedFieldData,
+        DataSection.Tls => _tlsData,
+        DataSection.Cil => _cilData,
+        _ => throw new UnreachableException(),
+    };
+
+    private void WriteData(BlobBuilder builder, DataSection section, int sectionRva)
+    {
+        BlobBuilder? data = GetDataSource(section);
+        if ((data?.Count ?? 0) > 0)
+        {
+            builder.Align(ManagedPEBuilder.MappedFieldDataAlignment);
+        }
+
+        int dataRva = checked(sectionRva + builder.Count);
+        Blob dataBlob = builder.ReserveBytes(data?.Count ?? 0);
+        _dataLayouts[(int)section] = new DataLayout(dataBlob, dataRva);
+        if (data is not null && data.Count > 0)
+        {
+            var writer = new BlobWriter(dataBlob);
+            foreach (Blob blob in data.GetBlobs())
+            {
+                ArraySegment<byte> bytes = blob.GetBytes();
+                Debug.Assert(bytes.Array is not null);
+                writer.WriteBytes(bytes.Array, bytes.Offset, bytes.Count);
+            }
+        }
+    }
+
+    private int GetDataRva(DataLocation location) =>
+        checked(_dataLayouts[(int)location.Section].Rva + location.Offset);
+
+    private void PatchDataLayout()
+    {
+        PatchMappedFieldRvas();
+        ApplyDataLabelFixups();
+        ApplyVTableTokens();
+        PatchExportStubAddresses();
+
+        if (!_vtableFixups.IsEmpty)
+        {
+            var writer = new BlobWriter(_vtableDirectoryFixup);
+            foreach (VTableFixupInfo fixup in _vtableFixups)
+            {
+                writer.WriteInt32(GetDataRva(fixup.DataLocation));
+                writer.WriteUInt16((ushort)fixup.SlotCount);
+                writer.WriteUInt16(fixup.Flags);
+            }
+        }
+
+        if (HasTlsData)
+        {
+            Debug.Assert(_tlsData is not null);
+            var writer = new BlobWriter(_tlsDirectoryFixup);
+            WriteAddress(_dataLayouts[(int)DataSection.Tls].Rva);
+            WriteAddress(checked(_dataLayouts[(int)DataSection.Tls].Rva + _tlsData.Count));
+            WriteAddress(_tlsIndexRva);
+            WriteAddress(_tlsCallbacksRva);
+            writer.WriteUInt32(0);
+            writer.WriteUInt32(0);
+
+            void WriteAddress(int rva)
+            {
+                ulong address = Header.ImageBase + (uint)rva;
+                if (Header.Machine == Machine.I386)
+                {
+                    writer.WriteUInt32(unchecked((uint)address));
+                }
+                else
+                {
+                    writer.WriteUInt64(address);
+                }
+            }
+        }
+    }
+
+    private void ApplyDataLabelFixups()
     {
         if (_dataLabelFixups.IsEmpty)
         {
@@ -319,50 +449,46 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
 
         foreach (DataLabelFixup fixup in _dataLabelFixups)
         {
-            int targetRva = _mappedFieldDataRva + fixup.TargetOffset;
+            var writer = new BlobWriter(_dataLayouts[(int)fixup.Source.Section].Data)
+            {
+                Offset = fixup.Source.Offset,
+            };
+            int targetRva = GetDataRva(fixup.Target);
             ulong targetAddress = Header.ImageBase + (uint)targetRva;
             if (fixup.PointerSize == sizeof(long))
             {
-                WriteUInt64AtOffset(
-                    builder,
-                    dataOffset + fixup.DataOffset,
-                    targetAddress);
+                writer.WriteUInt64(targetAddress);
             }
             else
             {
-                WriteInt32AtOffset(
-                    builder,
-                    dataOffset + fixup.DataOffset,
-                    unchecked((int)(uint)targetAddress));
+                writer.WriteUInt32(unchecked((uint)targetAddress));
             }
         }
     }
 
-    private void ApplyVTableTokens(Span<byte> mappedFieldData)
+    private void ApplyVTableTokens()
     {
         foreach (VTableFixupInfo fixup in _vtableFixups)
         {
+            var writer = new BlobWriter(_dataLayouts[(int)fixup.DataLocation.Section].Data);
             int slotSize = VTableFixupSupport.GetSlotSize(fixup.Flags);
             for (int slotIndex = 0; slotIndex < fixup.SlotCount; slotIndex++)
             {
-                int slotOffset = fixup.DataOffset + (slotIndex * slotSize);
+                int slotOffset = fixup.DataLocation.Offset + (slotIndex * slotSize);
                 int token = fixup.MethodTokens[slotIndex];
                 if (token == 0)
                 {
                     continue;
                 }
 
+                writer.Offset = slotOffset;
                 if (slotSize == sizeof(long))
                 {
-                    BinaryPrimitives.WriteInt64LittleEndian(
-                        mappedFieldData.Slice(slotOffset, sizeof(long)),
-                        token);
+                    writer.WriteInt64(token);
                 }
                 else
                 {
-                    BinaryPrimitives.WriteInt32LittleEndian(
-                        mappedFieldData.Slice(slotOffset, sizeof(int)),
-                        token);
+                    writer.WriteInt32(token);
                 }
             }
         }
@@ -382,6 +508,7 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
             MetadataReaderProvider.FromMetadataImage(ImmutableArray.Create(metadata));
         MetadataReader reader = provider.GetMetadataReader();
         int rowCount = reader.GetTableRowCount(TableIndex.FieldRva);
+        Debug.Assert(rowCount == _mappedFields.Length);
         if (rowCount == 0)
         {
             return;
@@ -389,14 +516,10 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
 
         int tableOffset = reader.GetTableMetadataOffset(TableIndex.FieldRva);
         int rowSize = reader.GetTableRowSize(TableIndex.FieldRva);
-        int assumedMappedFieldDataRva = _textSectionRva + _managedTextSize;
-        int rvaDelta = _mappedFieldDataRva - assumedMappedFieldDataRva;
-
         for (int row = 0; row < rowCount; row++)
         {
             int rvaOffset = metadataOffset + tableOffset + (row * rowSize);
-            int currentRva = ReadInt32AtOffset(_textSectionBuilder, rvaOffset);
-            WriteInt32AtOffset(_textSectionBuilder, rvaOffset, checked(currentRva + rvaDelta));
+            WriteInt32AtOffset(_textSectionBuilder, rvaOffset, GetDataRva(_mappedFields[row]));
         }
     }
 
@@ -410,8 +533,7 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
             VTableFixupInfo fixup = _vtableFixups[export.VTableEntryIndex - 1];
             int slotSize = VTableFixupSupport.GetSlotSize(fixup.Flags);
             int slotRva =
-                _mappedFieldDataRva +
-                fixup.DataOffset +
+                GetDataRva(fixup.DataLocation) +
                 ((export.VTableSlotIndex - 1) * slotSize);
             ulong absoluteAddress = Header.ImageBase + (uint)slotRva;
             var writer = new BlobWriter(_exportStubs[i].AddressFixup);
@@ -512,7 +634,7 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
             ? ImageRelBasedDir64
             : ImageRelBasedHighLow;
         var relocations = new List<BaseRelocation>(
-            _exportStubs.Count + _dataLabelFixups.Length + 1);
+            _exportStubs.Count + _dataLabelFixups.Length + 5);
 
         if (machine == Machine.I386)
         {
@@ -531,10 +653,21 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
         foreach (DataLabelFixup fixup in _dataLabelFixups)
         {
             relocations.Add(new BaseRelocation(
-                _mappedFieldDataRva + fixup.DataOffset,
+                GetDataRva(fixup.Source),
                 fixup.PointerSize == sizeof(long)
                     ? ImageRelBasedDir64
                     : ImageRelBasedHighLow));
+        }
+
+        if (HasTlsData)
+        {
+            int pointerSize = VTableFixupSupport.GetPointerSize(machine);
+            for (int i = 0; i < TlsDirectoryAddressCount; i++)
+            {
+                relocations.Add(new BaseRelocation(
+                    _tlsDirectoryRva + (i * pointerSize),
+                    exportRelocationType));
+            }
         }
 
         relocations.Sort(static (left, right) => left.Rva.CompareTo(right.Rva));
@@ -602,9 +735,6 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
             : 0;
     }
 
-    private static int Align(int value, int alignment) =>
-        checked((value + alignment - 1) & ~(alignment - 1));
-
     private static int ReadInt32AtOffset(BlobBuilder builder, int offset) =>
         BinaryPrimitives.ReadInt32LittleEndian(ReadBytes(builder, offset, sizeof(int)));
 
@@ -640,13 +770,6 @@ internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
     {
         Span<byte> bytes = stackalloc byte[sizeof(int)];
         BinaryPrimitives.WriteInt32LittleEndian(bytes, value);
-        WriteBytesAtOffset(builder, offset, bytes);
-    }
-
-    private static void WriteUInt64AtOffset(BlobBuilder builder, int offset, ulong value)
-    {
-        Span<byte> bytes = stackalloc byte[sizeof(ulong)];
-        BinaryPrimitives.WriteUInt64LittleEndian(bytes, value);
         WriteBytesAtOffset(builder, offset, bytes);
     }
 
