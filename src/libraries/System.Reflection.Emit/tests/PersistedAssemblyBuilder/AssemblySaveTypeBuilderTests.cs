@@ -567,6 +567,28 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void TypeBuilder_SetParent_GenericFromMixedSources()
+        {
+            using (TempFile file = TempFile.Create())
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                ModuleBuilder mb = CreateAssembly(out PersistedAssemblyBuilder assemblyBuilder);
+                TypeBuilder tb = mb.DefineType("TestType`1", TypeAttributes.Class | TypeAttributes.Public);
+
+                Type baseTypeFromMlc = mlc.LoadFromAssemblyName("System.Reflection.Emit.Tests").GetType(typeof(BaseType<>).FullName, throwOnError: true);
+                GenericTypeParameterBuilder[] typeParams = tb.DefineGenericParameters("T");
+
+                // TestType : BaseType<TestType<T>>
+                // The base type is from the MetadataLoadContext, but the test type and its generic argument is from the PersistedAssemblyBuilder.
+                // Normally we would use MakeGenericType, but neither reflection stack supports mixing types from different universes.
+                tb.SetParent(Type.MakeGenericSignatureType(baseTypeFromMlc, Type.MakeGenericSignatureType(tb, typeParams)));
+
+                tb.CreateType();
+                assemblyBuilder.Save(file.Path);
+            }
+        }
+
+        [Fact]
         public void GetField_TypeNotGeneric_ThrowsArgumentException()
         {
             AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
