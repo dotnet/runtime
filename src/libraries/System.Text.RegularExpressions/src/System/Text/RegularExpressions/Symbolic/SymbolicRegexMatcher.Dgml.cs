@@ -31,7 +31,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 foreach (MatchingState<TSet> state in _stateCache.Values)
                 {
                     string info = CharKind.DescribePrev(state.PrevCharKind);
-                    string deriv = WebUtility.HtmlEncode(state.Node.ToString());
+                    SymbolicRegexNode<TSet> node = state.GetNode(_builder);
+                    string deriv = WebUtility.HtmlEncode(node.ToString(_builder));
                     string nodeDgmlView = $"{(string.IsNullOrEmpty(info) ? info : $"Previous: {info}&#13;")}{(string.IsNullOrEmpty(deriv) ? "()" : deriv)}";
 
                     writer.WriteLine("        <Node Id=\"{0}\" Label=\"{0}\" Category=\"State\" Group=\"Collapsed\" StateInfo=\"{1}\">", state.Id, nodeDgmlView);
@@ -39,7 +40,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         writer.WriteLine("            <Category Ref=\"InitialState\" />");
                     }
-                    if (state.Node.CanBeNullable)
+                    if (node.CanBeNullable(_builder))
                     {
                         writer.WriteLine("            <Category Ref=\"FinalState\" />");
                     }
