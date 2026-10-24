@@ -93,5 +93,32 @@ namespace System.Security.Cryptography
                 }
             }
         }
+
+        internal bool TryCopyTo(Span<byte> destination, out int bytesWritten)
+        {
+            bool addedRef = false;
+
+            try
+            {
+                DangerousAddRef(ref addedRef);
+
+                if (destination.Length < _length)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                DangerousKeySpan.CopyTo(destination);
+                bytesWritten = _length;
+                return true;
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    DangerousRelease();
+                }
+            }
+        }
     }
 }
