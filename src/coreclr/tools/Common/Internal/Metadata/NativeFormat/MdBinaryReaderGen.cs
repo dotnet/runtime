@@ -148,6 +148,14 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
+        public static uint Read(this NativeReader reader, uint offset, out ConstantTypeCode value)
+        {
+            uint ivalue;
+            offset = reader.DecodeUnsigned(offset, out ivalue);
+            value = (ConstantTypeCode)ivalue;
+            return offset;
+        } // Read
+
         public static uint Read(this NativeReader reader, uint offset, out SignatureCallingConvention value)
         {
             uint ivalue;
@@ -209,14 +217,6 @@ namespace Internal.Metadata.NativeFormat
             uint ivalue;
             offset = reader.DecodeUnsigned(offset, out ivalue);
             value = (MethodSemanticsAttributes)ivalue;
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out NamedArgumentMemberKind value)
-        {
-            uint ivalue;
-            offset = reader.DecodeUnsigned(offset, out ivalue);
-            value = (NamedArgumentMemberKind)ivalue;
             return offset;
         } // Read
 
@@ -282,200 +282,11 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out ConstantBooleanArrayHandle handle)
+        public static uint Read(this NativeReader reader, uint offset, out ConstantHandle handle)
         {
             uint value;
             offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantBooleanArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantBooleanValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantBooleanValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantByteArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantByteArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantByteValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantByteValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantCharArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantCharArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantCharValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantCharValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantDoubleArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantDoubleArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantDoubleValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantDoubleValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantEnumArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantEnumArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantEnumValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantEnumValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantHandleArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantHandleArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantInt16ArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantInt16ArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantInt16ValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantInt16ValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantInt32ArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantInt32ArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantInt32ValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantInt32ValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantInt64ArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantInt64ArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantInt64ValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantInt64ValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantReferenceValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantReferenceValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantSByteArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantSByteArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantSByteValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantSByteValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantSingleArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantSingleArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantSingleValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantSingleValueHandle((int)value);
+            handle = new ConstantHandle((int)value);
             handle._Validate();
             return offset;
         } // Read
@@ -494,60 +305,6 @@ namespace Internal.Metadata.NativeFormat
             uint value;
             offset = reader.DecodeUnsigned(offset, out value);
             handle = new ConstantStringValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantUInt16ArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantUInt16ArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantUInt16ValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantUInt16ValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantUInt32ArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantUInt32ArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantUInt32ValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantUInt32ValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantUInt64ArrayHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantUInt64ArrayHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ConstantUInt64ValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantUInt64ValueHandle((int)value);
             handle._Validate();
             return offset;
         } // Read
@@ -665,15 +422,6 @@ namespace Internal.Metadata.NativeFormat
             uint value;
             offset = reader.DecodeUnsigned(offset, out value);
             handle = new ModifiedTypeHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out NamedArgumentHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new NamedArgumentHandle((int)value);
             handle._Validate();
             return offset;
         } // Read
@@ -831,9 +579,9 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out NamedArgumentHandleCollection values)
+        public static uint Read(this NativeReader reader, uint offset, out ConstantStringValueHandleCollection values)
         {
-            values = new NamedArgumentHandleCollection(reader, offset);
+            values = new ConstantStringValueHandleCollection(reader, offset);
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
             for (uint i = 0; i < count; ++i)

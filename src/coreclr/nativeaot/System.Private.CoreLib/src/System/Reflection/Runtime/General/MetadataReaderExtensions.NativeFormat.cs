@@ -114,25 +114,27 @@ namespace System.Reflection.Runtime.General
             return nameHandle.StringEquals(ConstructorInfo.ConstructorName, reader) || nameHandle.StringEquals(ConstructorInfo.TypeConstructorName, reader);
         }
 
-        public static object? ParseConstantValue(this Handle handle, MetadataReader reader)
+        public static object? ParseConstantValue(this ConstantHandle handle, MetadataReader reader)
         {
-            return handle.HandleType switch
+            Constant constant = handle.GetConstant(reader);
+            BlobReader blob = new BlobReader(constant.Blob.AsSpan());
+            return constant.TypeCode switch
             {
-                HandleType.ConstantBooleanValue => handle.ToConstantBooleanValueHandle(reader).GetConstantBooleanValue(reader).Value,
-                HandleType.ConstantCharValue => handle.ToConstantCharValueHandle(reader).GetConstantCharValue(reader).Value,
-                HandleType.ConstantByteValue => handle.ToConstantByteValueHandle(reader).GetConstantByteValue(reader).Value,
-                HandleType.ConstantSByteValue => handle.ToConstantSByteValueHandle(reader).GetConstantSByteValue(reader).Value,
-                HandleType.ConstantInt16Value => handle.ToConstantInt16ValueHandle(reader).GetConstantInt16Value(reader).Value,
-                HandleType.ConstantUInt16Value => handle.ToConstantUInt16ValueHandle(reader).GetConstantUInt16Value(reader).Value,
-                HandleType.ConstantInt32Value => handle.ToConstantInt32ValueHandle(reader).GetConstantInt32Value(reader).Value,
-                HandleType.ConstantUInt32Value => handle.ToConstantUInt32ValueHandle(reader).GetConstantUInt32Value(reader).Value,
-                HandleType.ConstantInt64Value => handle.ToConstantInt64ValueHandle(reader).GetConstantInt64Value(reader).Value,
-                HandleType.ConstantUInt64Value => handle.ToConstantUInt64ValueHandle(reader).GetConstantUInt64Value(reader).Value,
-                HandleType.ConstantSingleValue => handle.ToConstantSingleValueHandle(reader).GetConstantSingleValue(reader).Value,
-                HandleType.ConstantDoubleValue => handle.ToConstantDoubleValueHandle(reader).GetConstantDoubleValue(reader).Value,
-                HandleType.ConstantStringValue => handle.ToConstantStringValueHandle(reader).GetConstantStringValue(reader).Value,
-                HandleType.ConstantReferenceValue => null,
-                _ => throw new BadImageFormatException()
+                ConstantTypeCode.Boolean => blob.ReadBoolean(),
+                ConstantTypeCode.Char => blob.ReadChar(),
+                ConstantTypeCode.Byte => blob.ReadByte(),
+                ConstantTypeCode.SByte => blob.ReadSByte(),
+                ConstantTypeCode.Int16 => blob.ReadInt16(),
+                ConstantTypeCode.UInt16 => blob.ReadUInt16(),
+                ConstantTypeCode.Int32 => blob.ReadInt32(),
+                ConstantTypeCode.UInt32 => blob.ReadUInt32(),
+                ConstantTypeCode.Int64 => blob.ReadInt64(),
+                ConstantTypeCode.UInt64 => blob.ReadUInt64(),
+                ConstantTypeCode.Single => blob.ReadSingle(),
+                ConstantTypeCode.Double => blob.ReadDouble(),
+                ConstantTypeCode.String => blob.ReadStringHandle().GetString(reader),
+                ConstantTypeCode.NullReference => null,
+                _ => throw new UnreachableException()
             };
         }
 

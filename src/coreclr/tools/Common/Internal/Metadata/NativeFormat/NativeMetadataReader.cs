@@ -140,16 +140,10 @@ namespace Internal.Metadata.NativeFormat
         }
     }
 
-    /// <summary>
-    /// ConstantReferenceValue can only be used to encapsulate null reference values,
-    /// and therefore does not actually store the value.
-    /// </summary>
-    public readonly partial struct ConstantReferenceValue
+    public readonly partial struct ByteCollection
     {
-        /// Always returns null value.
-        public object Value
-        { get { return null; } }
-    } // ConstantReferenceValue
+        public ReadOnlySpan<byte> AsSpan() => _reader.ReadStringAsBytes(_offset);
+    }
 
     public readonly partial struct ConstantStringValueHandle
     {

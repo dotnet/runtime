@@ -564,6 +564,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     /// </summary>
     public partial class ConstantStringValue
     {
+        public override string ToString() => Value is null ? "null" : $"\"{Value}\"";
+
         public static explicit operator string(ConstantStringValue value)
         {
             if (value == null)
@@ -576,6 +578,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             return new ConstantStringValue() { Value = value };
         }
+    }
+
+    public partial class ConstantStringArray
+    {
+        public override string ToString() => "(String[]) {" + string.Join(", ", Value) + "}";
+    }
+
+    public partial class Constant
+    {
+        public override string ToString() => TypeCode.ToString();
     }
 
     public partial class ScopeDefinition
@@ -842,19 +854,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            string str = Constructor.ToString();
-            str += "(" + string.Join(", ", FixedArguments)
-                + string.Join(", ", NamedArguments) + ")";
-            str += "(ctor: " + Constructor.Handle.ToString();
-            return str;
-        }
-    }
-
-    public partial class NamedArgument
-    {
-        public override string ToString()
-        {
-            return Name + " = " + Value.ToString();
+            return Constructor.ToString();
         }
     }
 
@@ -999,33 +999,4 @@ namespace Internal.Metadata.NativeFormat.Writer
         }
     }
 
-    // Distinguishes positive and negative zeros for float and double values
-    public static class CustomComparer
-    {
-        public static bool Equals(float x, float y)
-        {
-            return BitConverter.SingleToInt32Bits(x) == BitConverter.SingleToInt32Bits(y);
-        }
-
-        public static bool Equals(double x, double y)
-        {
-            return BitConverter.DoubleToInt64Bits(x) == BitConverter.DoubleToInt64Bits(y);
-        }
-    }
-
-    public sealed class SingleComparer : IEqualityComparer<float>
-    {
-        public static readonly SingleComparer Instance = new SingleComparer();
-
-        public bool Equals(float x, float y) => CustomComparer.Equals(x, y);
-        public int GetHashCode(float obj) => obj.GetHashCode();
-    }
-
-    public sealed class DoubleComparer : IEqualityComparer<double>
-    {
-        public static readonly DoubleComparer Instance = new DoubleComparer();
-
-        public bool Equals(double x, double y) => CustomComparer.Equals(x, y);
-        public int GetHashCode(double obj) => obj.GetHashCode();
-    }
 }
