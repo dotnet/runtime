@@ -145,7 +145,8 @@ namespace Wasm.Build.Tests
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
         [InlineData(false)]
         [InlineData(true)]
-        public void PerformanceInstrumentationIsRejectedForBuild(bool readyToRun)
+        [TestCategory("no-workload")]
+        public void PerformanceInstrumentationWarnsForBuild(bool readyToRun)
         {
             ProjectInfo info = CopyTestAsset(
                 Configuration.Debug,
@@ -161,9 +162,11 @@ namespace Wasm.Build.Tests
             (string _, string output) = BlazorBuild(
                 info,
                 Configuration.Debug,
-                new BuildOptions(ExpectSuccess: false, AssertAppBundle: false));
+                new BuildOptions(AssertAppBundle: false,
+                    ExtraMSBuildArgs: "/warnaserror:false -p:UsingBrowserRuntimeWorkload=false"));
 
-            Assert.Contains("Only published applications are supported for CPU profiling", output);
+            Assert.Contains("WasmPerformanceInstrumentation during build provides incomplete sampling coverage", output);
+            Assert.Contains("Publish the application for complete instrumentation coverage.", output);
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]

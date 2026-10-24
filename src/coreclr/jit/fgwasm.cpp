@@ -3696,7 +3696,10 @@ PhaseStatus Compiler::fgWasmProfInstrument()
     FgWasm                  fgWasm(this);
     bool                    hasBlocksOnlyReachableViaEH = false;
     FlowGraphDfsTree* const dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
-    assert(!hasBlocksOnlyReachableViaEH);
+    if (hasBlocksOnlyReachableViaEH)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
     BitVecTraits traits = dfsTree->PostOrderTraits();
     BitVec       samplepointBlocks(BitVecOps::MakeEmpty(&traits));
 

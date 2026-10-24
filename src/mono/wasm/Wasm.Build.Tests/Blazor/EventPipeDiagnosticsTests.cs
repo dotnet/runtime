@@ -101,7 +101,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         using (var source = TraceLog.OpenOrConvert(ConvertTrace(info, "cpuprofile.nettrace")))
         {
             sampledMethodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName.StartsWith(
-                "BlazorBasicTestApp.Pages.Counter.CpuSamplingTarget(", StringComparison.Ordinal));
+                "BlazorBasicTestApp.Pages.Counter.CpuSamplingTarget(", StringComparison.Ordinal) &&
+                (!readyToRun || (stack.CodeAddress.Address & 0x80000000UL) != 0));
             if (!sampledMethodFound)
             {
                 foreach (var stack in source.CallStacks)
@@ -114,13 +115,16 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             if (readyToRun)
             {
                 reversePInvokeMethodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName.StartsWith(
-                    "BlazorBasicTestApp.CpuSamplingScenarios.ReversePInvokeTarget(", StringComparison.Ordinal));
+                    "BlazorBasicTestApp.CpuSamplingScenarios.ReversePInvokeTarget(", StringComparison.Ordinal) &&
+                    (stack.CodeAddress.Address & 0x80000000UL) != 0);
             }
         }
 
-        Assert.True(sampledMethodFound, "The cpuprofile.nettrace should contain stack frames for the 'Counter.CpuSamplingTarget' method");
+        Assert.True(sampledMethodFound, readyToRun
+            ? "The cpuprofile.nettrace should contain a Wasm virtual-IP stack frame for the R2R 'Counter.CpuSamplingTarget' method"
+            : "The cpuprofile.nettrace should contain stack frames for the 'Counter.CpuSamplingTarget' method");
         if (readyToRun)
-            Assert.True(reversePInvokeMethodFound, "The cpuprofile.nettrace should contain stack frames for the reverse P/Invoke entry samplepoint");
+            Assert.True(reversePInvokeMethodFound, "The cpuprofile.nettrace should contain a Wasm virtual-IP stack frame for the R2R reverse P/Invoke entry samplepoint");
         if (BuildTestBase.IsCoreClrRuntime && !readyToRun)
         {
             Assert.True(readyToRunMethodFound, "The cpuprofile.nettrace should contain rundown information for the ReadyToRun 'System.Buffer.Memmove' method");

@@ -54,8 +54,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
     </PropertyGroup>
-    <Error Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(_WasmCoreClrUnderPublish)' != 'true'"
-           Text="Only published applications are supported for CPU profiling with WasmPerformanceInstrumentation." />
+    <Warning Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(_WasmCoreClrUnderPublish)' != 'true'"
+             Text="WasmPerformanceInstrumentation during build provides incomplete sampling coverage because prebuilt framework ReadyToRun images are not instrumented. Publish the application for complete instrumentation coverage." />
   </Target>
 
   <!-- Fail comprehensibly instead of emitting PE images the runtime cannot load. The config checks
