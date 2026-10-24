@@ -99,6 +99,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Exp10M1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Exp2.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Exp2M1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ExpDoubleCore.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ExpM1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.FloatHelpers.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Floor.cs" />
