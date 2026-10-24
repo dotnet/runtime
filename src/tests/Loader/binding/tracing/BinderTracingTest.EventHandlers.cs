@@ -78,6 +78,43 @@ namespace BinderTracingTests
             }
         }
 
+        [BinderTest]
+        public static BindOperation AssemblyLoadContextResolving_ToStringReturnsNull()
+        {
+            return AssemblyLoadContextResolving_ToStringOverride(nameof(AssemblyLoadContextResolving_ToStringReturnsNull), throwFromToString: false);
+        }
+
+        [BinderTest]
+        public static BindOperation AssemblyLoadContextResolving_ToStringThrows()
+        {
+            return AssemblyLoadContextResolving_ToStringOverride(nameof(AssemblyLoadContextResolving_ToStringThrows), throwFromToString: true);
+        }
+
+        // The bind, the resolving handler's invocation and the handler's nested load all name the context.
+        private static BindOperation AssemblyLoadContextResolving_ToStringOverride(string name, bool throwFromToString)
+        {
+            var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
+            var alc = new ToStringOverrideALC(name, throwFromToString);
+            using (var handlers = new Handlers(HandlerReturn.RequestedAssembly, alc))
+            {
+                Assembly asm = alc.LoadFromAssemblyName(assemblyName);
+
+                Assert.Single(handlers.Invocations);
+                Assert.Single(handlers.Binds);
+                return new BindOperation()
+                {
+                    AssemblyName = assemblyName,
+                    AssemblyLoadContext = alc.BaseToString(),
+                    Success = true,
+                    ResultAssemblyName = asm.GetName(),
+                    ResultAssemblyPath = asm.Location,
+                    Cached = false,
+                    AssemblyLoadContextResolvingHandlers = handlers.Invocations,
+                    NestedBinds = handlers.Binds
+                };
+            }
+        }
+
         [BinderTest(additionalLoadsToTrack: new string[] { SubdirectoryAssemblyName + "Mismatch" })]
         public static BindOperation AssemblyLoadContextResolving_NameMismatch()
         {
@@ -396,7 +433,7 @@ namespace BinderTracingTests
                 {
                     AssemblyName = assemblyName,
                     HandlerName = $"{GetType().FullName}.{nameof(OnAssemblyLoadContextResolving)}",
-                    AssemblyLoadContext = context == AssemblyLoadContext.Default ? context.Name : context.ToString(),
+                    AssemblyLoadContext = ExpectedContextName(context),
                 };
                 if (asm != null)
                 {
@@ -431,6 +468,15 @@ namespace BinderTracingTests
                 return asm;
             }
 
+            // The name binder tracing gives the context. For a ToStringOverrideALC that is the base ToString(),
+            // since calling its override here would return null or throw.
+            private static string ExpectedContextName(AssemblyLoadContext context) => context switch
+            {
+                _ when context == AssemblyLoadContext.Default => context.Name,
+                ToStringOverrideALC overriding => overriding.BaseToString(),
+                _ => context.ToString(),
+            };
+
             private Assembly ResolveAssembly(AssemblyLoadContext context, AssemblyName assemblyName)
             {
                 if (handlerReturn == HandlerReturn.Null)
@@ -447,7 +493,7 @@ namespace BinderTracingTests
                 {
                     AssemblyName = asm.GetName(),
                     AssemblyPath = assemblyPath,
-                    AssemblyLoadContext = context == AssemblyLoadContext.Default ? context.Name : context.ToString(),
+                    AssemblyLoadContext = ExpectedContextName(context),
                     RequestingAssembly = CoreLibName,
                     RequestingAssemblyLoadContext = DefaultALC,
                     Success = true,

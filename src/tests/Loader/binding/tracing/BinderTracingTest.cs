@@ -61,6 +61,22 @@ namespace BinderTracingTests
             }
         }
 
+        // ToString() is virtual, so an override is user code that may return null or throw. Binder tracing must still
+        // name the context, as the base ToString() would.
+        public class ToStringOverrideALC : CustomALC
+        {
+            private readonly bool throwFromToString;
+
+            public ToStringOverrideALC(string name, bool throwFromToString) : base(name)
+            {
+                this.throwFromToString = throwFromToString;
+            }
+
+            public string BaseToString() => base.ToString();
+
+            public override string ToString() => throwFromToString ? throw new InvalidOperationException("ToString override throws") : null;
+        }
+
         private const string DefaultALC = "Default";
         private const string DependentAssemblyName = "AssemblyToLoad";
         private const string DependentAssemblyTypeName = "AssemblyToLoad.Program";
