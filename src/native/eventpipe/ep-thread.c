@@ -4,6 +4,7 @@
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
 #define EP_IMPL_THREAD_GETTER_SETTER
+#include "ep.h"
 #include "ep-buffer.h"
 #include "ep-buffer-manager.h"
 #include "ep-thread.h"
