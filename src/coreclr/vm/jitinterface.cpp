@@ -15597,6 +15597,15 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion() const
         return NativeCodeVersion();
     }
 
+#if defined(HAVE_GCCOVER) && defined(FEATURE_READYTORUN)
+    // R2R code is the default version, even when its entry point was registered
+    // by a different instantiation or by diagnostic enumeration before publication.
+    if (m_pJM == ExecutionManager::GetReadyToRunJitManager())
+    {
+        return NativeCodeVersion(pMD);
+    }
+#endif // HAVE_GCCOVER && FEATURE_READYTORUN
+
 #ifdef FEATURE_CODE_VERSIONING
     if (pMD->IsVersionable())
     {

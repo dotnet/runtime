@@ -65,6 +65,26 @@ void MethodDesc::Init()
     m_GCCoverCrst.Init(CrstGCCover);
 }
 
+#ifdef FEATURE_READYTORUN
+void MethodDesc::SetupGcCoverageForPrecompiledCode(PCODE pCode)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Image-backed code may not be patchable under Apple's write/execute restrictions.
+#ifndef HOST_APPLE
+    if (GCStress<cfg_instr_ngen>::IsEnabled())
+    {
+        CrstHolder gcCoverLock(&m_GCCoverCrst);
+        EECodeInfo codeInfo(pCode);
+        _ASSERTE(codeInfo.IsValid());
+
+        // Shared R2R code must use the same MethodDesc as the interrupt handler.
+        SetupGcCoverage(NativeCodeVersion(codeInfo.GetMethodDesc()), (BYTE*)pCode);
+    }
+#endif // !HOST_APPLE
+}
+#endif // FEATURE_READYTORUN
+
 #endif
 
 #define LOG_USING_R2R_CODE(method)  LOG((LF_ZAP, LL_INFO10000,                                                            \
