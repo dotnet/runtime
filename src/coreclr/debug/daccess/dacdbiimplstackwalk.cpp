@@ -647,13 +647,16 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
     FramePointer fp;
     switch (pIter->GetFrameState())
     {
-        // For managed methods, we have the full CONTEXT.  Additionally, we also have the caller CONTEXT
-        // on WIN64.
+        // Managed methods have the full CONTEXT. Caller-SP-based frame markers
+        // additionally require the caller CONTEXT.
         case StackFrameIterator::SFITER_FRAMELESS_METHOD:
         {
 #ifdef TARGET_X86
             fp = ComputeX86FramePointer(pRD->pCurrentContext);
 #else
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            pCF->EnsureCallerContextIsValid();
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
             fp = FramePointer::MakeFramePointer(GetRegdisplayStackMark(pRD));
 #endif
             break;
@@ -673,6 +676,9 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
             UINT_PTR PCTAddr = pHijackedContext->Esp - sizeof(DWORD);
             fp = FramePointer::MakeFramePointer(PCTAddr);
 #else
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            pCF->EnsureCallerContextIsValid();
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
             fp = FramePointer::MakeFramePointer(GetRegdisplayStackMark(pRD));
 #endif
             break;
