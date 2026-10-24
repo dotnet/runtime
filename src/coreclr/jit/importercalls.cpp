@@ -8507,11 +8507,10 @@ void Compiler::pickGDV(GenTreeCall*           call,
     // Prefer class guess as it is cheaper
     if (numberOfClasses > 0)
     {
-        const int maxNumberOfGuesses = getGDVMaxTypeChecks();
+        const int maxNumberOfGuesses = call->IsHelperCall() ? getCastMaxTypeChecks() : getGDVMaxTypeChecks();
         if (maxNumberOfGuesses == 0)
         {
-            // DOTNET_JitGuardedDevirtualizationMaxTypeChecks=0 means we don't want to do any guarded devirtualization
-            // Although, we expect users to disable GDV by setting DOTNET_JitEnableGuardedDevirtualization=0
+            // A zero limit disables profiled type-check candidates.
             return;
         }
 
