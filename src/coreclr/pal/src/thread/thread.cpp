@@ -1393,20 +1393,30 @@ CPalThread::ThreadEntry(
 
         int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
         cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
-        if (pCpuSet == nullptr)
+        cpu_set_t* pThreadCpuSet = CPU_ALLOC(cpusToAllocate);
+        if (pCpuSet == nullptr || pThreadCpuSet == nullptr)
         {
             ASSERT("CPU_ALLOC failed!\n");
+            CPU_FREE(pCpuSet);
+            CPU_FREE(pThreadCpuSet);
             palError = ERROR_OUTOFMEMORY;
             goto fail;
         }
 
         size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
         CPU_ZERO_S(cpuSetSize, pCpuSet);
+        CPU_ZERO_S(cpuSetSize, pThreadCpuSet);
 
         st = sched_getaffinity(gPID, cpuSetSize, pCpuSet);
         if (st == 0)
         {
-            st = sched_setaffinity(0, cpuSetSize, pCpuSet);
+            // Only set the mask if the thread doesn't already have it. Since Linux 6.2, the kernel keeps a mask
+            // set by sched_setaffinity across cpuset changes, so setting it unconditionally would keep the
+            // thread on the CPUs it started with when the process is later moved to a different cpuset (for
+            // example by a container runtime). Both sets are zeroed and have the same size, so memcmp is enough.
+            bool hasProcessMask = sched_getaffinity(0, cpuSetSize, pThreadCpuSet) == 0 &&
+                memcmp(pCpuSet, pThreadCpuSet, cpuSetSize) == 0;
+            st = hasProcessMask ? 0 : sched_setaffinity(0, cpuSetSize, pCpuSet);
             if (st != 0)
             {
                 if (errno == EPERM || errno == EACCES)
@@ -1422,6 +1432,7 @@ CPalThread::ThreadEntry(
                 {
                     ASSERT("sched_setaffinity failed!\n");
                     CPU_FREE(pCpuSet);
+                    CPU_FREE(pThreadCpuSet);
                     palError = ERROR_INTERNAL_ERROR;
                     goto fail;
                 }
@@ -1433,6 +1444,7 @@ CPalThread::ThreadEntry(
             ASSERT("sched_getaffinity failed!\n");
         }
         CPU_FREE(pCpuSet);
+        CPU_FREE(pThreadCpuSet);
     }
 #endif // HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
 
