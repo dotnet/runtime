@@ -218,6 +218,40 @@ namespace System
             => IsOpenBSD() && IsOSVersionAtLeast(major, minor, build, revision);
 
         /// <summary>
+        /// Indicates whether the current application is running on illumos.
+        /// </summary>
+        [NonVersionable]
+        public static bool IsIllumos() =>
+#if TARGET_ILLUMOS
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Check for the illumos version (returned by 'uname') with a >= version comparison. Used to guard APIs that were added in the given illumos release.
+        /// </summary>
+        public static bool IsIllumosVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
+            => IsIllumos() && IsOSVersionAtLeast(major, minor, build, revision);
+
+        /// <summary>
+        /// Indicates whether the current application is running on Solaris.
+        /// </summary>
+        [NonVersionable]
+        public static bool IsSolaris() =>
+#if TARGET_SOLARIS
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Check for the Solaris version (returned by 'uname') with a >= version comparison. Used to guard APIs that were added in the given Solaris release.
+        /// </summary>
+        public static bool IsSolarisVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
+            => IsSolaris() && IsOSVersionAtLeast(major, minor, build, revision);
+
+        /// <summary>
         /// Indicates whether the current application is running on Haiku.
         /// </summary>
         [NonVersionable]
