@@ -359,6 +359,14 @@ bool OptIfConversionDsc::IfConvertTryGetElseFromJtrueBlock(GenTreeLclVar* thenSt
     bool       hasEhSuccs       = m_startBlock->HasPotentialEHSuccs(m_compiler);
     Statement* last             = m_startBlock->lastStmt();
     Statement* stmt             = last;
+
+    // The SELECT replaces the JTRUE, and a guarded load makes it throw when the condition
+    // holds, so using the store as the Else would sink it past a potential exception.
+    if ((thenStore->Data() == m_guardedLoad) && hasEhSuccs)
+    {
+        return false;
+    }
+
     do
     {
         if (stmtSearchBudget-- <= 0)

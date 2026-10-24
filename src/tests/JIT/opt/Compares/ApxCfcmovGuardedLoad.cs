@@ -77,6 +77,28 @@ public unsafe class ApxCfcmovGuardedLoad
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int FifthOrMinusOne(int[] a) => a.Length > 5 ? a[5] : -1;
 
+    // The Else value is a store in the condition's block. The guarded load can throw
+    // into the handler, so that store must still be visible there. x starts non-zero so
+    // that "x = 7" is not the local's explicit init, which if-conversion would not move.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int ValueIfFlagInTry(bool flag, Node n)
+    {
+        int x = 3;
+        try
+        {
+            x = 7;
+            if (flag)
+            {
+                x = n.Value;
+            }
+        }
+        catch (NullReferenceException)
+        {
+            return x;
+        }
+        return x;
+    }
+
     // One method per condition, with a 32-bit and a 64-bit load.
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int ValueIfEqual(int k, int m, Node n, int d) => k == m ? n.Value : d;
@@ -182,6 +204,10 @@ public unsafe class ApxCfcmovGuardedLoad
         Assert.Equal(-3, ValueIfPositive(-3, null));
         Assert.Equal(42, ValueIfPositive(1, n));
         Assert.Throws<NullReferenceException>(() => ValueIfPositive(1, null));
+
+        Assert.Equal(7, ValueIfFlagInTry(false, null));
+        Assert.Equal(42, ValueIfFlagInTry(true, n));
+        Assert.Equal(7, ValueIfFlagInTry(true, null));
 
         int i = 11;
         long* l = stackalloc long[2];
