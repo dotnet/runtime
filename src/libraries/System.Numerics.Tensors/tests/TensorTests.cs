@@ -1249,7 +1249,14 @@ namespace System.Numerics.Tensors.Tests
 
             static void AssertBits(double expected, double actual)
             {
-                Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual));
+                if (double.IsNaN(expected))
+                {
+                    Assert.True(double.IsNaN(actual));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual));
+                }
             }
         }
 
