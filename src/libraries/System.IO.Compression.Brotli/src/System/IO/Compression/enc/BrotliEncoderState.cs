@@ -1014,12 +1014,25 @@ internal sealed class BrotliEncoderState
         {
             if (cmdDist <= maxDistance)
             {
-                while (bytes != 0 &&
-                    data[(int)(wrappedLastProcessedPos & mask)] == data[(int)((wrappedLastProcessedPos - cmdDist) & mask)])
+                while (bytes != 0)
                 {
-                    lastCommand.CopyLen++;
-                    bytes--;
-                    wrappedLastProcessedPos++;
+                    uint pos = wrappedLastProcessedPos & mask;
+                    uint previousPos = (uint)(wrappedLastProcessedPos - cmdDist) & mask;
+                    if (data[(int)pos] != data[(int)previousPos])
+                    {
+                        break;
+                    }
+                    // Split at either ring-buffer wrap so each comparison uses contiguous spans.
+                    uint limit = Math.Min(bytes, mask + 1 - Math.Max(pos, previousPos));
+                    uint matched = (uint)FindMatchLength.FindMatchLengthWithLimit(
+                        data.Slice((int)pos), data.Slice((int)previousPos), limit);
+                    lastCommand.CopyLen += matched;
+                    bytes -= matched;
+                    wrappedLastProcessedPos += matched;
+                    if (matched != limit)
+                    {
+                        break;
+                    }
                 }
             }
             // The C code also extends into the compound (custom) dictionary here when cmd_dist > max_distance;
