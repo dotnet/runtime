@@ -27,7 +27,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                 const int expectedReportCallsCount = 5;
                 int actualReportCallsCount = 0;
                 var worker = new BackgroundWorker() { WorkerReportsProgress = true };
-                var progressReportedEvent = new CountdownEvent(expectedReportCallsCount);
+                var progressBarrier = new Barrier(2, barrier => ++actualReportCallsCount);
                 var workerCompletedEvent = new ManualResetEventSlim(false);
 
                 worker.DoWork += (sender, e) =>
@@ -35,6 +35,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                     for (int i = 0; i < expectedReportCallsCount; i++)
                     {
                         worker.ReportProgress(i);
+                        progressBarrier.SignalAndWait();
                     }
 
                     e.Result = expectedResult;
@@ -53,15 +54,13 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                 };
                 worker.ProgressChanged += (sender, e) =>
                 {
-                    Interlocked.Increment(ref actualReportCallsCount);
-                    progressReportedEvent.Signal();
+                    progressBarrier.SignalAndWait();
                 };
 
                 worker.RunWorkerAsync();
 
                 // wait for signal from WhenRunWorkerCompleted
                 Assert.True(workerCompletedEvent.Wait(TimeoutLong));
-                Assert.True(progressReportedEvent.Wait(TimeoutLong));
                 Assert.False(worker.IsBusy);
                 Assert.Equal(expectedReportCallsCount, actualReportCallsCount);
             }
