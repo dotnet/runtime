@@ -922,6 +922,10 @@ namespace System.Reflection.Emit
                 return GetTokenFromTypeSpec(sig, length);
             }
 
+            // A modified type has no token of its own; as in a type signature, it takes the unmodified type's.
+            if (type is ModifiedType or SignatureModifiedType)
+                type = type.UnderlyingSystemType;
+
             Module refedModule = type.Module;
 
             if (refedModule.Equals(this))
