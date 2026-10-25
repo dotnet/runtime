@@ -142,6 +142,43 @@ public interface TypeType_GenericMethod
     T Echo<T>(T messages);
 }
 
+// Demonstrates proxies can be made for methods with pointer parameters and returns.
+public unsafe interface TestType_IPointerService
+{
+    int* Echo(int* p);
+    void Ref(ref int* p);
+    void Out(out int* p);
+    T* EchoGeneric<T>(T* p) where T : unmanaged;
+    void* EchoVoid(void* p);
+    int** EchoPointerPointer(int** p);
+    void In(in int* p);
+}
+
+public unsafe class TestType_PointerService : TestType_IPointerService
+{
+    public int* Echo(int* p) => p + 1;
+    public void Ref(ref int* p) => p++;
+    public void Out(out int* p) => p = null;
+    public T* EchoGeneric<T>(T* p) where T : unmanaged => p + 1;
+    public void* EchoVoid(void* p) => (byte*)p + 1;
+    public int** EchoPointerPointer(int** p) => p + 1;
+    public void In(in int* p) { }
+}
+
+// Demonstrates proxies can be made for methods with function pointer parameters and returns.
+public unsafe interface TestType_IFunctionPointerService
+{
+    delegate*<int, int> Echo(delegate*<int, int> f);
+    void Ref(ref delegate*<int, int> f);
+}
+
+public unsafe class TestType_FunctionPointerService : TestType_IFunctionPointerService
+{
+    public static int Twice(int x) => 2 * x;
+    public delegate*<int, int> Echo(delegate*<int, int> f) => f;
+    public void Ref(ref delegate*<int, int> f) => f = &Twice;
+}
+
 // Negative -- demonstrates trying to use a class for the interface type for the proxy
 public class TestType_ConcreteClass
 {

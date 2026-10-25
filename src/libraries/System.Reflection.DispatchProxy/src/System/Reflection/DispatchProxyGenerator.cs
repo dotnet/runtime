@@ -51,6 +51,8 @@ namespace System.Reflection
         private static readonly MethodInfo s_dispatchProxyInvokeMethod = typeof(DispatchProxy).GetMethod("Invoke", BindingFlags.NonPublic | BindingFlags.Instance)!;
         private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
         private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
+        private static readonly MethodInfo s_pointerBoxMethod = typeof(Pointer).GetMethod(nameof(Pointer.Box))!;
+        private static readonly MethodInfo s_pointerUnboxMethod = typeof(Pointer).GetMethod(nameof(Pointer.Unbox))!;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "MakeGenericMethod is safe here because the user code invoking the generic method will reference " +
@@ -648,6 +650,18 @@ namespace System.Reflection
                     Convert(il, argType, target, isAddress);
                     return;
                 }
+                if (source.IsPointer || source.IsFunctionPointer)
+                {
+                    Debug.Assert(target == typeof(object));
+                    BoxPointer(il, source);
+                    return;
+                }
+                if (target.IsPointer || target.IsFunctionPointer)
+                {
+                    Debug.Assert(source == typeof(object));
+                    UnboxPointer(il, target);
+                    return;
+                }
                 if (target.IsValueType)
                 {
                     if (source.IsValueType)
@@ -687,8 +701,59 @@ namespace System.Reflection
                 }
             }
 
+            // Boxes a pointer the way MethodInfo.Invoke returns one: a pointer as a System.Reflection.Pointer,
+            // a function pointer as an IntPtr.
+            private static void BoxPointer(ILGenerator il, Type type)
+            {
+                if (type.IsFunctionPointer)
+                {
+                    il.Emit(OpCodes.Box, typeof(IntPtr));
+                }
+                else
+                {
+                    il.Emit(OpCodes.Ldtoken, type);
+                    il.Emit(OpCodes.Call, s_getTypeFromHandleMethod);
+                    il.Emit(OpCodes.Call, s_pointerBoxMethod);
+                }
+            }
+
+            // Unboxes a pointer from what MethodInfo.Invoke returns for one (a System.Reflection.Pointer for a pointer,
+            // an IntPtr for a function pointer), from an IntPtr, or from null as a null pointer.
+            // Anything else throws InvalidCastException.
+            private static void UnboxPointer(ILGenerator il, Type type)
+            {
+                Label done = il.DefineLabel();
+                if (type.IsPointer)
+                {
+                    Label notPointer = il.DefineLabel();
+                    il.Emit(OpCodes.Dup);
+                    il.Emit(OpCodes.Isinst, typeof(Pointer));
+                    il.Emit(OpCodes.Brfalse_S, notPointer);
+                    il.Emit(OpCodes.Call, s_pointerUnboxMethod);
+                    il.Emit(OpCodes.Br_S, done);
+                    il.MarkLabel(notPointer);
+                }
+
+                Label notNull = il.DefineLabel();
+                il.Emit(OpCodes.Dup);
+                il.Emit(OpCodes.Brtrue_S, notNull);
+                il.Emit(OpCodes.Pop);
+                il.Emit(OpCodes.Ldc_I4_0);
+                il.Emit(OpCodes.Conv_U);
+                il.Emit(OpCodes.Br_S, done);
+                il.MarkLabel(notNull);
+                il.Emit(OpCodes.Unbox_Any, typeof(IntPtr));
+                il.MarkLabel(done);
+            }
+
             private static void Ldind(ILGenerator il, Type type)
             {
+                if (type.IsPointer || type.IsFunctionPointer)
+                {
+                    il.Emit(OpCodes.Ldind_I);
+                    return;
+                }
+
                 OpCode opCode = s_ldindOpCodes[GetTypeCode(type)];
                 if (!opCode.Equals(OpCodes.Nop))
                 {
@@ -702,6 +767,12 @@ namespace System.Reflection
 
             private static void Stind(ILGenerator il, Type type)
             {
+                if (type.IsPointer || type.IsFunctionPointer)
+                {
+                    il.Emit(OpCodes.Stind_I);
+                    return;
+                }
+
                 OpCode opCode = s_stindOpCodes[GetTypeCode(type)];
                 if (!opCode.Equals(OpCodes.Nop))
                 {
