@@ -257,7 +257,7 @@ internal sealed partial class BrotliDecoderState
             // This is a hottest part of the decode, so (as C does for the trivial literal context) we calculate the
             // number of steps where all checks evaluate to false (ringbuffer size/block size/input size) and run a
             // simple loop for them; the full version handles the remainder.
-            int numSteps = i - 1;
+            int numSteps = i;
             if (numSteps > 0 && ((uint)numSteps > blockLength0))
             {
                 // Safe cast, since block_length < steps
@@ -271,19 +271,11 @@ internal sealed partial class BrotliDecoderState
             {
                 numSteps = 0;
             }
-            // Calculate range where CheckInputAmount is always true. Start with the number of bytes we can read,
-            // convert to bits, at most 15 bits per symbol.
+            // Conservatively budget two bytes per symbol (codes use at most 15 bits), plus overread slack.
             {
                 const int MaximalOverread = 4;
-                long newLim = (long)(guardIn - nextIn) * 8 / 15;
-                if ((newLim - MaximalOverread) <= numSteps)
-                {
-                    numSteps = (int)(newLim - MaximalOverread);
-                }
-                if (numSteps < 0)
-                {
-                    numSteps = 0;
-                }
+                int inputLimit = Math.Max(0, ((guardIn - nextIn) >> 1) - MaximalOverread);
+                numSteps = Math.Min(numSteps, inputLimit);
             }
 
             if (_trivialLiteralContext != TLiteralMode.TrivialContext)
@@ -314,7 +306,7 @@ internal sealed partial class BrotliDecoderState
                 blockLength0 -= (uint)numSteps;
                 i -= numSteps;
                 // Full version for the remainder.
-                do
+                while (i != 0)
                 {
                     if (nextIn >= guardIn)
                     {
@@ -338,8 +330,8 @@ internal sealed partial class BrotliDecoderState
                         --i;
                         goto saveStateAndReturn;
                     }
+                    --i;
                 }
-                while (--i != 0);
             }
             else
             {
@@ -361,7 +353,7 @@ internal sealed partial class BrotliDecoderState
                 blockLength0 -= (uint)numSteps;
                 i -= numSteps;
                 // Full version for the remainder.
-                do
+                while (i != 0)
                 {
                     if (nextIn >= guardIn)
                     {
@@ -388,8 +380,8 @@ internal sealed partial class BrotliDecoderState
                         --i;
                         goto saveStateAndReturn;
                     }
+                    --i;
                 }
-                while (--i != 0);
             }
             _blockLength[0] = blockLength0;
         }

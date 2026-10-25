@@ -9,6 +9,8 @@ The encoder and decoder are a fully managed, safe C# port of the Brotli referenc
 
 Each ported file names its C counterpart in the header, and functions keep the names of the reference implementation (minus the `Brotli` prefix) to make it easy to port upstream changes. For a given quality and window size the encoder produces byte-identical output to the reference implementation, which is a useful property to preserve when porting changes. Not supported: large-window Brotli, custom/shared dictionaries.
 
+Codec buffer cleanup avoids `try`/`finally`: rentals are returned on normal completion, while arrays abandoned after unexpected exceptions are reclaimed by the GC once unreachable.
+
 ## Contribution Bar
 - [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
 - [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)

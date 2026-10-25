@@ -744,58 +744,52 @@ internal static class BackwardReferencesHq
         ZopfliCostModel model = hasher.ZopfliCostModel ??= new ZopfliCostModel();
         Span<BackwardMatch> matches = model.Matches;
         ref HashToBinaryTree h10 = ref hasher.H10;
-        try
+        nodes[0].Length = 0;
+        nodes[0].Cost = 0;
+        model.Init(parameters.Dist, numBytes);
+        ZopfliCostModelSetFromLiteralCosts(model, position, ringbuffer, ringbufferMask);
+        queue.Idx = 0;
+        for (nuint i = 0; i + HashToBinaryTree.HashTypeLength - 1 < numBytes; i++)
         {
-            nodes[0].Length = 0;
-            nodes[0].Cost = 0;
-            model.Init(parameters.Dist, numBytes);
-            ZopfliCostModelSetFromLiteralCosts(model, position, ringbuffer, ringbufferMask);
-            queue.Idx = 0;
-            for (nuint i = 0; i + HashToBinaryTree.HashTypeLength - 1 < numBytes; i++)
+            nuint pos = position + i;
+            nuint maxDistance = Math.Min(pos, maxBackwardLimit);
+            nuint dictionaryStart = Math.Min(pos + streamOffset, maxBackwardLimit);
+            nuint numMatches = h10.FindAllMatches(ringbuffer, ringbufferMask, pos, numBytes - i, maxDistance,
+                dictionaryStart + Gap, parameters, matches.Slice(LzMatchesOffset));
+            if (numMatches > 0 &&
+                matches[(int)numMatches - 1].Length > maxZopfliLen)
             {
-                nuint pos = position + i;
-                nuint maxDistance = Math.Min(pos, maxBackwardLimit);
-                nuint dictionaryStart = Math.Min(pos + streamOffset, maxBackwardLimit);
-                nuint numMatches = h10.FindAllMatches(ringbuffer, ringbufferMask, pos, numBytes - i, maxDistance,
-                    dictionaryStart + Gap, parameters, matches.Slice(LzMatchesOffset));
-                if (numMatches > 0 &&
-                    matches[(int)numMatches - 1].Length > maxZopfliLen)
+                matches[0] = matches[(int)numMatches - 1];
+                numMatches = 1;
+            }
+            nuint skip = UpdateNodes(numBytes, position, i, ringbuffer, ringbufferMask, parameters, maxBackwardLimit,
+                distCache, numMatches, matches, model, ref queue, nodes);
+            if (skip < Quality.LongCopyQuickStep)
+            {
+                skip = 0;
+            }
+            if (numMatches == 1 && matches[0].Length > maxZopfliLen)
+            {
+                skip = Math.Max(matches[0].Length, skip);
+            }
+            if (skip > 1)
+            {
+                // Add the tail of the copy to the hasher.
+                h10.StoreRange(ringbuffer, ringbufferMask, pos + 1, Math.Min(pos + skip, storeEnd));
+                skip--;
+                while (skip != 0)
                 {
-                    matches[0] = matches[(int)numMatches - 1];
-                    numMatches = 1;
-                }
-                nuint skip = UpdateNodes(numBytes, position, i, ringbuffer, ringbufferMask, parameters, maxBackwardLimit,
-                    distCache, numMatches, matches, model, ref queue, nodes);
-                if (skip < Quality.LongCopyQuickStep)
-                {
-                    skip = 0;
-                }
-                if (numMatches == 1 && matches[0].Length > maxZopfliLen)
-                {
-                    skip = Math.Max(matches[0].Length, skip);
-                }
-                if (skip > 1)
-                {
-                    // Add the tail of the copy to the hasher.
-                    h10.StoreRange(ringbuffer, ringbufferMask, pos + 1, Math.Min(pos + skip, storeEnd));
-                    skip--;
-                    while (skip != 0)
+                    i++;
+                    if (i + HashToBinaryTree.HashTypeLength - 1 >= numBytes)
                     {
-                        i++;
-                        if (i + HashToBinaryTree.HashTypeLength - 1 >= numBytes)
-                        {
-                            break;
-                        }
-                        EvaluateNode(position + streamOffset, i, maxBackwardLimit, Gap, distCache, model, ref queue, nodes);
-                        skip--;
+                        break;
                     }
+                    EvaluateNode(position + streamOffset, i, maxBackwardLimit, Gap, distCache, model, ref queue, nodes);
+                    skip--;
                 }
             }
         }
-        finally
-        {
-            model.Cleanup();
-        }
+        model.Cleanup();
         return ComputeShortestPathFromNodes(numBytes, nodes);
     }
 
@@ -813,18 +807,12 @@ internal static class BackwardReferencesHq
         // The literal context is only used by contextual dictionaries, which are not supported.
         _ = literalContextLut;
         ZopfliNode[] nodesArray = Hash.RentArray<ZopfliNode>(numBytes + 1);
-        try
-        {
-            Span<ZopfliNode> nodes = nodesArray.AsSpan(0, (int)(numBytes + 1));
-            InitZopfliNodes(nodes);
-            numCommands += ZopfliComputeShortestPath(numBytes, position, ringbuffer, ringbufferMask, parameters, distCache,
-                hasher, nodes);
-            ZopfliCreateCommands(numBytes, position, nodes, distCache, ref lastInsertLen, parameters, commands, ref numLiterals);
-        }
-        finally
-        {
-            Hash.ReturnArray(nodesArray);
-        }
+        Span<ZopfliNode> nodes = nodesArray.AsSpan(0, (int)(numBytes + 1));
+        InitZopfliNodes(nodes);
+        numCommands += ZopfliComputeShortestPath(numBytes, position, ringbuffer, ringbufferMask, parameters, distCache,
+            hasher, nodes);
+        ZopfliCreateCommands(numBytes, position, nodes, distCache, ref lastInsertLen, parameters, commands, ref numLiterals);
+        Hash.ReturnArray(nodesArray);
     }
 
     /// <summary>BrotliCreateHqZopfliBackwardReferences (quality 11).</summary>
@@ -855,79 +843,73 @@ internal static class BackwardReferencesHq
         const nuint ShadowMatches = 0;
         ref HashToBinaryTree h10 = ref hasher.H10;
         Span<int> origDistCache = stackalloc int[4];
-        try
+        for (nuint i = 0; i + HashToBinaryTree.HashTypeLength - 1 < numBytes; ++i)
         {
-            for (nuint i = 0; i + HashToBinaryTree.HashTypeLength - 1 < numBytes; ++i)
+            nuint pos = position + i;
+            nuint maxDistance = Math.Min(pos, maxBackwardLimit);
+            nuint dictionaryStart = Math.Min(pos + streamOffset, maxBackwardLimit);
+            nuint maxLength = numBytes - i;
+            // Ensure that we have enough free slots.
+            EnsureCapacity(ref matches, ref matchesSize, curMatchPos + Hash.MaxNumMatchesH10 + ShadowMatches);
+            nuint numFoundMatches = h10.FindAllMatches(ringbuffer, ringbufferMask, pos, maxLength, maxDistance,
+                dictionaryStart + Gap, parameters, matches.AsSpan((int)(curMatchPos + ShadowMatches)));
+            nuint curMatchEnd = curMatchPos + numFoundMatches;
+            for (nuint j = curMatchPos; j + 1 < curMatchEnd; ++j)
             {
-                nuint pos = position + i;
-                nuint maxDistance = Math.Min(pos, maxBackwardLimit);
-                nuint dictionaryStart = Math.Min(pos + streamOffset, maxBackwardLimit);
-                nuint maxLength = numBytes - i;
-                // Ensure that we have enough free slots.
-                EnsureCapacity(ref matches, ref matchesSize, curMatchPos + Hash.MaxNumMatchesH10 + ShadowMatches);
-                nuint numFoundMatches = h10.FindAllMatches(ringbuffer, ringbufferMask, pos, maxLength, maxDistance,
-                    dictionaryStart + Gap, parameters, matches.AsSpan((int)(curMatchPos + ShadowMatches)));
-                nuint curMatchEnd = curMatchPos + numFoundMatches;
-                for (nuint j = curMatchPos; j + 1 < curMatchEnd; ++j)
-                {
-                    Debug.Assert(matches[(int)j].Length <= matches[(int)j + 1].Length);
-                }
-                numMatches[(int)i] = (uint)numFoundMatches;
-                if (numFoundMatches > 0)
-                {
-                    nuint matchLen = matches[(int)curMatchEnd - 1].Length;
-                    if (matchLen > Quality.MaxZopfliLenQuality11)
-                    {
-                        nuint skip = matchLen - 1;
-                        matches[(int)curMatchPos++] = matches[(int)curMatchEnd - 1];
-                        numMatches[(int)i] = 1;
-                        // Add the tail of the copy to the hasher.
-                        h10.StoreRange(ringbuffer, ringbufferMask, pos + 1, Math.Min(pos + matchLen, storeEnd));
-                        numMatches.AsSpan((int)i + 1, (int)skip).Clear();
-                        i += skip;
-                    }
-                    else
-                    {
-                        curMatchPos = curMatchEnd;
-                    }
-                }
+                Debug.Assert(matches[(int)j].Length <= matches[(int)j + 1].Length);
             }
-
-            nuint origNumLiterals = numLiterals;
-            nuint origLastInsertLen = lastInsertLen;
-            distCache.Slice(0, 4).CopyTo(origDistCache);
-            nuint origNumCommands = numCommands;
-            nodesArray = Hash.RentArray<ZopfliNode>(numBytes + 1);
-            Span<ZopfliNode> nodes = nodesArray.AsSpan(0, (int)(numBytes + 1));
-            model.Init(parameters.Dist, numBytes);
-            for (int i = 0; i < 2; i++)
+            numMatches[(int)i] = (uint)numFoundMatches;
+            if (numFoundMatches > 0)
             {
-                InitZopfliNodes(nodes);
-                if (i == 0)
+                nuint matchLen = matches[(int)curMatchEnd - 1].Length;
+                if (matchLen > Quality.MaxZopfliLenQuality11)
                 {
-                    ZopfliCostModelSetFromLiteralCosts(model, position, ringbuffer, ringbufferMask);
+                    nuint skip = matchLen - 1;
+                    matches[(int)curMatchPos++] = matches[(int)curMatchEnd - 1];
+                    numMatches[(int)i] = 1;
+                    // Add the tail of the copy to the hasher.
+                    h10.StoreRange(ringbuffer, ringbufferMask, pos + 1, Math.Min(pos + matchLen, storeEnd));
+                    numMatches.AsSpan((int)i + 1, (int)skip).Clear();
+                    i += skip;
                 }
                 else
                 {
-                    ZopfliCostModelSetFromCommands(model, position, ringbuffer, ringbufferMask, commands,
-                        numCommands - origNumCommands, origLastInsertLen);
+                    curMatchPos = curMatchEnd;
                 }
-                numCommands = origNumCommands;
-                numLiterals = origNumLiterals;
-                lastInsertLen = origLastInsertLen;
-                origDistCache.CopyTo(distCache);
-                numCommands += ZopfliIterate(numBytes, position, ringbuffer, ringbufferMask, parameters, Gap, distCache,
-                    model, numMatches, matches, nodes);
-                ZopfliCreateCommands(numBytes, position, nodes, distCache, ref lastInsertLen, parameters, commands, ref numLiterals);
             }
         }
-        finally
+
+        nuint origNumLiterals = numLiterals;
+        nuint origLastInsertLen = lastInsertLen;
+        distCache.Slice(0, 4).CopyTo(origDistCache);
+        nuint origNumCommands = numCommands;
+        nodesArray = Hash.RentArray<ZopfliNode>(numBytes + 1);
+        Span<ZopfliNode> nodes = nodesArray.AsSpan(0, (int)(numBytes + 1));
+        model.Init(parameters.Dist, numBytes);
+        for (int i = 0; i < 2; i++)
         {
-            model.Cleanup();
-            Hash.ReturnArray(ref nodesArray);
-            Hash.ReturnArray(matches);
-            Hash.ReturnArray(numMatches);
+            InitZopfliNodes(nodes);
+            if (i == 0)
+            {
+                ZopfliCostModelSetFromLiteralCosts(model, position, ringbuffer, ringbufferMask);
+            }
+            else
+            {
+                ZopfliCostModelSetFromCommands(model, position, ringbuffer, ringbufferMask, commands,
+                    numCommands - origNumCommands, origLastInsertLen);
+            }
+            numCommands = origNumCommands;
+            numLiterals = origNumLiterals;
+            lastInsertLen = origLastInsertLen;
+            origDistCache.CopyTo(distCache);
+            numCommands += ZopfliIterate(numBytes, position, ringbuffer, ringbufferMask, parameters, Gap, distCache,
+                model, numMatches, matches, nodes);
+            ZopfliCreateCommands(numBytes, position, nodes, distCache, ref lastInsertLen, parameters, commands, ref numLiterals);
         }
+        model.Cleanup();
+        Hash.ReturnArray(ref nodesArray);
+        Hash.ReturnArray(matches);
+        Hash.ReturnArray(numMatches);
     }
 
     /// <summary>BROTLI_ENSURE_CAPACITY: grows the array (with the same growth policy as C) to at least <paramref name="required"/> elements.</summary>

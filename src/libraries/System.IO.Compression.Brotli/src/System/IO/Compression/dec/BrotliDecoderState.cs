@@ -523,16 +523,10 @@ internal sealed partial class BrotliDecoderState
     public static bool Decompress(ReadOnlySpan<byte> input, Span<byte> output, out int decodedSize)
     {
         var s = new BrotliDecoderState();
-        try
-        {
-            BrotliDecoderResult result = s.DecompressStream(input, output, out _, out _);
-            decodedSize = (int)s._partialPosOut;
-            return result == BrotliDecoderResult.Success;
-        }
-        finally
-        {
-            s.Dispose();
-        }
+        BrotliDecoderResult result = s.DecompressStream(input, output, out _, out _);
+        decodedSize = (int)s._partialPosOut;
+        s.Dispose();
+        return result == BrotliDecoderResult.Success;
     }
 
     private void MetablockBegin()
