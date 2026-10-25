@@ -94,7 +94,7 @@ namespace System.Text.Json
                     }
                     else
                     {
-                        ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                        ThrowHelper.ThrowJsonException_MetadataUnexpectedProperty(propertyName, ref state);
                     }
                 }
             }

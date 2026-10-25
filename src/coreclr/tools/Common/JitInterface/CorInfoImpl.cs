@@ -470,6 +470,32 @@ namespace Internal.JitInterface
         partial void PublishWasmMethodVirtualIPFixups();
         partial void ClearWasmMethodVirtualIPFixups();
 
+        private static FuncletKind[] GetWasmFuncletKinds(CORINFO_EH_CLAUSE[] clauses)
+        {
+            ArrayBuilder<FuncletKind> funcletKinds = new(clauses.Length);
+            foreach (CORINFO_EH_CLAUSE clause in clauses)
+            {
+                if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FINALLY) != 0)
+                {
+                    funcletKinds.Add(FuncletKind.Finally);
+                }
+                else if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FAULT) != 0)
+                {
+                    funcletKinds.Add(FuncletKind.Fault);
+                }
+                else
+                {
+                    if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER) != 0)
+                    {
+                        funcletKinds.Add(FuncletKind.Filter);
+                    }
+                    funcletKinds.Add(FuncletKind.CatchOrFilterHandler);
+                }
+            }
+
+            return funcletKinds.ToArray();
+        }
+
         private void PublishCode()
         {
             var relocs = _codeRelocs.ToArray();
@@ -527,6 +553,10 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeDebugEHClauseInfos(debugEHClauseInfos);
             _methodCodeNode.InitializeGCInfo(_gcInfo);
             _methodCodeNode.InitializeEHInfo(ehInfo);
+            if (_compilation.NodeFactory.Target.IsWasm && _ehClauses is not null)
+            {
+                _methodCodeNode.InitializeFuncletKinds(GetWasmFuncletKinds(_ehClauses));
+            }
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
@@ -1426,6 +1456,14 @@ namespace Internal.JitInterface
         private void reportTailCallDecision(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
 #pragma warning restore CA1822 // Mark members as static
         {
+#if READYTORUN
+            // R2R/interpreter transitions do not preserve tail calls, and explicit tail calls that cannot be
+            // fast are demoted to regular calls. Leave methods with explicit tail calls to the interpreter.
+            if (fIsTailPrefix && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
+            {
+                throw new RequiresRuntimeJitException(nameof(reportTailCallDecision));
+            }
+#endif
         }
 
         private void getEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, ref CORINFO_EH_CLAUSE clause)
@@ -3141,8 +3179,8 @@ namespace Internal.JitInterface
             // In R2R it is a breaking change for a previously positive
             // cast to become negative, but not for a previously negative
             // cast to become positive. So in R2R a negative result is
-            // always reported back as May.
-            if (result == TypeCompareState.MustNot)
+            // reported back as May, unless it can't change across versions.
+            if (result == TypeCompareState.MustNot && !IsNegativeCastResultVersionResilient(fromType, toType))
             {
                 result = TypeCompareState.May;
             }
@@ -4940,6 +4978,10 @@ namespace Internal.JitInterface
             if (this.MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
+                if (_methodCodeNode.IsJitHelper)
+                {
+                    flags.Set(CorJitFlag.CORJIT_FLAG_WASM_MANAGED_HELPER);
+                }
             }
 #endif
 

@@ -64,7 +64,7 @@ extends:
           ROOTFS_DIR: /crossrootfs/x86
 
       linux_x64_dev_innerloop:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04@sha256:a373309c2b8ca857d2c53dfd65f81f8be876b3a466109a56933024088b5b2d6b
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-amd64@sha256:9652406444a2d3527125566f0787ba0839efca9d009de374a3efc22570f19501
 
       linux_musl_x64_dev_innerloop:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-amd64@sha256:d55965ff32b3a3396dd215e9e2d907791229fe26fd1298a2a269d2e88b621d68

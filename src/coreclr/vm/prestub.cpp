@@ -560,8 +560,8 @@ PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier
     _ASSERTE(pWasTier0 != NULL);
     _ASSERTE(!*pWasTier0);
 
-    MulticoreJitCodeInfo codeInfo;
 #ifdef FEATURE_MULTICOREJIT
+    MulticoreJitCodeInfo codeInfo;
     // Quick check before calling expensive out of line function on this method's domain has code JITted by background thread
     MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
     if (mcJitManager.GetMulticoreJitCodeStorage().GetRemainingMethodCount() > 0)
@@ -584,9 +584,10 @@ PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier
         #endif
         }
     }
-#endif // FEATURE_MULTICOREJIT
-
     return codeInfo.GetEntryPoint();
+#else
+    return (PCODE)NULL;
+#endif // FEATURE_MULTICOREJIT
 }
 
 // ********************************************************************
@@ -2213,8 +2214,15 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
 {
     int8_t* args = (int8_t*)(block + 1);
     MethodDesc* pMethod = PortableEntryPoint::GetMethodDesc(portableEntrypoint);
+    // The method to run; differs from pMethod when a MethodImpl in the same type redirects pMethod's slot.
+    MethodDesc* pTargetMethod = pMethod;
     InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
-    if (targetIp == NULL)
+    if (targetIp != NULL)
+    {
+        // PrepareInterpreterCode may have stored the MethodImpl target's code on the declaration; run as that method.
+        pTargetMethod = targetIp->Method->methodHnd;
+    }
+    else
     {
         MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThread());
 
@@ -2232,15 +2240,20 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
 
             {
                 GCX_PREEMP_REGION_BEGIN();
-                (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
-                targetIp = pMethod->GetInterpreterCode();
+                // Match the interpreter's PrepareInterpreterCode: run the method that pMethod's slot resolves to.
+                if (pMethod->IsVtableSlot())
+                {
+                    pTargetMethod = MethodTable::MapMethodDeclToMethodImpl(pMethod);
+                }
+                (void)pTargetMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+                targetIp = pTargetMethod->GetInterpreterCode();
                 GCX_PREEMP_REGION_END();
             }
 
             finishedPrestubPortion = true;
             if (targetIp == NULL)
             {
-                _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
+                _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(pTargetMethod->GetPortableEntryPoint()));
                 // Keep the transition and argument roots, but do not report an additional
                 // managed activation that would be absent on subsequent calls.
                 pPFrame->MarkPrestubComplete();
@@ -2249,12 +2262,12 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
 #ifdef TARGET_WASM
                 // Gate on IsAsyncMethod to match InvokeManagedMethod/InvokeCalliStub; don't preload
                 // the global, InvokeCalliStub publishes the callee's continuation into continuationRet.
-                if (pMethod->IsAsyncMethod())
+                if (pTargetMethod->IsAsyncMethod())
                 {
                     pContinuationRet = &continuationRet;
                 }
 #endif // TARGET_WASM
-                InvokeManagedMethod(pMethod, args, retBuff, (PCODE)targetIp, pContinuationRet);
+                InvokeManagedMethod(pTargetMethod, args, retBuff, (PCODE)targetIp, pContinuationRet);
 #ifdef TARGET_WASM
                 if (pContinuationRet != nullptr)
                 {
@@ -2287,7 +2300,7 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             return; // We found R2R code during the Prestub, so there's no interpreter code to execute, and the R2R code has already been invoked, so we're done.
     }
 
-    _ASSERTE((PCODE)targetIp == (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint));
+    _ASSERTE((PCODE)targetIp == (PCODE)PortableEntryPoint::GetInterpreterData(pTargetMethod->GetPortableEntryPoint()));
 
     // Copy arguments to the stack
     if (argsSize > 0)
@@ -3209,12 +3222,15 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             // Portable entrypoints are stable, so prepare the method before patching the import cell.
             // This publishes an existing R2R body instead of leaving the cell on an interpreter thunk.
-            if (pMD->ShouldCallPrestub())
+            // Like the non-portable path below, call through pMD's slot: a MethodImpl in the same type can
+            // redirect it to another method, so prepare the method that owns the slot's entry point.
+            PCODE pEntryPoint = pMD->GetMethodEntryPoint();
+            MethodDesc* pTargetMD = PortableEntryPoint::GetMethodDesc(pEntryPoint);
+            if (pTargetMD->ShouldCallPrestub())
             {
-                (void)pMD->DoPrestub(NULL);
+                (void)pTargetMD->DoPrestub(NULL);
             }
 
-            PCODE pEntryPoint = pMD->GetMethodEntryPoint();
             MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pEntryPoint);
             pCode = PatchNonVirtualExternalMethod(pMD, pEntryPoint, pIndirection);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -3344,6 +3360,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
 
     switch(helpFunc)
     {
+#ifdef FEATURE_MULTITHREADING
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
         {
@@ -3358,6 +3375,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             pArgs->arg0 = (TADDR)pMT->GetThreadStaticsInfo();
             break;
+#endif // FEATURE_MULTITHREADING
 
         case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
@@ -3398,11 +3416,13 @@ static PCODE getHelperForStaticBase(Module * pModule, ReadyToRunFixupKind kind, 
     bool noCtor = pMT->IsClassInitedOrPreinited();
     bool threadStatic = (kind == READYTORUN_FIXUP_ThreadStaticBaseNonGC || kind == READYTORUN_FIXUP_ThreadStaticBaseGC);
 
+#ifdef FEATURE_MULTITHREADING
     // Special case for DirectOnThreadLocalData: return helper that gets the address of the pThread field
     if (threadStatic && !GCStatic && pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
     {
         return CEEJitInfo::getHelperFtnStatic(CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE);
     }
+#endif // FEATURE_MULTITHREADING
 
     CorInfoHelpFunc helper;
 
@@ -3663,11 +3683,13 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     Statics:
         th.AsMethodTable()->EnsureInstanceActive();
         th.AsMethodTable()->CheckRunClassInitThrowing();
+#ifdef FEATURE_MULTITHREADING
         if (kind == READYTORUN_FIXUP_ThreadStaticBaseNonGC || kind == READYTORUN_FIXUP_ThreadStaticBaseGC ||
             (kind == READYTORUN_FIXUP_FieldAddress && pFD->IsThreadStatic()))
         {
             th.AsMethodTable()->EnsureTlsIndexAllocated();
         }
+#endif // FEATURE_MULTITHREADING
         fReliable = true;
         break;
 
@@ -4006,12 +4028,14 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
         case READYTORUN_FIXUP_StaticBaseGC:
             result = (SIZE_T)th.AsMethodTable()->GetGCStaticsBasePointer();
             break;
+#ifdef FEATURE_MULTITHREADING
         case READYTORUN_FIXUP_ThreadStaticBaseNonGC:
             result = (SIZE_T)th.AsMethodTable()->GetNonGCThreadStaticsBasePointer();
             break;
         case READYTORUN_FIXUP_ThreadStaticBaseGC:
             result = (SIZE_T)th.AsMethodTable()->GetGCThreadStaticsBasePointer();
             break;
+#endif // FEATURE_MULTITHREADING
         case READYTORUN_FIXUP_CctorTrigger:
             break;
         case READYTORUN_FIXUP_FieldAddress:
