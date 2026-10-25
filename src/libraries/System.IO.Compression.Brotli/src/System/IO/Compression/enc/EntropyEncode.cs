@@ -393,45 +393,20 @@ internal static class EntropyEncode
         {
             return;  // All zeros.
         }
-        // Now counts[0..length - 1] does not have trailing zeros.
+        // Trimming trailing zeros does not change the nonzero count.
+        if (len - nonzeroCount < 6 && counts.Slice(0, len).ContainsAnyInRange(1u, 3u))
         {
-            int nonzeros = 0;
-            uint smallestNonzero = 1 << 30;
-            c = counts.Slice(0, len);
-            for (i = 0; i < c.Length; ++i)
+            for (i = 1; i < len - 1; ++i)
             {
-                if (c[i] != 0)
+                if (counts[i - 1] != 0 && counts[i] == 0 && counts[i + 1] != 0)
                 {
-                    ++nonzeros;
-                    if (smallestNonzero > c[i])
-                    {
-                        smallestNonzero = c[i];
-                    }
+                    counts[i] = 1;
                 }
             }
-            if (nonzeros < 5)
-            {
-                // Small histogram will model it well.
-                return;
-            }
-            if (smallestNonzero < 4)
-            {
-                int zeros = len - nonzeros;
-                if (zeros < 6)
-                {
-                    for (i = 1; i < len - 1; ++i)
-                    {
-                        if (counts[i - 1] != 0 && counts[i] == 0 && counts[i + 1] != 0)
-                        {
-                            counts[i] = 1;
-                        }
-                    }
-                }
-            }
-            if (nonzeros < 28)
-            {
-                return;
-            }
+        }
+        if (nonzeroCount < 28)
+        {
+            return;
         }
         // 2) Let's mark all population counts that already can be encoded
         // with an RLE code.
