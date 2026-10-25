@@ -8947,6 +8947,11 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
                 assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
                 flags |= ExceptionSetFlags::OverflowException | ExceptionSetFlags::DivideByZeroException;
             }
+            else if ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))
+            {
+                // div/idiv fault on a zero divisor and on a quotient that doesn't fit.
+                flags |= ExceptionSetFlags::OverflowException | ExceptionSetFlags::DivideByZeroException;
+            }
 #endif
 
             return flags;
@@ -32342,6 +32347,13 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             case NI_Vector_op_Division:
             {
                 assert((GetSimdSize() == 16) || (GetSimdSize() == 32));
+                gtFlags |= GTF_EXCEPT;
+                break;
+            }
+
+            case NI_X86Base_DivRem:
+            case NI_X86Base_X64_DivRem:
+            {
                 gtFlags |= GTF_EXCEPT;
                 break;
             }

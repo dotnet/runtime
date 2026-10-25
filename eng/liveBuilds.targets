@@ -220,12 +220,16 @@
                                           Include="$(LibrariesNativeArtifactsPath)libSystem.Security.Cryptography.Native.Android.a" />
 
       <!-- Same situation on WASI with CoreCLR: System.IO.Compression.Native/CMakeLists.txt
-           installs libSystem.IO.Compression.Native.a and libz.a directly into the
-           CoreCLR sharedFramework directory for CLR_CMAKE_TARGET_WASI, where they are
-           picked up by RuntimeFiles. Exclude the libs.native copies to avoid duplicates. -->
-      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
+           installs libSystem.IO.Compression.Native.a, libz.a and the brotli libraries directly
+           into the CoreCLR sharedFramework directory for CLR_CMAKE_TARGET_WASI, where they are
+           picked up by RuntimeFiles. Exclude the libs.native copies to avoid duplicates.
+           This does not apply to NativeAOT, whose RuntimeFiles come from aotsdk instead. -->
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(BuildNativeAOTRuntimePack)' != 'true'"
                                           Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
-                                                   $(LibrariesNativeArtifactsPath)libz.a" />
+                                                   $(LibrariesNativeArtifactsPath)libz.a;
+                                                   $(LibrariesNativeArtifactsPath)libbrotlicommon.a;
+                                                   $(LibrariesNativeArtifactsPath)libbrotlidec.a;
+                                                   $(LibrariesNativeArtifactsPath)libbrotlienc.a" />
 
       <!-- Same situation on browser with CoreCLR: these libraries are always installed to both
            LibrariesNativeArtifactsPath (the top-level, flavor-agnostic native artifacts directory
