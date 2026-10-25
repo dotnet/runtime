@@ -476,7 +476,17 @@ namespace System.Reflection.Emit
             else if (clsArgument.IsFunctionPointer)
             {
                 if (scope == null)
+                {
+                    // A signature without a module (such as the signature and locals of a DynamicMethod)
+                    // refers to the runtime type by its handle, as the general branch below does.
+                    if (m_module == null && clsArgument is RuntimeType)
+                    {
+                        InternalAddRuntimeType(clsArgument);
+                        return;
+                    }
+
                     throw new NotSupportedException(SR.NotSupported_FunctionPointerSignature);
+                }
 
                 AddData((int)CorElementType.ELEMENT_TYPE_FNPTR);
                 SignatureHelper sig = GetMethodSigHelper(scope, clsArgument);

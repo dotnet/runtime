@@ -64,5 +64,13 @@ namespace System.Reflection.Emit.Tests
             SignatureHelper sig = SignatureHelper.GetMethodSigHelper(CallingConventions.Standard, typeof(void));
             AssertExtensions.Throws<NotSupportedException>(() => sig.AddArgument(Type.MakeFunctionPointerSignatureType(typeof(int), [typeof(bool)])));
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public unsafe void GetMethodSigHelper_ModuleFunctionPointerParameter_ThrowsNotSupportedException()
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            AssertExtensions.Throws<NotSupportedException>(() => SignatureHelper.GetMethodSigHelper(module, typeof(int), [typeof(delegate*<int, int>)]));
+        }
     }
 }
