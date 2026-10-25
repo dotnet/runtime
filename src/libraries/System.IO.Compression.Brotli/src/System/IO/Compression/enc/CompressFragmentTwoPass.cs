@@ -430,18 +430,19 @@ internal static class CompressFragmentTwoPass
     /// <param name="blockSize">Size of the current block.</param>
     /// <param name="inputSize">Remaining input size starting at <paramref name="input"/>.</param>
     /// <param name="table">Hash table.</param>
-    /// <param name="tableBits">Log2 of the hash table size.</param>
     /// <param name="literals">Literal buffer.</param>
     /// <param name="literalsIx">Number of literals written to <paramref name="literals"/>.</param>
     /// <param name="commands">Command buffer.</param>
     /// <param name="commandsIx">Number of commands written to <paramref name="commands"/>.</param>
-    private static void CreateCommands<TMinMatch>(ReadOnlySpan<byte> data, int input, nuint blockSize, nuint inputSize,
-        Span<int> table, nuint tableBits, Span<byte> literals, ref int literalsIx, Span<uint> commands, ref int commandsIx)
+    private static void CreateCommands<TMinMatch, TTable>(ReadOnlySpan<byte> data, int input, nuint blockSize, nuint inputSize,
+        Span<int> table, Span<byte> literals, ref int literalsIx, Span<uint> commands, ref int commandsIx)
         where TMinMatch : struct, IMinMatch
+        where TTable : struct, IHashTableBits
     {
         // "ip" is the input pointer.
         int ip = input;
-        int shift = 64 - (int)tableBits;
+        int shift = 64 - TTable.Value;
+        table = table.Slice(0, 1 << TTable.Value);
         int ipEnd = input + (int)blockSize;
         // "nextEmit" is a pointer to the first byte that is not covered by a
         // previous copy. Bytes between "nextEmit" and the start of the next copy or
@@ -666,9 +667,10 @@ internal static class CompressFragmentTwoPass
         storage[(int)(storageIx >> 3)] = 0;
     }
 
-    private static void CompressFragmentTwoPassImpl<TMinMatch>(BrotliTwoPassArena s, ReadOnlySpan<byte> data, nuint inputSize,
-        Span<uint> commandBuf, Span<byte> literalBuf, Span<int> table, nuint tableBits, ref nuint storageIx, Span<byte> storage)
+    private static void CompressFragmentTwoPassImpl<TMinMatch, TTable>(BrotliTwoPassArena s, ReadOnlySpan<byte> data, nuint inputSize,
+        Span<uint> commandBuf, Span<byte> literalBuf, Span<int> table, ref nuint storageIx, Span<byte> storage)
         where TMinMatch : struct, IMinMatch
+        where TTable : struct, IHashTableBits
     {
         // Offset 0 of "data" is the start of the first block (C "base_ip"), used for position and distance computations.
         int input = 0;
@@ -679,7 +681,7 @@ internal static class CompressFragmentTwoPass
             int commands = 0;
             int literals = 0;
             nuint numLiterals;
-            CreateCommands<TMinMatch>(data, input, blockSize, inputSize, table, tableBits, literalBuf, ref literals, commandBuf, ref commands);
+            CreateCommands<TMinMatch, TTable>(data, input, blockSize, inputSize, table, literalBuf, ref literals, commandBuf, ref commands);
             numLiterals = (nuint)literals;
             if (ShouldCompress(s, data.Slice(input), blockSize, numLiterals))
             {
@@ -724,18 +726,34 @@ internal static class CompressFragmentTwoPass
         switch (tableBits)
         {
             case 8:
+                CompressFragmentTwoPassImpl<MinMatch4, HashTable8>(s, input, inputSize, commandBuf, literalBuf, table, ref storageIx, storage);
+                break;
             case 9:
+                CompressFragmentTwoPassImpl<MinMatch4, HashTable9>(s, input, inputSize, commandBuf, literalBuf, table, ref storageIx, storage);
+                break;
             case 10:
+                CompressFragmentTwoPassImpl<MinMatch4, HashTable10>(s, input, inputSize, commandBuf, literalBuf, table, ref storageIx, storage);
+                break;
             case 11:
+                CompressFragmentTwoPassImpl<MinMatch4, HashTable11>(s, input, inputSize, commandBuf, literalBuf, table, ref storageIx, storage);
+                break;
             case 12:
+                CompressFragmentTwoPassImpl<MinMatch4, HashTable12>(s, input, inputSize, commandBuf, literalBuf, table, ref storageIx, storage);
+                break;
             case 13:
+                CompressFragmentTwoPassImpl<MinMatch4, HashTable13>(s, input, inputSize, commandBuf, literalBuf, table, ref storageIx, storage);
+                break;
             case 14:
+                CompressFragmentTwoPassImpl<MinMatch4, HashTable14>(s, input, inputSize, commandBuf, literalBuf, table, ref storageIx, storage);
+                break;
             case 15:
-                CompressFragmentTwoPassImpl<MinMatch4>(s, input, inputSize, commandBuf, literalBuf, table, tableBits, ref storageIx, storage);
+                CompressFragmentTwoPassImpl<MinMatch4, HashTable15>(s, input, inputSize, commandBuf, literalBuf, table, ref storageIx, storage);
                 break;
             case 16:
+                CompressFragmentTwoPassImpl<MinMatch6, HashTable16>(s, input, inputSize, commandBuf, literalBuf, table, ref storageIx, storage);
+                break;
             case 17:
-                CompressFragmentTwoPassImpl<MinMatch6>(s, input, inputSize, commandBuf, literalBuf, table, tableBits, ref storageIx, storage);
+                CompressFragmentTwoPassImpl<MinMatch6, HashTable17>(s, input, inputSize, commandBuf, literalBuf, table, ref storageIx, storage);
                 break;
             default:
                 Debug.Fail("Unexpected table size.");

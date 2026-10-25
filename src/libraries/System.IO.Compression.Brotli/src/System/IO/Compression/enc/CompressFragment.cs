@@ -563,9 +563,11 @@ internal static class CompressFragment
     /// <paramref name="ip"/>: In: position to start the search at; out: position of the match.<br/>
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int FindNextMatch(ReadOnlySpan<byte> data, Span<int> table, int shift, int lastDistance, int ipLimit,
+    private static int FindNextMatch<TTable>(ReadOnlySpan<byte> data, Span<int> table, int lastDistance, int ipLimit,
         ref int ip)
+        where TTable : struct, IHashTableBits
     {
+        int shift = 64 - TTable.Value;
         // Heuristic match skipping: If 32 bytes are scanned with no matches
         // found, start looking only at every other byte. If 32 more bytes are
         // scanned, look at every third byte, etc.. When a match is found,
@@ -645,17 +647,18 @@ internal static class CompressFragment
     /// <param name="mlenStorageIx">Bit position of the MLEN field of the current meta-block header.</param>
     /// <param name="literalRatio">Estimated literal compression ratio of the current meta-block.</param>
     /// <param name="table">Hash table.</param>
-    /// <param name="shift">64 - log2(table size).</param>
     /// <param name="storageIx">Bit position in <paramref name="storage"/>.</param>
     /// <param name="storage">Output.</param>
     /// <returns>
     /// -1 when the block was processed completely (C "goto emit_remainder"); otherwise the meta-block was emitted
     /// uncompressed up to the returned offset (C "goto next_block").
     /// </returns>
-    private static int EmitCommands(BrotliOnePassArena s, ReadOnlySpan<byte> data, int input, nuint inputSize, nuint blockSize,
-        ref int nextEmit, int metablockStart, nuint mlenStorageIx, nuint literalRatio, Span<int> table, int shift,
+    private static int EmitCommands<TTable>(BrotliOnePassArena s, ReadOnlySpan<byte> data, int input, nuint inputSize, nuint blockSize,
+        ref int nextEmit, int metablockStart, nuint mlenStorageIx, nuint literalRatio, Span<int> table,
         ref nuint storageIx, Span<byte> storage)
+        where TTable : struct, IHashTableBits
     {
+        int shift = 64 - TTable.Value;
         const nuint InputMarginBytes = BrotliConstants.WindowGap;
         const nuint MinMatchLen = 5;
 
@@ -689,7 +692,7 @@ internal static class CompressFragment
         while (true)
         {
             Debug.Assert(nextEmit < ip);
-            int candidate = FindNextMatch(data, table, shift, lastDistance, ipLimit, ref ip);
+            int candidate = FindNextMatch<TTable>(data, table, lastDistance, ipLimit, ref ip);
             if (candidate < 0)
             {
                 storageIx = pos;
@@ -786,11 +789,12 @@ internal static class CompressFragment
     /// <param name="inputSize">Size of the fragment.</param>
     /// <param name="isLast">Whether this is the last fragment.</param>
     /// <param name="table">Hash table (all zeros).</param>
-    /// <param name="tableBits">Log2 of the hash table size.</param>
     /// <param name="storageIx">Bit position in <paramref name="storage"/>.</param>
     /// <param name="storage">Output.</param>
-    private static void CompressFragmentFastImpl(BrotliOnePassArena s, ReadOnlySpan<byte> data, nuint inputSize, bool isLast,
-        Span<int> table, nuint tableBits, ref nuint storageIx, Span<byte> storage)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CompressFragmentFastImpl<TTable>(BrotliOnePassArena s, ReadOnlySpan<byte> data, nuint inputSize, bool isLast,
+        Span<int> table, ref nuint storageIx, Span<byte> storage)
+        where TTable : struct, IHashTableBits
     {
         int ipEnd;
 
@@ -815,7 +819,7 @@ internal static class CompressFragment
 
         nuint literalRatio;
 
-        int shift = 64 - (int)tableBits;
+        table = table.Slice(0, 1 << TTable.Value);
 
         StoreMetaBlockHeader(blockSize, false, ref storageIx, storage);
         // No block splits, no contexts.
@@ -837,8 +841,8 @@ internal static class CompressFragment
     emit_commands:
         ipEnd = input + (int)blockSize;
         {
-            int uncompressedEnd = EmitCommands(s, data, input, inputSize, blockSize, ref nextEmit, metablockStart,
-                mlenStorageIx, literalRatio, table, shift, ref storageIx, storage);
+            int uncompressedEnd = EmitCommands<TTable>(s, data, input, inputSize, blockSize, ref nextEmit, metablockStart,
+                mlenStorageIx, literalRatio, table, ref storageIx, storage);
             if (uncompressedEnd >= 0)
             {
                 inputSize -= (nuint)(uncompressedEnd - input);
@@ -958,10 +962,16 @@ internal static class CompressFragment
         switch (tableBits)
         {
             case 9:
+                CompressFragmentFastImpl<HashTable9>(s, input, inputSize, isLast, table, ref storageIx, storage);
+                break;
             case 11:
+                CompressFragmentFastImpl<HashTable11>(s, input, inputSize, isLast, table, ref storageIx, storage);
+                break;
             case 13:
+                CompressFragmentFastImpl<HashTable13>(s, input, inputSize, isLast, table, ref storageIx, storage);
+                break;
             case 15:
-                CompressFragmentFastImpl(s, input, inputSize, isLast, table, tableBits, ref storageIx, storage);
+                CompressFragmentFastImpl<HashTable15>(s, input, inputSize, isLast, table, ref storageIx, storage);
                 break;
             default:
                 Debug.Fail("Unexpected table size.");

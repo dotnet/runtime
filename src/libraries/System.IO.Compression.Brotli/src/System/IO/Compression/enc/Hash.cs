@@ -10,6 +10,62 @@ using System.Runtime.CompilerServices;
 
 namespace System.IO.Compression;
 
+/// <summary>Preserves the native fast compressors' per-table-size specialization.</summary>
+internal interface IHashTableBits
+{
+    static abstract int Value { get; }
+}
+
+internal readonly struct HashTable8 : IHashTableBits
+{
+    public static int Value => 8;
+}
+
+internal readonly struct HashTable9 : IHashTableBits
+{
+    public static int Value => 9;
+}
+
+internal readonly struct HashTable10 : IHashTableBits
+{
+    public static int Value => 10;
+}
+
+internal readonly struct HashTable11 : IHashTableBits
+{
+    public static int Value => 11;
+}
+
+internal readonly struct HashTable12 : IHashTableBits
+{
+    public static int Value => 12;
+}
+
+internal readonly struct HashTable13 : IHashTableBits
+{
+    public static int Value => 13;
+}
+
+internal readonly struct HashTable14 : IHashTableBits
+{
+    public static int Value => 14;
+}
+
+internal readonly struct HashTable15 : IHashTableBits
+{
+    public static int Value => 15;
+}
+
+internal readonly struct HashTable16 : IHashTableBits
+{
+    public static int Value => 16;
+}
+
+internal readonly struct HashTable17 : IHashTableBits
+{
+    public static int Value => 17;
+}
+
 /// <summary>Basic common hash functions / constants (hash_base.h).</summary>
 internal static class HashBase
 {
