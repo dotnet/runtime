@@ -1529,121 +1529,127 @@ internal sealed class BrotliEncoderState
         {
             return false;
         }
-        if (_params.Quality == Quality.FastTwoPassCompressionQuality)
+        try
         {
-            if (_commandBuf is null && bufSize == CompressFragmentTwoPass.BlockSize)
+            if (_params.Quality == Quality.FastTwoPassCompressionQuality)
             {
-                _commandBuf = ArrayPool<uint>.Shared.Rent(CompressFragmentTwoPass.BlockSize);
-                _literalBuf = ArrayPool<byte>.Shared.Rent(CompressFragmentTwoPass.BlockSize);
-            }
-            if (_commandBuf is not null)
-            {
-                commandBuf = _commandBuf;
-                literalBuf = _literalBuf;
-                commandBufSize = CompressFragmentTwoPass.BlockSize;
-            }
-            else if (bufSize > 0)
-            {
-                tmpCommandBuf = ArrayPool<uint>.Shared.Rent((int)bufSize);
-                tmpLiteralBuf = ArrayPool<byte>.Shared.Rent((int)bufSize);
-                commandBuf = tmpCommandBuf;
-                literalBuf = tmpLiteralBuf;
-                commandBufSize = (int)bufSize;
-            }
-        }
-
-        while (true)
-        {
-            if (InjectFlushOrPushOutput(ref output))
-            {
-                continue;
-            }
-
-            // Compress block only when internal output buffer is empty, stream is not
-            // finished, there is no pending flush request, and there is either
-            // additional input or pending operation.
-            if (_availableOut == 0 &&
-                _streamState == BrotliEncoderStreamState.Processing &&
-                (input.Length != 0 || op != BrotliEncoderOperation.Process))
-            {
-                nuint blockSize = Math.Min(blockSizeLimit, (nuint)input.Length);
-                bool isLast = ((nuint)input.Length == blockSize) && (op == BrotliEncoderOperation.Finish);
-                bool forceFlush = ((nuint)input.Length == blockSize) && (op == BrotliEncoderOperation.Flush);
-                nuint maxOutSize = 2 * blockSize + 503;
-                bool inplace = true;
-                Span<byte> storage;
-                nuint storageIx = _lastBytesBits;
-
-                if (forceFlush && blockSize == 0)
+                if (_commandBuf is null && bufSize == CompressFragmentTwoPass.BlockSize)
                 {
-                    _streamState = BrotliEncoderStreamState.FlushRequested;
+                    _commandBuf = ArrayPool<uint>.Shared.Rent(CompressFragmentTwoPass.BlockSize);
+                    _literalBuf = ArrayPool<byte>.Shared.Rent(CompressFragmentTwoPass.BlockSize);
+                }
+                if (_commandBuf is not null)
+                {
+                    commandBuf = _commandBuf;
+                    literalBuf = _literalBuf;
+                    commandBufSize = CompressFragmentTwoPass.BlockSize;
+                }
+                else if (bufSize > 0)
+                {
+                    tmpCommandBuf = ArrayPool<uint>.Shared.Rent((int)bufSize);
+                    tmpLiteralBuf = ArrayPool<byte>.Shared.Rent((int)bufSize);
+                    commandBuf = tmpCommandBuf;
+                    literalBuf = tmpLiteralBuf;
+                    commandBufSize = (int)bufSize;
+                }
+            }
+
+            while (true)
+            {
+                if (InjectFlushOrPushOutput(ref output))
+                {
                     continue;
                 }
-                if (maxOutSize <= (nuint)output.Length)
-                {
-                    storage = output;
-                }
-                else
-                {
-                    inplace = false;
-                    storage = GetBrotliStorage(maxOutSize);
-                }
-                BinaryPrimitives.WriteUInt16LittleEndian(storage, _lastBytes);
-                Span<int> table = GetHashTable(_params.Quality, blockSize, out nuint tableSize);
 
-                if (_params.Quality == Quality.FastOnePassCompressionQuality)
+                // Compress block only when internal output buffer is empty, stream is not
+                // finished, there is no pending flush request, and there is either
+                // additional input or pending operation.
+                if (_availableOut == 0 &&
+                    _streamState == BrotliEncoderStreamState.Processing &&
+                    (input.Length != 0 || op != BrotliEncoderOperation.Process))
                 {
-                    CompressFragment.CompressFragmentFast(_onePassArena!, input, blockSize, isLast, table, tableSize,
-                        ref storageIx, storage);
-                }
-                else
-                {
-                    CompressFragmentTwoPass.Compress(_twoPassArena!, input, blockSize, isLast,
-                        commandBuf.AsSpan(0, commandBufSize), literalBuf.AsSpan(0, commandBufSize),
-                        table, tableSize, ref storageIx, storage);
-                }
-                if (blockSize != 0)
-                {
-                    input = input.Slice((int)blockSize);
-                    _totalIn += blockSize;
-                }
-                if (inplace)
-                {
-                    nuint outBytes = storageIx >> 3;
-                    Debug.Assert(outBytes <= (nuint)output.Length);
-                    Debug.Assert((storageIx & 7) == 0 || outBytes < (nuint)output.Length);
-                    output = output.Slice((int)outBytes);
-                    _totalOut += outBytes;
-                }
-                else
-                {
-                    nuint outBytes = storageIx >> 3;
-                    _nextOut = _storage;
-                    _nextOutOffset = 0;
-                    _availableOut = outBytes;
-                }
-                _lastBytes = storage[(int)(storageIx >> 3)];
-                _lastBytesBits = (byte)(storageIx & 7u);
+                    nuint blockSize = Math.Min(blockSizeLimit, (nuint)input.Length);
+                    bool isLast = ((nuint)input.Length == blockSize) && (op == BrotliEncoderOperation.Finish);
+                    bool forceFlush = ((nuint)input.Length == blockSize) && (op == BrotliEncoderOperation.Flush);
+                    nuint maxOutSize = 2 * blockSize + 503;
+                    bool inplace = true;
+                    Span<byte> storage;
+                    nuint storageIx = _lastBytesBits;
 
-                if (forceFlush)
-                {
-                    _streamState = BrotliEncoderStreamState.FlushRequested;
+                    if (forceFlush && blockSize == 0)
+                    {
+                        _streamState = BrotliEncoderStreamState.FlushRequested;
+                        continue;
+                    }
+                    if (maxOutSize <= (nuint)output.Length)
+                    {
+                        storage = output;
+                    }
+                    else
+                    {
+                        inplace = false;
+                        storage = GetBrotliStorage(maxOutSize);
+                    }
+                    BinaryPrimitives.WriteUInt16LittleEndian(storage, _lastBytes);
+                    Span<int> table = GetHashTable(_params.Quality, blockSize, out nuint tableSize);
+
+                    if (_params.Quality == Quality.FastOnePassCompressionQuality)
+                    {
+                        CompressFragment.CompressFragmentFast(_onePassArena!, input, blockSize, isLast, table, tableSize,
+                            ref storageIx, storage);
+                    }
+                    else
+                    {
+                        CompressFragmentTwoPass.Compress(_twoPassArena!, input, blockSize, isLast,
+                            commandBuf.AsSpan(0, commandBufSize), literalBuf.AsSpan(0, commandBufSize),
+                            table, tableSize, ref storageIx, storage);
+                    }
+                    if (blockSize != 0)
+                    {
+                        input = input.Slice((int)blockSize);
+                        _totalIn += blockSize;
+                    }
+                    if (inplace)
+                    {
+                        nuint outBytes = storageIx >> 3;
+                        Debug.Assert(outBytes <= (nuint)output.Length);
+                        Debug.Assert((storageIx & 7) == 0 || outBytes < (nuint)output.Length);
+                        output = output.Slice((int)outBytes);
+                        _totalOut += outBytes;
+                    }
+                    else
+                    {
+                        nuint outBytes = storageIx >> 3;
+                        _nextOut = _storage;
+                        _nextOutOffset = 0;
+                        _availableOut = outBytes;
+                    }
+                    _lastBytes = storage[(int)(storageIx >> 3)];
+                    _lastBytesBits = (byte)(storageIx & 7u);
+
+                    if (forceFlush)
+                    {
+                        _streamState = BrotliEncoderStreamState.FlushRequested;
+                    }
+                    if (isLast)
+                    {
+                        _streamState = BrotliEncoderStreamState.Finished;
+                    }
+                    continue;
                 }
-                if (isLast)
-                {
-                    _streamState = BrotliEncoderStreamState.Finished;
-                }
-                continue;
+                break;
             }
-            break;
         }
-        if (tmpCommandBuf is not null)
+        finally
         {
-            ArrayPool<uint>.Shared.Return(tmpCommandBuf);
-        }
-        if (tmpLiteralBuf is not null)
-        {
-            ArrayPool<byte>.Shared.Return(tmpLiteralBuf);
+            if (tmpCommandBuf is not null)
+            {
+                ArrayPool<uint>.Shared.Return(tmpCommandBuf);
+            }
+            if (tmpLiteralBuf is not null)
+            {
+                ArrayPool<byte>.Shared.Return(tmpLiteralBuf);
+            }
         }
         CheckFlushComplete();
         return true;
