@@ -139,6 +139,10 @@ public class R2RTestSuites
                     Options = options,
                     AdditionalArgs = additionalArgs,
                     OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
         void Validate(ReadyToRunReader reader)
         {
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
