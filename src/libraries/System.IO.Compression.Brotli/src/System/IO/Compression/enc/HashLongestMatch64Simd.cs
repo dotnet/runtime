@@ -267,10 +267,11 @@ internal struct HashLongestMatch64Simd : IHasher
             ushort numKey = num[(int)key];
             nuint head = (nuint)(numKey + 1) & blockMask;
             ulong matches = MatchingTagMask.GetMatchingTagMask(blockSize / 16, tag, tagBucket, head);
+            int maskShift = MatchingTagMask.GetMaskShift(blockSize / 16);
             // Mask off any matches from uninitialized tags.
             ushort n = (ushort)(65535 - numKey);
             ulong blockHasUnusedSlots = blockSize > n ? 1UL : 0UL;
-            ulong mask = (blockHasUnusedSlots << (n & (64 - 1))) - 1;
+            ulong mask = (blockHasUnusedSlots << ((n << maskShift) & (64 - 1))) - 1;
             matches &= mask;
             // The reference implementation checks "cur_ix_masked + best_len > ring_buffer_mask" (and then stops
             // the search) in every iteration, but it only changes when best_len changes, so it is checked up-front
@@ -283,7 +284,7 @@ internal struct HashLongestMatch64Simd : IHasher
                 ReadOnlySpan<byte> tailData = data.Slice((int)bestLen - 3);
                 for (; matches > 0; matches &= matches - 1)
                 {
-                    nuint rbIndex = (head + (nuint)ulong.TrailingZeroCount(matches)) & blockMask;
+                    nuint rbIndex = (head + (nuint)(ulong.TrailingZeroCount(matches) >> maskShift)) & blockMask;
                     nuint prevIx = bucket[(int)rbIndex];
                     nuint backward = curIx - prevIx;
                     if (backward > maxBackward)

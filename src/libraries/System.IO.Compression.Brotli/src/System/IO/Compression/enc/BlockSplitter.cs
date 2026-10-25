@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 
 namespace System.IO.Compression;
 
@@ -397,7 +398,9 @@ internal static class BlockSplitter
                 Vector128<double> c = Vector128.Create<double>(dst) - vmin;
                 Vector128<double> capped = Vector128.GreaterThanOrEqual(c, vswitch);
                 Vector128.ConditionalSelect(capped, vswitch, c).CopyTo(dst);
-                uint bits = capped.ExtractMostSignificantBits();
+                uint bits = AdvSimd.Arm64.IsSupported
+                    ? ((uint)capped.AsUInt64().GetElement(0) & 1) | ((uint)capped.AsUInt64().GetElement(1) & 2)
+                    : capped.ExtractMostSignificantBits();
                 if (bits != 0)
                 {
                     // k is a multiple of 2, so the 2 bits belong to the same byte.

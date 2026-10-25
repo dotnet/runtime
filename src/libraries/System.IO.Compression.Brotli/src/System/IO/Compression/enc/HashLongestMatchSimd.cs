@@ -7,6 +7,7 @@
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 
 namespace System.IO.Compression;
 
@@ -15,12 +16,18 @@ internal static class MatchingTagMask
 {
     /// <summary>
     /// Returns a bit mask of the tags in <paramref name="tagBucket"/> (16 * <paramref name="chunkCount"/> bytes) that
-    /// are equal to <paramref name="tag"/>, rotated right by <paramref name="head"/> within 16 * chunkCount bits.
+    /// are equal to <paramref name="tag"/>, in circular search order starting at <paramref name="head"/>.
+    /// Each tag occupies 1 &lt;&lt; GetMaskShift(chunkCount) bits, with at most one bit set per tag.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong GetMatchingTagMask(nuint chunkCount, byte tag, ReadOnlySpan<byte> tagBucket, nuint head)
     {
         Vector128<byte> comparisonMask = Vector128.Create(tag);
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            return GetMatchingTagMaskArm64(chunkCount, tagBucket, comparisonMask, (int)head);
+        }
+
         int count = (int)head;
         if (chunkCount == 1)
         {
@@ -40,6 +47,41 @@ internal static class MatchingTagMask
             matches |= (ulong)MatchMask(tagBucket, 16 * i, comparisonMask) << (16 * i);
         }
         return ulong.RotateRight(matches, count);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int GetMaskShift(nuint chunkCount) =>
+        AdvSimd.Arm64.IsSupported ? (chunkCount == 1 ? 2 : chunkCount == 2 ? 1 : 0) : 0;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong GetMatchingTagMaskArm64(nuint chunkCount, ReadOnlySpan<byte> tagBucket, Vector128<byte> comparisonMask, int head)
+    {
+        Vector128<byte> a = Vector128.Equals(Vector128.Create(tagBucket.Slice(0, 16)), comparisonMask);
+        if (chunkCount == 1)
+        {
+            // SHRN preserves four equal bits per tag; keep one for candidate iteration.
+            ulong matches = AdvSimd.ShiftRightLogicalNarrowingLower(a.AsUInt16(), 4).AsUInt64().ToScalar();
+            return ulong.RotateRight(matches, head << 2) & 0x8888888888888888UL;
+        }
+
+        Vector128<byte> b = Vector128.Equals(Vector128.Create(tagBucket.Slice(16, 16)), comparisonMask);
+        if (chunkCount == 2)
+        {
+            // Interleave pairs of tags into two-bit groups before narrowing to a single 64-bit mask.
+            Vector64<byte> even = AdvSimd.ShiftRightLogicalNarrowingLower(AdvSimd.Arm64.UnzipEven(a.AsUInt16(), b.AsUInt16()), 6);
+            Vector64<byte> odd = AdvSimd.ShiftRightLogicalNarrowingLower(AdvSimd.Arm64.UnzipOdd(a.AsUInt16(), b.AsUInt16()), 6);
+            ulong matches = AdvSimd.ShiftLeftAndInsert(even, odd, 4).AsUInt64().ToScalar();
+            return ulong.RotateRight(matches, head << 1) & 0xAAAAAAAAAAAAAAAAUL;
+        }
+
+        Vector128<byte> c = Vector128.Equals(Vector128.Create(tagBucket.Slice(32, 16)), comparisonMask);
+        Vector128<byte> d = Vector128.Equals(Vector128.Create(tagBucket.Slice(48, 16)), comparisonMask);
+        Vector128<byte> weights = Vector128.Create((byte)1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128);
+        Vector128<byte> ab = AdvSimd.Arm64.AddPairwise(a & weights, b & weights);
+        Vector128<byte> cd = AdvSimd.Arm64.AddPairwise(c & weights, d & weights);
+        Vector128<byte> combined = AdvSimd.Arm64.AddPairwise(ab, cd);
+        ulong compact = AdvSimd.Arm64.AddPairwise(combined, combined).AsUInt64().ToScalar();
+        return ulong.RotateRight(compact, head);
     }
 
     /// <summary>Returns the 16-bit mask of the bytes of the 16-byte chunk at <paramref name="offset"/> that are equal to the tag.</summary>
@@ -303,10 +345,11 @@ internal struct HashLongestMatchSimd : IHasher
             ushort numKey = num[(int)key];
             nuint head = (nuint)(numKey + 1) & blockMask;
             ulong matches = MatchingTagMask.GetMatchingTagMask(blockSize / 16, tag, tagBucket, head);
+            int maskShift = MatchingTagMask.GetMaskShift(blockSize / 16);
             // Mask off any matches from uninitialized tags.
             ushort n = (ushort)(65535 - numKey);
             ulong blockHasUnusedSlots = blockSize > n ? 1UL : 0UL;
-            ulong mask = (blockHasUnusedSlots << (n & (64 - 1))) - 1;
+            ulong mask = (blockHasUnusedSlots << ((n << maskShift) & (64 - 1))) - 1;
             matches &= mask;
             // The reference implementation checks "cur_ix_masked + best_len > ring_buffer_mask" (and then stops
             // the search) in every iteration, but it only changes when best_len changes, so it is checked up-front
@@ -319,7 +362,7 @@ internal struct HashLongestMatchSimd : IHasher
                 ReadOnlySpan<byte> tailData = data.Slice((int)bestLen - 3);
                 for (; matches > 0; matches &= matches - 1)
                 {
-                    nuint rbIndex = (head + (nuint)ulong.TrailingZeroCount(matches)) & blockMask;
+                    nuint rbIndex = (head + (nuint)(ulong.TrailingZeroCount(matches) >> maskShift)) & blockMask;
                     nuint prevIx = bucket[(int)rbIndex];
                     nuint backward = curIx - prevIx;
                     if (backward > maxBackward)

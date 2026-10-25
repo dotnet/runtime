@@ -6,6 +6,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 
 namespace System.IO.Compression;
 
@@ -370,8 +371,16 @@ internal static class EntropyEncode
         {
             for (; i <= c.Length - Vector128<uint>.Count; i += Vector128<uint>.Count)
             {
-                uint zeroMask = Vector128.Equals(Vector128.Create(c.Slice(i, Vector128<uint>.Count)), Vector128<uint>.Zero).ExtractMostSignificantBits();
-                nonzeroCount += Vector128<uint>.Count - (int)uint.PopCount(zeroMask);
+                Vector128<uint> zeros = Vector128.Equals(Vector128.Create(c.Slice(i, Vector128<uint>.Count)), Vector128<uint>.Zero);
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    // Each zero contributes -1 to the horizontal sum.
+                    nonzeroCount += Vector128<uint>.Count + Vector128.Sum(zeros.AsInt32());
+                }
+                else
+                {
+                    nonzeroCount += Vector128<uint>.Count - (int)uint.PopCount(zeros.ExtractMostSignificantBits());
+                }
             }
         }
         for (; i < c.Length; i++)
