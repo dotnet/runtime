@@ -366,6 +366,11 @@ internal sealed class Hasher
         if (!IsSetup)
         {
             Quality.ChooseHasher(parameters, ref parameters.Hasher);
+            // A single input block does not amortize the SIMD tag lookup overhead.
+            if (oneShot && parameters.Hasher.Type == 58)
+            {
+                parameters.Hasher.Type = 5;
+            }
             Params = parameters.Hasher;
             DictNumLookups = 0;
             DictNumMatches = 0;
