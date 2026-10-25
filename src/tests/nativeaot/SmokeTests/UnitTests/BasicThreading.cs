@@ -15,6 +15,13 @@ class BasicThreading
 
     internal static int Run()
     {
+        // Mobile app hosts may invoke managed Main on a background thread.
+        if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsIOS() &&
+            !OperatingSystem.IsTvOS() && !OperatingSystem.IsMacCatalyst())
+        {
+            Assert.False(Thread.CurrentThread.IsBackground);
+        }
+
         SimpleReadWriteThreadStaticTest.Run(42, "SimpleReadWriteThreadStatic");
 
         ThreadStaticsTestWithTasks.Run();
