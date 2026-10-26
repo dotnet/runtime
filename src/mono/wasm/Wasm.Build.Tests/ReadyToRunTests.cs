@@ -38,7 +38,7 @@ namespace Wasm.Build.Tests
         {
             // A build stages the prebuilt framework R2R images from the runtime pack (no per-app crossgen2).
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_build",
-                extraProperties: config == Configuration.Release ? "<WasmUsePrebuiltReadyToRun>true</WasmUsePrebuiltReadyToRun>" : "");
+                extraProperties: config == Configuration.Release ? "<PublishReadyToRun>true</PublishReadyToRun>" : "");
             (_, string output) = BlazorBuild(info, config,
                 new BuildOptions(ExtraMSBuildArgs: config == Configuration.Debug ? "-p:WasmEnableHotReload=true" : ""));
 
@@ -158,7 +158,7 @@ namespace Wasm.Build.Tests
             AssertPrebuiltFrameworkReadyToRun(webcilDir, output);
 
             BlazorBuild(info, config,
-                new BuildOptions(UseCache: false, ExtraMSBuildArgs: "-p:WasmUsePrebuiltReadyToRun=false"));
+                new BuildOptions(UseCache: false, ExtraMSBuildArgs: "-p:PublishReadyToRun=false"));
             AssertCoreLibReadyToRun(webcilDir, expectReadyToRun: false);
 
             (_, output) = BlazorBuild(info, config, new BuildOptions(UseCache: false));
