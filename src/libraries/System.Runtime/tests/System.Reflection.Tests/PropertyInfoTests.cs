@@ -165,8 +165,8 @@ namespace System.Reflection.Tests
             static abstract int Value { get; set; }
         }
 
-        // Mono's GetValue calls the getter through a delegate of its own
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136482", TestRuntimes.Mono)]
         public void GetValue_StaticAbstract_ThrowsMemberAccessException()
         {
             PropertyInfo propertyInfo = GetProperty(typeof(IStaticAbstractProperty), nameof(IStaticAbstractProperty.Value));

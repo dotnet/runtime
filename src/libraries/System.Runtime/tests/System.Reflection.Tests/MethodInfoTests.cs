@@ -1316,8 +1316,8 @@ namespace System.Reflection.Tests
             Assert.Equal(testString, miStaticVirtual.Invoke(null, new object[] { testString }));
         }
 
-        // Mono's delegate binding is not changed by this fix
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136097", TestRuntimes.Mono)]
         public void CreateDelegate_StaticVirtual_ClosedOverFirstArgument()
         {
             MethodInfo miStaticVirtual = GetMethod(typeof(IStaticInterface), nameof(IStaticInterface.StaticVirtual));
@@ -1328,7 +1328,8 @@ namespace System.Reflection.Tests
         }
 
         // A struct returned through a hidden buffer takes another path when a delegate closes over a static method
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136097", TestRuntimes.Mono)]
         public void CreateDelegate_StaticVirtual_ClosedOverFirstArgument_LargeStructReturn()
         {
             MethodInfo miStaticVirtual = GetMethod(typeof(IStaticInterface), nameof(IStaticInterface.StaticVirtualLargeStruct));
@@ -1341,8 +1342,9 @@ namespace System.Reflection.Tests
             Assert.Equal(4, returnValue.D);
         }
 
-        // Mono binds delegates without checking for static abstract methods
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136482", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136097", TestRuntimes.Mono)]
         public void CreateDelegate_StaticAbstract_ThrowsMemberAccessException()
         {
             MethodInfo noArgs = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.NoArgs));
@@ -1382,7 +1384,7 @@ namespace System.Reflection.Tests
         }
 
         // The generic method definition check comes first
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/136099", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void CreateDelegate_StaticAbstractGenericMethodDefinition_ThrowsArgumentException()
         {
@@ -1391,7 +1393,8 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => Delegate.CreateDelegate(typeof(Action), genericDefinition, throwOnBindFailure: false));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136482", TestRuntimes.Mono)]
         public void CreateDelegate_ByName_StaticAbstract_DoesNotBind()
         {
             Assert.Throws<ArgumentException>(() => Delegate.CreateDelegate(typeof(Action), typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.NoArgs)));
@@ -1404,8 +1407,9 @@ namespace System.Reflection.Tests
         }
 
         // A case-insensitive match skips the static abstract method whatever the declaration order
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/136098", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136098", TestRuntimes.Mono)]
         public void CreateDelegate_ByName_IgnoreCase_SkipsStaticAbstract()
         {
             foreach (Type type in new[] { typeof(IStaticAbstractFirstCaseTwins), typeof(IStaticVirtualFirstCaseTwins) })
@@ -1421,7 +1425,8 @@ namespace System.Reflection.Tests
         // A static abstract method in an abstract class, sealed or not, or in a sealed interface is rejected as one in an
         // interface. The method comes from its token: Type.GetMethod would list the type's methods, and a Checked CoreLib
         // asserts there that a non-virtual method of a class isn't abstract.
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136482", TestRuntimes.Mono)]
         [InlineData(TypeAttributes.Public | TypeAttributes.Abstract, (MethodAttributes)0)]
         [InlineData(TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed, (MethodAttributes)0)]
         [InlineData(TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract | TypeAttributes.Sealed, MethodAttributes.Virtual)]
@@ -1442,7 +1447,8 @@ namespace System.Reflection.Tests
         }
 
         // As for an abstract instance method: an entry point on CoreCLR, PlatformNotSupportedException on NativeAOT
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136484", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public void GetFunctionPointer_StaticAbstract_MatchesAbstractMethod()
         {
             MethodInfo[] methods =
