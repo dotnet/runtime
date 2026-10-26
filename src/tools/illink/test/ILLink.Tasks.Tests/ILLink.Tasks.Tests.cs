@@ -2360,6 +2360,7 @@ namespace ILLink.Tasks.Tests
                     ILLinkPath = test.Task.ILLinkPath,
                     AssemblyPaths = new ITaskItem[] { new TaskItem(input) },
                     ReferenceAssemblyPaths = Directory.GetFiles(Path.GetDirectoryName(typeof(object).Assembly.Location), "*.dll")
+                        .Where(Utils.IsManagedAssembly)
                         .Select(path => (ITaskItem)new TaskItem(path)).ToArray(),
                     RootAssemblyNames = new ITaskItem[] { new TaskItem("WarningInput", new Dictionary<string, string> { { "RootMode", "EntryPoint" } }) },
                     OutputDirectory = new TaskItem(test.Output),
