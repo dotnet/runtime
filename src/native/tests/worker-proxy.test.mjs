@@ -154,7 +154,7 @@ async function createFixture(options = {}) {
         }
     }
     const context = createContext({
-        AbortController, Atomics: options.threaded ? Atomics : atomics, SharedArrayBuffer, setTimeout, clearTimeout,
+        AbortController, Atomics: options.threaded ? Atomics : atomics, Error, SharedArrayBuffer, setTimeout, clearTimeout,
         self: {
             addEventListener: (type, listener) => {
                 if (type === "message") workerListeners.push(listener);
@@ -251,6 +251,8 @@ async function createFixture(options = {}) {
     return {
         workers, calls, errors, termination, memory, module, allocations, imports, layout,
         importTransport: (await load("./worker-imports")).namespace,
+        promiseHelpers: (await load("./promise-completion-source")).namespace,
+        promiseTransport: (await load("./worker-promises")).namespace,
         failWorker: error => workerErrorListeners.forEach(listener => listener({ error, message: error.message })),
         create: async (config = { workerOptions: { timeoutMs: 1000 } }) => {
             uiApi = await proxyModule.namespace.createWorkerProxy(config);
@@ -278,7 +280,7 @@ test("worker exports return primitives synchronously and preserve aliases across
         assert.equal(scalar(-2147483648), -2147483647);
         assert.equal(scalar(2147483646), 2147483647);
         assert.throws(() => scalar(2147483648), /Int32/);
-        assert.throws(() => exports.Sample.Test.Async(1), /synchronous.*Int32/);
+        assert.throws(() => exports.Sample.Test.Async(1), /Int32.*Task<Int32>/);
         assert.equal(fixture.allocations.size, allocations);
         assert.equal(fixture.calls.filter(call => call[0] === "exports").length, 1);
     } finally {
@@ -308,6 +310,7 @@ test("real worker threads support repeated nesting and many siblings in one oute
                 return value === 0 ? 1 : exports.ThroughImport(value - 1) + 1;
             },
         });
+
         exports = (await api.getAssemblyExports("Test")).Sample.Test;
         for (let i = 0; i < 32; i++) assert.equal(exports.ThroughImport(4), 5);
         assert.equal(exports.ThroughImport(99), 2145);
@@ -499,6 +502,20 @@ for (const [seed, expected] of [
         assert.deepEqual(Array.from({ length: 4 }, () => fixture.layout.allocatePromiseId()), expected);
     });
 }
+
+test("cancelled promises release asynchronous request ownership", { timeout: 3000 }, async () => {
+    const fixture = await createFixture();
+    const { getPromiseCompletionSource } = fixture.promiseHelpers;
+    const promises = fixture.promiseTransport.createWorkerPromises();
+    const id = promises.reserve();
+    const promise = promises.promise(id);
+    const rejected = assert.rejects(promise, /Cancelled/);
+    getPromiseCompletionSource(promise).reject(new Error("Cancelled"));
+    await rejected;
+    assert.throws(() => promises.promise(id), /invalid asynchronous request/);
+    promises.complete({ type: "async-import", requestId: id, result: 42 });
+    promises.stop(new Error("Stopped"));
+});
 
 for (const seed of [2147483646, -2]) {
     test(`dispatch counters and completion IDs wrap without changing ownership from ${seed}`, { timeout: 3000 }, async () => {
@@ -832,3 +849,150 @@ test("managed command failures preserve the error and terminate the worker", { t
     await assert.rejects(api.runMain(), /Managed entry point failed/);
     assert.equal(fixture.workers[0].terminated, true);
 });
+
+test("scalar Task exports preserve their synchronous prefix, nulls, throws and asynchronous failures", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    const events = [];
+    try {
+        api.setModuleImports("main.js", { update: value => {
+            events.push("import");
+            queueMicrotask(() => events.push("microtask"));
+            return value + 1;
+        } });
+        const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        events.push("before");
+        const result = exports.AsyncPrefix(41);
+        assert.equal(typeof result.then, "function");
+        events.push("after");
+        assert.deepEqual(events, ["before", "import", "after"]);
+        assert.equal(await result, 42);
+        assert.deepEqual(events, ["before", "import", "after", "microtask"]);
+        assert.equal(await exports.Async(17), 18);
+        assert.equal(exports.Async(-2), null);
+        assert.throws(() => exports.Async(-1), /Synchronous Task export failure/);
+        assert.throws(() => exports.Async("1"), /Int32/);
+        await assert.rejects(exports.Async(-3), /Asynchronous Task export failure/);
+        assert.equal(exports.Scalar(9), 10);
+        assert.equal(exports.ActiveAllocations(0), 16);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("asynchronous UI imports release frames across 70 outstanding Tasks and preserve nested synchronous prefixes", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    const deferred = [];
+    let exports;
+    try {
+        api.setModuleImports("main.js", { update: value => {
+            assert.equal(exports.Scalar(value), value + 1);
+            return new Promise((resolve, reject) => deferred.push({ value, resolve, reject }));
+        } });
+        exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        const promises = [];
+        for (let value = 0; value < 70; value++) {
+            promises.push(exports.AsyncImport(value));
+            assert.equal(deferred.length, value + 1, "Import prefix must finish before the export returns");
+            for (let slot = 0; slot < 16; slot++) {
+                const signal = fixture.workers[0].signal;
+                assert.equal(Atomics.load(signal, fixture.layout.jsimportEntryOffset(slot)), 0);
+                assert.equal(Atomics.load(signal, fixture.layout.jsexportEntryOffset(slot)), 0);
+            }
+        }
+        const results = Promise.all(promises.map(promise => promise.then(value => value, error => error.message)));
+        for (const request of deferred.reverse()) {
+            if (request.value === 33) request.reject(new Error("Deferred UI failure"));
+            else request.resolve(request.value + 10);
+        }
+        assert.deepEqual(await results, Array.from({ length: 70 }, (_, value) => value === 33 ? "Deferred UI failure" : value + 10));
+        assert.equal(exports.ActiveAllocations(0), 16);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("asynchronous UI imports preserve nulls and errors and reject unsupported thenables", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    try {
+        api.setModuleImports("main.js", { update: value => {
+            if (value === 0) return null;
+            if (value === 1) return undefined;
+            if (value === 2) return 42;
+            if (value === 3) throw new Error("Immediate UI failure");
+            if (value === 4) return { then: resolve => {
+                assert.equal(api.INTERNAL.workerImports.isDispatching(), true);
+                resolve(45);
+            } };
+            if (value === 5) return { then: (_resolve, reject) => reject(new Error("Immediate thenable failure")) };
+            if (value === 6) return Promise.resolve(2147483648);
+            return { then: resolve => setTimeout(() => resolve(48), 1) };
+        } });
+        const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        assert.equal(exports.AsyncImport(0), null);
+        assert.equal(exports.AsyncImport(1), null);
+        assert.throws(() => exports.AsyncImport(2), /Value is not a Promise/);
+        assert.throws(() => exports.AsyncImport(3), /Immediate UI failure/);
+        assert.throws(() => exports.AsyncImport(4), /Promise/);
+        assert.throws(() => exports.AsyncImport(5), /Promise/);
+        await assert.rejects(exports.AsyncImport(6), /Int32/);
+        assert.throws(() => exports.AsyncImport(7), /Promise/);
+        assert.equal(exports.ActiveAllocations(0), 16);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("exit rejects pending Task exports and ignores late UI import completion", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    let resolve;
+    api.setModuleImports("main.js", { update: () => new Promise(done => resolve = done) });
+    const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+    const pending = exports.AsyncImport(1);
+    const never = exports.Async(-4);
+    const rejected = assert.rejects(pending, /exit/i);
+    const neverRejected = assert.rejects(never, /exit/i);
+    api.exit(0);
+    await Promise.all([rejected, neverRejected, fixture.termination]);
+    resolve(42);
+    await new Promise(done => setTimeout(done, 10));
+    assert.throws(() => exports.Async(1), /exit/i);
+});
+
+test("worker failure rejects pending Task exports and removes pending UI completions", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    let reject;
+    api.setModuleImports("main.js", { update: () => new Promise((_resolve, fail) => reject = fail) });
+    const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+    const pending = assert.rejects(exports.AsyncImport(1), /M5 pending worker failure/);
+    const never = assert.rejects(exports.Async(-4), /M5 pending worker failure/);
+    fixture.workers[0].postMessage({ type: "test-crash" });
+    await Promise.all([pending, never, fixture.termination]);
+    reject(new Error("Late UI failure"));
+    await new Promise(done => setTimeout(done, 10));
+});
+
+for (const seed of [2147483646, -2]) {
+    test(`outstanding asynchronous exports cross signed ID rollover from ${seed}`, { timeout: 30000 }, async () => {
+        const fixture = await createFixture({ threaded: true, seedPromiseIds: seed });
+        const api = await fixture.create();
+        const deferred = [];
+        try {
+            api.setModuleImports("main.js", { update: value => new Promise(resolve => deferred.push(() => resolve(value + 1))) });
+            const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+            const pending = Array.from({ length: 8 }, (_, value) => exports.AsyncImport(value));
+            deferred.reverse().forEach(resolve => resolve());
+            assert.deepEqual(await Promise.all(pending), [1, 2, 3, 4, 5, 6, 7, 8]);
+        } finally {
+            api.exit(0);
+            await fixture.termination;
+        }
+    });
+}

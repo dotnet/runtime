@@ -3,6 +3,8 @@
 
 import type { PromiseCompletionSource } from "./types";
 import { createPromiseCompletionSource } from "./promise-completion-source";
+import type { WorkerPromiseMessage } from "./worker-promises";
+import { captureWorkerPromise, createWorkerPromises } from "./worker-promises";
 import { JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 import {
     allocatePromiseId, JSEXPORT_RING_CAPACITY, jsexportEntryOffset, jsexportErrorOffset, MemoryViewManager,
@@ -10,6 +12,7 @@ import {
     OFFSET_JSEXPORT_QUEUE, OFFSET_JSEXPORT_RING, reserveCallSlot,
     OFFSET_WORKER_STATE,
     RING_ENTRY_ARGS_PTR, RING_ENTRY_HANDLE, RING_ENTRY_PROMISE_ID, RING_ENTRY_SIGNAL,
+    RING_ENTRY_RESULT_KIND, WorkerResultKind,
     readSharedError, SignalState, spinWaitWithJSImportService, wakeMain, wakeWorker, writeSharedError,
 } from "./shared-signaling";
 
@@ -17,6 +20,7 @@ export interface WorkerExportDescriptor {
     path: string[];
     handle: number;
     supported: boolean;
+    isAsync?: boolean;
 }
 export interface WorkerExportsRequest {
     type: "exports";
@@ -27,7 +31,7 @@ export type WorkerExportsResponse = { type: "exports", requestId: number } & (
     { exports: WorkerExportDescriptor[] } | { error: string }
 );
 
-type ScalarExport = (value?: unknown) => number;
+type ScalarExport = (value?: unknown) => number | Promise<number | null> | null;
 interface AssemblyExports {
     [name: string]: AssemblyExports | ScalarExport;
 }
@@ -46,6 +50,7 @@ export function createWorkerJSExportClient(
 ) {
     const pending = new Map<number, PendingExports>();
     const assemblies = new Map<string, Promise<AssemblyExports>>();
+    const promises = createWorkerPromises();
     let stopped: Error | undefined;
     let callDepth = 0;
 
@@ -62,7 +67,7 @@ export function createWorkerJSExportClient(
         }
     }
 
-    function invoke(handle: number, value: unknown): number {
+    function invoke(handle: number, value: unknown, isAsync: boolean): number | Promise<number | null> | null {
         ensureRunning();
         const isNull = value === null || value === undefined;
         if (!isNull && (typeof value !== "number" || !Number.isInteger(value) || value < -0x8000_0000 || value > 0x7fff_ffff)) {
@@ -77,6 +82,8 @@ export function createWorkerJSExportClient(
         const entry = jsexportEntryOffset(slot);
         let active = false;
         let published = false;
+        const id = promises.reserve();
+        let pendingPromise = false;
         try {
             const pointer = Atomics.load(signal, OFFSET_FRAME_PTRS + slot) >>> 0;
             const views = memory.refreshIfNeeded();
@@ -87,12 +94,12 @@ export function createWorkerJSExportClient(
             const argument = pointer + 2 * JavaScriptMarshalerArgSize;
             views.u8[argument + JSMarshalerArgumentOffsets.Type] = isNull ? MarshalerType.None : MarshalerType.Int32;
             views.i32[argument / 4] = isNull ? 0 : value;
-            const id = allocatePromiseId();
             callDepth++;
             active = true;
             Atomics.store(signal, entry + RING_ENTRY_HANDLE, handle);
             Atomics.store(signal, entry + RING_ENTRY_ARGS_PTR, pointer);
             Atomics.store(signal, entry + RING_ENTRY_PROMISE_ID, id);
+            Atomics.store(signal, entry + RING_ENTRY_RESULT_KIND, isAsync ? WorkerResultKind.Promise : WorkerResultKind.Scalar);
             Atomics.store(signal, OFFSET_JSEXPORT_QUEUE + head % JSEXPORT_RING_CAPACITY, slot);
             Atomics.store(signal, OFFSET_JSEXPORT_HEAD, (head + 1) >>> 0);
             published = true;
@@ -105,6 +112,14 @@ export function createWorkerJSExportClient(
             if (Atomics.load(signal, entry + RING_ENTRY_PROMISE_ID) !== id) throw new Error("withWorker(): export completion mismatch");
             if (state === SignalState.ERROR) throw readSharedError(signal, jsexportErrorOffset(slot));
             if (state !== SignalState.DONE) throw new Error("withWorker(): invalid export completion");
+            if (isAsync) {
+                const kind = Atomics.load(signal, entry + RING_ENTRY_RESULT_KIND);
+                if (kind === WorkerResultKind.Null) return null;
+                if (kind !== WorkerResultKind.Promise) throw new Error("withWorker(): invalid asynchronous export completion");
+                const promise = promises.promise(id);
+                pendingPromise = true;
+                return promise;
+            }
             const result = memory.refreshIfNeeded();
             const resultPointer = pointer + JavaScriptMarshalerArgSize;
             const type = result.u8[resultPointer + JSMarshalerArgumentOffsets.Type];
@@ -117,6 +132,7 @@ export function createWorkerJSExportClient(
             }
             throw error;
         } finally {
+            if (!pendingPromise) promises.release(id);
             Atomics.store(signal, entry + RING_ENTRY_SIGNAL, SignalState.IDLE);
             if (active) callDepth--;
         }
@@ -129,8 +145,8 @@ export function createWorkerJSExportClient(
             if (!descriptor.path.length || descriptor.path.some(part => !part)) throw new Error("withWorker(): invalid export path");
             let fn = functions.get(descriptor.handle);
             if (!fn) {
-                fn = descriptor.supported ? value => invoke(descriptor.handle, value) : () => {
-                    throw new Error("withWorker(): only synchronous Int32 -> Int32 exports are supported");
+                fn = descriptor.supported ? value => invoke(descriptor.handle, value, descriptor.isAsync === true) : () => {
+                    throw new Error("withWorker(): only Int32 -> Int32 or Task<Int32> exports are supported");
                 };
                 functions.set(descriptor.handle, fn);
             }
@@ -148,8 +164,12 @@ export function createWorkerJSExportClient(
         return result;
     }
 
-    function onMessage(event: MessageEvent<WorkerExportsResponse>): void {
+    function onMessage(event: MessageEvent<WorkerExportsResponse | WorkerPromiseMessage>): void {
         const message = event.data;
+        if (message.type === "async-export") {
+            promises.complete(message);
+            return;
+        }
         if (message.type !== "exports") return;
         const request = pending.get(message.requestId);
         if (!request) return;
@@ -187,6 +207,7 @@ export function createWorkerJSExportClient(
 
     function stop(error: Error): void {
         stopped = error;
+        promises.stop(error);
         worker.removeEventListener("message", onMessage);
         for (const request of pending.values()) request.completion.reject(error);
         pending.clear();
@@ -196,7 +217,17 @@ export function createWorkerJSExportClient(
     return { getAssemblyExports, stop, isCalling: () => callDepth !== 0 };
 }
 
-export function createWorkerJSExportDispatcher(signal: Int32Array, memory: MemoryViewManager, invoke: (handle: number, pointer: number) => void) {
+export function createWorkerJSExportDispatcher(
+    signal: Int32Array, memory: MemoryViewManager,
+    invoke: (handle: number, pointer: number) => unknown,
+    post: (message: WorkerPromiseMessage) => void = () => {
+        throw new Error("withWorker(): asynchronous export transport is missing");
+    },
+    onFailure: (error: Error) => void = error => {
+        throw error;
+    },
+) {
+    const active = new Set<number>();
     return (): void => {
         for (;;) {
             const tail = Atomics.load(signal, OFFSET_JSEXPORT_TAIL) >>> 0;
@@ -212,7 +243,12 @@ export function createWorkerJSExportDispatcher(signal: Int32Array, memory: Memor
                 if (!pointer || pointer % 4 !== 0 || pointer + 3 * JavaScriptMarshalerArgSize > memory.refreshIfNeeded().u8.byteLength) {
                     throw new Error("withWorker(): invalid export frame");
                 }
-                invoke(Atomics.load(signal, entry + RING_ENTRY_HANDLE), pointer);
+                const result = invoke(Atomics.load(signal, entry + RING_ENTRY_HANDLE), pointer);
+                if (Atomics.load(signal, entry + RING_ENTRY_RESULT_KIND) === WorkerResultKind.Promise) {
+                    const id = Atomics.load(signal, entry + RING_ENTRY_PROMISE_ID);
+                    const kind = captureWorkerPromise(result, id, "async-export", active, post, onFailure);
+                    Atomics.store(signal, entry + RING_ENTRY_RESULT_KIND, kind);
+                }
             } catch (error) {
                 writeSharedError(signal, jsexportErrorOffset(slot), error, "managed export");
                 state = SignalState.ERROR;

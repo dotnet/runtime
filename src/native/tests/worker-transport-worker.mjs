@@ -10,7 +10,7 @@ const sourceDirectory = new URL("../libs/Common/JavaScript/loader/", import.meta
 
 export function createWorkerModuleLoader(context, stubs, transform = (_specifier, source) => source) {
     const cache = new Map();
-    return async function load(specifier) {
+    async function getModule(specifier) {
         if (cache.has(specifier)) return cache.get(specifier);
         let module;
         if (stubs[specifier]) {
@@ -26,7 +26,11 @@ export function createWorkerModuleLoader(context, stubs, transform = (_specifier
             module = new SourceTextModule(output, { context, identifier: specifier });
         }
         cache.set(specifier, module);
-        await module.link(load);
+        return module;
+    }
+    return async function load(specifier) {
+        const module = await getModule(specifier);
+        if (module.status === "unlinked") await module.link(getModule);
         return module;
     };
 }
@@ -62,13 +66,17 @@ async function runWorker() {
     let argumentSize;
     let typeOffset;
     let int32Type;
-    function invokeImport(value) {
+    function invokeImport(value, isAsync = false) {
         const pointer = module._malloc(3 * argumentSize);
         try {
             new Uint8Array(memory.buffer).fill(0, pointer, pointer + 3 * argumentSize);
             new Int32Array(memory.buffer)[(pointer + 2 * argumentSize) / 4] = value;
             new Uint8Array(memory.buffer)[pointer + 2 * argumentSize + typeOffset] = int32Type;
-            return imports.get("main.js").get("update")(pointer);
+            const frame = new Uint8Array(memory.buffer, pointer + argumentSize, argumentSize);
+            if (isAsync) frame.fill(0x5a);
+            const result = imports.get("main.js").get("update")(pointer, isAsync);
+            if (isAsync && !frame.every(value => value === 0x5a)) throw new Error("Async import overwrote the native Task frame");
+            return result;
         } finally {
             module._free(pointer);
         }
@@ -84,6 +92,9 @@ async function runWorker() {
                 { path: ["Sample", "Test", "Scalar"], handle: 1, supported: true },
                 { path: ["Sample", "Test", "ThroughImport"], handle: 2, supported: true },
                 { path: ["Sample", "Test", "ActiveAllocations"], handle: 3, supported: true },
+                { path: ["Sample", "Test", "Async"], handle: 4, supported: true, isAsync: true },
+                { path: ["Sample", "Test", "AsyncImport"], handle: 5, supported: true, isAsync: true },
+                { path: ["Sample", "Test", "AsyncPrefix"], handle: 6, supported: true, isAsync: true },
             ],
             invokeWorkerJSExport: (handle, pointer) => {
                 const value = new Int32Array(memory.buffer)[(pointer + 2 * argumentSize) / 4];
@@ -95,6 +106,17 @@ async function runWorker() {
                     result = invokeImport(value);
                 } else if (handle === 3) {
                     result = allocations.size;
+                } else if (handle === 4) {
+                    if (value === -1) throw new Error("Synchronous Task export failure");
+                    if (value === -2) return null;
+                    if (value === -3) return Promise.reject(new Error("Asynchronous Task export failure"));
+                    if (value === -4) return new Promise(() => {});
+                    return new Promise(resolve => setTimeout(() => resolve(value + 1), 5));
+                } else if (handle === 5) {
+                    const promise = invokeImport(value, true);
+                    return promise === null ? null : Promise.resolve(promise);
+                } else if (handle === 6) {
+                    return Promise.resolve(invokeImport(value));
                 } else {
                     throw new Error("Unknown test export");
                 }
@@ -115,7 +137,7 @@ async function runWorker() {
         },
     };
     const context = createContext({
-        AbortController, Atomics, SharedArrayBuffer, setTimeout, clearTimeout,
+        AbortController, Atomics, Error, SharedArrayBuffer, setTimeout, clearTimeout,
         self: {
             addEventListener: (type, listener) => {
                 if (type === "message") parentPort.on("message", data => listener({ data }));
@@ -143,6 +165,9 @@ async function runWorker() {
     parentPort.once("message", message => {
         if (message.type !== "init") throw new Error("Expected worker initialization");
         void workerModule.namespace.bootstrapWorkerRuntime(message);
+    });
+    parentPort.on("message", message => {
+        if (message.type === "test-crash") throw new Error("M5 pending worker failure");
     });
 }
 

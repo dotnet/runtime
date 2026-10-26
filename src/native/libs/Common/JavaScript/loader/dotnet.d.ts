@@ -51,10 +51,12 @@ interface DotnetHostBuilder {
     /**
      * Configures the runtime to start on a dedicated web worker.
      * The main thread gets a proxy supporting runMain, runMainAndExit, and exit.
-     * UI imports and synchronous exports currently support one Int32 argument and an Int32 result.
+     * UI imports and exports currently support Int32 -> Int32 and Int32 -> Task<Int32>.
      * Register each module once, before running managed code.
      * Nested synchronous calls have 16 in-flight slots in each direction.
-     * Asynchronous exports, heap access, and diagnostics are not yet supported by the proxy.
+     * Asynchronous calls release those slots after their synchronous prefix.
+     * Asynchronous UI imports require native Promise results; custom thenables are not supported.
+     * Other marshaled types, heap access, and diagnostics are not yet supported by the proxy.
      * Requires COOP/COEP headers and SharedArrayBuffer support.
      */
     withWorker(options?: WorkerOptions): DotnetHostBuilder;

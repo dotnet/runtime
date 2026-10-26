@@ -57,6 +57,43 @@ namespace Sample
         [JSImport("Sample.Test.displayMeaning", "main.js")]
         internal static partial int DisplayMeaning(int meaning);
 
+        [JSImport("Sample.Test.readMeaningAsync", "main.js")]
+        internal static partial Task<int> ReadMeaningAsync(int meaning);
+
+        [JSExport]
+        internal static Task<int> TaskValue(int value)
+        {
+            return value switch
+            {
+                -1 => throw new InvalidOperationException("M5 synchronous Task failure"),
+                -2 => null!,
+                -3 => Task.FromException<int>(new InvalidOperationException("M5 asynchronous Task failure")),
+                _ => Task.FromResult(checked(value + 1))
+            };
+        }
+
+        [JSExport]
+        internal static async Task<int> DelayedValue(int value)
+        {
+            await Task.Delay(10);
+            if (value == -1)
+                throw new InvalidOperationException("M5 delayed Task failure");
+
+            return checked(value + 1);
+        }
+
+        [JSExport]
+        internal static Task<int> TaskThroughImport(int value)
+        {
+            return ReadMeaningAsync(value);
+        }
+
+        [JSExport]
+        internal static Task<int> TaskSyncPrefix(int value)
+        {
+            return Task.FromResult(DisplayMeaning(value));
+        }
+
         [JSExport]
         internal static int Increment(int value)
         {

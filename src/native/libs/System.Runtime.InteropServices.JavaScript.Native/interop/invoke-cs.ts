@@ -9,7 +9,7 @@ import type { WorkerExportDescriptor } from "../../Common/JavaScript/loader/work
 import { dotnetAssert, dotnetLogger, Module } from "./cross-module";
 
 import { bindAssemblyExports, invokeJSExport } from "./managed-exports";
-import { allocStackFrame, getArg, getMarshalerToCsByType, getSig, getSignatureType, getSignatureArgumentCount, getSignatureVersion, jsInteropState } from "./marshal";
+import { allocStackFrame, getArg, getMarshalerToCsByType, getSig, getSignatureType, getSignatureResType, getSignatureArgumentCount, getSignatureVersion, jsInteropState } from "./marshal";
 import { bindArgMarshalToCs } from "./marshal-to-cs";
 import { bindArgMarshalToJs, endMarshalTaskToJs, marshalInt32ToJs, releaseEagerTaskHolder } from "./marshal-to-js";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, isRuntimeRunning, startMeasure } from "./utils";
@@ -41,7 +41,7 @@ export async function getWorkerAssemblyExports(assemblyName: string): Promise<Wo
                 const closure: BindingClosureCS | undefined = Reflect.get(value, boundCsFunctionSymbol);
                 const supported = closure?.isWorkerScalar === true;
                 if (supported) workerExports.set(handle, value);
-                descriptors.push({ path, handle, supported });
+                descriptors.push({ path, handle, supported, isAsync: closure?.isAsync === true });
             } else if (value && typeof value === "object") {
                 walk(value, path);
             }
@@ -56,14 +56,21 @@ export async function getWorkerAssemblyExports(assemblyName: string): Promise<Wo
     }
 }
 
-export function invokeWorkerJSExport(handle: number, args: JSMarshalerArguments): void {
+export function invokeWorkerJSExport(handle: number, args: JSMarshalerArguments): Promise<number> | null | undefined {
     try {
         const fn = workerExports.get(handle);
         if (!fn) throw new Error("withWorker(): unknown or unsupported scalar export");
         const result = fn(marshalInt32ToJs(getArg(args, 2)));
+        const closure: BindingClosureCS = Reflect.get(fn, boundCsFunctionSymbol);
+        if (closure.isAsync) {
+            return result === null ? null : result.catch((error: unknown) => {
+                throw snapshotWorkerExportError(error);
+            });
+        }
         const converter = getMarshalerToCsByType(MarshalerType.Int32);
         if (!converter) throw new Error("Int32 marshaler is not initialized");
         converter(getArg(args, 1), result);
+        return undefined;
     } catch (error) {
         throw snapshotWorkerExportError(error);
     }
@@ -120,7 +127,8 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
         isAsync,
         isDiscardNoWait,
         isDisposed: false,
-        isWorkerScalar: argsCount === 1 && !isAsync && resMarshalerType === MarshalerType.Int32
+        isWorkerScalar: argsCount === 1 && ((!isAsync && resMarshalerType === MarshalerType.Int32)
+            || (isAsync && getSignatureResType(resSig) === MarshalerType.Int32))
             && getSignatureType(getSig(signature, 2)) === MarshalerType.Int32,
     };
     let boundFn: Function;

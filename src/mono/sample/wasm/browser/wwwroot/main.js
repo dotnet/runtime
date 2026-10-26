@@ -10,6 +10,23 @@ let nestedExport;
 let nestedScalar;
 let recordNestedOrder = false;
 const nestedEvents = [];
+const asyncEvents = [];
+
+function readMeaningAsync(value) {
+    asyncEvents.push(`prefix:${value}`);
+    if (value === -1) throw new Error("M5 synchronous UI failure");
+    if (value === -2) return null;
+    if (value === -3) return undefined;
+    if (value === -4) return 42;
+    if (value === -5) return Promise.reject(new Error("M5 asynchronous UI failure"));
+    if (value === -6) return { then: resolve => resolve(46) };
+    if (value === -7) return { then: (_resolve, reject) => reject(new Error("M5 thenable failure")) };
+    const result = nestedScalar(value);
+    return Promise.resolve().then(() => {
+        asyncEvents.push(`resolve:${value}`);
+        return result;
+    });
+}
 
 function displayMeaning(meaning) {
     if (nestedMode !== "off") {
@@ -71,7 +88,8 @@ try {
     setModuleImports("main.js", {
         Sample: {
             Test: {
-                displayMeaning
+                displayMeaning,
+                readMeaningAsync
             }
         }
     });
@@ -156,6 +174,74 @@ try {
     nestedMode = "off";
     console.log(`Nested export ordering: ${nestedEvents.join(",")}`);
     console.log("Nested export round trips completed.");
+    exportEvents.length = 0;
+    checkingExportOrder = true;
+    exportEvents.push("before");
+    const prefixTask = exports.Sample.Test.TaskSyncPrefix(41);
+    exportEvents.push("after");
+    checkingExportOrder = false;
+    if (exportEvents.join(",") !== "before,import,after" || await prefixTask !== 42) {
+        throw new Error("Task export synchronous prefix changed.");
+    }
+    if (exportEvents.join(",") !== "before,import,after,microtask") {
+        throw new Error("Task export microtask ordering changed.");
+    }
+    asyncEvents.push("before");
+    const asyncTask = exports.Sample.Test.TaskThroughImport(41);
+    asyncEvents.push("after");
+    if (asyncEvents.join(",") !== "before,prefix:41,after" || await asyncTask !== 42) {
+        throw new Error("Async import synchronous prefix changed.");
+    }
+    if (asyncEvents.join(",") !== "before,prefix:41,after,resolve:41") {
+        throw new Error("Async import completion ordering changed.");
+    }
+    if (await exports.Sample.Test.TaskValue(41) !== 42 || await exports.Sample.Test.DelayedValue(8) !== 9) {
+        throw new Error("Task scalar results changed.");
+    }
+    if (exports.Sample.Test.TaskValue(-2) !== null
+        || exports.Sample.Test.TaskThroughImport(-2) !== null
+        || exports.Sample.Test.TaskThroughImport(-3) !== null) {
+        throw new Error("Null Task results changed.");
+    }
+    for (const [invoke, message] of [
+        [() => exports.Sample.Test.TaskValue(-1), "M5 synchronous Task failure"],
+        [() => exports.Sample.Test.TaskThroughImport(-1), "M5 synchronous UI failure"],
+        [() => exports.Sample.Test.TaskThroughImport(-4), "Value is not a Promise"]
+    ]) {
+        try {
+            invoke();
+            throw new Error("Expected a synchronous Task-prefix exception.");
+        } catch (error) {
+            if (!error.message.includes(message)) throw error;
+            error.dispose?.();
+        }
+    }
+    for (const [invoke, message] of [
+        [() => exports.Sample.Test.TaskValue(-3), "M5 asynchronous Task failure"],
+        [() => exports.Sample.Test.DelayedValue(-1), "M5 delayed Task failure"],
+        [() => exports.Sample.Test.TaskThroughImport(-5), "M5 asynchronous UI failure"]
+    ]) {
+        try {
+            await invoke();
+            throw new Error("Expected an asynchronous Task exception.");
+        } catch (error) {
+            if (!error.message.includes(message)) throw error;
+            error.dispose?.();
+        }
+    }
+    if (getConfig().workerOptions) {
+        try {
+            exports.Sample.Test.TaskThroughImport(-6);
+            throw new Error("Expected an unsupported-thenable error.");
+        } catch (error) {
+            if (!error.message.includes("Promise")) throw error;
+        }
+    }
+    const concurrentResults = await Promise.all(Array.from({ length: 70 }, (_, value) => exports.Sample.Test.TaskThroughImport(value)));
+    if (concurrentResults.some((value, index) => value !== index + 1)) {
+        throw new Error("Concurrent Task results changed.");
+    }
+    console.log("Scalar asynchronous interop completed (70 concurrent calls).");
     const exitCode = await dotnet.runMainAndExit();
     console.log(`Program has exited with code ${exitCode}.`);
     exit(exitCode);

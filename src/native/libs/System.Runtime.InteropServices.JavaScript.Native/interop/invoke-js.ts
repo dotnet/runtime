@@ -8,7 +8,7 @@ import { dotnetBrowserUtilsExports, dotnetApi, dotnetAssert, dotnetLogger, VoidP
 import type { BindingClosureJS, BoundMarshalerToJs, JSFnHandle, JSFunctionSignature, JSHandle, JSMarshalerArguments, VoidPtr, WrappedJSFunction } from "./types";
 
 import { MarshalerType, MeasuredBlock } from "./types";
-import { getSig, getSignatureArgumentCount, getSignatureFunctionName, getSignatureHandle, getSignatureModuleName, getSignatureType, getSignatureVersion, isReceiverShouldFree, jsInteropState } from "./marshal";
+import { getSig, getSignatureArgumentCount, getSignatureFunctionName, getSignatureHandle, getSignatureModuleName, getSignatureType, getSignatureResType, getSignatureVersion, isReceiverShouldFree, jsInteropState } from "./marshal";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, fixupPointer, startMeasure } from "./utils";
 import { bindArgMarshalToJs } from "./marshal-to-js";
 import { boundJsFunctionSymbol, getJSObjectFromJSHandle, importedJsFunctionSymbol, jsImportWrapperByFnHandle } from "./gc-handles";
@@ -17,7 +17,7 @@ import { wrapAsCancelablePromise } from "./cancelable-promise";
 
 export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
-type WorkerImportInvoker = (args: JSMarshalerArguments) => number | null;
+type WorkerImportInvoker = (args: JSMarshalerArguments, isAsync: boolean) => unknown;
 const workerImports = new Map<string, Map<string, WorkerImportInvoker>>();
 
 export function registerWorkerJSImport(moduleName: string, functionName: string, invoke: WorkerImportInvoker): void {
@@ -68,14 +68,17 @@ function bindJsImport(signature: JSFunctionSignature): Function {
     const argsCount = getSignatureArgumentCount(signature);
     const workerInvoke = workerImports.get(jsModuleName)?.get(jsFunctionName);
     let currentWorkerArgs: JSMarshalerArguments | undefined;
+    const workerResSig = getSig(signature, 1);
+    const workerResType = getSignatureType(workerResSig);
+    const workerAsync = workerResType === MarshalerType.Task || workerResType === MarshalerType.TaskPreCreated;
     if (workerInvoke && (argsCount !== 1 || getSignatureType(getSig(signature, 2)) !== MarshalerType.Int32
-        || getSignatureType(getSig(signature, 1)) !== MarshalerType.Int32)) {
-        throw new Error("withWorker(): UI imports currently support only one Int32 argument and an Int32 result");
+        || (workerAsync ? getSignatureResType(workerResSig) !== MarshalerType.Int32 : workerResType !== MarshalerType.Int32))) {
+        throw new Error("withWorker(): UI imports support only Int32 -> Int32 or Task<Int32>");
     }
     const fn = workerInvoke
         ? () => {
             if (currentWorkerArgs === undefined) throw new Error("withWorker(): UI import argument frame is missing");
-            return workerInvoke(currentWorkerArgs);
+            return workerInvoke(currentWorkerArgs, workerAsync);
         }
         : lookupJsImport(jsFunctionName, jsModuleName);
 

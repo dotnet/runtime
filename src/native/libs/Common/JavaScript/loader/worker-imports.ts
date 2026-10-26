@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { JSMarshalerArguments } from "./types";
+import type { WorkerPromiseMessage } from "./worker-promises";
+import { captureWorkerPromise, createWorkerPromises } from "./worker-promises";
 import { JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 import {
-    allocatePromiseId, JSIMPORT_RING_CAPACITY, jsimportEntryOffset, jsimportErrorOffset,
+    JSIMPORT_RING_CAPACITY, jsimportEntryOffset, jsimportErrorOffset,
     MemoryViewManager, readSharedError, writeSharedError, reserveCallSlot, OFFSET_JSIMPORT_RING, OFFSET_JSIMPORT_QUEUE,
     OFFSET_JSIMPORT_HEAD, OFFSET_JSIMPORT_TAIL, OFFSET_WAKEUP_MAIN, OFFSET_WAKEUP_WORKER,
     RING_ENTRY_ARGS_PTR, RING_ENTRY_HANDLE, RING_ENTRY_PROMISE_ID, RING_ENTRY_SIGNAL,
+    RING_ENTRY_RESULT_KIND, WorkerResultKind,
     SignalState, wakeMain, wakeWorker,
 } from "./shared-signaling";
 
@@ -22,11 +25,12 @@ type UIImportFunction = (value: number) => unknown;
 export function createWorkerJSImportDispatcher(
     signal: Int32Array,
     memory: MemoryViewManager,
-    postImports: (message: WorkerModuleImportsMessage) => void,
+    postImports: (message: WorkerModuleImportsMessage | WorkerPromiseMessage) => void,
     onFailure: (error: Error) => void,
 ) {
     const functions = new Map<number, UIImportFunction>();
     const modules = new Set<string>();
+    const active = new Set<number>();
     let nextHandle = 1;
     let stopped = false;
     let dispatchDepth = 0;
@@ -70,6 +74,7 @@ export function createWorkerJSImportDispatcher(
             }
             Atomics.store(signal, OFFSET_JSIMPORT_TAIL, (tail + 1) >>> 0);
             let state = SignalState.DONE;
+            dispatchDepth++;
             try {
                 const invoke = functions.get(Atomics.load(signal, entry + RING_ENTRY_HANDLE));
                 if (!invoke) throw new Error("withWorker(): unknown UI import handle");
@@ -79,14 +84,13 @@ export function createWorkerJSImportDispatcher(
                     throw new Error("withWorker(): invalid UI import argument frame");
                 }
                 const value = views.i32[(pointer + 2 * JavaScriptMarshalerArgSize + JSMarshalerArgumentOffsets.Int32Value) / 4];
-                let response: unknown;
-                dispatchDepth++;
-                try {
-                    response = invoke(value);
-                } finally {
-                    dispatchDepth--;
+                const result = invoke(value);
+                if (Atomics.load(signal, entry + RING_ENTRY_RESULT_KIND) === WorkerResultKind.Promise) {
+                    const id = Atomics.load(signal, entry + RING_ENTRY_PROMISE_ID);
+                    const kind = captureWorkerPromise(result, id, "async-import", active, postImports, onFailure);
+                    Atomics.store(signal, entry + RING_ENTRY_RESULT_KIND, kind);
+                    continue;
                 }
-                const result = response;
                 const isNull = result === null || result === undefined;
                 if (!isNull && (typeof result !== "number" || !Number.isInteger(result) || result < -0x8000_0000 || result > 0x7fff_ffff)) {
                     throw new Error("withWorker(): UI import must return a synchronous Int32");
@@ -98,9 +102,11 @@ export function createWorkerJSImportDispatcher(
             } catch (error) {
                 writeSharedError(signal, jsimportErrorOffset(slot), error, "UI import");
                 state = SignalState.ERROR;
+            } finally {
+                dispatchDepth--;
+                Atomics.store(signal, entry + RING_ENTRY_SIGNAL, state);
+                wakeWorker(signal);
             }
-            Atomics.store(signal, entry + RING_ENTRY_SIGNAL, state);
-            wakeWorker(signal);
         }
     }
 
@@ -125,6 +131,7 @@ export function createWorkerJSImportDispatcher(
         stopped = true;
         functions.clear();
         modules.clear();
+        active.clear();
         wakeMain(signal);
     }
 
@@ -132,8 +139,11 @@ export function createWorkerJSImportDispatcher(
     return { setModuleImports, processPending, stop, isDispatching: () => dispatchDepth !== 0 };
 }
 
-export function createWorkerJSImportInvoker(signal: Int32Array, memory: MemoryViewManager, handle: number, processExports: () => void) {
-    return (args: JSMarshalerArguments): number | null => {
+export function createWorkerJSImportInvoker(
+    signal: Int32Array, memory: MemoryViewManager, handle: number, processExports: () => void,
+    promises = createWorkerPromises(),
+) {
+    return (args: JSMarshalerArguments, isAsync = false): unknown => {
         const head = Atomics.load(signal, OFFSET_JSIMPORT_HEAD) >>> 0;
         const tail = Atomics.load(signal, OFFSET_JSIMPORT_TAIL) >>> 0;
         if (((head - tail) >>> 0) >= JSIMPORT_RING_CAPACITY) {
@@ -141,10 +151,12 @@ export function createWorkerJSImportInvoker(signal: Int32Array, memory: MemoryVi
         }
         const slot = reserveCallSlot(signal, OFFSET_JSIMPORT_RING, JSIMPORT_RING_CAPACITY, "UI import");
         const entry = jsimportEntryOffset(slot);
-        const id = allocatePromiseId();
+        const id = promises.reserve();
+        let pendingPromise = false;
         Atomics.store(signal, entry + RING_ENTRY_PROMISE_ID, id);
         Atomics.store(signal, entry + RING_ENTRY_HANDLE, handle);
         Atomics.store(signal, entry + RING_ENTRY_ARGS_PTR, Number(args));
+        Atomics.store(signal, entry + RING_ENTRY_RESULT_KIND, isAsync ? WorkerResultKind.Promise : WorkerResultKind.Scalar);
         Atomics.store(signal, OFFSET_JSIMPORT_QUEUE + head % JSIMPORT_RING_CAPACITY, slot);
         Atomics.store(signal, OFFSET_JSIMPORT_HEAD, (head + 1) >>> 0);
         wakeMain(signal);
@@ -164,6 +176,16 @@ export function createWorkerJSImportInvoker(signal: Int32Array, memory: MemoryVi
                 throw readSharedError(signal, jsimportErrorOffset(slot));
             }
             if (state !== SignalState.DONE) throw new Error("withWorker(): invalid UI import completion");
+            if (isAsync) {
+                const kind = Atomics.load(signal, entry + RING_ENTRY_RESULT_KIND);
+                if (kind === WorkerResultKind.Null) return null;
+                if (kind === WorkerResultKind.Promise) {
+                    const promise = promises.promise(id);
+                    pendingPromise = true;
+                    return promise;
+                }
+                throw new Error("withWorker(): invalid asynchronous UI import completion");
+            }
             const views = memory.refreshIfNeeded();
             const resultPointer = Number(args) + JavaScriptMarshalerArgSize;
             const resultType = views.u8[resultPointer + JSMarshalerArgumentOffsets.Type];
@@ -171,6 +193,7 @@ export function createWorkerJSImportInvoker(signal: Int32Array, memory: MemoryVi
             if (resultType !== MarshalerType.Int32) throw new Error("withWorker(): invalid UI import result type");
             return views.i32[(resultPointer + JSMarshalerArgumentOffsets.Int32Value) / 4];
         } finally {
+            if (!pendingPromise) promises.release(id);
             Atomics.store(signal, entry + RING_ENTRY_SIGNAL, SignalState.IDLE);
         }
     };

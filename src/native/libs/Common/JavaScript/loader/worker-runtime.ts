@@ -36,6 +36,8 @@ import type { WorkerModuleImportsMessage } from "./worker-imports";
 import { createWorkerJSImportInvoker } from "./worker-imports";
 import type { WorkerExportDescriptor, WorkerExportsRequest, WorkerExportsResponse } from "./worker-exports";
 import { createWorkerJSExportDispatcher } from "./worker-exports";
+import type { WorkerPromiseMessage } from "./worker-promises";
+import { createWorkerPromises } from "./worker-promises";
 
 // -----------------------------------------------------------
 // Init message types (exchanged via postMessage during Phase A)
@@ -69,7 +71,7 @@ export interface WorkerErrorMessage {
     stack?: string;
 }
 
-export type WorkerToMainMessage = WorkerReadyMessage | WorkerErrorMessage | WorkerExportsResponse;
+export type WorkerToMainMessage = WorkerReadyMessage | WorkerErrorMessage | WorkerExportsResponse | WorkerPromiseMessage;
 
 // -----------------------------------------------------------
 // Wait for init message from main thread
@@ -176,10 +178,14 @@ export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promis
 function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryViews: MemoryViewManager): void {
     let closing = false;
     let commandRunning = false;
+    const promises = createWorkerPromises();
     const processExports = createWorkerJSExportDispatcher(signalView, memoryViews, (handle, pointer) => {
-        runtime.INTERNAL.invokeWorkerJSExport(handle, pointer);
-    });
+        return runtime.INTERNAL.invokeWorkerJSExport(handle, pointer);
+    }, message => {
+        if (!closing) self.postMessage(message);
+    }, reportFailure);
     function reportFailure(error: unknown): void {
+        promises.stop(error instanceof Error ? error : new Error(String(error)));
         writeSharedError(signalView, OFFSET_WORKER_ERROR_LENGTH, error, "worker");
         Atomics.store(signalView, OFFSET_WORKER_STATE, SignalState.ERROR);
         wakeMain(signalView);
@@ -195,7 +201,11 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
         }
     }
 
-    self.addEventListener("message", (ev: MessageEvent<WorkerCommandMessage | WorkerModuleImportsMessage | WorkerExportsRequest>): void => {
+    self.addEventListener("message", (ev: MessageEvent<WorkerCommandMessage | WorkerModuleImportsMessage | WorkerExportsRequest | WorkerPromiseMessage>): void => {
+        if (ev.data.type === "async-import" && !closing) {
+            promises.complete(ev.data);
+            return;
+        }
         if (ev.data.type === "exports" && !closing) {
             const request = ev.data;
             void runtime.INTERNAL.getWorkerAssemblyExports(request.assemblyName).then(
@@ -208,7 +218,7 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
         }
         if (ev.data.type === "imports" && !closing) {
             for (const entry of ev.data.functions) {
-                runtime.INTERNAL.registerWorkerJSImport(ev.data.moduleName, entry.name, createWorkerJSImportInvoker(signalView, memoryViews, entry.handle, pumpExports));
+                runtime.INTERNAL.registerWorkerJSImport(ev.data.moduleName, entry.name, createWorkerJSImportInvoker(signalView, memoryViews, entry.handle, pumpExports, promises));
             }
             return;
         }
@@ -230,6 +240,7 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
             wakeMain(signalView);
             if (command.commandId !== CommandId.RUN_MAIN) {
                 closing = true;
+                promises.stop(new Error("withWorker(): worker has exited"));
                 Atomics.store(signalView, OFFSET_WORKER_STATE, SignalState.DONE);
                 self.close();
             }
