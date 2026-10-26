@@ -24,7 +24,7 @@ export const enum CommandId {
 }
 
 // Layout version — bump when the signaling buffer layout changes
-export const SIGNALING_VERSION = 3;
+export const SIGNALING_VERSION = 4;
 
 // Number of entries in the JSImport ring buffer (worker → main)
 export const JSIMPORT_RING_CAPACITY = 16;
@@ -69,12 +69,16 @@ export const OFFSET_JSEXPORT_RING = OFFSET_JSEXPORT_HEAD + 2;
 // Frame pointer ring (pre-allocated memory slots for main → worker arg frames)
 export const OFFSET_FRAME_PTRS = OFFSET_JSEXPORT_RING + JSEXPORT_RING_CAPACITY * RING_ENTRY_SIZE;
 
-// Total signaling buffer size in Int32 elements
-export const OFFSET_JSIMPORT_ERROR_LENGTH = OFFSET_FRAME_PTRS + FRAME_RING_CAPACITY;
-export const OFFSET_JSIMPORT_ERROR_TEXT = OFFSET_JSIMPORT_ERROR_LENGTH + 1;
+// Dispatch queues contain call-slot indices; a claimed slot remains owned until
+// its caller consumes the completion.
+export const OFFSET_JSIMPORT_QUEUE = OFFSET_FRAME_PTRS + FRAME_RING_CAPACITY;
+export const OFFSET_JSEXPORT_QUEUE = OFFSET_JSIMPORT_QUEUE + JSIMPORT_RING_CAPACITY;
 export const JSIMPORT_ERROR_CAPACITY = 4096;
-export const OFFSET_JSEXPORT_ERROR_LENGTH = OFFSET_JSIMPORT_ERROR_TEXT + JSIMPORT_ERROR_CAPACITY;
-export const OFFSET_WORKER_STATE = OFFSET_JSEXPORT_ERROR_LENGTH + 1 + JSIMPORT_ERROR_CAPACITY;
+const ERROR_SLOT_SIZE = 1 + JSIMPORT_ERROR_CAPACITY;
+export const OFFSET_JSIMPORT_ERROR_LENGTH = OFFSET_JSEXPORT_QUEUE + JSEXPORT_RING_CAPACITY;
+export const OFFSET_JSEXPORT_ERROR_LENGTH = OFFSET_JSIMPORT_ERROR_LENGTH + JSIMPORT_RING_CAPACITY * ERROR_SLOT_SIZE;
+export const OFFSET_WORKER_ERROR_LENGTH = OFFSET_JSEXPORT_ERROR_LENGTH + JSEXPORT_RING_CAPACITY * ERROR_SLOT_SIZE;
+export const OFFSET_WORKER_STATE = OFFSET_WORKER_ERROR_LENGTH + ERROR_SLOT_SIZE;
 export const SIGNALING_BUFFER_INT32_SIZE = OFFSET_WORKER_STATE + 1;
 
 // Total signaling buffer size in bytes (Int32Array element = 4 bytes)
@@ -95,7 +99,9 @@ export const RING_ENTRY_ARGS_PTR = 3;
 let nextPromiseId = 1;
 
 export function allocatePromiseId(): number {
-    return nextPromiseId++;
+    const id = nextPromiseId;
+    nextPromiseId = (nextPromiseId + 1) | 0;
+    return id;
 }
 
 // -----------------------------------------------------------
@@ -170,6 +176,24 @@ export function jsimportEntryOffset(index: number): number {
 
 export function jsexportEntryOffset(index: number): number {
     return ringEntryOffset(OFFSET_JSEXPORT_RING, index, JSEXPORT_RING_CAPACITY);
+}
+
+export function jsimportErrorOffset(slot: number): number {
+    return OFFSET_JSIMPORT_ERROR_LENGTH + slot * ERROR_SLOT_SIZE;
+}
+
+export function jsexportErrorOffset(slot: number): number {
+    return OFFSET_JSEXPORT_ERROR_LENGTH + slot * ERROR_SLOT_SIZE;
+}
+
+export function reserveCallSlot(signal: Int32Array, base: number, capacity: number, context: string): number {
+    for (let slot = 0; slot < capacity; slot++) {
+        const entry = ringEntryOffset(base, slot, capacity);
+        if (Atomics.compareExchange(signal, entry + RING_ENTRY_SIGNAL, SignalState.IDLE, SignalState.PENDING) === SignalState.IDLE) {
+            return slot;
+        }
+    }
+    throw new Error(`withWorker(): ${context} queue is full`);
 }
 
 // -----------------------------------------------------------

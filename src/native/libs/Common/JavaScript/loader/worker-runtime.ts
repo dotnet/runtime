@@ -22,7 +22,7 @@ import {
     OFFSET_COMMAND_SIGNAL,
     OFFSET_COMMAND_RESULT,
     OFFSET_COMMAND_PROMISE_ID,
-    OFFSET_JSEXPORT_ERROR_LENGTH,
+    OFFSET_WORKER_ERROR_LENGTH,
     OFFSET_WORKER_STATE,
     OFFSET_WAKEUP_WORKER,
     OFFSET_FRAME_PTRS,
@@ -180,11 +180,20 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
         runtime.INTERNAL.invokeWorkerJSExport(handle, pointer);
     });
     function reportFailure(error: unknown): void {
-        writeSharedError(signalView, OFFSET_JSEXPORT_ERROR_LENGTH, error, "worker");
+        writeSharedError(signalView, OFFSET_WORKER_ERROR_LENGTH, error, "worker");
         Atomics.store(signalView, OFFSET_WORKER_STATE, SignalState.ERROR);
         wakeMain(signalView);
     }
     self.addEventListener("error", (event: ErrorEvent) => reportFailure(event.error ?? new Error(event.message)));
+    function pumpExports(): void {
+        try {
+            processExports();
+        } catch (error) {
+            reportFailure(error);
+            self.postMessage({ type: "error", message: error instanceof Error ? error.message : String(error) });
+            throw error;
+        }
+    }
 
     self.addEventListener("message", (ev: MessageEvent<WorkerCommandMessage | WorkerModuleImportsMessage | WorkerExportsRequest>): void => {
         if (ev.data.type === "exports" && !closing) {
@@ -199,7 +208,7 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
         }
         if (ev.data.type === "imports" && !closing) {
             for (const entry of ev.data.functions) {
-                runtime.INTERNAL.registerWorkerJSImport(ev.data.moduleName, entry.name, createWorkerJSImportInvoker(signalView, memoryViews, entry.handle));
+                runtime.INTERNAL.registerWorkerJSImport(ev.data.moduleName, entry.name, createWorkerJSImportInvoker(signalView, memoryViews, entry.handle, pumpExports));
             }
             return;
         }
@@ -241,7 +250,7 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
         if (closing) return;
         const lastSeen = Atomics.load(signalView, OFFSET_WAKEUP_WORKER);
         // Process anything already pending
-        processExports();
+        pumpExports();
 
         // Wait asynchronously for next wakeup — keeps event loop alive
         // so that async operations (runMainAndExit, Promises) can resolve.

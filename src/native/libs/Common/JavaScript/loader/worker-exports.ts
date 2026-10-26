@@ -5,8 +5,9 @@ import type { PromiseCompletionSource } from "./types";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 import {
-    allocatePromiseId, JSEXPORT_RING_CAPACITY, jsexportEntryOffset, MemoryViewManager,
-    OFFSET_FRAME_PTRS, OFFSET_JSEXPORT_ERROR_LENGTH, OFFSET_JSEXPORT_HEAD, OFFSET_JSEXPORT_TAIL,
+    allocatePromiseId, JSEXPORT_RING_CAPACITY, jsexportEntryOffset, jsexportErrorOffset, MemoryViewManager,
+    OFFSET_FRAME_PTRS, OFFSET_WORKER_ERROR_LENGTH, OFFSET_JSEXPORT_HEAD, OFFSET_JSEXPORT_TAIL,
+    OFFSET_JSEXPORT_QUEUE, OFFSET_JSEXPORT_RING, reserveCallSlot,
     OFFSET_WORKER_STATE,
     RING_ENTRY_ARGS_PTR, RING_ENTRY_HANDLE, RING_ENTRY_PROMISE_ID, RING_ENTRY_SIGNAL,
     readSharedError, SignalState, spinWaitWithJSImportService, wakeMain, wakeWorker, writeSharedError,
@@ -46,7 +47,7 @@ export function createWorkerJSExportClient(
     const pending = new Map<number, PendingExports>();
     const assemblies = new Map<string, Promise<AssemblyExports>>();
     let stopped: Error | undefined;
-    let calling = false;
+    let callDepth = 0;
 
     function ensureRunning(): void {
         assertRunning();
@@ -54,7 +55,7 @@ export function createWorkerJSExportClient(
         const state = Atomics.load(signal, OFFSET_WORKER_STATE);
         if (state !== SignalState.IDLE) {
             const error = state === SignalState.ERROR
-                ? readSharedError(signal, OFFSET_JSEXPORT_ERROR_LENGTH)
+                ? readSharedError(signal, OFFSET_WORKER_ERROR_LENGTH)
                 : new Error("withWorker(): worker has exited");
             onFailure(error);
             throw error;
@@ -63,34 +64,38 @@ export function createWorkerJSExportClient(
 
     function invoke(handle: number, value: unknown): number {
         ensureRunning();
-        if (calling) throw new Error("withWorker(): nested synchronous exports are not supported yet");
         const isNull = value === null || value === undefined;
         if (!isNull && (typeof value !== "number" || !Number.isInteger(value) || value < -0x8000_0000 || value > 0x7fff_ffff)) {
             throw new Error("withWorker(): export argument must be an Int32");
         }
         const head = Atomics.load(signal, OFFSET_JSEXPORT_HEAD) >>> 0;
         const tail = Atomics.load(signal, OFFSET_JSEXPORT_TAIL) >>> 0;
-        const entry = jsexportEntryOffset(head);
-        if (((head - tail) >>> 0) >= JSEXPORT_RING_CAPACITY || Atomics.load(signal, entry + RING_ENTRY_SIGNAL) !== SignalState.IDLE) {
+        if (((head - tail) >>> 0) >= JSEXPORT_RING_CAPACITY) {
             throw new Error("withWorker(): export queue is full");
         }
-        const pointer = Atomics.load(signal, OFFSET_FRAME_PTRS + head % JSEXPORT_RING_CAPACITY) >>> 0;
-        const views = memory.refreshIfNeeded();
-        if (!pointer || pointer % 4 !== 0 || pointer + 3 * JavaScriptMarshalerArgSize > views.u8.byteLength) {
-            throw new Error("withWorker(): invalid export argument frame");
-        }
-        views.u8.fill(0, pointer, pointer + 3 * JavaScriptMarshalerArgSize);
-        const argument = pointer + 2 * JavaScriptMarshalerArgSize;
-        views.u8[argument + JSMarshalerArgumentOffsets.Type] = isNull ? MarshalerType.None : MarshalerType.Int32;
-        views.i32[argument / 4] = isNull ? 0 : value;
-        const id = allocatePromiseId();
-        calling = true;
-        Atomics.store(signal, entry + RING_ENTRY_HANDLE, handle);
-        Atomics.store(signal, entry + RING_ENTRY_ARGS_PTR, pointer);
-        Atomics.store(signal, entry + RING_ENTRY_PROMISE_ID, id);
-        Atomics.store(signal, entry + RING_ENTRY_SIGNAL, SignalState.PENDING);
-        Atomics.store(signal, OFFSET_JSEXPORT_HEAD, (head + 1) >>> 0);
+        const slot = reserveCallSlot(signal, OFFSET_JSEXPORT_RING, JSEXPORT_RING_CAPACITY, "export");
+        const entry = jsexportEntryOffset(slot);
+        let active = false;
+        let published = false;
         try {
+            const pointer = Atomics.load(signal, OFFSET_FRAME_PTRS + slot) >>> 0;
+            const views = memory.refreshIfNeeded();
+            if (!pointer || pointer % 4 !== 0 || pointer + 3 * JavaScriptMarshalerArgSize > views.u8.byteLength) {
+                throw new Error("withWorker(): invalid export argument frame");
+            }
+            views.u8.fill(0, pointer, pointer + 3 * JavaScriptMarshalerArgSize);
+            const argument = pointer + 2 * JavaScriptMarshalerArgSize;
+            views.u8[argument + JSMarshalerArgumentOffsets.Type] = isNull ? MarshalerType.None : MarshalerType.Int32;
+            views.i32[argument / 4] = isNull ? 0 : value;
+            const id = allocatePromiseId();
+            callDepth++;
+            active = true;
+            Atomics.store(signal, entry + RING_ENTRY_HANDLE, handle);
+            Atomics.store(signal, entry + RING_ENTRY_ARGS_PTR, pointer);
+            Atomics.store(signal, entry + RING_ENTRY_PROMISE_ID, id);
+            Atomics.store(signal, OFFSET_JSEXPORT_QUEUE + head % JSEXPORT_RING_CAPACITY, slot);
+            Atomics.store(signal, OFFSET_JSEXPORT_HEAD, (head + 1) >>> 0);
+            published = true;
             wakeWorker(signal);
             const state = spinWaitWithJSImportService(signal, entry + RING_ENTRY_SIGNAL, SignalState.PENDING, memory, () => {
                 ensureRunning();
@@ -98,7 +103,7 @@ export function createWorkerJSExportClient(
             });
             ensureRunning();
             if (Atomics.load(signal, entry + RING_ENTRY_PROMISE_ID) !== id) throw new Error("withWorker(): export completion mismatch");
-            if (state === SignalState.ERROR) throw readSharedError(signal, OFFSET_JSEXPORT_ERROR_LENGTH);
+            if (state === SignalState.ERROR) throw readSharedError(signal, jsexportErrorOffset(slot));
             if (state !== SignalState.DONE) throw new Error("withWorker(): invalid export completion");
             const result = memory.refreshIfNeeded();
             const resultPointer = pointer + JavaScriptMarshalerArgSize;
@@ -107,13 +112,13 @@ export function createWorkerJSExportClient(
             if (type !== MarshalerType.Int32) throw new Error("withWorker(): invalid export result type");
             return result.i32[resultPointer / 4];
         } catch (error) {
-            if (Atomics.load(signal, entry + RING_ENTRY_SIGNAL) === SignalState.PENDING) {
+            if (published && Atomics.load(signal, entry + RING_ENTRY_SIGNAL) === SignalState.PENDING) {
                 onFailure(error instanceof Error ? error : new Error(String(error)));
             }
             throw error;
         } finally {
             Atomics.store(signal, entry + RING_ENTRY_SIGNAL, SignalState.IDLE);
-            calling = false;
+            if (active) callDepth--;
         }
     }
 
@@ -160,7 +165,7 @@ export function createWorkerJSExportClient(
 
     async function getAssemblyExports(assemblyName: string): Promise<AssemblyExports> {
         ensureRunning();
-        if (calling) throw new Error("withWorker(): bind exports outside synchronous calls");
+        if (callDepth !== 0) throw new Error("withWorker(): bind exports outside synchronous calls");
         const name = assemblyName.endsWith(".dll") ? assemblyName.slice(0, -4) : assemblyName;
         if (!name) throw new Error("withWorker(): assembly name is required");
         const cached = assemblies.get(name);
@@ -188,15 +193,19 @@ export function createWorkerJSExportClient(
         assemblies.clear();
     }
     worker.addEventListener("message", onMessage);
-    return { getAssemblyExports, stop, isCalling: () => calling };
+    return { getAssemblyExports, stop, isCalling: () => callDepth !== 0 };
 }
 
 export function createWorkerJSExportDispatcher(signal: Int32Array, memory: MemoryViewManager, invoke: (handle: number, pointer: number) => void) {
     return (): void => {
-        let tail = Atomics.load(signal, OFFSET_JSEXPORT_TAIL) >>> 0;
-        while (tail !== (Atomics.load(signal, OFFSET_JSEXPORT_HEAD) >>> 0)) {
-            const entry = jsexportEntryOffset(tail);
+        for (;;) {
+            const tail = Atomics.load(signal, OFFSET_JSEXPORT_TAIL) >>> 0;
+            if (tail === (Atomics.load(signal, OFFSET_JSEXPORT_HEAD) >>> 0)) return;
+            const slot = Atomics.load(signal, OFFSET_JSEXPORT_QUEUE + tail % JSEXPORT_RING_CAPACITY);
+            if (slot < 0 || slot >= JSEXPORT_RING_CAPACITY) throw new Error("withWorker(): invalid export slot");
+            const entry = jsexportEntryOffset(slot);
             if (Atomics.load(signal, entry + RING_ENTRY_SIGNAL) !== SignalState.PENDING) throw new Error("withWorker(): invalid export queue state");
+            Atomics.store(signal, OFFSET_JSEXPORT_TAIL, (tail + 1) >>> 0);
             let state = SignalState.DONE;
             try {
                 const pointer = Atomics.load(signal, entry + RING_ENTRY_ARGS_PTR) >>> 0;
@@ -205,12 +214,10 @@ export function createWorkerJSExportDispatcher(signal: Int32Array, memory: Memor
                 }
                 invoke(Atomics.load(signal, entry + RING_ENTRY_HANDLE), pointer);
             } catch (error) {
-                writeSharedError(signal, OFFSET_JSEXPORT_ERROR_LENGTH, error, "managed export");
+                writeSharedError(signal, jsexportErrorOffset(slot), error, "managed export");
                 state = SignalState.ERROR;
             }
             Atomics.store(signal, entry + RING_ENTRY_SIGNAL, state);
-            tail = (tail + 1) >>> 0;
-            Atomics.store(signal, OFFSET_JSEXPORT_TAIL, tail);
             wakeMain(signal);
         }
     };

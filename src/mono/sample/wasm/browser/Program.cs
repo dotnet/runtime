@@ -14,6 +14,23 @@ namespace Sample
         {
             Console.WriteLine("Hello from WASM!");
             Console.WriteLine($"Arguments: {string.Join(", ", args)}");
+            if (args.Length > 0 && args[0] == "M4-root")
+            {
+                int depth = args.Length > 1 ? int.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture) : 3;
+                try
+                {
+                    int result = DisplayMeaning(depth);
+                    if (result != depth + 1)
+                        throw new InvalidOperationException($"Root import nesting returned {result} for {depth}.");
+                }
+                catch (JSException exception) when (args.Length > 2 && args[2] == "catch-capacity"
+                    && exception.Message.Contains("queue is full", StringComparison.Ordinal))
+                {
+                    Console.WriteLine("Root import capacity error recovered.");
+                }
+                Console.WriteLine("Root import nesting completed.");
+                return Task.FromResult(0);
+            }
             for (int value = 0; value < 64; value++)
             {
                 int result = DisplayMeaning(value);

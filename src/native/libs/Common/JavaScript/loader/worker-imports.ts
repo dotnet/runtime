@@ -4,8 +4,8 @@
 import type { JSMarshalerArguments } from "./types";
 import { JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 import {
-    allocatePromiseId, JSIMPORT_RING_CAPACITY, jsimportEntryOffset,
-    MemoryViewManager, OFFSET_JSIMPORT_ERROR_LENGTH, readSharedError, writeSharedError,
+    allocatePromiseId, JSIMPORT_RING_CAPACITY, jsimportEntryOffset, jsimportErrorOffset,
+    MemoryViewManager, readSharedError, writeSharedError, reserveCallSlot, OFFSET_JSIMPORT_RING, OFFSET_JSIMPORT_QUEUE,
     OFFSET_JSIMPORT_HEAD, OFFSET_JSIMPORT_TAIL, OFFSET_WAKEUP_MAIN, OFFSET_WAKEUP_WORKER,
     RING_ENTRY_ARGS_PTR, RING_ENTRY_HANDLE, RING_ENTRY_PROMISE_ID, RING_ENTRY_SIGNAL,
     SignalState, wakeMain, wakeWorker,
@@ -29,7 +29,7 @@ export function createWorkerJSImportDispatcher(
     const modules = new Set<string>();
     let nextHandle = 1;
     let stopped = false;
-    let dispatching = false;
+    let dispatchDepth = 0;
 
     function setModuleImports(moduleName: string, moduleImports: unknown): void {
         if (stopped) throw new Error("withWorker(): runtime has exited");
@@ -59,12 +59,16 @@ export function createWorkerJSImportDispatcher(
 
     function processPending(): void {
         if (stopped) return;
-        let tail = Atomics.load(signal, OFFSET_JSIMPORT_TAIL) >>> 0;
-        while (tail !== (Atomics.load(signal, OFFSET_JSIMPORT_HEAD) >>> 0)) {
-            const entry = jsimportEntryOffset(tail);
+        for (;;) {
+            const tail = Atomics.load(signal, OFFSET_JSIMPORT_TAIL) >>> 0;
+            if (tail === (Atomics.load(signal, OFFSET_JSIMPORT_HEAD) >>> 0)) return;
+            const slot = Atomics.load(signal, OFFSET_JSIMPORT_QUEUE + tail % JSIMPORT_RING_CAPACITY);
+            if (slot < 0 || slot >= JSIMPORT_RING_CAPACITY) throw new Error("withWorker(): invalid UI import slot");
+            const entry = jsimportEntryOffset(slot);
             if (Atomics.load(signal, entry + RING_ENTRY_SIGNAL) !== SignalState.PENDING) {
                 throw new Error("withWorker(): invalid UI import queue state");
             }
+            Atomics.store(signal, OFFSET_JSIMPORT_TAIL, (tail + 1) >>> 0);
             let state = SignalState.DONE;
             try {
                 const invoke = functions.get(Atomics.load(signal, entry + RING_ENTRY_HANDLE));
@@ -76,11 +80,11 @@ export function createWorkerJSImportDispatcher(
                 }
                 const value = views.i32[(pointer + 2 * JavaScriptMarshalerArgSize + JSMarshalerArgumentOffsets.Int32Value) / 4];
                 let response: unknown;
-                dispatching = true;
+                dispatchDepth++;
                 try {
                     response = invoke(value);
                 } finally {
-                    dispatching = false;
+                    dispatchDepth--;
                 }
                 const result = response;
                 const isNull = result === null || result === undefined;
@@ -92,13 +96,10 @@ export function createWorkerJSImportDispatcher(
                 output.u8[resultPointer + JSMarshalerArgumentOffsets.Type] = isNull ? MarshalerType.None : MarshalerType.Int32;
                 output.i32[(resultPointer + JSMarshalerArgumentOffsets.Int32Value) / 4] = isNull ? 0 : result;
             } catch (error) {
-                // One synchronous import is in flight. Nested calls need per-call error storage.
-                writeSharedError(signal, OFFSET_JSIMPORT_ERROR_LENGTH, error, "UI import");
+                writeSharedError(signal, jsimportErrorOffset(slot), error, "UI import");
                 state = SignalState.ERROR;
             }
             Atomics.store(signal, entry + RING_ENTRY_SIGNAL, state);
-            tail = (tail + 1) >>> 0;
-            Atomics.store(signal, OFFSET_JSIMPORT_TAIL, tail);
             wakeWorker(signal);
         }
     }
@@ -128,22 +129,23 @@ export function createWorkerJSImportDispatcher(
     }
 
     listen();
-    return { setModuleImports, processPending, stop, isDispatching: () => dispatching };
+    return { setModuleImports, processPending, stop, isDispatching: () => dispatchDepth !== 0 };
 }
 
-export function createWorkerJSImportInvoker(signal: Int32Array, memory: MemoryViewManager, handle: number) {
+export function createWorkerJSImportInvoker(signal: Int32Array, memory: MemoryViewManager, handle: number, processExports: () => void) {
     return (args: JSMarshalerArguments): number | null => {
         const head = Atomics.load(signal, OFFSET_JSIMPORT_HEAD) >>> 0;
         const tail = Atomics.load(signal, OFFSET_JSIMPORT_TAIL) >>> 0;
-        const entry = jsimportEntryOffset(head);
-        if (((head - tail) >>> 0) >= JSIMPORT_RING_CAPACITY || Atomics.load(signal, entry + RING_ENTRY_SIGNAL) !== SignalState.IDLE) {
+        if (((head - tail) >>> 0) >= JSIMPORT_RING_CAPACITY) {
             throw new Error("withWorker(): UI import queue is full");
         }
+        const slot = reserveCallSlot(signal, OFFSET_JSIMPORT_RING, JSIMPORT_RING_CAPACITY, "UI import");
+        const entry = jsimportEntryOffset(slot);
         const id = allocatePromiseId();
         Atomics.store(signal, entry + RING_ENTRY_PROMISE_ID, id);
         Atomics.store(signal, entry + RING_ENTRY_HANDLE, handle);
         Atomics.store(signal, entry + RING_ENTRY_ARGS_PTR, Number(args));
-        Atomics.store(signal, entry + RING_ENTRY_SIGNAL, SignalState.PENDING);
+        Atomics.store(signal, OFFSET_JSIMPORT_QUEUE + head % JSIMPORT_RING_CAPACITY, slot);
         Atomics.store(signal, OFFSET_JSIMPORT_HEAD, (head + 1) >>> 0);
         wakeMain(signal);
         try {
@@ -152,11 +154,14 @@ export function createWorkerJSImportInvoker(signal: Int32Array, memory: MemoryVi
                 const generation = Atomics.load(signal, OFFSET_WAKEUP_WORKER);
                 state = Atomics.load(signal, entry + RING_ENTRY_SIGNAL);
                 if (state !== SignalState.PENDING) break;
+                processExports();
+                state = Atomics.load(signal, entry + RING_ENTRY_SIGNAL);
+                if (state !== SignalState.PENDING) break;
                 Atomics.wait(signal, OFFSET_WAKEUP_WORKER, generation);
             }
             if (Atomics.load(signal, entry + RING_ENTRY_PROMISE_ID) !== id) throw new Error("withWorker(): UI import completion mismatch");
             if (state === SignalState.ERROR) {
-                throw readSharedError(signal, OFFSET_JSIMPORT_ERROR_LENGTH);
+                throw readSharedError(signal, jsimportErrorOffset(slot));
             }
             if (state !== SignalState.DONE) throw new Error("withWorker(): invalid UI import completion");
             const views = memory.refreshIfNeeded();

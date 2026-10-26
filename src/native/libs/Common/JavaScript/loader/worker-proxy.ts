@@ -135,7 +135,6 @@ function buildProxyRuntimeAPI(
     const workerImports = createWorkerJSImportDispatcher(signalView, memoryViews, message => worker.postMessage(message), terminate);
     const workerExports = createWorkerJSExportClient(signalView, memoryViews, worker, workerImports.processPending, () => {
         if (exiting || exited) throw exited ?? new Error("withWorker(): runtime is exiting");
-        if (workerImports.isDispatching()) throw new Error("withWorker(): nested synchronous exports are not supported yet");
     }, terminate);
 
     registerFailureHandler(error => {
@@ -213,7 +212,7 @@ function buildProxyRuntimeAPI(
         getAssemblyExports: workerExports.getAssemblyExports,
         setModuleImports: (moduleName: string, moduleImports: unknown): void => {
             if (exiting || exited) throw exited ?? new Error("withWorker(): runtime is exiting");
-            if (pendingCommand || workerExports.isCalling()) throw new Error("withWorker(): register module imports before running managed code");
+            if (pendingCommand || workerExports.isCalling() || workerImports.isDispatching()) throw new Error("withWorker(): register module imports before running managed code");
             workerImports.setModuleImports(moduleName, moduleImports);
         },
         invokeLibraryInitializers: notSupported("invokeLibraryInitializers"),

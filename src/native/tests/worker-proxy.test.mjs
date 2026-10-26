@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { createContext, SourceTextModule, SyntheticModule } from "node:vm";
-import ts from "typescript";
-
-const sourceDirectory = new URL("../libs/Common/JavaScript/loader/", import.meta.url);
+import { createContext } from "node:vm";
+import { Worker as NodeWorker } from "node:worker_threads";
+import { createWorkerModuleLoader } from "./worker-transport-worker.mjs";
 
 async function createFixture(options = {}) {
     const workers = [];
@@ -32,6 +30,7 @@ async function createFixture(options = {}) {
         return result;
     };
     atomics.wait = (array, index, expected) => {
+        options.onWait?.();
         uiApi.INTERNAL.workerImports.processPending();
         assert.notEqual(Atomics.load(array, index), expected, "UI dispatch must wake the synchronous worker wait");
         return "not-equal";
@@ -95,8 +94,67 @@ async function createFixture(options = {}) {
         },
     };
     let bootstrapWorkerRuntime;
+    let layout;
+    class ThreadWorker {
+        constructor() {
+            this.listeners = new Set();
+            this.terminated = false;
+            this.closed = false;
+            workers.push(this);
+            this.thread = new NodeWorker(new URL("./worker-transport-worker.mjs", import.meta.url), {
+                execArgv: ["--experimental-vm-modules"],
+            });
+            this.thread.on("message", data => {
+                if (data.type === "ready") {
+                    this.signal = new Int32Array(data.signalBuffer);
+                    this.watchdog = new NodeWorker(`
+                        const {parentPort, workerData: d} = require("node:worker_threads");
+                        setTimeout(() => {
+                            const signal = new Int32Array(d.buffer);
+                            const message = "Nested worker transport test timed out";
+                            for (let i=0; i<message.length; i++) signal[d.error+1+i]=message.charCodeAt(i);
+                            Atomics.store(signal,d.error,message.length);
+                            Atomics.store(signal,d.state,3);
+                            Atomics.add(signal,d.wakeup,1);
+                            Atomics.notify(signal,d.wakeup);
+                            parentPort.postMessage(message);
+                        }, 10000);
+                    `, {
+                        eval: true, execArgv: [],
+                        workerData: {
+                            buffer: data.signalBuffer, state: layout.OFFSET_WORKER_STATE,
+                            error: layout.OFFSET_WORKER_STATE - 1 - layout.JSIMPORT_ERROR_CAPACITY,
+                            wakeup: layout.OFFSET_WAKEUP_MAIN,
+                        },
+                    });
+                    this.watchdog.on("message", message => this.onerror?.({ message }));
+                }
+                const event = { data };
+                this.onmessage?.(event);
+                for (const listener of this.listeners) listener(event);
+            });
+            this.thread.on("error", error => this.onerror?.({ message: error.message }));
+            this.thread.on("exit", () => {
+                this.closed = true;
+                if (!this.terminated) void Promise.resolve(this.watchdog?.terminate()).then(terminated);
+            });
+        }
+        postMessage(message) {
+            this.thread.postMessage(message);
+        }
+        addEventListener(_type, listener) {
+            this.listeners.add(listener);
+        }
+        removeEventListener(_type, listener) {
+            this.listeners.delete(listener);
+        }
+        terminate() {
+            this.terminated = true;
+            void Promise.all([this.thread.terminate(), this.watchdog?.terminate()]).then(terminated);
+        }
+    }
     const context = createContext({
-        AbortController, Atomics: atomics, SharedArrayBuffer, setTimeout, clearTimeout,
+        AbortController, Atomics: options.threaded ? Atomics : atomics, SharedArrayBuffer, setTimeout, clearTimeout,
         self: {
             addEventListener: (type, listener) => {
                 if (type === "message") workerListeners.push(listener);
@@ -118,6 +176,7 @@ async function createFixture(options = {}) {
                 if (message.type === "ready" && options.invalidSignaling === "non-shared") {
                     message.signalBuffer = new ArrayBuffer(message.signalBuffer.byteLength);
                 }
+                if (message.type === "ready") workers[0].signal = new Int32Array(message.signalBuffer);
                 queueMicrotask(() => {
                     const event = { data: message };
                     workers[0].onmessage?.(event);
@@ -126,7 +185,7 @@ async function createFixture(options = {}) {
             },
             close: () => workers[0].closed = true,
         },
-        Worker: class {
+        Worker: options.threaded ? ThreadWorker : class {
             constructor() {
                 this.terminated = false;
                 this.closed = false;
@@ -162,7 +221,6 @@ async function createFixture(options = {}) {
         },
     });
 
-    const cache = new Map();
     const stubs = {
         "../types": {},
         "./bootstrap": { scriptUrl: "https://example.test/dotnet.js" },
@@ -175,33 +233,24 @@ async function createFixture(options = {}) {
         },
     };
 
-    async function load(specifier) {
-        if (cache.has(specifier)) return cache.get(specifier);
-        let module;
-        if (stubs[specifier]) {
-            const exports = stubs[specifier];
-            module = new SyntheticModule(Object.keys(exports), function () {
-                for (const [key, value] of Object.entries(exports)) this.setExport(key, value);
-            }, { context });
-        } else {
-            const source = await readFile(new URL(`${specifier}.ts`, sourceDirectory), "utf8");
-            const output = ts.transpileModule(source, {
-                compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
-            }).outputText;
-            module = new SourceTextModule(output, { context, identifier: specifier });
+    const load = createWorkerModuleLoader(context, stubs, (specifier, source) => {
+        if (specifier === "./shared-signaling" && options.seedPromiseIds !== undefined) {
+            const marker = "let nextPromiseId = 1;";
+            assert.ok(source.includes(marker), "Completion ID seed must match the implementation");
+            return source.replace(marker, `let nextPromiseId = ${options.seedPromiseIds};`);
         }
-        cache.set(specifier, module);
-        await module.link(load);
-        return module;
-    }
+        return source;
+    });
 
     const workerModule = await load("./worker-runtime");
     await workerModule.evaluate();
+    layout = (await load("./shared-signaling")).namespace;
     bootstrapWorkerRuntime = workerModule.namespace.bootstrapWorkerRuntime;
     const proxyModule = await load("./worker-proxy");
     await proxyModule.evaluate();
     return {
-        workers, calls, errors, termination, memory, module, allocations, imports,
+        workers, calls, errors, termination, memory, module, allocations, imports, layout,
+        importTransport: (await load("./worker-imports")).namespace,
         failWorker: error => workerErrorListeners.forEach(listener => listener({ error, message: error.message })),
         create: async (config = { workerOptions: { timeoutMs: 1000 } }) => {
             uiApi = await proxyModule.namespace.createWorkerProxy(config);
@@ -232,6 +281,110 @@ test("worker exports return primitives synchronously and preserve aliases across
         assert.throws(() => exports.Sample.Test.Async(1), /synchronous.*Int32/);
         assert.equal(fixture.allocations.size, allocations);
         assert.equal(fixture.calls.filter(call => call[0] === "exports").length, 1);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("real worker threads support repeated nesting and many siblings in one outer call", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    let exports;
+    let record = false;
+    const events = [];
+    try {
+        api.setModuleImports("main.js", {
+            update: value => {
+                if (record) {
+                    events.push(`import:${value}`);
+                    Promise.resolve().then(() => events.push(`microtask:${value}`));
+                }
+                if (value === 99) {
+                    let sum = 0;
+                    for (let i = 0; i < 65; i++) sum += exports.Scalar(i);
+                    return sum;
+                }
+                return value === 0 ? 1 : exports.ThroughImport(value - 1) + 1;
+            },
+        });
+        exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        for (let i = 0; i < 32; i++) assert.equal(exports.ThroughImport(4), 5);
+        assert.equal(exports.ThroughImport(99), 2145);
+        record = true;
+        events.push("before");
+        assert.equal(exports.ThroughImport(3), 4);
+        events.push("after");
+        assert.deepEqual(events, ["before", "import:3", "import:2", "import:1", "import:0", "after"]);
+        record = false;
+        await Promise.resolve();
+        assert.deepEqual(events.slice(-4), ["microtask:3", "microtask:2", "microtask:1", "microtask:0"]);
+        assert.equal(exports.ActiveAllocations(0), 16);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("an import completed during the nested pump does not park afterward", { timeout: 3000 }, async () => {
+    const fixture = await createFixture({
+        onWait: () => {
+            throw new Error("Unexpected wait after completion");
+        },
+    });
+    const api = await fixture.create();
+    const pointer = fixture.module._malloc(3 * 32);
+    try {
+        api.setModuleImports("main.js", { update: value => value + 1 });
+        new Int32Array(fixture.memory.buffer)[(pointer + 64) / 4] = 41;
+        const invoke = fixture.importTransport.createWorkerJSImportInvoker(
+            fixture.workers[0].signal, api.INTERNAL.workerMemoryViews, 1, api.INTERNAL.workerImports.processPending);
+        assert.equal(invoke(pointer), 42);
+    } finally {
+        fixture.module._free(pointer);
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("real worker threads isolate nested errors and recover after both capacity limits", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    let exports;
+    let failure = "none";
+    try {
+        api.setModuleImports("main.js", {
+            update: value => {
+                if (failure !== "none" && value === 2) throw new Error("Inner UI import failure \u03bb");
+                if (failure === "recover" && value === 3) {
+                    let first;
+                    try {
+                        exports.ThroughImport(2);
+                    } catch (error) {
+                        first = error;
+                    }
+                    assert.match(first.message, /Inner UI import failure/);
+                    assert.throws(() => exports.Scalar(-1), /Inner managed export failure/);
+                    assert.match(first.message, /Inner UI import failure/);
+                    return 90;
+                }
+                return value === 0 ? 1 : exports.ThroughImport(value - 1) + 1;
+            },
+        });
+        exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        failure = "propagate";
+        assert.throws(() => exports.ThroughImport(4), /Inner UI import failure \u03bb/);
+        failure = "recover";
+        assert.equal(exports.ThroughImport(4), 91);
+        failure = "none";
+        assert.equal(exports.ThroughImport(15), 16);
+        assert.throws(() => exports.ThroughImport(16), /export queue is full/);
+        assert.equal(exports.ActiveAllocations(0), 16);
+        assert.equal(exports.ThroughImport(4), 5);
+        assert.equal(await api.runMain("Test", ["16", "catch-capacity"]), 77);
+        assert.equal(exports.ActiveAllocations(0), 16);
+        assert.equal(await api.runMain("Test", ["3"]), 4);
+        assert.equal(exports.ThroughImport(4), 5);
     } finally {
         api.exit(0);
         await fixture.termination;
@@ -275,25 +428,24 @@ test("worker export errors reclaim frames and permit the next call", { timeout: 
     }
 });
 
-test("export import servicing preserves microtask ordering and rejects nested exports", { timeout: 3000 }, async () => {
+test("export import servicing preserves microtask ordering during nested exports", { timeout: 30000 }, async () => {
     const events = [];
     let scalar;
-    const fixture = await createFixture({
-        exportFn: (_value, imports, pointer) => imports.get("main.js").get("update")(pointer),
-    });
+    const fixture = await createFixture({ threaded: true });
     const api = await fixture.create();
     try {
         api.setModuleImports("main.js", {
             update: value => {
                 events.push("import");
-                assert.throws(() => scalar(0), /nested/);
+                assert.equal(scalar(0), 1);
                 Promise.resolve().then(() => events.push("microtask"));
                 return value + 1;
             },
         });
-        scalar = (await api.getAssemblyExports("Test")).Sample.Test.Scalar;
+        const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        scalar = exports.Scalar;
         events.push("before");
-        assert.equal(scalar(41), 42);
+        assert.equal(exports.ThroughImport(41), 42);
         events.push("after");
         assert.deepEqual(events, ["before", "import", "after"]);
         await Promise.resolve();
@@ -318,36 +470,76 @@ test("failed export discovery can be retried", { timeout: 3000 }, async () => {
     }
 });
 
-test("exports called from a runMain import are rejected until the nested worker pump exists", { timeout: 3000 }, async () => {
-    let fixture;
+test("exports called from a runMain import complete synchronously", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
     let scalar;
-    fixture = await createFixture({
-        runMain: imports => {
-            const pointer = fixture.module._malloc(3 * 32);
-            try {
-                assert.equal(imports.get("main.js").get("update")(pointer), 42);
-            } finally {
-                fixture.module._free(pointer);
-            }
-            return 0;
-        },
-    });
     const api = await fixture.create();
     try {
         api.setModuleImports("main.js", {
             update: () => {
-                assert.throws(() => scalar(1), /nested/);
+                assert.equal(scalar(1), 2);
                 return 42;
             },
         });
         scalar = (await api.getAssemblyExports("Test")).Sample.Test.Scalar;
-        assert.equal(await api.runMain(), 0);
+        assert.equal(await api.runMain("Test", ["41"]), 42);
         assert.equal(scalar(1), 2);
     } finally {
         api.exit(0);
         await fixture.termination;
     }
 });
+
+for (const [seed, expected] of [
+    [2147483646, [2147483646, 2147483647, -2147483648, -2147483647]],
+    [-2, [-2, -1, 0, 1]],
+]) {
+    test(`completion IDs stay signed across rollover from ${seed}`, { timeout: 3000 }, async () => {
+        const fixture = await createFixture({ seedPromiseIds: seed });
+        assert.deepEqual(Array.from({ length: 4 }, () => fixture.layout.allocatePromiseId()), expected);
+    });
+}
+
+for (const seed of [2147483646, -2]) {
+    test(`dispatch counters and completion IDs wrap without changing ownership from ${seed}`, { timeout: 3000 }, async () => {
+        let fixture;
+        fixture = await createFixture({
+            seedPromiseIds: seed,
+            runMain: imports => {
+                const pointer = fixture.module._malloc(3 * 32);
+                try {
+                    for (let value = 0; value < 32; value++) {
+                        new Int32Array(fixture.memory.buffer)[(pointer + 64) / 4] = value;
+                        assert.equal(imports.get("main.js").get("update")(pointer), value + 1);
+                    }
+                } finally {
+                    fixture.module._free(pointer);
+                }
+                return 0;
+            },
+        });
+        const api = await fixture.create();
+        try {
+            api.setModuleImports("main.js", { update: value => value + 1 });
+            const { Scalar } = (await api.getAssemblyExports("Test")).Sample.Test;
+            const signal = fixture.workers[0].signal;
+            const layout = fixture.layout;
+            for (const offset of [layout.OFFSET_JSIMPORT_HEAD, layout.OFFSET_JSIMPORT_TAIL,
+                layout.OFFSET_JSEXPORT_HEAD, layout.OFFSET_JSEXPORT_TAIL]) {
+                Atomics.store(signal, offset, 0xffff_fffe);
+            }
+            for (let value = 0; value < 32; value++) assert.equal(Scalar(value), value + 1);
+            assert.equal(await api.runMain(), 0);
+            for (const offset of [layout.OFFSET_JSIMPORT_HEAD, layout.OFFSET_JSIMPORT_TAIL,
+                layout.OFFSET_JSEXPORT_HEAD, layout.OFFSET_JSEXPORT_TAIL]) {
+                assert.equal(Atomics.load(signal, offset) >>> 0, 30);
+            }
+        } finally {
+            api.exit(0);
+            await fixture.termination;
+        }
+    });
+}
 
 test("worker failure rejects pending export discovery", { timeout: 3000 }, async () => {
     const fixture = await createFixture({ getExports: () => new Promise(() => {}) });

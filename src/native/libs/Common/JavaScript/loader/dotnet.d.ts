@@ -53,7 +53,8 @@ interface DotnetHostBuilder {
      * The main thread gets a proxy supporting runMain, runMainAndExit, and exit.
      * UI imports and synchronous exports currently support one Int32 argument and an Int32 result.
      * Register each module once, before running managed code.
-     * Nested exports, asynchronous exports, heap access, and diagnostics are not yet supported by the proxy.
+     * Nested synchronous calls have 16 in-flight slots in each direction.
+     * Asynchronous exports, heap access, and diagnostics are not yet supported by the proxy.
      * Requires COOP/COEP headers and SharedArrayBuffer support.
      */
     withWorker(options?: WorkerOptions): DotnetHostBuilder;
