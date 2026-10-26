@@ -8,7 +8,6 @@
 #include "clrhost.h"
 #include "ex.h"
 #ifndef SELF_NO_HOST
-#define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
 #endif // !SELF_NO_HOST
 #include "minipal/time.h"
