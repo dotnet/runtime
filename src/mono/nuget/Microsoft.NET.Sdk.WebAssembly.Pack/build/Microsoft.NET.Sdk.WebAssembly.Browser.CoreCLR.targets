@@ -20,8 +20,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_WasmUsePrebuiltReadyToRun Condition="'$(_WasmUsePrebuiltReadyToRun)' == ''">false</_WasmUsePrebuiltReadyToRun>
   </PropertyGroup>
 
-  <!-- ReadyToRun publishing defaults OFF for now. Flipping the publish default to true belongs to the
-       codegen-quality / crossgen2-resolution work stream (dotnet/runtime#132466), not here.
+  <!-- ReadyToRun publishing defaults OFF for now. Flipping the publish default to true is tracked by dotnet/runtime#132466.
        Consumers opt in to publishing with -p:PublishReadyToRun=true. -->
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">false</PublishReadyToRun>
