@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
@@ -672,25 +671,6 @@ namespace System.Threading.Threads.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void IsBackgroundTest()
         {
-            using (var e = new ManualResetEvent(false))
-            {
-                var foregroundThread = ThreadTestHelpers.CreateGuardedThread(out Action waitForThread, () =>
-                {
-                    Assert.False(Thread.CurrentThread.IsBackground);
-                    e.CheckedWait();
-                });
-                foregroundThread.Start();
-                try
-                {
-                    Assert.False(foregroundThread.IsBackground);
-                }
-                finally
-                {
-                    e.Set();
-                    waitForThread();
-                }
-            }
-
             var t = new Thread(() => { });
             Assert.False(t.IsBackground);
             t.IsBackground = true;
@@ -707,71 +687,6 @@ namespace System.Threading.Threads.Tests
             t = new Thread(() => Thread.Sleep(Timeout.Infinite));
             t.IsBackground = true;
             t.Start();
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public static async Task IsBackgroundTest_ThreadPool()
-        {
-            Assert.True(await Task.Run(() => Thread.CurrentThread.IsBackground));
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsMultithreadingSupported))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public static void IsBackgroundTest_ResurrectedThread(bool started)
-        {
-            var completion = new TaskCompletionSource<Thread>();
-            ThreadTestHelpers.WaitForConditionWithCustomDelay(
-                () => completion.Task.IsCompleted,
-                () =>
-                {
-                    // Allocate twice to overwrite conservatively reported stack roots.
-                    ThreadResurrector.Create(completion, started);
-                    ThreadResurrector.Create(completion, started);
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                });
-
-            // Allow the thread's internal SafeHandle to be finalized as well.
-            for (int i = 0; i < 2; i++)
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
-
-            Thread t = completion.Task.GetAwaiter().GetResult();
-            if (started)
-            {
-                Assert.Throws<ThreadStateException>(() => t.IsBackground);
-            }
-            else
-            {
-                Assert.False(t.IsBackground);
-            }
-        }
-
-        private sealed class ThreadResurrector
-        {
-            private readonly TaskCompletionSource<Thread> _completion;
-            private readonly Thread _thread = new Thread(() => { });
-
-            private ThreadResurrector(TaskCompletionSource<Thread> completion, bool started)
-            {
-                _completion = completion;
-                if (started)
-                {
-                    _thread.Start();
-                    Assert.True(_thread.Join(UnexpectedTimeoutMilliseconds));
-                }
-            }
-
-            ~ThreadResurrector() => _completion.TrySetResult(_thread);
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            public static void Create(TaskCompletionSource<Thread> completion, bool started)
-            {
-                GC.KeepAlive(new ThreadResurrector(completion, started));
-            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]

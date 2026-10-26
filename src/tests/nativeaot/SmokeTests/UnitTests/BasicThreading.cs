@@ -455,6 +455,38 @@ class ThreadTest
         ExpectPassed(nameof(TestConcurrentIsBackgroundProperty), spawnedCount);
     }
 
+    private static void TestIsBackgroundProperty()
+    {
+        // Thread created using Thread.Start
+        var t_event = new AutoResetEvent(false);
+        var t = new Thread(() => {
+            Expect(!Thread.CurrentThread.IsBackground, "Expected CurrentThread.IsBackground == false");
+            t_event.WaitOne();
+        });
+
+        t.Start();
+        s_startedThreads.Add(t);
+
+        Expect(!t.IsBackground, "Expected t.IsBackground == false");
+        t_event.Set();
+        t.Join();
+        ExpectException<ThreadStateException>(() => Console.WriteLine(t.IsBackground),
+            "Expected ThreadStateException for t.IsBackground");
+
+        // Thread pool thread
+        Task.Factory.StartNew(() => Expect(Thread.CurrentThread.IsBackground, "Expected IsBackground == true")).Wait();
+
+        // Resurrected threads
+        Thread unstartedResurrected = Resurrector.CreateUnstartedResurrected();
+        Expect(unstartedResurrected.IsBackground == false, "Expected unstartedResurrected.IsBackground == false");
+
+        Thread stoppedResurrected = Resurrector.CreateStoppedResurrected();
+        ExpectException<ThreadStateException>(() => Console.WriteLine(stoppedResurrected.IsBackground),
+            "Expected ThreadStateException for stoppedResurrected.IsBackground");
+
+        ExpectPassed(nameof(TestIsBackgroundProperty), 6);
+    }
+
     private static void TestIsThreadPoolThreadProperty()
     {
 #if false   // The IsThreadPoolThread property is not in the contract version we compile against at present
@@ -569,6 +601,7 @@ class ThreadTest
 
         TestCurrentThreadProperty();
         TestNameProperty();
+        TestIsBackgroundProperty();
         TestIsThreadPoolThreadProperty();
         TestManagedThreadIdProperty();
         TestThreadStateProperty();
