@@ -75,7 +75,7 @@ PGO files must exist when the project is published, but do not need to come from
 build being published. Profile records for methods that can no longer be resolved are ignored.
 Refresh profiles periodically to keep them representative of the application and its workload;
 as the code and behavior diverge from the captured profile, precompilation coverage and optimization
-quality can degrade. Trimming does not require a profile generated from the exact linker output.
+quality can degrade.
 
 # `WasmApp.{props,targets}`, and `WasmApp.InTree.{props,targets}`
 
