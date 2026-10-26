@@ -1336,10 +1336,12 @@ namespace ILLink.Tasks.Tests
             if (source == "reference")
             {
                 string input = test.Task.AssemblyPaths[0].ItemSpec;
-                using var assembly = Mono.Cecil.AssemblyDefinition.ReadAssembly(input);
-                assembly.MainModule.AssemblyReferences.Add(new Mono.Cecil.AssemblyNameReference(name, new Version(1, 0)));
                 using var output = new MemoryStream();
-                assembly.Write(output);
+                using (var assembly = Mono.Cecil.AssemblyDefinition.ReadAssembly(input))
+                {
+                    assembly.MainModule.AssemblyReferences.Add(new Mono.Cecil.AssemblyNameReference(name, new Version(1, 0)));
+                    assembly.Write(output);
+                }
                 File.WriteAllBytes(input, output.ToArray());
             }
             else

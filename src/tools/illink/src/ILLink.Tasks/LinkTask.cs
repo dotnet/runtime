@@ -591,7 +591,7 @@ namespace ILLink.Tasks
             }
         }
 
-        private static bool HasPathSyntax(string name) => name.IndexOf('/') >= 0 || name.IndexOf('\\') >= 0 || name.IndexOf(':') >= 0;
+        private static bool HasPathSyntax(string name) => name.AsSpan().IndexOfAny('/', '\\', ':') >= 0;
 
         private bool TryAddCacheableExtraArgsInputs(SortedSet<string> files, SortedSet<string> directories, out List<(string Option, string Path)> extraPaths)
         {
@@ -685,7 +685,7 @@ namespace ILLink.Tasks
                     case DebugDirectoryEntryType.CodeView:
                         if (!entry.IsPortableCodeView)
                             throw new NotSupportedException("Native PDB symbols are not supported by the shared cache.");
-                        paths.CheckSymbolPath(pe.ReadCodeViewDebugDirectoryData(entry).Path);
+                        CachePathMap.CheckSymbolPath(pe.ReadCodeViewDebugDirectoryData(entry).Path);
                         break;
                     case DebugDirectoryEntryType.EmbeddedPortablePdb:
                         using (MetadataReaderProvider provider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(entry))
@@ -712,7 +712,7 @@ namespace ILLink.Tasks
             static void CheckDocuments(MetadataReader metadata, CachePathMap paths)
             {
                 foreach (DocumentHandle handle in metadata.Documents)
-                    paths.CheckSymbolPath(metadata.GetString(metadata.GetDocument(handle).Name));
+                    CachePathMap.CheckSymbolPath(metadata.GetString(metadata.GetDocument(handle).Name));
                 foreach (CustomDebugInformationHandle handle in metadata.CustomDebugInformation)
                     paths.CheckForPhysicalRoots(metadata.GetBlobBytes(metadata.GetCustomDebugInformation(handle).Value));
             }
@@ -737,7 +737,7 @@ namespace ILLink.Tasks
                     string physical = Path.GetFullPath(root.ItemSpec).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                     string logical = root.GetMetadata("MappedPath");
                     if (physical.Length == 0 || physical.Equals(Path.GetPathRoot(physical), PathComparison) ||
-                        !IsLogicalPath(logical) || !logical.EndsWith("/", StringComparison.Ordinal))
+                        !IsLogicalPath(logical) || logical[logical.Length - 1] != '/')
                         throw new NotSupportedException("SourceRoots require stable /_/ or /_N/ MappedPath prefixes.");
                     foreach (var previous in _roots)
                     {
@@ -797,17 +797,17 @@ namespace ILLink.Tasks
                 path = Path.GetFullPath(path);
                 if (path.Length > Path.GetPathRoot(path).Length)
                     path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                if (path.IndexOfAny(new[] { '"', '\r', '\n' }) >= 0 ||
-                    (Path.DirectorySeparatorChar == '/' && path.IndexOf('\\') >= 0))
+                if (path.AsSpan().IndexOfAny('"', '\r', '\n') >= 0 ||
+                    (Path.DirectorySeparatorChar == '/' && path.AsSpan().IndexOf('\\') >= 0))
                     throw new NotSupportedException("Quoted or multiline paths are not supported by the shared cache.");
                 return path;
             }
 
-            internal void CheckSymbolPath(string path)
+            internal static void CheckSymbolPath(string path)
             {
                 if (IsLogicalPath(path))
                     return;
-                if (path.StartsWith("/", StringComparison.Ordinal) || path.StartsWith("\\", StringComparison.Ordinal) ||
+                if ((path.Length > 0 && path[0] is '/' or '\\') ||
                     (path.Length > 1 && path[1] == ':') || path.Split('/', '\\').Any(part => part == ".."))
                     throw new NotSupportedException($"Physical or escaping symbol path '{path}' is not supported by the shared cache.");
             }
@@ -821,7 +821,7 @@ namespace ILLink.Tasks
                 }
             }
 
-            internal void CheckForPhysicalRoots(Stream input, long offset, long length)
+            internal void CheckForPhysicalRoots(FileStream input, long offset, long length)
             {
                 int overlap = _physicalPrefixes.Max(prefix => prefix.Length) - 1;
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Max(64 * 1024, checked(2 * overlap + 1)));
