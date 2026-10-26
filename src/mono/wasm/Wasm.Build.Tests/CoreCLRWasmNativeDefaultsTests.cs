@@ -164,19 +164,20 @@ namespace Wasm.Build.Tests
         // PublishReadyToRunPgoFiles drives a crossgen2 --partial image: with PGO data and R2R on, --partial is
         // appended and the .mibc flows to crossgen2 as -m:. With no PGO data the full closure is compiled
         // (no --partial, no PGO input); the gate also requires PublishReadyToRun=true so PGO data with
-        // R2R off is inert. Stops before crossgen2 - only the property/item wiring is under test; the crossgen2
+        // R2R off remains in the project but does not enable partial compilation. Stops before crossgen2; the crossgen2
         // args just let the R2R restore resolve a compiler (in-build when BASE_DIR is set, SDK pack otherwise).
         [Theory]
         [InlineData(/*profileSet*/ true,  /*r2r*/ true,  /*expectPartial*/ true)]
         [InlineData(/*profileSet*/ false, /*r2r*/ true,  /*expectPartial*/ false)]
         [InlineData(/*profileSet*/ true,  /*r2r*/ false, /*expectPartial*/ false)]
+        [InlineData(/*profileSet*/ false, /*r2r*/ false, /*expectPartial*/ false)]
         public void PublishReadyToRunPgoFilesControlsPartialCompilation(bool profileSet, bool r2r, bool expectPartial)
         {
             Configuration config = Configuration.Release;
             string profilePath = Path.Combine(BuildEnvironment.TestDataPath, "DotNet_Blazor_Wasm.mibc");
             string printValueTarget = """
                 <Target Name="PrintR2RProfileFlow"
-                        DependsOnTargets="_WasmCoreClrSelectR2RDirectories">
+                        DependsOnTargets="_WasmCoreClrSelectR2RDirectories;_WasmCoreClrConfigureReadyToRunPgo">
                     <Message Text="** R2RExtraArgs: '$(PublishReadyToRunCrossgen2ExtraArgs)'" Importance="High" />
                     <Message Text="** R2RPgoFiles: '@(PublishReadyToRunPgoFiles)'" Importance="High" />
                     <Error Text="Stopping after validating the R2R profile flow" />
@@ -210,11 +211,18 @@ namespace Wasm.Build.Tests
             if (expectPartial)
             {
                 Assert.Contains("--partial", extraArgs.Groups[1].Value);
-                Assert.Contains(profilePath, pgoFiles.Groups[1].Value);
             }
             else
             {
                 Assert.DoesNotContain("--partial", extraArgs.Groups[1].Value);
+            }
+
+            if (profileSet)
+            {
+                Assert.Equal(profilePath, pgoFiles.Groups[1].Value);
+            }
+            else
+            {
                 Assert.Equal("", pgoFiles.Groups[1].Value);
             }
         }

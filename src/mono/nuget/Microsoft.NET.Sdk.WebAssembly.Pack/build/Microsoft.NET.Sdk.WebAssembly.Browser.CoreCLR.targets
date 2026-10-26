@@ -237,18 +237,22 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="CreateReadyToRunImages"
           BeforeTargets="ProcessPublishFilesForWasm" />
 
+  <Target Name="_WasmCoreClrConfigureReadyToRunPgo"
+          Condition="'$(PublishReadyToRun)' == 'true'">
+    <PropertyGroup>
+      <!-- Item-dependent configuration must run at target execution time. -->
+      <PublishReadyToRunCrossgen2ExtraArgs Condition="'@(PublishReadyToRunPgoFiles)' != ''">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+  </Target>
+
   <!-- Per-app crossgen must be conservative: cross-module inlining makes all images depend on the
        whole closure. Include reference-only assemblies and the compiler as non-correlated inputs
        so _CreateR2RImages reruns even when its per-assembly outputs are otherwise up-to-date. -->
   <Target Name="_WasmCoreClrConservativeR2RInputs"
           Condition="'$(PublishReadyToRun)' == 'true'"
-          DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
+          DependsOnTargets="_WasmCoreClrSelectR2RDirectories;_WasmCoreClrConfigureReadyToRunPgo"
           BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
-      <!-- With explicit PGO data, compile only the profiled subset into the eager image; the rest runs
-           interpreted. This is evaluated at target execution because top-level properties cannot reference
-           item lists. Without PGO data the partial switch is omitted and the full closure is compiled. -->
-      <PublishReadyToRunCrossgen2ExtraArgs Condition="'@(PublishReadyToRunPgoFiles)' != ''">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
       <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|PgoFiles=@(PublishReadyToRunPgoFiles->'%(FullPath)', '|')|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)</_WasmReadyToRunState>
       <_WasmReadyToRunStateHash>$([MSBuild]::StableStringHash('$(_WasmReadyToRunState)', 'Sha256'))</_WasmReadyToRunStateHash>
       <_WasmReadyToRunStateFile>$(_WasmPublishR2RDir)browser-r2r-state.stamp</_WasmReadyToRunStateFile>
