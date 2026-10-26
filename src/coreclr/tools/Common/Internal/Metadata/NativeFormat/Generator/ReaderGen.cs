@@ -87,8 +87,6 @@ internal sealed class ReaderGen : CsWriter
         WriteLine("NativeReader streamReader = reader._streamReader;");
         foreach (var member in record.Members)
         {
-            if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
-                continue;
             if ((member.Flags & MemberDefFlags.Blob) != 0 && member == record.Members[^1])
                 WriteLine($"{member.GetMemberFieldName()} = new ByteCollection(streamReader, offset);");
             else
@@ -101,9 +99,6 @@ internal sealed class ReaderGen : CsWriter
 
         foreach (var member in record.Members)
         {
-            if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
-                continue;
-
             string memberType = member.GetMemberType();
             string fieldType = member.GetMemberType(MemberTypeKind.ReaderField);
 

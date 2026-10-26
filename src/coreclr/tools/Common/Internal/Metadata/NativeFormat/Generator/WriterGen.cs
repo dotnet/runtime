@@ -86,9 +86,6 @@ internal sealed class WriterGen : CsWriter
         }
         foreach (var member in record.Members)
         {
-            if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
-                continue;
-
             if ((record.Flags & RecordDefFlags.CustomCompare) != 0 && (member.Flags & MemberDefFlags.Compare) == 0)
                 continue;
 
@@ -139,9 +136,6 @@ internal sealed class WriterGen : CsWriter
 
         foreach (var member in record.Members)
         {
-            if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
-                continue;
-
             if ((record.Flags & RecordDefFlags.CustomCompare) != 0 && (member.Flags & MemberDefFlags.Compare) == 0)
                 continue;
 
@@ -217,9 +211,6 @@ internal sealed class WriterGen : CsWriter
         }
         foreach (var member in record.Members)
         {
-            if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
-                continue;
-
             var typeSet = member.TypeName as string[];
             if (typeSet != null)
             {
@@ -277,9 +268,6 @@ internal sealed class WriterGen : CsWriter
         WriteLineIfNeeded();
         foreach (var member in record.Members)
         {
-            if ((member.Flags & MemberDefFlags.NotPersisted) != 0)
-                continue;
-
             string fieldType = member.GetMemberType(MemberTypeKind.WriterField);
             if ((member.Flags & (MemberDefFlags.List | MemberDefFlags.Map | MemberDefFlags.Blob)) != 0)
             {

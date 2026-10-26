@@ -39,7 +39,6 @@ public enum MemberDefFlags
     Child = 0x0010, // Member instance is logically defined and owned by record;
                     // otherwise instance may be shared (such as a TypeRef).
     Name = 0x0020, // May be used as the member's simple name for diagnostics.
-    NotPersisted = 0x0040, // Indicates member is not written to or read from metadata.
     Compare = 0x0080, // Indicates member should be used for equality functionality.
     EnumerateForHashCode = 0x0100, // Indicates that the collection is safe to be enumerated in GetHashCode
                                    // without causing reentrancy
@@ -187,10 +186,10 @@ internal sealed class SchemaDef
 
                 const MemberDefFlags RequiredFlags = MemberDefFlags.Map | MemberDefFlags.RecordRef;
                 if ((member.Flags & RequiredFlags) != RequiredFlags ||
-                    (member.Flags & (MemberDefFlags.Sequence | MemberDefFlags.NotPersisted)) != 0 ||
+                    (member.Flags & MemberDefFlags.Sequence) != 0 ||
                     member.TypeName is not string typeName || !HandleSchema.Contains(typeName))
                 {
-                    throw new InvalidOperationException($"Hashtable member {record.Name}.{member.Name} must be a persisted map of typed record references.");
+                    throw new InvalidOperationException($"Hashtable member {record.Name}.{member.Name} must be a map of typed record references.");
                 }
             }
         }
@@ -218,18 +217,8 @@ internal sealed class SchemaDef
 
     public static readonly PrimitiveType[] PrimitiveTypes = new PrimitiveType[]
     {
-        new PrimitiveType("bool", "Boolean"),
-        new PrimitiveType("char", "Char"),
         new PrimitiveType("byte", "Byte"),
-        new PrimitiveType("sbyte", "SByte"),
-        new PrimitiveType("short", "Int16"),
-        new PrimitiveType("ushort", "UInt16"),
         new PrimitiveType("int", "Int32"),
-        new PrimitiveType("uint", "UInt32"),
-        new PrimitiveType("long", "Int64"),
-        new PrimitiveType("ulong", "UInt64"),
-        new PrimitiveType("float", "Single"),
-        new PrimitiveType("double", "Double"),
     };
 
     // These enums supplement those defined by System.Reflection.Primitives.

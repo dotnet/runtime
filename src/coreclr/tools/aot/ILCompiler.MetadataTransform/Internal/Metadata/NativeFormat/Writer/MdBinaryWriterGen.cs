@@ -17,34 +17,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 {
     internal static partial class MdBinaryWriter
     {
-        public static void Write(this NativeWriter writer, bool[] values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Length);
-            foreach (bool value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, char[] values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Length);
-            foreach (char value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
         public static void Write(this NativeWriter writer, byte[] values)
         {
             if (values == null)
@@ -59,48 +31,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, sbyte[] values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Length);
-            foreach (sbyte value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, short[] values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Length);
-            foreach (short value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, ushort[] values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Length);
-            foreach (ushort value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
         public static void Write(this NativeWriter writer, int[] values)
         {
             if (values == null)
@@ -110,76 +40,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
             writer.WriteUnsigned((uint)values.Length);
             foreach (int value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, uint[] values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Length);
-            foreach (uint value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, long[] values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Length);
-            foreach (long value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, ulong[] values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Length);
-            foreach (ulong value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, float[] values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Length);
-            foreach (float value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, double[] values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Length);
-            foreach (double value in values)
             {
                 writer.Write(value);
             }

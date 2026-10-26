@@ -16,24 +16,6 @@ namespace Internal.Metadata.NativeFormat
 {
     internal static partial class MdBinaryReader
     {
-        public static unsafe uint Read(this NativeReader reader, uint offset, out BooleanCollection values)
-        {
-            values = new BooleanCollection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            offset = checked(offset + count * sizeof(bool));
-            return offset;
-        } // Read
-
-        public static unsafe uint Read(this NativeReader reader, uint offset, out CharCollection values)
-        {
-            values = new CharCollection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            offset = checked(offset + count * sizeof(char));
-            return offset;
-        } // Read
-
         public static unsafe uint Read(this NativeReader reader, uint offset, out ByteCollection values)
         {
             values = new ByteCollection(reader, offset);
@@ -43,84 +25,12 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static unsafe uint Read(this NativeReader reader, uint offset, out SByteCollection values)
-        {
-            values = new SByteCollection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            offset = checked(offset + count * sizeof(sbyte));
-            return offset;
-        } // Read
-
-        public static unsafe uint Read(this NativeReader reader, uint offset, out Int16Collection values)
-        {
-            values = new Int16Collection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            offset = checked(offset + count * sizeof(short));
-            return offset;
-        } // Read
-
-        public static unsafe uint Read(this NativeReader reader, uint offset, out UInt16Collection values)
-        {
-            values = new UInt16Collection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            offset = checked(offset + count * sizeof(ushort));
-            return offset;
-        } // Read
-
         public static unsafe uint Read(this NativeReader reader, uint offset, out Int32Collection values)
         {
             values = new Int32Collection(reader, offset);
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
             offset = checked(offset + count * sizeof(int));
-            return offset;
-        } // Read
-
-        public static unsafe uint Read(this NativeReader reader, uint offset, out UInt32Collection values)
-        {
-            values = new UInt32Collection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            offset = checked(offset + count * sizeof(uint));
-            return offset;
-        } // Read
-
-        public static unsafe uint Read(this NativeReader reader, uint offset, out Int64Collection values)
-        {
-            values = new Int64Collection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            offset = checked(offset + count * sizeof(long));
-            return offset;
-        } // Read
-
-        public static unsafe uint Read(this NativeReader reader, uint offset, out UInt64Collection values)
-        {
-            values = new UInt64Collection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            offset = checked(offset + count * sizeof(ulong));
-            return offset;
-        } // Read
-
-        public static unsafe uint Read(this NativeReader reader, uint offset, out SingleCollection values)
-        {
-            values = new SingleCollection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            offset = checked(offset + count * sizeof(float));
-            return offset;
-        } // Read
-
-        public static unsafe uint Read(this NativeReader reader, uint offset, out DoubleCollection values)
-        {
-            values = new DoubleCollection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            offset = checked(offset + count * sizeof(double));
             return offset;
         } // Read
 

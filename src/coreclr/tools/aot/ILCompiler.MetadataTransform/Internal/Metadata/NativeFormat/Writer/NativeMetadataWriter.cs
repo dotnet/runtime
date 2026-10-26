@@ -990,12 +990,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public static bool SequenceEqual<T>(this List<T> first, List<T> second)
         {
-            return first.SequenceEqual(second, null);
-        }
-
-        public static bool SequenceEqual<T>(this List<T> first, List<T> second, IEqualityComparer<T> comparer)
-        {
-            return CollectionsMarshal.AsSpan(first).SequenceEqual(CollectionsMarshal.AsSpan(second), comparer);
+            return CollectionsMarshal.AsSpan(first).SequenceEqual(CollectionsMarshal.AsSpan(second), comparer: null);
         }
     }
 
