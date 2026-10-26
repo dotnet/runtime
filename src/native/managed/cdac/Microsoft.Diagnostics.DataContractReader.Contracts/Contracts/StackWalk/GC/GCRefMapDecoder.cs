@@ -57,8 +57,7 @@ internal ref struct GCRefMapDecoder
 
     // StackWalk version 2 targets require R2R 33 and its new token assignments.
     internal static bool UsesLegacyTokens(Target target) =>
-        target.Contracts.TryGetContract<IStackWalk>(out IStackWalk? stackWalk) &&
-        stackWalk is StackWalk_1 { Version: < 2 };
+        target.Contracts.TryGetContractVersion<IStackWalk>(out string? version) && version == "c1";
 
     public GCRefMapDecoder(Target target, TargetPointer blob)
     {

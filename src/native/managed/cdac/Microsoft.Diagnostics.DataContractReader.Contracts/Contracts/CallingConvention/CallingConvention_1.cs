@@ -455,17 +455,13 @@ internal sealed class CallingConvention_1 : ICallingConvention
 
                             if (arg.IsByRefLikeStruct)
                             {
-                                ITypeHandle? layoutType =
-                                    arg.TypeInfo.ExactTypeHandle ?? arg.TypeInfo.GenericTypeDefinition;
-                                if (layoutType is not null)
-                                {
-                                    // Preserve the legacy best-effort behavior: unreadable/corrupt field
-                                    // metadata should decline this part of the GC map rather than fail the
-                                    // entire argument walk for this target.
-                                    ByRefPointerOffsetsReporter reporter = new(_target);
-                                    foreach (ulong offset in reporter.Find(layoutType))
-                                        tokens[checked(arg.Offset + (int)offset)] = GCRefMapToken.Interior;
-                                }
+                                ITypeHandle layoutType =
+                                    arg.TypeInfo.ExactTypeHandle ?? arg.TypeInfo.GenericTypeDefinition
+                                    ?? throw new NotImplementedException("Runtime layout is unavailable for a byref-like argument.");
+                                // An exact argument map must not omit byrefs in unresolved nested fields.
+                                ByRefPointerOffsetsReporter reporter = new(_target, allowPartialResults: false);
+                                foreach (ulong offset in reporter.Find(layoutType))
+                                    tokens[checked(arg.Offset + (int)offset)] = GCRefMapToken.Interior;
                                 emitted = true;
                             }
 
