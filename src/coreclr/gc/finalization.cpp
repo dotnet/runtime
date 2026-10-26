@@ -25,6 +25,92 @@ void gc_heap::schedule_finalizer_work (FinalizerWorkItem* callback)
     }
 }
 
+void gc_heap::get_pause_data_snapshot(uint64_t* sequence, uint64_t* missed_records)
+{
+    for (;;)
+    {
+        uint32_t version = VolatileLoad(&pause_data_version);
+        if ((version & 1) != 0)
+        {
+            continue;
+        }
+
+        *sequence = Interlocked::ExchangeAdd64(&pause_data_sequence, uint64_t(0));
+        *missed_records = Interlocked::ExchangeAdd64(&pause_data_missed, uint64_t(0));
+        if (version == VolatileLoad(&pause_data_version))
+        {
+            return;
+        }
+    }
+}
+
+void gc_heap::configure_pause_data_callback(GCPauseDataCallback callback, bool enabled, uint64_t* sequence, uint64_t* missed_records)
+{
+    assert(callback != nullptr);
+    VolatileStore(&pause_data_callback, callback);
+    VolatileStore(&pause_data_enabled, uint32_t(enabled));
+    get_pause_data_snapshot(sequence, missed_records);
+}
+
+void gc_heap::record_pause_data(uint64_t collection_index, size_t duration_microseconds, int generation, bool concurrent)
+{
+    if (VolatileLoad(&pause_data_enabled) == 0)
+    {
+        return;
+    }
+
+    // Pause accounting has a single producer. The version makes registration's
+    // sequence/loss snapshot consistent without ever waiting in the producer.
+    uint32_t version = Interlocked::Increment(&pause_data_version);
+    assert((version & 1) != 0);
+    UNREFERENCED_PARAMETER(version);
+    uint64_t sequence = Interlocked::ExchangeAdd64(&pause_data_sequence, uint64_t(1)) + 1;
+    uint32_t write = pause_data_write;
+    if (write - VolatileLoad(&pause_data_read) == pause_data_capacity)
+    {
+        Interlocked::ExchangeAdd64(&pause_data_missed, uint64_t(1));
+    }
+    else
+    {
+        pause_data_records[write % pause_data_capacity] =
+            { sequence, collection_index, static_cast<uint64_t>(duration_microseconds),
+              static_cast<uint32_t>(generation), static_cast<uint32_t>(concurrent) };
+        VolatileStore(&pause_data_write, write + 1);
+    }
+    Interlocked::Increment(&pause_data_version);
+
+    if (Interlocked::CompareExchange(&pause_data_scheduled, int32_t(1), int32_t(0)) == 0)
+    {
+        schedule_finalizer_work(&pause_data_work);
+    }
+}
+
+void gc_heap::deliver_pause_data(FinalizerWorkItem* work)
+{
+    // A finite snapshot lets ordinary finalizers run even if callbacks trigger GC.
+    uint32_t end = VolatileLoad(&pause_data_write);
+    uint32_t read = pause_data_read;
+    while (read != end)
+    {
+        GCPauseData pause = pause_data_records[read % pause_data_capacity];
+        VolatileStore(&pause_data_read, ++read);
+
+        uint64_t sequence;
+        uint64_t missed_records;
+        get_pause_data_snapshot(&sequence, &missed_records);
+        GCPauseDataCallback callback = VolatileLoad(&pause_data_callback);
+        assert(callback != nullptr);
+        callback(&pause, missed_records);
+    }
+
+    Interlocked::Exchange(&pause_data_scheduled, int32_t(0));
+    if ((VolatileLoad(&pause_data_read) != VolatileLoad(&pause_data_write)) &&
+        (Interlocked::CompareExchange(&pause_data_scheduled, int32_t(1), int32_t(0)) == 0))
+    {
+        schedule_finalizer_work(work);
+    }
+}
+
 #ifdef FEATURE_PREMORTEM_FINALIZATION
 inline
 unsigned int gen_segment (int gen)

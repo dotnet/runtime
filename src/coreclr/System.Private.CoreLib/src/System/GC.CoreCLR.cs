@@ -808,6 +808,13 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnableNoGCRegionCallback")]
         private static unsafe partial EnableNoGCRegionCallbackStatus _EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, long totalSize);
 
+        static unsafe partial void ConfigurePauseDataCallback(void* callback, bool enabled, ref long sequence, ref long missedRecords, ref bool supported)
+            => supported = _ConfigurePauseDataCallback(callback, enabled ? 1 : 0, out sequence, out missedRecords) != 0;
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_ConfigurePauseDataCallback")]
+        private static unsafe partial int _ConfigurePauseDataCallback(void* callback, int enabled, out long sequence, out long missedRecords);
+
         internal static long GetGenerationBudget(int generation)
         {
             return _GetGenerationBudget(generation);

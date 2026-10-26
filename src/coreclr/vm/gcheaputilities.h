@@ -333,6 +333,8 @@ public:
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 #ifndef DACCESS_COMPILE
+    static bool SupportsPauseDataCallbacks();
+
     // Gets a pointer to the module that contains the GC.
     static PTR_VOID GetGCModuleBase();
 
@@ -350,4 +352,3 @@ private:
 };
 
 #endif // _GCHEAPUTILITIES_H_
-

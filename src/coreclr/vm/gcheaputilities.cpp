@@ -81,6 +81,15 @@ extern "C" HRESULT LOCALGC_CALLCONV GC_Initialize(
 
 #ifndef DACCESS_COMPILE
 
+bool GCHeapUtilities::SupportsPauseDataCallbacks()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return (g_gc_version_info.MajorVersion > GC_INTERFACE_MAJOR_VERSION) ||
+        ((g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+         (g_gc_version_info.MinorVersion >= GC_INTERFACE_MINOR_VERSION_PAUSE_DATA_CALLBACK));
+}
+
 PTR_VOID GCHeapUtilities::GetGCModuleBase()
 {
     assert(g_gc_module_base);

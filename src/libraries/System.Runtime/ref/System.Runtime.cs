@@ -3112,6 +3112,7 @@ namespace System
         public static void RefreshMemoryLimit() { }
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold) { }
         public static void RegisterNoGCRegionCallback(long totalSize, System.Action callback) { }
+        public static System.IDisposable RegisterPauseDataCallback(System.GCPauseDataCallback callback) { throw null; }
         public static void RemoveMemoryPressure(long bytesAllocated) { }
         public static void ReRegisterForFinalize(object obj) { }
         public static void SuppressFinalize(object obj) { }
@@ -3178,6 +3179,16 @@ namespace System
         Timeout = 3,
         NotApplicable = 4,
     }
+    public readonly partial struct GCPauseData
+    {
+        private readonly int _dummyPrimitive;
+        public long CollectionIndex { get { throw null; } }
+        public bool Concurrent { get { throw null; } }
+        public System.TimeSpan Duration { get { throw null; } }
+        public int Generation { get { throw null; } }
+        public long SequenceNumber { get { throw null; } }
+    }
+    public delegate void GCPauseDataCallback(System.GCPauseData pause, long missedRecords);
     public readonly partial struct Guid : System.IComparable, System.IComparable<System.Guid>, System.IEquatable<System.Guid>, System.IFormattable, System.IParsable<System.Guid>, System.ISpanFormattable, System.ISpanParsable<System.Guid>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Guid>
     {
         private readonly int _dummyPrimitive;
