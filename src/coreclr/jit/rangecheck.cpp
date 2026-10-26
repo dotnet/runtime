@@ -1307,6 +1307,11 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
 
         const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(assertionIndex);
 
+        if (curAssertion.GetOp2().KindIs(Compiler::O2K_CONST_INT) && (curAssertion.GetOp1().GetVN() != normalLclVN))
+        {
+            continue;
+        }
+
         Limit      limit(Limit::keUndef);
         genTreeOps cmpOper    = GT_NONE;
         bool       isUnsigned = false;

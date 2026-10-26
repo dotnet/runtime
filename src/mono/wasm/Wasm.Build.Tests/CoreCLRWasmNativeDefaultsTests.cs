@@ -38,6 +38,7 @@ namespace Wasm.Build.Tests
             { "<InvariantGlobalization>false</InvariantGlobalization>", false },
             { "<InvariantTimezone>false</InvariantTimezone>", false },
             { "<EnableDiagnostics>false</EnableDiagnostics>", false },
+            { "<WasmEnableRelaxedSimd>false</WasmEnableRelaxedSimd>", false },
             // property left unset -> no relink
             { "", false },
             // casing must not matter, MSBuild string comparison is case-insensitive
@@ -46,6 +47,7 @@ namespace Wasm.Build.Tests
             { "<InvariantGlobalization>true</InvariantGlobalization>", true },
             { "<InvariantTimezone>true</InvariantTimezone>", true },
             { "<EnableDiagnostics>true</EnableDiagnostics>", true },
+            { "<WasmEnableRelaxedSimd>true</WasmEnableRelaxedSimd>", true },
             { "<WasmInitialHeapSize>67108864</WasmInitialHeapSize>", true },
             // EmccInitialHeapSize is the documented browser property and EmccTotalMemory its legacy
             // alias; both must be normalized into WasmInitialHeapSize before the registry compares.
@@ -100,6 +102,34 @@ namespace Wasm.Build.Tests
 
             Assert.NotNull(line);
             Assert.Contains("** WasmBuildNative: 'false'", line);
+        }
+
+        [Fact, TestCategory("no-workload")]
+        public void WebcilVersionDoesNotRequireRuntimeFlavor()
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_webcil_version",
+                extraProperties: "<PublishReadyToRun>false</PublishReadyToRun>",
+                insertAtEnd: """
+                    <Target Name="CheckCoreClrWebcilVersion" DependsOnTargets="_ResolveWasmConfiguration">
+                        <Error Condition="'$(UseMonoRuntime)' != 'false'" Text="The test must select CoreCLR." />
+                        <Error Condition="'$(RuntimeFlavor)' != ''" Text="The test must not set RuntimeFlavor." />
+                        <Error Condition="'$(_WasmWebcilVersion)' != '1'" Text="CoreCLR requires WebCIL version 1." />
+                        <Error Text="Stopping after validating CoreCLR WebCIL version" />
+                    </Target>
+                    """);
+
+            (string _, string output) = BuildProject(
+                info,
+                Configuration.Debug,
+                new BuildOptions(
+                    ExpectSuccess: false,
+                    ExtraMSBuildArgs: "-t:CheckCoreClrWebcilVersion -p:RuntimeFlavor="));
+
+            Assert.Contains("Stopping after validating CoreCLR WebCIL version", output);
         }
 
         // Mirrors the Mono path's WithNativeReference test: a project that references a native
