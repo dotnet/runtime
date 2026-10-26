@@ -28,6 +28,7 @@ is stored. Failures are diagnosed, and failed tool execution is never retried. I
 declarations, including cache/output overlap, fail before cleanup rather than bypassing caching.
 
 Normal execution owns output preparation, including removal of stale or partially restored files.
+It must also reset state populated by `readMetadata`, since restoration can fail after metadata is read.
 The cache owns reconciliation only on hits, including deleting declared files recorded as absent.
 Restoration is not transactional. Empty directories are not preserved, and symbolic links are not
 checked.

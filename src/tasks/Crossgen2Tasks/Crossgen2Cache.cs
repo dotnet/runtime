@@ -26,7 +26,8 @@ internal static class Crossgen2Cache
     internal static string InputPath(string path)
     {
         // These strings are embedded in a response file, not passed as an argv array.
-        if (!Path.IsPathFullyQualified(path) || path.AsSpan().ContainsAny(s_unsupportedPathCharacters))
+        if (!Path.IsPathFullyQualified(path) || path.AsSpan().ContainsAny(s_unsupportedPathCharacters) ||
+            char.IsWhiteSpace(path[^1]))
         {
             throw new InvalidDataException($"Unsupported response-file path: '{path}'.");
         }

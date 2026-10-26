@@ -166,7 +166,7 @@ public class Crossgen2CacheTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void RoundTripPreservesTaskOutputsWithoutWarningReplay(bool showWarnings, bool emitWarning) => RemoteExecutor.Invoke((show, emit) =>
+    public void RepeatedExecutionPreservesTaskOutputsAndWarningPolicy(bool showWarnings, bool emitWarning) => RemoteExecutor.Invoke((show, emit) =>
     {
         using var fixture = new Fixture();
         string neighbor = Path.Combine(fixture.Root, "out", "unrelated.txt");
@@ -177,6 +177,10 @@ public class Crossgen2CacheTests
         miss.EmitWarning = bool.Parse(emit);
         Assert.True(miss.Execute());
         Assert.Equal(bool.Parse(emit) && !bool.Parse(show), miss.WarningsDetected);
+        if (miss.ShowCompilerWarnings)
+        {
+            Assert.False(Directory.Exists(fixture.Cache));
+        }
         byte[] image = File.ReadAllBytes(fixture.Output);
         byte[] map = File.ReadAllBytes(fixture.Map);
         File.Delete(fixture.Output);
@@ -184,15 +188,25 @@ public class Crossgen2CacheTests
         DateTime before = DateTime.UtcNow;
         MockCompiler hit = fixture.Create();
         hit.ShowCompilerWarnings = miss.ShowCompilerWarnings;
+        hit.EmitWarning = miss.EmitWarning;
         hit.WarningsDetected = !miss.WarningsDetected;
         Assert.True(hit.Execute());
-        Assert.Equal(0, hit.Executions);
+        Assert.Equal(miss.ShowCompilerWarnings ? 1 : 0, hit.Executions);
         Assert.Equal(0, hit.ExitCode);
         Assert.Equal(image, File.ReadAllBytes(fixture.Output));
         Assert.Equal(map, File.ReadAllBytes(fixture.Map));
         Assert.Equal(miss.WarningsDetected, hit.WarningsDetected);
-        Assert.Empty(hit.Engine.Warnings);
-        Assert.DoesNotContain(hit.Engine.Messages, message => message.Contains("warning:", StringComparison.Ordinal));
+        Assert.Equal(miss.Engine.Warnings, hit.Engine.Warnings);
+        if (miss.ShowCompilerWarnings)
+        {
+            Assert.Equal(
+                miss.Engine.Messages.Where(message => message.Contains("warning:", StringComparison.Ordinal)),
+                hit.Engine.Messages.Where(message => message.Contains("warning:", StringComparison.Ordinal)));
+        }
+        else
+        {
+            Assert.DoesNotContain(hit.Engine.Messages, message => message.Contains("warning:", StringComparison.Ordinal));
+        }
         Assert.InRange(File.GetLastWriteTimeUtc(fixture.Output), before.AddSeconds(-1), DateTime.UtcNow.AddSeconds(1));
         Assert.Equal("do not delete", File.ReadAllText(neighbor));
     }, showWarnings.ToString(), emitWarning.ToString()).Dispose();
@@ -500,6 +514,43 @@ public class Crossgen2CacheTests
         Assert.Contains(task.Engine.Messages, m => m.Contains(expectedDiagnostic, StringComparison.Ordinal));
     }, shape).Dispose();
 
+    [LinuxCacheTheory]
+    [InlineData("input", " ")]
+    [InlineData("input", "\t")]
+    [InlineData("input", "\u00a0")]
+    [InlineData("symbols", " ")]
+    [InlineData("symbols", "\t")]
+    [InlineData("symbols", "\u00a0")]
+    [InlineData("normalized-symbols", " ")]
+    [InlineData("normalized-symbols", "\t")]
+    [InlineData("normalized-symbols", "\u00a0")]
+    public void LinuxWhitespacePathsBypass(string shape, string whitespace) => RemoteExecutor.Invoke((value, suffix) =>
+    {
+        using var fixture = new Fixture();
+        MockCompiler task = fixture.Create();
+        task.ImplementationAssemblyReferences = new[] { new TaskItem(fixture.Reference) };
+        if (value == "input")
+        {
+            string input = fixture.Input + suffix;
+            File.Copy(fixture.Input, input);
+            task.CompilationEntry.ItemSpec = input;
+        }
+        else
+        {
+            string directory = Path.Combine(fixture.Root, "symbols" + suffix);
+            Directory.CreateDirectory(directory);
+            if (value == "normalized-symbols")
+            {
+                directory = Path.Combine(directory, ".");
+            }
+            task.CompilationEntry.SetMetadata("OutputPDBImage", Path.Combine(directory, Path.GetFileName(fixture.Map)));
+        }
+        Assert.True(task.Execute());
+        Assert.Equal(1, task.Executions);
+        Assert.Contains(task.Engine.Messages, m => m.Contains("cache bypass: Unsupported response-file path:", StringComparison.Ordinal));
+        Assert.False(Directory.Exists(fixture.Cache));
+    }, shape, whitespace).Dispose();
+
     [CachePlatformTheory]
     [InlineData("outputs-in-cache")]
     [InlineData("cache-in-output")]
@@ -690,7 +741,7 @@ public class Crossgen2CacheTests
     public void SeparateSymbolDirectoryIsCached(string scenario) => RemoteExecutor.Invoke(value =>
     {
         using var fixture = new Fixture();
-        string directory = Path.Combine(fixture.Root, "PDB");
+        string directory = Path.Combine(fixture.Root, "PDB directory");
         Directory.CreateDirectory(directory);
         string symbols = Path.Combine(directory, Path.GetFileName(fixture.Map));
         string neighbor = Path.Combine(directory, "unrelated.txt");
@@ -955,7 +1006,7 @@ public class Crossgen2CacheTests
         string symbolsPath = Path.ChangeExtension(output, Fixture.SymbolExtension);
         if (bool.Parse(separate))
         {
-            string directory = Path.Combine(fixture.Root, "PDB");
+            string directory = Path.Combine(fixture.Root, "PDB directory");
             Directory.CreateDirectory(directory);
             symbolsPath = Path.Combine(directory, Path.GetFileName(symbolsPath));
         }
@@ -1008,6 +1059,59 @@ public class Crossgen2CacheTests
             Assert.Equal(cachedSymbols, File.ReadAllBytes(symbolsPath));
         }
     }, symbols.ToString(), separateDirectory.ToString()).Dispose();
+
+    [LinuxCacheTheory(realCompiler: true)]
+    [InlineData("input")]
+    [InlineData("symbols")]
+    public void RealCompilerWhitespacePathsBypass(string shape) => RemoteExecutor.Invoke(value =>
+    {
+        using var fixture = new Fixture();
+        string runtime = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
+        string input = Path.Combine(fixture.Root, "System.Linq.dll");
+        File.Copy(Path.Combine(runtime, "System.Linq.dll"), input);
+        string declaredInput = input;
+        string symbolDirectory = Path.Combine(fixture.Root, "symbols");
+        string effectiveSymbolDirectory = symbolDirectory;
+        if (value == "input")
+        {
+            declaredInput += " ";
+            File.Copy(fixture.Input, declaredInput);
+        }
+        else
+        {
+            symbolDirectory += " ";
+        }
+        Directory.CreateDirectory(symbolDirectory);
+        Directory.CreateDirectory(effectiveSymbolDirectory);
+        string output = Path.Combine(fixture.Root, "out", "System.Linq.dll");
+        string symbolName = Path.ChangeExtension(Path.GetFileName(output), Fixture.SymbolExtension);
+        MockCompiler Create()
+        {
+            MockCompiler task = fixture.Create("System.Linq.dll");
+            task.RealTool = true;
+            task.Crossgen2Tool.ItemSpec = Environment.GetEnvironmentVariable("CROSSGEN2_CACHE_TEST_TOOL")!;
+            task.CompilationEntry.ItemSpec = declaredInput;
+            task.CompilationEntry.SetMetadata("EmitSymbols", (value == "symbols").ToString());
+            task.CompilationEntry.SetMetadata("OutputPDBImage", Path.Combine(symbolDirectory, symbolName));
+            task.ImplementationAssemblyReferences = Directory.GetFiles(runtime, "*.dll").Where(HasMetadata).Select(p => new TaskItem(p)).ToArray();
+            task.Crossgen2PgoFiles = Array.Empty<ITaskItem>();
+            return task;
+        }
+        for (int i = 0; i < 2; i++)
+        {
+            MockCompiler task = Create();
+            Assert.True(task.Execute(), string.Join(Environment.NewLine, task.Engine.Messages));
+            Assert.Equal(1, task.Executions);
+            Assert.Contains(task.Engine.Messages, m => m.Contains("cache bypass: Unsupported response-file path:", StringComparison.Ordinal));
+            Assert.Equal("System.Linq", System.Reflection.AssemblyName.GetAssemblyName(output).Name);
+            Assert.False(Directory.Exists(fixture.Cache));
+        }
+        if (value == "symbols")
+        {
+            Assert.True(File.Exists(Path.Combine(effectiveSymbolDirectory, symbolName)));
+            Assert.False(File.Exists(Path.Combine(symbolDirectory, symbolName)));
+        }
+    }, shape).Dispose();
 
     private static byte[] NormalizeNativePdbIdentity(byte[] image)
     {
@@ -1202,6 +1306,21 @@ public sealed class RealCrossgen2TheoryAttribute : CachePlatformTheoryAttribute
     public RealCrossgen2TheoryAttribute()
     {
         if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CROSSGEN2_CACHE_TEST_TOOL")))
+        {
+            Skip = "Set CROSSGEN2_CACHE_TEST_TOOL to a directly executed crossgen2 deployment for this host.";
+        }
+    }
+}
+
+public sealed class LinuxCacheTheoryAttribute : CachePlatformTheoryAttribute
+{
+    public LinuxCacheTheoryAttribute(bool realCompiler = false)
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            Skip = "This test exercises Linux response-file path conventions.";
+        }
+        else if (realCompiler && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CROSSGEN2_CACHE_TEST_TOOL")))
         {
             Skip = "Set CROSSGEN2_CACHE_TEST_TOOL to a directly executed crossgen2 deployment for this host.";
         }

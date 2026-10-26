@@ -108,6 +108,7 @@ internal sealed class Crossgen2CacheInvocation
         if (!string.IsNullOrEmpty(symbols))
         {
             symbols = Crossgen2Cache.InputPath(symbols);
+            Crossgen2Cache.InputPath(Path.GetDirectoryName(symbols)!);
         }
         string symbolOutput = RunReadyToRunCompiler.GetSymbolOutputPath(image, symbols, windows);
         if (emitSymbols && ((!windows && perfmapFormatVersion != "1") ||

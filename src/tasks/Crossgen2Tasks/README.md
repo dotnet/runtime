@@ -37,7 +37,10 @@ bundles are supported, including the repository's self-contained in-build compil
 Managed hosting-runtime identity is intentionally not resolved; see the assumptions below.
 Optional task-supplied MIBC profiles, Linux version-1 perf maps, and Windows native
 PDBs are supported. It requires fully qualified, non-wildcard input/output paths that can be
-represented safely in the task's response file. It does not parse extra command
+represented safely in the task's response file.
+Paths ending in whitespace, including normalized symbol-output directories, bypass
+caching because the response-file reader trims unquoted arguments.
+It does not parse extra command
 strings in general: an unrecognized argument (including anything with a path-like
 shape, response files, or an unexpected value) bypasses caching. A small allowlist
 of known, pathless boolean switches used by in-repo callers (currently
@@ -61,8 +64,8 @@ Before tool execution, the task deletes these two files, including
 symbols left by a previous symbol-enabled compilation. Preparation belongs to
 normal tool execution, not the cache, so it also runs when caching is disabled
 or bypassed. This intentionally changes those paths to remove stale outputs.
-A hit restores their recorded presence/absence. Unrelated outputs and target-owned
-semaphores are untouched. PDB-only compilation preserves the native image it reads
+A hit restores their recorded presence/absence. Unrelated outputs are untouched.
+PDB-only compilation preserves the native image it reads
 and cleans only its symbol output. When legacy symbols are requested, preparation
 uses the declared symbol path rather than the modern crossgen2 naming convention.
 
@@ -182,8 +185,8 @@ remains supported in the meantime.
 ### Diagnostics, storage, and failures
 
 Only exit-code-zero results without task-logged errors are stored.
-Cache hits do not replay compiler warnings or other compiler
-text, matching the no-replay policy of the ILLink cache. `WarningsDetected` is
+`ShowCompilerWarnings=true` bypasses caching so requested diagnostics and their MSBuild
+warning-as-error handling are not skipped. Hits do not replay compiler text. `WarningsDetected` is
 stored and restored separately as a Boolean task output; it remains available
 to callers without replaying the warning messages. Normal execution resets this
 output before running the compiler, including after a failed restoration.

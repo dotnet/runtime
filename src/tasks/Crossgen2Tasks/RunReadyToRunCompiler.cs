@@ -423,7 +423,7 @@ namespace Microsoft.NET.Build.Tasks
         {
             try
             {
-                if (!ActuallyUseCrossgen2 || Crossgen2IsVersion5 || _createCompositeImage ||
+                if (ShowCompilerWarnings || !ActuallyUseCrossgen2 || Crossgen2IsVersion5 || _createCompositeImage ||
                     !string.IsNullOrEmpty(DotNetHostPath) || UseCommandProcessor ||
                     EnvironmentVariables?.Length > 0 ||
                     !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_LIBRARY_PATH")) ||
@@ -435,7 +435,7 @@ namespace Microsoft.NET.Build.Tasks
                     !Crossgen2CacheInvocation.SupportsTarget(Crossgen2Tool) ||
                     !Crossgen2Cache.PathComparer.Equals(Crossgen2Cache.InputPath(pathToTool), Crossgen2Cache.InputPath(Crossgen2Tool.ItemSpec)))
                 {
-                    Crossgen2Cache.Report(Log, "bypass: unsupported invocation (requires directly executed Linux-x64 or Windows-x64 crossgen2 targeting its host, with non-composite PE output and without unrecognized extra arguments or environment overrides)");
+                    Crossgen2Cache.Report(Log, "bypass: unsupported invocation (requires directly executed Linux-x64 or Windows-x64 crossgen2 targeting its host, with non-composite PE output and without compiler warning display, unrecognized extra arguments or environment overrides)");
                     return null;
                 }
 
