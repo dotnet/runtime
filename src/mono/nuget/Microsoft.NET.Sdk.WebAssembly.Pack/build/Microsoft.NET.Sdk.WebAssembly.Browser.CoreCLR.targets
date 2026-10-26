@@ -11,8 +11,17 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
-  <!-- Default OFF for now. Flipping to true belongs to the codegen-quality / crossgen2-resolution work
-       stream (dotnet/runtime#132466), not here. Consumers opt in with -p:PublishReadyToRun=true. -->
+  <!-- Compute build-only selection before defaulting PublishReadyToRun so its explicit overrides
+       remain effective without introducing a separate public build setting. -->
+  <PropertyGroup>
+    <_WasmUsePrebuiltReadyToRun>$(PublishReadyToRun)</_WasmUsePrebuiltReadyToRun>
+    <_WasmUsePrebuiltReadyToRun Condition="'$(_WasmUsePrebuiltReadyToRun)' == '' and '$(Configuration)' == 'Debug' and
+                                          '$(WasmEnableWebcil)' != 'false' and '$(WasmPerformanceInstrumentation)' == ''">true</_WasmUsePrebuiltReadyToRun>
+    <_WasmUsePrebuiltReadyToRun Condition="'$(_WasmUsePrebuiltReadyToRun)' == ''">false</_WasmUsePrebuiltReadyToRun>
+  </PropertyGroup>
+
+  <!-- ReadyToRun publishing defaults OFF for now. Flipping the publish default to true is tracked by dotnet/runtime#132466.
+       Consumers opt in to publishing with -p:PublishReadyToRun=true. -->
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">false</PublishReadyToRun>
   </PropertyGroup>
@@ -52,7 +61,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishR2RDir Condition="'$(_WasmPublishR2RDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'R2R'))</_WasmPublishR2RDir>
       <_WasmPublishPrebuiltR2RDirectory>$(_WasmPublishR2RDir)</_WasmPublishPrebuiltR2RDirectory>
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
-      <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(_WasmUsePrebuiltReadyToRun)' == 'true' and '$(_WasmCoreClrUnderPublish)' != 'true' and
+                              '$(DeployOnBuild)' != 'true' and '$(_WasmEnableWebcil)' == 'true' and '$(WasmPerformanceInstrumentation)' == ''">
+      <_WasmBuildPrebuiltR2RDirectory>$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
     </PropertyGroup>
   </Target>
 
