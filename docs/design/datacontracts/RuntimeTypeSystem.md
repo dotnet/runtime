@@ -589,17 +589,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `InstantiatedMethodDesc` | `PerInstInfo` | `pointer` | The pointer to the method's type arguments |
 | `LayoutEEClass` | `LayoutInfo` | `EEClassLayoutInfo` | Inline `EEClassLayoutInfo` for a type with layout. Only the offset is used - the reader constructs an `EEClassLayoutInfo` at that offset from the `EEClass` address. Only valid when `EEClass.VMFlags` has `VMFLAG_HASLAYOUT` |
 | `LoaderAllocator` | `CreationNumber` | `uint64` | Monotonically-increasing creation number assigned to each collectible LoaderAllocator. |
-| `LoaderAllocator` | `DynamicHelpersStubHeap` | `pointer` | Dynamic-helper stub heap (optional, present when ReadyToRun dynamic-helper stubs are enabled) |
-| `LoaderAllocator` | `ExecutableHeap` | `pointer` | Executable-code heap |
-| `LoaderAllocator` | `FixupPrecodeHeap` | `pointer` | Fixup-precode heap (optional, present when fixup precodes are supported) |
-| `LoaderAllocator` | `HighFrequencyHeap` | `pointer` | High-frequency allocation heap |
 | `LoaderAllocator` | `IsCollectible` | `uint8` | Non-zero if the LoaderAllocator is collectible. |
-| `LoaderAllocator` | `LowFrequencyHeap` | `pointer` | Low-frequency allocation heap |
-| `LoaderAllocator` | `NewStubPrecodeHeap` | `pointer` | New-stub-precode heap (optional, absent with portable entry points) |
-| `LoaderAllocator` | `ObjectHandle` | `ObjectHandle` | Handle to the managed loader allocator object |
-| `LoaderAllocator` | `ReferenceCount` | `uint32` | Reference count of the loader allocator |
-| `LoaderAllocator` | `StaticsHeap` | `pointer` | Heap containing statics-related allocations |
-| `LoaderAllocator` | `VirtualCallStubManager` | `pointer` | Pointer to the virtual-call stub manager |
 | `MethodDesc` | *(type size)* | `uint32` | Base size for mcIL classification |
 | `MethodDesc` | `ChunkIndex` | `uint8` | Offset of this MethodDesc relative to the end of its containing MethodDescChunk - in multiples of MethodDescAlignment |
 | `MethodDesc` | `CodeData` | `pointer` | Pointer to per-method code data containing entry-point and code-versioning state |
@@ -607,7 +597,6 @@ static class RuntimeTypeSystem_1_Helpers
 | `MethodDesc` | `Flags` | `uint16` | The method's flags |
 | `MethodDesc` | `Flags3AndTokenRemainder` | `uint16` | More flags for the method, and the low bits of the method's token's RID |
 | `MethodDesc` | `GCCoverageInfo` | `pointer` | The method's GCCover debug info, if supported |
-| `MethodDesc` | `InterpreterCode` | `pointer` | Pointer to the method's `InterpByteCodeStart`, or the poison value 1 if the method will never be interpreted (only defined if `FEATURE_INTERPRETER` is enabled) |
 | `MethodDesc` | `Slot` | `uint16` | The method's slot |
 | `MethodDescChunk` | *(type size)* | `uint32` | Size of the data descriptor layout |
 | `MethodDescChunk` | `Count` | `uint8` | The number of MethodDesc entries in this chunk, minus 1. |
@@ -615,7 +604,6 @@ static class RuntimeTypeSystem_1_Helpers
 | `MethodDescChunk` | `MethodTable` | `pointer` | The method table set of methods belongs to |
 | `MethodDescChunk` | `Next` | `pointer` | The next chunk of methods |
 | `MethodDescChunk` | `Size` | `uint8` | The size of this MethodDescChunk  following this MethodDescChunk header, minus 1. In multiples of MethodDescAlignment |
-| `MethodDescCodeData` | `GCRefMap` | `pointer` | Optional cached ReadyToRun method-entry GC reference map used by prestub and call-counting frames |
 | `MethodDescCodeData` | `OptimizationTier` | `uint32` | Optimization tier of the method's current native code |
 | `MethodDescCodeData` | `TemporaryEntryPoint` | `CodePointer` | Temporary code entry point used before the method has a stable entry point |
 | `MethodDescCodeData` | `VersioningState` | `pointer` | The IL versioning state associated with a method descriptor |
@@ -638,7 +626,6 @@ static class RuntimeTypeSystem_1_Helpers
 | `NativeCodeSlot` | *(type size)* | `uint32` | Size of the native code slot, added when HasNativeCodeSlot flag is set |
 | `NonVtableSlot` | *(type size)* | `uint32` | Size of the non-vtable slot, added when HasNonVtableSlot flag is set |
 | `Object` | *(type size)* | `uint32` | Size in bytes of the fixed Object portion through its MethodTable pointer |
-| `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `ParamTypeDesc` | `TypeArg` | `pointer` | Associated type argument |
 | `PInvokeMethodDesc` | *(type size)* | `uint32` | Base size for mcPInvoke classification |
 | `Signature` | `SignatureLength` | `uint32` | Length in bytes of the raw signature blob. |

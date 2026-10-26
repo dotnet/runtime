@@ -4,6 +4,35 @@
 using System;
 using System.Runtime.CompilerServices;
 
+public static class ThreadStaticInFlightDataBeforeUnload
+{
+    [ThreadStatic]
+    private static object s_value;
+
+    static ThreadStaticInFlightDataBeforeUnload()
+    {
+        s_value = new object();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Touch()
+    {
+    }
+}
+
+public static class ThreadStaticInFlightDataAfterUnload
+{
+    [ThreadStatic]
+    private static object s_value;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Set()
+    {
+        s_value = new object();
+        GC.KeepAlive(s_value);
+    }
+}
+
 // Use multiple classes to trigger multiple statics allocation events
 public class StaticTest2
 {

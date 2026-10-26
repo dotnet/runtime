@@ -47,7 +47,7 @@ Pull-request process — scope, benchmark evidence, API approval, backport — i
 
 ## Documentation & Comments
 
-- **Comments should explain why, not restate code.** Delete comments like `// Get the types` that just duplicate the code in English. Don't include historical context about why code changed.
+- **Comments should explain why, not restate code or history.** Delete comments like `// Get the types` that just duplicate the code in English. When rewriting logic, do not add source comments describing how the old or previous implementation worked. If explaining the previous implementation is useful, use the `annotate_diff_line` tool when available; otherwise omit that historical explanation. Comments in the code should explain the current implementation or why it behaves as it does.
 - **Delete or update obsolete comments when corresponding code changes.** Stale comments describing old behavior are worse than no comments. Update them when you touch the relevant code; leave unrelated stale comments to a dedicated cleanup pass.
 - **Track deferred work with GitHub issues and searchable TODOs.** Reference a tracking issue in TODO comments with a consistent prefix (e.g., `TODO-Async:`). Remove ancient TODOs that will never be addressed.
 - **Don't duplicate comments on interface implementations.** Documentation comments belong on the interface definition. Implementations should use `<inheritdoc/>` to avoid divergence.

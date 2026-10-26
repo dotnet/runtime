@@ -331,6 +331,11 @@ namespace ILAssembler
         private ImmutableArray<ValidatedVTableAssociation> ValidateVTableAssociations(
             ImmutableArray<ValidatedVTableFixup> validatedVTableFixups)
         {
+            if (_vtableFixups.Count == 0)
+            {
+                return ImmutableArray<ValidatedVTableAssociation>.Empty;
+            }
+
             var fixupsByOriginalIndex = new Dictionary<int, (int SerializedIndex, ValidatedVTableFixup Fixup)>(
                 validatedVTableFixups.Length);
             for (int i = 0; i < validatedVTableFixups.Length; i++)
@@ -589,7 +594,7 @@ namespace ILAssembler
         /// the CodeView entry records that path as given (after <see cref="Options.PathMap"/>), so the same input
         /// and the same recorded PDB path give the same image bytes, and a PDB path that is a file name alone
         /// keeps the image independent of its directory. Without <see cref="Options.Deterministic"/>, the id's
-        /// GUID is random. The checksum is the
+        /// GUID is random and its stamp is the current Unix time in seconds. The checksum is the
         /// content hash in both cases.
         /// </para>
         /// </remarks>
@@ -597,8 +602,8 @@ namespace ILAssembler
         {
             portablePdb = null;
 
-            // As in native ilasm, only /DEBUG (any mode) or /PDB produces a PDB. Without them, sequence
-            // points from .line directives are parsed and validated but not emitted.
+            // Only /DEBUG (any mode) or /PDB produces a PDB. Without them, .line
+            // directives are still parsed and validated, and no sequence points are recorded.
             if (!GeneratesPdb)
             {
                 return null;
@@ -613,12 +618,13 @@ namespace ILAssembler
             // PortablePdbBuilder hands the id provider the serialized PDB with its 20-byte id zeroed.
             // The SHA-256 of that content is the PdbChecksum value, and the deterministic id.
             byte[]? pdbContentHash = null;
+            Func<IEnumerable<Blob>, BlobContentId> timeBasedIdProvider = BlobContentId.GetTimeBasedProvider();
             BlobContentId PdbIdProvider(IEnumerable<Blob> content)
             {
                 pdbContentHash = ComputeSha256(content);
                 return _options.Deterministic
                     ? BlobContentId.FromHash(pdbContentHash)
-                    : new BlobContentId(Guid.NewGuid(), 0x04030201);
+                    : timeBasedIdProvider(content);
             }
 
             // Create the portable PDB
@@ -708,6 +714,8 @@ namespace ILAssembler
                 List<EntityRegistry.SequencePoint> sequencePoints = method.DebugInfo.SequencePoints;
                 if (sequencePoints.Count == 0 || !method.HasBody)
                 {
+                    // Points are recorded as instructions are emitted, so a method without an IL body has none
+                    // to map; a .line directive inside it applies to the next instruction, in a later method.
                     _pdbBuilder.AddMethodDebugInformation(default, default);
                 }
                 else
