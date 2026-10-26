@@ -41,6 +41,9 @@ than blocking the collector or growing memory indefinitely. Sequence numbers
 include skipped records. Each subscriber receives newly observed overflow counts
 with its next eligible callback; there is no separate notification for loss alone.
 New subscriptions do not receive older buffered pauses.
+Registration and disposal update a published array of subscriptions. Delivery
+reads that array without taking the registration lock; only the finalizer thread
+advances a published subscription's loss baseline.
 
 DiagnosticSource uses this public API to implement `dotnet.gc.pause.duration` in
 the opt-in `System.Runtime.Detailed.GC` meter on .NET 11 and later. The histogram

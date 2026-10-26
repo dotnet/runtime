@@ -25,6 +25,15 @@ void gc_heap::schedule_finalizer_work (FinalizerWorkItem* callback)
     }
 }
 
+static uint64_t read_pause_data_counter(uint64_t* counter)
+{
+#ifdef HOST_64BIT
+    return VolatileLoad(counter);
+#else // HOST_64BIT
+    return Interlocked::ExchangeAdd64(counter, uint64_t(0));
+#endif // HOST_64BIT
+}
+
 void gc_heap::get_pause_data_snapshot(uint64_t* sequence, uint64_t* missed_records)
 {
     for (;;)
@@ -35,8 +44,8 @@ void gc_heap::get_pause_data_snapshot(uint64_t* sequence, uint64_t* missed_recor
             continue;
         }
 
-        *sequence = Interlocked::ExchangeAdd64(&pause_data_sequence, uint64_t(0));
-        *missed_records = Interlocked::ExchangeAdd64(&pause_data_missed, uint64_t(0));
+        *sequence = read_pause_data_counter(&pause_data_sequence);
+        *missed_records = read_pause_data_counter(&pause_data_missed);
         if (version == VolatileLoad(&pause_data_version))
         {
             return;
@@ -95,9 +104,7 @@ void gc_heap::deliver_pause_data(FinalizerWorkItem* work)
         GCPauseData pause = pause_data_records[read % pause_data_capacity];
         VolatileStore(&pause_data_read, ++read);
 
-        uint64_t sequence;
-        uint64_t missed_records;
-        get_pause_data_snapshot(&sequence, &missed_records);
+        uint64_t missed_records = read_pause_data_counter(&pause_data_missed);
         GCPauseDataCallback callback = VolatileLoad(&pause_data_callback);
         assert(callback != nullptr);
         callback(&pause, missed_records);

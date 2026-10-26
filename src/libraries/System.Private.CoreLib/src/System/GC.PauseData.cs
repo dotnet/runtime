@@ -31,7 +31,14 @@ public static partial class GC
         return PauseDataCallbacks.Register(callback);
     }
 
-    static unsafe partial void ConfigurePauseDataCallback(void* callback, bool enabled, ref long sequence, ref long missedRecords, ref bool supported);
+    static unsafe partial void ConfigurePauseDataCallback(void* callback, bool enabled, ref PauseDataCallbackState state);
+
+    private struct PauseDataCallbackState
+    {
+        public long Sequence;
+        public long MissedRecords;
+        public bool Supported;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct NativePauseData
@@ -55,27 +62,28 @@ public static partial class GC
             {
                 Registration[] registrations = new Registration[checked(s_registrations.Length + 1)];
                 s_registrations.CopyTo(registrations, 0);
-                Configure(enabled: true, out registration._firstSequence, out registration._lastMissedRecords);
+                PauseDataCallbackState state = Configure(enabled: true);
+                registration._firstSequence = state.Sequence;
+                registration._lastMissedRecords = state.MissedRecords;
                 registrations[^1] = registration;
-                s_registrations = registrations;
+                Volatile.Write(ref s_registrations, registrations);
             }
 
             return registration;
         }
 
-        private static unsafe void Configure(bool enabled, out long sequence, out long missedRecords)
+        private static unsafe PauseDataCallbackState Configure(bool enabled)
         {
-            sequence = 0;
-            missedRecords = 0;
-            // An unimplemented runtime hook leaves support disabled.
-            bool supported = false;
+            PauseDataCallbackState state = default;
             ConfigurePauseDataCallback(
                 (void*)(delegate* unmanaged[Cdecl]<NativePauseData*, long, void>)&OnPause,
-                enabled, ref sequence, ref missedRecords, ref supported);
-            if (!supported)
+                enabled, ref state);
+            if (!state.Supported)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_GCPauseDataCallback);
             }
+
+            return state;
         }
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant.
@@ -87,28 +95,19 @@ public static partial class GC
             GCPauseData pause = new(data->SequenceNumber, data->CollectionIndex,
                 new TimeSpan(checked(data->DurationMicroseconds * TimeSpan.TicksPerMicrosecond)),
                 data->Generation, data->Concurrent != 0);
-            Registration[] registrations;
-            lock (s_lock)
-            {
-                registrations = s_registrations;
-            }
+            Registration[] registrations = Volatile.Read(ref s_registrations);
 
             foreach (Registration registration in registrations)
             {
-                GCPauseDataCallback? callback;
-                long missed;
-                lock (s_lock)
+                GCPauseDataCallback? callback = Volatile.Read(ref registration._callback);
+                if (callback is null || pause.SequenceNumber <= registration._firstSequence)
                 {
-                    callback = registration._callback;
-                    if (callback is null || pause.SequenceNumber <= registration._firstSequence)
-                    {
-                        continue;
-                    }
-
-                    missed = missedRecords - registration._lastMissedRecords;
-                    registration._lastMissedRecords = missedRecords;
+                    continue;
                 }
 
+                // Registration initializes this before publication; only this thread advances it.
+                long missed = missedRecords - registration._lastMissedRecords;
+                registration._lastMissedRecords = missedRecords;
                 callback(pause, missed);
             }
         }
@@ -137,11 +136,11 @@ public static partial class GC
                     Array.Copy(s_registrations, index + 1, registrations, index, registrations.Length - index);
                     if (registrations.Length == 0)
                     {
-                        Configure(enabled: false, out _, out _);
+                        Configure(enabled: false);
                     }
 
-                    _callback = null;
-                    s_registrations = registrations;
+                    Volatile.Write(ref _callback, null);
+                    Volatile.Write(ref s_registrations, registrations);
                 }
             }
         }

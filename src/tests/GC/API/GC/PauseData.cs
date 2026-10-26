@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 public static class PauseDataTests
@@ -30,6 +31,8 @@ public static class PauseDataTests
 
         VerifyPayloadAndSubscribers();
         VerifySelfDisposal();
+        VerifySubscriptionChangesDuringDelivery();
+        VerifyConcurrentSubscriptions();
         VerifyOverflowAndNonblockingDisposal();
         VerifyHistogram();
         if (Environment.GetEnvironmentVariable("DOTNET_gcConcurrent") == "1")
@@ -295,17 +298,163 @@ public static class PauseDataTests
         Assert.Equal(1, Volatile.Read(ref calls));
     }
 
+    private static void VerifySubscriptionChangesDuringDelivery()
+    {
+        using ManualResetEventSlim entered = new();
+        using ManualResetEventSlim release = new();
+        using ManualResetEventSlim delivered = new();
+        int armed = 0;
+        int blocked = 0;
+        int expired = 0;
+        int removedCalls = 0;
+        int invalid = 0;
+        long oldIndex = 0;
+        long expectedIndex = 0;
+        IDisposable? late = null;
+        using IDisposable blocker = GC.RegisterPauseDataCallback((_, _) =>
+        {
+            if (Volatile.Read(ref armed) != 0 && Interlocked.Exchange(ref blocked, 1) == 0)
+            {
+                entered.Set();
+                if (!release.Wait(TimeoutMilliseconds))
+                {
+                    Volatile.Write(ref expired, 1);
+                }
+            }
+        });
+        using IDisposable removed = GC.RegisterPauseDataCallback((_, _) =>
+        {
+            if (Volatile.Read(ref blocked) != 0)
+            {
+                Interlocked.Increment(ref removedCalls);
+            }
+        });
+
+        try
+        {
+            Volatile.Write(ref armed, 1);
+            GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+            Assert.True(entered.Wait(TimeoutMilliseconds));
+            for (int i = 0; i < 8; i++)
+            {
+                GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+            }
+            oldIndex = GC.GetGCMemoryInfo(GCKind.Ephemeral).Index;
+            late = GC.RegisterPauseDataCallback((pause, missed) =>
+            {
+                if (pause.CollectionIndex <= oldIndex || missed != 0)
+                {
+                    Interlocked.Increment(ref invalid);
+                }
+                if (pause.CollectionIndex == Volatile.Read(ref expectedIndex))
+                {
+                    delivered.Set();
+                }
+            });
+            removed.Dispose();
+            GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+            Volatile.Write(ref expectedIndex, GC.GetGCMemoryInfo(GCKind.Ephemeral).Index);
+            release.Set();
+            Assert.True(delivered.Wait(TimeoutMilliseconds));
+        }
+        finally
+        {
+            release.Set();
+            late?.Dispose();
+            removed.Dispose();
+            blocker.Dispose();
+            GC.WaitForPendingFinalizers();
+        }
+
+        Assert.Equal(0, Volatile.Read(ref expired));
+        Assert.Equal(0, Volatile.Read(ref invalid));
+        Assert.Equal(0, Volatile.Read(ref removedCalls));
+    }
+
+    private static void VerifyConcurrentSubscriptions()
+    {
+        const int WorkerCount = 4;
+        const int RegistrationsPerWorker = 64;
+        const int Collections = 256;
+        using ManualResetEventSlim start = new();
+        using CountdownEvent registered = new(WorkerCount);
+        using ManualResetEventSlim releaseFirst = new();
+        int invalid = 0;
+        int callbacks = 0;
+        Task[] workers = new Task[WorkerCount];
+        for (int i = 0; i < workers.Length; i++)
+        {
+            workers[i] = Task.Run(() =>
+            {
+                start.Wait();
+                for (int j = 0; j < RegistrationsPerWorker; j++)
+                {
+                    long previousSequence = 0;
+                    using IDisposable subscription = GC.RegisterPauseDataCallback((pause, missed) =>
+                    {
+                        if (pause.SequenceNumber <= previousSequence || missed < 0)
+                        {
+                            Interlocked.Increment(ref invalid);
+                        }
+                        previousSequence = pause.SequenceNumber;
+                        Interlocked.Increment(ref callbacks);
+                    });
+                    if (j == 0)
+                    {
+                        registered.Signal();
+                        if (!releaseFirst.Wait(TimeoutMilliseconds))
+                        {
+                            throw new TimeoutException("The initial subscriptions were not released.");
+                        }
+                    }
+                    Thread.Yield();
+                    subscription.Dispose();
+                }
+            });
+        }
+
+        try
+        {
+            start.Set();
+            Assert.True(registered.Wait(TimeoutMilliseconds));
+            GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+            GC.WaitForPendingFinalizers();
+            Assert.True(Volatile.Read(ref callbacks) >= WorkerCount);
+            releaseFirst.Set();
+            for (int i = 0; i < Collections; i++)
+            {
+                GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+                Thread.Yield();
+            }
+        }
+        finally
+        {
+            start.Set();
+            releaseFirst.Set();
+            Assert.True(Task.WaitAll(workers, TimeoutMilliseconds));
+        }
+        GC.WaitForPendingFinalizers();
+        int completedCalls = Volatile.Read(ref callbacks);
+        GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+        GC.WaitForPendingFinalizers();
+        Assert.Equal(completedCalls, Volatile.Read(ref callbacks));
+        Assert.Equal(0, Volatile.Read(ref invalid));
+    }
+
     private static void VerifyOverflowAndNonblockingDisposal()
     {
         using ManualResetEventSlim entered = new();
         using ManualResetEventSlim release = new();
         using ManualResetEventSlim disposed = new();
         using ManualResetEventSlim sawLoss = new();
+        using ManualResetEventSlim lateDelivered = new();
         int armed = 0;
         int blocked = 0;
         int expired = 0;
         long missedTotal = 0;
+        int invalidLoss = 0;
         Thread? disposer = null;
+        IDisposable? late = null;
         IDisposable blocker = GC.RegisterPauseDataCallback((_, _) =>
         {
             if (Volatile.Read(ref armed) != 0 && Interlocked.Exchange(ref blocked, 1) == 0)
@@ -319,6 +468,10 @@ public static class PauseDataTests
         });
         IDisposable observer = GC.RegisterPauseDataCallback((_, missed) =>
         {
+            if (missed < 0)
+            {
+                Interlocked.Increment(ref invalidLoss);
+            }
             Interlocked.Add(ref missedTotal, missed);
             if (missed > 0)
             {
@@ -336,6 +489,14 @@ public static class PauseDataTests
                 GC.Collect(0, GCCollectionMode.Forced, blocking: true);
             }
 
+            late = GC.RegisterPauseDataCallback((_, missed) =>
+            {
+                if (missed != 0)
+                {
+                    Interlocked.Increment(ref invalidLoss);
+                }
+                lateDelivered.Set();
+            });
             disposer = new Thread(() =>
             {
                 blocker.Dispose();
@@ -345,14 +506,19 @@ public static class PauseDataTests
             Assert.True(disposed.Wait(TimeoutMilliseconds));
             release.Set();
             Assert.True(sawLoss.Wait(TimeoutMilliseconds));
+            GC.WaitForPendingFinalizers();
+            GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+            Assert.True(lateDelivered.Wait(TimeoutMilliseconds));
             Assert.True(Interlocked.Read(ref missedTotal) >= OverflowCollections - BufferCapacity);
             Assert.Equal(0, Volatile.Read(ref expired));
+            Assert.Equal(0, Volatile.Read(ref invalidLoss));
         }
         finally
         {
             release.Set();
             blocker.Dispose();
             observer.Dispose();
+            late?.Dispose();
             if (disposer is not null)
             {
                 Assert.True(disposer.Join(TimeoutMilliseconds));
