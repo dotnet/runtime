@@ -94,6 +94,7 @@ namespace ILAssembler
             ModuleType = GetOrCreateTypeDefinition(null, "", "<Module>", moduleType =>
             {
                 moduleType.BaseType = null;
+                moduleType.IsDefined = true;
             });
         }
 
@@ -1865,6 +1866,7 @@ namespace ILAssembler
             public string Name { get; }
             public TypeAttributes Attributes { get; set; }
             public TypeEntity? BaseType { get; set; }
+            public bool IsDefined { get; set; }
 
             public NamedElementList<GenericParameterEntity> GenericParameters { get; } = new();
 
