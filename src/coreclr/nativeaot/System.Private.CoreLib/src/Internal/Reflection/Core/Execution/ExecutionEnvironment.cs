@@ -108,15 +108,16 @@ namespace Internal.Reflection.Core.Execution
             {
                 genericMethodTypeArgumentHandles[i] = genericMethodTypeArguments[i].TypeHandle;
             }
-
-            // A static abstract interface method has no implementation to call
-            MethodAttributes methodAttributes = methodHandle.NativeFormatReader.GetMethod(methodHandle.NativeFormatHandle).Flags;
-            if ((methodAttributes & (MethodAttributes.Static | MethodAttributes.Abstract)) == (MethodAttributes.Static | MethodAttributes.Abstract))
-                return new StaticAbstractMethodInvoker((MethodInfo)ExecutionDomain.GetMethod(typeDefinitionHandle, methodHandle, genericMethodTypeArgumentHandles));
-
             MethodBaseInvoker methodInvoker = TryGetMethodInvokerNoConstraintCheck(typeDefinitionHandle, methodHandle, genericMethodTypeArgumentHandles);
             if (methodInvoker == null)
+            {
+                // A static abstract interface method has no implementation to call
+                MethodAttributes methodAttributes = methodHandle.NativeFormatReader.GetMethod(methodHandle.NativeFormatHandle).Flags;
+                if ((methodAttributes & (MethodAttributes.Static | MethodAttributes.Abstract)) == (MethodAttributes.Static | MethodAttributes.Abstract))
+                    return new StaticAbstractMethodInvoker((MethodInfo)ExecutionDomain.GetMethod(typeDefinitionHandle, methodHandle, genericMethodTypeArgumentHandles));
+
                 exception = ReflectionCoreExecution.ExecutionEnvironment.CreateNonInvokabilityException(exceptionPertainant);
+            }
             return methodInvoker;
         }
 
