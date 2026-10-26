@@ -251,17 +251,38 @@ In live mode:
 
 1. First prepare the complete batch of proposed issues.
 2. Write all draft files as described above.
-3. Process the proposed issues one by one. For each KBE:
-   - Ask the user whether to create this specific issue.
+3. Follow the repository's
+   [GitHub publication authorization rules](../../copilot-instructions.md#github-publication-authorization).
+   In an interactive session, explicit advance permission to compose and
+   publish KBEs for the specified PR may cover the whole batch. Do not ask
+   again or require separate approval of the generated text for issues within
+   that scope. An executing workflow's documented publication contract may
+   also authorize issue creation for the specified PR within its currently
+   authorized actions and output limits. Invoking this skill or asking to
+   analyze CI alone is not permission to publish.
+4. Process the proposed issues one by one. For each KBE:
+   - If the candidate is **draft-only** under Step 4, keep its draft local and
+     report the missing evidence. Do not publish it automatically using advance
+     permission or workflow authorization until the shared KBE verification
+     requirements are met.
+   - Otherwise, if explicit advance permission in an interactive session or
+     the caller workflow's documented publication contract covers this issue,
+     create it without asking again unless the contract requires additional
+     approval.
+   - Otherwise, ask the user whether to create this specific issue.
    - The question must include:
      - the proposed issue title,
+     - the proposed labels and full body,
+     - the destination repository,
      - a short description of what the KBE is about,
      - the list of failures it covers, or a shortened summary if the list is
        long,
      - a clickable draft-file link when possible plus the plain absolute path,
      - a clear statement that the GitHub issue will be created on behalf of the
        currently authenticated user.
-   - Only create that issue if the user explicitly confirms.
+   - Without advance permission or applicable workflow authorization, only
+     create that issue if the user explicitly confirms. If approval cannot be
+     obtained, leave it as a draft and report the pending decision.
    - If the user declines, skip that issue and continue to the next proposed
      KBE.
 
@@ -272,8 +293,7 @@ the issue is being filed under a developer account. A concise note is enough,
 for example:
 
 > [!NOTE]
-> This issue draft was prepared with GitHub Copilot assistance and reviewed by
-> the submitting developer.
+> This issue was prepared with GitHub Copilot assistance.
 
 ## Step 6: Final output format
 

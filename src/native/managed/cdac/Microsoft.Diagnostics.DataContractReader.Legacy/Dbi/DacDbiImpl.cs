@@ -29,6 +29,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     private readonly Lock _apiLock;
     private readonly Target _target;
     private IDacDbiInterface? _legacy;
+    private ComObject? _legacyComObject;
     private ComObject? _dataTargetComObject;
     private ulong CorDBDefaultEnCFunctionVersion => _target.ReadGlobalPointer(Constants.Globals.CorDBDefaultEnCFunctionVersion).Value;
 
@@ -71,7 +72,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         _apiLock = apiLock;
         _target = target;
+#if DEBUG
         _legacy = legacyObj as IDacDbiInterface;
+#else
+        _legacy = null;
+#endif
+        _legacyComObject = legacyObj as ComObject;
         _dataTargetComObject = dataTargetComObject;
     }
 
@@ -79,7 +85,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         using Lock.Scope scope = _apiLock.EnterScope();
         _target.Flush(FlushScope.All);
-        return _legacy is not null ? _legacy.FlushCache() : HResults.S_OK;
+
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.FlushCache();
+            Debug.ValidateHResult(HResults.S_OK, hrLocal);
+        }
+
+        return HResults.S_OK;
     }
 
     public int Destroy()
@@ -87,10 +100,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         using Lock.Scope scope = _apiLock.EnterScope();
         try
         {
-            ComObject? legacyComObject = (object?)_legacy as ComObject;
             _dataTargetComObject?.FinalRelease();
             _dataTargetComObject = null;
-            legacyComObject?.FinalRelease();
+            _legacyComObject?.FinalRelease();
+            _legacyComObject = null;
             _legacy = null;
 
             return HResults.S_OK;
@@ -105,9 +118,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacy is not null
-            ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts)
-            : HResults.S_OK;
+        // Keep the legacy DBI's comparison state synchronized without allowing its result
+        // to control cDAC behavior.
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.DacSetTargetConsistencyChecks(fEnableAsserts);
+            Debug.ValidateHResult(HResults.S_OK, hrLocal);
+        }
+
+        return HResults.S_OK;
     }
 
     public int IsLeftSideInitialized(Interop.BOOL* pResult)
@@ -1807,7 +1826,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
         // Mirror the create onto the legacy DBI
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback())
+        if (_legacy is not null)
         {
             uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
             nuint legacyHandle = 0;
@@ -1863,7 +1882,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0)
+        if (_legacy is not null && legacyHandle != 0)
         {
             int hrLocal = _legacy.DeleteStackWalk(legacyHandle);
             Debug.ValidateHResult(hr, hrLocal);
@@ -1952,8 +1971,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-        // Mirror to legacy DBI in all builds so the legacy walker tracks the cDAC walker
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0)
+        // Mirror to the legacy DBI for validation so its walker tracks the cDAC walker.
+        if (_legacy is not null && legacyHandle != 0)
         {
             int hrLocal = _legacy.SetStackWalkCurrentContext(vmThread, legacyHandle, flag, pContext);
             Debug.ValidateHResult(hr, hrLocal);
@@ -1998,8 +2017,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-        // Mirror to legacy DBI in all builds so the legacy walker tracks the cDAC walker
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0)
+        // Mirror to the legacy DBI for validation so its walker tracks the cDAC walker.
+        if (_legacy is not null && legacyHandle != 0)
         {
             Interop.BOOL localResult;
             int hrLocal = _legacy.UnwindStackWalkFrame(legacyHandle, &localResult);
@@ -2902,7 +2921,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetCodePointer nativeCode = rts.GetNativeCode(methodDescHandle);
                 if (nativeCode != TargetCodePointer.Null)
                 {
-                    nativeCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
+                    nativeCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(nativeCode);
                     pCodeInfo->hotRegion.pAddress = nativeCode.ToAddress(_target).ToClrDataAddress(_target);
 
                     IExecutionManager executionManager = _target.Contracts.ExecutionManager;
@@ -2956,7 +2975,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetCodePointer code = ((ClrDataAddress)codeAddress).ToTargetCodePointer(_target);
                 try
                 {
-                    code = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(code);
+                    code = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(code);
                 }
                 catch (VirtualReadException)
                 {
@@ -6464,6 +6483,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
                 if (pCode != TargetCodePointer.Null)
                 {
+                    pCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(pCode);
                     IReadOnlyList<AsyncSuspensionInfo> suspensionPoints = _target.Contracts.DebugInfo.GetAsyncSuspensionPoints(pCode);
                     if (state < (uint)suspensionPoints.Count)
                     {
@@ -6558,6 +6578,60 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*pIndex == indexLocal, $"cDAC: {*pIndex}, DAC: {indexLocal}");
+        }
+#endif
+        return hr;
+    }
+
+    public int GetTargetInfo(TargetInfo* pTargetInfo)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pTargetInfo is null)
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pTargetInfo));
+            Contracts.IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
+
+            pTargetInfo->Arch = runtimeInfo.GetTargetArchitecture() switch
+            {
+                Contracts.RuntimeInfoArchitecture.X86 => TargetArchitecture.X86,
+                Contracts.RuntimeInfoArchitecture.X64 => TargetArchitecture.AMD64,
+                Contracts.RuntimeInfoArchitecture.Arm => TargetArchitecture.Arm,
+                Contracts.RuntimeInfoArchitecture.Arm64 => TargetArchitecture.Arm64,
+                Contracts.RuntimeInfoArchitecture.LoongArch64 => TargetArchitecture.LoongArch64,
+                Contracts.RuntimeInfoArchitecture.RiscV64 => TargetArchitecture.RiscV64,
+                Contracts.RuntimeInfoArchitecture.Wasm => TargetArchitecture.Wasm,
+                _ => TargetArchitecture.Unknown,
+            };
+
+            pTargetInfo->OS = runtimeInfo.GetTargetOperatingSystem() switch
+            {
+                Contracts.RuntimeInfoOperatingSystem.Windows => TargetOperatingSystem.Windows,
+                Contracts.RuntimeInfoOperatingSystem.Unix => TargetOperatingSystem.Unix,
+                Contracts.RuntimeInfoOperatingSystem.Browser => TargetOperatingSystem.Browser,
+                Contracts.RuntimeInfoOperatingSystem.Apple => TargetOperatingSystem.Apple,
+                _ => TargetOperatingSystem.Unknown,
+            };
+
+            pTargetInfo->PointerSize = (uint)_target.PointerSize;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            TargetInfo targetInfoLocal = default;
+            int hrLocal = _legacy.GetTargetInfo(pTargetInfo == null ? null : &targetInfoLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pTargetInfo->Arch == targetInfoLocal.Arch, $"cDAC: {pTargetInfo->Arch}, DAC: {targetInfoLocal.Arch}");
+                Debug.Assert(pTargetInfo->OS == targetInfoLocal.OS, $"cDAC: {pTargetInfo->OS}, DAC: {targetInfoLocal.OS}");
+                Debug.Assert(pTargetInfo->PointerSize == targetInfoLocal.PointerSize, $"cDAC: {pTargetInfo->PointerSize}, DAC: {targetInfoLocal.PointerSize}");
+            }
         }
 #endif
         return hr;

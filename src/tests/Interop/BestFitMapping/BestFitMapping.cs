@@ -912,7 +912,11 @@ public class BestFitMapping
 
         //Cdecl Delegate
         DoCCallBack_LPSTR_In(new CCallBackIn(TestMethod_CCallBackIn));
-        DoCCallBack_LPSTR_Out(new CCallBackOut(TestMethod_CCallBackOut));
+        // https://github.com/dotnet/runtime/issues/123529
+        if (!Utilities.IsNativeAot)
+        {
+            DoCCallBack_LPSTR_Out(new CCallBackOut(TestMethod_CCallBackOut));
+        }
         DoCCallBack_LPSTR_InOut(new CCallBackInOut(TestMethod_CCallBackInOut));
 
         DoCCallBack_LPSTR_InByRef(new CCallBackInByRef(TestMethod_CCallBackInByRef));
@@ -922,7 +926,11 @@ public class BestFitMapping
 
         //Stdcall Delegate
         DoSCallBack_LPSTR_In(new SCallBackIn(TestMethod_SCallBackIn));
-        DoSCallBack_LPSTR_Out(new SCallBackOut(TestMethod_SCallBackOut));
+        // https://github.com/dotnet/runtime/issues/123529
+        if (!Utilities.IsNativeAot)
+        {
+            DoSCallBack_LPSTR_Out(new SCallBackOut(TestMethod_SCallBackOut));
+        }
         DoSCallBack_LPSTR_InOut(new SCallBackInOut(TestMethod_SCallBackInOut));
 
         DoSCallBack_LPSTR_InByRef(new SCallBackInByRef(TestMethod_SCallBackInByRef));

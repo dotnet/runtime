@@ -14,6 +14,7 @@
 #include "threadsuspend.h"
 #include "interoplibinterface.h"
 #include "exinfo.h"
+#include "externalmemoryhandle.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -312,7 +313,9 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
             ScanStackRoots(pThread, fn, sc);
             ScanTailCallArgBufferRoots(pThread, fn, sc);
+#ifdef FEATURE_MULTITHREADING
             ScanThreadStaticRoots(pThread, fn, sc);
+#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_EVENT_TRACE
             sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -333,6 +336,18 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
         {
             SystemDomain::EnumAllStaticGCRefs(fn, sc);
         }
+    }
+
+    // In server GC, we can be scanning GC roots from multiple GC threads concurrently.
+    // It's unsafe for us to scan unpinned roots from multiple threads concurrently
+    // as this could lead to invalid relocations during compaction.
+    // As a result, we will only scan these roots on one context to ensure they are scanned exactly once.
+    if (GCHeapUtilities::ShouldScanUnpinnedRoots(sc))
+    {
+        // We are going to scan over possible byref values located not on any given thread's stack.
+        // Ensure that we don't try to check the stack limits of any particular thread while scanning these roots.
+        sc->thread_under_crawl = nullptr;
+        ExternalMemoryHandle::GCScanRoots(fn, sc);
     }
 }
 
@@ -668,7 +683,9 @@ void GcScanRootsForProfilerAndETW(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
         ScanStackRoots(pThread, fn, sc);
         ScanTailCallArgBufferRoots(pThread, fn, sc);
+#ifdef FEATURE_MULTITHREADING
         ScanThreadStaticRoots(pThread, fn, sc);
+#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_EVENT_TRACE
         sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -1463,6 +1480,7 @@ bool GCToEEInterface::WasCurrentThreadCreatedByGC()
     return !!::IsGCSpecialThread();
 }
 
+#ifdef FEATURE_MULTITHREADING
 struct SuspendableThreadStubArguments
 {
     void* Argument;
@@ -1567,7 +1585,7 @@ namespace
         args.Thread->StartThread();
 
         // Wait for the thread to be in its main loop
-        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE);
+        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE, false);
         args.ThreadStartedEvent.CloseEvent();
         _ASSERTE(res == WAIT_OBJECT_0);
 
@@ -1631,7 +1649,7 @@ namespace
         }
 
         // Wait for the thread to be in its main loop
-        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE);
+        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE, false);
         args.ThreadStartedEvent.CloseEvent();
         _ASSERTE(res == WAIT_OBJECT_0);
 
@@ -1639,9 +1657,11 @@ namespace
         return true;
     }
 } // anonymous namespace
+#endif // FEATURE_MULTITHREADING
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
+#ifdef FEATURE_MULTITHREADING
     InlineSString<MaxThreadNameSize> wideName;
     const WCHAR* namePtr = nullptr;
     EX_TRY
@@ -1668,6 +1688,11 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     {
         return CreateNonSuspendableThread(threadStart, arg, namePtr);
     }
+#else
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();
+    return false;
+#endif // FEATURE_MULTITHREADING
 }
 
 void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)

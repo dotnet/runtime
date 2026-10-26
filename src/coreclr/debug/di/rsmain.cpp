@@ -5,7 +5,6 @@
 // File: RsMain.cpp
 //
 // Random RS utility stuff, plus root ICorDebug implementation
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -38,33 +37,6 @@ RSDebuggingInfo * g_pRSDebuggingInfo = &g_RSDebuggingInfo_OutOfProc;
 
 // The following instances are used for invoking overloaded new/delete
 forDbiWorker forDbi;
-
-#ifdef _DEBUG
-// For logs, we can print the string name for the debug codes.
-const char * GetDebugCodeName(DWORD dwCode)
-{
-    if (dwCode < 1 || dwCode > 9)
-    {
-        return "!Invalid Debug Event Code!";
-    }
-
-    static const char * const szNames[] = {
-        "(1) EXCEPTION_DEBUG_EVENT",
-        "(2) CREATE_THREAD_DEBUG_EVENT",
-        "(3) CREATE_PROCESS_DEBUG_EVENT",
-        "(4) EXIT_THREAD_DEBUG_EVENT",
-        "(5) EXIT_PROCESS_DEBUG_EVENT",
-        "(6) LOAD_DLL_DEBUG_EVENT",
-        "(7) UNLOAD_DLL_DEBUG_EVENT",
-        "(8) OUTPUT_DEBUG_STRING_EVENT",
-        "(9) RIP_EVENT",// <-- only on Win9X
-    };
-
-    return szNames[dwCode - 1];
-}
-
-#endif
-
 
 //-----------------------------------------------------------------------------
 // Per-thread state for Debug builds...
@@ -508,7 +480,7 @@ void CordbCommonBase::InitializeCommon()
 // setting this since V1.0 and removing it may be a breaking change.
 void CordbCommonBase::AddDebugPrivilege()
 {
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
     HANDLE hToken;
     TOKEN_PRIVILEGES Privileges;
     BOOL fSucc;
@@ -955,7 +927,7 @@ Cordb::Cordb(CorDebugInterfaceVersion iDebuggerVersion)
 
 Cordb::Cordb(CorDebugInterfaceVersion iDebuggerVersion, const ProcessDescriptor& pd, LPCWSTR dacModulePath)
   : CordbBase(NULL, 0, enumCordb),
-    m_processes(11),
+    m_processes(),
     m_initialized(false),
     m_debuggerSpecifiedVersion(iDebuggerVersion),
     m_pd(pd),
@@ -1084,13 +1056,9 @@ HRESULT Cordb::Terminate()
     {
         RSLockHolder ch(&m_processListMutex);
 
-        HASHFIND hfDT;
-        CordbProcess * pProcess;
-
-        for (pProcess=  (CordbProcess*) m_processes.FindFirst(&hfDT);
-             pProcess != NULL;
-             pProcess = (CordbProcess*) m_processes.FindNext(&hfDT))
+        for (CordbHashTable::Iterator iterator = m_processes.Begin(), end = m_processes.End(); iterator != end; iterator++)
         {
+            CordbProcess *pProcess = static_cast<CordbProcess *>(*iterator);
             _ASSERTE(pProcess->IsSafeToSendEvents() || pProcess->m_unrecoverableError);
             if (pProcess->IsSafeToSendEvents() && !pProcess->m_unrecoverableError)
             {
@@ -1136,8 +1104,7 @@ HRESULT Cordb::Terminate()
 
 #ifdef _DEBUG
     {
-        HASHFIND find;
-        _ASSERTE(m_processes.FindFirst(&find) == NULL); // should be emptied by neuter
+        _ASSERTE(m_processes.GetCount() == 0); // should be emptied by neuter
     }
 #endif //_DEBUG
 

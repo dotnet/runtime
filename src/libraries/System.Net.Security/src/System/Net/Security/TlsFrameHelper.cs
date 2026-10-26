@@ -157,6 +157,7 @@ namespace System.Net.Security
 
         private const int UInt24Size = 3;
         private const int RandomSize = 32;
+        private const int MaxHostNameLength = 255;
         private const int ProtocolVersionMajorOffset = 0;
         private const int ProtocolVersionMinorOffset = 1;
         private const int ProtocolVersionSize = 2;
@@ -641,7 +642,7 @@ namespace System.Net.Security
             }
 
             invalid = false;
-            return DecodeString(hostName);
+            return hostNameLength <= MaxHostNameLength ? DecodeString(hostName) : null;
         }
 
         private static bool TryGetSupportedVersionsFromExtension(ReadOnlySpan<byte> extensionData, out SslProtocols protocols)

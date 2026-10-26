@@ -2129,7 +2129,7 @@ inline void DACCOP_IGNORE(DacCopWarningCode code, const char * szReasonString)
 typedef uintptr_t TADDR;
 
 typedef void* PTR_VOID;
-typedef LPVOID* PTR_PTR_VOID;
+typedef PTR_VOID* PTR_PTR_VOID;
 typedef const void* PTR_CVOID;
 
 #define DPTR(type) type*

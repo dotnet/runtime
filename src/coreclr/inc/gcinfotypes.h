@@ -618,6 +618,7 @@ struct AMD64GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
+    static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
 
 #elif defined(TARGET_ARM)
@@ -676,6 +677,7 @@ struct ARM32GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
+    static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
 
 #elif defined(TARGET_ARM64)
@@ -737,6 +739,7 @@ struct ARM64GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
+    static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
 
 #elif defined(TARGET_LOONGARCH64)
@@ -796,6 +799,7 @@ struct LoongArch64GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
+    static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
 
 #elif defined(TARGET_RISCV64)
@@ -856,6 +860,7 @@ struct RISCV64GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
+    static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
 
 #elif defined(TARGET_X86)
@@ -911,6 +916,7 @@ struct X86GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
+    static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
 
 #elif defined(TARGET_WASM) && !defined(TARGET_64BIT)
@@ -968,6 +974,7 @@ struct Wasm32GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = false;
+    static const bool HAS_INTERRUPTIBLE_RANGES = false;
 };
 
 #else // No target defined
@@ -1031,6 +1038,7 @@ struct InterpreterGcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = false;
+    static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
 
 #endif // FEATURE_INTERPRETER

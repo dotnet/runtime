@@ -15,7 +15,7 @@ namespace Tracing.Tests.NonLossyBlockEnv
     {
         private NonLossyBlockEnvEventSource() {}
         public static NonLossyBlockEnvEventSource Log = new NonLossyBlockEnvEventSource();
-        public void BlockEnvEvent() { WriteEvent(1, "BlockEnvEvent"); }
+        public void BlockEnvEvent() { WriteEvent(1); }
     }
 
     // Validates the DOTNET_EventPipeBufferingMode startup-session opt-in (env-var path in
@@ -202,6 +202,7 @@ namespace Tracing.Tests.NonLossyBlockEnv
             psi.Environment["DOTNET_EventPipeCircularMB"] = CircularMB.ToString();
             psi.Environment["DOTNET_EventPipeBufferingMode"] = bufferingMode;
             psi.Environment["DOTNET_EventPipeOutputStreaming"] = outputStreaming;
+            psi.Environment["DOTNET_EventPipeRundown"] = "0";
 
             Console.WriteLine($"Launching tracee: {psi.FileName} {string.Join(" ", psi.ArgumentList)}");
             Console.WriteLine($"  DOTNET_EventPipeBufferingMode={bufferingMode} DOTNET_EventPipeOutputStreaming={outputStreaming} DOTNET_EventPipeCircularMB={CircularMB}");

@@ -539,6 +539,10 @@ void Compiler::lvaAllocWasmStackPtr()
         LclVarDsc* varDsc              = lvaGetDesc(lvaWasmSpArg);
         varDsc->lvType                 = TYP_I_IMPL;
         varDsc->lvImplicitlyReferenced = 1;
+        // The prolog loads $sp from the __stack_pointer global (see genAllocLclFrame), so this local
+        // is explicitly initialized. Without this the optimizer treats its use-before-def as zero-init
+        // and value-numbers it to 0, folding the shadow-SP argument of outgoing calls to a null base.
+        varDsc->lvHasExplicitInit = 1;
     }
 }
 
@@ -550,16 +554,17 @@ void Compiler::lvaAllocWasmStackPtr()
 //
 // Notes:
 //   The managed calling convention for Wasm passes a pointer to the portable entry point as the last arg.
-//   This arg is currently unused in the JIT, and we may not need to model it.
+//   Ordinary managed methods store this argument as their unwindable frame identity.
 //
 void Compiler::lvaInitWasmPortableEntryPtr(unsigned* curVarNum)
 {
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
     {
-        LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
-        varDsc->lvType    = TYP_I_IMPL;
-        varDsc->lvIsParam = 1;
-        varDsc->lvOnFrame = true;
+        lvaWasmPortableEntryPointArg = *curVarNum;
+        LclVarDsc* varDsc            = lvaGetDesc(*curVarNum);
+        varDsc->lvType               = TYP_I_IMPL;
+        varDsc->lvIsParam            = 1;
+        varDsc->lvOnFrame            = true;
         (*curVarNum)++;
     }
 }
@@ -2488,11 +2493,12 @@ bool Compiler::lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
 // lvaIsImplicitByRefLocal: Is the local an "implicit byref" parameter?
 //
 // We term structs passed via pointers to shadow copies "implicit byrefs".
-// They are used on Windows x64 for structs 3, 5, 6, 7, > 8 bytes in size,
-// and on ARM64/LoongArch64 for structs larger than 16 bytes.
+// They are used on Windows x64, ARM64, LoongArch64, RISC-V and WebAssembly; see
+// "By-value value types passed by reference" in clr-abi.md for the exact rules.
 //
-// They are "byrefs" because the VM sometimes uses memory allocated on the
-// GC heap for the shadow copies.
+// The shadow copies must be outside the GC heap, so stores into them do not
+// require write barriers and the pointers need not be GC reported (see
+// lvaGetImplicitByRefParamType). The caller is responsible for GC reporting their contents.
 //
 // Arguments:
 //    lclNum - The local in question
@@ -2508,11 +2514,25 @@ bool Compiler::lvaIsImplicitByRefLocal(unsigned lclNum) const
     {
         assert(varDsc->lvIsParam);
 
-        assert(varTypeIsStruct(varDsc) || varDsc->TypeIs(TYP_BYREF));
+        assert(varTypeIsStruct(varDsc) || varDsc->TypeIs(TYP_I_IMPL, TYP_BYREF));
         return true;
     }
 #endif // FEATURE_IMPLICIT_BYREFS
     return false;
+}
+
+//------------------------------------------------------------------------
+// lvaGetImplicitByRefParamType: Get the type implicit byref parameters are
+//    retyped to by fgRetypeImplicitByRefArgs.
+//
+// Return Value:
+//    TYP_I_IMPL since the storage is never on the GC heap. Async methods use
+//    TYP_BYREF so that derived addresses are not kept live across suspension
+//    points, as the storage is different after resumption.
+//
+var_types Compiler::lvaGetImplicitByRefParamType()
+{
+    return impInlineRoot()->compIsAsync() ? TYP_BYREF : TYP_I_IMPL;
 }
 
 //------------------------------------------------------------------------
@@ -2923,6 +2943,27 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
 
         return genTypeStSz(varType) * sizeof(int);
     }
+
+#ifdef TARGET_ARM64
+    if (lvaIsUnknownSizeLocal(varNum))
+    {
+        assert(lvaIsOSRLocal(varNum));
+        unsigned size = 0;
+        switch (varDsc->lvType)
+        {
+            case TYP_SIMD:
+                size = getRuntimeVectorTByteLength();
+                break;
+            case TYP_MASK:
+                size = getRuntimeVectorTByteLength() / 8;
+                break;
+            default:
+                unreached();
+        }
+        assert(size != 0);
+        return size;
+    }
+#endif
 
     if (varDsc->lvIsParam && !varDsc->lvIsStructField)
     {
@@ -4399,6 +4440,15 @@ void Compiler::lvaAssignFrameOffsets(FrameLayoutState curState)
     {
         assert(curState == FINAL_FRAME_LAYOUT);
         unkSizeFrame.Finalize();
+
+        if (compUsesUnknownSizeFrame)
+        {
+            JITDUMP("*** Final UnknownSizeFrame ***\n");
+            JITDUMP("Total Size in VL: %d\n", unkSizeFrame.VectorBlockSize());
+            JITDUMP("Vector Count    : %d\n", unkSizeFrame.nVector);
+            JITDUMP("Mask Count      : %d\n", unkSizeFrame.nMask);
+            JITDUMP("Start offset    : %d\n", -codeGen->genTotalFrameSize());
+        }
     }
 #endif
 }
@@ -4512,7 +4562,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         // Can't be relative to EBP unless we have an EBP
         noway_assert(!varDsc->lvFramePointerBased || codeGen->doubleAlignOrFramePointerUsed());
 
-        if (lvaIsUnknownSizeLocal(lclNum))
+        if (lvaLocalIsOnUnknownSizeFrame(lclNum))
         {
             continue;
         }
@@ -4717,7 +4767,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         int startOffset;
         if (lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(lclNum, &startOffset))
         {
-            assert(!lvaIsUnknownSizeLocal(lclNum));
+            assert(!lvaLocalIsOnUnknownSizeFrame(lclNum));
 
             dsc->SetStackOffset(startOffset + relativeZero);
             JITDUMP("Set V%02u to offset %d\n", lclNum, startOffset);
@@ -5337,7 +5387,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
                 continue;
             }
-            else if (lvaIsUnknownSizeLocal(lclNum))
+            else if (lvaLocalIsOnUnknownSizeFrame(lclNum))
             {
                 // Reserve dynamic stack space for this variable.
                 lvaAllocUnknownSizeLocal(lclNum);
@@ -5365,7 +5415,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             if (varDsc->lvIsParam)
             {
 #ifdef TARGET_ARM64
-                if (info.compIsVarArgs && varDsc->lvIsRegArg && (lclNum != info.compRetBuffArg))
+                if (info.compIsVarArgs && varDsc->lvIsRegArg && (lclNum != info.compRetBuffArg) &&
+                    (lclNum != lvaSecretStubArg))
                 {
                     const ABIPassingInformation& abiInfo =
                         lvaGetParameterABIInfo(varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum);
@@ -6340,7 +6391,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
     int       printed = 0;
 
 #ifdef TARGET_ARM64
-    if (lvaIsUnknownSizeLocal(lclNum))
+    if (lvaLocalIsOnUnknownSizeFrame(lclNum))
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
         offset            = unkSizeFrame.GetAddressingOffset(varDsc);
@@ -6569,6 +6620,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (lvaIsOSRLocal(lclNum) && varDsc->lvOnFrame)
     {
         printf(" tier0-frame");
+    }
+    if (lvaLocalIsOnUnknownSizeFrame(lclNum))
+    {
+        printf(" unknown-size-frame");
     }
     if (varDsc->lvIsHoist)
     {

@@ -17,9 +17,31 @@ namespace System.Text.Json.SourceGeneration
     internal static class RoslynExtensions
     {
         private static readonly Func<ITypeSymbol, bool>? s_isClosedTypeAccessor = CreateIsClosedTypeAccessor();
+        private static readonly Func<IModuleSymbol, int>? s_memorySafetyRulesVersionAccessor = CreateMemorySafetyRulesVersionAccessor();
 
         public static LanguageVersion? GetLanguageVersion(this Compilation compilation)
             => compilation is CSharpCompilation csc ? csc.LanguageVersion : null;
+
+        public static bool UsesUpdatedMemorySafetyRules(this SemanticModel semanticModel)
+        {
+            const int UpdatedMemorySafetyRulesVersion = 2;
+
+            // The module API includes both the compilation option and the legacy feature flag.
+            // Older compiler hosts expose only the temporary feature-flag opt-in.
+            return s_memorySafetyRulesVersionAccessor is { } getVersion
+                ? getVersion(semanticModel.Compilation.SourceModule) >= UpdatedMemorySafetyRulesVersion
+                : semanticModel.SyntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules");
+        }
+
+        private static Func<IModuleSymbol, int>? CreateMemorySafetyRulesVersionAccessor()
+        {
+            // The enum-valued API is unavailable in Roslyn 3.11; delegate binding accepts its underlying int type.
+            // https://github.com/dotnet/roslyn/pull/84860
+            MethodInfo? getter = typeof(IModuleSymbol).GetProperty("MemorySafetyRulesVersion")?.GetMethod;
+            return getter is null
+                ? null
+                : (Func<IModuleSymbol, int>)getter.CreateDelegate(typeof(Func<IModuleSymbol, int>));
+        }
 
         public static INamedTypeSymbol? GetBestTypeByMetadataName(this Compilation compilation, Type type)
         {
@@ -662,33 +684,6 @@ namespace System.Text.Json.SourceGeneration
             }
         }
 
-        /// <summary>
-        /// Returns the kind keyword corresponding to the specified declaration syntax node.
-        /// </summary>
-        public static string GetTypeKindKeyword(this TypeDeclarationSyntax typeDeclaration)
-        {
-            switch (typeDeclaration.Kind())
-            {
-                case SyntaxKind.ClassDeclaration:
-                    return "class";
-                case SyntaxKind.InterfaceDeclaration:
-                    return "interface";
-                case SyntaxKind.StructDeclaration:
-                    return "struct";
-                case SyntaxKind.RecordDeclaration:
-                    return "record";
-                case SyntaxKind.RecordStructDeclaration:
-                    return "record struct";
-                case SyntaxKind.EnumDeclaration:
-                    return "enum";
-                case SyntaxKind.DelegateDeclaration:
-                    return "delegate";
-                default:
-                    Debug.Fail("unexpected syntax kind");
-                    return null;
-            }
-        }
-
         public static void ResolveNullabilityAnnotations(this IFieldSymbol field, out bool isGetterNonNullable, out bool isSetterNonNullable)
         {
             if (field.Type.IsNullableType())
@@ -807,45 +802,50 @@ namespace System.Text.Json.SourceGeneration
         //   Source-symbol candidate enumeration mirrored by these polyfills:
         //     https://github.com/dotnet/roslyn/blob/18bf2c8709264bac6615856e507eb44ba2a026e2/src/Compilers/CSharp/Portable/Symbols/Source/SourceMemberContainerSymbol.cs#L903-L961
 
-        /// <summary>
-        /// Polyfill for <c>ITypeSymbol.IsClosed</c>: returns <see langword="true"/> when
-        /// <paramref name="type"/> is an abstract class declared with the <c>closed</c> modifier, whose
-        /// hierarchy the language restricts to its declaring module. Detection is syntactic because the
-        /// compiler-emitted <c>[IsClosedType]</c> attribute is filtered out of the symbol API. When
-        /// available, the built-in API is used through light-up so metadata-only symbols are supported;
-        /// otherwise source declarations fall back to syntax inspection.
-        /// </summary>
-        public static bool IsClosedType(this INamedTypeSymbol type)
+        extension(ITypeSymbol type)
         {
-            if (type is not { TypeKind: TypeKind.Class, IsAbstract: true })
+            /// <summary>
+            /// Gets a value indicating whether the type is an abstract class declared with the
+            /// <c>closed</c> modifier, whose hierarchy the language restricts to its declaring module.
+            /// Detection is syntactic because the compiler-emitted <c>[IsClosedType]</c> attribute is
+            /// filtered out of the symbol API. When available, the built-in API is used through light-up
+            /// so metadata-only symbols are supported; otherwise source declarations fall back to syntax inspection.
+            /// </summary>
+            public bool IsClosed
             {
-                return false;
-            }
-
-            if (s_isClosedTypeAccessor is not null)
-            {
-                return s_isClosedTypeAccessor(type);
-            }
-
-            foreach (SyntaxReference syntaxReference in type.DeclaringSyntaxReferences)
-            {
-                if (syntaxReference.GetSyntax() is BaseTypeDeclarationSyntax declaration)
+                get
                 {
-                    foreach (SyntaxToken modifier in declaration.Modifiers)
+                    if (type is not { TypeKind: TypeKind.Class, IsAbstract: true })
                     {
-                        // The 'closed' contextual keyword is tokenized as a dedicated SyntaxKind by
-                        // closed-aware compilers, but that enum member does not exist in the Roslyn
-                        // version the generator compiles against. Compare the token text instead, which
-                        // is stable across compiler versions.
-                        if (modifier.Text is "closed")
+                        return false;
+                    }
+
+                    if (s_isClosedTypeAccessor is not null)
+                    {
+                        return s_isClosedTypeAccessor(type);
+                    }
+
+                    foreach (SyntaxReference syntaxReference in type.DeclaringSyntaxReferences)
+                    {
+                        if (syntaxReference.GetSyntax() is BaseTypeDeclarationSyntax declaration)
                         {
-                            return true;
+                            foreach (SyntaxToken modifier in declaration.Modifiers)
+                            {
+                                // The 'closed' contextual keyword is tokenized as a dedicated SyntaxKind by
+                                // closed-aware compilers, but that enum member does not exist in the Roslyn
+                                // version the generator compiles against. Compare the token text instead, which
+                                // is stable across compiler versions.
+                                if (modifier.Text is "closed")
+                                {
+                                    return true;
+                                }
+                            }
                         }
                     }
+
+                    return false;
                 }
             }
-
-            return false;
         }
 
         private static Func<ITypeSymbol, bool>? CreateIsClosedTypeAccessor()
@@ -896,7 +896,7 @@ namespace System.Text.Json.SourceGeneration
                             ? candidate.ConstructUnboundGenericType()
                             : candidate;
 
-                        if (candidate.IsClosedType())
+                        if (candidate.IsClosed)
                         {
                             GetClosedDerivedTypesCore(derivedType, enumeratedTypes, ref derivedTypes);
                         }
