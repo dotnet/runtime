@@ -144,13 +144,7 @@ void InlineTrackingMap::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
     }
 
     CrstHolder lock(&m_mapCrst);
-    InlineTrackingEntry *existingEntry = const_cast<InlineTrackingEntry *>(LookupPtr(inlineeMnM));
-    if (existingEntry)
-    {
-        // We saw this inlinee before, just add one more inliner
-        existingEntry->Add(inliner);
-    }
-    else
+    if (!Update(inlineeMnM, [&](InlineTrackingEntry &entry) { entry.Add(inliner); }))
     {
         // We haven't seen this inlinee before, create a new record in the hashtable
         // and add a first inliner to it.

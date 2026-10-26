@@ -192,7 +192,8 @@ namespace Tracing.Tests.SampleProfilerSampleType
                     const int HeaderSize = sizeof(ulong);
                     Assert.True(size > HeaderSize && (size - HeaderSize) % pointerSize == 0, $"Invalid raw stack attachment size: {size}");
                     ulong address = unchecked((ulong)Marshal.ReadInt64(item, s_pointerOffset));
-                    IntPtr stack = (IntPtr)checked((nuint)address);
+                    // TraceEvent sign-extends 32-bit stack pointers into DataPtr, so keep only the native-width bits.
+                    IntPtr stack = (nint)address;
                     Assert.NotEqual(IntPtr.Zero, stack);
                     var frames = new ulong[(size - HeaderSize) / pointerSize];
                     for (int frame = 0; frame < frames.Length; frame++)

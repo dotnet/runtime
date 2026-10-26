@@ -5632,15 +5632,13 @@ public:
     GenTree* impNormStructVal(GenTree* structVal, unsigned curLevel);
 
     GenTree* impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                              bool*                   pRuntimeLookup    = nullptr,
-                              bool                    mustRestoreHandle = false,
-                              bool                    importParent      = false);
+                              bool*                   pRuntimeLookup = nullptr,
+                              bool                    importParent   = false);
 
     GenTree* impParentClassTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                         bool*                   pRuntimeLookup    = nullptr,
-                                         bool                    mustRestoreHandle = false)
+                                         bool*                   pRuntimeLookup = nullptr)
     {
-        return impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, true);
+        return impTokenToHandle(pResolvedToken, pRuntimeLookup, true);
     }
 
     GenTree* impLookupToTree(CORINFO_LOOKUP*         pLookup,

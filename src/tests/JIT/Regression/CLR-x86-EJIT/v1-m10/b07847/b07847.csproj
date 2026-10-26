@@ -3,6 +3,9 @@
     <CLRTestPriority>1</CLRTestPriority>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- Crossgen2 does not support managed C++ assemblies. -->
+    <CrossGenTest>false</CrossGenTest>
+    <R2RIncompatible>true</R2RIncompatible>
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <CopyDebugCRTDllsToOutputDirectory>true</CopyDebugCRTDllsToOutputDirectory>
     <!-- Loading IJW assemblies into an unloadable context is not allowed -->

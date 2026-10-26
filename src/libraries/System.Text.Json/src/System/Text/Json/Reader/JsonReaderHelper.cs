@@ -102,16 +102,7 @@ namespace System.Text.Json
             {
                 newLines = 1;
                 data = data.Slice(0, lastLineFeedIndex);
-#if NET
                 newLines += data.Count(JsonConstants.LineFeed);
-#else
-                int pos;
-                while ((pos = data.IndexOf(JsonConstants.LineFeed)) >= 0)
-                {
-                    newLines++;
-                    data = data.Slice(pos + 1);
-                }
-#endif
             }
 
             return (newLines, lastLineFeedIndex);
