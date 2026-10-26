@@ -221,6 +221,75 @@ namespace Microsoft.NET.Build.Tasks
                 }
             }
 
+            return ValidateOutputPaths();
+        }
+
+        private bool ValidateOutputPaths()
+        {
+            try
+            {
+                var outputs = new HashSet<string>(Crossgen2Cache.PathComparer);
+                if (!IsPdbCompilation)
+                {
+                    outputs.Add(Path.GetFullPath(_outputR2RImage));
+                }
+                string symbols = GetOwnedSymbolOutputPath();
+                if (!string.IsNullOrEmpty(symbols))
+                {
+                    outputs.Add(Path.GetFullPath(symbols));
+                }
+
+                ITaskItem tool = ActuallyUseCrossgen2 ? Crossgen2Tool : CrossgenTool;
+                IEnumerable<string> inputs = new[]
+                {
+                    _createCompositeImage ? null : CompilationEntry.ItemSpec,
+                    ActuallyUseCrossgen2 && !_createCompositeImage ? CompilationEntry.ItemSpec.TrimEnd() : null,
+                    tool.ItemSpec,
+                    tool.GetMetadata(MetadataKeys.JitPath),
+                    ActuallyUseCrossgen2 ? DotNetHostPath : DiaSymReader
+                };
+                IEnumerable<ITaskItem> references = _createCompositeImage
+                    ? ReadyToRunCompositeBuildReferences : ImplementationAssemblyReferences;
+                if (IsPdbCompilation && references is not null)
+                {
+                    references = references.Where(reference => !string.Equals(Path.GetFileName(reference.ItemSpec),
+                        Path.GetFileName(_outputR2RImage), StringComparison.OrdinalIgnoreCase));
+                }
+                inputs = inputs.Concat((references ?? Array.Empty<ITaskItem>()).Select(item => item.ItemSpec));
+                if (ActuallyUseCrossgen2)
+                {
+                    inputs = inputs.Concat((Crossgen2PgoFiles ?? Array.Empty<ITaskItem>()).Select(item => item.ItemSpec));
+                    if (_createCompositeImage)
+                    {
+                        inputs = inputs.Concat((ReadyToRunCompositeBuildInput ?? Array.Empty<ITaskItem>()).SelectMany(item => new[] { item.ItemSpec, item.ItemSpec.TrimEnd() }))
+                            .Concat((ReadyToRunCompositeUnrootedBuildInput ?? Array.Empty<ITaskItem>()).Select(item => item.ItemSpec));
+                    }
+                    string directory = Path.GetDirectoryName(Path.GetFullPath(tool.ItemSpec));
+                    inputs = inputs.Concat(new[]
+                    {
+                        Path.Combine(directory, OperatingSystem.IsWindows() ? "clrjit_win_x64_x64.dll" : "libclrjit_unix_x64_x64.so"),
+                        Path.Combine(directory, OperatingSystem.IsWindows() ? "jitinterface_x64.dll" : "libjitinterface_x64.so")
+                    });
+                    if (_emitSymbols && Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows")
+                    {
+                        inputs = inputs.Append(Path.Combine(directory, "Microsoft.DiaSymReader.Native.dll"));
+                    }
+                }
+                foreach (string input in inputs)
+                {
+                    if (!string.IsNullOrEmpty(input) && outputs.Contains(Path.GetFullPath(input)))
+                    {
+                        Log.LogError(Strings.CrossgenOutputOverlapsInput, input);
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                Log.LogErrorFromException(ex);
+                return false;
+            }
+
             return true;
         }
 
@@ -467,14 +536,7 @@ namespace Microsoft.NET.Build.Tasks
                     DeleteOutputFile(_outputR2RImage);
                 }
 
-                string symbolOutput = _outputPDBImage;
-                if (ActuallyUseCrossgen2 && !Crossgen2IsVersion5 &&
-                    (!_emitSymbols || Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows" ||
-                     Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion) == "1"))
-                {
-                    symbolOutput = GetSymbolOutputPath(_outputR2RImage, _outputPDBImage,
-                        Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows");
-                }
+                string symbolOutput = GetOwnedSymbolOutputPath();
                 if (!string.IsNullOrEmpty(symbolOutput))
                 {
                     DeleteOutputFile(symbolOutput);
@@ -490,6 +552,19 @@ namespace Microsoft.NET.Build.Tasks
             }
 
             return ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
+        }
+
+        private string GetOwnedSymbolOutputPath()
+        {
+            if (ActuallyUseCrossgen2 && !Crossgen2IsVersion5 &&
+                (!_emitSymbols || Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows" ||
+                 Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion) == "1"))
+            {
+                return GetSymbolOutputPath(_outputR2RImage, _outputPDBImage,
+                    Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows");
+            }
+
+            return _outputPDBImage;
         }
 
         internal static string GetSymbolOutputPath(string image, string symbols, bool windows)
