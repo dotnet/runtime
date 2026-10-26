@@ -17,6 +17,56 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process))] // https://github.com/dotnet/runtime/issues/71962
     public class GeneratorTests(ITestOutputHelper logger)
     {
+#if !NET
+        [Theory]
+        [InlineData(false, "internal")]
+        [InlineData(false, "public")]
+        [InlineData(true, "internal")]
+        [InlineData(true, "public")]
+        public void UnsafeAccessorPolyfill_DoesNotEnableRuntimeSupport(bool referenced, string accessibility)
+        {
+            string polyfill = $$"""
+                namespace System.Runtime.CompilerServices
+                {
+                    {{accessibility}} enum UnsafeAccessorKind { Constructor, Method, StaticMethod, Field, StaticField }
+                    [System.AttributeUsage(System.AttributeTargets.Method)]
+                    {{accessibility}} sealed class UnsafeAccessorAttribute : System.Attribute
+                    {
+                        public UnsafeAccessorAttribute(UnsafeAccessorKind kind) { }
+                        public string Name { get; set; }
+                    }
+                }
+                """;
+            string source = """
+                using System.Text.Json.Serialization;
+                [JsonSerializable(typeof(Model))]
+                [JsonSerializable(typeof(Model<int>))]
+                internal partial class Context : JsonSerializerContext { }
+                public class Model
+                {
+                    [JsonConstructor]
+                    private Model() { }
+                    public int Value { get; init; }
+                    [JsonInclude]
+                    private int Hidden { get; set; }
+                }
+                public class Model<T>
+                {
+                    public T Value { get; init; }
+                }
+                """;
+
+            MetadataReference[] references = referenced
+                ? [MetadataReference.CreateFromImage(CompilationHelper.CreateAssemblyImage(
+                    CompilationHelper.CreateCompilation(polyfill, assemblyName: "Polyfills")))]
+                : [];
+            Compilation compilation = CompilationHelper.CreateCompilation(referenced ? source : source + polyfill, references);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+            Assert.DoesNotContain(result.NewCompilation.SyntaxTrees,
+                tree => tree.ToString().Contains("[global::System.Runtime.CompilerServices.UnsafeAccessorAttribute"));
+        }
+#endif
+
         [Fact]
         public void TypeDiscoveryPrimitivePOCO()
         {
