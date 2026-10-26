@@ -11,11 +11,20 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
+  <!-- WasmUsePrebuiltReadyToRun selects framework images for ordinary WebCIL-enabled builds, not publishing.
+       An explicit build setting wins; otherwise preserve PublishReadyToRun overrides before its default. -->
+  <PropertyGroup>
+    <WasmUsePrebuiltReadyToRun Condition="'$(WasmUsePrebuiltReadyToRun)' == '' and '$(PublishReadyToRun)' != ''">$(PublishReadyToRun)</WasmUsePrebuiltReadyToRun>
+    <WasmUsePrebuiltReadyToRun Condition="'$(WasmUsePrebuiltReadyToRun)' == '' and '$(Configuration)' == 'Debug' and
+                                         '$(WasmEnableWebcil)' != 'false' and '$(WasmPerformanceInstrumentation)' == ''">true</WasmUsePrebuiltReadyToRun>
+    <WasmUsePrebuiltReadyToRun Condition="'$(WasmUsePrebuiltReadyToRun)' == ''">false</WasmUsePrebuiltReadyToRun>
+  </PropertyGroup>
+
   <!-- ReadyToRun publishing defaults OFF for now. Flipping the publish default to true belongs to the
        codegen-quality / crossgen2-resolution work stream (dotnet/runtime#132466), not here.
        Consumers opt in to publishing with -p:PublishReadyToRun=true. -->
   <PropertyGroup>
-    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(Configuration)' == 'Release'">false</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">false</PublishReadyToRun>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
@@ -46,11 +55,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishR2RDir Condition="'$(_WasmPublishR2RDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'R2R'))</_WasmPublishR2RDir>
       <_WasmPublishPrebuiltR2RDirectory>$(_WasmPublishR2RDir)</_WasmPublishPrebuiltR2RDirectory>
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
-      <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(PublishReadyToRun)' == '' and '$(Configuration)' == 'Debug' and
-                              '$(_WasmCoreClrUnderPublish)' != 'true' and '$(DeployOnBuild)' != 'true' and
-                              '$(_WasmEnableWebcil)' == 'true' and '$(WasmPerformanceInstrumentation)' == ''">
+    <Error Condition="'$(WasmUsePrebuiltReadyToRun)' == 'true' and '$(_WasmCoreClrUnderPublish)' != 'true' and
+                      '$(DeployOnBuild)' != 'true' and '$(_WasmEnableWebcil)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''"
+           Text="WasmPerformanceInstrumentation is not supported together with WasmUsePrebuiltReadyToRun on CoreCLR browser-wasm. Set WasmUsePrebuiltReadyToRun=false to use IL-only framework assemblies." />
+    <PropertyGroup Condition="'$(WasmUsePrebuiltReadyToRun)' == 'true' and '$(_WasmCoreClrUnderPublish)' != 'true' and
+                              '$(DeployOnBuild)' != 'true' and '$(_WasmEnableWebcil)' == 'true'">
       <_WasmBuildPrebuiltR2RDirectory>$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
     </PropertyGroup>
   </Target>

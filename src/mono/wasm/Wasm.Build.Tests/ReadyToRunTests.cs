@@ -19,6 +19,7 @@ namespace Wasm.Build.Tests
     // CoreCLR browser-wasm ships ReadyToRun images as webcil-in-wasm; a non-zero R2R table size in the
     // System.Private.CoreLib webcil is the marker that R2R was produced and staged. These tests cover R2R in
     // both build and publish, with and without IL trimming, driving all pages in a real browser. CoreCLR only.
+    [TestCategory("coreclr")]
     public class ReadyToRunTests : BlazorWasmTestBase
     {
         private const int InteractionTimeoutMs = 60_000;
@@ -29,7 +30,7 @@ namespace Wasm.Build.Tests
             _enablePerTestCleanup = true;
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [InlineData(Configuration.Debug)]
         [InlineData(Configuration.Release)]
         [TestCategory("no-workload")]
@@ -37,7 +38,7 @@ namespace Wasm.Build.Tests
         {
             // A build stages the prebuilt framework R2R images from the runtime pack (no per-app crossgen2).
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_build",
-                extraProperties: config == Configuration.Release ? "<PublishReadyToRun>true</PublishReadyToRun>" : "");
+                extraProperties: config == Configuration.Release ? "<WasmUsePrebuiltReadyToRun>true</WasmUsePrebuiltReadyToRun>" : "");
             (_, string output) = BlazorBuild(info, config,
                 new BuildOptions(ExtraMSBuildArgs: config == Configuration.Debug ? "-p:WasmEnableHotReload=true" : ""));
 
@@ -51,7 +52,7 @@ namespace Wasm.Build.Tests
                 ExecuteAfterLoaded: (_, page) => InteractAllPagesAsync(page)));
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [InlineData(Configuration.Debug, /*trimmed*/ false)]
         [InlineData(Configuration.Release, /*trimmed*/ true)]
         [InlineData(Configuration.Release, /*trimmed*/ false)]
@@ -59,7 +60,7 @@ namespace Wasm.Build.Tests
         public Task PublishRunAllPages(Configuration config, bool trimmed)
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: false, composite: false);
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [InlineData(Configuration.Release, /*trimmed*/ true, /*nativeRelink*/ false)]
         [InlineData(Configuration.Release, /*trimmed*/ false, /*nativeRelink*/ false)]
         [InlineData(Configuration.Release, /*trimmed*/ true, /*nativeRelink*/ true)]
@@ -70,7 +71,7 @@ namespace Wasm.Build.Tests
         // CoreCLR relinks dotnet.native.wasm for Blazor when WasmBuildNative=true; the relink is driven by the
         // IsBrowserWasmProject triggers in BrowserWasmApp.CoreCLR.targets. AssertBundle(isNativeBuild: true)
         // proves the served dotnet.native.wasm was relinked rather than the runtime-pack prebuilt.
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [InlineData(Configuration.Release, /*trimmed*/ true)]
         [InlineData(Configuration.Release, /*trimmed*/ false)]
         [TestCategory("no-workload")]
@@ -132,7 +133,7 @@ namespace Wasm.Build.Tests
                 Assert.True(suffixLibraryLoaded, $"'{SuffixLibraryLoadedMessage}' was not logged; R2rSuffixLibrary.r2r did not load as a component assembly.");
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [InlineData(Configuration.Debug)]
         [InlineData(Configuration.Release)]
         [TestCategory("no-workload")]
@@ -146,7 +147,7 @@ namespace Wasm.Build.Tests
             AssertPerAppCrossgenRan(config, expected: false);
         }
 
-        [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Fact]
         [TestCategory("no-workload")]
         public void DebugBuildRestagesFrameworkWhenReadyToRunChanges()
         {
@@ -157,7 +158,7 @@ namespace Wasm.Build.Tests
             AssertPrebuiltFrameworkReadyToRun(webcilDir, output);
 
             BlazorBuild(info, config,
-                new BuildOptions(UseCache: false, ExtraMSBuildArgs: "-p:PublishReadyToRun=false"));
+                new BuildOptions(UseCache: false, ExtraMSBuildArgs: "-p:WasmUsePrebuiltReadyToRun=false"));
             AssertCoreLibReadyToRun(webcilDir, expectReadyToRun: false);
 
             (_, output) = BlazorBuild(info, config, new BuildOptions(UseCache: false));
@@ -165,7 +166,7 @@ namespace Wasm.Build.Tests
             AssertPerAppCrossgenRan(config, expected: false);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [InlineData(Configuration.Release)]
         [TestCategory("no-workload")]
         public void CompositeRequiresWebcil(Configuration config)
