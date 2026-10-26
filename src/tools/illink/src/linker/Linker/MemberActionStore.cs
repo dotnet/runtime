@@ -68,6 +68,28 @@ namespace Mono.Linker
             return false;
         }
 
+        internal bool IsFeatureSwitchWithoutSetting(MethodDefinition method)
+        {
+            if (!method.IsStatic || !method.IsGetter)
+                return false;
+
+            foreach (var property in method.DeclaringType.Properties)
+            {
+                if (property.GetMethod != method)
+                    continue;
+
+                foreach (var attribute in _context.CustomAttributes.GetCustomAttributes(property, "System.Diagnostics.CodeAnalysis", "FeatureSwitchDefinitionAttribute"))
+                {
+                    if (attribute.ConstructorArguments is [CustomAttributeArgument { Value: string switchName }])
+                        return !_context.FeatureSettings.ContainsKey(switchName);
+                }
+
+                return false;
+            }
+
+            return false;
+        }
+
         internal bool TryGetFeatureCheckValue(MethodDefinition method, out bool value)
         {
             value = false;

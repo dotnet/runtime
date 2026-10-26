@@ -91,6 +91,8 @@ namespace Mono.Linker.Steps
                         CodeOptimizations.OptimizeTypeHierarchyAnnotations |
                         CodeOptimizations.SubstituteFeatureGuards, assembly.Name.Name);
 
+                    Context.HasLibraryRootAssembly = true;
+
                     // Enable EventSource special handling
                     Context.DisableEventSourceSpecialHandling = false;
 

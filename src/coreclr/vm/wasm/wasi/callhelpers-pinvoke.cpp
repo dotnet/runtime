@@ -16,6 +16,7 @@ extern "C" {
     int32_t BrotliDecoderDecompressStream (void *, void *, void *, void *, void *, void *);
     void BrotliDecoderDestroyInstance (void *);
     int32_t BrotliDecoderIsFinished (void *);
+    int32_t BrotliDecoderSetParameter (void *, int32_t, uint32_t);
     int32_t BrotliEncoderCompress (int32_t, int32_t, int32_t, void *, void *, void *, void *);
     int32_t BrotliEncoderCompressStream (void *, int32_t, void *, void *, void *, void *, void *);
     void * BrotliEncoderCreateInstance (void *, void *, void *);
@@ -95,7 +96,6 @@ extern "C" {
     int32_t SystemNative_FcntlGetFD (void *);
     int32_t SystemNative_FcntlGetIsNonBlocking (void *, void *);
     int32_t SystemNative_FcntlSetFD (void *, int32_t);
-    int32_t SystemNative_FcntlSetIsNonBlocking (void *, int32_t);
     int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     void SystemNative_Free (void *);
     void SystemNative_FreeHostEntry (void *);
@@ -110,7 +110,6 @@ extern "C" {
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
     int32_t SystemNative_GetHostEntryForName (void *, int32_t, void *);
-    int32_t SystemNative_GetHostName (void *, int32_t);
     int32_t SystemNative_GetIPv4Address (void *, int32_t, void *);
     int32_t SystemNative_GetIPv4MulticastOption (void *, int32_t, void *);
     int32_t SystemNative_GetIPv6Address (void *, int32_t, void *, int32_t, void *);
@@ -119,7 +118,6 @@ extern "C" {
     void * SystemNative_GetLoadLibraryError ();
     int64_t SystemNative_GetLowResolutionTimestamp ();
     int32_t SystemNative_GetMaximumAddressSize ();
-    int32_t SystemNative_GetNameInfo (void *, uint32_t, uint32_t, void *, uint32_t, void *, uint32_t, int32_t);
     void SystemNative_GetNonCryptographicallySecureRandomBytes (void *, int32_t);
     int32_t SystemNative_GetPeerName (void *, void *, void *);
     int32_t SystemNative_GetPort (void *, int32_t, void *);
@@ -181,7 +179,6 @@ extern "C" {
     int32_t SystemNative_ReceiveMessage (void *, void *, int32_t, void *);
     int32_t SystemNative_Rename (void *, void *);
     int32_t SystemNative_RmDir (void *);
-    int32_t SystemNative_Select (void *, int32_t, void *, int32_t, void *, int32_t, int32_t, int32_t, void *);
     int32_t SystemNative_Send (void *, void *, int32_t, int32_t, void *);
     int32_t SystemNative_SendFile (void *, void *, int64_t, int64_t, void *);
     int32_t SystemNative_SendMessage (void *, void *, int32_t, void *);
@@ -336,6 +333,7 @@ static const Entry s_libSystem_IO_Compression_Native [] = {
     DllImportEntry(BrotliDecoderDecompressStream) // System.IO.Compression.Brotli
     DllImportEntry(BrotliDecoderDestroyInstance) // System.IO.Compression.Brotli
     DllImportEntry(BrotliDecoderIsFinished) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliDecoderSetParameter) // System.IO.Compression.Brotli
     DllImportEntry(BrotliEncoderCompress) // System.IO.Compression.Brotli
     DllImportEntry(BrotliEncoderCompressStream) // System.IO.Compression.Brotli
     DllImportEntry(BrotliEncoderCreateInstance) // System.IO.Compression.Brotli
@@ -399,7 +397,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_CloseDir) // System.Private.CoreLib
     DllImportEntry(SystemNative_Connect) // System.Net.Sockets
     DllImportEntry(SystemNative_Connectx) // System.Net.Sockets
-    DllImportEntry(SystemNative_ConvertErrorPalToPlatform) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Net.Sockets, System.Private.CoreLib
+    DllImportEntry(SystemNative_ConvertErrorPalToPlatform) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
     DllImportEntry(SystemNative_ConvertErrorPlatformToPal) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_CopyFile) // System.Private.CoreLib
     DllImportEntry(SystemNative_Disconnect) // System.Net.Sockets
@@ -407,14 +405,13 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_FChMod) // System.Private.CoreLib
     DllImportEntry(SystemNative_FChflags) // System.Private.CoreLib
     DllImportEntry(SystemNative_FLock) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FStat) // System.IO.Compression.ZipFile, System.Net.Sockets, System.Private.CoreLib
+    DllImportEntry(SystemNative_FStat) // System.IO.Compression.ZipFile, System.Private.CoreLib
     DllImportEntry(SystemNative_FSync) // System.Private.CoreLib
     DllImportEntry(SystemNative_FTruncate) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_FUTimens) // System.Private.CoreLib
     DllImportEntry(SystemNative_FcntlGetFD) // System.Net.Sockets
-    DllImportEntry(SystemNative_FcntlGetIsNonBlocking) // System.Net.Sockets, System.Private.CoreLib
+    DllImportEntry(SystemNative_FcntlGetIsNonBlocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_FcntlSetFD) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_FcntlSetIsNonBlocking) // System.Net.Sockets
     DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
     DllImportEntry(SystemNative_FreeHostEntry) // System.Net.NameResolution
@@ -429,7 +426,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetHostEntryForName) // System.Net.NameResolution
-    DllImportEntry(SystemNative_GetHostName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives, System.Net.Sockets
     DllImportEntry(SystemNative_GetIPv4MulticastOption) // System.Net.Sockets
     DllImportEntry(SystemNative_GetIPv6Address) // System.Net.Primitives, System.Net.Sockets
@@ -438,7 +434,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetLoadLibraryError) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetLowResolutionTimestamp) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetMaximumAddressSize) // System.Net.Sockets
-    DllImportEntry(SystemNative_GetNameInfo) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetPeerName) // System.Net.Sockets
     DllImportEntry(SystemNative_GetPort) // System.Net.Primitives, System.Net.Sockets
@@ -500,7 +495,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_ReceiveMessage) // System.Net.Sockets
     DllImportEntry(SystemNative_Rename) // System.Private.CoreLib
     DllImportEntry(SystemNative_RmDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Select) // System.Net.Sockets
     DllImportEntry(SystemNative_Send) // System.Net.Sockets
     DllImportEntry(SystemNative_SendFile) // System.Net.Sockets
     DllImportEntry(SystemNative_SendMessage) // System.Net.Sockets
@@ -521,7 +515,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_Shutdown) // System.Net.Sockets
     DllImportEntry(SystemNative_Socket) // System.Net.NameResolution, System.Net.Sockets
     DllImportEntry(SystemNative_Stat) // System.IO.Compression.ZipFile, System.Private.CoreLib
-    DllImportEntry(SystemNative_StrErrorR) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Net.Sockets, System.Private.CoreLib
+    DllImportEntry(SystemNative_StrErrorR) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
     DllImportEntry(SystemNative_SymLink) // System.Private.CoreLib
     DllImportEntry(SystemNative_SysConf) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_SysLog) // System.Private.CoreLib
@@ -602,8 +596,8 @@ typedef struct PInvokeTable {
 
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
-    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 51},
-    {"libSystem.Native", s_libSystem_Native, 147},
+    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 52},
+    {"libSystem.Native", s_libSystem_Native, 143},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},
