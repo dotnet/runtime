@@ -1018,9 +1018,9 @@ namespace DispatchProxyTests
             Assert.IsType<Pointer>(received);
             Assert.Equal((nint)(&value), (nint)Pointer.Unbox(received));
 
+            received = "Failed";
             proxy.Echo(null);
-            Assert.IsType<Pointer>(received);
-            Assert.Equal(0, (nint)Pointer.Unbox(received));
+            Assert.Null(received);
         }
 
         [Theory]
@@ -1087,6 +1087,21 @@ namespace DispatchProxyTests
             proxy.Ref(ref p);
             Assert.Equal(0, (nint)p);
 
+            proxy.Ref(ref p);
+            Assert.Null(received);
+
+            // The pointer type of a written-back Pointer is not checked.
+            written = Pointer.Box((long*)values, typeof(long*));
+            proxy.Ref(ref p);
+            Assert.Equal((nint)values, (nint)p);
+
+            written = 42;
+            Assert.Throws<InvalidCastException>(() => { proxy.Ref(ref p); });
+
+            written = (IntPtr)(values + 1);
+            proxy.Out(out p);
+            Assert.Equal((nint)(values + 1), (nint)p);
+
             written = Pointer.Box(values, typeof(int*));
             proxy.Out(out p);
             Assert.Null(received);
@@ -1146,49 +1161,44 @@ namespace DispatchProxyTests
             Assert.Equal((nint)(&value), (nint)p);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/100020", TestRuntimes.CoreCLR)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public static unsafe void Invoke_Function_Pointer_Parameter_And_Return(bool useGenericCreate)
+        public static void Invoke_Pointer_Parameter_In_Another_AssemblyLoadContext(bool useGenericCreate)
         {
-            delegate*<int, int> twice = &TestType_FunctionPointerService.Twice;
-            var proxy = CreateHelper<TestType_IFunctionPointerService, TestDispatchProxy>(useGenericCreate);
+            if (typeof(DispatchProxyTests).Assembly.Location == "")
+                return;
 
-            object received = null;
-            object result = null;
-            object written = null;
-            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
-            {
-                received = args[0];
-                args[0] = written;
-                return result;
-            };
+            EchoPointerThroughProxy(useGenericCreate);
 
-            result = (IntPtr)twice;
-            Assert.Equal((nint)twice, (nint)proxy.Echo(twice));
-            Assert.Equal((nint)twice, Assert.IsType<IntPtr>(received));
+            // Each new load context gets its own proxy assembly, whose first pointer conversion is a box in
+            // EchoPointerThroughProxy and an unbox in ReturnPointerThroughProxy.
+            InvokeInNewAssemblyLoadContext(nameof(EchoPointerThroughProxy), useGenericCreate);
+            InvokeInNewAssemblyLoadContext(nameof(ReturnPointerThroughProxy), useGenericCreate);
+        }
 
-            result = null;
-            Assert.Equal(0, (nint)proxy.Echo(null));
-            Assert.Equal(0, Assert.IsType<IntPtr>(received));
+        private static void InvokeInNewAssemblyLoadContext(string methodName, bool useGenericCreate) =>
+            new AssemblyLoadContext(methodName)
+                .LoadFromAssemblyPath(typeof(DispatchProxyTests).Assembly.Location)
+                .GetType(typeof(DispatchProxyTests).FullName, true)
+                .GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic)
+                .Invoke(null, new object[] { useGenericCreate });
 
-            result = Pointer.Box((void*)twice, typeof(void*));
-            Assert.Throws<InvalidCastException>(() => { proxy.Echo(twice); });
+        private static unsafe void EchoPointerThroughProxy(bool useGenericCreate)
+        {
+            int value = 42;
+            var proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) => args[0];
+            Assert.Equal((nint)(&value), (nint)proxy.Echo(&value));
+        }
 
-            delegate*<int, int> f = twice;
-            written = null;
-            proxy.Ref(ref f);
-            Assert.Equal((nint)twice, Assert.IsType<IntPtr>(received));
-            Assert.Equal(0, (nint)f);
-
-            written = (IntPtr)twice;
-            proxy.Ref(ref f);
-            Assert.Equal((nint)twice, (nint)f);
-
-            var target = new TestType_FunctionPointerService();
-            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) => method.Invoke(target, args);
-            Assert.Equal(42, proxy.Echo(twice)(21));
+        private static unsafe void ReturnPointerThroughProxy(bool useGenericCreate)
+        {
+            int value = 42;
+            object result = Pointer.Box(&value, typeof(int*));
+            var proxy = CreateHelper<TestType_IPointerReturnService, TestDispatchProxy>(useGenericCreate);
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) => result;
+            Assert.Equal((nint)(&value), (nint)proxy.Get());
         }
 
         private static TestType_IHelloService CreateTestHelloProxy(bool useGenericCreate) =>

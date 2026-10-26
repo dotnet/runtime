@@ -165,18 +165,10 @@ public unsafe class TestType_PointerService : TestType_IPointerService
     public void In(in int* p) { }
 }
 
-// Demonstrates proxies can be made for methods with function pointer parameters and returns.
-public unsafe interface TestType_IFunctionPointerService
+// Demonstrates proxies can be made for a pointer return with no pointer parameter.
+public unsafe interface TestType_IPointerReturnService
 {
-    delegate*<int, int> Echo(delegate*<int, int> f);
-    void Ref(ref delegate*<int, int> f);
-}
-
-public unsafe class TestType_FunctionPointerService : TestType_IFunctionPointerService
-{
-    public static int Twice(int x) => 2 * x;
-    public delegate*<int, int> Echo(delegate*<int, int> f) => f;
-    public void Ref(ref delegate*<int, int> f) => f = &Twice;
+    int* Get();
 }
 
 // Negative -- demonstrates trying to use a class for the interface type for the proxy
