@@ -501,10 +501,10 @@ namespace System.Security.Cryptography.Pkcs
 
         private X509Certificate2? FindSignerCertificate()
         {
-            return FindSignerCertificate(SignerIdentifier, _document.Certificates);
+            return _document.FindCertificate(SignerIdentifier);
         }
 
-        private static X509Certificate2? FindSignerCertificate(
+        internal static X509Certificate2? FindSignerCertificate(
             SubjectIdentifier signerIdentifier,
             X509Certificate2Collection? extraStore)
         {
