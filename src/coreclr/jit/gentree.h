@@ -2540,6 +2540,7 @@ public:
 
     bool IsReuseRegVal() const
     {
+        // This can be extended to non-constant nodes, but not to local or indir nodes.
         return OperIsConst() && ((gtFlags & GTF_REUSE_REG_VAL) != 0);
     }
 
