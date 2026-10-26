@@ -491,7 +491,7 @@ void InitGSCookie()
 #else // TARGET_WINDOWS
     if (!VMToOSInterface::ProtectMemory((LPVOID)pGSCookiePtr, sizeof(GSCookie), VMToOSInterface::MemoryProtection::ReadWrite))
     {
-        ThrowLastError();
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
     }
 #endif // TARGET_WINDOWS
 #endif // FEATURE_READONLY_GS_COOKIE
@@ -527,7 +527,7 @@ void InitGSCookie()
 #else // TARGET_WINDOWS
     if (!VMToOSInterface::ProtectMemory((LPVOID)pGSCookiePtr, sizeof(GSCookie), VMToOSInterface::MemoryProtection::ReadOnly))
     {
-        ThrowLastError();
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
     }
 #endif // TARGET_WINDOWS
 #endif // FEATURE_READONLY_GS_COOKIE

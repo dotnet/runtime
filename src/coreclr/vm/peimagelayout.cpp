@@ -367,7 +367,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                     VMToOSInterface::JitWriteProtect(false);
 #else
                 if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, oldProtection))
-                    ThrowLastError();
+                    ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 #endif // __APPLE__ && HOST_ARM64
                 hasOldProtection = false;
                 oldProtection = VMToOSInterface::MemoryProtection::NoAccess;
@@ -403,7 +403,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 // Writing was already enabled above via VMToOSInterface::JitWriteProtect.
 #else
                 if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, newProtection))
-                    ThrowLastError();
+                    ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 #endif // __APPLE__ && HOST_ARM64
                 oldProtection = GetSectionMemoryProtection(*pSection);
                 hasOldProtection = true;
@@ -485,7 +485,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 #else
         // Restore the protection
         if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, oldProtection))
-            ThrowLastError();
+            ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 #endif // __APPLE__ && HOST_ARM64
     }
 #endif // !TARGET_WASM

@@ -96,6 +96,12 @@ void ExecutableAllocator::UnmapRW(void*) noexcept
 #include "executableallocator.h"
 #include <configuration.h>
 
+#if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
+static constexpr bool ExecutableBackingRequired = true;
+#else
+static constexpr bool ExecutableBackingRequired = false;
+#endif
+
 #if USE_LAZY_PREFERRED_RANGE
 // Preferred region to allocate the code in.
 BYTE * ExecutableAllocator::g_lazyPreferredRangeStart;
@@ -803,7 +809,7 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
     }
     else
     {
-        return VMToOSInterface::ReserveMemoryWithinRange(loAddress, hiAddress, size, true);
+        return VMToOSInterface::ReserveMemoryWithinRange(loAddress, hiAddress, size, ExecutableBackingRequired);
     }
 }
 
@@ -886,7 +892,7 @@ void* ExecutableAllocator::Reserve(size_t size)
         }
         else
         {
-            result = static_cast<BYTE*>(VMToOSInterface::ReserveMemory(size, true));
+            result = static_cast<BYTE*>(VMToOSInterface::ReserveMemory(size, ExecutableBackingRequired));
         }
     }
 

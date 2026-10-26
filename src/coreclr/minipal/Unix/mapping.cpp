@@ -129,13 +129,11 @@ static void CopyMemoryToPlaceholder(void* address, const void* source, size_t si
     }
 #endif // HOST_OSX && HOST_ARM64
 
-#if defined(__GNUC__) || defined(__clang__)
     if (executable && size != 0)
     {
         char* begin = static_cast<char*>(address);
         __builtin___clear_cache(begin, begin + size);
     }
-#endif // __GNUC__ || __clang__
 }
 
 VMToOSInterface::MemoryMapHandle VMToOSInterface::CreateMemoryMapping(MemoryMapHandle fileHandle, uint64_t, MemoryProtection)
@@ -179,7 +177,7 @@ void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtecti
     }
 #endif // TARGET_APPLE
 
-    if (address == nullptr && executable)
+    if (address == nullptr && (executable || executableBacking))
     {
         constexpr size_t allocationGranularity = 64 * 1024;
         if (size > SIZE_MAX - (allocationGranularity - 1))
