@@ -98,4 +98,37 @@
 
       *******************" />
   </Target>
+
+  <!-- Validation only. The Emscripten packs and manifest used by the workload tests are resolved from the dotnet/dotnet
+       validation build feed and nowhere else, because the same versions were released with an older Node. -->
+  <PropertyGroup>
+    <TemplateNuGetConfigPathForWorkloadTesting>$(MSBuildThisFileDirectory)NuGet.node-validation.config</TemplateNuGetConfigPathForWorkloadTesting>
+    <NuGetConfigPackageSourceMappingsForWorkloadTesting>*</NuGetConfigPackageSourceMappingsForWorkloadTesting>
+  </PropertyGroup>
+
+  <!-- Validation only. Fails the build when the Node installed with the Emscripten workload is not the expected version. -->
+  <Target Name="_ValidateInstalledEmscriptenNode"
+          AfterTargets="InstallWorkloadUsingArtifacts"
+          Condition="'$(InstallWorkloadForTesting)' == 'true'">
+    <ItemGroup>
+      <_InstalledEmscriptenNode Include="$(SdkWithWorkloadForTestingPath)packs/Microsoft.NET.Runtime.Emscripten.*.Node.*/*/tools/bin/node" />
+      <_InstalledEmscriptenNode Include="$(SdkWithWorkloadForTestingPath)packs/Microsoft.NET.Runtime.Emscripten.*.Node.*/*/tools/bin/node.exe" />
+    </ItemGroup>
+
+    <Error Condition="'@(_InstalledEmscriptenNode)' == ''"
+           Text="No Emscripten Node pack was installed under $(SdkWithWorkloadForTestingPath)packs." />
+
+    <Message Importance="High" Text="Installed Emscripten Node: %(_InstalledEmscriptenNode.FullPath)" />
+    <Exec Command="&quot;%(_InstalledEmscriptenNode.FullPath)&quot; --version"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="High"
+          IgnoreStandardErrorWarningFormat="true">
+      <Output TaskParameter="ConsoleOutput" ItemName="_InstalledEmscriptenNodeVersion" />
+    </Exec>
+
+    <Error Condition="'@(_InstalledEmscriptenNodeVersion)' == ''"
+           Text="The installed Emscripten Node printed no version." />
+    <Error Condition="'%(_InstalledEmscriptenNodeVersion.Identity)' != 'v24.22.1'"
+           Text="Expected the installed Emscripten Node to be v24.22.1 from dotnet/node#424, got '%(_InstalledEmscriptenNodeVersion.Identity)'." />
+  </Target>
 </Project>
