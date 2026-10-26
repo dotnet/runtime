@@ -111,6 +111,7 @@ else()
                     list(APPEND CORERUN_BROWSER_LINK_OPTIONS --preload-file ${WASM_PRELOAD_DIR}@/)
                 endif()
             else()
+                list(APPEND CORERUN_SOURCES ./wasm/wasmfs_root_override.cpp)
                 target_sources(corerun PRIVATE ./wasm/wasmfs_root_override.cpp)
                 # Node.js doesn't have good support for WASM_BIGINT, so disable it for the Node/shell.
                 list(APPEND CORERUN_BROWSER_LINK_OPTIONS -sWASM_BIGINT=0)
@@ -121,7 +122,9 @@ else()
 
                 # Link the Node.js bridge without NODERAWFS's root hook; corerun supplies
                 # its own hook to map the virtual root to the host filesystem root.
-                list(APPEND CORERUN_BROWSER_LINK_OPTIONS -sNODE_HOST_ENV=1 -lnodefs.js)
+                list(APPEND CORERUN_BROWSER_LINK_OPTIONS
+                    -sNODE_HOST_ENV=1
+                    -lnodefs.js)
             endif()
             list(APPEND CORERUN_BROWSER_LINK_OPTIONS
                 -sINITIAL_MEMORY=134217728

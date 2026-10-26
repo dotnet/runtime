@@ -212,9 +212,17 @@ static int BrowserHost_CreateDirectory(const char* path)
 // JavaScript FS API (and -sFORCE_FILESYSTEM) is not required on the browser host.
 extern "C" int BrowserHost_WriteFileToVfs(const char* path, const void* data, int32_t length)
 {
+    if (path == nullptr || length < 0 || (data == nullptr && length > 0))
+    {
+        errno = EINVAL;
+        std::fprintf(stderr, "BrowserHost_WriteFileToVfs: invalid arguments\n");
+        return -1;
+    }
+
     BrowserHost_EnsureParentDirs(path);
 
-    int fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    int fd;
+    while ((fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0 && errno == EINTR);
     if (fd < 0)
     {
         std::fprintf(stderr, "BrowserHost_WriteFileToVfs: open('%s') failed - errno %d\n", path, errno);
@@ -236,6 +244,13 @@ extern "C" int BrowserHost_WriteFileToVfs(const char* path, const void* data, in
             close(fd);
             return -1;
         }
+        if (written == 0)
+        {
+            errno = EIO;
+            std::fprintf(stderr, "BrowserHost_WriteFileToVfs: write('%s') made no progress\n", path);
+            close(fd);
+            return -1;
+        }
         cursor += written;
         remaining -= static_cast<int32_t>(written);
     }
@@ -247,6 +262,20 @@ extern "C" int BrowserHost_WriteFileToVfs(const char* path, const void* data, in
 // Create (mkdir -p) and change into the working directory. Replaces FS.createPath + FS.chdir.
 extern "C" int BrowserHost_SetWorkingDirectory(const char* path)
 {
+    if (path == nullptr || path[0] == '\0')
+    {
+        errno = EINVAL;
+        std::fprintf(stderr, "BrowserHost_SetWorkingDirectory: invalid path\n");
+        return -1;
+    }
+
+    // HOME defaults to /home/web_user in Emscripten.
+    if (BrowserHost_CreateDirectory("/home/web_user") != 0)
+    {
+        std::fprintf(stderr, "BrowserHost_SetWorkingDirectory: mkdir('/home/web_user') failed - errno %d\n", errno);
+        return -1;
+    }
+
     // SpecialFolder.CommonApplicationData maps to /usr/share.
     if (BrowserHost_CreateDirectory("/usr/share") != 0)
     {

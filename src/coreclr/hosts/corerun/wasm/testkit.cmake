@@ -181,7 +181,10 @@ function(corerun_kit_export)
     endforeach()
 
     list(PREPEND kitLibraries corerun_static)
-    list(PREPEND kitLinkInputs "\"$<TARGET_FILE_NAME:corerun_static>\"")
+    list(PREPEND kitLinkInputs
+        -Wl,--whole-archive
+        "\"$<TARGET_FILE_NAME:corerun_static>\""
+        -Wl,--no-whole-archive)
 
     # Nothing links corerun_static, so without this the component target would
     # try to install an archive that was never built.

@@ -16,11 +16,16 @@ const RUNTIME_IDENTIFIER = "RUNTIME_IDENTIFIER";
 export function initializeCoreCLR(): number {
     const loaderConfig = _ems_.dotnetApi.getConfig();
 
-    const workingDirPtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(loaderConfig.virtualWorkingDirectory!) as any;
-    const workingDirectoryResult = _ems_._BrowserHost_SetWorkingDirectory(workingDirPtr);
-    _ems_._free(workingDirPtr);
+    const workingDirectory = loaderConfig.virtualWorkingDirectory!;
+    const workingDirPtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(workingDirectory) as any;
+    let workingDirectoryResult: number;
+    try {
+        workingDirectoryResult = _ems_._BrowserHost_SetWorkingDirectory(workingDirPtr);
+    } finally {
+        _ems_._free(workingDirPtr);
+    }
     if (workingDirectoryResult !== 0) {
-        return workingDirectoryResult;
+        throw new Error(`Failed to set working directory '${workingDirectory}'`);
     }
 
     const hostContractPtr = _ems_._BrowserHost_CreateHostContract();

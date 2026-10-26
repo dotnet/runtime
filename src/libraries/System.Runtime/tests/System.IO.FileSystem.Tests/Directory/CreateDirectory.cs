@@ -229,7 +229,7 @@ namespace System.IO.Tests
 
         [ConditionalTheory(typeof(Directory_CreateDirectory), nameof(NoMaxComponentLength))]
         [MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
-        public void DirectoryWithComponentLongerThanMaxComponentAsPath_BrowserDoesNotThrowException(string path)
+        public void DirectoryWithComponentLongerThanMaxComponentAsPath_MonoBrowserDoesNotThrowException(string path)
         {
             DirectoryInfo result = Create(path);
             Assert.True(Directory.Exists(path));
