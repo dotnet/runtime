@@ -106,7 +106,7 @@ namespace System.Reflection.Emit
             return new SignatureHelper(mod, intCall, returnType, null, null);
         }
 
-        internal static SignatureHelper GetMethodSigHelper(DynamicScope scope, Type functionPointerType)
+        internal static SignatureHelper GetMethodSigHelper(DynamicScope? scope, Type functionPointerType)
         {
             Debug.Assert(functionPointerType.IsFunctionPointer);
 
@@ -147,8 +147,22 @@ namespace System.Reflection.Emit
 
             SignatureHelper sig = new(null, callConv);
             sig.m_returnType = retType;
-            sig.AddDynamicArgument(scope, retType, retTypeModReqs, retTypeModOpts, false);
-            sig.AddArguments(scope, paramTypes, paramModReqs, paramModOpts);
+
+            if (scope == null)
+            {
+                // Rejects a calling convention other than the default or unmanaged one (vararg, instance).
+                if (retType.MakeFunctionPointerType(paramTypes, functionPointerType.IsUnmanagedFunctionPointer) != functionPointerType)
+                    throw new NotSupportedException(SR.NotSupported_FunctionPointerSignature);
+
+                sig.AddOneArgTypeHelper(retType);
+                sig.AddArguments(paramTypes, null, null);
+            }
+            else
+            {
+                sig.AddDynamicArgument(scope, retType, retTypeModReqs, retTypeModOpts, false);
+                sig.AddArguments(scope, paramTypes, paramModReqs, paramModOpts);
+            }
+
             return sig;
         }
 
@@ -475,18 +489,8 @@ namespace System.Reflection.Emit
             }
             else if (clsArgument.IsFunctionPointer)
             {
-                if (scope == null)
-                {
-                    // A signature without a module (such as the signature and locals of a DynamicMethod)
-                    // refers to the runtime type by its handle, as the general branch below does.
-                    if (m_module == null && clsArgument is RuntimeType)
-                    {
-                        InternalAddRuntimeType(clsArgument);
-                        return;
-                    }
-
+                if (scope == null && (m_module != null || clsArgument is not RuntimeType))
                     throw new NotSupportedException(SR.NotSupported_FunctionPointerSignature);
-                }
 
                 AddData((int)CorElementType.ELEMENT_TYPE_FNPTR);
                 SignatureHelper sig = GetMethodSigHelper(scope, clsArgument);
