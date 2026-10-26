@@ -9,6 +9,11 @@ one-based source line and column numbers. Diagnostics do not include the source
 file's contents. The `-ERR` option continues to suppress compiler diagnostics
 while attempting to emit output despite errors.
 
+Line starts are indexed lazily per source text and shared by its locations.
+Each subsequent coordinate lookup uses binary search rather than rescanning the
+file. Line breaks remain LF-based (including CRLF); columns count UTF-16 code
+units, without expanding tabs.
+
 ## Build Instructions
 
 ### Regular Builds

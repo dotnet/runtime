@@ -43,21 +43,8 @@ public record Location(SourceSpan Span, SourceText Source)
 
     public override string ToString()
     {
-        int line = 1;
-        int column = 1;
-        for (int i = 0; i < Span.Start && i < Source.Text.Length; i++)
-        {
-            if (Source.Text[i] == '\n')
-            {
-                line++;
-                column = 1;
-            }
-            else
-            {
-                column++;
-            }
-        }
+        (int line, int column) = Source.GetLinePosition(Span.Start);
 
-        return $"{Source.Path}({line},{column})";
+        return $"{Source.Path}({line + 1},{column + 1})";
     }
 }

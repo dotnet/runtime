@@ -18,13 +18,69 @@ public class CommandLineTests
     [InlineData("abc", 3, "input.il(1,4)")]
     [InlineData("abc\n  def", 6, "input.il(2,3)")]
     [InlineData("abc\r\n  def", 7, "input.il(2,3)")]
+    [InlineData("abc\rdef", 4, "input.il(1,5)")]
+    [InlineData("abc\r\n", 4, "input.il(1,5)")]
+    [InlineData("abc\r\n", 5, "input.il(2,1)")]
     [InlineData("abc\n\n", 5, "input.il(3,1)")]
     [InlineData("\tdef", 1, "input.il(1,2)")]
+    [InlineData("a\u0085b\u2028c\u2029d", 6, "input.il(1,7)")]
+    [InlineData("\ud83d\ude00x", 2, "input.il(1,3)")]
+    [InlineData("abc", -1, "input.il(1,1)")]
+    [InlineData("abc", int.MaxValue, "input.il(1,4)")]
     public void DiagnosticLocation_UsesOneBasedLineAndColumn(string text, int start, string expected)
     {
         var location = new Location(new SourceSpan(start, 0), new SourceText(text, "input.il"));
 
         Assert.Equal(expected, location.ToString());
+    }
+
+    [Fact]
+    public void DiagnosticLocations_SharedSourceSupportsOutOfOrderLookups()
+    {
+        string text = string.Concat(Enumerable.Repeat("abc\r\n\n\tdef\n", 1000));
+        var source = new SourceText(text, "input.il");
+        int[] offsets = [text.Length, 0, 25, text.Length - 1, 5, 1000, 5];
+        foreach (int offset in offsets)
+        {
+            int line = 1;
+            int column = 1;
+            for (int i = 0; i < offset; i++)
+            {
+                if (text[i] == '\n')
+                {
+                    line++;
+                    column = 1;
+                }
+                else
+                {
+                    column++;
+                }
+            }
+
+            Assert.Equal($"input.il({line},{column})", new Location(new SourceSpan(offset, 0), source).ToString());
+        }
+    }
+
+    [Fact]
+    public void DiagnosticLocations_DifferentSourcesHaveIndependentLineStarts()
+    {
+        var source = new SourceText("first\nsecond", "input.il");
+        Assert.Equal("input.il(2,1)", new Location(new SourceSpan(6, 0), source).ToString());
+
+        var differentText = new SourceText("replacement", source.Path);
+        Assert.Equal("input.il(1,7)", new Location(new SourceSpan(6, 0), differentText).ToString());
+        var differentPath = new SourceText(source.Text, "included.il");
+        Assert.Equal("included.il(2,1)", new Location(new SourceSpan(6, 0), differentPath).ToString());
+    }
+
+    [Fact]
+    public void DiagnosticLocations_SharedSourceSupportsRepeatedLookups()
+    {
+        var source = new SourceText(string.Concat(Enumerable.Repeat("abc\n", 1000)), "input.il");
+        for (int line = 0; line <= 1000; line++)
+        {
+            Assert.Equal($"input.il({line + 1},1)", new Location(new SourceSpan(line * 4, 0), source).ToString());
+        }
     }
 
     [Theory]
