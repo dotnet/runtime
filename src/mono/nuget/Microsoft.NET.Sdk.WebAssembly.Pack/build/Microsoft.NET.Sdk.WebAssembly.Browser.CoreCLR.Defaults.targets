@@ -1,0 +1,14 @@
+<!--
+***********************************************************************************************
+Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.Defaults.targets
+
+CoreCLR browser-wasm defaults applied before Microsoft.NET.Sdk targets.
+
+Copyright (c) .NET Foundation. All rights reserved.
+***********************************************************************************************
+-->
+<Project>
+  <PropertyGroup Condition="'$(UseMonoRuntime)' == 'false'">
+    <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
+  </PropertyGroup>
+</Project>
