@@ -993,45 +993,22 @@ namespace ILAssembler
                 coreAsmRef,
                 new TypeName(null, "System.Diagnostics.DebuggableAttribute"));
 
-            bool legacyConstructor = coreAsmRef.Name.Equals("mscorlib", StringComparison.OrdinalIgnoreCase)
-                && coreAsmRef.Version?.Major == 1;
+            var debuggingModesType = _entityRegistry.GetOrCreateTypeReference(
+                debuggableAttrType,
+                new TypeName(null, "DebuggingModes"));
+
             BlobBuilder ctorSig = new();
             var sigEncoder = new BlobEncoder(ctorSig);
-            if (legacyConstructor)
-            {
-                sigEncoder.MethodSignature(SignatureCallingConvention.Default, 0, isInstanceMethod: true)
-                    .Parameters(2,
-                        returnType => returnType.Void(),
-                        parameters =>
-                        {
-                            parameters.AddParameter().Type().Boolean();
-                            parameters.AddParameter().Type().Boolean();
-                        });
-            }
-            else
-            {
-                var debuggingModesType = _entityRegistry.GetOrCreateTypeReference(
-                    debuggableAttrType,
-                    new TypeName(null, "DebuggingModes"));
-                sigEncoder.MethodSignature(SignatureCallingConvention.Default, 0, isInstanceMethod: true)
-                    .Parameters(1,
-                        returnType => returnType.Void(),
-                        parameters => parameters.AddParameter().Type().Type(debuggingModesType.Handle, isValueType: true));
-            }
+            sigEncoder.MethodSignature(SignatureCallingConvention.Default, 0, isInstanceMethod: true)
+                .Parameters(1,
+                    returnType => returnType.Void(),
+                    parameters => parameters.AddParameter().Type().Type(debuggingModesType.Handle, isValueType: true));
 
             var ctor = _entityRegistry.CreateLazilyRecordedMemberReference(debuggableAttrType, ".ctor", ctorSig);
 
             BlobBuilder attrValue = new();
             attrValue.WriteUInt16(0x0001); // Prolog
-            if (legacyConstructor)
-            {
-                attrValue.WriteBoolean(true); // isJITTrackingEnabled
-                attrValue.WriteBoolean((debuggingModes & 0x100) != 0); // isJITOptimizerDisabled
-            }
-            else
-            {
-                attrValue.WriteInt32(debuggingModes);
-            }
+            attrValue.WriteInt32(debuggingModes);
             attrValue.WriteUInt16(0x0000); // No named arguments
 
             // Create and attach the custom attribute

@@ -675,26 +675,23 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
-        [InlineData(false, 1, null, 0x101)]
-        [InlineData(false, 1, DebugMode.Opt, 0x03)]
-        [InlineData(false, 1, DebugMode.Impl, 0x103)]
-        [InlineData(true, 1, null, 0x101)]
-        [InlineData(true, 1, DebugMode.Opt, 0x03)]
-        [InlineData(true, 1, DebugMode.Impl, 0x103)]
-        [InlineData(false, 4, null, 0x101)]
-        [InlineData(false, 4, DebugMode.Opt, 0x03)]
-        [InlineData(false, 4, DebugMode.Impl, 0x103)]
-        [InlineData(true, 4, null, 0x101)]
-        [InlineData(true, 4, DebugMode.Opt, 0x03)]
-        [InlineData(true, 4, DebugMode.Impl, 0x103)]
-        [InlineData(true, 1, null, 0x101, "System.Runtime")]
-        [InlineData(true, 1, DebugMode.Opt, 0x03, "System.Runtime")]
-        [InlineData(true, 1, DebugMode.Impl, 0x103, "System.Runtime")]
-        public void DebugOption_UsesTargetConstructorAndAssemblyAttributeOwner(
-            bool netmodule, int coreLibMajorVersion, DebugMode? mode, int expectedMode, string coreLibName = "mscorlib")
+        [InlineData(false, null, 0x101, "mscorlib")]
+        [InlineData(false, DebugMode.Opt, 0x03, "mscorlib")]
+        [InlineData(false, DebugMode.Impl, 0x103, "mscorlib")]
+        [InlineData(true, null, 0x101, "mscorlib")]
+        [InlineData(true, DebugMode.Opt, 0x03, "mscorlib")]
+        [InlineData(true, DebugMode.Impl, 0x103, "mscorlib")]
+        [InlineData(false, null, 0x101, "System.Runtime")]
+        [InlineData(false, DebugMode.Opt, 0x03, "System.Runtime")]
+        [InlineData(false, DebugMode.Impl, 0x103, "System.Runtime")]
+        [InlineData(true, null, 0x101, "System.Runtime")]
+        [InlineData(true, DebugMode.Opt, 0x03, "System.Runtime")]
+        [InlineData(true, DebugMode.Impl, 0x103, "System.Runtime")]
+        public void DebugOption_UsesModernConstructorAndAssemblyAttributeOwner(
+            bool netmodule, DebugMode? mode, int expectedMode, string coreLibName)
         {
             string source = $$"""
-                .assembly extern {{coreLibName}} { .ver {{coreLibMajorVersion}}:0:0:0 }
+                .assembly extern {{coreLibName}} { .ver 4:0:0:0 }
                 {{(netmodule ? "" : ".assembly test { }")}}
                 .module test.dll
                 """;
@@ -725,25 +722,16 @@ namespace ILAssembler.Tests
             Assert.Equal("System.Diagnostics", reader.GetString(attributeType.Namespace));
             Assert.Equal("DebuggableAttribute", reader.GetString(attributeType.Name));
             Assert.Equal(coreLibName, reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)attributeType.ResolutionScope).Name));
-            if (coreLibName == "mscorlib" && coreLibMajorVersion == 1)
-            {
-                Assert.Equal(new byte[] { 0x20, 0x02, 0x01, 0x02, 0x02 }, reader.GetBlobBytes(constructor.Signature));
-                Assert.Equal(new byte[] { 1, 0, 1, (byte)((expectedMode & 0x100) != 0 ? 1 : 0), 0, 0 }, reader.GetBlobBytes(attribute.Value));
-                Assert.DoesNotContain(reader.TypeReferences, handle => reader.GetString(reader.GetTypeReference(handle).Name) == "DebuggingModes");
-            }
-            else
-            {
-                AssertDebuggableAttribute(attribute, expectedMode);
-                BlobReader signature = reader.GetBlobReader(constructor.Signature);
-                Assert.Equal(0x20, signature.ReadByte());
-                Assert.Equal(1, signature.ReadCompressedInteger());
-                Assert.Equal(SignatureTypeCode.Void, signature.ReadSignatureTypeCode());
-                Assert.Equal(SignatureTypeCode.TypeHandle, signature.ReadSignatureTypeCode());
-                TypeReference modes = reader.GetTypeReference((TypeReferenceHandle)signature.ReadTypeHandle());
-                Assert.Equal("DebuggingModes", reader.GetString(modes.Name));
-                Assert.Equal(constructor.Parent, modes.ResolutionScope);
-                Assert.Equal(0, signature.RemainingBytes);
-            }
+            AssertDebuggableAttribute(attribute, expectedMode);
+            BlobReader signature = reader.GetBlobReader(constructor.Signature);
+            Assert.Equal(0x20, signature.ReadByte());
+            Assert.Equal(1, signature.ReadCompressedInteger());
+            Assert.Equal(SignatureTypeCode.Void, signature.ReadSignatureTypeCode());
+            Assert.Equal(SignatureTypeCode.TypeHandle, signature.ReadSignatureTypeCode());
+            TypeReference modes = reader.GetTypeReference((TypeReferenceHandle)signature.ReadTypeHandle());
+            Assert.Equal("DebuggingModes", reader.GetString(modes.Name));
+            Assert.Equal(constructor.Parent, modes.ResolutionScope);
+            Assert.Equal(0, signature.RemainingBytes);
         }
 
         [Theory]

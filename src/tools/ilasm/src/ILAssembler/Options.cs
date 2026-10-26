@@ -116,7 +116,6 @@ namespace ILAssembler
         /// <remarks>
         /// For a netmodule, the assembly attribute is attached to
         /// <c>System.Runtime.CompilerServices.AssemblyAttributesGoHere</c> for the assembly linker.
-        /// A v1 <c>mscorlib</c> target uses the legacy two-Boolean constructor.
         /// The PDB is returned in <see cref="CompilationResult.PortablePdb"/>, not embedded in the image.
         /// The image references it through its debug directory; see <see cref="PdbFilePath"/>.
         /// </remarks>
@@ -140,8 +139,6 @@ namespace ILAssembler
         /// <remarks>
         /// A non-null value implies <see cref="Debug"/>: it produces a Portable PDB and adds a
         /// <c>DebuggableAttribute</c> with the selected debugging modes, including for netmodules.
-        /// The legacy two-Boolean constructor represents both the default and <c>IMPL</c> modes as
-        /// tracking enabled and optimization disabled.
         /// </remarks>
         public DebugMode? DebugMode { get; set; }
 
