@@ -6,6 +6,7 @@
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
+  <Import Project="$(CommonTestPath)Data\TinyAssembly.targets" />
   <ItemGroup>
     <Compile Include="AssemblyExtensionTests.cs" />
     <Compile Include="ConstructorInfo\ConstructorInfoInvokeArrayTests.cs" />
@@ -21,7 +22,7 @@
     <Compile Include="TypeTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="$(CommonTestPath)Data\TinyAssembly.dll">
+    <Content Include="$(TinyAssemblyPath)">
       <Link>TinyAssembly.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

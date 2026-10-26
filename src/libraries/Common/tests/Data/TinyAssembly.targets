@@ -1,0 +1,71 @@
+<Project>
+  <PropertyGroup>
+    <_TinyAssemblyDirectory>$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(Configuration)', '$(TargetFramework)', 'TinyAssembly'))</_TinyAssemblyDirectory>
+    <TinyAssemblyPath>$(_TinyAssemblyDirectory)TinyAssembly.dll</TinyAssemblyPath>
+    <_TinyAssemblySource>$(MSBuildThisFileDirectory)TinyAssembly.il</_TinyAssemblySource>
+    <_TinyAssemblyTargets>$(MSBuildThisFileFullPath)</_TinyAssemblyTargets>
+    <_TinyAssemblyMetadataProject>$(MSBuildThisFileDirectory)TinyAssemblyMetadata\TinyAssemblyMetadata_inbuild.csproj</_TinyAssemblyMetadataProject>
+    <_TinyAssemblyHostPropertiesToRemove>TargetFramework;TargetOS;TargetArchitecture;RuntimeIdentifier;RuntimeIdentifiers;RuntimeFlavor;SelfContained;UseLocalTargetingRuntimePack;TestNativeAot;TestSingleFile;TestReadyToRun;PublishAot;PublishReadyToRun;RunAOTCompilation;Platform;PlatformTarget;BuildingInsideVisualStudio;BuildProjectReferences</_TinyAssemblyHostPropertiesToRemove>
+    <_TinyAssemblyHostProperties>TargetOS=$(HostOS);TargetArchitecture=$(BuildArchitecture);Platform=AnyCPU;PlatformTarget=AnyCPU;BuildingInsideVisualStudio=false;BuildProjectReferences=true</_TinyAssemblyHostProperties>
+    <_TinyAssemblyRawPath>$(_TinyAssemblyDirectory)TinyAssembly.ilasm.dll</_TinyAssemblyRawPath>
+    <_TinyAssemblyStagingPath>$(_TinyAssemblyDirectory)TinyAssembly.normalized.dll</_TinyAssemblyStagingPath>
+    <_TinyAssemblyILAsmPackage>runtime.$(NETCoreSdkRuntimeIdentifier).microsoft.netcore.ilasm</_TinyAssemblyILAsmPackage>
+    <_TinyAssemblyILAsmDirectory Condition="'$(ILAsmToolPath)' != ''">$([MSBuild]::NormalizeDirectory('$(ILAsmToolPath)'))</_TinyAssemblyILAsmDirectory>
+    <_TinyAssemblyILAsmDirectory Condition="'$(ILAsmToolPath)' == ''">$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', '$(_TinyAssemblyILAsmPackage)', '$(MicrosoftNETCoreILAsmVersion)', 'runtimes', '$(NETCoreSdkRuntimeIdentifier)', 'native'))</_TinyAssemblyILAsmDirectory>
+    <_TinyAssemblyILAsm>$(_TinyAssemblyILAsmDirectory)ilasm</_TinyAssemblyILAsm>
+    <_TinyAssemblyILAsm Condition="'$(HostOS)' == 'windows'">$(_TinyAssemblyILAsm).exe</_TinyAssemblyILAsm>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageDownload Include="$(_TinyAssemblyILAsmPackage)"
+                     Version="[$(MicrosoftNETCoreILAsmVersion)]"
+                     Condition="'$(ILAsmToolPath)' == ''" />
+    <ProjectReference Include="$(_TinyAssemblyMetadataProject)"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      GlobalPropertiesToRemove="$(_TinyAssemblyHostPropertiesToRemove)"
+                      AdditionalProperties="$(_TinyAssemblyHostProperties)" />
+  </ItemGroup>
+
+  <Target Name="_BuildTinyAssemblyMetadataTool"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <MSBuild Projects="$(_TinyAssemblyMetadataProject)"
+             Targets="Build"
+             RemoveProperties="$(_TinyAssemblyHostPropertiesToRemove)"
+             Properties="$(_TinyAssemblyHostProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_TinyAssemblyMetadataTool" />
+    </MSBuild>
+  </Target>
+
+  <Target Name="_GenerateTinyAssembly"
+          Condition="'$(DesignTimeBuild)' != 'true'"
+          DependsOnTargets="_BuildTinyAssemblyMetadataTool"
+          Inputs="$(_TinyAssemblySource);$(_TinyAssemblyTargets);$(_TinyAssemblyILAsm);@(_TinyAssemblyMetadataTool)"
+          Outputs="$(TinyAssemblyPath)">
+    <Error Condition="!Exists('$(_TinyAssemblyILAsm)')"
+           Text="TinyAssembly requires the host ILAsm tool at '$(_TinyAssemblyILAsm)'. Restore the declared package or set ILAsmToolPath to a built host tool." />
+    <Error Condition="'@(_TinyAssemblyMetadataTool)' == ''"
+           Text="The TinyAssembly metadata tool must be built before generating the fixture." />
+    <MakeDir Directories="$(_TinyAssemblyDirectory)" />
+    <Delete Files="$(_TinyAssemblyRawPath);$(_TinyAssemblyStagingPath)" />
+    <Exec Command="&quot;$(_TinyAssemblyILAsm)&quot; -QUIET -NOLOGO -DLL -OUTPUT=&quot;$(_TinyAssemblyRawPath)&quot; &quot;$(_TinyAssemblySource)&quot;" />
+    <Exec Command="&quot;$(DotNetTool)&quot; &quot;@(_TinyAssemblyMetadataTool)&quot; &quot;$(_TinyAssemblyRawPath)&quot; &quot;$(_TinyAssemblyStagingPath)&quot;" />
+    <VerifyFileHash File="$(_TinyAssemblyStagingPath)"
+                    Hash="1F76A2E47DDEEBDC51E59DEE277C54A024D81F561F19CC8B9DFFC889175CDF17"
+                    Algorithm="SHA256" />
+    <Move SourceFiles="$(_TinyAssemblyStagingPath)" DestinationFiles="$(TinyAssemblyPath)" />
+  </Target>
+
+  <Target Name="GenerateTinyAssembly"
+          Condition="'$(DesignTimeBuild)' != 'true'"
+          BeforeTargets="AssignTargetPaths"
+          DependsOnTargets="_GenerateTinyAssembly">
+    <VerifyFileHash File="$(TinyAssemblyPath)"
+                    Hash="1F76A2E47DDEEBDC51E59DEE277C54A024D81F561F19CC8B9DFFC889175CDF17"
+                    Algorithm="SHA256" />
+    <ItemGroup>
+      <FileWrites Include="$(TinyAssemblyPath);$(_TinyAssemblyRawPath);$(_TinyAssemblyStagingPath)" />
+    </ItemGroup>
+  </Target>
+</Project>

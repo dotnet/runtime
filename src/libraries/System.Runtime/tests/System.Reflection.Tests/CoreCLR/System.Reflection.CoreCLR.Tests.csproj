@@ -3,11 +3,12 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
+  <Import Project="$(CommonTestPath)Data\TinyAssembly.targets" />
   <ItemGroup>
     <Compile Include="AssemblyTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="$(CommonTestPath)Data\TinyAssembly.dll">
+    <EmbeddedResource Include="$(TinyAssemblyPath)">
       <Link>Assembly\TinyAssembly.dll</Link>
       <LogicalName>TinyAssembly.dll</LogicalName>
     </EmbeddedResource>
