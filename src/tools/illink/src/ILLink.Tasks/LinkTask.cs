@@ -372,6 +372,9 @@ namespace ILLink.Tasks
                 writer.Write("ILLink task cache key v1");
                 writer.Write(commandLineCommands);
                 writer.Write(responseFileCommands);
+                writer.Write(StandardOutputImportance ?? string.Empty);
+                writer.Write(StandardErrorImportance ?? string.Empty);
+                writer.Write(LogStandardErrorAsError);
                 writer.Write(Environment.CurrentDirectory);
                 writer.Write(Path.GetFullPath(OutputDirectory.ItemSpec));
                 writer.Write(RuntimeInformation.OSDescription);

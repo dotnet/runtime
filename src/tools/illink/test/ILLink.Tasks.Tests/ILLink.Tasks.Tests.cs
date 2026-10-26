@@ -1999,6 +1999,9 @@ namespace ILLink.Tasks.Tests
         [InlineData("metadata")]
         [InlineData("output")]
         [InlineData("input-path")]
+        [InlineData("stdout-importance")]
+        [InlineData("stderr-importance")]
+        [InlineData("stderr-as-error")]
         public void CacheKeyTracksInvocation(string change)
         {
             using var test = new OutputDirectoryTest();
@@ -2019,6 +2022,15 @@ namespace ILLink.Tasks.Tests
                     string newPath = Path.Combine(test.Root, "Input.dll");
                     File.Copy(test.Task.AssemblyPaths[0].ItemSpec, newPath);
                     test.Task.AssemblyPaths[0] = new TaskItem(newPath);
+                    break;
+                case "stdout-importance":
+                    test.Task.StandardOutputImportance = "High";
+                    break;
+                case "stderr-importance":
+                    test.Task.StandardErrorImportance = "Low";
+                    break;
+                case "stderr-as-error":
+                    test.Task.LogStandardErrorAsError = true;
                     break;
             }
 
