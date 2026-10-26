@@ -65,7 +65,8 @@ symbols left by a previous symbol-enabled compilation. Preparation belongs to
 normal tool execution, not the cache, so it also runs when caching is disabled
 or bypassed. This intentionally changes those paths to remove stale outputs.
 Task parameter validation rejects owned output paths that overlap declared compiler
-inputs before cleanup or cache restoration, regardless of cache eligibility.
+inputs, including rooted and adjacent CodeView PDB candidates, before cleanup or
+cache restoration, regardless of cache eligibility or whether symbols are enabled.
 A hit restores their recorded presence/absence. Unrelated outputs are untouched.
 PDB-only compilation preserves the native image it reads
 and cleans only its symbol output. When legacy symbols are requested, preparation

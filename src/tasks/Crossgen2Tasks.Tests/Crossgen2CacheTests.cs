@@ -632,6 +632,73 @@ public class Crossgen2CacheTests
         Assert.False(Directory.Exists(fixture.Cache));
     }, configuration, input).Dispose();
 
+    public static IEnumerable<object[]> InputPdbOverlapCases =>
+        from configuration in new[] { "enabled", "disabled", "bypassed" }
+        from source in new[] { "assembly", "reference", "composite", "unrooted", "legacy", "pdb-only" }
+        from rooted in new[] { false, true }
+        from emitSymbols in new[] { false, true }
+        select new object[] { configuration, source, rooted, emitSymbols };
+
+    [CachePlatformTheory]
+    [MemberData(nameof(InputPdbOverlapCases))]
+    public void InputPdbOverlapsFailBeforeCleanup(string configuration, string source, bool rooted, bool emitSymbols) =>
+        RemoteExecutor.Invoke((mode, input, absolute, symbols) =>
+    {
+        using var fixture = new Fixture();
+        Directory.CreateDirectory(Path.GetDirectoryName(fixture.Output)!);
+        string assembly = Path.Combine(absolute == "True" ? fixture.Root : Path.GetDirectoryName(fixture.Output)!, "reference.ni.dll");
+        File.Copy(fixture.Input, assembly);
+        using (FileStream stream = File.Open(assembly, FileMode.Open, FileAccess.ReadWrite))
+        {
+            using var pe = new PEReader(stream, PEStreamOptions.LeaveOpen);
+            DebugDirectoryEntry entry = pe.ReadDebugDirectory().Single(e => e.Type == DebugDirectoryEntryType.CodeView);
+            byte[] path = System.Text.Encoding.UTF8.GetBytes((absolute == "True" ? fixture.Map : Path.GetFileName(fixture.Map)) + "\0");
+            Assert.True(path.Length <= entry.DataSize - 24);
+            stream.Position = entry.DataPointer + 24;
+            stream.Write(path);
+        }
+        File.Copy(Path.ChangeExtension(fixture.Input, ".pdb"), fixture.Map);
+        byte[] before = File.ReadAllBytes(fixture.Map);
+        byte[] assemblyBefore = File.ReadAllBytes(assembly);
+        MockCompiler task = fixture.Create();
+        task.CompilationEntry.SetMetadata("EmitSymbols", symbols.ToLowerInvariant());
+        task.ImplementationAssemblyReferences = Array.Empty<ITaskItem>();
+        if (input is "assembly" or "legacy" or "pdb-only")
+        {
+            task.CompilationEntry.ItemSpec = assembly;
+            if (input is "legacy" or "pdb-only")
+            {
+                task.UseCrossgen2 = false;
+                task.CrossgenTool = new TaskItem(fixture.Tool);
+                task.CrossgenTool.SetMetadata("JitPath", fixture.Jit);
+                if (input == "pdb-only")
+                {
+                    task.CompilationEntry.SetMetadata("CreatePDBCommand", "/CreatePDB");
+                }
+            }
+        }
+        else if (input == "reference")
+        {
+            task.ImplementationAssemblyReferences = new[] { new TaskItem(assembly) };
+        }
+        else
+        {
+            task.CompilationEntry.SetMetadata("CreateCompositeImage", "true");
+            task.ReadyToRunCompositeBuildReferences = Array.Empty<ITaskItem>();
+            task.ReadyToRunCompositeBuildInput = new[] { new TaskItem(input == "composite" ? assembly : fixture.Input) };
+            task.ReadyToRunCompositeUnrootedBuildInput = input == "unrooted" ? new[] { new TaskItem(assembly) } : Array.Empty<ITaskItem>();
+        }
+        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
+        task.ShowCompilerWarnings = mode == "bypassed";
+
+        Assert.False(task.Execute());
+        Assert.Equal(0, task.Executions);
+        Assert.Equal(before, File.ReadAllBytes(fixture.Map));
+        Assert.Equal(assemblyBefore, File.ReadAllBytes(assembly));
+        Assert.Contains(task.Engine.Errors, message => message.Contains("overlaps compiler input", StringComparison.Ordinal));
+        Assert.False(Directory.Exists(fixture.Cache));
+    }, configuration, source, rooted.ToString(), emitSymbols.ToString()).Dispose();
+
     [CachePlatformTheory]
     [InlineData("outputs-in-cache")]
     [InlineData("cache-in-output")]

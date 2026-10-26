@@ -6,6 +6,7 @@
 
 #nullable disable
 
+using System.Reflection.PortableExecutable;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -240,10 +241,13 @@ namespace Microsoft.NET.Build.Tasks
                 }
 
                 ITaskItem tool = ActuallyUseCrossgen2 ? Crossgen2Tool : CrossgenTool;
-                IEnumerable<string> inputs = new[]
+                IEnumerable<string> assemblies = new[]
                 {
                     _createCompositeImage ? null : CompilationEntry.ItemSpec,
-                    ActuallyUseCrossgen2 && !_createCompositeImage ? CompilationEntry.ItemSpec.TrimEnd() : null,
+                    ActuallyUseCrossgen2 && !_createCompositeImage ? CompilationEntry.ItemSpec.TrimEnd() : null
+                };
+                IEnumerable<string> inputs = new[]
+                {
                     tool.ItemSpec,
                     tool.GetMetadata(MetadataKeys.JitPath),
                     ActuallyUseCrossgen2 ? DotNetHostPath : DiaSymReader
@@ -255,13 +259,13 @@ namespace Microsoft.NET.Build.Tasks
                     references = references.Where(reference => !string.Equals(Path.GetFileName(reference.ItemSpec),
                         Path.GetFileName(_outputR2RImage), StringComparison.OrdinalIgnoreCase));
                 }
-                inputs = inputs.Concat((references ?? Array.Empty<ITaskItem>()).Select(item => item.ItemSpec));
+                assemblies = assemblies.Concat((references ?? Array.Empty<ITaskItem>()).Select(item => item.ItemSpec));
                 if (ActuallyUseCrossgen2)
                 {
                     inputs = inputs.Concat((Crossgen2PgoFiles ?? Array.Empty<ITaskItem>()).Select(item => item.ItemSpec));
                     if (_createCompositeImage)
                     {
-                        inputs = inputs.Concat((ReadyToRunCompositeBuildInput ?? Array.Empty<ITaskItem>()).SelectMany(item => new[] { item.ItemSpec, item.ItemSpec.TrimEnd() }))
+                        assemblies = assemblies.Concat((ReadyToRunCompositeBuildInput ?? Array.Empty<ITaskItem>()).SelectMany(item => new[] { item.ItemSpec, item.ItemSpec.TrimEnd() }))
                             .Concat((ReadyToRunCompositeUnrootedBuildInput ?? Array.Empty<ITaskItem>()).Select(item => item.ItemSpec));
                     }
                     string directory = Path.GetDirectoryName(Path.GetFullPath(tool.ItemSpec));
@@ -275,16 +279,45 @@ namespace Microsoft.NET.Build.Tasks
                         inputs = inputs.Append(Path.Combine(directory, "Microsoft.DiaSymReader.Native.dll"));
                     }
                 }
-                foreach (string input in inputs)
+                foreach (string input in inputs.Concat(assemblies))
+                {
+                    if (!ValidateInput(input))
+                    {
+                        return false;
+                    }
+                }
+                foreach (string assembly in assemblies.Where(path => !string.IsNullOrEmpty(path)).Select(Path.GetFullPath).Distinct(Crossgen2Cache.PathComparer))
+                {
+                    try
+                    {
+                        using FileStream stream = File.OpenRead(assembly);
+                        using var pe = new PEReader(stream);
+                        foreach (var candidate in Crossgen2Cache.GetSymbolCandidates(pe, assembly, Environment.CurrentDirectory))
+                        {
+                            if (!ValidateInput(candidate.Path))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    catch (Exception ex) when (ex is BadImageFormatException or FileNotFoundException or DirectoryNotFoundException)
+                    {
+                        // Invalid or missing assemblies cannot supply symbols; let the compiler diagnose them.
+                    }
+                }
+
+                bool ValidateInput(string input)
                 {
                     if (!string.IsNullOrEmpty(input) && outputs.Contains(Path.GetFullPath(input)))
                     {
                         Log.LogError(Strings.CrossgenOutputOverlapsInput, input);
                         return false;
                     }
+
+                    return true;
                 }
             }
-            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ex is ArgumentException or IOException or InvalidDataException or UnauthorizedAccessException or NotSupportedException)
             {
                 Log.LogErrorFromException(ex);
                 return false;

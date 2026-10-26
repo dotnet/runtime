@@ -110,24 +110,9 @@ internal static class Crossgen2Cache
             {
                 throw new InvalidDataException($"Multi-file assemblies are not supported: '{path}'.");
             }
-            // The compiler tries rooted CodeView paths before candidates beside the PE.
-            // Include absence too, so creating a previously missing PDB invalidates the key.
-            DebugDirectoryEntry[] symbols = pe.ReadDebugDirectory().Where(e => e.Type == DebugDirectoryEntryType.CodeView).ToArray();
-            foreach (DebugDirectoryEntry entry in symbols)
+            foreach ((string symbolPath, BlobContentId identity) in GetSymbolCandidates(pe, path, workingDirectory))
             {
-                CodeViewDebugDirectoryData codeView = pe.ReadCodeViewDebugDirectoryData(entry);
-                string pdb = codeView.Path;
-                var identity = new BlobContentId(codeView.Guid, entry.Stamp);
-                if (Path.IsPathRooted(pdb))
-                {
-                    if (!Path.IsPathFullyQualified(pdb) && Path.GetPathRoot(pdb)!.Length != 1)
-                    {
-                        throw new InvalidDataException($"Drive-relative CodeView path is not supported: '{pdb}'.");
-                    }
-                    // Unix-style CodeView paths in Windows assemblies are rooted on the compiler's current drive.
-                    AddSymbols(Path.GetFullPath(pdb, Path.GetFullPath(workingDirectory)), identity);
-                }
-                AddSymbols(Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileName(pdb)), identity);
+                AddSymbols(symbolPath, identity);
             }
         }
 
@@ -147,6 +132,32 @@ internal static class Crossgen2Cache
             {
                 // Missing symbol candidates are declared so their absence participates in the key.
             }
+        }
+    }
+
+    internal static IEnumerable<(string Path, BlobContentId Identity)> GetSymbolCandidates(PEReader pe, string assembly, string workingDirectory)
+    {
+        // The compiler tries rooted CodeView paths before candidates beside the PE.
+        // Include absence too, so creating a previously missing PDB invalidates the key.
+        foreach (DebugDirectoryEntry entry in pe.ReadDebugDirectory())
+        {
+            if (entry.Type != DebugDirectoryEntryType.CodeView)
+            {
+                continue;
+            }
+            CodeViewDebugDirectoryData codeView = pe.ReadCodeViewDebugDirectoryData(entry);
+            string pdb = codeView.Path;
+            var identity = new BlobContentId(codeView.Guid, entry.Stamp);
+            if (Path.IsPathRooted(pdb))
+            {
+                if (!Path.IsPathFullyQualified(pdb) && Path.GetPathRoot(pdb)!.Length != 1)
+                {
+                    throw new InvalidDataException($"Drive-relative CodeView path is not supported: '{pdb}'.");
+                }
+                // Unix-style CodeView paths in Windows assemblies are rooted on the compiler's current drive.
+                yield return (Path.GetFullPath(pdb, Path.GetFullPath(workingDirectory)), identity);
+            }
+            yield return (Path.Combine(Path.GetDirectoryName(assembly)!, Path.GetFileName(pdb)), identity);
         }
     }
 }
