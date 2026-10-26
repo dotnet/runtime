@@ -30,13 +30,13 @@ CordbModule::CordbModule(
 : CordbBase(pProcess, VmPtrToCookie(vmModule), enumCordbModule),
     m_pAssembly(0),
     m_pAppDomain(0),
-    m_classes(11),
-    m_functions(101),
+    m_classes(),
+    m_functions(),
     m_vmAssembly(vmAssembly),
     m_vmModule(vmModule),
     m_EnCCount(0),
     m_fForceMetaDataSerialize(FALSE),
-    m_nativeCodeTable(101)
+    m_nativeCodeTable()
 {
     _ASSERTE(pProcess->GetProcessLock()->HasLock());
 
@@ -512,6 +512,10 @@ void CordbModule::RefreshMetaData()
 
         _ASSERTE(event.type == DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT);
 
+        // The runtime reports a serialization failure in the reply's hr, with no buffer,
+        // so check it before using the buffer or arming the cleanup.
+        IfFailThrow(event.hr);
+
         //
         // Update it on the RS
         //
@@ -850,7 +854,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
     }
 
     return hr;
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 }
 
 //---------------------------------------------------------------------------------------
@@ -2380,7 +2384,7 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
         ReleaseHolder<ISymUnmanagedBinder> pBinder;
         if (symFormat == IDacDbiInterface::kSymbolFormatPDB)
         {
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
             // PDB format - use diasymreader.dll with COM activation
             InlineSString<MAX_PATH> ssBuf;
             IfFailThrow(GetClrModuleDirectory(ssBuf));

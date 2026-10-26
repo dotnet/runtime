@@ -262,8 +262,8 @@ namespace Mono.Linker.Steps
             AssemblyDefinition? startingAssembly = null;
             if (Context.TypeMapEntryAssembly is not null)
             {
-                var assemblyName = AssemblyNameReference.Parse(Context.TypeMapEntryAssembly);
-                startingAssembly = Context.TryResolve(assemblyName);
+                var assemblyName = LinkContext.TryParseAssemblyName(Context.TypeMapEntryAssembly);
+                startingAssembly = assemblyName is null ? null : Context.TryResolve(assemblyName);
             }
             // If resolution fails, fall back to entry point assembly
             startingAssembly ??= Annotations.GetEntryPointAssembly();

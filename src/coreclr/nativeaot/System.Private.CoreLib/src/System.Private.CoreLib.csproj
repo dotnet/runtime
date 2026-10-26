@@ -57,6 +57,9 @@
 
   <!-- Sources -->
   <ItemGroup>
+    <Compile Include="$(CommonPath)Internal\VersionResilientHashCode.cs">
+      <Link>Common\Internal\VersionResilientHashCode.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DehydratedData.cs">
       <Link>Internal\Runtime\DehydratedData.cs</Link>
     </Compile>
@@ -267,7 +270,6 @@
       <Link>Common\Interop\Windows\Kernel32\Interop.ExitProcess.cs</Link>
     </Compile>
     <Compile Include="System\EventReporter.cs" />
-    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\BuiltInVariantExtensions.cs">
       <Link>System\Runtime\InteropServices\BuiltInVariantExtensions.cs</Link>
@@ -301,7 +303,6 @@
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true' or '$(TargetsWasm)'=='true'">
-    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Unix.cs" />
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.Unix.cs" />
@@ -310,9 +311,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Exit.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MProtect.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.MProtect.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -416,7 +414,6 @@
     <Compile Include="System\Reflection\Runtime\General\IRuntimeMemberInfoWithNoMetadataDefinition.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.NativeFormat.cs" />
-    <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />
     <Compile Include="System\Reflection\Runtime\General\NativeFormat\DefaultValueParser.cs" />
     <Compile Include="System\Reflection\Runtime\General\ThunkedApis.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeContext.cs" />

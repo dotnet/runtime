@@ -17,6 +17,27 @@ using Internal.TypeVerifier;
 
 namespace ILVerify
 {
+    /// <summary>
+    /// Verifies the IL and metadata of modules read through <see cref="PEReader"/> instances.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A <see cref="Verifier"/> is not thread-safe. Do not call its methods, or enumerate sequences it returned,
+    /// on more than one thread at the same time. Calls that do not overlap may come from different threads.
+    /// </para>
+    /// <para>
+    /// The <c>Verify</c> methods return lazily evaluated sequences. Verification, including the
+    /// <see cref="IResolver"/> calls it needs, happens while the returned sequence is enumerated.
+    /// <see cref="SetSystemModuleName"/> calls the <see cref="IResolver"/> immediately.
+    /// </para>
+    /// <para>
+    /// The verifier creates a module for each <see cref="PEReader"/> it uses, whether passed to a <c>Verify</c>
+    /// method or returned by the <see cref="IResolver"/>. It may keep reading from that reader after the enumeration
+    /// that first used it has completed. Keep each such <see cref="PEReader"/> undisposed until the
+    /// <see cref="Verifier"/> and every sequence it returned are no longer used. Keep the memory it reads alive and
+    /// unchanged for the same period. The verifier does not dispose these readers.
+    /// </para>
+    /// </remarks>
     public class Verifier
     {
         private Lazy<ResourceManager> _stringResourceManager =
@@ -25,9 +46,26 @@ namespace ILVerify
         private ILVerifyTypeSystemContext _typeSystemContext;
         private VerifierOptions _verifierOptions;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Verifier"/> class that uses the specified resolver and the
+        /// default options.
+        /// </summary>
+        /// <param name="resolver">
+        /// The resolver that provides a <see cref="PEReader"/> for each assembly and module that the verifier needs.
+        /// </param>
         public Verifier(IResolver resolver) : this(resolver, null){ }
 
-        public Verifier(IResolver resolver, VerifierOptions verifierOptions) : this(new ILVerifyTypeSystemContext(resolver), verifierOptions) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Verifier"/> class that uses the specified resolver and options.
+        /// </summary>
+        /// <param name="resolver">
+        /// The resolver that provides a <see cref="PEReader"/> for each assembly and module that the verifier needs.
+        /// </param>
+        /// <param name="verifierOptions">
+        /// The options that control verification, or <see langword="null"/> to use the default options.
+        /// </param>
+        public Verifier(IResolver resolver, VerifierOptions verifierOptions)
+            : this(new ILVerifyTypeSystemContext(resolver) { AllowIgnoresAccessChecksTo = verifierOptions?.AllowIgnoresAccessChecksTo == true }, verifierOptions) { }
 
         internal Verifier(ILVerifyTypeSystemContext context, VerifierOptions verifierOptions)
         {
@@ -35,6 +73,15 @@ namespace ILVerify
             _verifierOptions = verifierOptions ?? new VerifierOptions();
         }
 
+        /// <summary>
+        /// Sets the assembly that defines the core types, such as <see cref="object"/>, that verification needs.
+        /// </summary>
+        /// <param name="name">The name of the assembly, for example <c>System.Private.CoreLib</c>.</param>
+        /// <remarks>
+        /// Call this method before enumerating a sequence returned by a <c>Verify</c> method; otherwise, the
+        /// enumeration throws an exception. This method asks the <see cref="IResolver"/> for the assembly immediately,
+        /// and throws an exception if the resolver returns <see langword="null"/>.
+        /// </remarks>
         public void SetSystemModuleName(AssemblyNameInfo name)
         {
             PEReader peReader = _typeSystemContext._resolver.ResolveAssembly(name);
@@ -50,6 +97,22 @@ namespace ILVerify
             return _typeSystemContext.GetModule(peReader);
         }
 
+        /// <summary>
+        /// Verifies the IL of each method defined in a module.
+        /// </summary>
+        /// <param name="peReader">The reader for the module to verify.</param>
+        /// <returns>
+        /// A sequence of the problems found. Verification happens while the sequence is enumerated. Call
+        /// <see cref="SetSystemModuleName"/> before enumerating the sequence.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="peReader"/> is <see langword="null"/>. The exception is thrown when the returned sequence is
+        /// enumerated, not when this method is called.
+        /// </exception>
+        /// <remarks>
+        /// Methods that have no IL body are skipped. This method does not verify type metadata; use
+        /// <see cref="Verify(PEReader, TypeDefinitionHandle, bool)"/> for that.
+        /// </remarks>
         public IEnumerable<VerificationResult> Verify(PEReader peReader)
             => Verify(peReader, Array.Empty<VerificationResult>());
 
@@ -84,6 +147,26 @@ namespace ILVerify
             }
         }
 
+        /// <summary>
+        /// Verifies the metadata of a type definition and, optionally, the IL of the methods that the type defines.
+        /// </summary>
+        /// <param name="peReader">The reader for the module that defines the type.</param>
+        /// <param name="typeHandle">The type definition to verify.</param>
+        /// <param name="verifyMethods">
+        /// <see langword="true"/> to also verify the IL of the methods that the type defines; otherwise,
+        /// <see langword="false"/>.
+        /// </param>
+        /// <returns>
+        /// A sequence of the problems found. Verification happens while the sequence is enumerated. Call
+        /// <see cref="SetSystemModuleName"/> before enumerating the sequence.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="peReader"/> is <see langword="null"/>, or <paramref name="typeHandle"/> is a nil handle.
+        /// The exception is thrown when the returned sequence is enumerated, not when this method is called.
+        /// </exception>
+        /// <remarks>
+        /// Nested types are not verified.
+        /// </remarks>
         public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle, bool verifyMethods = false)
             => Verify(peReader, typeHandle, verifyMethods, Array.Empty<VerificationResult>());
 
@@ -133,6 +216,19 @@ namespace ILVerify
             }
         }
 
+        /// <summary>
+        /// Verifies the IL of a method.
+        /// </summary>
+        /// <param name="peReader">The reader for the module that defines the method.</param>
+        /// <param name="methodHandle">The method definition to verify.</param>
+        /// <returns>
+        /// A sequence of the problems found, which is empty if the method has no IL body. Verification happens while
+        /// the sequence is enumerated. Call <see cref="SetSystemModuleName"/> before enumerating the sequence.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="peReader"/> is <see langword="null"/>, or <paramref name="methodHandle"/> is a nil
+        /// handle. The exception is thrown when the returned sequence is enumerated, not when this method is called.
+        /// </exception>
         public IEnumerable<VerificationResult> Verify(PEReader peReader, MethodDefinitionHandle methodHandle)
             => Verify(peReader, methodHandle, Array.Empty<VerificationResult>());
 
@@ -585,9 +681,33 @@ namespace ILVerify
         }
     }
 
+    /// <summary>
+    /// Provides options that control what a <see cref="Verifier"/> reports.
+    /// </summary>
     public class VerifierOptions
     {
+        /// <summary>
+        /// Gets or sets a value that indicates whether the names of types and methods in the results of type
+        /// verification include their metadata tokens.
+        /// </summary>
+        /// <remarks>
+        /// The names are in <see cref="VerificationResult.Args"/>. The default is <see langword="false"/>.
+        /// </remarks>
         public bool IncludeMetadataTokensInErrorMessages { get; set; }
+        /// <summary>
+        /// Gets or sets a value that indicates whether the verifier also reports valid IL that is likely a mistake.
+        /// </summary>
+        /// <remarks>
+        /// When this property is <see langword="true"/>, the verifier reports
+        /// <see cref="VerifierError.ThrowOrCatchOnlyExceptionType"/> for a method that throws or catches a type that
+        /// is neither <see cref="object"/> nor assignable to <see cref="Exception"/>. The default is
+        /// <see langword="false"/>.
+        /// </remarks>
         public bool SanityChecks { get; set; }
+
+        /// <summary>
+        /// Respect IgnoresAccessChecksToAttribute. Off by default, since code that relies on it is not verifiable.
+        /// </summary>
+        public bool AllowIgnoresAccessChecksTo { get; set; }
     }
 }
