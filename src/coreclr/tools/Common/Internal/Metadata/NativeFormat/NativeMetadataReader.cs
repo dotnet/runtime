@@ -142,7 +142,7 @@ namespace Internal.Metadata.NativeFormat
 
     public readonly partial struct ByteCollection
     {
-        public ReadOnlySpan<byte> AsSpan() => _reader.ReadStringAsBytes(_offset);
+        public ReadOnlySpan<byte> AsSpan() => _reader.ReadLengthPrefixedBytes(_offset);
     }
 
     public readonly partial struct ConstantStringValueHandle
@@ -222,7 +222,7 @@ namespace Internal.Metadata.NativeFormat
                 return [];
             }
 
-            return _streamReader.ReadStringAsBytes((uint)handle.Offset);
+            return _streamReader.ReadLengthPrefixedBytes((uint)handle.Offset);
         }
     }
 
