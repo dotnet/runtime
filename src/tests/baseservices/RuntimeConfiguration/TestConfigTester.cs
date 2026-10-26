@@ -53,11 +53,6 @@ public class TestConfigTester
             startInfo.FileName = corerunPath;
             startInfo.Arguments = arguments.ToString();
 
-            foreach (string key in Environment.GetEnvironmentVariables().Keys)
-            {
-                startInfo.EnvironmentVariables[key] = Environment.GetEnvironmentVariable(key);
-            }
-
             Console.WriteLine($"Running: {startInfo.Arguments}");
             foreach (Attribute ev in envVariables)
             {

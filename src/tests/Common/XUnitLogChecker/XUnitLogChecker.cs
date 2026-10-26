@@ -739,6 +739,8 @@ public class XUnitLogChecker
 
         try
         {
+            // Writing all stdin to a pipe before draining stdout/stderr can deadlock.
+            // File-backed stdin avoids that without requiring a concurrent input writer.
             using FileStream input = new FileStream(
                 Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()),
                 FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read,
