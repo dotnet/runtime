@@ -3,6 +3,7 @@
 
 using System;
 using System.CommandLine;
+using System.IO;
 using Xunit;
 
 namespace ILAssembler.Tests;

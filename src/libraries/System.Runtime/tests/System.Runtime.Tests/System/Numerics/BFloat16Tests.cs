@@ -859,7 +859,6 @@ namespace System.Numerics.Tests
 
         [MemberData(nameof(ExplicitConversion_FromInt128_TestData))]
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/135116", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void ExplicitConversion_FromInt128(Int128 i, BFloat16 expected)
         {
             BFloat16 b16 = (BFloat16)i;
@@ -891,7 +890,6 @@ namespace System.Numerics.Tests
 
         [MemberData(nameof(ExplicitConversion_FromUInt128_TestData))]
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/135116", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void ExplicitConversion_FromUInt128(UInt128 i, BFloat16 expected)
         {
             BFloat16 b16 = (BFloat16)i;

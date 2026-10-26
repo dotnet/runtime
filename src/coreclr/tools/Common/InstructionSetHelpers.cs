@@ -347,7 +347,8 @@ namespace System.CommandLine
                 unsupportedInstructionSet,
                 optimisticInstructionSet,
                 InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(targetArchitecture),
-                targetArchitecture);
+                targetArchitecture,
+                isVectorTOptimistic);
         }
 
         // Produces an InstructionSetSupport where the instruction sets are fixed at compile time: every
@@ -377,7 +378,8 @@ namespace System.CommandLine
                 unsupportedInstructionSets,
                 instructionSetSupport.SupportedFlags,
                 instructionSetSupport.NonSpecifiableFlags,
-                instructionSetSupport.Architecture);
+                instructionSetSupport.Architecture,
+                isVectorTOptimistic: false);
         }
     }
 }

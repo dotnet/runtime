@@ -23,6 +23,27 @@ namespace ILAssembler.Tests
 {
     public class DataTests
     {
+        [Theory]
+        [InlineData("")]
+        [InlineData("\n")]
+        [InlineData("\r\n")]
+        public void DataDeclaration_AtEndOfDocument_EmitsFieldRva(string suffix)
+        {
+            string source = """
+                .assembly test {}
+                .class public DataHolder
+                {
+                    .field public static int32 Value at ValueData
+                }
+                .data ValueData = int32(42)
+                """ + suffix;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            FieldDefinition field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+            Assert.Equal(new byte[] { 42, 0, 0, 0 }, ReadData(pe, field, sizeof(int)));
+        }
+
         [Fact]
         public void DataItems_EmitExpectedTypedBytesAndRepeatCounts()
         {

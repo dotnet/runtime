@@ -26,4 +26,3 @@ EXPORTS
     DllGetClassObject private
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 
-

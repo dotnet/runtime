@@ -628,8 +628,11 @@ namespace Internal.IL
 
         void CheckIsArray(StackValue value)
         {
-            Check((value.Kind == StackValueKind.ObjRef) && ((value.Type == null) || value.Type.IsSzArray),
-                VerifierError.ExpectedArray /* , value */);
+            if (!Check((value.Kind == StackValueKind.ObjRef) && ((value.Type == null) || value.Type.IsSzArray),
+                VerifierError.ExpectedArray /* , value */))
+            {
+                AbortBasicBlockVerification();
+            }
         }
 
         void CheckIsAssignable(StackValue src, StackValue dst, VerifierError error = VerifierError.StackUnexpected)
@@ -1773,31 +1776,7 @@ namespace Internal.IL
 
             // special checks for tailcalls
             if (tailCall)
-            {
-                TypeDesc callerReturnType = _methodSignature.ReturnType;
-
-                if (returnType.IsVoid || callerReturnType.IsVoid)
-                {
-                    Check(returnType.IsVoid && callerReturnType.IsVoid, VerifierError.TailRetVoid);
-                }
-                // else
-                // if (returnType.IsValueType || callerReturnType.IsValueType)
-                // {
-                //      TODO: Check exact match
-                // }
-                else
-                {
-                    var retStackType = StackValue.CreateFromType(returnType);
-                    var callerRetStackType = StackValue.CreateFromType(callerReturnType);
-                    Check(IsAssignable(retStackType, callerRetStackType), VerifierError.TailRetType, retStackType, callerRetStackType);
-                }
-
-                // for tailcall, stack must be empty
-                Check(_stackTop == 0, VerifierError.TailStackEmpty);
-
-                // The instruction following a tail.call shall be a ret
-                Check(_currentOffset < _ilBytes.Length && (ILOpcode)_ilBytes[_currentOffset] == ILOpcode.ret, VerifierError.TailRet);
-            }
+                CheckTailCallReturn(returnType);
 
             // now push on the result
             if (opcode == ILOpcode.newobj)
@@ -1829,9 +1808,81 @@ namespace Internal.IL
             }
         }
 
+        void CheckTailCallReturn(TypeDesc returnType)
+        {
+            TypeDesc callerReturnType = _methodSignature.ReturnType;
+
+            if (returnType.IsVoid || callerReturnType.IsVoid)
+            {
+                Check(returnType.IsVoid && callerReturnType.IsVoid, VerifierError.TailRetVoid);
+            }
+            // else
+            // if (returnType.IsValueType || callerReturnType.IsValueType)
+            // {
+            //      TODO: Check exact match
+            // }
+            else
+            {
+                var retStackType = StackValue.CreateFromType(returnType);
+                var callerRetStackType = StackValue.CreateFromType(callerReturnType);
+                Check(IsAssignable(retStackType, callerRetStackType), VerifierError.TailRetType, retStackType, callerRetStackType);
+            }
+
+            // for tailcall, stack must be empty
+            Check(_stackTop == 0, VerifierError.TailStackEmpty);
+
+            // The instruction following a tail.call shall be a ret
+            Check(_currentOffset < _ilBytes.Length && (ILOpcode)_ilBytes[_currentOffset] == ILOpcode.ret, VerifierError.TailRet);
+        }
+
         void ImportCalli(int token)
         {
-            throw new NotImplementedException($"{nameof(ImportCalli)} not implemented");
+            // calli is always reported as unverifiable. The runtime does not track the lifetime of function
+            // pointers, so the target may be code that has been unloaded. The call site is still checked, and
+            // verification goes on.
+            Unverifiable();
+
+            bool tailCall = HasPendingPrefix(Prefix.Tail);
+            ClearPendingPrefix(Prefix.Tail);
+
+            object tokenObj = ResolveToken(token);
+            FatalCheck(tokenObj is MethodSignature, VerifierError.ExpectedSignatureToken);
+            var sig = (MethodSignature)tokenObj;
+
+            var ftn = Pop();
+            Check(ftn.Kind == StackValueKind.NativeInt, VerifierError.StackMethod, ftn);
+
+            // An instance call site that does not list the type of 'this' takes one argument more than it declares.
+            bool implicitThis = !sig.IsStatic && !sig.IsExplicitThis;
+            var args = new StackValue[sig.Length + (implicitThis ? 1 : 0)];
+            for (int i = args.Length - 1; i >= 0; i--)
+                args[i] = Pop();
+
+            int firstParameter = args.Length - sig.Length;
+            for (int i = 0; i < sig.Length; i++)
+            {
+                var declared = StackValue.CreateFromType(sig[i]);
+                CheckIsAssignable(args[firstParameter + i], declared);
+
+                if (tailCall)
+                    Check(!IsByRefLike(declared), VerifierError.TailByRef, declared);
+            }
+
+            if (implicitThis && tailCall)
+                Check(!IsByRefLike(args[0]), VerifierError.TailByRef, args[0]);
+
+            if (tailCall)
+                CheckTailCallReturn(sig.ReturnType);
+
+            if (!sig.ReturnType.IsVoid)
+            {
+                var returnValue = StackValue.CreateFromType(sig.ReturnType);
+
+                if (returnValue.Kind == StackValueKind.ByRef)
+                    returnValue.SetIsPermanentHome();
+
+                Push(returnValue);
+            }
         }
 
         void ImportLdFtn(int token, ILOpcode opCode)
@@ -2265,8 +2316,7 @@ namespace Internal.IL
                 isPermanentHome = true;
                 instance = null;
 
-                if (field.IsInitOnly)
-                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.InitOnly);
+                // TODO: verification of readonly references https://github.com/dotnet/runtime/issues/57444
             }
             else
             {
@@ -2475,13 +2525,43 @@ namespace Internal.IL
 
         void ImportEndFinally()
         {
+            // ECMA-335 I.12.4.2.8.2.6: the innermost enclosing protected block, filter or handler
+            // shall be a finally or fault handler.
             if (Check(_currentBasicBlock.HandlerIndex.HasValue, VerifierError.Endfinally))
             {
                 Check(_exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind
-                    is ILExceptionRegionKind.Finally or ILExceptionRegionKind.Fault, VerifierError.Endfinally);
+                    is ILExceptionRegionKind.Finally or ILExceptionRegionKind.Fault &&
+                    !IsInTryOrFilterNestedInHandler(_currentBasicBlock), VerifierError.Endfinally);
             }
 
             EmptyTheStack();
+        }
+
+        /// <summary>
+        /// Checks whether the innermost try block or filter enclosing <paramref name="block"/> lies
+        /// inside the innermost handler enclosing it, so that the handler is not the innermost
+        /// enclosing exception-handling block.
+        /// </summary>
+        bool IsInTryOrFilterNestedInHandler(BasicBlock block)
+        {
+            ref var handler = ref _exceptionRegions[block.HandlerIndex.Value].ILRegion;
+            int handlerEnd = handler.HandlerOffset + handler.HandlerLength;
+
+            if (block.TryIndex.HasValue)
+            {
+                ref var tryRegion = ref _exceptionRegions[block.TryIndex.Value].ILRegion;
+                if (handler.HandlerOffset <= tryRegion.TryOffset && tryRegion.TryOffset + tryRegion.TryLength <= handlerEnd)
+                    return true;
+            }
+
+            if (block.FilterIndex.HasValue)
+            {
+                ref var filterRegion = ref _exceptionRegions[block.FilterIndex.Value].ILRegion;
+                if (handler.HandlerOffset <= filterRegion.FilterOffset && filterRegion.HandlerOffset <= handlerEnd)
+                    return true;
+            }
+
+            return false;
         }
 
         void ImportNewArray(int token)
@@ -2523,7 +2603,8 @@ namespace Internal.IL
                 }
             }
 
-            Push(StackValue.CreateFromType(elementType));
+            // ldelem.ref on a null array has no element type; the result is a null reference
+            Push(elementType != null ? StackValue.CreateFromType(elementType) : StackValue.CreateObjRef(null));
         }
 
         void ImportStoreElement(int token)
@@ -2889,7 +2970,7 @@ namespace Internal.IL
         }
 
         //
-        // Deprecated
+        // Variable argument lists and typed references
         //
 
         void ImportArgList()
@@ -2899,17 +2980,43 @@ namespace Internal.IL
 
         void ImportRefAnyType()
         {
-            throw new PlatformNotSupportedException("TypedReference not supported in .NET Core");
+            var typedReference = Pop();
+            CheckIsAssignable(typedReference, StackValue.CreateValueType(GetWellKnownType(WellKnownType.TypedReference)));
+
+            Push(StackValue.CreateValueType(GetWellKnownType(WellKnownType.RuntimeTypeHandle)));
         }
 
         void ImportMkRefAny(int token)
         {
-            throw new PlatformNotSupportedException("TypedReference not supported in .NET Core");
+            var type = ResolveTypeToken(token);
+
+            var ptr = Pop();
+
+            // ECMA-335 III.4.19: verification requires a managed pointer to an instance of the class.
+            // The class may be byref-like: the ECMA-335 augments allow a managed pointer to a byref-like type.
+            if (Check(ptr.Kind == StackValueKind.ByRef, VerifierError.StackByRef, ptr))
+            {
+                // III.1.8.1.2.2: a controlled-mutability managed pointer cannot be used with mkrefany.
+                Check(!ptr.IsReadOnly, VerifierError.ReadOnlyInMkrefany);
+
+                if (ptr.Type != type)
+                    VerificationError(VerifierError.StackUnexpected, ptr, StackValue.CreateByRef(type));
+            }
+
+            Check(_method.OwningType.CanAccess(type), VerifierError.TypeAccess);
+
+            Push(StackValue.CreateValueType(GetWellKnownType(WellKnownType.TypedReference)));
         }
 
         void ImportRefAnyVal(int token)
         {
-            throw new PlatformNotSupportedException("TypedReference not supported in .NET Core");
+            var type = ResolveTypeToken(token);
+
+            var typedReference = Pop();
+            CheckIsAssignable(typedReference, StackValue.CreateValueType(GetWellKnownType(WellKnownType.TypedReference)));
+
+            // The address can point to a local of a caller, so it does not have a permanent home.
+            Push(StackValue.CreateByRef(type));
         }
     }
 }

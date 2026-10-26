@@ -462,7 +462,8 @@ enum GenTreeFlags : unsigned
 
     GTF_CALL_NULLCHECK          = 0x08000000, // GT_CALL -- must check instance pointer for null
     GTF_CALL_POP_ARGS           = 0x04000000, // GT_CALL -- caller pop arguments?
-    GTF_CALL_HOISTABLE          = 0x02000000, // GT_CALL -- call is hoistable
+    GTF_CALL_HOISTABLE          = 0x02000000, // GT_CALL -- call is hoistable (any cctor it runs may run earlier;
+                                              //            the call still may modify the heap)
     GTF_TLS_GET_ADDR            = 0x01000000, // GT_CALL -- call is tls_get_addr
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
@@ -5424,7 +5425,8 @@ struct GenTreeCall final : public GenTree
     bool IsGenericVirtual(Compiler* compiler) const
     {
         return (gtCallType == CT_INDIRECT && (gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                                              gtControlExpr->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT)
+                                              gtControlExpr->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT) ||
+                                              gtControlExpr->IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT)
 #ifdef FEATURE_READYTORUN
                                               || gtControlExpr->IsHelperCall(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
 #endif
@@ -6935,15 +6937,18 @@ struct GenTreeVecCon : public GenTree
     static unsigned ElementCount(unsigned simdSize, var_types simdBaseType);
 
     template <typename simdTypename>
-    static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simdTypename& simdVal)
+    static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node,
+                                            simdTypename&       simdVal,
+                                            simdmask_t*         cnsMask = nullptr)
     {
         NamedIntrinsic intrinsic    = node->GetHWIntrinsicId();
         var_types      simdType     = node->TypeGet();
         var_types      simdBaseType = node->GetSimdBaseType();
         unsigned       simdSize     = node->GetSimdSize();
 
-        size_t argCnt    = node->GetOperandCount();
-        size_t cnsArgCnt = 0;
+        size_t     argCnt    = node->GetOperandCount();
+        size_t     cnsArgCnt = 0;
+        simdmask_t mask      = {};
 
         switch (intrinsic)
         {
@@ -6958,6 +6963,7 @@ struct GenTreeVecCon : public GenTree
                 if ((argCnt == 1) && HandleArgForHWIntrinsicCreate<simdTypename>(node->Op(1), 0, simdVal, simdBaseType))
                 {
                     // CreateScalar leaves the upper bits as zero
+                    mask.u64[0] |= 1;
 
                     if (intrinsic != NI_Vector_CreateScalar)
                     {
@@ -6965,6 +6971,7 @@ struct GenTreeVecCon : public GenTree
                         for (unsigned i = 1; i < ElementCount(simdSize, simdBaseType); i++)
                         {
                             HandleArgForHWIntrinsicCreate<simdTypename>(node->Op(1), i, simdVal, simdBaseType);
+                            mask.u64[0] |= (1ULL << i);
                         }
                     }
 
@@ -6976,17 +6983,27 @@ struct GenTreeVecCon : public GenTree
                     {
                         if (HandleArgForHWIntrinsicCreate<simdTypename>(node->Op(i), i - 1, simdVal, simdBaseType))
                         {
+                            mask.u64[0] |= (1ULL << (i - 1));
                             cnsArgCnt++;
                         }
                     }
                 }
 
                 assert((argCnt == 1) || (argCnt == ElementCount(simdSize, simdBaseType)));
+
+                if (cnsMask != nullptr)
+                {
+                    *cnsMask = mask;
+                }
                 return argCnt == cnsArgCnt;
             }
 
             default:
             {
+                if (cnsMask != nullptr)
+                {
+                    *cnsMask = mask;
+                }
                 return false;
             }
         }
