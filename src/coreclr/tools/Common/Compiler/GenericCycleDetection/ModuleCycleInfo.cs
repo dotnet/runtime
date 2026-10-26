@@ -57,14 +57,17 @@ namespace ILCompiler
 
                 foreach (EcmaGenericParameter formal in formalsNeedingLazyGenerics)
                 {
-                    var formalDefinition = key.MetadataReader.GetGenericParameter(formal.Handle);
+                    // A cycle in this module's graph may pass through a generic parameter on an
+                    // overridden base or interface method defined in another EcmaModule, so resolve
+                    // the parent handle against the formal's own module rather than `key`.
+                    var formalDefinition = formal.MetadataReader.GetGenericParameter(formal.Handle);
                     if (formal.Kind == GenericParameterKind.Type)
                     {
-                        entitiesNeedingLazyGenerics.Add(key.GetType(formalDefinition.Parent));
+                        entitiesNeedingLazyGenerics.Add(formal.Module.GetType(formalDefinition.Parent));
                     }
                     else
                     {
-                        entitiesNeedingLazyGenerics.Add(key.GetMethod(formalDefinition.Parent));
+                        entitiesNeedingLazyGenerics.Add(formal.Module.GetMethod(formalDefinition.Parent));
                     }
                 }
 
