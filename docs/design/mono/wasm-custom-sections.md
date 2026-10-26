@@ -63,8 +63,9 @@ rest, keeping the section single. .NET contributes:
 
 Emitting `producers` can be disabled with `$(WasmEmitProducersSection)=false`.
 
-> Note: emscripten runs `wasm-opt` after the link. Binaryen preserves the `producers` section by
-> default, so the merged entries survive optimization; this should be verified end-to-end by a real relink.
+Emscripten strips `producers` by default, so the native link passes
+`-sEMIT_PRODUCERS_SECTION=1` when `$(WasmEmitProducersSection)` is enabled. This preserves the
+single section merged by `wasm-ld` through Emscripten's post-link processing.
 
 ## Implementation
 

@@ -399,6 +399,8 @@
       <_EmccLinkStepArgs Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
 
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
+      <!-- Emscripten strips producers by default. Preserve the section that wasm-ld merges from dotnet-producers.o. -->
+      <_EmccLinkStepArgs Condition="'$(WasmEmitProducersSection)' == 'true'" Include="-sEMIT_PRODUCERS_SECTION=1" />
 
       <_WasmLinkStepArgs Include="@(_EmccLinkStepArgs)" />
       <_WasmLinkStepArgs Include="@(LinkerArg)" />

@@ -16,7 +16,7 @@ namespace Wasm.Build.NativeRebuild.Tests
     //   - emitted into every webcil module (independent of native re-link).
     //
     // Categorized `no-workload` so it runs on both the Mono (no-workload leg) and CoreCLR runtimes.
-    // A successful re-link also validates that wasm-ld accepts the producers object we hand it.
+    // A successful re-link also validates that wasm-ld accepts the producers object and Emscripten preserves it.
     [TestCategory("native")]
     [TestCategory("no-workload")]
     public class WasmMetadataSectionsTests : NativeRebuildTestsBase
@@ -49,16 +49,21 @@ namespace Wasm.Build.NativeRebuild.Tests
         }
 
         [Theory]
-        [InlineData(Configuration.Release)]
-        public void NativeWasm_Relink_WithoutBuildId_EmitsProducersButNoBuildId(Configuration config)
+        [InlineData(Configuration.Release, true)]
+        [InlineData(Configuration.Release, false)]
+        public void NativeWasm_Relink_WithoutBuildId_EmitsConfiguredProducers(Configuration config, bool emitProducers)
         {
-            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "meta_relink_noid");
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, $"meta_relink_noid_{emitProducers}");
             PublishProject(info, config,
-                new PublishOptions(ExtraMSBuildArgs: "-p:_WasmDevel=true -p:WasmBuildNative=true"),
+                new PublishOptions(ExtraMSBuildArgs: $"-p:_WasmDevel=true -p:WasmBuildNative=true -p:WasmEmitProducersSection={emitProducers}"),
                 isNativeBuild: true);
 
             string wasm = Path.Combine(GetBinFrameworkDir(config, forPublish: true), "dotnet.native.wasm");
-            AssertProducers(wasm, NativeRuntimeProducer);
+            if (emitProducers)
+                AssertProducers(wasm, NativeRuntimeProducer);
+            else
+                Assert.Null(ReadCustomSection(wasm, "producers"));
+
             // No build_id is emitted unless $(WasmNativeBuildId) is set.
             Assert.Null(ReadCustomSection(wasm, "build_id"));
         }

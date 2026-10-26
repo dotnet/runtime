@@ -946,7 +946,8 @@
            'build_id' custom section carrying these raw bytes. -->
       <_EmccLinkStepArgs Condition="'$(_WasmNormalizedBuildId)' != ''" Include="-Wl,--build-id=0x$(_WasmNormalizedBuildId)" />
 
-      <!-- producers: a linkable object that wasm-ld merges into the 'producers' custom section. -->
+      <!-- Emscripten strips producers by default. Preserve the section that wasm-ld merges from this object. -->
+      <_EmccLinkStepArgs Condition="'$(WasmEmitProducersSection)' == 'true'" Include="-sEMIT_PRODUCERS_SECTION=1" />
       <_EmccLinkStepArgs Condition="'$(WasmEmitProducersSection)' == 'true'" Include="&quot;$(_WasmIntermediateOutputPath)dotnet-producers.o&quot;" />
     </ItemGroup>
 
