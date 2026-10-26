@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -210,6 +211,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="callback">The generated wrapper that marshals the arguments and invokes the exported method.</param>
         /// <returns>The method metadata.</returns>
         /// <exception cref="PlatformNotSupportedException">The method is executed on architecture other than WebAssembly.</exception>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [DebuggerNonUserCode]
         public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures, delegate*<JSMarshalerArgument*, void> callback)
         {
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
@@ -224,6 +227,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="assemblyName">The simple name of the assembly.</param>
         /// <param name="register">The generated registration entry point for the assembly's exports.</param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [DebuggerNonUserCode]
         public static void RegisterAssemblyExports(string assemblyName, Action register)
             => JSHostImplementation.RegisterAssemblyExports(assemblyName, register);
 
