@@ -919,20 +919,24 @@ The API surface and all other stack-walking algorithms are unchanged.
 
 ### Contextual receiver token
 
-`GCRefMap` token `THIS` has value 6. It uses the two-bit escape followed by extended integer
-7, then one extra bit describing whether the original call site's receiver was interior.
-Existing tokens 0 through 5 retain their encoding. The extra bit must be consumed even when
-the frame overrides its interpretation:
+`GCRefMap` tokens `THIS_REF` (value 5) and `THIS_BYREF` (value 6) describe whether the original
+call site's receiver was an object reference or an interior pointer. They use the two-bit
+escape followed by extended integer 5 or 7 respectively; neither consumes an extra bit.
+`VASIG_COOKIE` moves from value 5 to value 7, whose extended integer 9 takes two groups.
+Tokens 0 through 4 retain their encoding. A target publishing Version 1 retains the old
+value 5 for `VASIG_COOKIE`; the reader normalizes this token when decoding target maps.
+The receiver interpretation can be overridden by the frame:
 
 - `ExternalMethodFrame` uses the encoded fallback.
 - `StubDispatchFrame` always reports an object reference.
 - `PrestubMethodFrame` and `CallCountingHelperFrame` report an interior pointer only when
   the method's owning type is a value type and the method is not an unboxing stub.
 
-All supported ReadyToRun instance import maps use `THIS`: the runtime's minimum supported
+All supported ReadyToRun instance import maps use `THIS_REF` or `THIS_BYREF`: the runtime's minimum supported
 ReadyToRun major version is 33. No per-map receiver-format flag or receiver-token validation is needed.
 Signature-synthesized maps may continue to use concrete `REF` and `INTERIOR` tokens; synthetic
 maps for explicit-context shared bodies are not eligible for declaration-map borrowing.
+Signature-synthesized blobs retain the target's cookie encoding and are decoded accordingly.
 
 ### Loaded virtual declaration lookup
 

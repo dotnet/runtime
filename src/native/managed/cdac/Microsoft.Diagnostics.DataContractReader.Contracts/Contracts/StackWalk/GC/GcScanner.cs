@@ -229,9 +229,11 @@ internal class GcScanner
                 case GCRefMapToken.Interior:
                     scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
                     break;
-                case GCRefMapToken.This:
-                    bool interior = frameAddress == TargetPointer.Null ? decoder.ThisIsInterior :
-                        _frameHelpers.ThisIsInterior(frameAddress, decoder.ThisIsInterior);
+                case GCRefMapToken.ThisRef:
+                case GCRefMapToken.ThisByRef:
+                    bool fallback = token is GCRefMapToken.ThisByRef;
+                    bool interior = frameAddress == TargetPointer.Null ? fallback :
+                        _frameHelpers.ThisIsInterior(frameAddress, fallback);
                     scanContext.GCReportCallback(slotAddress, interior ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None);
                     break;
                 case GCRefMapToken.MethodParam:
@@ -290,7 +292,7 @@ internal class GcScanner
         }
 
         Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(fmf.TransitionBlockPtr);
-        GCRefMapDecoder decoder = new(blob);
+        GCRefMapDecoder decoder = new(blob, legacyTokens: GCRefMapDecoder.UsesLegacyTokens(_target));
         EnumerateGCRefMapTokens(ref decoder, tb, scanContext);
     }
 

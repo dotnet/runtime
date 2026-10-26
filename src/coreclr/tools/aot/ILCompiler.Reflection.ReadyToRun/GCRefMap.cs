@@ -17,21 +17,20 @@ namespace ILCompiler.Reflection.ReadyToRun
         GCREFMAP_INTERIOR = 2,
         GCREFMAP_METHOD_PARAM = 3,
         GCREFMAP_TYPE_PARAM = 4,
-        GCREFMAP_VASIG_COOKIE = 5,
-        GCREFMAP_THIS = 6,
+        GCREFMAP_THIS_REF = 5,
+        GCREFMAP_THIS_BYREF = 6,
+        GCREFMAP_VASIG_COOKIE = 7,
     }
 
     public struct GCRefMapEntry
     {
         public readonly int Offset;
         public readonly CORCOMPILE_GCREFMAP_TOKENS Token;
-        public readonly bool ThisIsInterior;
 
-        public GCRefMapEntry(int offset, CORCOMPILE_GCREFMAP_TOKENS token, bool thisIsInterior = false)
+        public GCRefMapEntry(int offset, CORCOMPILE_GCREFMAP_TOKENS token)
         {
             Offset = offset;
             Token = token;
-            ThisIsInterior = thisIsInterior;
         }
     }
 
@@ -61,14 +60,15 @@ namespace ILCompiler.Reflection.ReadyToRun
     public class GCRefMapDecoder
     {
         private readonly ReadyToRunReader _reader;
+        private readonly bool _legacyTokens;
         private int _offset;
         private int _pendingByte;
         private int _pos;
-        public bool ThisIsInterior { get; private set; }
 
         public GCRefMapDecoder(ReadyToRunReader reader, int offset)
         {
             _reader = reader;
+            _legacyTokens = reader.ReadyToRunHeader.MajorVersion < 33;
             _offset = offset;
             _pendingByte = 0x80;
             _pos = 0;
@@ -151,8 +151,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     _pos++;
                     CORCOMPILE_GCREFMAP_TOKENS token = (CORCOMPILE_GCREFMAP_TOKENS)((ext >> 1) + 3);
-                    if (token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS)
-                        ThisIsInterior = GetBit() != 0;
+                    // Before R2R 33, value 5 denoted the varargs cookie, not a receiver.
+                    if (_legacyTokens && token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_REF)
+                        return CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_VASIG_COOKIE;
                     return token;
                 }
             }
@@ -179,7 +180,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if (token != CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_SKIP)
                 {
                     int offset = transitionBlock.OffsetFromGCRefMapPos(pos);
-                    entries.Add(new GCRefMapEntry(offset, token, token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS && ThisIsInterior));
+                    entries.Add(new GCRefMapEntry(offset, token));
                 }
             }
 

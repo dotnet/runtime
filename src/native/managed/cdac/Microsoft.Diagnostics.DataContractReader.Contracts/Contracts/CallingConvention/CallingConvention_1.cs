@@ -537,6 +537,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         }
 
         GCRefMapEncoder enc = default;
+        bool legacyTokens = GCRefMapDecoder.UsesLegacyTokens(_target);
         if (isX86)
             enc.WriteStackPop(enumeration.CbStackPop / (uint)pointerSize);
 
@@ -545,7 +546,9 @@ internal sealed class CallingConvention_1 : ICallingConvention
             int offset = tb.OffsetFromGCRefMapPos(pos);
             if (tokens.TryGetValue(offset, out GCRefMapToken token) && token != GCRefMapToken.Skip)
             {
-                enc.WriteToken((uint)pos, (byte)token);
+                byte encodedToken = legacyTokens && token is GCRefMapToken.VASigCookie
+                    ? GCRefMapDecoder.LegacyVASigCookie : (byte)token;
+                enc.WriteToken((uint)pos, encodedToken);
                 if (enc.Length > MaxGCRefMapBlobLength)
                     return null;
             }

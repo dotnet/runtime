@@ -44,6 +44,7 @@ _None._
 | `Loader` |
 | `RuntimeInfo` |
 | `RuntimeTypeSystem` |
+| `StackWalk` |
 <!-- END GENERATED: usage contract=CallingConvention version=c1 -->
 
 
@@ -51,6 +52,11 @@ The single API is implemented by walking the shared `ArgIterator`
 (`src/coreclr/tools/Common/CallingConvention/ArgIterator.cs`) and feeding
 the per-argument result into a GCRefMap encoder that mirrors
 `GCRefMapBuilder` (`src/coreclr/inc/gcrefmap.h`).
+
+The encoder uses `VASIG_COOKIE` value 5 for targets publishing `StackWalk` version `c1`,
+and value 7 for version `c2`, which requires R2R 33. This preserves byte-for-byte
+compatibility with the target runtime; consumers decode synthesized blobs using the
+same target-version distinction.
 
 `TryComputeArgGCRefMapBlob` returns `false` for any method whose
 signature, ABI path, or generic context the encoder hasn't been taught

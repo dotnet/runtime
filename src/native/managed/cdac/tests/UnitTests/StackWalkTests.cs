@@ -44,22 +44,40 @@ public unsafe class StackWalkTests
     [InlineData(0x07, 3)]
     [InlineData(0x0f, 4)]
     [InlineData(0x17, 5)]
-    public void GCRefMapDecoder_PreservesLegacyTokens(byte encoded, int expected)
+    [InlineData(0x1f, 6)]
+    [InlineData(0x67, 7)]
+    public void GCRefMapDecoder_ReadsSingleTokens(byte encoded, int expected)
     {
         GCRefMapDecoder decoder = new([encoded]);
         Assert.Equal((GCRefMapToken)expected, decoder.ReadToken());
-        Assert.False(decoder.ThisIsInterior);
     }
 
     [Theory]
-    [InlineData(new byte[] { 0x9f, 0x01 }, false)]
-    [InlineData(new byte[] { 0xdf, 0x01 }, true)]
-    public void GCRefMapDecoder_ThisConsumesFallbackBit(byte[] blob, bool interior)
+    [InlineData(new byte[] { 0x57 }, false, 5)]
+    [InlineData(new byte[] { 0x5f }, false, 6)]
+    [InlineData(new byte[] { 0xe7, 0x08 }, false, 7)]
+    [InlineData(new byte[] { 0x57 }, true, 7)]
+    public void GCRefMapDecoder_ExtendedTokensDoNotConsumeExtraBits(byte[] blob, bool legacyTokens, int expected)
     {
-        GCRefMapDecoder decoder = new(blob);
-        Assert.Equal(GCRefMapToken.This, decoder.ReadToken());
-        Assert.Equal(interior, decoder.ThisIsInterior);
+        GCRefMapDecoder decoder = new(blob, legacyTokens: legacyTokens);
+        Assert.Equal((GCRefMapToken)expected, decoder.ReadToken());
         Assert.Equal(1, decoder.CurrentPos);
+        Assert.Equal(GCRefMapToken.Ref, decoder.ReadToken());
+        Assert.Equal(2, decoder.CurrentPos);
+        Assert.True(decoder.AtEnd);
+    }
+
+    [Theory]
+    [InlineData("c1", 7)]
+    [InlineData("c2", 5)]
+    public void GCRefMapDecoder_TargetTokensUseContractVersion(string version, int expected)
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            nameof(FrameType.PrestubMethodFrame), gcRefMap: [0x57], hasMethodDesc: true);
+        ((TestPlaceholderTarget.TestContractRegistry)target.Contracts).SetVersion<IStackWalk>(version);
+
+        GCRefMapDecoder decoder = new(target, new TargetPointer(0x6200));
+        Assert.Equal((GCRefMapToken)expected, decoder.ReadToken());
         Assert.Equal(GCRefMapToken.Ref, decoder.ReadToken());
         Assert.Equal(2, decoder.CurrentPos);
         Assert.True(decoder.AtEnd);
@@ -169,7 +187,7 @@ public unsafe class StackWalkTests
     public void MethodGCRefMapLookup_FiltersOverrideMapsByMetadata(bool genericMethod, GenericContextLoc context, ulong expectedMap)
     {
         (TestPlaceholderTarget target, VirtualMapTypeSystem rts) =
-            CreateVirtualMapTarget("overriding-fallback", overrideMap: [0xfd, 0x04]);
+            CreateVirtualMapTarget("overriding-fallback", overrideMap: [0xdd, 0x02]);
         if (genericMethod)
             rts.GenericMethods.Add(0x6200);
         rts.MethodContexts[0x6200] = context;
@@ -183,7 +201,7 @@ public unsafe class StackWalkTests
     public void MethodGCRefMapLookup_PrefersNearestNonUnboxingDeclaration(bool unboxing, ulong expectedMap)
     {
         (TestPlaceholderTarget target, VirtualMapTypeSystem rts) =
-            CreateVirtualMapTarget("overriding-fallback", overrideMap: [0xfd, 0x04]);
+            CreateVirtualMapTarget("overriding-fallback", overrideMap: [0xdd, 0x02]);
         if (unboxing)
             rts.UnboxingStubs.Add(0x6200);
         Assert.Equal(expectedMap, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
@@ -329,7 +347,7 @@ public unsafe class StackWalkTests
     public void MethodGCRefMapLookup_DispatchBorrowsInsteadOfUsingExactContextBodyMap(GenericContextLoc context)
     {
         (TestPlaceholderTarget target, VirtualMapTypeSystem rts) =
-            CreateVirtualMapTarget("overriding-fallback", ownMap: true, overrideMap: [0xfd, 0x04]);
+            CreateVirtualMapTarget("overriding-fallback", ownMap: true, overrideMap: [0xdd, 0x02]);
         rts.MethodContexts[0x6000] = context;
         TargetPointer result = new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
             rts.GetMethodDescHandle(new TargetPointer(0x6000)), TargetPointer.Null, dispatch: true);
@@ -413,7 +431,7 @@ public unsafe class StackWalkTests
     [InlineData("interface", nameof(FrameType.StubDispatchFrame))]
     public void TransitionFrame_X86UnwindUsesMetadataOrCachedMiss(string scenario, string frameType)
     {
-        byte[] signatureMap = [0xfd, 0x04];
+        byte[] signatureMap = [0xdd, 0x02];
         (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
             scenario, frameType: frameType, unreadableThis: true, signatureMap: signatureMap,
             frameMapLookupDone: scenario == "interface");
@@ -458,7 +476,7 @@ public unsafe class StackWalkTests
     [InlineData(nameof(FrameType.StubDispatchFrame), false)]
     public void TransitionFrame_CachedLookupDoesNotReadRelocatedReceiver(string frameType, bool hasMap)
     {
-        byte[] signatureMap = [0xfd, 0x04];
+        byte[] signatureMap = [0xdd, 0x02];
         ulong cachedMap = hasMap ? 0xa000UL : 0;
         (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
             "interface", frameType: frameType, unreadableThis: true, signatureMap: signatureMap,
@@ -512,7 +530,7 @@ public unsafe class StackWalkTests
     public void StubDispatchFrame_CachedMethodMapUsesContractVersion(string version, bool methodMap)
     {
         (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
-            "interface", map: [0xfd, 0x04],
+            "interface", map: [0xdd, 0x02],
             frameType: nameof(FrameType.StubDispatchFrame), unreadableThis: true, ownMap: true);
         ((TestPlaceholderTarget.TestContractRegistry)target.Contracts).SetVersion<IStackWalk>(version);
         Assert.Equal(methodMap ? 0xa000UL : 0UL,
@@ -647,7 +665,7 @@ public unsafe class StackWalkTests
                 (nameof(X86Context.Ebp), 0), (nameof(X86Context.Ebx), 4), (nameof(X86Context.Edi), 8), (nameof(X86Context.Esi), 12)),
             [DataType.Object] = TypeInfo((nameof(Data.Object.MethodTable), 0)),
         };
-        AddMemory(0xa000, map ?? [0xfd, 0x04]);
+        AddMemory(0xa000, map ?? [0xdd, 0x02]);
         if (overrideMap is not null)
             AddMemory(0xb200, overrideMap);
         byte[] frame = new byte[28];
@@ -806,7 +824,7 @@ public unsafe class StackWalkTests
     public void TransitionFrame_ThisUsesFrameReceiverKind(
         string frameType, bool encodedInterior, bool valueType, bool unboxing, bool expectedInterior)
     {
-        byte[] map = encodedInterior ? [0xfd, 0x06] : [0xfd, 0x04];
+        byte[] map = encodedInterior ? [0xfd, 0x02] : [0xdd, 0x02];
         (TestPlaceholderTarget target, ContextHolder<X86Context> context) = CreateX86TransitionFrameTarget(
             frameType, map, hasMethodDesc: true, valueType: valueType, unboxing: unboxing);
         GcScanContext scanContext = new(target, resolveInteriorPointers: false);

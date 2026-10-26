@@ -198,6 +198,67 @@ public class SignatureTypeInfoProviderTests
         rts.Verify(r => r.GetClassAlignmentRequirement(exactTypeHandle), Times.Once);
     }
 
+    [Theory]
+    [InlineData("c1", new byte[] { 0xc0, 0x0b })]
+    [InlineData("c2", new byte[] { 0xc0, 0x33 })]
+    public void VarArgMapPreservesTargetCookieEncoding(string stackWalkVersion, byte[] expected)
+    {
+        using MetadataReaderProvider metadataProvider = BuildMetadataWithGenericField();
+        ModuleHandle moduleHandle = new(0x4000);
+        Mock<ILoader> loader = new();
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(0x3000))).Returns(moduleHandle);
+        Mock<IEcmaMetadata> metadata = new();
+        metadata.Setup(m => m.GetMetadata(moduleHandle)).Returns(metadataProvider.GetMetadataReader());
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(RuntimeInfoArchitecture.X86);
+        runtimeInfo.Setup(r => r.GetTargetOperatingSystem()).Returns(RuntimeInfoOperatingSystem.Windows);
+        IRuntimeTypeSystem rts = new VarArgTypeSystem();
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(
+            new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false })
+            .AddMockContract(loader)
+            .AddMockContract(metadata)
+            .AddMockContract(runtimeInfo)
+            .AddMockContract(rts)
+            .AddMockContract(Mock.Of<IExecutionManager>())
+            .AddMockContract(Mock.Of<IGCInfo>())
+            .AddContract<IStackWalk>(version: stackWalkVersion)
+            .Build();
+
+        Assert.True(new CallingConvention_1(target).TryComputeArgGCRefMapBlob(
+            new MethodDescHandle(new TargetPointer(0x1000)), out byte[] blob));
+        Assert.Equal(expected, blob);
+        GCRefMapDecoder decoder = new(blob, legacyTokens: GCRefMapDecoder.UsesLegacyTokens(target));
+        Assert.Equal(0u, decoder.ReadStackPop());
+        Assert.Equal(GCRefMapToken.Skip, decoder.ReadToken());
+        Assert.Equal(GCRefMapToken.Skip, decoder.ReadToken());
+        Assert.Equal(GCRefMapToken.VASigCookie, decoder.ReadToken());
+        Assert.True(decoder.AtEnd);
+    }
+
+    private sealed class VarArgTypeSystem : IRuntimeTypeSystem
+    {
+        private sealed record TypeHandle(CorElementType ElementType) : ITypeHandle
+        {
+            public TargetPointer Address => new((ulong)ElementType);
+        }
+
+        public TargetPointer GetMethodTable(MethodDescHandle method) => new((ulong)CorElementType.Object);
+        public ITypeHandle GetTypeHandle(TargetPointer address) => new TypeHandle((CorElementType)address.Value);
+        public TargetPointer GetModule(ITypeHandle type) => new(0x3000);
+        public ReadOnlySpan<ITypeHandle> GetInstantiation(ITypeHandle type) => [];
+        public CorElementType GetSignatureCorElementType(ITypeHandle type) => ((TypeHandle)type).ElementType;
+        public ITypeHandle GetPrimitiveType(CorElementType type) => new TypeHandle(type);
+        public TargetPointer GetWellKnownMethodTable(WellKnownMethodTable type) => new((ulong)CorElementType.Object);
+        public GenericContextLoc GetGenericContextLoc(MethodDescHandle method) => GenericContextLoc.None;
+        public bool IsAsyncMethod(MethodDescHandle method) => false;
+
+        public bool TryGetMethodSignature(MethodDescHandle method, out ReadOnlySpan<byte> signature)
+        {
+            signature = [0x05, 0x00, 0x01]; // static vararg void ()
+            return true;
+        }
+    }
+
     private static SignatureTypeInfoProvider CreateProvider(
         MockTarget.Architecture arch,
         ModuleHandle moduleHandle,

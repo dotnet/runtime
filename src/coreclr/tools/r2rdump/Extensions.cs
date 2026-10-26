@@ -309,8 +309,11 @@ namespace R2RDump
                         case CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_VASIG_COOKIE:
                             writer.Write("V");
                             break;
-                        case CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS:
-                            writer.Write(entry.ThisIsInterior ? "THIS:I" : "THIS:R");
+                        case CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_REF:
+                            writer.Write("THIS:R");
+                            break;
+                        case CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_BYREF:
+                            writer.Write("THIS:I");
                             break;
                         default:
                             throw new NotImplementedException();

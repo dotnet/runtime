@@ -303,6 +303,55 @@ public class R2RTestSuites
         }
     }
 
+    [Theory]
+    [InlineData(32, new byte[] { 0x57 }, 7)]
+    [InlineData(33, new byte[] { 0x57 }, 5)]
+    [InlineData(33, new byte[] { 0x5f }, 6)]
+    [InlineData(33, new byte[] { 0xe7, 0x08 }, 7)]
+    public void GCRefMapTokensFollowFormatVersion(ushort majorVersion, byte[] blob, int expectedToken)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(GCRefMapTokensFollowFormatVersion),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(GCRefMapTokensFollowFormatVersion),
+            [
+                new(nameof(GCRefMapTokensFollowFormatVersion), [new CrossgenAssembly(input)])
+                {
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            ReadyToRunImportSection.ImportSectionEntry entry = reader.ImportSections
+                .SelectMany(section => section.Entries).First(entry => entry.GCRefMapSize > 0);
+            int offset = reader.GetOffset((int)entry.SignatureRVA);
+            ushort originalVersion = reader.ReadyToRunHeader.MajorVersion;
+            byte[] originalBytes = reader.Image.AsSpan(offset, blob.Length).ToArray();
+            try
+            {
+                reader.ReadyToRunHeader.MajorVersion = majorVersion;
+                blob.CopyTo(reader.Image, offset);
+                GCRefMapDecoder decoder = new(reader, offset);
+                Assert.Equal((CORCOMPILE_GCREFMAP_TOKENS)expectedToken, decoder.ReadToken());
+                Assert.Equal(1, decoder.CurrentPos());
+                Assert.Equal(CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF, decoder.ReadToken());
+                Assert.Equal(2, decoder.CurrentPos());
+                Assert.True(decoder.AtEnd());
+            }
+            finally
+            {
+                reader.ReadyToRunHeader.MajorVersion = originalVersion;
+                originalBytes.CopyTo(reader.Image, offset);
+            }
+        }
+    }
+
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsXArchTarget))]
     [InlineData(false)]
     [InlineData(true)]
@@ -332,8 +381,10 @@ public class R2RTestSuites
                     .Contains(typeName, StringComparison.Ordinal) == true);
             Assert.NotNull(entry.GCRefMap);
             GCRefMapEntry receiver = Assert.Single(entry.GCRefMap.Entries,
-                entry => entry.Token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS);
-            Assert.Equal(interior, receiver.ThisIsInterior);
+                entry => entry.Token is CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_REF or
+                    CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_BYREF);
+            Assert.Equal(interior ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_BYREF :
+                CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_REF, receiver.Token);
             Assert.Equal(8, entry.GCRefMap.Entries.Count(entry => entry.Token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF));
             Assert.Single(entry.GCRefMap.Entries, entry => entry.Token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR);
         }

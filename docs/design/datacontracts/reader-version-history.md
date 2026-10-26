@@ -35,9 +35,11 @@ Added support for cached and virtual ReadyToRun argument maps:
 - On x86, these frames also use the cached map's stack-pop count when unwinding.
 - Readers retain signature-based scanning when no map is cached or the field is absent.
 
-- `StackWalk` version `c2` decodes `THIS` and its call-site interior fallback bit.
+- `StackWalk` version `c2` decodes `THIS_REF` and `THIS_BYREF`, which encode the
+  call-site receiver kind without a separate bit. `VASIG_COOKIE` moves from 5 to 7;
+  version `c1` targets retain the old value.
 - Supported ReadyToRun images have major version 33 or newer, so all instance import maps
-  use contextual `THIS`. Declaration lookup checks method-instantiation and explicit-context
+  use contextual receiver tokens. Declaration lookup checks method-instantiation and explicit-context
   eligibility from metadata, without decoding maps or maintaining per-map format flags.
 - Prestub, call-counting, and stub-dispatch frames can reuse same-slot declaration maps,
   including overriding declarations, class MethodImpl aliases, and interface implementations

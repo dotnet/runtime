@@ -82,8 +82,9 @@
 // method's ReadyToRun entry point and fixups.
 // R2R Version 31.1 adds READYTORUN_FLAG_SINGLE_THREADED, which records that the image lays out [ThreadStatic] fields as regular statics
 // for a runtime built without FEATURE_MULTITHREADING.
-// R2R Version 33 requires contextual THIS tokens in instance-call GCRefMaps and
-// prefixes map-bearing import signatures with their GCRefMaps.
+// R2R Version 33 requires contextual THIS_REF/THIS_BYREF tokens in instance-call
+// GCRefMaps, moves VASIG_COOKIE from 5 to 7, and prefixes map-bearing import
+// signatures with their GCRefMaps.
 
 struct READYTORUN_CORE_HEADER
 {

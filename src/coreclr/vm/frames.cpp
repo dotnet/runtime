@@ -1704,9 +1704,10 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
 
         switch (token)
         {
-        case GCREFMAP_THIS:
+        case GCREFMAP_THIS_REF:
+        case GCREFMAP_THIS_BYREF:
         {
-            bool interior = decoder.ThisIsInterior();
+            bool interior = token == GCREFMAP_THIS_BYREF;
             FrameIdentifier frame = GetFrameIdentifier();
             if (frame == FrameIdentifier::StubDispatchFrame)
                 interior = false;
@@ -2031,8 +2032,12 @@ static void DumpGCRefMap(const char *name, BYTE *address)
                     buf.AppendUTF8("I(");
                     break;
 
-                case GCREFMAP_THIS:
-                    buf.AppendUTF8(decoder.ThisIsInterior() ? "THIS:I(" : "THIS:R(");
+                case GCREFMAP_THIS_REF:
+                    buf.AppendUTF8("THIS:R(");
+                    break;
+
+                case GCREFMAP_THIS_BYREF:
+                    buf.AppendUTF8("THIS:I(");
                     break;
 
                 case GCREFMAP_METHOD_PARAM:
@@ -2104,8 +2109,10 @@ bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell
         }
         int newToken = decoderNew.ReadToken();
         int oldToken = decoderExisting.ReadToken();
-        if (oldToken == GCREFMAP_THIS)
-            oldToken = decoderExisting.ThisIsInterior() ? GCREFMAP_INTERIOR : GCREFMAP_REF;
+        if (oldToken == GCREFMAP_THIS_REF)
+            oldToken = GCREFMAP_REF;
+        else if (oldToken == GCREFMAP_THIS_BYREF)
+            oldToken = GCREFMAP_INTERIOR;
         invalidGCRefMap |= newToken != oldToken;
     }
     if (invalidGCRefMap)

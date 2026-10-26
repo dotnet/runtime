@@ -167,8 +167,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 if (token != CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_SKIP)
                 {
-                    WriteToken(pos, (byte)token,
-                        method.OwningType.IsValueType && !isUnboxingStub);
+                    WriteToken(pos, (byte)token);
                 }
             }
 
@@ -199,10 +198,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 frame[argit.GetAsyncContinuationArgOffset()] = CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF;
             }
 
-            // If the function has a this pointer, add it to the mask
+            // Keep every receiver contextual, even for nonvirtual reference-type methods:
+            // cached maps can flow through interface declarations to unboxed value-type entries,
+            // and dispatch relationships can change across versions. Plain REF/INTERIOR tokens
+            // would freeze the receiver kind instead of letting each frame interpret it.
             if (argit.HasThis)
             {
-                frame[_transitionBlock.ThisOffset] = CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS;
+                frame[_transitionBlock.ThisOffset] = method.OwningType.IsValueType && !isUnboxingStub
+                    ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_BYREF
+                    : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_REF;
             }
 
             if (argit.IsVarArg)
@@ -391,7 +395,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public void WriteToken(uint pos, uint gcRefMapToken, bool thisIsInterior = false)
+        public void WriteToken(uint pos, uint gcRefMapToken)
         {
             uint posDelta = pos - _pos;
             _pos = pos + 1;
@@ -422,8 +426,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 AppendTwoBit(3);
                 AppendInt(((gcRefMapToken - 3) << 1) | 1);
-                if (gcRefMapToken == (uint)CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS)
-                    AppendBit(thisIsInterior ? 1u : 0u);
             }
         }
 

@@ -115,7 +115,7 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
         if (!_target.Contracts.CallingConvention.TryComputeArgGCRefMapBlob(md, out byte[] blob) || blob.Length == 0)
             return false;
 
-        decoder = new(blob);
+        decoder = new(blob, legacyTokens: GCRefMapDecoder.UsesLegacyTokens(_target));
         return true;
     }
 
