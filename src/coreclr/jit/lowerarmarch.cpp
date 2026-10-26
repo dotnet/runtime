@@ -1544,7 +1544,10 @@ bool Lowering::TryLowerSvePredicateBitwiseClear(GenTreeHWIntrinsic* node, NamedI
 
     auto convertResultToVectorIfNeeded = [this, node, nodeType, simdSize]() {
         LIR::Use use;
-        if (BlockRange().TryGetUse(node, &use) && !use.User()->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
+        // A conversion at a different element width must read the replicated vector bits.
+        if (BlockRange().TryGetUse(node, &use) &&
+            (!use.User()->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask) ||
+             (genTypeSize(use.User()->AsHWIntrinsic()->GetSimdBaseType()) != genTypeSize(node->GetSimdBaseType()))))
         {
             GenTree* convert =
                 m_compiler->gtNewSimdCvtMaskToVectorNode(nodeType, node, node->GetSimdBaseType(), simdSize);

@@ -38,6 +38,26 @@ public class PredicateInstructions
         }
     }
 
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
+    public static void TestReinterpretedBitwiseClearSelect()
+    {
+        Vector<byte> selected = SelectReinterpretedBitwiseClear(Vector<int>.Zero, Vector<int>.Zero);
+
+        for (int i = 0; i < Vector<byte>.Count; i++)
+        {
+            Assert.Equal((byte)0x5A, selected[i]);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<byte> SelectReinterpretedBitwiseClear(Vector<int> left, Vector<int> right)
+    {
+        Vector<int> firstMask = Sve.CompareEqual(left, right);
+        Vector<int> secondMask = Sve.CompareGreaterThan(left, right);
+        return Sve.ConditionalSelect(Vector.AsVectorByte(firstMask & ~secondMask),
+            Vector.Create((byte)0x5A), Vector.Create((byte)0xA5));
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Vector<byte> ReverseReinterpretedComparison(Vector<int> left, Vector<int> right) =>
         Sve.ReverseElement(Vector.AsVectorByte(Sve.CompareEqual(left, right)));
