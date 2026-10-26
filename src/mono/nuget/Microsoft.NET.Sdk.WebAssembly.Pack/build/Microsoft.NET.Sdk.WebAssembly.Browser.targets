@@ -62,6 +62,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebcil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.StageWasmSharedMemory" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.AttachWebcilSizes" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
@@ -328,6 +329,19 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEmitDiagnosticModuleBuild Condition="'$(EnableDiagnostics)' == 'true' or '$(WasmEmitSymbolMap)' == 'true' or '$(WasmTestSupport)' == 'true'">true</_WasmEmitDiagnosticModuleBuild>
       <_WasmEmitDiagnosticModuleBuild Condition="'$(_WasmEmitDiagnosticModuleBuild)' == ''">false</_WasmEmitDiagnosticModuleBuild>
     </PropertyGroup>
+
+    <Error Condition="'$(WasmEnableSharedMemory)' == 'true' and '$(UseMonoRuntime)' != 'false'"
+           Text="WasmEnableSharedMemory is supported only by the CoreCLR browser worker prototype." />
+    <StageWasmSharedMemory Condition="'$(WasmEnableSharedMemory)' == 'true'"
+                          Candidates="@(_WasmBuildAssetCandidates)"
+                          OutputPath="$(IntermediateOutputPath)wasm-shared\build">
+      <Output TaskParameter="StagedCandidates" ItemName="_WasmSharedBuildCandidates" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </StageWasmSharedMemory>
+    <ItemGroup Condition="'$(WasmEnableSharedMemory)' == 'true'">
+      <_WasmBuildAssetCandidates Remove="@(_WasmBuildAssetCandidates)" />
+      <_WasmBuildAssetCandidates Include="@(_WasmSharedBuildCandidates)" />
+    </ItemGroup>
 
     <ComputeWasmBuildAssets
       Candidates="@(_WasmBuildAssetCandidates->Distinct())"
@@ -1065,12 +1079,32 @@ Copyright (c) .NET Foundation. All rights reserved.
                                    Condition="'$(PublishReadyToRunComposite)' != 'true' and '$(PublishTrimmed)' != 'true'" />
     </ItemGroup>
 
+    <StageWasmSharedMemory Condition="'$(WasmEnableSharedMemory)' == 'true'"
+                          Candidates="@(_WasmResolvedFilesToPublish)"
+                          OutputPath="$(IntermediateOutputPath)wasm-shared\publish">
+      <Output TaskParameter="StagedCandidates" ItemName="_WasmSharedPublishCandidates" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </StageWasmSharedMemory>
+    <ItemGroup Condition="'$(WasmEnableSharedMemory)' == 'true'">
+      <_WasmResolvedFilesToPublish Remove="@(_WasmResolvedFilesToPublish)" />
+      <_WasmResolvedFilesToPublish Include="@(_WasmSharedPublishCandidates)" />
+    </ItemGroup>
+    <StageWasmSharedMemory Condition="'$(WasmEnableSharedMemory)' == 'true'"
+                          Candidates="@(WasmNativeAsset)"
+                          OutputPath="$(IntermediateOutputPath)wasm-shared\publish">
+      <Output TaskParameter="StagedCandidates" ItemName="_WasmNativePublishAssets" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </StageWasmSharedMemory>
+    <ItemGroup Condition="'$(WasmEnableSharedMemory)' != 'true'">
+      <_WasmNativePublishAssets Include="@(WasmNativeAsset)" />
+    </ItemGroup>
+
     <ComputeWasmPublishAssets
       ResolvedFilesToPublish="@(_WasmResolvedFilesToPublish)"
       CustomIcuCandidate="$(_BlazorIcuDataFileName)"
       TimeZoneSupport="$(_BlazorEnableTimeZoneSupport)"
       PublishPath="$(PublishDir)"
-      WasmAotAssets="@(WasmNativeAsset)"
+      WasmAotAssets="@(_WasmNativePublishAssets)"
       InvariantGlobalization="$(_WasmInvariantGlobalization)"
       LoadFullICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
       CopySymbols="$(CopyOutputSymbolsToPublishDirectory)"
@@ -1098,6 +1132,16 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
     <Error Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true' and '@(_WasmCompositePublishCandidate)' == ''"
            Text="Composite ReadyToRun compilation did not produce a composite WebAssembly image." />
+    <StageWasmSharedMemory Condition="'$(WasmEnableSharedMemory)' == 'true' and '@(_WasmCompositePublishCandidate)' != ''"
+                          Candidates="@(_WasmCompositePublishCandidate)" AllCandidates="true"
+                          OutputPath="$(IntermediateOutputPath)wasm-shared\composite">
+      <Output TaskParameter="StagedCandidates" ItemName="_WasmSharedCompositeCandidates" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </StageWasmSharedMemory>
+    <ItemGroup Condition="'$(WasmEnableSharedMemory)' == 'true' and '@(_WasmCompositePublishCandidate)' != ''">
+      <_WasmCompositePublishCandidate Remove="@(_WasmCompositePublishCandidate)" />
+      <_WasmCompositePublishCandidate Include="@(_WasmSharedCompositeCandidates)" />
+    </ItemGroup>
     <!-- The composite owner is not a managed assembly, so it bypasses ComputeWasmPublishAssets/ConvertDllsToWebcil.
          The readyToRunComposite trait routes it to coreAssembly with isCompositeImage set in the boot config. -->
     <DefineStaticWebAssets Condition="'@(_WasmCompositePublishCandidate)' != ''"

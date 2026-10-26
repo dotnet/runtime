@@ -20,6 +20,154 @@ namespace Wasm.Build.Tests;
 [TestCategory("no-workload")]
 public class WebcilInWasmSizesTests
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void SharedMemory_PreservesInputAndBounds(bool imported, bool alreadyShared)
+    {
+        var limits = new List<byte> { 1, (byte)(alreadyShared ? 3 : 1), 1, 0x80, 0x80, 4 };
+        if (imported)
+            limits.InsertRange(1, new byte[] { 1, (byte)'m', 1, (byte)'m', 2 });
+        byte[] original = WrapModule(imported ? (byte)2 : (byte)5, limits);
+        byte[] saved = (byte[])original.Clone();
+        byte[] shared = WasmMemory.MakeShared(original);
+        byte[] expected = (byte[])original.Clone();
+        expected[imported ? 16 : 11] = 3;
+        Assert.Equal(saved, original);
+        Assert.Equal(expected, shared);
+        Assert.Equal(shared, WasmMemory.MakeShared(shared));
+    }
+
+    public static IEnumerable<object[]> InvalidSharedMemoryImages()
+    {
+        yield return new object[] { Array.Empty<byte>() };
+        yield return new object[] { WrapModule(5, [1, 0, 1]) }; // No maximum.
+        yield return new object[] { WrapModule(5, [1, 2, 1]) }; // Shared without maximum.
+        yield return new object[] { WrapModule(5, [1, 1, 2, 1]) }; // Minimum above maximum.
+        yield return new object[] { WrapModule(5, [1, 1, 1, 0x81, 0x80, 4]) }; // Above wasm32.
+        yield return new object[] { WrapModule(5, [1, 5, 1, 2]) }; // Memory64.
+        yield return new object[] { WrapModule(5, [0]) }; // No memory.
+        yield return new object[] { WrapModule(5, [2, 1, 1, 2, 1, 1, 2]) }; // Multiple memories.
+        yield return new object[] { WrapModule(5, [1, 1, 1, 0x80]) }; // Truncated ULEB.
+        yield return new object[] { WrapModule(5, [1, 1, 1, 0xff, 0xff, 0xff, 0xff, 0x10]) }; // Overflow.
+        yield return new object[] { WrapModule(2, [1, 0xff, 0x7f]) }; // Name outside section.
+        yield return new object[] { WrapModule(2, [1, 0, 0, 5]) }; // Unknown import kind.
+        byte[] truncated = WrapModule(5, [1, 1, 1, 2]);
+        yield return new object[] { truncated.Take(truncated.Length - 1).ToArray() };
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidSharedMemoryImages))]
+    public void SharedMemory_RejectsInvalidInputWithoutMutation(byte[] image)
+    {
+        byte[] original = (byte[])image.Clone();
+        Assert.Throws<InvalidDataException>(() => WasmMemory.MakeShared(image));
+        Assert.Equal(original, image);
+    }
+
+    [Fact]
+    public void SharedMemory_SkipsSupportedNonMemoryImports()
+    {
+        byte[] image = WrapModule(2, [
+            5,
+            0, 0, 0, 0, // Function.
+            0, 0, 1, 0x70, 0, 1, // Table.
+            0, 0, 3, 0x7f, 0, // Global.
+            0, 0, 4, 0, 0, // Tag.
+            0, 0, 2, 1, 1, 2 // Memory.
+        ]);
+        byte[] expected = (byte[])image.Clone();
+        expected[^3] = 3;
+        Assert.Equal(expected, WasmMemory.MakeShared(image));
+    }
+
+    [Fact]
+    public void SharedMemory_StagesAppOwnedCopyAndPreservesTimestamp()
+    {
+        using var directory = new TempDirectory();
+        string source = Path.Combine(directory.Path, "dotnet.native.wasm");
+        byte[] original = WrapModule(5, [1, 1, 1, 2]);
+        File.WriteAllBytes(source, original);
+        string output = Path.Combine(directory.Path, "app");
+        var task = new StageWasmSharedMemory
+        {
+            BuildEngine = new TestBuildEngine(),
+            Candidates = [new TaskItem(source)],
+            OutputPath = output
+        };
+        Assert.True(task.Execute());
+        string staged = Assert.Single(task.StagedCandidates).ItemSpec;
+        Assert.NotEqual(source, staged);
+        Assert.Equal(original, File.ReadAllBytes(source));
+        Assert.Equal(WasmMemory.MakeShared(original), File.ReadAllBytes(staged));
+        DateTime timestamp = File.GetLastWriteTimeUtc(staged);
+        Assert.True(task.Execute());
+        Assert.Equal(timestamp, File.GetLastWriteTimeUtc(staged));
+    }
+
+    [Fact]
+    public void SharedMemory_FailedStagingPreservesSourceAndExistingOutput()
+    {
+        using var directory = new TempDirectory();
+        string source = Path.Combine(directory.Path, "dotnet.native.wasm");
+        byte[] unbounded = WrapModule(5, [1, 0, 1]);
+        File.WriteAllBytes(source, unbounded);
+        string outputDirectory = Path.Combine(directory.Path, "app");
+        Directory.CreateDirectory(outputDirectory);
+        string output = Path.Combine(outputDirectory, "dotnet.native.wasm");
+        byte[] previous = WrapModule(5, [1, 3, 1, 2]);
+        File.WriteAllBytes(output, previous);
+        var engine = new TestBuildEngine { AllowErrors = true };
+        var task = new StageWasmSharedMemory
+        {
+            BuildEngine = engine,
+            Candidates = [new TaskItem(source)],
+            OutputPath = outputDirectory
+        };
+        Assert.False(task.Execute());
+        Assert.Contains("bounded wasm32", Assert.Single(engine.Errors));
+        Assert.Equal(unbounded, File.ReadAllBytes(source));
+        Assert.Equal(previous, File.ReadAllBytes(output));
+    }
+
+    [Fact]
+    public void SharedMemory_R2RModeChangesRestageWithoutChangingPack()
+    {
+        using var directory = new TempDirectory();
+        byte[] payload = BuildWebcilInWasm(payloadSize: 4, tableSize: 1);
+        var module = new List<byte>(payload.Take(8));
+        AddSection(module, 5, [1, 1, 1, 2]);
+        module.AddRange(payload.Skip(8));
+        byte[] original = module.ToArray();
+        string source = Path.Combine(directory.Path, "pack.dll");
+        File.WriteAllBytes(source, original);
+        var candidate = new TaskItem(source);
+        candidate.SetMetadata("RelativePath", "pack.dll");
+        candidate.SetMetadata("R2RWebcilPath", source);
+        string outputPath = Path.Combine(directory.Path, "output");
+        string stamp = Path.Combine(directory.Path, "mode.stamp");
+        foreach (bool shared in new[] { false, true, false })
+        {
+            File.WriteAllText(stamp, shared.ToString());
+            File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddMinutes(1));
+            var task = new ConvertDllsToWebcil
+            {
+                BuildEngine = new TestBuildEngine(),
+                Candidates = [candidate],
+                IsEnabled = true,
+                WasmEnableSharedMemory = shared,
+                ConversionStamp = stamp,
+                OutputPath = outputPath,
+                IntermediateOutputPath = Path.Combine(directory.Path, "tmp"),
+            };
+            Assert.True(task.Execute());
+            Assert.Equal(shared ? WasmMemory.MakeShared(original) : original, File.ReadAllBytes(Path.Combine(outputPath, "pack.wasm")));
+            Assert.Equal(original, File.ReadAllBytes(source));
+        }
+    }
+
     [Fact]
     public void NonR2R_ReadsPayloadSize_WithZeroTableSize()
     {
@@ -642,6 +790,8 @@ public class WebcilInWasmSizesTests
 
     private sealed class TestBuildEngine : IBuildEngine
     {
+        public bool AllowErrors { get; init; }
+        public List<string> Errors { get; } = new();
         public bool ContinueOnError => false;
         public int LineNumberOfTaskNode => 0;
         public int ColumnNumberOfTaskNode => 0;
@@ -654,7 +804,12 @@ public class WebcilInWasmSizesTests
         {
         }
 
-        public void LogErrorEvent(BuildErrorEventArgs e) => Assert.Fail(e.Message ?? "Build error");
+        public void LogErrorEvent(BuildErrorEventArgs e)
+        {
+            if (!AllowErrors)
+                Assert.Fail(e.Message ?? "Build error");
+            Errors.Add(e.Message ?? "Build error");
+        }
 
         public void LogMessageEvent(BuildMessageEventArgs e)
         {

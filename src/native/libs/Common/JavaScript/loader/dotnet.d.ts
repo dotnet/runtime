@@ -57,6 +57,7 @@ interface DotnetHostBuilder {
      * Asynchronous calls release those slots after their synchronous prefix.
      * Asynchronous UI imports require native Promise results; custom thenables are not supported.
      * Other marshaled types, heap access, and diagnostics are not yet supported by the proxy.
+     * Build the application with WasmEnableSharedMemory=true to select app-owned shared assets.
      * Requires COOP/COEP headers and SharedArrayBuffer support.
      */
     withWorker(options?: WorkerOptions): DotnetHostBuilder;

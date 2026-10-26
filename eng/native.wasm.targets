@@ -19,9 +19,6 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <!-- TODO move me -->
-    <WasmEnableSharedMemory>true</WasmEnableSharedMemory>
-
     <_RuntimeVariant />
     <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
     <FeatureMultithreading Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
@@ -194,24 +191,6 @@
       <NativeCMakeArg Condition="'$(TargetsBrowser)' == 'true'" Include="-cmakeargs &quot;-DCMAKE_EMCC_INCOMING_MODULE_JS_API=$(_EmccIncomingModuleJSAPIs)&quot;" />
     </ItemGroup>
 
-  </Target>
-
-  <!--
-    Post-link patch: set the 'shared' bit on dotnet.native.wasm's memory definition.
-    This enables SharedArrayBuffer usage at runtime without requiring threaded Emscripten libraries.
-    Handles both imported memory (-sIMPORTED_MEMORY=1) and locally-defined/exported memory.
-    Runs after the native build but before CopyWasmNativeFiles copies the output.
-  -->
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmMemorySetShared" AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
-
-  <Target Name="PatchWasmSharedMemory"
-          Condition="'$(TargetsBrowser)' == 'true' and '$(WasmEnableSharedMemory)' == 'true'"
-          DependsOnTargets="$(CopyWasmNativeFilesDependsOn)"
-          BeforeTargets="CopyWasmNativeFiles">
-    <PropertyGroup>
-      <_WasmFileToPath>$(HostSharedFrameworkDir)dotnet.native.wasm</_WasmFileToPath>
-    </PropertyGroup>
-    <WasmMemorySetShared WasmFilePath="$(_WasmFileToPath)" Condition="Exists('$(_WasmFileToPath)')" />
   </Target>
 
 </Project>

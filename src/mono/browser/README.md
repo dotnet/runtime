@@ -39,6 +39,37 @@ At this time no other build dependencies are necessary to start building for Web
 
 # Running tests
 
+## Experimental CoreCLR dedicated worker hosting
+
+The dedicated-worker prototype requires both build-time and runtime opt-in:
+
+```xml
+<PropertyGroup>
+  <UseMonoRuntime>false</UseMonoRuntime>
+  <WasmEnableSharedMemory>true</WasmEnableSharedMemory>
+</PropertyGroup>
+```
+
+Start it with `dotnet.withWorker().create()` and serve the app with
+`Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp`.
+
+Shared native and ReadyToRun images are staged into the application's intermediate
+directory before asset fingerprinting and integrity computation. The runtime pack
+is not modified. Ordinary builds without this property retain non-shared memory
+and do not require these isolation headers. Changing the property restages the
+application assets; do not patch files in the NuGet cache or published output.
+Browser ReadyToRun images must be produced by a compiler that includes a maximum
+in their memory imports. Older unbounded images fail shared staging explicitly.
+
+The current bridge supports one Int32 argument with an Int32 or Task<Int32> result.
+Synchronous calls block the UI and service interop requests, not arbitrary Promise
+continuations. Each direction has 16 active synchronous call slots; asynchronous
+calls release their slots after initial invocation. Async UI imports require native
+Promises, not custom thenables. Shutdown rejects pending proxy calls but does not
+cancel arbitrary user Promises. Broader marshaling and the full RuntimeAPI remain
+unsupported; this prototype still requires API/design review.
+
 ## Installation of JavaScript engines
 
 The latest engines can be installed with jsvu (JavaScript engine Version Updater https://github.com/GoogleChromeLabs/jsvu)

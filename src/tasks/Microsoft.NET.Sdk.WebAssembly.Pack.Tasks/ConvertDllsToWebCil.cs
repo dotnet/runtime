@@ -194,7 +194,13 @@ public class ConvertDllsToWebcil : Task
                     Directory.CreateDirectory(candidatePath);
 
                 // Copy (not move): the runtime pack's native/*.wasm is a shared source that must survive staging.
-                if (Utils.CopyIfDifferent(r2rWebcilPath, finalWebcil, useHash: false))
+                string stagedR2R = r2rWebcilPath;
+                if (WasmEnableSharedMemory)
+                {
+                    stagedR2R = Path.Combine(tmpDir, webcilFileName);
+                    File.WriteAllBytes(stagedR2R, WasmMemory.MakeShared(File.ReadAllBytes(r2rWebcilPath)));
+                }
+                if (Utils.CopyIfDifferent(stagedR2R, finalWebcil, useHash: false))
                     Log.LogMessage(MessageImportance.Low, $"Staged prebuilt R2R webcil {finalWebcil} from {r2rWebcilPath} .");
                 else
                     Log.LogMessage(MessageImportance.Low, $"Skipped staging {finalWebcil} as the contents are unchanged.");
