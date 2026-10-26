@@ -35,23 +35,12 @@ enum WasmFrameFlags
 };
 
 // xdata starts with a NativeFormat-encoded unsigned frame size and flags.
-// Root records then contain the function table index and GCInfo.
+// Root records then contain GCInfo.
 static uint8_t* GetUnwindData(const WasmRuntimeFunction* pFunction, uint32_t* pFrameSize)
 {
     uint8_t* p = pFunction->m_unwindData;
     *pFrameSize = NativePrimitiveDecoder::ReadUnsigned(p);
     return p;
-}
-
-static uint32_t GetFunctionIndex(const WasmRuntimeFunction* pFunction)
-{
-    uint32_t frameSize;
-    uint8_t* p = GetUnwindData(pFunction, &frameSize);
-    if ((*p++ & Funclet) != 0)
-        return 0;
-    uint32_t index = NativePrimitiveDecoder::ReadUInt32(p);
-    ASSERT(index != 0);
-    return index;
 }
 
 static uintptr_t GetPhysicalFramePointer(uintptr_t shadowSP)
@@ -64,38 +53,14 @@ static uintptr_t GetPhysicalFramePointer(uintptr_t shadowSP)
 
 WasmCodeManager::WasmCodeManager(const WasmRuntimeFunction* pFunctions, uint32_t nFunctions,
     void** pClasslibFunctions, uint32_t nClasslibFunctions)
-    : m_pFunctions(pFunctions), m_nFunctions(nFunctions), m_pFunctionMap(nullptr), m_nFunctionMap(0),
+    : m_pFunctions(pFunctions), m_nFunctions(nFunctions),
       m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
 }
 
-bool WasmCodeManager::Initialize()
-{
-    for (uint32_t i = 0; i < m_nFunctions; i++)
-    {
-        uint32_t index = GetFunctionIndex(&m_pFunctions[i]);
-        if (index >= SIZE_MAX / sizeof(*m_pFunctionMap) - 1)
-            return false;
-        m_nFunctionMap = max(m_nFunctionMap, index + 1);
-    }
-
-    m_pFunctionMap = new (nothrow) const WasmRuntimeFunction*[m_nFunctionMap]();
-    if (m_pFunctionMap == nullptr)
-        return false;
-
-    for (uint32_t i = 0; i < m_nFunctions; i++)
-    {
-        uint32_t index = GetFunctionIndex(&m_pFunctions[i]);
-        if (index != 0)
-            m_pFunctionMap[index] = &m_pFunctions[i];
-    }
-
-    return true;
-}
-
 // RyuJIT's shadow frame begins with an identity and a virtual IP. With localloc, SP
 // instead points at an indirection to FP. Funclet identities point at the establishing
-// frame, tagged with 2; ordinary NativeAOT identities are (function table index << 1) | 1.
+// frame, tagged with 2; ordinary NativeAOT identities are (method start virtual IP << 1) | 1.
 uintptr_t WasmCodeManager::GetFramePointer(uintptr_t shadowSP)
 {
     uintptr_t fp = GetPhysicalFramePointer(shadowSP);
@@ -118,11 +83,7 @@ uintptr_t WasmCodeManager::GetVirtualIP(uintptr_t shadowSP)
     uint32_t virtualIP = *reinterpret_cast<uint32_t*>(fp + sizeof(uintptr_t));
     uintptr_t identity = *reinterpret_cast<uintptr_t*>(GetFramePointer(shadowSP));
     ASSERT((identity & 1) != 0 && identity != 1);
-    uint32_t functionIndex = static_cast<uint32_t>(identity >> 1);
-    ASSERT(s_pCodeManager != nullptr && functionIndex < s_pCodeManager->m_nFunctionMap);
-    const WasmRuntimeFunction* pFunction = s_pCodeManager->m_pFunctionMap[functionIndex];
-    ASSERT(pFunction != nullptr);
-    return pFunction->m_virtualStart + virtualIP;
+    return (identity >> 1) + virtualIP;
 }
 
 bool WasmCodeManager::FindMethodInfo(PTR_VOID controlPC, MethodInfo* pMethodInfoOut)
@@ -152,7 +113,7 @@ bool WasmCodeManager::FindMethodInfo(PTR_VOID controlPC, MethodInfo* pMethodInfo
         p = GetUnwindData(pFunction, &frameSize);
     }
     pMethodInfo->m_methodStart = pFunction->m_virtualStart;
-    pMethodInfo->m_gcInfo = p + sizeof(uint8_t) + sizeof(uint32_t);
+    pMethodInfo->m_gcInfo = p + sizeof(uint8_t);
     return true;
 }
 
@@ -306,11 +267,6 @@ EXTERN_C bool RhRegisterWasmModule(void* pFunctions, uint32_t cbFunctions,
         pRuntimeFunctions, nFunctions, pClasslibFunctions, nClasslibFunctions);
     if (pCodeManager == nullptr)
         return false;
-    if (!pCodeManager->Initialize())
-    {
-        delete pCodeManager;
-        return false;
-    }
     s_pCodeManager = pCodeManager;
     RegisterCodeManager(pCodeManager, reinterpret_cast<PTR_VOID>(virtualStart), virtualEnd - virtualStart);
     return true;

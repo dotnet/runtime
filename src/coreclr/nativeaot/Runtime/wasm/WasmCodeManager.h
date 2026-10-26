@@ -18,15 +18,12 @@ class WasmCodeManager final : public ICodeManager
 {
     const WasmRuntimeFunction* m_pFunctions;
     uint32_t m_nFunctions; // Excludes the terminal entry containing the end virtual IP.
-    const WasmRuntimeFunction** m_pFunctionMap;
-    uint32_t m_nFunctionMap;
     void** m_pClasslibFunctions;
     uint32_t m_nClasslibFunctions;
 
 public:
     WasmCodeManager(const WasmRuntimeFunction* pFunctions, uint32_t nFunctions,
         void** pClasslibFunctions, uint32_t nClasslibFunctions);
-    bool Initialize();
 
     static uintptr_t GetFramePointer(uintptr_t shadowSP);
     static uintptr_t GetVirtualIP(uintptr_t shadowSP);

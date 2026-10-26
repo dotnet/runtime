@@ -640,7 +640,6 @@ namespace ILCompiler.ObjectWriter
 
                 if (i == 0)
                 {
-                    _xdataSectionWriter.EmitSymbolReference(RelocType.WASM_TABLE_INDEX_I32, currentSymbolName);
                     _xdataSectionWriter.Write(nodeWithCodeInfo.GCInfo);
                 }
 
