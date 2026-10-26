@@ -726,6 +726,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task Receive0ByteReturns_WhenPeerDisconnects()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -781,8 +782,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(0, await receive.WaitAsync(TestSettings.PassingTestTimeout));
 
             byte[] buffer = new byte[1];
-            SocketReceiveFromResult result = await ReceiveFromAsync(receiver, buffer, new IPEndPoint(IPAddress.Any, 0)).WaitAsync(TestSettings.PassingTestTimeout);
-            Assert.Equal(1, result.ReceivedBytes);
+            Assert.Equal(1, await ReceiveAsync(receiver, buffer).WaitAsync(TestSettings.PassingTestTimeout));
             Assert.Equal(42, buffer[0]);
         }
 

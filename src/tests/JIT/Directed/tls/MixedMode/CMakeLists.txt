@@ -3,18 +3,7 @@
 
 include_directories(${INC_PLATFORM_DIR})
 
-add_library(usetls ${TEST_LIB_TYPE} testtls.cpp)
-
-install (TARGETS usetls DESTINATION bin)
-
 if(CLR_CMAKE_HOST_WIN32)
     add_subdirectory(cppcli)
-endif()
-
-if(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
-    add_definitions(-mtls-dialect=desc)
-endif()
-
-if(CLR_CMAKE_HOST_WIN32)
     add_subdirectory(cppcli-mutual)
 endif()

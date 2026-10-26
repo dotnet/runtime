@@ -7790,6 +7790,21 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_Met
     return S_OK;
 }
 
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetRuntimeVersion(OUT COR_VERSION * pVersion)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pVersion == nullptr)
+        return E_INVALIDARG;
+
+    pVersion->dwMajor = RuntimeProductMajorVersion;
+    pVersion->dwMinor = RuntimeProductMinorVersion;
+    pVersion->dwBuild = RuntimeProductPatchVersion;
+    pVersion->dwSubBuild = 0;
+
+    return S_OK;
+}
+
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetInfo(OUT TargetInfo * pTargetInfo)
 {
     DD_ENTER_MAY_THROW;

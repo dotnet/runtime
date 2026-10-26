@@ -12,11 +12,11 @@
     <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
 
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-    <IgnoreForCI Condition="'$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">true</IgnoreForCI>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Mono -->
+    <IgnoreForCI Condition="'$(RuntimeFlavor)' == 'Mono'">true</IgnoreForCI>
   </PropertyGroup>
-  <ItemGroup Condition="'$(OS)' == 'Windows_NT' or '$(ContinuousIntegrationBuild)' != 'true'">
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Mono -->
     <ProjectReference Include="ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
   </ItemGroup>
 
