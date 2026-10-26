@@ -91,7 +91,7 @@ function injectDependencies() {
         `runAOTCompilation: ${RUN_AOT_COMPILATION}, ` +
         `wasmEnableThreads: ${!!PTHREADS}, ` +
         `gitHash: "${gitHash}", ` +
-        `buildId: "${WASM_BUILD_ID}", ` +
+        `buildId: ${JSON.stringify(WASM_BUILD_ID)}, ` +
         `});`;
 
     autoAddDeps(DotnetSupportLib, "$DOTNET");

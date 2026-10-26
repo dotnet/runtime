@@ -60,7 +60,7 @@ public class WasmEmitProducersObject : Task
         }
         catch (Exception ex)
         {
-            Log.LogError($"Failed to write producers object '{OutputPath}': {ex.Message}");
+            Log.LogErrorFromException(ex, showStackTrace: true);
             return false;
         }
 

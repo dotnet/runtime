@@ -4,6 +4,7 @@
 #nullable enable
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -107,13 +108,13 @@ public static class WasmCustomSectionWriter
             ThrowArgumentNull(nameof(moduleBytes));
 
         // Nothing to do.
-        if (producers is null && buildId is null)
+        if (producers is null && (buildId is null || buildId.Length == 0))
             return moduleBytes;
 
-        if (moduleBytes.Length < 8 || BitConverter.ToUInt32(moduleBytes, 0) != WasmMagic)
+        if (moduleBytes.Length < 8 || BinaryPrimitives.ReadUInt32LittleEndian(moduleBytes.AsSpan(0, 4)) != WasmMagic)
             throw new InvalidDataException("Not a WebAssembly module (bad magic).");
 
-        uint version = BitConverter.ToUInt32(moduleBytes, 4);
+        uint version = BinaryPrimitives.ReadUInt32LittleEndian(moduleBytes.AsSpan(4, 4));
         if (version != 1)
             throw new InvalidDataException($"Unsupported WebAssembly module version {version}.");
 
@@ -163,6 +164,8 @@ public static class WasmCustomSectionWriter
             }
         }
 
+        bool replaceBuildId = buildId is { Length: > 0 };
+
         using var ms = new MemoryStream(moduleBytes.Length + 256);
         ms.Write(moduleBytes, 0, bodyStart);
 
@@ -171,7 +174,7 @@ public static class WasmCustomSectionWriter
             // Drop the sections we are going to (re)write, so we never emit duplicates.
             if (mergedProducers is not null && customName == ProducersSectionName)
                 continue;
-            if (buildId is not null && customName == BuildIdSectionName)
+            if (replaceBuildId && customName == BuildIdSectionName)
                 continue;
 
             // Re-emit the full section record (id byte + size + payload) verbatim.
@@ -181,8 +184,8 @@ public static class WasmCustomSectionWriter
         if (mergedProducers is not null)
             WriteProducersSection(ms, mergedProducers);
 
-        if (buildId is not null)
-            WriteBuildIdSection(ms, buildId);
+        if (replaceBuildId)
+            WriteBuildIdSection(ms, buildId!);
 
         return ms.ToArray();
     }
