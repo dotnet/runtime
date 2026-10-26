@@ -5,6 +5,7 @@
 #include "loaderheap.h"
 #include "ex.h"
 #include "pedecoder.h"
+#define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
 
 AllocMemTracker::AllocMemTracker()

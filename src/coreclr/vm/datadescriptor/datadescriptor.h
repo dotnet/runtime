@@ -11,9 +11,6 @@
 #include <stddef.h>
 
 #include <sospriv.h>
-#ifndef TARGET_UNIX
-#include <msodw.h>
-#endif // TARGET_UNIX
 #include <runtime_version.h>
 #include "cdacplatformmetadata.hpp"
 #include "interoplibinterface_comwrappers.h"

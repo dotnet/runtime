@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 #include "CLREventBase.h"
-#include <clrdata.h>
 #include <minipal/time.h>
 #include "primitives.h"
 #include "safewrap.h"
