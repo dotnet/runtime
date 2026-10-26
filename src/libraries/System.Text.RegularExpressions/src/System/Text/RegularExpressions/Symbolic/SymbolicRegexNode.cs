@@ -2459,76 +2459,92 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </remarks>
         internal int CountSingletons()
         {
-            // Guard against stack overflow due to deep recursion
-            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            using var pending = new ValueListBuilder<(int NodeId, int Multiplier)>(stackalloc (int, int)[32]);
+            SymbolicRegexNodeContext<TSet> current = this;
+            int multiplier = 1;
+            int total = 0;
+
+            // Saturating multiplication distributes over the nonnegative counts,
+            // so loop multipliers can be carried to the leaves.
+            while (true)
             {
-                return StackHelper.CallOnEmptyStack(CountSingletons);
-            }
+                switch (current._kind)
+                {
+                    case SymbolicRegexNodeKind.Singleton:
+                        total = Sum(total, multiplier);
+                        break;
 
-            switch (_kind)
-            {
-                case SymbolicRegexNodeKind.Singleton:
-                    return 1;
+                    case SymbolicRegexNodeKind.Concat:
+                    case SymbolicRegexNodeKind.Alternate:
+                        Debug.Assert(!current._left.IsNull && !current._right.IsNull);
+                        pending.Append((current._right.Id, multiplier));
+                        current = current._left;
+                        continue;
 
-                case SymbolicRegexNodeKind.Concat:
-                case SymbolicRegexNodeKind.Alternate:
-                    Debug.Assert(!_left.IsNull && !_right.IsNull);
-                    // #(this) = #(_left) + #(_right)
-                    return Sum(_left.CountSingletons(), _right.CountSingletons());
+                    case SymbolicRegexNodeKind.Loop:
+                        Debug.Assert(!current._left.IsNull && current._right.IsNull);
+                        Debug.Assert(current._lower >= 0 && current._upper > 0 && current._upper >= current._lower);
 
-                case SymbolicRegexNodeKind.Loop:
-                    Debug.Assert(!_left.IsNull && _right.IsNull);
-                    Debug.Assert(_lower >= 0 && _upper > 0 && _upper >= _lower);
-                    if (_upper == int.MaxValue)
-                    {
-                        if (_lower is 0 or int.MaxValue)
+                        int loopMultiplier;
+                        if (current._upper == int.MaxValue)
                         {
-                            int bodyCount = _left.CountSingletons();
-
-                            // When an unbounded loop's body contains another unbounded loop, the
-                            // derivative computation creates a 2-way Alternate at each nesting level
-                            // (because the Concat derivative branches when its left side is nullable).
-                            // This means the per-character derivative cost doubles with each such
-                            // nesting level. Account for this so that the NFA size estimate catches
-                            // deeply nested patterns that would cause exponential blowup.
-                            // Note: RegexNode.ReduceLoops already collapses same-laziness non-capturing
-                            // nested loops before the symbolic engine sees them, so this multiplier
-                            // primarily fires for patterns with captures or mixed laziness.
-                            // For capturing patterns like ((a)*)*, the inner loop is wrapped in
-                            // Concat(CaptureStart, Concat(Loop, CaptureEnd)), so we search through
-                            // structural wrappers to find nested unbounded loops.
-                            if (ContainsNestedUnboundedLoop(_builder!, _left))
+                            if (current._lower is 0 or int.MaxValue)
                             {
-                                return Times(2, bodyCount);
+                                // When an unbounded loop's body contains another unbounded loop, the
+                                // derivative computation creates a 2-way Alternate at each nesting level
+                                // (because the Concat derivative branches when its left side is nullable).
+                                // This means the per-character derivative cost doubles with each such
+                                // nesting level. Account for this so that the NFA size estimate catches
+                                // deeply nested patterns that would cause exponential blowup.
+                                // Note: RegexNode.ReduceLoops already collapses same-laziness non-capturing
+                                // nested loops before the symbolic engine sees them, so this multiplier
+                                // primarily fires for patterns with captures or mixed laziness.
+                                // For capturing patterns like ((a)*)*, the inner loop is wrapped in
+                                // Concat(CaptureStart, Concat(Loop, CaptureEnd)), so we search through
+                                // structural wrappers to find nested unbounded loops.
+                                loopMultiplier = ContainsNestedUnboundedLoop(current._builder!, current._left) ? 2 : 1;
                             }
-
-                            return bodyCount;
+                            else
+                            {
+                                // The case is R{m,} with R = _left and m = _lower.
+                                // #(this) = (m+1) x #(R)
+                                // Ex: #((ab){4,}) = #((ab)(ab)(ab)(ab)(ab)*) = 5x2 = 10
+                                loopMultiplier = current._lower + 1;
+                            }
+                        }
+                        else
+                        {
+                            // The general case with both upper and lower bounds is R{m,n} with m =_lower and n = _upper
+                            // #(this) = n x #(R)
+                            // Ex: #((ab){4,6}) = #((ab)(ab)(ab)(ab)(ab)?(ab)?) = 6x2 = 12
+                            loopMultiplier = current._upper;
                         }
 
-                        // the upper bound is not being used, so the lower must be non-zero
-                        Debug.Assert(_lower > 0);
+                        multiplier = Times(multiplier, loopMultiplier);
+                        current = current._left;
+                        continue;
 
-                        // The case is R{m,} with R = _left and m = _lower.
-                        // #(this) = (m+1) x #(R)
-                        // Ex: #((ab){4,}) = #((ab)(ab)(ab)(ab)(ab)*) = 5x2 = 10
-                        return Times(_lower + 1, _left.CountSingletons());
-                    }
+                    case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    case SymbolicRegexNodeKind.Effect:
+                        Debug.Assert(!current._left.IsNull);
+                        current = current._left;
+                        continue;
 
-                    // The general case with both upper and lower bounds is R{m,n} with m =_lower and n = _upper
-                    // #(this) = n x #(R)
-                    // Ex: #((ab){4,6}) = #((ab)(ab)(ab)(ab)(ab)?(ab)?) = 6x2 = 12
-                    return Times(_upper, _left.CountSingletons());
+                    default:
+                        Debug.Assert(current._left.IsNull && current._right.IsNull);
+                        // All the other nodes contribute 0 to the overall count
+                        // because they contain no children and therefore no singletons
+                        break;
+                }
 
-                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
-                case SymbolicRegexNodeKind.Effect:
-                    Debug.Assert(!_left.IsNull);
-                    return _left.CountSingletons();
+                if (pending.Length == 0)
+                {
+                    return total;
+                }
 
-                default:
-                    Debug.Assert(_left.IsNull && _right.IsNull);
-                    // All the other nodes contribute 0 to the overall count
-                    // because they contain no children and therefore no singletons
-                    return 0;
+                (int NodeId, int Multiplier) next = pending.Pop();
+                current = current.GetContext(next.NodeId);
+                multiplier = next.Multiplier;
             }
         }
 
