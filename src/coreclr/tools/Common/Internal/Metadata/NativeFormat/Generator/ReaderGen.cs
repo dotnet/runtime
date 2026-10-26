@@ -87,7 +87,7 @@ internal sealed class ReaderGen : CsWriter
         WriteLine("NativeReader streamReader = reader._streamReader;");
         foreach (var member in record.Members)
         {
-            if (member.GetMemberType() == "ByteCollection" && member == record.Members[^1])
+            if ((member.Flags & MemberDefFlags.Blob) != 0 && member == record.Members[^1])
                 WriteLine($"{member.GetMemberFieldName()} = new ByteCollection(streamReader, offset);");
             else
                 WriteLine($"offset = streamReader.Read(offset, out {member.GetMemberFieldName()});");

@@ -218,7 +218,7 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Parses ECMA-335 II.23.3 argument data with NativeFormat handles instead of type names.
+        /// Parses ECMA-335 II.23.3 argument data with NativeFormat handles instead of SerStrings.
         /// </summary>
         internal ref struct CustomAttributeDataParser
         {
@@ -241,7 +241,7 @@ namespace System.Reflection
             public double GetR8() => _blob.ReadDouble();
             public CustomAttributeEncoding GetTag() => (CustomAttributeEncoding)GetU1();
             public int GetNamedArgumentCount() => GetU2();
-            public string? GetString() => _blob.ReadString();
+            public string? GetString() => _blob.ReadStringHandle().GetStringOrNull(_reader);
 
             public CustomAttributeType GetNamedArgument(out string? name, out bool isProperty)
             {

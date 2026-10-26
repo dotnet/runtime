@@ -186,6 +186,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
+            Blob.Visit(this, visitor);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -194,7 +195,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             var other = obj as Constant;
             if (other == null) return false;
             if (TypeCode != other.TypeCode) return false;
-            if (!Blob.SequenceEqual(other.Blob)) return false;
+            if (!Blob.Equals(other.Blob)) return false;
             return true;
         } // Equals
 
@@ -205,10 +206,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             EnterGetHashCode();
             int hash = -464276854;
             hash = ((hash << 13) - (hash >> 19)) ^ TypeCode.GetHashCode();
-            for (int i = 0; i < Blob.Length; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ Blob[i].GetHashCode();
-            }
+            hash = ((hash << 13) - (hash >> 19)) ^ Blob.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
             return _hash;
@@ -217,7 +215,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Save(NativeWriter writer)
         {
             writer.Write(TypeCode);
-            writer.Write(Blob);
+            Blob.Save(writer);
         } // Save
 
         internal static ConstantHandle AsHandle(Constant record)
@@ -241,7 +239,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         } // Handle
 
         public ConstantTypeCode TypeCode;
-        public Byte[] Blob;
+        public MetadataBlob Blob = new MetadataBlob();
     } // Constant
 
     public partial class ConstantStringArray : MetadataRecord

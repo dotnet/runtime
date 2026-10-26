@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Internal.Metadata.NativeFormat;
 
@@ -65,29 +62,7 @@ internal ref struct BlobReader(ReadOnlySpan<byte> blob)
         return ReadUInt32();
     }
 
-    public string? ReadString()
-    {
-        // ECMA-335 II.23.3: SerString is a compressed UTF8 byte count, or 0xFF for null.
-        byte first = ReadByte();
-        if (first == 0xff)
-            return null;
-
-        int length = first;
-        if ((first & 0x80) != 0)
-        {
-            if ((first & 0x40) == 0)
-            {
-                length = ((first & 0x3f) << 8) | ReadByte();
-            }
-            else
-            {
-                Debug.Assert((first & 0xe0) == 0xc0);
-                length = ((first & 0x1f) << 24) | (ReadByte() << 16) | (ReadByte() << 8) | ReadByte();
-            }
-        }
-
-        return Encoding.UTF8.GetString(ReadBytes(length));
-    }
+    public ConstantStringValueHandle ReadStringHandle() => new ConstantStringValueHandle((int)ReadUnsigned());
 
     public Handle ReadTypeHandle()
     {
