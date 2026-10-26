@@ -1943,7 +1943,7 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                         }
                         else if (fNotFoundAction == ThrowIfNotFound)
                         {
-                            pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDef, IDS_CLASSLOAD_TYPEBUILDER_NOT_CREATED);
+                            pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDef, IDS_CLASSLOAD_TYPE_NOT_CREATED);
                         }
                     }
                 }

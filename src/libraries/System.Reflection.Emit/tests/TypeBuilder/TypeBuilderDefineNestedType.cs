@@ -271,7 +271,7 @@ namespace System.Reflection.Emit.Tests
 
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => createdType.GetMethod("Method").Invoke(null, null));
             TypeLoadException typeLoadException = Assert.IsType<TypeLoadException>(ex.InnerException);
-            Assert.Contains("TypeBuilder.CreateType", typeLoadException.Message);
+            Assert.Contains("CreateType", typeLoadException.Message);
         }
     }
 }
