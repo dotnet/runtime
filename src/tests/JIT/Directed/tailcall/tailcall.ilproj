@@ -2,6 +2,9 @@
   <PropertyGroup>
     <!-- Needed for CLRTestEnvironmentVariable, Environment.Exit -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- The test has its own Main, so the WASI ReadyToRun failure is skipped here.
+         ActiveIssue https://github.com/dotnet/runtime/issues/134949 -->
+    <R2RIncompatible Condition="'$(TargetOS)' == 'wasi'">true</R2RIncompatible>
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>

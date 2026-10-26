@@ -174,7 +174,7 @@ internal sealed class TestTarget : Target
 
     // --- Primitive reads called by extension methods ----------------
 
-    public override T Read<T>(ulong address)
+    public override unsafe T Read<T>(ulong address)
     {
         Span<byte> span = GetSpan(address, sizeof(T));
         return System.Runtime.InteropServices.MemoryMarshal.Read<T>(span);
@@ -202,7 +202,7 @@ internal sealed class TestTarget : Target
     public override TargetNInt ReadNInt(ulong address)
         => new TargetNInt(PointerSize == 8 ? Read<long>(address) : Read<int>(address));
 
-    public override void Write<T>(ulong address, T value)
+    public override unsafe void Write<T>(ulong address, T value)
     {
         Span<byte> span = GetSpan(address, sizeof(T));
         System.Runtime.InteropServices.MemoryMarshal.Write(span, in value);
@@ -257,6 +257,7 @@ internal sealed class TestTarget : Target
     public override bool IsAlignedToPointerSize(TargetPointer pointer) => throw new NotImplementedException();
     public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer) => throw new NotImplementedException();
     public override bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context) => throw new NotImplementedException();
+    public override bool TryGetRuntimeImageBase(out TargetPointer imageBase) => throw new NotImplementedException();
 
     // --- Stub ContractRegistry -------------------------------------
 
