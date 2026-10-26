@@ -50,7 +50,7 @@ namespace ILAssembler
                 ValidateVTableFixups(machine);
             ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations =
                 ValidateVTableAssociations(validatedVTableFixups);
-            ImmutableArray<VTableExportPEBuilder.DataLabelFixup> validatedDataLabelFixups =
+            ImmutableArray<ILAssemblerPEBuilder.DataLabelFixup> validatedDataLabelFixups =
                 ValidateDataLabelFixups();
             ImmutableArray<ValidatedExport> validatedExports =
                 ValidateExports(validatedVTableAssociations, machine);
@@ -144,65 +144,38 @@ namespace ILAssembler
                 ? GetDeterministicContentId
                 : null;
 
-            // Separate data sections and native artifacts require patching after their RVAs are known.
-            if (validatedVTableFixups.Length > 0 ||
-                validatedExports.Length > 0 ||
-                validatedDataLabelFixups.Length > 0 ||
-                _hasNonCilData)
-            {
-                ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> vtableFixupInfos =
-                    BuildVTableFixupInfos(
-                        validatedVTableFixups,
-                        validatedVTableAssociations);
-                ImmutableArray<VTableExportPEBuilder.ExportInfo> exports =
-                    BuildExportInfos(validatedExports);
-
-                // Apply CorFlags from options or directive
-                CorFlags corFlags = _options.CorFlags ?? _corflags;
-                if (_options.Prefer32Bit)
-                {
-                    corFlags |= CorFlags.Prefers32Bit;
-                }
-
-                VTableExportPEBuilder peBuilder = new(
-                    header,
-                    rootBuilder,
-                    ilStream,
-                    _mappedFieldData,
-                    _manifestResources,
-                    debugDirectoryBuilder: debugDirectoryBuilder,
-                    entryPoint: entryPoint,
-                    flags: corFlags,
-                    deterministicIdProvider: deterministicIdProvider,
-                    vtableFixups: vtableFixupInfos,
-                    exports: exports,
-                    dataLabelFixups: validatedDataLabelFixups,
-                    tlsData: _tlsData,
-                    cilData: _cilData,
-                    mappedFields: mappedFields);
-
-                return (_diagnostics.ToImmutable(), new CompilationResult(peBuilder, mvidFixup, portablePdb));
-            }
+            ImmutableArray<ILAssemblerPEBuilder.VTableFixupInfo> vtableFixupInfos =
+                BuildVTableFixupInfos(
+                    validatedVTableFixups,
+                    validatedVTableAssociations);
+            ImmutableArray<ILAssemblerPEBuilder.ExportInfo> exports =
+                BuildExportInfos(validatedExports);
 
             // Apply CorFlags from options or directive
-            CorFlags standardCorFlags = _options.CorFlags ?? _corflags;
+            CorFlags corFlags = _options.CorFlags ?? _corflags;
             if (_options.Prefer32Bit)
             {
-                standardCorFlags |= CorFlags.Prefers32Bit;
+                corFlags |= CorFlags.Requires32Bit | CorFlags.Prefers32Bit;
             }
 
-            ILAssemblerPEBuilder standardBuilder = new(
+            ILAssemblerPEBuilder peBuilder = new(
                 header,
                 rootBuilder,
                 ilStream,
-                _cilData,
+                _mappedFieldData,
                 _manifestResources,
-                flags: standardCorFlags,
-                entryPoint: entryPoint,
                 debugDirectoryBuilder: debugDirectoryBuilder,
-                deterministicIdProvider: deterministicIdProvider);
+                entryPoint: entryPoint,
+                flags: corFlags,
+                deterministicIdProvider: deterministicIdProvider,
+                vtableFixups: vtableFixupInfos,
+                exports: exports,
+                dataLabelFixups: validatedDataLabelFixups,
+                tlsData: _tlsData,
+                cilData: _cilData,
+                mappedFields: mappedFields);
 
-            return (_diagnostics.ToImmutable(), new CompilationResult(standardBuilder, mvidFixup, portablePdb));
+            return (_diagnostics.ToImmutable(), new CompilationResult(peBuilder, mvidFixup, portablePdb));
         }
 
         private static BlobContentId GetDeterministicContentId(IEnumerable<Blob> content)
@@ -305,10 +278,10 @@ namespace ILAssembler
             return endOffset - location.Offset;
         }
 
-        private ImmutableArray<VTableExportPEBuilder.DataLabelFixup> ValidateDataLabelFixups()
+        private ImmutableArray<ILAssemblerPEBuilder.DataLabelFixup> ValidateDataLabelFixups()
         {
             var builder =
-                ImmutableArray.CreateBuilder<VTableExportPEBuilder.DataLabelFixup>(
+                ImmutableArray.CreateBuilder<ILAssemblerPEBuilder.DataLabelFixup>(
                     _mappedFieldDataReferenceFixups.Count);
 
             foreach (CILParser.DataLabelReferenceValue reference in _mappedFieldDataReferenceFixups)
@@ -324,7 +297,7 @@ namespace ILAssembler
                     continue;
                 }
 
-                builder.Add(new VTableExportPEBuilder.DataLabelFixup(
+                builder.Add(new ILAssemblerPEBuilder.DataLabelFixup(
                     new DataLocation(reference.Section, reference.DataOffset),
                     target,
                     reference.PointerSize));
@@ -419,7 +392,7 @@ namespace ILAssembler
 
                 ParserRuleContext context = _exportDirectiveContexts[method];
                 string exportName = method.ExportAlias ?? method.Name;
-                if (!VTableExportPEBuilder.IsExportMachineSupported(machine))
+                if (!ILAssemblerPEBuilder.IsExportMachineSupported(machine))
                 {
                     ReportError(
                         DiagnosticIds.UnsupportedNativeExportMachine,
@@ -504,12 +477,12 @@ namespace ILAssembler
             return validatedExports.ToImmutable();
         }
 
-        private static ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> BuildVTableFixupInfos(
+        private static ImmutableArray<ILAssemblerPEBuilder.VTableFixupInfo> BuildVTableFixupInfos(
             ImmutableArray<ValidatedVTableFixup> validatedVTableFixups,
             ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations)
         {
             var builder =
-                ImmutableArray.CreateBuilder<VTableExportPEBuilder.VTableFixupInfo>(
+                ImmutableArray.CreateBuilder<ILAssemblerPEBuilder.VTableFixupInfo>(
                     validatedVTableFixups.Length);
 
             for (int i = 0; i < validatedVTableFixups.Length; i++)
@@ -527,7 +500,7 @@ namespace ILAssembler
                     }
                 }
 
-                builder.Add(new VTableExportPEBuilder.VTableFixupInfo(
+                builder.Add(new ILAssemblerPEBuilder.VTableFixupInfo(
                     fixup.DataLocation,
                     fixup.Entry.SlotCount,
                     fixup.Entry.Flags,
@@ -537,16 +510,16 @@ namespace ILAssembler
             return builder.MoveToImmutable();
         }
 
-        private static ImmutableArray<VTableExportPEBuilder.ExportInfo> BuildExportInfos(
+        private static ImmutableArray<ILAssemblerPEBuilder.ExportInfo> BuildExportInfos(
             ImmutableArray<ValidatedExport> validatedExports)
         {
             var builder =
-                ImmutableArray.CreateBuilder<VTableExportPEBuilder.ExportInfo>(
+                ImmutableArray.CreateBuilder<ILAssemblerPEBuilder.ExportInfo>(
                     validatedExports.Length);
 
             foreach (ValidatedExport export in validatedExports)
             {
-                builder.Add(new VTableExportPEBuilder.ExportInfo(
+                builder.Add(new ILAssemblerPEBuilder.ExportInfo(
                     export.Method.ExportOrdinal,
                     export.Method.ExportAlias ?? export.Method.Name,
                     export.VTableEntryIndex,

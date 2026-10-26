@@ -120,8 +120,10 @@ namespace ILAssembler.Tests
             Assert.Equal(CorFlags.ILOnly, pe.PEHeaders.CorHeader!.Flags);
         }
 
-        [Fact]
-        public void Prefer32BitOption_AddsPreferredCorFlag()
+        [Theory]
+        [InlineData(CorFlags.ILOnly)]
+        [InlineData(CorFlags.ILOnly | CorFlags.Requires32Bit)]
+        public void Prefer32BitOption_AddsPreferredCorFlag(CorFlags initialFlags)
         {
             string source = """
                 .assembly test { }
@@ -132,13 +134,80 @@ namespace ILAssembler.Tests
 
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options
             {
-                CorFlags = CorFlags.ILOnly | CorFlags.Requires32Bit,
+                CorFlags = initialFlags,
                 Prefer32Bit = true
             });
 
-            CorFlags flags = pe.PEHeaders.CorHeader!.Flags;
-            Assert.True(flags.HasFlag(CorFlags.Requires32Bit));
-            Assert.True(flags.HasFlag(CorFlags.Prefers32Bit));
+            Assert.Equal(
+                CorFlags.ILOnly | CorFlags.Requires32Bit | CorFlags.Prefers32Bit,
+                pe.PEHeaders.CorHeader!.Flags);
+        }
+
+        [Theory]
+        [InlineData(Machine.I386, "tls", 0x00000001, 0x00000002)]
+        [InlineData(Machine.I386, "tls", 0x00030003, 0x00010002)]
+        [InlineData(Machine.I386, "tls", 0x00020001, 0x00000002)]
+        [InlineData(Machine.Amd64, "tls", 0x00000001, 0x00000000)]
+        [InlineData(Machine.Amd64, "tls", 0x00030003, 0x00030002)]
+        [InlineData(Machine.Arm64, "tls", 0x00000001, 0x00000000)]
+        [InlineData(Machine.Arm64, "tls", 0x00030003, 0x00030002)]
+        [InlineData(Machine.I386, "pointer", 0x00000001, 0x00000002)]
+        [InlineData(Machine.I386, "pointer", 0x00030003, 0x00010002)]
+        [InlineData(Machine.Amd64, "pointer", 0x00030003, 0x00030002)]
+        [InlineData(Machine.Arm64, "pointer", 0x00030003, 0x00030002)]
+        [InlineData(Machine.I386, "export", 0x00000001, 0x00000002)]
+        [InlineData(Machine.I386, "export", 0x00030003, 0x00010002)]
+        [InlineData(Machine.Amd64, "export", 0x00030003, 0x00030002)]
+        [InlineData(Machine.Arm64, "export", 0x00030003, 0x00030002)]
+        [InlineData(Machine.I386, "vtable", 0x00000001, 0x00000001)]
+        [InlineData(Machine.I386, "vtable", 0x00030003, 0x00030003)]
+        [InlineData(Machine.Amd64, "vtable", 0x00030003, 0x00030003)]
+        [InlineData(Machine.Arm64, "vtable", 0x00030003, 0x00030003)]
+        [InlineData(Machine.I386, "data", 0x00030003, 0x00030003)]
+        [InlineData(Machine.I386, "cil", 0x00030003, 0x00030003)]
+        [InlineData(Machine.I386, "empty-tls", 0x00030003, 0x00030003)]
+        public void DataAndNativeArtifacts_CorFlagsMatchNativeIlasm(
+            Machine machine, string kind, int initialFlags, int expectedFlags)
+        {
+            string width = machine == Machine.I386 ? "int32" : "int64";
+            string declaration = kind switch
+            {
+                "tls" => ".data tls D = int32(42)",
+                "empty-tls" => ".data tls D = int8[0]",
+                "data" => ".data D = int32(42)",
+                "cil" => ".data cil D = int32(42)",
+                "pointer" => ".data D = int32(42)\n.data Pointer = &(D)",
+                "vtable" => $".data D = {width}(0)\n.vtfixup [1] {width} at D",
+                "export" => $$"""
+                    .data D = {{width}}(0)
+                    .vtfixup [1] {{width}} fromunmanaged at D
+                    .method public static void M() cil managed
+                    {
+                        .vtentry 1 : 1
+                        .export [1]
+                        ret
+                    }
+                    """,
+                _ => throw new InvalidOperationException($"Unexpected declaration kind '{kind}'."),
+            };
+            string source = $".assembly test {{}}\n.corflags {initialFlags}\n{declaration}";
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                source, new Options { Machine = machine });
+            Assert.Equal((CorFlags)expectedFlags, pe.PEHeaders.CorHeader!.Flags);
+        }
+
+        [Theory]
+        [InlineData("", CorFlags.ILOnly | CorFlags.Requires32Bit | CorFlags.Prefers32Bit)]
+        [InlineData(".data tls int32[0]", CorFlags.ILOnly | CorFlags.Requires32Bit | CorFlags.Prefers32Bit)]
+        [InlineData(".data tls int32(42)", CorFlags.Requires32Bit)]
+        [InlineData(".data D = int32(42)\n.data Pointer = &(D)", CorFlags.Requires32Bit)]
+        public void Prefer32BitOption_WithNativeArtifacts_MatchesNativeIlasm(string declaration, CorFlags expectedFlags)
+        {
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                $".assembly test {{}}\n{declaration}",
+                new Options { Prefer32Bit = true });
+            Assert.Equal(expectedFlags, pe.PEHeaders.CorHeader!.Flags);
         }
 
         [Fact]
@@ -474,8 +543,6 @@ namespace ILAssembler.Tests
         [Fact]
         public void WithoutDebugOrPdb_DeterministicImageWithExportsHasNoDebugDirectory()
         {
-            // .vtfixup and .export images are built by VTableExportPEBuilder rather than the standard builder;
-            // without a PDB they too have no debug directory, not even ManagedPEBuilder's default Reproducible one.
             string source = """
                 .assembly test { }
                 .assembly extern mscorlib { }
