@@ -595,6 +595,34 @@ namespace ILAssembler.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        public void PortablePdb_NondeterministicId_UsesCurrentTimeAndUniqueGuid(bool debug)
+        {
+            long before = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            BlobContentId first = CompilePdbId();
+            BlobContentId second = CompilePdbId();
+            long after = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            Assert.InRange((long)first.Stamp, before, after);
+            Assert.InRange((long)second.Stamp, before, after);
+            Assert.NotEqual(Guid.Empty, first.Guid);
+            Assert.NotEqual(Guid.Empty, second.Guid);
+            Assert.NotEqual(first.Guid, second.Guid);
+
+            BlobContentId CompilePdbId()
+            {
+                CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(PortablePdbSource, new Options
+                {
+                    Debug = debug,
+                    Pdb = !debug,
+                });
+                using MetadataReaderProvider provider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
+                return new BlobContentId(provider.GetMetadataReader().DebugMetadataHeader!.Id);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         public void PortablePdb_PdbChecksumEntry_IsSha256OfPdbWithIdZeroed(bool deterministic)
         {
             CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(PortablePdbSource, new Options
@@ -614,6 +642,7 @@ namespace ILAssembler.Tests
             }
 
             Assert.Equal("SHA256", checksum.AlgorithmName);
+            Assert.Equal(0u, checksumEntry.Stamp);
             Assert.Equal(SHA256.HashData(pdb), checksum.Checksum.ToArray());
         }
 
