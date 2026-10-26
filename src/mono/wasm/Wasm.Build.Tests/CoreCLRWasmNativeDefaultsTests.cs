@@ -161,11 +161,9 @@ namespace Wasm.Build.Tests
             Assert.Equal(Path.Combine(GetObjDir(config), "R2R") + Path.DirectorySeparatorChar, match.Groups[1].Value);
         }
 
-        // PublishReadyToRunPgoFiles drives a crossgen2 --partial image: with PGO data and R2R on, --partial is
-        // appended and the .mibc flows to crossgen2 as -m:. With no PGO data the full closure is compiled
-        // (no --partial, no PGO input); the gate also requires PublishReadyToRun=true so PGO data with
-        // R2R off remains in the project but does not enable partial compilation. Stops before crossgen2; the crossgen2
-        // args just let the R2R restore resolve a compiler (in-build when BASE_DIR is set, SDK pack otherwise).
+        // Verify that explicit PGO items remain available to the SDK ReadyToRun pipeline and enable
+        // --partial only when ReadyToRun is on. Stops before crossgen2; the compiler arguments only let
+        // restore resolve a compiler (in-build when BASE_DIR is set, SDK pack otherwise).
         [Theory]
         [InlineData(/*profileSet*/ true,  /*r2r*/ true,  /*expectPartial*/ true)]
         [InlineData(/*profileSet*/ false, /*r2r*/ true,  /*expectPartial*/ false)]

@@ -71,10 +71,11 @@ MIBC profile:
 Methods selected by the profile are compiled eagerly and other methods remain available through
 the interpreter. Without PGO files, `PublishReadyToRun` compiles the full closure.
 
-The profile must exist when the project is published and must match the assemblies passed to
-crossgen2. In particular, profiles identify methods in specific assembly builds, so regenerate the
-profile after changing the profiled assemblies. Profiles for trimmed assemblies must be generated
-against the corresponding linker output so their module identities match.
+PGO files must exist when the project is published, but do not need to come from the exact assembly
+builds being published. Profile records for methods that can no longer be resolved are ignored.
+Refresh profiles periodically to keep them representative of the application and its workload;
+as the code and behavior diverge from the captured profile, precompilation coverage and optimization
+quality can degrade. Trimming does not require a profile generated from the exact linker output.
 
 # `WasmApp.{props,targets}`, and `WasmApp.InTree.{props,targets}`
 

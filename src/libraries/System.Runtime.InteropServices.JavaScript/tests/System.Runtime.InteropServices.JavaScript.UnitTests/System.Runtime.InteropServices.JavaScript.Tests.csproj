@@ -26,7 +26,8 @@
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">true</PublishReadyToRun>
   </PropertyGroup>
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
-    <!-- Precompile only the profiled subset; the rest stays interpreted. -->
+    <!-- Exercise mixed R2R/interpreter execution across JS interop boundaries; this is extra coverage,
+         not a workaround required for the tests to pass. -->
     <PublishReadyToRunPgoFiles Include="$(BrowserWasmMibcProfile)" />
   </ItemGroup>
 
