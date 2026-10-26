@@ -310,7 +310,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RunDisablediOSTests)' != 'true'">
-    <!-- PNSE -->
+    <!-- MsQuic is not available -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic/tests/FunctionalTests/System.Net.Quic.Functional.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51414 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl/tests/System.Security.Cryptography.OpenSsl.Tests.csproj" />

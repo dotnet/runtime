@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- DllImports are in shared msquic interop file -->
     <NoWarn>$(NoWarn);SYSLIB1054</NoWarn>
@@ -12,12 +12,13 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetQuic_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == ''">ExcludeApiList.PNSE.txt</ApiExclusionListPath>
+    <IsPlatformNotSupportedFlavor Condition="'$(TargetPlatformIdentifier)' == '' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</IsPlatformNotSupportedFlavor>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPlatformNotSupportedFlavor)' == 'true'">SR.SystemNetQuic_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <ApiExclusionListPath Condition="'$(IsPlatformNotSupportedFlavor)' == 'true'">ExcludeApiList.PNSE.txt</ApiExclusionListPath>
   </PropertyGroup>
 
   <!-- Source files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
+  <ItemGroup Condition="'$(IsPlatformNotSupportedFlavor)' != 'true'">
     <Compile Include="System\Net\Quic\**\*.cs" Exclude="System\Net\Quic\*.Unsupported.cs"/>
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
@@ -40,7 +41,7 @@
   </ItemGroup>
 
   <!-- Unsupported platforms -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
+  <ItemGroup Condition="'$(IsPlatformNotSupportedFlavor)' == 'true'">
     <Compile Include="System\Net\Quic\*.Unsupported.cs" />
   </ItemGroup>
 

@@ -134,7 +134,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.NetworkChange.cs" Link="Common\Interop\Unix\System.Native\Interop.NetworkChange.cs" />
   </ItemGroup>
 
-  <!-- Linux (other than Android) -->
+  <!-- Linux implementation, selected at runtime in the unix flavor -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\Net\NetworkInformation\ExceptionHelper.Linux.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIcmpV4Statistics.cs" />
@@ -178,7 +178,7 @@
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Bsd.cs" />
   </ItemGroup>
 
-  <!-- OSX/FreeBSD/OpenBSD -->
+  <!-- BSD implementation, used by Apple platforms and selected at runtime in the unix flavor -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\Net\NetworkInformation\BsdIcmpV4Statistics.cs" />
     <Compile Include="System\Net\NetworkInformation\BsdIcmpV6Statistics.cs" />
