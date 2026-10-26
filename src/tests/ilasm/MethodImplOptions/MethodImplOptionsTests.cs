@@ -69,13 +69,11 @@ public class MethodImplOptionsTests : IDisposable
         ProcessStartInfo ilasmPsi, ildasmPsi;
         GetIlasmProcessStartInfos(_ilasmFile, _ildasmFile, ilFileName, out disasmIlFileName, out ilasmPsi, out ildasmPsi);
 
-        Process ilasmProcess = Process.Start(ilasmPsi);
-        ilasmProcess.WaitForExit();
-        Assert.Equal(0, ilasmProcess.ExitCode);
+        ProcessExitStatus ilasmStatus = Process.Run(ilasmPsi);
+        Assert.Equal(0, ilasmStatus.ExitCode);
 
-        Process ildasmProcess = Process.Start(ildasmPsi);
-        ildasmProcess.WaitForExit();
-        Assert.Equal(0, ildasmProcess.ExitCode);
+        ProcessExitStatus ildasmStatus = Process.Run(ildasmPsi);
+        Assert.Equal(0, ildasmStatus.ExitCode);
 
         string disasmIl = File.ReadAllText(disasmIlFileName);
         var findMainAttributeRegex =
@@ -103,7 +101,6 @@ public class MethodImplOptionsTests : IDisposable
         string currentDirectory = Environment.CurrentDirectory;
 
         ilasmPsi = new ProcessStartInfo();
-        ilasmPsi.UseShellExecute = false;
         ilasmPsi.WorkingDirectory = currentDirectory;
         ilasmPsi.FileName = ilasmFile;
         string asmDllFileName = $"{Path.GetFileNameWithoutExtension(ilFileName)}.dll";
@@ -111,7 +108,6 @@ public class MethodImplOptionsTests : IDisposable
             $"-nologo -dll -optimize -output={asmDllFileName} {ilFileName}";
 
         ildasmPsi = new ProcessStartInfo();
-        ildasmPsi.UseShellExecute = false;
         ildasmPsi.WorkingDirectory = currentDirectory;
         ildasmPsi.FileName = ildasmFile;
         disasmIlFileName = $"{Path.GetFileNameWithoutExtension(ilFileName)}_dis{Path.GetExtension(ilFileName)}";

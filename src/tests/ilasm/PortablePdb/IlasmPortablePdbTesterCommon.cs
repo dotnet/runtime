@@ -36,16 +36,13 @@ namespace IlasmPortablePdbTests
             var ilasmArgs = $"{CommonIlasmArguments} -output={dllFullPath} {ilSrcFullPath}";
             var ilasmPsi = new ProcessStartInfo
             {
-                UseShellExecute = false,
                 WorkingDirectory = currentDirectory,
                 FileName = ilasmFullPath,
                 Arguments = ilasmArgs
             };
 
-            Process ilasmProcess = Process.Start(ilasmPsi);
-            ilasmProcess.WaitForExit();
-
-            Assert.Equal(0, ilasmProcess.ExitCode);
+            ProcessExitStatus status = Process.Run(ilasmPsi);
+            Assert.Equal(0, status.ExitCode);
             Assert.True(File.Exists(dllFullPath));
             Assert.True(File.Exists(pdbFullPath));
 

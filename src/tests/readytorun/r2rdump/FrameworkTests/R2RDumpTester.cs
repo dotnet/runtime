@@ -57,15 +57,13 @@ namespace R2RDumpTests
 
             ProcessStartInfo processStartInfo = new ProcessStartInfo
             {
-                UseShellExecute = false,
                 FileName = DotNetAbsolutePath,
                 // TODO, what flags do we like to test?
                 Arguments = string.Join(" ", new string[]{"exec", R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile, "--val"})
             };
 
-            Process process = Process.Start(processStartInfo);
-            process.WaitForExit();
-            int exitCode = process.ExitCode;
+            ProcessExitStatus status = Process.Run(processStartInfo);
+            int exitCode = status.ExitCode;
             string outputContent = File.ReadAllText(OutputFile);
             File.Delete(OutputFile);
             // TODO, here is a point where we can add more validation to outputs

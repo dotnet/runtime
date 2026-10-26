@@ -82,17 +82,12 @@ namespace TestTLSWithLoadedDlls
             arguments.Append(System.Reflection.Assembly.GetExecutingAssembly().Location);
             arguments.Append(" RunLotsOfTasks");
 
-            Process process = new Process();
-            process.StartInfo.FileName = GetCorerunPath();
-            process.StartInfo.Arguments = arguments.ToString();
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.EnvironmentVariables["DOTNET_AssertNotStaticTlsResolver"] = "1";
+            ProcessStartInfo startInfo = new ProcessStartInfo(GetCorerunPath(), arguments.ToString());
+            startInfo.EnvironmentVariables["DOTNET_AssertNotStaticTlsResolver"] = "1";
 
-            Console.WriteLine($"Launching {process.StartInfo.FileName} {process.StartInfo.Arguments}");
+            Console.WriteLine($"Launching {startInfo.FileName} {startInfo.Arguments}");
 
-            process.Start();
-            process.WaitForExit();
-            return process.ExitCode;
+            return Process.Run(startInfo).ExitCode;
         }
 
         private static string GetCorerunPath()

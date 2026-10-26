@@ -37,7 +37,7 @@ public class TestConfigTester
                 continue;
             }
 
-            using Process process = new();
+            ProcessStartInfo startInfo = new();
 
             StringBuilder arguments = new();
 
@@ -49,27 +49,26 @@ public class TestConfigTester
 
             arguments.Append($"\"{testConfigApp}\" {mi.Name}");
 
-            process.StartInfo.FileName = corerunPath;
-            process.StartInfo.Arguments = arguments.ToString();
+            startInfo.FileName = corerunPath;
+            startInfo.Arguments = arguments.ToString();
 
             foreach (string key in Environment.GetEnvironmentVariables().Keys)
             {
-                process.StartInfo.EnvironmentVariables[key] = Environment.GetEnvironmentVariable(key);
+                startInfo.EnvironmentVariables[key] = Environment.GetEnvironmentVariable(key);
             }
 
-            Console.WriteLine($"Running: {process.StartInfo.Arguments}");
+            Console.WriteLine($"Running: {startInfo.Arguments}");
             foreach (Attribute ev in envVariables)
             {
                 TestConfig.EnvVarAttribute envVar = (TestConfig.EnvVarAttribute)ev;
-                process.StartInfo.EnvironmentVariables[envVar.Name] = envVar.Value;
+                startInfo.EnvironmentVariables[envVar.Name] = envVar.Value;
                 Console.WriteLine($"    set {envVar.Name}={envVar.Value}");
             }
 
-            process.Start();
-            process.WaitForExit();
-            if (process.ExitCode != TestConfig.Success)
+            ProcessExitStatus status = Process.Run(startInfo);
+            if (status.ExitCode != TestConfig.Success)
             {
-                throw new Exception($"Failed: {mi.Name}: exit code = {process.ExitCode}");
+                throw new Exception($"Failed: {mi.Name}: exit code = {status.ExitCode}");
             }
         }
     }
