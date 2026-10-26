@@ -26,15 +26,31 @@ public class ConstantMaskReuse
         Vector<int> a = Vector.Create(11);
         Vector<int> b = Vector.Create(22);
         Vector<int> c = Vector.Create(33);
+        int[] values = new int[32];
         Vector<ulong> mask1 = Vector128.CreateScalar(0x1UL).AsVector();
         Vector<ulong> mask2 = Vector128.CreateScalar(0x2UL).AsVector();
 
+        Consume(PTrueMultipleCompareMask(a, b));
         Consume(PTrueMultipleCreateTrueMask(a, b, c));
+        Consume(PTrueMultipleCreateTrueMaskPattern(a, b, c));
+        Consume(PFalseMultipleCreateFalseMask(a, b, c));
+        Consume(PFalseMultipleLoadMasks(values));
+        Consume(PTrueMultipleAllBitsMask(a, b, c));
         Consume(PTrueMultipleEmbeddedMask(a, b, c));
+        Consume(PTrueMultipleMixedSources(a, b, c));
         Consume(PTrueDifferentPatterns(a, b, c));
         Consume(PTrueDifferentElementSizes(a));
         Consume(PTrueMultipleConversionTrueMask(mask1, mask2));
         Consume(PTrueSeparatedByCall(a, b));
+
+        if (Sve2.IsSupported)
+        {
+            Vector<double> d = Vector.Create(42.0);
+            Vector<byte> e = Vector.Create((byte)42);
+
+            Consume(PTrueMultipleSve2Log2Negate(d));
+            Consume(PTrueMultipleSve2ZeroExtend8(e));
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -109,5 +125,101 @@ public class ConstantMaskReuse
         Vector<int> result2 = Sve.Negate(Identity(b));
         Consume(result2);
         return result1;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<int> PTrueMultipleCompareMask(Vector<int> a, Vector<int> b)
+    {
+        //ARM64: ptrue {{p[0-9]+}}.s
+        //ARM64-NOT: ptrue
+        Vector<int> mask1 = Sve.CompareGreaterThan(a, b);
+        Vector<int> mask2 = Sve.CompareLessThan(a, b);
+        Vector<int> result1 = Sve.ConditionalSelect(mask1, a, b);
+        Vector<int> result2 = Sve.ConditionalSelect(mask2, b, a);
+        return Sve.Add(result1, result2);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<int> PTrueMultipleCreateTrueMaskPattern(Vector<int> a, Vector<int> b, Vector<int> c)
+    {
+        //ARM64: ptrue {{p[0-9]+}}.s
+        //ARM64-NOT: ptrue
+        //ARM64: ptrue {{p[0-9]+}}.b, vl1
+        //ARM64-NOT: ptrue
+        Vector<int> mask1 = Sve.CreateBreakAfterMask(Sve.CompareGreaterThan(a, b), Sve.CreateTrueMaskInt32(SveMaskPattern.VectorCount1));
+        Vector<int> mask2 = Sve.CreateBreakAfterMask(Sve.CompareLessThan(a, b), Sve.CreateTrueMaskInt32(SveMaskPattern.VectorCount1));
+        Vector<int> result1 = Sve.ConditionalSelect(mask1, a, b);
+        Vector<int> result2 = Sve.ConditionalSelect(mask2, b, c);
+        return Sve.Add(result1, result2);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<int> PFalseMultipleCreateFalseMask(Vector<int> a, Vector<int> b, Vector<int> c)
+    {
+        //ARM64: ptrue {{p[0-9]+}}.s
+        //ARM64-NOT: ptrue
+        //ARM64-NOT: pfalse
+        //ARM64: pfalse {{p[0-9]+}}.b
+        //ARM64-NOT: ptrue
+        //ARM64-NOT: pfalse
+        Vector<int> mask1 = Sve.CreateBreakAfterMask(Sve.CompareGreaterThan(a, b), Sve.CreateFalseMaskInt32());
+        Vector<int> mask2 = Sve.CreateBreakAfterMask(Sve.CompareLessThan(a, b), Sve.CreateFalseMaskInt32());
+        Vector<int> result1 = Sve.ConditionalSelect(mask1, a, b);
+        Vector<int> result2 = Sve.ConditionalSelect(mask2, b, c);
+        return Sve.Add(result1, result2);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe Vector<int> PFalseMultipleLoadMasks(int[] values)
+    {
+        //ARM64: pfalse {{p[0-9]+}}.b
+        //ARM64-NOT: pfalse
+        fixed (int* ptr = values)
+        {
+            Vector<int> result1 = Sve.LoadVectorNonFaulting(Sve.CreateFalseMaskInt32(), ptr);
+            Vector<int> result2 = Sve.LoadVectorNonFaulting(Vector<int>.Zero, ptr + 1);
+            return Sve.Add(result1, result2);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<int> PTrueMultipleAllBitsMask(Vector<int> a, Vector<int> b, Vector<int> c)
+    {
+        //ARM64: ptrue {{p[0-9]+}}.s
+        //ARM64-NOT: ptrue
+        Vector<int> result1 = Sve.ConditionalSelect(Vector<int>.AllBitsSet, Sve.AbsoluteDifference(a, b), a);
+        Vector<int> result2 = Sve.ConditionalSelect(Vector<int>.AllBitsSet, Sve.Abs(c), c);
+        return Sve.Add(result1, result2);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<int> PTrueMultipleMixedSources(Vector<int> a, Vector<int> b, Vector<int> c)
+    {
+        //ARM64: ptrue {{p[0-9]+}}.s
+        //ARM64-NOT: ptrue
+        Vector<int> mask = Sve.CreateBreakAfterMask(Sve.CompareGreaterThan(a, b), Sve.CreateTrueMaskInt32());
+        Vector<int> result1 = Sve.ConditionalSelect(mask, Sve.AbsoluteDifference(a, b), a);
+        Vector<int> result2 = Sve.ConditionalSelect(Vector<int>.AllBitsSet, Sve.Abs(c), c);
+        return Sve.Add(result1, result2);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<double> PTrueMultipleSve2Log2Negate(Vector<double> value)
+    {
+        //ARM64: ptrue {{p[0-9]+}}.d
+        //ARM64-NOT: ptrue
+        Vector<long> exponent = Sve2.Log2(value);
+        Vector<long> scale = Sve.Negate(exponent);
+        return Sve.Scale(value, scale);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<ushort> PTrueMultipleSve2ZeroExtend8(Vector<byte> value)
+    {
+        //ARM64: ptrue {{p[0-9]+}}.h
+        //ARM64-NOT: ptrue
+        Vector<ushort> result1 = Sve.ZeroExtend8((Vector<ushort>)value);
+        Vector<ushort> result2 = Sve.ZeroExtend8((Vector<ushort>)Sve.Add(value, value));
+        return Sve.Add(result1, result2);
     }
 }
