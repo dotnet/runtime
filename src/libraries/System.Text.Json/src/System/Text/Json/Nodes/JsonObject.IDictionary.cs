@@ -54,10 +54,8 @@ namespace System.Text.Json.Nodes
         /// </returns>
         public bool TryAdd(string propertyName, JsonNode? value, out int index)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
+
             bool success = Dictionary.TryAdd(propertyName, value, out index);
             if (success)
             {

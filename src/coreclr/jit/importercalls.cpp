@@ -67,7 +67,7 @@ GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         }
         else
         {
-            instParam = impTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
+            instParam = impTokenToHandle(pResolvedToken, &runtimeLookup);
             if (instParam == nullptr)
             {
                 assert(compDonotInline());
@@ -116,7 +116,7 @@ GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         }
         else
         {
-            instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
+            instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup);
             if (instParam == nullptr)
             {
                 assert(compDonotInline());
@@ -5339,8 +5339,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     {
                         JITDUMP("Optimizing constrained box-this obj.getType() to direct type construction\n");
                         impPopStack();
-                        GenTree* typeHandleOp =
-                            impTokenToHandle(pConstrainedResolvedToken, nullptr, true /* mustRestoreHandle */);
+                        GenTree* typeHandleOp = impTokenToHandle(pConstrainedResolvedToken);
                         if (typeHandleOp == nullptr)
                         {
                             assert(compDonotInline());

@@ -491,35 +491,40 @@ private:
     //
 
     // This is for a hashing of ClassID values
-    struct CLASSHASHENTRY : HASHENTRY
+    struct AllocByClassEntry
     {
         ClassID         m_clsId;        // The class ID (also the key)
         size_t          m_count;        // How many of this class have been counted
     };
 
-    // This is a simple implementation of CHashTable to provide a very simple
-    // implementation of the Cmp pure virtual function
-    class CHashTableImpl : public CHashTable
+    class AllocByClassTraits : public NoRemoveSHashTraits<NonDacAwareSHashTraits<DefaultSHashTraits<AllocByClassEntry>>>
     {
     public:
-        CHashTableImpl(ULONG iBuckets);
-        virtual ~CHashTableImpl();
-
-    protected:
-        virtual BOOL Cmp(SIZE_T k1, const HASHENTRY * pc2);
+        typedef ClassID key_t;
+        static key_t GetKey(const element_t &entry) { return entry.m_clsId; }
+        static BOOL Equals(key_t left, key_t right) { return left == right; }
+        static count_t Hash(key_t key)
+        {
+            count_t hash = static_cast<count_t>(key);
+#ifdef HOST_64BIT
+            hash = HashCOUNT_T(hash, static_cast<count_t>(key >> 32));
+#endif
+            return hash;
+        }
+        static element_t Null() { return {}; }
+        static bool IsNull(const element_t &entry) { return entry.m_clsId == 0; }
     };
+
+    typedef SHash<AllocByClassTraits> AllocByClassTable;
 
     // This contains the data for storing allocation information
     // in terms of numbers of objects sorted by class.
     struct AllocByClassData
     {
-        CHashTableImpl *    pHashTable;     // The hash table
-        CLASSHASHENTRY *    arrHash;        // Array that the hashtable uses for linking
-        ULONG               cHash;          // The total number of elements in arrHash
-        ULONG               iHash;          // Next empty entry in the hash array
-        ClassID *           arrClsId;       // Array of ClassIDs for the call to ObjectsAllocatedByClass
-        ULONG *             arrcObjects;    // Array of counts for the call to ObjectsAllocatedByClass
-        size_t              cLength;        // Length of the above two parallel arrays
+        AllocByClassTable   hashTable;
+        ClassID *           arrClsId = nullptr;    // Array of ClassIDs for ObjectsAllocatedByClass
+        ULONG *             arrcObjects = nullptr; // Array of counts for ObjectsAllocatedByClass
+        size_t              cLength = 0;          // Length of the above two parallel arrays
     };
 
     static const UINT kcReferencesMax = 512;

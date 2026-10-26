@@ -1591,6 +1591,32 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
 
+        [Theory]
+        [InlineData("", HttpStatusCode.OK)]
+        [InlineData(" ", HttpStatusCode.OK)]
+        [InlineData("\t", HttpStatusCode.OK)]
+        [InlineData(",", HttpStatusCode.OK)]
+        [InlineData(" , , \t", HttpStatusCode.OK)]
+        [InlineData("invalid", HttpStatusCode.OK)]
+        [InlineData("", HttpStatusCode.Found)]
+        [InlineData(",", HttpStatusCode.Found)]
+        [SkipOnPlatform(TestPlatforms.Browser, "SocketsHttpHandler is not supported on Browser")]
+        public async Task SendAsync_EmptyOrInvalidAltSvcHeader_Success(string altSvc, HttpStatusCode statusCode)
+        {
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = false;
+            using HttpClient client = CreateHttpClient(handler);
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpResponseMessage response = await client.GetAsync(uri);
+                Assert.Equal(statusCode, response.StatusCode);
+                Assert.Equal(HttpVersion.Version11, response.Version);
+            },
+            server => server.AcceptConnectionSendResponseAndCloseAsync(statusCode, $"Alt-Svc: {altSvc}\r\n"),
+            new LoopbackServer.Options { UseSsl = true });
+        }
+
         [Fact]
         public async Task SendAsync_UriWithNonDnsNonAsciiHost_Throws()
         {
