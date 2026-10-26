@@ -115,6 +115,8 @@ namespace ILAssembler
             {
                 // Octal support isn't built-in, so we'll do it manually.
                 result = 0;
+                long maximum = negate ? -(long)int.MinValue : uint.MaxValue;
+                bool overflow = false;
                 for (int i = 0; i < value.Length; i++)
                 {
                     int digitValue = value[i] - '0';
@@ -124,6 +126,13 @@ namespace ILAssembler
                         invalidOctal = true;
                         return false;
                     }
+                    if (restrictToInt32 && (overflow || result > (maximum - digitValue) / 8))
+                    {
+                        // Keep validating the remaining digits so invalid octal takes precedence.
+                        overflow = true;
+                        continue;
+                    }
+
                     if (i != 0)
                     {
                         result *= 8;
@@ -132,15 +141,8 @@ namespace ILAssembler
                     result += digitValue;
                 }
 
-                // uint.MaxValue has 11 octal digits; longer magnitudes may have wrapped past 64 bits.
-                if (restrictToInt32 && (value.TrimStart('0').Length > 11 ||
-                    result > (negate ? -(long)int.MinValue : uint.MaxValue)))
-                {
-                    return false;
-                }
-
                 if (negate) result = -result;
-                return true;
+                return !overflow;
             }
 
             if (restrictToInt32)

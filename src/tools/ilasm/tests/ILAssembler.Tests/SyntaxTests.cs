@@ -84,6 +84,8 @@ namespace ILAssembler.Tests
         [InlineData("-0x80000001")]
         [InlineData("-0xffffffff")]
         [InlineData("040000000000")]
+        [InlineData("037777777777777777777777777777777777777777777777777")]
+        [InlineData("-037777777777777777777777777777777777777777777777777")]
         [InlineData("-020000000001")]
         [InlineData("18446744073709551615")]
         [InlineData("-18446744073709551615")]
@@ -121,6 +123,8 @@ namespace ILAssembler.Tests
         [InlineData("09")]
         [InlineData("-018")]
         [InlineData("02000000000000000000008")]
+        [InlineData("037777777777777777777777777777777777777777777777778")]
+        [InlineData("-037777777777777777777777777777777777777777777777779")]
         public void InvalidOctalIntegerLiteral_ReportsDiagnostic(string literal)
         {
             string source = $$"""
