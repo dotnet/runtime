@@ -49,9 +49,9 @@ PLATFORM_THREAD_LOCAL size_t minipal_cached_thread_id;
 size_t minipal_get_current_thread_id_no_cache(void)
 {
     size_t tid;
-#if defined(__wasm) && !defined(_REENTRANT)
-    tid = 1; // In non-reentrant WASM builds, we define a single thread with ID 1.
-#else // !__wasm || _REENTRANT
+#if defined(__wasm) && !defined(_REENTRANT) && !defined(__EMSCRIPTEN__)
+    tid = 1; // In non-reentrant WASI builds, we define a single thread with ID 1.
+#else // !__wasm || _REENTRANT || __EMSCRIPTEN__
 
 #if defined(__linux__)
     tid = (size_t)syscall(SYS_gettid);
@@ -70,12 +70,13 @@ size_t minipal_get_current_thread_id_no_cache(void)
 #elif defined(__sun)
     tid = (size_t)pthread_self();
 #elif defined(__wasm)
+    // Emscripten libraries built without -pthread can also be linked into multithreaded applications.
     tid = (size_t)(void*)pthread_self();
 #else
 #error "Unsupported platform"
 #endif
 
-#endif // __wasm && !_REENTRANT
+#endif // __wasm && !_REENTRANT && !__EMSCRIPTEN__
     return tid;
 }
 
