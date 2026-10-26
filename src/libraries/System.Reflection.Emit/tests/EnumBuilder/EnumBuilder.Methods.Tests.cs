@@ -258,7 +258,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(new BoolAttribute(true), objVals[0]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         public void EnumNotCreated_UsedByCreatedType_ThrowsWithHelpfulMessage()
         {
             EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));

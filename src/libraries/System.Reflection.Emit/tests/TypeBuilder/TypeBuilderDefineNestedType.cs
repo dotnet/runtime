@@ -255,7 +255,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<NotSupportedException>(() => type.AsType().GetNestedTypes(Helpers.AllFlags));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         public void NestedTypeNotCreated_UsedByCreatedType_ThrowsWithHelpfulMessage()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

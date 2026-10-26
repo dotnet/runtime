@@ -4148,7 +4148,11 @@ runtime_resolve (MonoObject *obj, MonoError *error)
 		resolve_method = m;
 	}
 	void *args [ ] = { obj };
-	return mono_runtime_invoke_checked (resolve_method, NULL, args, error);
+	MonoObject *exc = NULL;
+	MonoObject *res = mono_runtime_try_invoke (resolve_method, NULL, args, &exc, error);
+	if (exc && is_ok (error))
+		mono_error_set_exception_instance (error, (MonoException*)exc);
+	return res;
 }
 
 gpointer
