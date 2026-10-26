@@ -552,9 +552,12 @@ namespace ILAssembler.Tests
             {
                 Assert.NotNull(result);
                 using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
-                Assert.Equal(0, pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
+                MetadataReader reader = pe.GetMetadataReader();
+                MethodDefinitionHandle mainHandle = reader.MethodDefinitions
+                    .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "Main");
+                Assert.Equal(MetadataTokens.GetToken(mainHandle), pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
                 using MetadataReaderProvider pdb = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
-                Assert.True(pdb.GetMetadataReader().DebugMetadataHeader!.EntryPoint.IsNil);
+                Assert.Equal(mainHandle, pdb.GetMetadataReader().DebugMetadataHeader!.EntryPoint);
             }
             else
             {
@@ -592,8 +595,10 @@ namespace ILAssembler.Tests
             Assert.Equal(MetadataTokens.GetToken(mainHandle), pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
         }
 
-        [Fact]
-        public void InstanceEntryPoint_DoesNotPreventSubsequentStaticEntryPoint()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void InstanceEntryPoint_WithSubsequentEntryPoint_ReportsDuplicateAndRetainsFirst(bool errorTolerant)
         {
             string source = """
                 .assembly test { }
@@ -605,16 +610,35 @@ namespace ILAssembler.Tests
                 """;
 
             var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
-                source, new Options { ErrorTolerant = true, Debug = true });
-            Assert.Equal(DiagnosticIds.InstanceEntryPoint, Assert.Single(diagnostics).Id);
-            Assert.NotNull(result);
-            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
-            MetadataReader reader = pe.GetMetadataReader();
-            MethodDefinitionHandle mainHandle = reader.MethodDefinitions
-                .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "Main");
-            Assert.Equal(MetadataTokens.GetToken(mainHandle), pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
-            using MetadataReaderProvider pdb = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
-            Assert.Equal(mainHandle, pdb.GetMetadataReader().DebugMetadataHeader!.EntryPoint);
+                source, new Options { ErrorTolerant = errorTolerant, Debug = true });
+            Assert.Collection(diagnostics,
+                error =>
+                {
+                    Assert.Equal(DiagnosticIds.InstanceEntryPoint, error.Id);
+                    Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+                    Assert.Equal(new SourceSpan(source.IndexOf(".entrypoint", StringComparison.Ordinal), ".entrypoint".Length), error.Location.Span);
+                },
+                error =>
+                {
+                    Assert.Equal(DiagnosticIds.DuplicateEntryPoint, error.Id);
+                    Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+                    Assert.Equal(new SourceSpan(source.LastIndexOf(".entrypoint", StringComparison.Ordinal), ".entrypoint".Length), error.Location.Span);
+                });
+            if (errorTolerant)
+            {
+                Assert.NotNull(result);
+                using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+                MetadataReader reader = pe.GetMetadataReader();
+                MethodDefinitionHandle invalidHandle = reader.MethodDefinitions
+                    .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "Invalid");
+                Assert.Equal(MetadataTokens.GetToken(invalidHandle), pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
+                using MetadataReaderProvider pdb = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
+                Assert.Equal(invalidHandle, pdb.GetMetadataReader().DebugMetadataHeader!.EntryPoint);
+            }
+            else
+            {
+                Assert.Null(result);
+            }
         }
 
         [Fact]

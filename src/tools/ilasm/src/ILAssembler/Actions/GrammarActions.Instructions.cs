@@ -275,7 +275,6 @@ internal sealed partial class GrammarActions
                 DiagnosticIds.InstanceEntryPoint,
                 DiagnosticMessageTemplates.InstanceEntryPoint,
                 directiveToken);
-            return;
         }
 
         _entityRegistry.EntryPoint = _currentMethod.Definition;
