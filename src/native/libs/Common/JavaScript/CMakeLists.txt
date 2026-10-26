@@ -46,6 +46,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/run.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/shared-signaling.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/types.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/worker-exports.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/worker-imports.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/worker-proxy.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/worker-runtime.ts"

@@ -4,8 +4,8 @@
 import type { JSMarshalerArguments } from "./types";
 import { JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 import {
-    allocatePromiseId, JSIMPORT_ERROR_CAPACITY, JSIMPORT_RING_CAPACITY, jsimportEntryOffset,
-    MemoryViewManager, OFFSET_JSIMPORT_ERROR_LENGTH, OFFSET_JSIMPORT_ERROR_TEXT,
+    allocatePromiseId, JSIMPORT_RING_CAPACITY, jsimportEntryOffset,
+    MemoryViewManager, OFFSET_JSIMPORT_ERROR_LENGTH, readSharedError, writeSharedError,
     OFFSET_JSIMPORT_HEAD, OFFSET_JSIMPORT_TAIL, OFFSET_WAKEUP_MAIN, OFFSET_WAKEUP_WORKER,
     RING_ENTRY_ARGS_PTR, RING_ENTRY_HANDLE, RING_ENTRY_PROMISE_ID, RING_ENTRY_SIGNAL,
     SignalState, wakeMain, wakeWorker,
@@ -29,6 +29,7 @@ export function createWorkerJSImportDispatcher(
     const modules = new Set<string>();
     let nextHandle = 1;
     let stopped = false;
+    let dispatching = false;
 
     function setModuleImports(moduleName: string, moduleImports: unknown): void {
         if (stopped) throw new Error("withWorker(): runtime has exited");
@@ -74,7 +75,14 @@ export function createWorkerJSImportDispatcher(
                     throw new Error("withWorker(): invalid UI import argument frame");
                 }
                 const value = views.i32[(pointer + 2 * JavaScriptMarshalerArgSize + JSMarshalerArgumentOffsets.Int32Value) / 4];
-                const result = invoke(value);
+                let response: unknown;
+                dispatching = true;
+                try {
+                    response = invoke(value);
+                } finally {
+                    dispatching = false;
+                }
+                const result = response;
                 const isNull = result === null || result === undefined;
                 if (!isNull && (typeof result !== "number" || !Number.isInteger(result) || result < -0x8000_0000 || result > 0x7fff_ffff)) {
                     throw new Error("withWorker(): UI import must return a synchronous Int32");
@@ -84,13 +92,8 @@ export function createWorkerJSImportDispatcher(
                 output.u8[resultPointer + JSMarshalerArgumentOffsets.Type] = isNull ? MarshalerType.None : MarshalerType.Int32;
                 output.i32[(resultPointer + JSMarshalerArgumentOffsets.Int32Value) / 4] = isNull ? 0 : result;
             } catch (error) {
-                let message = error instanceof Error ? error.message : String(error);
-                // M2 has one synchronous import in flight. Nested calls need per-call error storage.
-                if (message.length > JSIMPORT_ERROR_CAPACITY) {
-                    message = `withWorker(): UI import error message exceeds ${JSIMPORT_ERROR_CAPACITY} UTF-16 code units`;
-                }
-                for (let i = 0; i < message.length; i++) signal[OFFSET_JSIMPORT_ERROR_TEXT + i] = message.charCodeAt(i);
-                Atomics.store(signal, OFFSET_JSIMPORT_ERROR_LENGTH, message.length);
+                // One synchronous import is in flight. Nested calls need per-call error storage.
+                writeSharedError(signal, OFFSET_JSIMPORT_ERROR_LENGTH, error, "UI import");
                 state = SignalState.ERROR;
             }
             Atomics.store(signal, entry + RING_ENTRY_SIGNAL, state);
@@ -125,7 +128,7 @@ export function createWorkerJSImportDispatcher(
     }
 
     listen();
-    return { setModuleImports, processPending, stop };
+    return { setModuleImports, processPending, stop, isDispatching: () => dispatching };
 }
 
 export function createWorkerJSImportInvoker(signal: Int32Array, memory: MemoryViewManager, handle: number) {
@@ -153,11 +156,7 @@ export function createWorkerJSImportInvoker(signal: Int32Array, memory: MemoryVi
             }
             if (Atomics.load(signal, entry + RING_ENTRY_PROMISE_ID) !== id) throw new Error("withWorker(): UI import completion mismatch");
             if (state === SignalState.ERROR) {
-                const length = Atomics.load(signal, OFFSET_JSIMPORT_ERROR_LENGTH);
-                if (length < 0 || length > JSIMPORT_ERROR_CAPACITY) throw new Error("withWorker(): invalid UI import error length");
-                let message = "";
-                for (let i = 0; i < length; i++) message += String.fromCharCode(signal[OFFSET_JSIMPORT_ERROR_TEXT + i]);
-                throw new Error(message);
+                throw readSharedError(signal, OFFSET_JSIMPORT_ERROR_LENGTH);
             }
             if (state !== SignalState.DONE) throw new Error("withWorker(): invalid UI import completion");
             const views = memory.refreshIfNeeded();

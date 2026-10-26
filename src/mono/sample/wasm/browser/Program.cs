@@ -41,6 +41,20 @@ namespace Sample
         internal static partial int DisplayMeaning(int meaning);
 
         [JSExport]
+        internal static int Increment(int value)
+        {
+            if (value == -1)
+                throw new InvalidOperationException("M3 export failure");
+            return checked(value + 1);
+        }
+
+        [JSExport]
+        internal static int ThroughImport(int value)
+        {
+            return DisplayMeaning(value);
+        }
+
+        [JSExport]
         internal static async Task PrintMeaning(Task<int> meaningPromise)
         {
             Console.WriteLine("Meaning of life is " + await meaningPromise);

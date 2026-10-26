@@ -25,6 +25,9 @@ import {
     allocatePromiseId,
     wakeMain,
     MemoryViewManager,
+    OFFSET_VERSION,
+    SIGNALING_BUFFER_BYTE_SIZE,
+    SIGNALING_VERSION,
 } from "./shared-signaling";
 
 import type { WorkerCommandMessage, WorkerInitMessage, WorkerToMainMessage } from "./worker-runtime";
@@ -32,6 +35,7 @@ import { scriptUrl } from "./bootstrap";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { dotnetLogger, Module } from "./cross-module";
 import { createWorkerJSImportDispatcher } from "./worker-imports";
+import { createWorkerJSExportClient } from "./worker-exports";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -71,6 +75,11 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
                 terminate(new Error("withWorker(): worker WASM memory is missing or not shared"));
                 return;
             }
+            if (!(msg.signalBuffer instanceof SharedArrayBuffer) || msg.signalBuffer.byteLength !== SIGNALING_BUFFER_BYTE_SIZE
+                || Atomics.load(new Int32Array(msg.signalBuffer), OFFSET_VERSION) !== SIGNALING_VERSION) {
+                terminate(new Error("withWorker(): incompatible worker signaling protocol"));
+                return;
+            }
             if (timeoutId !== undefined) {
                 clearTimeout(timeoutId);
             }
@@ -106,9 +115,8 @@ export async function createWorkerProxy(config: LoaderConfig): Promise<RuntimeAP
 // -----------------------------------------------------------
 // Build the proxy RuntimeAPI returned to the caller
 //
-// Only runMain, runMainAndExit, exit, getConfig, and
-// runtimeBuildInfo are functional. All other APIs throw
-// "not supported in worker proxy mode" for now.
+// Supports lifecycle operations and scalar synchronous interop.
+// Other API surfaces remain explicit unsupported stubs.
 // -----------------------------------------------------------
 
 function buildProxyRuntimeAPI(
@@ -125,9 +133,14 @@ function buildProxyRuntimeAPI(
     let exiting = false;
     let exitRequested = false;
     const workerImports = createWorkerJSImportDispatcher(signalView, memoryViews, message => worker.postMessage(message), terminate);
+    const workerExports = createWorkerJSExportClient(signalView, memoryViews, worker, workerImports.processPending, () => {
+        if (exiting || exited) throw exited ?? new Error("withWorker(): runtime is exiting");
+        if (workerImports.isDispatching()) throw new Error("withWorker(): nested synchronous exports are not supported yet");
+    }, terminate);
 
     registerFailureHandler(error => {
         workerImports.stop();
+        workerExports.stop(error);
         exited = error;
         pendingCommand?.abort(error);
         wakeMain(signalView);
@@ -197,10 +210,10 @@ function buildProxyRuntimeAPI(
         INTERNAL: { workerMemoryViews: memoryViews, workerImports },
         Module,
         runtimeId: 0,
-        getAssemblyExports: notSupported("getAssemblyExports"),
+        getAssemblyExports: workerExports.getAssemblyExports,
         setModuleImports: (moduleName: string, moduleImports: unknown): void => {
             if (exiting || exited) throw exited ?? new Error("withWorker(): runtime is exiting");
-            if (pendingCommand) throw new Error("withWorker(): register module imports before running managed code");
+            if (pendingCommand || workerExports.isCalling()) throw new Error("withWorker(): register module imports before running managed code");
             workerImports.setModuleImports(moduleName, moduleImports);
         },
         invokeLibraryInitializers: notSupported("invokeLibraryInitializers"),

@@ -14,9 +14,23 @@ async function createFixture(options = {}) {
     const calls = [];
     const errors = [];
     const workerListeners = [];
+    const workerErrorListeners = [];
     const imports = new Map();
     let uiApi;
+    let workerWake;
     const atomics = Object.create(Atomics);
+    atomics.waitAsync = (array, index, expected) => index === 3
+        ? { async: true, value: { then: callback => workerWake = callback } }
+        : Atomics.waitAsync(array, index, expected);
+    atomics.notify = (array, index) => {
+        const result = Atomics.notify(array, index);
+        if (index === 3 && workerWake) {
+            const callback = workerWake;
+            workerWake = undefined;
+            callback();
+        }
+        return result;
+    };
     atomics.wait = (array, index, expected) => {
         uiApi.INTERNAL.workerImports.processPending();
         assert.notEqual(Atomics.load(array, index), expected, "UI dispatch must wake the synchronous worker wait");
@@ -45,6 +59,23 @@ async function createFixture(options = {}) {
     const runtime = {
         runtimeBuildInfo: {},
         INTERNAL: {
+            getWorkerAssemblyExports: async assemblyName => {
+                calls.push(["exports", assemblyName]);
+                if (options.getExports) await options.getExports();
+                return [
+                    { path: ["Sample", "Test", "Scalar"], handle: 1, supported: true },
+                    { path: ["Sample", "Test", "Scalar.123"], handle: 1, supported: true },
+                    { path: ["Sample", "Test", "Async"], handle: 2, supported: false },
+                ];
+            },
+            invokeWorkerJSExport: (handle, pointer) => {
+                assert.equal(handle, 1);
+                const heap = new Int32Array(memory.buffer);
+                const argument = heap[(pointer + 64) / 4];
+                const result = options.exportFn ? options.exportFn(argument, imports, pointer) : argument + 1;
+                heap[(pointer + 32) / 4] = result;
+                new Uint8Array(memory.buffer)[pointer + 32 + 12] = 7;
+            },
             registerWorkerJSImport: (moduleName, functionName, invoke) => {
                 if (!imports.has(moduleName)) imports.set(moduleName, new Map());
                 imports.get(moduleName).set(functionName, invoke);
@@ -67,7 +98,10 @@ async function createFixture(options = {}) {
     const context = createContext({
         AbortController, Atomics: atomics, SharedArrayBuffer, setTimeout, clearTimeout,
         self: {
-            addEventListener: (_type, listener) => workerListeners.push(listener),
+            addEventListener: (type, listener) => {
+                if (type === "message") workerListeners.push(listener);
+                if (type === "error") workerErrorListeners.push(listener);
+            },
             postMessage: data => {
                 const message = structuredClone(data);
                 if (message.type === "ready" && options.invalidReadyMemory) {
@@ -75,7 +109,20 @@ async function createFixture(options = {}) {
                         ? undefined
                         : new WebAssembly.Memory({ initial: 1 });
                 }
-                queueMicrotask(() => workers[0].onmessage?.({ data: message }));
+                if (message.type === "ready" && options.invalidSignaling === "version") {
+                    Atomics.store(new Int32Array(message.signalBuffer), 0, -1);
+                }
+                if (message.type === "ready" && options.invalidSignaling === "length") {
+                    message.signalBuffer = new SharedArrayBuffer(4);
+                }
+                if (message.type === "ready" && options.invalidSignaling === "non-shared") {
+                    message.signalBuffer = new ArrayBuffer(message.signalBuffer.byteLength);
+                }
+                queueMicrotask(() => {
+                    const event = { data: message };
+                    workers[0].onmessage?.(event);
+                    for (const listener of workers[0].listeners) listener(event);
+                });
             },
             close: () => workers[0].closed = true,
         },
@@ -83,7 +130,14 @@ async function createFixture(options = {}) {
             constructor() {
                 this.terminated = false;
                 this.closed = false;
+                this.listeners = new Set();
                 workers.push(this);
+            }
+            addEventListener(_type, listener) {
+                this.listeners.add(listener);
+            }
+            removeEventListener(_type, listener) {
+                this.listeners.delete(listener);
             }
             postMessage(message) {
                 const data = structuredClone(message);
@@ -148,12 +202,194 @@ async function createFixture(options = {}) {
     await proxyModule.evaluate();
     return {
         workers, calls, errors, termination, memory, module, allocations, imports,
+        failWorker: error => workerErrorListeners.forEach(listener => listener({ error, message: error.message })),
         create: async (config = { workerOptions: { timeoutMs: 1000 } }) => {
             uiApi = await proxyModule.namespace.createWorkerProxy(config);
             return uiApi;
         },
     };
 }
+
+test("worker exports return primitives synchronously and preserve aliases across ring wraparound", { timeout: 3000 }, async () => {
+    const fixture = await createFixture();
+    const api = await fixture.create();
+    try {
+        const exports = await api.getAssemblyExports("Test.dll");
+        assert.equal(await api.getAssemblyExports("Test"), exports);
+        const scalar = exports.Sample.Test.Scalar;
+        assert.equal(exports.Sample.Test["Scalar.123"], scalar);
+        const allocations = fixture.allocations.size;
+        for (let i = 0; i < 65; i++) {
+            const result = scalar(i);
+            assert.equal(typeof result, "number");
+            assert.equal(result, i + 1);
+        }
+        assert.equal(scalar(null), 1);
+        assert.equal(scalar(undefined), 1);
+        assert.equal(scalar(-2147483648), -2147483647);
+        assert.equal(scalar(2147483646), 2147483647);
+        assert.throws(() => scalar(2147483648), /Int32/);
+        assert.throws(() => exports.Sample.Test.Async(1), /synchronous.*Int32/);
+        assert.equal(fixture.allocations.size, allocations);
+        assert.equal(fixture.calls.filter(call => call[0] === "exports").length, 1);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+for (const invalidSignaling of ["version", "length", "non-shared"]) {
+    test(`incompatible ${invalidSignaling} signaling rejects startup`, { timeout: 3000 }, async () => {
+        const fixture = await createFixture({ invalidSignaling });
+        let api;
+        try {
+            await assert.rejects(fixture.create().then(result => {
+                api = result;
+                return result;
+            }), /signaling protocol/);
+            assert.equal(fixture.workers[0].terminated, true);
+        } finally {
+            if (api) {
+                api.exit(0);
+                await fixture.termination;
+            }
+        }
+    });
+}
+
+test("worker export errors reclaim frames and permit the next call", { timeout: 3000 }, async () => {
+    const fixture = await createFixture({
+        exportFn: value => {
+            if (value === -1) throw new Error("Managed export failure \u03bb");
+            return value + 1;
+        },
+    });
+    const api = await fixture.create();
+    try {
+        const { Scalar } = (await api.getAssemblyExports("Test")).Sample.Test;
+        assert.throws(() => Scalar(-1), /Managed export failure \u03bb/);
+        assert.equal(Scalar(42), 43);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("export import servicing preserves microtask ordering and rejects nested exports", { timeout: 3000 }, async () => {
+    const events = [];
+    let scalar;
+    const fixture = await createFixture({
+        exportFn: (_value, imports, pointer) => imports.get("main.js").get("update")(pointer),
+    });
+    const api = await fixture.create();
+    try {
+        api.setModuleImports("main.js", {
+            update: value => {
+                events.push("import");
+                assert.throws(() => scalar(0), /nested/);
+                Promise.resolve().then(() => events.push("microtask"));
+                return value + 1;
+            },
+        });
+        scalar = (await api.getAssemblyExports("Test")).Sample.Test.Scalar;
+        events.push("before");
+        assert.equal(scalar(41), 42);
+        events.push("after");
+        assert.deepEqual(events, ["before", "import", "after"]);
+        await Promise.resolve();
+        assert.deepEqual(events, ["before", "import", "after", "microtask"]);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("failed export discovery can be retried", { timeout: 3000 }, async () => {
+    let fail = true;
+    const fixture = await createFixture({ getExports: () => { if (fail) throw new Error("Export discovery failed"); } });
+    const api = await fixture.create();
+    try {
+        await assert.rejects(api.getAssemblyExports("Test"), /Export discovery failed/);
+        fail = false;
+        assert.equal((await api.getAssemblyExports("Test")).Sample.Test.Scalar(1), 2);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("exports called from a runMain import are rejected until the nested worker pump exists", { timeout: 3000 }, async () => {
+    let fixture;
+    let scalar;
+    fixture = await createFixture({
+        runMain: imports => {
+            const pointer = fixture.module._malloc(3 * 32);
+            try {
+                assert.equal(imports.get("main.js").get("update")(pointer), 42);
+            } finally {
+                fixture.module._free(pointer);
+            }
+            return 0;
+        },
+    });
+    const api = await fixture.create();
+    try {
+        api.setModuleImports("main.js", {
+            update: () => {
+                assert.throws(() => scalar(1), /nested/);
+                return 42;
+            },
+        });
+        scalar = (await api.getAssemblyExports("Test")).Sample.Test.Scalar;
+        assert.equal(await api.runMain(), 0);
+        assert.equal(scalar(1), 2);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("worker failure rejects pending export discovery", { timeout: 3000 }, async () => {
+    const fixture = await createFixture({ getExports: () => new Promise(() => {}) });
+    const api = await fixture.create();
+    const discovering = api.getAssemblyExports("Test");
+    fixture.workers[0].onerror({ message: "Export worker crashed" });
+    await assert.rejects(discovering, /Export worker crashed/);
+    assert.equal(fixture.workers[0].terminated, true);
+    assert.equal(fixture.workers[0].listeners.size, 0);
+});
+
+test("shared worker failure is visible before the UI error event can run", { timeout: 3000 }, async () => {
+    const fixture = await createFixture();
+    const api = await fixture.create();
+    try {
+        const { Scalar } = (await api.getAssemblyExports("Test")).Sample.Test;
+        fixture.failWorker(new Error("Synchronous worker failure"));
+        assert.throws(() => Scalar(1), /Synchronous worker failure/);
+        assert.equal(fixture.workers[0].terminated, true);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("oversized export errors are explicit and do not poison the next call", { timeout: 3000 }, async () => {
+    const fixture = await createFixture({
+        exportFn: value => {
+            if (value === -1) throw new Error("x".repeat(5000));
+            return value + 1;
+        },
+    });
+    const api = await fixture.create();
+    try {
+        const { Scalar } = (await api.getAssemblyExports("Test")).Sample.Test;
+        assert.throws(() => Scalar(-1), /managed export error message exceeds/);
+        assert.equal(Scalar(42), 43);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
 
 test("scalar UI imports reuse shared frames across ring wraparound", { timeout: 3000 }, async () => {
     let fixture;

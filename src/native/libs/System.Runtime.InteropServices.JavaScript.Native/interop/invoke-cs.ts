@@ -3,17 +3,71 @@
 
 import BuildConfiguration from "consts:configuration";
 
-import type { BindingClosureCS, BoundMarshalerToCs, CSFnHandle, JSFunctionSignature } from "./types";
+import type { BindingClosureCS, BoundMarshalerToCs, CSFnHandle, JSFunctionSignature, JSMarshalerArguments } from "./types";
+import type { WorkerExportDescriptor } from "../../Common/JavaScript/loader/worker-exports";
 
 import { dotnetAssert, dotnetLogger, Module } from "./cross-module";
 
 import { bindAssemblyExports, invokeJSExport } from "./managed-exports";
-import { allocStackFrame, getSig, getSignatureType, getSignatureArgumentCount, getSignatureVersion, jsInteropState } from "./marshal";
+import { allocStackFrame, getArg, getMarshalerToCsByType, getSig, getSignatureType, getSignatureArgumentCount, getSignatureVersion, jsInteropState } from "./marshal";
 import { bindArgMarshalToCs } from "./marshal-to-cs";
-import { bindArgMarshalToJs, endMarshalTaskToJs, releaseEagerTaskHolder } from "./marshal-to-js";
+import { bindArgMarshalToJs, endMarshalTaskToJs, marshalInt32ToJs, releaseEagerTaskHolder } from "./marshal-to-js";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, isRuntimeRunning, startMeasure } from "./utils";
 import { MarshalerType, MeasuredBlock } from "./types";
 import { boundCsFunctionSymbol, exportsByAssembly } from "./gc-handles";
+import { ManagedError } from "./marshaled-types";
+
+const workerExportHandles = new WeakMap<Function, number>();
+const workerExports = new Map<number, Function>();
+let nextWorkerExportHandle = 1;
+
+function snapshotWorkerExportError(error: unknown): Error {
+    const result = new Error(error instanceof Error ? error.message : String(error));
+    if (error instanceof ManagedError && !error.isDisposed) error.dispose();
+    return result;
+}
+
+export async function getWorkerAssemblyExports(assemblyName: string): Promise<WorkerExportDescriptor[]> {
+    const descriptors: WorkerExportDescriptor[] = [];
+    function walk(scope: object, prefix: string[]): void {
+        for (const [name, value] of Object.entries(scope)) {
+            const path = [...prefix, name];
+            if (typeof value === "function") {
+                let handle = workerExportHandles.get(value);
+                if (handle === undefined) {
+                    handle = nextWorkerExportHandle++;
+                    workerExportHandles.set(value, handle);
+                }
+                const closure: BindingClosureCS | undefined = Reflect.get(value, boundCsFunctionSymbol);
+                const supported = closure?.isWorkerScalar === true;
+                if (supported) workerExports.set(handle, value);
+                descriptors.push({ path, handle, supported });
+            } else if (value && typeof value === "object") {
+                walk(value, path);
+            }
+        }
+    }
+    try {
+        const exports = await getAssemblyExports(assemblyName);
+        walk(exports, []);
+        return descriptors;
+    } catch (error) {
+        throw snapshotWorkerExportError(error);
+    }
+}
+
+export function invokeWorkerJSExport(handle: number, args: JSMarshalerArguments): void {
+    try {
+        const fn = workerExports.get(handle);
+        if (!fn) throw new Error("withWorker(): unknown or unsupported scalar export");
+        const result = fn(marshalInt32ToJs(getArg(args, 2)));
+        const converter = getMarshalerToCsByType(MarshalerType.Int32);
+        if (!converter) throw new Error("Int32 marshaler is not initialized");
+        converter(getArg(args, 1), result);
+    } catch (error) {
+        throw snapshotWorkerExportError(error);
+    }
+}
 
 export async function getAssemblyExports(assemblyName: string): Promise<any> {
     assertJsInterop();
@@ -66,6 +120,8 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
         isAsync,
         isDiscardNoWait,
         isDisposed: false,
+        isWorkerScalar: argsCount === 1 && !isAsync && resMarshalerType === MarshalerType.Int32
+            && getSignatureType(getSig(signature, 2)) === MarshalerType.Int32,
     };
     let boundFn: Function;
 

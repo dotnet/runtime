@@ -22,19 +22,20 @@ import {
     OFFSET_COMMAND_SIGNAL,
     OFFSET_COMMAND_RESULT,
     OFFSET_COMMAND_PROMISE_ID,
-    OFFSET_JSEXPORT_HEAD,
-    OFFSET_JSEXPORT_TAIL,
+    OFFSET_JSEXPORT_ERROR_LENGTH,
+    OFFSET_WORKER_STATE,
     OFFSET_WAKEUP_WORKER,
     OFFSET_FRAME_PTRS,
     FRAME_RING_CAPACITY,
     SignalState,
     CommandId,
-    jsexportEntryOffset,
-    RING_ENTRY_SIGNAL,
     wakeMain,
+    writeSharedError,
 } from "./shared-signaling";
 import type { WorkerModuleImportsMessage } from "./worker-imports";
 import { createWorkerJSImportInvoker } from "./worker-imports";
+import type { WorkerExportDescriptor, WorkerExportsRequest, WorkerExportsResponse } from "./worker-exports";
+import { createWorkerJSExportDispatcher } from "./worker-exports";
 
 // -----------------------------------------------------------
 // Init message types (exchanged via postMessage during Phase A)
@@ -68,7 +69,7 @@ export interface WorkerErrorMessage {
     stack?: string;
 }
 
-export type WorkerToMainMessage = WorkerReadyMessage | WorkerErrorMessage;
+export type WorkerToMainMessage = WorkerReadyMessage | WorkerErrorMessage | WorkerExportsResponse;
 
 // -----------------------------------------------------------
 // Wait for init message from main thread
@@ -175,8 +176,27 @@ export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promis
 function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryViews: MemoryViewManager): void {
     let closing = false;
     let commandRunning = false;
+    const processExports = createWorkerJSExportDispatcher(signalView, memoryViews, (handle, pointer) => {
+        runtime.INTERNAL.invokeWorkerJSExport(handle, pointer);
+    });
+    function reportFailure(error: unknown): void {
+        writeSharedError(signalView, OFFSET_JSEXPORT_ERROR_LENGTH, error, "worker");
+        Atomics.store(signalView, OFFSET_WORKER_STATE, SignalState.ERROR);
+        wakeMain(signalView);
+    }
+    self.addEventListener("error", (event: ErrorEvent) => reportFailure(event.error ?? new Error(event.message)));
 
-    self.addEventListener("message", (ev: MessageEvent<WorkerCommandMessage | WorkerModuleImportsMessage>): void => {
+    self.addEventListener("message", (ev: MessageEvent<WorkerCommandMessage | WorkerModuleImportsMessage | WorkerExportsRequest>): void => {
+        if (ev.data.type === "exports" && !closing) {
+            const request = ev.data;
+            void runtime.INTERNAL.getWorkerAssemblyExports(request.assemblyName).then(
+                (exports: WorkerExportDescriptor[]) => self.postMessage({ type: "exports", requestId: request.requestId, exports }),
+                (error: unknown) => self.postMessage({
+                    type: "exports", requestId: request.requestId, error: error instanceof Error ? error.message : String(error),
+                }),
+            );
+            return;
+        }
         if (ev.data.type === "imports" && !closing) {
             for (const entry of ev.data.functions) {
                 runtime.INTERNAL.registerWorkerJSImport(ev.data.moduleName, entry.name, createWorkerJSImportInvoker(signalView, memoryViews, entry.handle));
@@ -201,11 +221,13 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
             wakeMain(signalView);
             if (command.commandId !== CommandId.RUN_MAIN) {
                 closing = true;
+                Atomics.store(signalView, OFFSET_WORKER_STATE, SignalState.DONE);
                 self.close();
             }
         }, error => {
             if (closing && command.commandId !== CommandId.EXIT) return;
             closing = true;
+            reportFailure(error);
             const errorMsg: WorkerErrorMessage = {
                 type: "error",
                 message: error instanceof Error ? error.message : String(error),
@@ -215,27 +237,11 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
         });
     });
 
-    function processAllPending(): boolean {
-        let didWork = false;
-
-        // Drain JSExport ring
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-            const head = Atomics.load(signalView, OFFSET_JSEXPORT_HEAD);
-            const tail = Atomics.load(signalView, OFFSET_JSEXPORT_TAIL);
-            if (head === tail) break;
-            processJSExportEntry(signalView, tail);
-            didWork = true;
-        }
-
-        return didWork;
-    }
-
     function waitLoop(): void {
         if (closing) return;
         const lastSeen = Atomics.load(signalView, OFFSET_WAKEUP_WORKER);
         // Process anything already pending
-        processAllPending();
+        processExports();
 
         // Wait asynchronously for next wakeup — keeps event loop alive
         // so that async operations (runMainAndExit, Promises) can resolve.
@@ -272,16 +278,4 @@ async function processCommand(command: WorkerCommandMessage, runtime: RuntimeAPI
         default:
             throw new Error(`Unknown worker command ${command.commandId}`);
     }
-}
-
-function processJSExportEntry(signalView: Int32Array, tailIndex: number): void {
-    const entryBase = jsexportEntryOffset(tailIndex);
-
-    // TODO Phase 4: Read method_handle and args_ptr from ring entry,
-    // invoke C# method via the method handle with args at argsPtr.
-    // For now, mark as done and advance tail
-    Atomics.store(signalView, entryBase + RING_ENTRY_SIGNAL, SignalState.DONE);
-    Atomics.notify(signalView, entryBase + RING_ENTRY_SIGNAL);
-    Atomics.add(signalView, OFFSET_JSEXPORT_TAIL, 1);
-    wakeMain(signalView);
 }

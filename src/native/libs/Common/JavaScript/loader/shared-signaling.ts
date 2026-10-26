@@ -24,7 +24,7 @@ export const enum CommandId {
 }
 
 // Layout version — bump when the signaling buffer layout changes
-export const SIGNALING_VERSION = 2;
+export const SIGNALING_VERSION = 3;
 
 // Number of entries in the JSImport ring buffer (worker → main)
 export const JSIMPORT_RING_CAPACITY = 16;
@@ -73,7 +73,9 @@ export const OFFSET_FRAME_PTRS = OFFSET_JSEXPORT_RING + JSEXPORT_RING_CAPACITY *
 export const OFFSET_JSIMPORT_ERROR_LENGTH = OFFSET_FRAME_PTRS + FRAME_RING_CAPACITY;
 export const OFFSET_JSIMPORT_ERROR_TEXT = OFFSET_JSIMPORT_ERROR_LENGTH + 1;
 export const JSIMPORT_ERROR_CAPACITY = 4096;
-export const SIGNALING_BUFFER_INT32_SIZE = OFFSET_JSIMPORT_ERROR_TEXT + JSIMPORT_ERROR_CAPACITY;
+export const OFFSET_JSEXPORT_ERROR_LENGTH = OFFSET_JSIMPORT_ERROR_TEXT + JSIMPORT_ERROR_CAPACITY;
+export const OFFSET_WORKER_STATE = OFFSET_JSEXPORT_ERROR_LENGTH + 1 + JSIMPORT_ERROR_CAPACITY;
+export const SIGNALING_BUFFER_INT32_SIZE = OFFSET_WORKER_STATE + 1;
 
 // Total signaling buffer size in bytes (Int32Array element = 4 bytes)
 export const SIGNALING_BUFFER_BYTE_SIZE = SIGNALING_BUFFER_INT32_SIZE * 4;
@@ -133,6 +135,23 @@ export function wakeMain(signalView: Int32Array): void {
 export function wakeWorker(signalView: Int32Array): void {
     Atomics.add(signalView, OFFSET_WAKEUP_WORKER, 1);
     Atomics.notify(signalView, OFFSET_WAKEUP_WORKER);
+}
+
+export function writeSharedError(signal: Int32Array, offset: number, error: unknown, context: string): void {
+    let message = error instanceof Error ? error.message : String(error);
+    if (message.length > JSIMPORT_ERROR_CAPACITY) {
+        message = `withWorker(): ${context} error message exceeds ${JSIMPORT_ERROR_CAPACITY} UTF-16 code units`;
+    }
+    for (let i = 0; i < message.length; i++) signal[offset + 1 + i] = message.charCodeAt(i);
+    Atomics.store(signal, offset, message.length);
+}
+
+export function readSharedError(signal: Int32Array, offset: number): Error {
+    const length = Atomics.load(signal, offset);
+    if (length < 0 || length > JSIMPORT_ERROR_CAPACITY) throw new Error("withWorker(): invalid shared error length");
+    let message = "";
+    for (let i = 0; i < length; i++) message += String.fromCharCode(signal[offset + 1 + i]);
+    return new Error(message);
 }
 
 // -----------------------------------------------------------

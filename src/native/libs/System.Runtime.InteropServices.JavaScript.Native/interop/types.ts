@@ -109,6 +109,7 @@ export type BindingClosureCS = {
     isAsync: boolean,
     isDiscardNoWait: boolean,
     isDisposed: boolean,
+    isWorkerScalar: boolean,
 }
 
 export const enum MeasuredBlock {
