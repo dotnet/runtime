@@ -253,7 +253,19 @@ namespace System.Threading
         {
             Debug.Assert(!IsHeldByCurrentThread);
 
-            Enter();
+#if FEATURE_WASM_MANAGED_THREADS
+            if (Thread.ThrowOnBlockingWaitOnJSInteropThread || Thread.WarnOnBlockingWaitOnJSInteropThread)
+            {
+                // A timed condition wait must restore ownership even if another thread still holds the lock.
+                while (!TryEnter(int.MaxValue))
+                {
+                }
+            }
+            else
+#endif
+            {
+                Enter();
+            }
             _recursionCount = previousRecursionCount;
         }
 

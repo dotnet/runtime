@@ -95,6 +95,28 @@ namespace System.Threading
                 return false;
             }
 
+#if FEATURE_WASM_MANAGED_THREADS
+            if (millisecondsTimeout > 0 &&
+                (Thread.ThrowOnBlockingWaitOnJSInteropThread || Thread.WarnOnBlockingWaitOnJSInteropThread))
+            {
+                // Async waiter timeouts may need this thread's event loop, so poll without queuing another async waiter.
+                long waitStartTime = Environment.TickCount64;
+                SpinWait spinner = default;
+                do
+                {
+                    if (WaitCore(0, cancellationToken))
+                    {
+                        return true;
+                    }
+
+                    spinner.SpinOnce();
+                }
+                while (TimeoutHelper.UpdateTimeOut(waitStartTime, millisecondsTimeout) != 0);
+
+                return WaitCore(0, cancellationToken);
+            }
+#endif
+
             long startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout > 0)
             {
@@ -140,7 +162,7 @@ namespace System.Threading
                 // then block on (once we've released the lock).
                 if (m_asyncHead is not null)
                 {
-                    RuntimeFeature.ThrowIfBlockingIsNotSupported();
+                    RuntimeFeature.ThrowIfBlockingIsNotSupported(millisecondsTimeout);
 
                     Debug.Assert(m_asyncTail is not null, "tail should not be null if head isn't");
                     asyncWaitTask = WaitAsyncCore(millisecondsTimeout, cancellationToken);
@@ -226,7 +248,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         private bool WaitUntilCountOrTimeout(long millisecondsTimeout, long startTime, CancellationToken cancellationToken)
         {
-            RuntimeFeature.ThrowIfBlockingIsNotSupported();
+            RuntimeFeature.ThrowIfBlockingIsNotSupported(millisecondsTimeout);
 
             int monitorWaitMilliseconds = Timeout.Infinite;
 

@@ -85,6 +85,49 @@ namespace System.Threading.Tests
             Assert.Throws<ObjectDisposedException>(() => ev.Wait(-2, cancellation.Token));
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [InlineData(0)]
+        [InlineData(20)]
+        public static void WaitOnJSInteropThreadHonorsFiniteTimeouts(int millisecondsTimeout)
+        {
+            using ManualResetEventSlim ev = new(false, 0);
+            ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                Assert.False(ev.Wait(millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
+                Assert.False(ev.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                Assert.Throws<PlatformNotSupportedException>(() => ev.Wait());
+                ev.Set();
+                ev.Wait();
+            });
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [InlineData(0)]
+        [InlineData(20)]
+        public static void TaskWaitsOnJSInteropThreadHonorFiniteTimeouts(int millisecondsTimeout)
+        {
+            Task incomplete = new TaskCompletionSource().Task;
+            ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                Assert.False(incomplete.Wait(millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
+                Assert.False(Task.WaitAll([incomplete], millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
+                Assert.Equal(-1, Task.WaitAny([incomplete], millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                Assert.Throws<PlatformNotSupportedException>(() => incomplete.Wait());
+                Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAll([incomplete]));
+                Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAny([incomplete]));
+            });
+        }
+
         // Validates init, set, reset state transitions.
         [Theory]
         [InlineData(true)]

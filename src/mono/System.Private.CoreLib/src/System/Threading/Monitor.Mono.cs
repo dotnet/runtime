@@ -129,8 +129,7 @@ namespace System.Threading
             if (millisecondsTimeout == Timeout.Infinite)
                 throw new PlatformNotSupportedException();
 #elif FEATURE_WASM_MANAGED_THREADS
-            if (millisecondsTimeout != 0)
-                RuntimeFeature.ThrowIfBlockingIsNotSupported();
+            RuntimeFeature.ThrowIfBlockingIsNotSupported(millisecondsTimeout);
 #endif
 
             bool sendWaitEvents =

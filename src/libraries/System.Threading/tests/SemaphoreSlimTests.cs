@@ -142,6 +142,44 @@ namespace System.Threading.Tests
             Assert.Equal(0, semaphore.CurrentCount);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [InlineData(0, false, false)]
+        [InlineData(20, false, false)]
+        [InlineData(0, true, false)]
+        [InlineData(20, true, false)]
+        [InlineData(0, false, true)]
+        [InlineData(20, false, true)]
+        [InlineData(0, true, true)]
+        [InlineData(20, true, true)]
+        public static async Task WaitOnJSInteropThreadHonorsFiniteTimeouts(int millisecondsTimeout, bool queueAsyncWaiter, bool warnOnly)
+        {
+            using SemaphoreSlim semaphore = new(0, 1);
+            Task<bool> asyncWaiter = queueAsyncWaiter ? semaphore.WaitAsync(Timeout.Infinite) : null;
+            ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                Assert.False(semaphore.Wait(millisecondsTimeout));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                stopwatch.Restart();
+                Assert.False(semaphore.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                if (!warnOnly)
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => semaphore.Wait());
+                }
+            }, warnOnly);
+            semaphore.Release();
+            if (queueAsyncWaiter)
+            {
+                Assert.True(await asyncWaiter);
+                Assert.Equal(0, semaphore.CurrentCount);
+            }
+            else
+            {
+                Assert.True(semaphore.Wait(0));
+            }
+        }
+
         /// <summary>
         /// SemaphoreSlim public methods and properties to be tested
         /// </summary>

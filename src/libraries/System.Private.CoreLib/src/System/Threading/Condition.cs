@@ -139,8 +139,7 @@ namespace System.Threading
                 throw new SynchronizationLockException();
 
 #if FEATURE_MULTITHREADING
-            if (millisecondsTimeout != 0)
-                RuntimeFeature.ThrowIfBlockingIsNotSupported();
+            RuntimeFeature.ThrowIfBlockingIsNotSupported(millisecondsTimeout);
 #else
             if (millisecondsTimeout == Timeout.Infinite)
                 throw new PlatformNotSupportedException();

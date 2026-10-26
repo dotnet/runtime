@@ -40,15 +40,17 @@ JIT/interpreter/AOT to drop the multi-threaded implementation in the single-thre
 The implementation should not use `[UnsupportedOSPlatform("browser")]`
 
 Synchronous wait APIs can succeed when a semaphore count, task completion, or set state is already
-available, and a zero-timeout wait should return its normal result. Single-threaded implementations
-also honor positive finite timeouts by waiting for the timeout and returning the normal timeout
-result. These waits do not pump the JavaScript event loop or run queued managed work. Unsatisfied
-infinite waits remain unsupported.
+available, and a zero-timeout wait should return its normal result. Both single-threaded and
+multi-threaded implementations also honor positive finite timeouts. On the DOM thread, these waits
+may spin until the operation succeeds or the timeout expires. They do not pump the JavaScript event
+loop or run queued managed work, so they can delay rendering and event processing. Unsatisfied
+infinite waits remain unsupported in single-threaded implementations.
 
-Multi-threaded WebAssembly implementations should call
-`System.Runtime.CompilerServices.RuntimeFeature.ThrowIfBlockingIsNotSupported()` when a wait would
-actually block, since blocking support depends on the current thread at runtime. The public APIs
-remain annotated as unsupported because whether a wait blocks depends on runtime state.
+Multi-threaded WebAssembly implementations should pass the wait timeout to
+`System.Runtime.CompilerServices.RuntimeFeature.ThrowIfBlockingIsNotSupported(millisecondsTimeout)`.
+Only infinite waits are subject to the current thread's blocking policy. Operations without a timeout
+omit the argument, which defaults to an infinite timeout. The public APIs remain annotated as
+unsupported because whether a wait blocks depends on runtime state.
 
 ## Native runtime preprocessor defines ##
 

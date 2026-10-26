@@ -9,7 +9,7 @@ internal sealed partial class LowLevelLifoSemaphore
 {
     private bool WaitSlow(int timeoutMs)
     {
-        RuntimeFeature.ThrowIfBlockingIsNotSupported();
+        RuntimeFeature.ThrowIfBlockingIsNotSupported(timeoutMs);
 
         int spinsRemaining = Environment.IsSingleProcessor ? 0 : _maxSpinCount;
 

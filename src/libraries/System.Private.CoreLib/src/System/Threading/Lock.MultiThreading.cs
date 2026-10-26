@@ -314,7 +314,7 @@ namespace System.Threading
             // exceptional paths.
             try
             {
-                RuntimeFeature.ThrowIfBlockingIsNotSupported();
+                RuntimeFeature.ThrowIfBlockingIsNotSupported(timeoutMs);
 
                 Interlocked.Increment(ref s_contentionCount);
 

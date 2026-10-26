@@ -134,6 +134,71 @@ namespace System.Threading.Tests
             Assert.False(Monitor.IsEntered(obj));
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [InlineData(0)]
+        [InlineData(20)]
+        public static void WaitOnJSInteropThreadHonorsFiniteTimeouts(int millisecondsTimeout)
+        {
+            object obj = new();
+            ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+            {
+                lock (obj)
+                {
+                    lock (obj)
+                    {
+                        Stopwatch stopwatch = Stopwatch.StartNew();
+                        Assert.False(Monitor.Wait(obj, millisecondsTimeout));
+                        Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                        stopwatch.Restart();
+                        Assert.False(Monitor.Wait(obj, TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                        Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+                        Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj));
+                    }
+                    Assert.True(Monitor.IsEntered(obj));
+                }
+                Assert.False(Monitor.IsEntered(obj));
+            });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        public static void WaitOnJSInteropThreadRestoresRecursiveOwnership()
+        {
+            object obj = new();
+            using ManualResetEventSlim ready = new(false);
+            Thread thread = ThreadTestHelpers.CreateGuardedThread(out Action waitForThread, () =>
+            {
+                ready.CheckedWait();
+                lock (obj)
+                {
+                    Monitor.Pulse(obj);
+                    Thread.Sleep(100);
+                }
+            });
+            thread.IsBackground = true;
+            thread.Start();
+            try
+            {
+                ThreadTestHelpers.RunWithJSInteropBlockingPolicy(() =>
+                {
+                    lock (obj)
+                    {
+                        lock (obj)
+                        {
+                            ready.Set();
+                            Assert.True(Monitor.Wait(obj, FailTimeoutMilliseconds));
+                            Assert.True(Monitor.IsEntered(obj));
+                        }
+                        Assert.True(Monitor.IsEntered(obj));
+                    }
+                    Assert.False(Monitor.IsEntered(obj));
+                });
+            }
+            finally
+            {
+                waitForThread();
+            }
+        }
+
         // Attempts a single recursive acquisition/release cycle of a newly-created lock.
         [Fact]
         public static void BasicRecursion()
