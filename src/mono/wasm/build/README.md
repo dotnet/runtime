@@ -71,8 +71,8 @@ MIBC profile:
 Methods selected by the profile are compiled eagerly and other methods remain available through
 the interpreter. Without PGO files, `PublishReadyToRun` compiles the full closure.
 
-PGO files must exist when the project is published, but do not need to come from the exact assembly
-builds being published. Profile records for methods that can no longer be resolved are ignored.
+PGO files must exist when the project is published, but do not need to come from the exact
+build being published. Profile records for methods that can no longer be resolved are ignored.
 Refresh profiles periodically to keep them representative of the application and its workload;
 as the code and behavior diverge from the captured profile, precompilation coverage and optimization
 quality can degrade. Trimming does not require a profile generated from the exact linker output.
