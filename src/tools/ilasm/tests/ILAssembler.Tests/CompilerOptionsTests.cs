@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -143,42 +144,53 @@ namespace ILAssembler.Tests
                 pe.PEHeaders.CorHeader!.Flags);
         }
 
+        public enum ImageKind
+        {
+            Cil,
+            Data,
+            EmptyTls,
+            Export,
+            Pointer,
+            Tls,
+            VTable,
+        }
+
         [Theory]
-        [InlineData(Machine.I386, "tls", 0x00000001, 0x00000002)]
-        [InlineData(Machine.I386, "tls", 0x00030003, 0x00010002)]
-        [InlineData(Machine.I386, "tls", 0x00020001, 0x00000002)]
-        [InlineData(Machine.Amd64, "tls", 0x00000001, 0x00000000)]
-        [InlineData(Machine.Amd64, "tls", 0x00030003, 0x00030002)]
-        [InlineData(Machine.Arm64, "tls", 0x00000001, 0x00000000)]
-        [InlineData(Machine.Arm64, "tls", 0x00030003, 0x00030002)]
-        [InlineData(Machine.I386, "pointer", 0x00000001, 0x00000002)]
-        [InlineData(Machine.I386, "pointer", 0x00030003, 0x00010002)]
-        [InlineData(Machine.Amd64, "pointer", 0x00030003, 0x00030002)]
-        [InlineData(Machine.Arm64, "pointer", 0x00030003, 0x00030002)]
-        [InlineData(Machine.I386, "export", 0x00000001, 0x00000002)]
-        [InlineData(Machine.I386, "export", 0x00030003, 0x00010002)]
-        [InlineData(Machine.Amd64, "export", 0x00030003, 0x00030002)]
-        [InlineData(Machine.Arm64, "export", 0x00030003, 0x00030002)]
-        [InlineData(Machine.I386, "vtable", 0x00000001, 0x00000001)]
-        [InlineData(Machine.I386, "vtable", 0x00030003, 0x00030003)]
-        [InlineData(Machine.Amd64, "vtable", 0x00030003, 0x00030003)]
-        [InlineData(Machine.Arm64, "vtable", 0x00030003, 0x00030003)]
-        [InlineData(Machine.I386, "data", 0x00030003, 0x00030003)]
-        [InlineData(Machine.I386, "cil", 0x00030003, 0x00030003)]
-        [InlineData(Machine.I386, "empty-tls", 0x00030003, 0x00030003)]
+        [InlineData(Machine.I386, ImageKind.Tls, 0x00000001, 0x00000002)]
+        [InlineData(Machine.I386, ImageKind.Tls, 0x00030003, 0x00010002)]
+        [InlineData(Machine.I386, ImageKind.Tls, 0x00020001, 0x00000002)]
+        [InlineData(Machine.Amd64, ImageKind.Tls, 0x00000001, 0x00000000)]
+        [InlineData(Machine.Amd64, ImageKind.Tls, 0x00030003, 0x00030002)]
+        [InlineData(Machine.Arm64, ImageKind.Tls, 0x00000001, 0x00000000)]
+        [InlineData(Machine.Arm64, ImageKind.Tls, 0x00030003, 0x00030002)]
+        [InlineData(Machine.I386, ImageKind.Pointer, 0x00000001, 0x00000002)]
+        [InlineData(Machine.I386, ImageKind.Pointer, 0x00030003, 0x00010002)]
+        [InlineData(Machine.Amd64, ImageKind.Pointer, 0x00030003, 0x00030002)]
+        [InlineData(Machine.Arm64, ImageKind.Pointer, 0x00030003, 0x00030002)]
+        [InlineData(Machine.I386, ImageKind.Export, 0x00000001, 0x00000002)]
+        [InlineData(Machine.I386, ImageKind.Export, 0x00030003, 0x00010002)]
+        [InlineData(Machine.Amd64, ImageKind.Export, 0x00030003, 0x00030002)]
+        [InlineData(Machine.Arm64, ImageKind.Export, 0x00030003, 0x00030002)]
+        [InlineData(Machine.I386, ImageKind.VTable, 0x00000001, 0x00000001)]
+        [InlineData(Machine.I386, ImageKind.VTable, 0x00030003, 0x00030003)]
+        [InlineData(Machine.Amd64, ImageKind.VTable, 0x00030003, 0x00030003)]
+        [InlineData(Machine.Arm64, ImageKind.VTable, 0x00030003, 0x00030003)]
+        [InlineData(Machine.I386, ImageKind.Data, 0x00030003, 0x00030003)]
+        [InlineData(Machine.I386, ImageKind.Cil, 0x00030003, 0x00030003)]
+        [InlineData(Machine.I386, ImageKind.EmptyTls, 0x00030003, 0x00030003)]
         public void DataAndNativeArtifacts_CorFlagsMatchNativeIlasm(
-            Machine machine, string kind, int initialFlags, int expectedFlags)
+            Machine machine, ImageKind kind, int initialFlags, int expectedFlags)
         {
             string width = machine == Machine.I386 ? "int32" : "int64";
             string declaration = kind switch
             {
-                "tls" => ".data tls D = int32(42)",
-                "empty-tls" => ".data tls D = int8[0]",
-                "data" => ".data D = int32(42)",
-                "cil" => ".data cil D = int32(42)",
-                "pointer" => ".data D = int32(42)\n.data Pointer = &(D)",
-                "vtable" => $".data D = {width}(0)\n.vtfixup [1] {width} at D",
-                "export" => $$"""
+                ImageKind.Tls => ".data tls D = int32(42)",
+                ImageKind.EmptyTls => ".data tls D = int8[0]",
+                ImageKind.Data => ".data D = int32(42)",
+                ImageKind.Cil => ".data cil D = int32(42)",
+                ImageKind.Pointer => ".data D = int32(42)\n.data Pointer = &(D)",
+                ImageKind.VTable => $".data D = {width}(0)\n.vtfixup [1] {width} at D",
+                ImageKind.Export => $$"""
                     .data D = {{width}}(0)
                     .vtfixup [1] {{width}} fromunmanaged at D
                     .method public static void M() cil managed
@@ -188,7 +200,7 @@ namespace ILAssembler.Tests
                         ret
                     }
                     """,
-                _ => throw new InvalidOperationException($"Unexpected declaration kind '{kind}'."),
+                _ => throw new UnreachableException(),
             };
             string source = $".assembly test {{}}\n.corflags {initialFlags}\n{declaration}";
 
