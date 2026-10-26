@@ -902,6 +902,9 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(type);
 
+            if (type is ModifiedType or SignatureModifiedType)
+                type = type.UnderlyingSystemType;
+
             // Return a token for the class relative to the Module.  Tokens
             // are used to indentify objects when the objects are used in IL
             // instructions.  Tokens are always relative to the Module.  For example,
@@ -921,10 +924,6 @@ namespace System.Reflection.Emit
                 byte[] sig = SignatureHelper.GetTypeSigToken(this, type).InternalGetSignature(out int length);
                 return GetTokenFromTypeSpec(sig, length);
             }
-
-            // A modified type has no token of its own; as in a type signature, it takes the unmodified type's.
-            if (type is ModifiedType or SignatureModifiedType)
-                type = type.UnderlyingSystemType;
 
             Module refedModule = type.Module;
 

@@ -29,7 +29,6 @@ namespace System.Reflection.Emit
         internal static SignatureHelper GetMethodSpecSigHelper(Module? scope, Type[] inst)
         {
             SignatureHelper sigHelp = new SignatureHelper(scope, MdSigCallingConvention.GenericInst);
-            sigHelp.m_isTypeOrInstantiationSignature = true;
             sigHelp.AddData(inst.Length);
             foreach (Type t in inst)
                 sigHelp.AddArgument(t);
@@ -225,7 +224,6 @@ namespace System.Reflection.Emit
         private int m_currSig; // index into m_signature buffer for next available byte
         private int m_sizeLoc; // index into m_signature buffer to put m_argCount (will be NO_SIZE_IN_SIG if no arg count is needed)
         private ModuleBuilder? m_module;
-        private bool m_isTypeOrInstantiationSignature;
         private bool m_sigDone;
         private int m_argCount; // tracking number of arguments in the signature
         private Type? m_returnType;
@@ -261,7 +259,6 @@ namespace System.Reflection.Emit
         {
             Init(mod);
 
-            m_isTypeOrInstantiationSignature = true;
             AddOneArgTypeHelper(type);
         }
 
@@ -334,9 +331,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    // As in PersistedAssemblyBuilder, required modifiers are written before optional ones, and a
-                    // modifier array passed with a modified type replaces the type's own modifiers of that kind, in the
-                    // same order: the reverse of signature order, as reflection returns them.
+                    // A modifier array passed with a modified type replaces the type's own modifiers of that kind.
                     if (requiredCustomModifiers != null)
                         AddReflectedCustomModifiers(requiredCustomModifiers, required: true, nameof(requiredCustomModifiers));
                     else
@@ -367,24 +362,17 @@ namespace System.Reflection.Emit
             AddOneArgTypeHelper(clsArgument);
         }
 
-        // Types returned by GetModifiedParameterType, GetModifiedFieldType and GetModifiedPropertyType, and by
-        // Type.MakeModifiedSignatureType, are encoded with their custom modifiers in a module's member, local and calli
-        // signatures. A type signature and a method instantiation take the unmodified type, and a signature without a
-        // module (such as a DynamicMethod's calli signature) treats them like any other type.
         private bool IsEncodedModifiedType(Type type) =>
-            m_module != null && !m_isTypeOrInstantiationSignature && type is ModifiedType or SignatureModifiedType;
+            m_module != null && type is ModifiedType or SignatureModifiedType;
 
-        // Reflection returns a modified type's modifiers of each kind in the reverse of signature order. A type read from
-        // a signature keeps that signature's order of required and optional modifiers; for any other, as in
-        // PersistedAssemblyBuilder, required modifiers are written before optional ones.
+        // Writes the type's custom modifiers in the order of the signature it was read from, or the required ones first
+        // when that order is not known.
         private void AddModifiedTypeCustomModifiers(Type type)
         {
             Type[] requiredCustomModifiers = type.GetRequiredCustomModifiers();
             Type[] optionalCustomModifiers = type.GetOptionalCustomModifiers();
 
-            // The kinds are read up to the first byte that is neither a required nor an optional modifier. Reflection
-            // also counts ELEMENT_TYPE_CMOD_INTERNAL modifiers and steps over ELEMENT_TYPE_SENTINEL; if the counts
-            // differ, the order is not known.
+            // Without a signature, or when its modifier count differs from reflection's, the order is not known.
             bool[]? kinds = (type as ModifiedType)?.GetCustomModifierKinds();
             if (kinds == null || kinds.Length != requiredCustomModifiers.Length + optionalCustomModifiers.Length)
             {
@@ -393,6 +381,7 @@ namespace System.Reflection.Emit
                 return;
             }
 
+            // Reflection returns each kind's modifiers in reverse signature order.
             int required = requiredCustomModifiers.Length;
             int optional = optionalCustomModifiers.Length;
             foreach (bool isRequired in kinds)
@@ -402,6 +391,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        // customModifiers is in reflection order, the reverse of signature order.
         private void AddReflectedCustomModifiers(Type[] customModifiers, bool required, string? paramName)
         {
             for (int i = customModifiers.Length - 1; i >= 0; i--)
@@ -435,12 +425,9 @@ namespace System.Reflection.Emit
 
         private void AddOneArgTypeHelperWorker(Type clsArgument, bool lastWasGenericInst, DynamicScope? scope)
         {
-            // With a module, a modified type's modifiers have been written by the caller (member, local and calli
-            // signatures) or are dropped (type signatures and method instantiations; see IsEncodedModifiedType). A
-            // modified type's element and generic argument types can carry their own modifiers, so only a modified type
-            // with neither is replaced by the unmodified type.
-            if (m_module != null && clsArgument is ModifiedType or SignatureModifiedType
-                && !clsArgument.HasElementType && !clsArgument.IsConstructedGenericType)
+            // A modified type that is not an array, pointer, by-ref or constructed generic type is written as its
+            // unmodified type; the caller has written its modifiers.
+            if (IsEncodedModifiedType(clsArgument) && !clsArgument.HasElementType && !clsArgument.IsConstructedGenericType)
                 clsArgument = clsArgument.UnderlyingSystemType;
 
             if (clsArgument.IsGenericParameter)
