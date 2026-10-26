@@ -403,6 +403,11 @@ namespace System.Net
 
         private static void ReadCallback(IAsyncResult asyncResult)
         {
+            if (asyncResult.CompletedSynchronously)
+            {
+                return;
+            }
+
             ReceiveState state = (ReceiveState)asyncResult.AsyncState!;
             try
             {
@@ -517,16 +522,22 @@ namespace System.Net
                     {
                         if (_isAsync)
                         {
-                            BeginRead(state.Buffer, 0, state.Buffer.Length, s_readCallbackDelegate, state);
-                            return null;
+                            IAsyncResult asyncResult = BeginRead(state.Buffer, 0, state.Buffer.Length, s_readCallbackDelegate, state);
+                            if (!asyncResult.CompletedSynchronously)
+                            {
+                                return null;
+                            }
+
+                            bytesRead = EndRead(asyncResult);
                         }
                         else
                         {
                             bytesRead = Read(state.Buffer, 0, state.Buffer.Length);
-                            if (bytesRead == 0)
-                                CloseSocket();
-                            ReceiveCommandResponseCallback(state, bytesRead);
                         }
+
+                        if (bytesRead == 0)
+                            CloseSocket();
+                        ReceiveCommandResponseCallback(state, bytesRead);
                     }
                     catch (IOException)
                     {
@@ -627,16 +638,22 @@ namespace System.Net
                     {
                         if (_isAsync)
                         {
-                            BeginRead(state.Buffer, 0, state.Buffer.Length, s_readCallbackDelegate, state);
-                            return;
+                            IAsyncResult asyncResult = BeginRead(state.Buffer, 0, state.Buffer.Length, s_readCallbackDelegate, state);
+                            if (!asyncResult.CompletedSynchronously)
+                            {
+                                return;
+                            }
+
+                            bytesRead = EndRead(asyncResult);
                         }
                         else
                         {
                             bytesRead = Read(state.Buffer, 0, state.Buffer.Length);
-                            if (bytesRead == 0)
-                                CloseSocket();
-                            continue;
                         }
+
+                        if (bytesRead == 0)
+                                CloseSocket();
+                        continue;
                     }
                     catch (IOException)
                     {
