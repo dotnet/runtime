@@ -23,7 +23,7 @@ public class PlatformNativeR2R
         string testDotNetCmd = Environment.GetEnvironmentVariable("__TestDotNetCmd");
         ProcessStartInfo psi = new ProcessStartInfo
         {
-            UseShellExecute = false,
+            InheritedHandles = [],
             FileName = string.IsNullOrEmpty(testDotNetCmd) ? "dotnet" : testDotNetCmd,
             Arguments = $"\"{r2rDumpPath}\" --in \"{Assembly.GetExecutingAssembly().Location}\" --header",
             RedirectStandardOutput = true,

@@ -7,7 +7,6 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -546,7 +545,7 @@ public class XUnitLogChecker
         {
             FileName = fileName,
             Arguments = arguments,
-            UseShellExecute = false,
+            InheritedHandles = [],
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
@@ -558,6 +557,12 @@ public class XUnitLogChecker
             result = Process.RunAndCaptureText(startInfo, TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_MS));
         }
         catch (TimeoutException)
+        {
+            outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
+            return false;
+        }
+
+        if (result.ExitStatus.Canceled)
         {
             outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
             return false;
@@ -721,55 +726,57 @@ public class XUnitLogChecker
 
         string? symbolizerOutput = null;
 
-        Process llvmSymbolizer = new Process()
+        ProcessStartInfo symbolizerStartInfo = new ProcessStartInfo()
         {
-            StartInfo = {
-                FileName = "llvm-symbolizer",
-                Arguments = $"--pretty-print",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                RedirectStandardInput = true,
-            }
+            FileName = "llvm-symbolizer",
+            Arguments = "--pretty-print",
+            InheritedHandles = [],
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
         };
 
-        outputWriter.WriteLine($"Invoking {llvmSymbolizer.StartInfo.FileName} {llvmSymbolizer.StartInfo.Arguments}");
+        outputWriter.WriteLine($"Invoking {symbolizerStartInfo.FileName} {symbolizerStartInfo.Arguments}");
 
         try
         {
-            if (!llvmSymbolizer.Start())
+            using FileStream input = new FileStream(
+                Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()),
+                FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read,
+                4096, FileOptions.DeleteOnClose);
+            using (StreamWriter writer = new StreamWriter(input, new UTF8Encoding(false), leaveOpen: true))
             {
-                outputWriter.WriteLine($"Unable to start {llvmSymbolizer.StartInfo.FileName}");
+                writer.WriteLine(addrBuilder.ToString());
+            }
+            input.Position = 0;
+            symbolizerStartInfo.StandardInputHandle = input.SafeFileHandle;
+
+            // TODO: Use Process.RunAndCaptureText once it kills the entire process tree on timeout.
+            // https://github.com/dotnet/runtime/issues/136466
+            using Process llvmSymbolizer = Process.Start(symbolizerStartInfo)!;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            TimeSpan timeout = TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_MS);
+            (string StandardOutput, string StandardError) result;
+            try
+            {
+                result = llvmSymbolizer.ReadAllText(timeout);
+                TimeSpan remaining = TimeSpan.FromMilliseconds(Math.Max(0, (timeout - stopwatch.Elapsed).TotalMilliseconds));
+                if (!llvmSymbolizer.TryWaitForExitStatus(remaining, out _))
+                {
+                    Console.WriteLine("llvm-symbolizer stdout:");
+                    Console.WriteLine(result.StandardOutput);
+                    Console.WriteLine("llvm-symbolizer stderr:");
+                    Console.WriteLine(result.StandardError);
+                    throw new TimeoutException("llvm-symbolizer timed out.");
+                }
+            }
+            catch (TimeoutException)
+            {
+                llvmSymbolizer.Kill(entireProcessTree: true);
+                llvmSymbolizer.WaitForExitStatus();
+                throw;
             }
 
-            using (var symbolizerWriter = llvmSymbolizer.StandardInput)
-            {
-                symbolizerWriter.WriteLine(addrBuilder.ToString());
-            }
-
-            Task<string> stdout = llvmSymbolizer.StandardOutput.ReadToEndAsync();
-            Task<string> stderr = llvmSymbolizer.StandardError.ReadToEndAsync();
-            bool fSuccess = llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS);
-
-            Task.WaitAll(stdout, stderr);
-
-            if (!fSuccess)
-            {
-                outputWriter.WriteLine("Errors while running llvm-symbolizer --pretty-print");
-                string output = stdout.Result;
-                string error = stderr.Result;
-
-                Console.WriteLine("llvm-symbolizer stdout:");
-                Console.WriteLine(output);
-                Console.WriteLine("llvm-symbolizer stderr:");
-                Console.WriteLine(error);
-
-                llvmSymbolizer.Kill(true);
-
-                return false;
-            }
-
-            symbolizerOutput = stdout.Result;
+            symbolizerOutput = result.StandardOutput;
 
         }
         catch (Exception e)
@@ -857,4 +864,3 @@ public class XUnitLogChecker
         return true;
     }
 }
-

@@ -38,6 +38,7 @@ public class ParallelCrashTester
         ProcessStartInfo startInfo = new ProcessStartInfo(
             Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun"),
             $"ParallelCrash.dll {arg}");
+        startInfo.InheritedHandles = [];
         // Disable crash diagnostics since the target process is expected to crash
         startInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
         startInfo.Environment.Remove("DOTNET_EnableCrashReport");

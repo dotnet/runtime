@@ -36,6 +36,7 @@ namespace IlasmPortablePdbTests
             var ilasmArgs = $"{CommonIlasmArguments} -output={dllFullPath} {ilSrcFullPath}";
             var ilasmPsi = new ProcessStartInfo
             {
+                InheritedHandles = [],
                 WorkingDirectory = currentDirectory,
                 FileName = ilasmFullPath,
                 Arguments = ilasmArgs

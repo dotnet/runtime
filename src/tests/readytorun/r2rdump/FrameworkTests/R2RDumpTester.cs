@@ -57,6 +57,7 @@ namespace R2RDumpTests
 
             ProcessStartInfo processStartInfo = new ProcessStartInfo
             {
+                InheritedHandles = [],
                 FileName = DotNetAbsolutePath,
                 // TODO, what flags do we like to test?
                 Arguments = string.Join(" ", new string[]{"exec", R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile, "--val"})

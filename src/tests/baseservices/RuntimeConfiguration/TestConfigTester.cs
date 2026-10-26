@@ -38,6 +38,7 @@ public class TestConfigTester
             }
 
             ProcessStartInfo startInfo = new();
+            startInfo.InheritedHandles = [];
 
             StringBuilder arguments = new();
 

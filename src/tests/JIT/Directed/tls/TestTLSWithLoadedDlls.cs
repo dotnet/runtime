@@ -83,6 +83,7 @@ namespace TestTLSWithLoadedDlls
             arguments.Append(" RunLotsOfTasks");
 
             ProcessStartInfo startInfo = new ProcessStartInfo(GetCorerunPath(), arguments.ToString());
+            startInfo.InheritedHandles = [];
             startInfo.EnvironmentVariables["DOTNET_AssertNotStaticTlsResolver"] = "1";
 
             Console.WriteLine($"Launching {startInfo.FileName} {startInfo.Arguments}");

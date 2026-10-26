@@ -1744,7 +1744,7 @@ Thanks for contributing to CLR Stress!
                     arguments = String.Format("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a ADD_CUSTOM -s RUNNING -k FAIL{0:000} -v \"{1} ({2} ReturnCode={3})\"", _reportedFailCnt++, test.RefOrID, test.TestOwner, returnCode);
                 }
                 ProcessStartInfo psi = new ProcessStartInfo("cscript.exe", Environment.ExpandEnvironmentVariables(arguments));
-                psi.UseShellExecute = false;
+                psi.InheritedHandles = [];
                 psi.RedirectStandardOutput = true;
                 psi.RedirectStandardError = true;
 

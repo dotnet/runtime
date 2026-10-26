@@ -18,6 +18,7 @@ namespace TestUnhandledExceptionTester
         static void RunExternalProcess(string unhandledType, string assembly)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.InheritedHandles = [];
             startInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
             startInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), assembly) + " " + unhandledType;
             startInfo.RedirectStandardOutput = true;

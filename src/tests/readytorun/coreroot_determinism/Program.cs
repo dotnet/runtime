@@ -96,6 +96,7 @@ public class Program
         }
         Directory.CreateDirectory(outDir);
         ProcessStartInfo processStartInfo = new ProcessStartInfo(coreRunPath, $"{superIlcPath} compile-directory -cr {coreRootPath} -in {compilationInputFolder} --nojit --noexe --large-bubble --release --nocleanup -ct 30 -out {outDir}");
+        processStartInfo.InheritedHandles = [];
         ProcessExitStatus status = Process.Run(processStartInfo);
         if (status.ExitCode != 0)
         {

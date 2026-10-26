@@ -216,6 +216,7 @@ namespace TestLibrary
                 // Some distros might not have the /proc/pid/task/tid/children entry enabled in the kernel
                 // attempt to use pgrep then
                 var pgrepInfo = new ProcessStartInfo("pgrep");
+                pgrepInfo.InheritedHandles = [];
                 pgrepInfo.RedirectStandardOutput = true;
                 pgrepInfo.RedirectStandardError = true;
                 pgrepInfo.Arguments = $"-P {process.Id}";
@@ -634,6 +635,7 @@ namespace TestLibrary
 
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.InheritedHandles = [];
                 process.StartInfo.EnvironmentVariables.Add("__Category", category);
                 process.StartInfo.EnvironmentVariables.Add("__TestBinaryBase", testBinaryBase);
                 process.StartInfo.EnvironmentVariables.Add("__OutputDir", outputDir);
@@ -645,10 +647,9 @@ namespace TestLibrary
                 Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
                 Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream, 4096, cts.Token);
 
-                if (process.WaitForExit(timeout))
+                if (process.TryWaitForExitStatus(TimeSpan.FromMilliseconds(timeout), out ProcessExitStatus? status))
                 {
-                    // Process completed. Check process.ExitCode here.
-                    exitCode = process.ExitCode;
+                    exitCode = status.ExitCode;
                     Task.WaitAll(copyOutput, copyError);
                 }
                 else
@@ -729,15 +730,16 @@ namespace TestLibrary
             string command = "wmic process get Name, ProcessId, ParentProcessId";
 
             // Start the process and capture the output
-            Process process = new Process();
-            process.StartInfo.FileName = "cmd.exe";
-            process.StartInfo.Arguments = $"/c {command}";
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.CreateNoWindow = true;
+            ProcessStartInfo startInfo = new ProcessStartInfo("cmd.exe", $"/c {command}")
+            {
+                InheritedHandles = [],
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
 
             // Start the process and read the output
-            string output = Process.RunAndCaptureText(process.StartInfo).StandardOutput;
+            string output = Process.RunAndCaptureText(startInfo).StandardOutput;
 
             // Output the result
             return output;

@@ -46,11 +46,12 @@ class NameConfigWithPid
             string outputPathBaseName = $"eventPipeStream{Thread.CurrentThread.ManagedThreadId}_{(ulong)Stopwatch.GetTimestamp()}";
             string outputPathPattern = Path.Combine(tempDir, outputPathBaseName + "_{pid}_{pid}.nettrace");
 
-            process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
+            process.StartInfo.FileName = Environment.ProcessPath;
             process.StartInfo.Arguments = TestLibrary.Utilities.IsNativeAot
                 ? WaitForInput
                 : $"{typeof(NameConfigWithPid).Assembly.Location} {WaitForInput}";
-            process.StartInfo.UseShellExecute = false;
+            using Process processToDispose = process;
+            process.StartInfo.InheritedHandles = [];
             process.StartInfo.RedirectStandardInput = true;
             process.StartInfo.RedirectStandardError = true;
 
@@ -78,9 +79,8 @@ class NameConfigWithPid
 
             process.StandardInput.WriteLine("input");
             process.StandardInput.Flush();
-            process.WaitForExit();
-
             Console.WriteLine($"StdErr ReadToEnd from child process '{process.StandardError.ReadToEnd()}'");
+            process.WaitForExitStatus();
             if (!File.Exists(expectedPath))
             {
                 Console.WriteLine($"{expectedPath} not found");

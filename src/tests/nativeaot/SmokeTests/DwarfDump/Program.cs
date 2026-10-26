@@ -26,7 +26,10 @@ public class Program
         }
 
         Console.WriteLine("Running llvm-dwarfdump");
-        ProcessExitStatus status = Process.Run(llvmDwarfDumpPath, ["--version"]);
+        ProcessExitStatus status = Process.Run(new ProcessStartInfo(llvmDwarfDumpPath, ["--version"])
+        {
+            InheritedHandles = [],
+        });
         if (status.ExitCode != 0)
         {
             return 3;
@@ -34,6 +37,7 @@ public class Program
 
         ProcessTextOutput result = Process.RunAndCaptureText(new ProcessStartInfo
         {
+            InheritedHandles = [],
             FileName = llvmDwarfDumpPath,
             Arguments = $"--verify {Environment.ProcessPath}",
             RedirectStandardOutput = true,

@@ -101,6 +101,7 @@ public class MethodImplOptionsTests : IDisposable
         string currentDirectory = Environment.CurrentDirectory;
 
         ilasmPsi = new ProcessStartInfo();
+        ilasmPsi.InheritedHandles = [];
         ilasmPsi.WorkingDirectory = currentDirectory;
         ilasmPsi.FileName = ilasmFile;
         string asmDllFileName = $"{Path.GetFileNameWithoutExtension(ilFileName)}.dll";
@@ -108,6 +109,7 @@ public class MethodImplOptionsTests : IDisposable
             $"-nologo -dll -optimize -output={asmDllFileName} {ilFileName}";
 
         ildasmPsi = new ProcessStartInfo();
+        ildasmPsi.InheritedHandles = [];
         ildasmPsi.WorkingDirectory = currentDirectory;
         ildasmPsi.FileName = ildasmFile;
         disasmIlFileName = $"{Path.GetFileNameWithoutExtension(ilFileName)}_dis{Path.GetExtension(ilFileName)}";
