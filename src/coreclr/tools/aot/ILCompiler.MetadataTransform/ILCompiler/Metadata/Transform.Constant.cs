@@ -21,9 +21,13 @@ namespace ILCompiler.Metadata
             Ecma.BlobReader blob = reader.GetBlobReader(constant.Value);
             Constant result = new Constant { TypeCode = (ConstantTypeCode)constant.TypeCode };
 
-            // ECMA-335 II.22.9: only the string payload is replaced with a NativeFormat handle.
+            // ECMA-335 II.22.9: transcode UTF16 string constants to inline SerStrings.
             if (constant.TypeCode == Ecma.ConstantTypeCode.String)
-                result.Blob.WriteString(HandleString(blob.ReadUTF16(blob.Length)));
+            {
+                Ecma.BlobBuilder builder = new Ecma.BlobBuilder();
+                builder.WriteSerializedString(blob.ReadUTF16(blob.Length));
+                result.Blob = builder.ToArray();
+            }
             else
             {
                 int size = constant.TypeCode switch
@@ -35,7 +39,7 @@ namespace ILCompiler.Metadata
                     Ecma.ConstantTypeCode.NullReference => blob.Length,
                     _ => throw new BadImageFormatException(),
                 };
-                result.Blob.WriteBytes(blob.ReadBytes(size));
+                result.Blob = blob.ReadBytes(size);
             }
 
             return result;

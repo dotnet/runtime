@@ -132,7 +132,7 @@ namespace System.Reflection.Runtime.General
                 ConstantTypeCode.UInt64 => blob.ReadUInt64(),
                 ConstantTypeCode.Single => blob.ReadSingle(),
                 ConstantTypeCode.Double => blob.ReadDouble(),
-                ConstantTypeCode.String => blob.ReadStringHandle().GetString(reader),
+                ConstantTypeCode.String => blob.ReadString(),
                 ConstantTypeCode.NullReference => null,
                 _ => throw new UnreachableException()
             };

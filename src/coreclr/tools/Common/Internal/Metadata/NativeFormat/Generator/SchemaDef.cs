@@ -308,7 +308,7 @@ internal sealed class SchemaDef
                 name: "Constant",
                 members: new MemberDef[] {
                     new MemberDef("TypeCode", "ConstantTypeCode"),
-                    new MemberDef("Blob", flags: MemberDefFlags.Blob),
+                    new MemberDef("Blob", "Byte", MemberDefFlags.Array),
                 }
             ),
             new RecordDef(

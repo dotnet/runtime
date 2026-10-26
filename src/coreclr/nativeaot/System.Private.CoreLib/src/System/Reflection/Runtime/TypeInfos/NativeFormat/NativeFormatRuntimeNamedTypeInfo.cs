@@ -63,33 +63,17 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             //
             foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
             {
-                // We can't reference the GuidAttribute class directly as we don't have an official dependency on System.Runtime.InteropServices.
-                // Following age-old CLR tradition, we search for the custom attribute using a name-based search. Since this makes it harder
-                // to be sure we won't run into custom attribute constructors that comply with the GuidAttribute(String) signature,
-                // we'll check that it does and silently skip the CA if it doesn't match the expected pattern.
+                // Match by name, as CoreCLR does, without resolving the constructor signature.
                 if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.InteropServices", "GuidAttribute"))
                 {
-                    CustomAttribute ca = cah.GetCustomAttribute(_reader);
-                    MethodSignature signature = ca.Constructor.HandleType == HandleType.QualifiedMethod
-                        ? ca.Constructor.ToQualifiedMethodHandle(_reader).GetQualifiedMethod(_reader)
-                            .Method.GetMethod(_reader).Signature.GetMethodSignature(_reader)
-                        : ca.Constructor.ToMemberReferenceHandle(_reader).GetMemberReference(_reader)
-                            .Signature.ParseMethodSignature(_reader);
-                    if (signature.Parameters.Count != 1)
-                        continue;
-
-                    HandleCollection.Enumerator parameters = signature.Parameters.GetEnumerator();
-                    parameters.MoveNext();
-                    if (parameters.Current.Resolve(_reader, default).ToType() != typeof(string))
-                        continue;
-
-                    BlobReader blob = new BlobReader(ca.Blob.AsSpan());
-                    ConstantStringValueHandle constantStringValueHandle = blob.ReadStringHandle();
-                    if (constantStringValueHandle.IsNil)
+                    ReadOnlySpan<byte> blob = cah.GetCustomAttribute(_reader).Blob.AsSpan();
+                    const int GuidLength = 36;
+                    // One-byte string length, GUID text, and a two-byte named-argument count.
+                    if (blob.Length != sizeof(byte) + GuidLength + sizeof(ushort))
                         continue;
 
                     // Parse a 'Guid' directly from the encoded UTF8 buffer, instead of round-tripping through a 'string'
-                    return Guid.Parse(_reader.ReadStringAsBytes(constantStringValueHandle));
+                    return Guid.Parse(blob.Slice(sizeof(byte), GuidLength));
                 }
             }
             return null;

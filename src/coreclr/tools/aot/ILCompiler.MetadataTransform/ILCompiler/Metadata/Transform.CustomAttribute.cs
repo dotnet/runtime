@@ -33,7 +33,7 @@ namespace ILCompiler.Metadata
             CustomAttribute result = new CustomAttribute { Constructor = HandleQualifiedMethod(constructor) };
             Ecma.BlobReader valueReader = reader.GetBlobReader(attribute.Value);
 
-            // ECMA-335 II.23.3, with the prologue omitted and SerStrings replaced by handles.
+            // ECMA-335 II.23.3, with the prologue omitted and type names replaced by handles.
             ushort prolog = valueReader.ReadUInt16();
             Debug.Assert(prolog == 1);
 
@@ -47,7 +47,7 @@ namespace ILCompiler.Metadata
             {
                 result.Blob.WriteByte(valueReader.ReadByte());
                 Cts.TypeDesc type = TranscodeFieldOrPropType(module, ref valueReader, result.Blob);
-                result.Blob.WriteString(HandleString(valueReader.ReadSerializedString()));
+                result.Blob.WriteString(valueReader.ReadSerializedString());
                 TranscodeCustomAttributeValue(module, type, ref valueReader, result.Blob);
             }
 
@@ -119,7 +119,7 @@ namespace ILCompiler.Metadata
             }
             else if (type.IsString)
             {
-                blob.WriteString(HandleString(reader.ReadSerializedString()));
+                blob.WriteString(reader.ReadSerializedString());
             }
             else if (type.UnderlyingType.IsPrimitive)
             {

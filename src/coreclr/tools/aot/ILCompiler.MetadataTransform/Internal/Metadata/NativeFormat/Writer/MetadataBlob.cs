@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 using Internal.NativeFormat;
 
 namespace Internal.Metadata.NativeFormat.Writer;
@@ -14,14 +15,12 @@ public sealed class MetadataBlob : IEquatable<MetadataBlob>
     private readonly List<HandleReference> _references = new List<HandleReference>();
     private bool _isReadOnly;
 
-    private readonly struct HandleReference(int offset, MetadataRecord record, bool isTyped)
+    private readonly struct HandleReference(int offset, MetadataRecord record)
     {
         public readonly int Offset = offset;
         public readonly MetadataRecord Record = record;
-        public readonly bool IsTyped = isTyped;
-
         public uint EncodedValue => Record is null ? 0 :
-            IsTyped ? (uint)Record.HandleOffset : (uint)Record.HandleType | ((uint)Record.HandleOffset << 7);
+            (uint)Record.HandleType | ((uint)Record.HandleOffset << 7);
     }
 
     public void WriteByte(byte value)
@@ -37,11 +36,31 @@ public sealed class MetadataBlob : IEquatable<MetadataBlob>
             _bytes.Add(value);
     }
 
-    public void WriteString(ConstantStringValue value)
+    public void WriteString(string value)
     {
         Debug.Assert(!_isReadOnly);
-        Debug.Assert(value is null || value.Value is not null);
-        _references.Add(new HandleReference(_bytes.Count, value, isTyped: true));
+        // ECMA-335 II.23.3: SerString is a compressed UTF8 byte count, or 0xFF for null.
+        if (value is null)
+        {
+            WriteByte(0xff);
+            return;
+        }
+
+        byte[] bytes = Encoding.UTF8.GetBytes(value);
+        int length = bytes.Length;
+        Debug.Assert(length <= 0x1fffffff);
+        if (length > 0x3fff)
+        {
+            WriteByte((byte)((length >> 24) | 0xc0));
+            WriteByte((byte)(length >> 16));
+            WriteByte((byte)(length >> 8));
+        }
+        else if (length > 0x7f)
+        {
+            WriteByte((byte)((length >> 8) | 0x80));
+        }
+        WriteByte((byte)length);
+        WriteBytes(bytes);
     }
 
     public void WriteType(MetadataRecord value)
@@ -49,7 +68,7 @@ public sealed class MetadataBlob : IEquatable<MetadataBlob>
         Debug.Assert(!_isReadOnly);
         Debug.Assert(value is null || value.HandleType is
             HandleType.TypeDefinition or HandleType.TypeReference or HandleType.TypeSpecification);
-        _references.Add(new HandleReference(_bytes.Count, value, isTyped: false));
+        _references.Add(new HandleReference(_bytes.Count, value));
     }
 
     internal void Visit(MetadataRecord owner, IRecordVisitor visitor)
@@ -59,7 +78,7 @@ public sealed class MetadataBlob : IEquatable<MetadataBlob>
         {
             HandleReference reference = _references[i];
             _references[i] = new HandleReference(
-                reference.Offset, visitor.Visit(owner, reference.Record), reference.IsTyped);
+                reference.Offset, visitor.Visit(owner, reference.Record));
         }
     }
 
@@ -81,7 +100,7 @@ public sealed class MetadataBlob : IEquatable<MetadataBlob>
         {
             HandleReference left = _references[i];
             HandleReference right = other._references[i];
-            if (left.Offset != right.Offset || left.IsTyped != right.IsTyped || !Equals(left.Record, right.Record))
+            if (left.Offset != right.Offset || !Equals(left.Record, right.Record))
                 return false;
         }
 
@@ -100,7 +119,6 @@ public sealed class MetadataBlob : IEquatable<MetadataBlob>
         foreach (HandleReference reference in _references)
         {
             hash = unchecked(hash * 31 + reference.Offset);
-            hash = unchecked(hash * 31 + (reference.IsTyped ? 1 : 0));
             hash = unchecked(hash * 31 + (reference.Record?.GetHashCode() ?? 0));
         }
 
