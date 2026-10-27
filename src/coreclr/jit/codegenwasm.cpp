@@ -757,6 +757,12 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             {
                 GetEmitter()->emitIns_BlockTy(INS_loop);
             }
+            else if (interval->IsTry() && m_compiler->IsNativeAot())
+            {
+                // TODO-NativeAOT-WASM: Preserve interval nesting without CoreCLR's catch-resumption tag during
+                // NativeAOT bringup.
+                GetEmitter()->emitIns_BlockTy(INS_block);
+            }
             else if (interval->IsTry())
             {
                 // Handle try_table emission here, since there may be blocks nested inside.
@@ -2178,9 +2184,8 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
                 return;
             }
 
-            // Wasm has no absolute-address literals; every handle is materialized as a module-base-
-            // relative constant and relocated. compReloc is always on for a real AOT compile, so a
-            // handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
+            // Handles need linker relocations for NativeAOT or image-relative relocations for R2R.
+            // A handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
             assert(icon->ImmedValNeedsReloc(m_compiler) || m_compiler->RunningSuperPmiReplay());
             GetEmitter()->emitAddressConstant((void*)icon->IntegralValue());
             WasmProduceReg(treeNode);
@@ -3152,11 +3157,18 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     if (addr->isContained() && !addr->OperIs(GT_LEA))
     {
-        // A contained address constant folds into the memarg offset, so emit just the image base here.
+        // A contained address constant folds into the memarg offset, so emit just the address base here.
         //
         assert(addr->IsIconHandle() && !tree->TypeIs(TYP_SIMD12));
         assert(addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler));
-        GetEmitter()->emitImageBase();
+        if (m_compiler->IsNativeAot())
+        {
+            GetEmitter()->emitIns_I(INS_i32_const, EA_PTRSIZE, 0);
+        }
+        else
+        {
+            GetEmitter()->emitImageBase();
+        }
         GetEmitter()->emitIns_MemargAddress(ins_Load(type), emitActualTypeSize(type),
                                             (void*)addr->AsIntConCommon()->IntegralValue());
     }

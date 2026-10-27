@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
@@ -65,9 +66,9 @@ internal sealed partial class GrammarActions
         }
         else
         {
-            for (int i = method.LocalsScopes.Count - 1; i >= 0; i--)
+            for (int i = method.OpenScopes.Count - 1; i >= 0; i--)
             {
-                if (method.LocalsScopes[i].TryGetValue(variableName, out int localIndex))
+                if (method.OpenScopes[i].Names.TryGetValue(variableName, out int localIndex))
                 {
                     index = localIndex;
                     break;
@@ -252,12 +253,31 @@ internal sealed partial class GrammarActions
         }
     }
 
-    internal void SetEntryPoint()
+    internal void SetEntryPoint(IToken directiveToken)
     {
-        if (_currentMethod is not null)
+        if (_currentMethod is null)
         {
-            _entityRegistry.EntryPoint = _currentMethod.Definition;
+            return;
         }
+
+        if (_entityRegistry.EntryPoint is not null)
+        {
+            ReportError(
+                DiagnosticIds.DuplicateEntryPoint,
+                DiagnosticMessageTemplates.DuplicateEntryPoint,
+                directiveToken);
+            return;
+        }
+
+        if (!_currentMethod.Definition.MethodAttributes.HasFlag(MethodAttributes.Static))
+        {
+            ReportError(
+                DiagnosticIds.InstanceEntryPoint,
+                DiagnosticMessageTemplates.InstanceEntryPoint,
+                directiveToken);
+        }
+
+        _entityRegistry.EntryPoint = _currentMethod.Definition;
     }
 
     internal void SetZeroInit()
@@ -328,6 +348,12 @@ internal sealed partial class GrammarActions
         method.Definition.MethodBody.Switch(labels, Location.From(builder.OpcodeToken, _documents));
     }
 
+    /// <summary>
+    /// Starts emitting an instruction into the current method: records its sequence point at the current IL offset
+    /// (<see cref="RecordSequencePoint"/>) and parses its opcode. Every instruction passes through here before its
+    /// bytes are written, and the caller must write them.
+    /// </summary>
+    /// <returns>The current method and the opcode, or <see langword="null"/> outside a method body.</returns>
     private (CurrentMethodContext Method, ILOpCode OpCode)? StartInstruction(IToken opcodeToken)
     {
         if (_currentMethod is not { } method)
@@ -336,6 +362,7 @@ internal sealed partial class GrammarActions
         }
 
         ILOpCode opcode = ParseOpCodeFromToken(opcodeToken);
+        RecordSequencePoint(method, opcodeToken);
         return (method, opcode);
     }
 
@@ -365,8 +392,14 @@ internal sealed partial class GrammarActions
         string normalized = text.Replace('.', '_');
         normalized = normalized switch
         {
+            "brnull" or "brzero" => "brfalse",
+            "brnull_s" or "brzero_s" => "brfalse_s",
+            "brinst" => "brtrue",
+            "brinst_s" => "brtrue_s",
             "ldelem_u8" => "ldelem_i8",
             "ldind_u8" => "ldind_i8",
+            "ldelem_any" => "ldelem",
+            "stelem_any" => "stelem",
             "endfault" => "endfinally",
             _ => normalized
         };

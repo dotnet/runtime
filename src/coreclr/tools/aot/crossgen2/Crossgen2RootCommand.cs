@@ -156,6 +156,8 @@ namespace ILCompiler
             new("--two-phase-compilation") { Description = SR.TwoPhaseCompilationOption };
         public Option<bool> VerifyGCModeTransitions { get; } =
             new("--verify-gc-mode-transitions") { Description = SR.VerifyGCModeTransitionsOption };
+        public Option<bool?> TargetSingleThreaded { get; } =
+            new("--target-single-threaded") { Description = SR.TargetSingleThreadedOption };
         public Option<bool> StripInliningInfo { get; } =
             new("--strip-inlining-info") { Description = SR.StripInliningInfoOption };
         public Option<bool> StripDebugInfo { get; } =
@@ -240,6 +242,7 @@ namespace ILCompiler
             Options.Add(FileLayout);
             Options.Add(VerifyTypeAndFieldLayout);
             Options.Add(VerifyGCModeTransitions);
+            Options.Add(TargetSingleThreaded);
             Options.Add(CallChainProfileFile);
             Options.Add(MakeReproPath);
             Options.Add(HotColdSplitting);

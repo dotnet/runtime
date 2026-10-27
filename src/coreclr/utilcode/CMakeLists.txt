@@ -4,6 +4,7 @@ set(UTILCODE_COMMON_SOURCES
   dn_xxhash.cpp
   clrhost_nodependencies.cpp
   ccomprc.cpp
+  cxxexception.cpp
   ex.cpp
   sbuffer.cpp
   sstring_com.cpp
@@ -53,6 +54,8 @@ set(UTILCODE_COMMON_SOURCES
   yieldprocessornormalized.cpp
 )
 
+set_source_files_properties(cxxexception.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+
 # These source file do not yet compile on Linux.
 # They should be moved out from here into the declaration
 # of UTILCODE_SOURCES above after fixing compiler errors.
@@ -80,8 +83,6 @@ set(UTILCODE_STATICNOHOST_SOURCES
   ${UTILCODE_COMMON_SOURCES}
   hostimpl.cpp
 )
-
-set (UTILCODE_DEPENDENCIES eventing_headers)
 
 convert_to_absolute_path(UTILCODE_SOURCES ${UTILCODE_SOURCES})
 convert_to_absolute_path(UTILCODE_DAC_SOURCES ${UTILCODE_DAC_SOURCES})
@@ -119,11 +120,10 @@ endif(CLR_CMAKE_HOST_WIN32)
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set_target_properties(utilcode_dac PROPERTIES DAC_COMPONENT TRUE)
   target_compile_definitions(utilcode_dac PRIVATE SELF_NO_HOST)
-  add_dependencies(utilcode_dac ${UTILCODE_DEPENDENCIES})
   target_precompile_headers(utilcode_dac PRIVATE [["stdafx.h"]])
   endif()
+target_compile_definitions(utilcode PRIVATE DISABLE_ETW_CALLBACK_HOOKS)
 target_compile_definitions(utilcodestaticnohost PRIVATE SELF_NO_HOST)
-add_dependencies(utilcode ${UTILCODE_DEPENDENCIES})
-add_dependencies(utilcodestaticnohost ${UTILCODE_DEPENDENCIES})
+add_dependencies(utilcode eventing_headers)
 target_precompile_headers(utilcode PRIVATE [["stdafx.h"]])
 target_precompile_headers(utilcodestaticnohost PRIVATE [["stdafx.h"]])

@@ -481,26 +481,35 @@ namespace System.Net.Test.Common
                 if (httpOptions.UseSsl)
                 {
                     var sslStream = new SslStream(stream, false, delegate { return true; });
+                    try
+                    {
 #if !NETFRAMEWORK
-                    SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions()
-                    {
-                        AllowTlsResume = httpOptions.AllowTlsResume,
-                        EnabledSslProtocols = httpOptions.SslProtocols,
-                        ServerCertificateContext = httpOptions.CertificateContext ?? SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null),
-                        ClientCertificateRequired = true,
-                    };
+                        SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions()
+                        {
+                            AllowTlsResume = httpOptions.AllowTlsResume,
+                            EnabledSslProtocols = httpOptions.SslProtocols,
+                            ServerCertificateContext = httpOptions.CertificateContext ?? SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null),
+                            ClientCertificateRequired = true,
+                        };
 
-                    await sslStream.AuthenticateAsServerAsync(sslOptions, default).ConfigureAwait(false);
+                        await sslStream.AuthenticateAsServerAsync(sslOptions, default).ConfigureAwait(false);
 #else
-                    using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
-                    {
-                        await sslStream.AuthenticateAsServerAsync(
-                            cert,
-                            clientCertificateRequired: true, // allowed but not required
-                            enabledSslProtocols: httpOptions.SslProtocols,
-                            checkCertificateRevocation: false).ConfigureAwait(false);
-                    }
+                        using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
+                        {
+                            await sslStream.AuthenticateAsServerAsync(
+                                cert,
+                                clientCertificateRequired: true, // allowed but not required
+                                enabledSslProtocols: httpOptions.SslProtocols,
+                                checkCertificateRevocation: false).ConfigureAwait(false);
+                        }
 #endif
+                    }
+                    catch
+                    {
+                        sslStream.Dispose();
+                        throw;
+                    }
+
                     stream = sslStream;
                 }
 
@@ -857,6 +866,7 @@ namespace System.Net.Test.Common
                 else if (_contentLength < 0)
                 {
                     // Chunked Encoding
+                    int length = 0;
                     while (true)
                     {
                         string chunkHeader = await ReadLineAsync().ConfigureAwait(false);
@@ -871,18 +881,20 @@ namespace System.Net.Test.Common
                         byte[] chunk = new byte[chunkLength];
                         await ReadBlockAsync(chunk, 0, chunkLength).ConfigureAwait(false);
                         await ReadLineAsync().ConfigureAwait(false);
-                        if (buffer == null)
+                        if (buffer is null)
                         {
                             buffer = chunk;
+                            length = chunkLength;
                         }
                         else
                         {
-                            byte[] newBuffer = new byte[buffer.Length + chunkLength];
-
-                            buffer.CopyTo(newBuffer, 0);
-                            chunk.CopyTo(newBuffer, buffer.Length);
-                            buffer = newBuffer;
+                            length = GenericLoopbackConnection.AppendToBuffer(ref buffer, length, chunk);
                         }
+                    }
+
+                    if (buffer is not null)
+                    {
+                        Array.Resize(ref buffer, length);
                     }
                 }
 

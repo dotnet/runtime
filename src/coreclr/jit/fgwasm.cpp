@@ -2406,12 +2406,167 @@ PhaseStatus Compiler::fgWasmControlFlow()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+inline bool treeIsNonExceptGCSafePoint(GenTree* tree, Compiler* comp)
+{
+    if (tree->IsCall())
+    {
+        // All non-helper calls are considered safe points. A helper is a GC safepoint if it is not marked as NoGC.
+        return !tree->IsHelperCall() || !comp->s_helperCallProperties.IsNoGC(tree->AsCall()->GetHelperNum());
+    }
+
+    return tree->OperIs(GT_GCPOLL);
+}
+
+//------------------------------------------------------------------------
+// fgWasmFindGCRefCandidates: Identify GC ref locals which are candidates to live in Wasm locals by determining if they
+// are GC-safe (unexposed to GC).
+//
+// Notes:
+//    This is a dataflow analysis which uses existing liveness information to identify JIT locals which may be placed in
+//    Wasm locals at regalloc time. We limit these to locals which do not require a gc-visible home. For Wasm, a
+//    gc-visible home is on the shadow stack. We mark a gc-ref local as a candidate for a Wasm local if the analysis
+//    determines there is no liveness across a GC safepoint for the local definition itself. A GC safepoint is an
+//    operation whose codegen instructions may trigger a GC. We split safepoints into exceptional and non-exceptional
+//    safepoints. Non exceptional safepoints are:
+//      - Any explicit GC_POLL
+//      - All calls, except helpers marked as NO_GC
+//      - Invocations of a finally funclet (the only safepoint not explicitly expressed as an LIR node)
+//    Exceptional safepoints are:
+//       - Any node NOT otherwise in the first category which may throw. In these cases the only possible GC collecting
+//       path is the throwing path.
+//         Exceptional safepoint nodes are treated differently, because locals live into them are only meaningfully
+//         exposed to GC if they are also live into a reachable handler block.
+//    IMPORTANT: A tree temporary that is the result of a LCL_VAR may still be live across a safepoint even if the local
+//    is dead at that safepoint from a liveness perspective. fgWasmSpillRefs handles these cases by checking the list of
+//    candidates generated from this pass and giving a temporary a gc-visible home if necessary.
+PhaseStatus Compiler::fgWasmFindGCRefCandidates()
+{
+#define DISP_SAFEPOINT(msg, block, tree, liveInto)                                                                     \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        JITDUMP((msg), (block)->bbNum);                                                                                \
+        DISPNODE((tree));                                                                                              \
+        JITDUMP("Live across: ");                                                                                      \
+        JITDUMPEXEC(dumpConvertedVarSet(this, (liveInto)));                                                            \
+        JITDUMP("\n");                                                                                                 \
+    } while (0)
+
+    if (lvaTrackedCount == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    VARSET_TP              liveAcrossGC = VarSetOps::MakeEmpty(this);
+    VARSET_TP              liveInto     = VarSetOps::MakeEmpty(this);
+    TreeLifeUpdater<false> lifeUpdater(this);
+    VarSetOps::AssignNoCopy(this, compCurLife, VarSetOps::MakeEmpty(this));
+
+    for (BasicBlock* const block : Blocks())
+    {
+        VARSET_TP ehLive = VarSetOps::MakeEmpty(this);
+        if (block->HasPotentialEHSuccs(this))
+        {
+            MemoryKindSet memoryLive = 0;
+            fgAddHandlerLiveVars(block, ehLive, memoryLive);
+        }
+
+        compCurLifeTree = nullptr;
+        VarSetOps::Assign(this, compCurLife, block->bbLiveIn);
+        for (GenTree* tree : LIR::AsRange(block))
+        {
+            // compCurLife should reflect liveness into this tree;
+            VarSetOps::Assign(this, liveInto, compCurLife);
+
+            if (treeIsNonExceptGCSafePoint(tree, this))
+            {
+                VarSetOps::UnionD(this, liveAcrossGC, liveInto);
+                DISP_SAFEPOINT("GC safepoint in " FMT_BB ":\n", block, tree, liveInto);
+            }
+            else if (tree->OperMayThrow(this))
+            {
+                // All operations which may throw are considered potential GC on safepoints on the exceptional path, as
+                // a GC could occur during exception handling before a catch. This includes null checks, divide by zero,
+                // and array bounds checks. Only locals still live into the exceptional path need to be considered for
+                // EH-only GC safepoints.
+                VarSetOps::IntersectionD(this, liveInto, ehLive);
+                VarSetOps::UnionD(this, liveAcrossGC, liveInto);
+                DISP_SAFEPOINT("EH-Only GC safepoint in " FMT_BB ":\n", block, tree, liveInto);
+            }
+
+            lifeUpdater.UpdateLife<false>(tree);
+        }
+
+        if (block->KindIs(BBJ_CALLFINALLY))
+        {
+            // At this point, compCurLife should reflect the set of locals live after all IR trees in the block have
+            // been processed. If this block calls a finally funclet, locals which are in bbLiveOut would potentially
+            // cross a GC safepoint as well, so account for this.
+            BitVec liveAcross = VarSetOps::Intersection(this, compCurLife, block->bbLiveOut);
+            VarSetOps::UnionD(this, liveAcrossGC, liveAcross);
+        }
+    }
+
+    JITDUMP("All Vars Live across GC safepoints:\n");
+    JITDUMPEXEC(dumpConvertedVarSet(this, liveAcrossGC));
+    JITDUMP("\n");
+
+    // Build our set of candiates from gc-ref typed locals which are not live across a safepoint
+    m_wasmGCRefCandidates  = new (this, CMK_WasmGCRefCandidates) BitVec();
+    *m_wasmGCRefCandidates = VarSetOps::MakeEmpty(this);
+    for (unsigned varIndex = 0; varIndex < lvaTrackedCount; varIndex++)
+    {
+        LclVarDsc* varDsc = lvaGetDescByTrackedIndex(varIndex);
+        if (varTypeIsGC(varDsc->TypeGet()) && !VarSetOps::IsMember(this, liveAcrossGC, varIndex))
+        {
+            VarSetOps::AddElemD(this, *m_wasmGCRefCandidates, varIndex);
+        }
+    }
+
+    JITDUMP("Identified GC ref candidates:\n");
+    JITDUMPEXEC(dumpConvertedVarSet(this, *m_wasmGCRefCandidates));
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
 PhaseStatus Compiler::fgWasmSpillRefs()
 {
     bool anyChanges = false;
 
     jitstd::vector<GenTree*> defs(getAllocator(CMK_WasmSpillRefs));
     jitstd::vector<unsigned> spillSlotsToZeroAtEndOfBlock(getAllocator(CMK_WasmSpillRefs));
+
+    // Helper to remove used nodes from the defs list when they're no longer meaningfully 'live'. A contained operand is
+    //  not itself on the operand stack, so look through it to the operands that are.
+    auto removeUses = [](GenTree* op, jitstd::vector<GenTree*>& defs, auto& recurse) -> void {
+        if (!op->IsValue())
+        {
+            return;
+        }
+
+        if (op->isContained())
+        {
+            op->VisitOperands([&recurse, &defs](GenTree* innerOp) {
+                recurse(innerOp, defs, recurse);
+                return GenTree::VisitResult::Continue;
+            });
+            return;
+        }
+
+        if (!op->TypeIs(TYP_REF, TYP_BYREF))
+        {
+            return;
+        }
+
+        for (size_t i = defs.size(); i > 0; i--)
+        {
+            if (op == defs[i - 1])
+            {
+                defs[i - 1] = defs[defs.size() - 1];
+                defs.pop_back();
+                break;
+            }
+        }
+    };
 
     for (BasicBlock* const block : Blocks())
     {
@@ -2435,8 +2590,18 @@ PhaseStatus Compiler::fgWasmSpillRefs()
         {
             if (tree->IsCall())
             {
-                // For any ref/byref values live at the point of a call, spill them into pinned slots
-                //  on the stack where the GC can see them so it won't move them.
+                // If we have a call, consume the call's operands from the defs list BEFORE spilling
+                // any live refs. This is because a GC-ref node which is only live INTO (and not across) another call
+                // does not need extra GC protection. The callee is responsible for ensuring the GC safety of any
+                // incoming GC ref args.
+                tree->VisitOperands([&removeUses, &defs](GenTree* op) {
+                    removeUses(op, defs, removeUses);
+                    return GenTree::VisitResult::Continue;
+                });
+
+                // For any ref/byref values which are still live at the point of a call and not consumed by the current
+                // call, spill them into pinned slots on the stack where the GC can see them so it won't move them.
+                // These cases should only be for nested calls like F(x, G()) where x is a GC ref.
                 if (!defs.empty())
                 {
                     if (m_wasmSpillSlots == nullptr)
@@ -2509,49 +2674,21 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 }
             }
 
-            // FIXME: Should this happen before the spilling of the live defs list?
-            // I think the answer is no, because live defs being passed as arguments to the current call
-            //  are not guaranteed to ever end up in memory where the GC can see them unless we spill
-            //  them. If we can somehow guarantee that all callees will spill their ref parameters
-            //  immediately, we could do this before the block above.
-
-            // Remove used nodes from defs list, they're no longer meaningfully 'live'. A contained operand is
-            //  not itself on the operand stack, so look through it to the operands that are.
-            auto removeUses = [&defs](GenTree* op, auto& recurse) -> void {
-                if (!op->IsValue())
-                    return;
-                if (op->isContained())
-                {
-                    op->VisitOperands([&recurse](GenTree* innerOp) {
-                        recurse(innerOp, recurse);
-                        return GenTree::VisitResult::Continue;
-                    });
-                    return;
-                }
-                if (!op->TypeIs(TYP_REF, TYP_BYREF))
-                    return;
-
-                for (size_t i = defs.size(); i > 0; i--)
-                {
-                    if (op == defs[i - 1])
-                    {
-                        defs[i - 1] = defs[defs.size() - 1];
-                        defs.pop_back();
-                        break;
-                    }
-                }
-            };
-
-            // A contained node is part of its parent, so it is visited as part of the parent instead.
             if (tree->isContained())
             {
                 continue;
             }
 
-            tree->VisitOperands([&removeUses](GenTree* op) {
-                removeUses(op, removeUses);
-                return GenTree::VisitResult::Continue;
-            });
+            if (!tree->IsCall())
+            {
+                // If the tree isn't a call, then we haven't already removed the current tree's operands from the defs
+                // list. These operands are no longer meaningfully live so we should remove them now.
+                assert(!tree->IsCall() || tree->AsCall()->IsUnmanaged() || tree->AsCall()->IsHelperCall());
+                tree->VisitOperands([&removeUses, &defs](GenTree* op) {
+                    removeUses(op, defs, removeUses);
+                    return GenTree::VisitResult::Continue;
+                });
+            }
 
             // We only care about used values, and invariant nodes can't produce movable GC refs, so skip
             //  nodes appropriately
@@ -2560,14 +2697,19 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 continue;
             }
 
-            // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
-            //  it won't be mutated between its def (here) and its use (the call that would produce a spill)
-            //  and we won't need to spill it.
             if (tree->OperIs(GT_LCL_VAR))
             {
                 GenTreeLclVarCommon* lclVar = tree->AsLclVarCommon();
                 LclVarDsc*           dsc    = lvaGetDesc(lclVar);
-                if (!dsc->IsAddressExposed())
+                bool                 isRefLocalCandidate =
+                    dsc->lvTracked && VarSetOps::IsMember(this, *m_wasmGCRefCandidates, dsc->lvVarIndex);
+
+                // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
+                // it won't be mutated between its def (here) and its use (the call that would produce a spill).
+                // If the local is NOT a gc ref wasm local candidate, then it will be assigned a pinned stack home
+                // by RA already. Otherwise, temporary reads of candidates that are live across a call still need to be
+                // spilled.
+                if (!dsc->IsAddressExposed() && !isRefLocalCandidate)
                 {
                     continue;
                 }
