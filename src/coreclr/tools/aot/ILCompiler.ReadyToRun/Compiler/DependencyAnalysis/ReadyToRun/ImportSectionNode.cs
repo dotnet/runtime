@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 
 using Internal.ReadyToRunConstants;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -136,10 +137,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.EmitUInt(0);
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
-            yield return new DependencyListEntry(_imports, "Import section fixup data");
-            yield return new DependencyListEntry(_signatures, "Import section signatures");
+            sink.Add(_imports, "Import section fixup data");
+            sink.Add(_signatures, "Import section signatures");
         }
 
         protected override string GetName(NodeFactory context)

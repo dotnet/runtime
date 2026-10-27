@@ -74,6 +74,12 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WasmCoreClrValidateReadyToRun"
           Condition="'$(PublishReadyToRun)' == 'true'"
           BeforeTargets="_WasmCoreClrSelectR2RDirectories;_ResolveWasmOutputs">
+    <ItemGroup>
+      <_WasmMissingReadyToRunPgoFile Include="@(PublishReadyToRunPgoFiles)"
+                                     Condition="!Exists('%(PublishReadyToRunPgoFiles.Identity)')" />
+    </ItemGroup>
+    <Error Condition="'@(_WasmMissingReadyToRunPgoFile)' != ''"
+           Text="PublishReadyToRunPgoFiles item '@(_WasmMissingReadyToRunPgoFile)' does not exist. Specify an existing .mibc file generated for the assemblies being published." />
     <Error Condition="'$(PublishReadyToRunComposite)' == 'true' and '$(_WasmEnableWebcil)' != 'true'"
            Text="PublishReadyToRunComposite for CoreCLR browser-wasm requires WebCIL-in-Wasm assemblies; enable WasmEnableWebcil." />
     <Error Condition="'$(PublishReadyToRunContainerFormat)' != 'wasm'"
@@ -243,32 +249,47 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="CreateReadyToRunImages"
           BeforeTargets="ProcessPublishFilesForWasm" />
 
+  <Target Name="_WasmCoreClrConfigureReadyToRunPgo"
+          Condition="'$(PublishReadyToRun)' == 'true'">
+    <PropertyGroup>
+      <!-- Item-dependent configuration must run at target execution time. -->
+      <PublishReadyToRunCrossgen2ExtraArgs Condition="'@(PublishReadyToRunPgoFiles)' != ''">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+  </Target>
+
   <!-- Per-app crossgen must be conservative: cross-module inlining makes all images depend on the
        whole closure. Include reference-only assemblies and the compiler as non-correlated inputs
        so _CreateR2RImages reruns even when its per-assembly outputs are otherwise up-to-date. -->
   <Target Name="_WasmCoreClrConservativeR2RInputs"
           Condition="'$(PublishReadyToRun)' == 'true'"
+          DependsOnTargets="_WasmCoreClrSelectR2RDirectories;_WasmCoreClrConfigureReadyToRunPgo"
           BeforeTargets="_CreateR2RImages">
-    <ItemGroup>
-      <_ReadyToRunCompilerInputs Include="@(_ReadyToRunCompileList);@(_ReadyToRunAssembliesToReference);@(_ReadyToRunCompositeBuildReferences);@(_ReadyToRunCompositeUnrootedBuildInput)" />
-      <!-- crossgen2 itself, not just the JIT: an updated compiler with an unchanged JIT must still invalidate. -->
-      <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
-                                 Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
-    </ItemGroup>
-    <!-- Crossgen2 configuration that isn't a file input: extra arguments (e.g. -p:PublishReadyToRunStripDebugInfo)
-         and the composite mode, whose component stubs share the per-assembly <name>.wasm output names and would
-         otherwise look up-to-date after a composite publish. WriteOnlyWhenDifferent bumps the timestamp only
-         when this configuration changes. -->
     <PropertyGroup>
-      <_WasmReadyToRunArgsStamp>$(IntermediateOutputPath)wasm-r2r-args.stamp</_WasmReadyToRunArgsStamp>
+      <_WasmReadyToRunState>Composite=$(PublishReadyToRunComposite)|PgoFiles=@(PublishReadyToRunPgoFiles->'%(FullPath)', '|')|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)</_WasmReadyToRunState>
+      <_WasmReadyToRunStateHash>$([MSBuild]::StableStringHash('$(_WasmReadyToRunState)', 'Sha256'))</_WasmReadyToRunStateHash>
+      <_WasmReadyToRunStateFile>$(_WasmPublishR2RDir)browser-r2r-state.stamp</_WasmReadyToRunStateFile>
     </PropertyGroup>
-    <WriteLinesToFile File="$(_WasmReadyToRunArgsStamp)"
-                      Lines="PublishReadyToRunComposite=$(PublishReadyToRunComposite);$(PublishReadyToRunCrossgen2ExtraArgs)"
+    <ReadLinesFromFile File="$(_WasmReadyToRunStateFile)"
+                       Condition="Exists('$(_WasmReadyToRunStateFile)')">
+      <Output TaskParameter="Lines" PropertyName="_WasmPreviousReadyToRunStateHash" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <_WasmReadyToRunStateChanged Condition="'$(_WasmPreviousReadyToRunStateHash)' != '$(_WasmReadyToRunStateHash)'">true</_WasmReadyToRunStateChanged>
+    </PropertyGroup>
+    <!-- Output timestamps can be newer than a newly written state file. Delete every batch output on a
+         state change so _CreateR2RImages cannot retain a mixture of full and partial images. -->
+    <Delete Condition="'$(_WasmReadyToRunStateChanged)' == 'true'"
+            Files="@(_ReadyToRunCompileList->'%(OutputR2RImage)');@(_ReadyToRunCompileList->'%(OutputPDBImage)')" />
+    <WriteLinesToFile File="$(_WasmReadyToRunStateFile)"
+                      Lines="$(_WasmReadyToRunStateHash)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
-      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunArgsStamp)" />
-      <FileWrites Include="$(_WasmReadyToRunArgsStamp)" />
+      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunStateFile);@(_ReadyToRunCompileList);@(_ReadyToRunAssembliesToReference);@(_ReadyToRunCompositeBuildReferences);@(_ReadyToRunCompositeUnrootedBuildInput)" />
+      <!-- crossgen2 itself, not just the JIT: an updated compiler with an unchanged JIT must still invalidate. -->
+      <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
+                                 Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
+      <FileWrites Include="$(_WasmReadyToRunStateFile)" />
     </ItemGroup>
   </Target>
 
