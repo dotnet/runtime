@@ -994,6 +994,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-reverse.cpp
     )
     if (GEN_PINVOKE)
+        add_compile_definitions(GEN_PINVOKE=1)
         list(APPEND VM_SOURCES_WKS_GEN
             ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-pinvoke.cpp
         )

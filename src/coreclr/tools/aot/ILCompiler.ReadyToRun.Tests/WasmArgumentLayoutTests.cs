@@ -1265,16 +1265,224 @@ public class WasmArgumentLayoutTests
         }
     }
 
+    [Theory]
+    [InlineData("browser")]
+    [InlineData("wasi")]
+    public void PortableCallHelpersGeneratorEmitsCoreLibQCalls(string targetOS)
+    {
+        string source = """
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.Versioning;
+
+            [assembly: DisableRuntimeMarshalling]
+
+            public static class Imports
+            {
+                [DllImport("Native", EntryPoint = "Native_Test")]
+                public static extern int Native();
+                [DllImport("QCall", EntryPoint = "QCall_Test")]
+                public static extern long First(int value, ref long result);
+                [DllImport("QCall", EntryPoint = "QCall_Test")]
+                public static extern long Second(int value, ref long result);
+                [DllImport("QCall")]
+                public static extern IntPtr memmove(IntPtr dest, IntPtr src, UIntPtr length);
+                [DllImport("QCall")]
+                public static extern IntPtr memset(IntPtr dest, int value, UIntPtr length);
+                [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
+                [DllImport("QCall", EntryPoint = "QCall_Unavailable")]
+                public static extern void Unavailable();
+            }
+
+            namespace System
+            {
+                public class Object { }
+                public class ValueType { }
+                public class Enum : ValueType { }
+                public struct Void { }
+                public struct Boolean { }
+                public struct Byte { }
+                public struct Int16 { }
+                public struct Int32 { }
+                public struct Int64 { }
+                public struct UInt16 { }
+                public struct UInt32 { }
+                public struct UInt64 { }
+                public struct Single { }
+                public struct Double { }
+                public struct Char { }
+                public struct SByte { }
+                public struct IntPtr { }
+                public struct UIntPtr { }
+                public sealed class String { }
+                public class Attribute { }
+                public enum AttributeTargets { All = 32767 }
+                public sealed class AttributeUsageAttribute : Attribute
+                {
+                    public AttributeUsageAttribute(AttributeTargets targets) { }
+                    public bool AllowMultiple { get; set; }
+                    public bool Inherited { get; set; }
+                }
+            }
+            namespace System.Runtime.CompilerServices
+            {
+                public sealed class DisableRuntimeMarshallingAttribute : System.Attribute { }
+            }
+            namespace System.Runtime.InteropServices
+            {
+                public sealed class DllImportAttribute : System.Attribute
+                {
+                    public DllImportAttribute(string library) { }
+                    public string EntryPoint;
+                }
+            }
+            namespace System.Runtime.Versioning
+            {
+                [System.AttributeUsage(System.AttributeTargets.All, AllowMultiple = true)]
+                public sealed class UnsupportedOSPlatformAttribute : System.Attribute
+                {
+                    public UnsupportedOSPlatformAttribute(string platform) { }
+                }
+            }
+            """;
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source,
+                Path.Combine(workingDirectory, CoreLibSimpleName + ".dll"), useCoreLibReference: false);
+            ReadyToRunCompilerContext context = CreateWasmContextWithCoreLib(
+                targetOS == "browser" ? TargetOS.Browser : TargetOS.Wasi, inputAssembly);
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = Path.Combine(workingDirectory, "generated"),
+                TargetOS = targetOS,
+                PInvokeModules = new[] { "Native", "QCall" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false));
+            Assert.True(exitCode == 0, log.ToString());
+
+            string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
+            Assert.Contains("const void* QCallResolveDllImport(const char* name)", table);
+            Assert.Contains("DllImportEntry(Native_Test)", table);
+            Assert.DoesNotContain("{\"QCall\",", table);
+            Assert.DoesNotContain("QCall_Unavailable", table);
+            Assert.Contains("static const Entry s_QCall", table);
+
+            Assert.Contains("int64_t QCall_QCall_Test (int32_t, void *) __asm__(\"QCall_Test\");", table);
+            Assert.Equal(1, table.Split("{ \"QCall_Test\", (void*)&QCall_QCall_Test }").Length - 1);
+            if (targetOS == "browser")
+            {
+                Assert.Contains("{ \"memmove\", (void*)&QCall_memmove }", table);
+                Assert.Contains("{ \"memset\", (void*)&QCall_memset }", table);
+                Assert.DoesNotContain("DllImportEntry(memmove)", table);
+                Assert.DoesNotContain("DllImportEntry(memset)", table);
+            }
+            else
+            {
+                Assert.Contains("DllImportEntry(memmove)", table);
+                Assert.Contains("DllImportEntry(memset)", table);
+                Assert.DoesNotContain("QCall_memmove", table);
+                Assert.DoesNotContain("QCall_memset", table);
+            }
+
+            int repeatExitCode = PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false));
+            Assert.True(repeatExitCode == 0, log.ToString());
+            Assert.Equal(table, File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp")));
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("browser")]
+    [InlineData("wasi")]
+    public void PortableCallHelpersGeneratorIgnoresNonCoreLibQCalls(string targetOS)
+    {
+        string source = """
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+
+            [assembly: DisableRuntimeMarshalling]
+
+            public static class Imports
+            {
+                [DllImport("Native", EntryPoint = "Native_Test")]
+                public static extern int Native();
+                [DllImport("QCall", EntryPoint = "QCall_NonCoreLib")]
+                public static extern int QCall();
+            }
+            """;
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Imports.dll"));
+            ReadyToRunCompilerContext context = CreateWasmContext(
+                targetOS == "browser" ? TargetOS.Browser : TargetOS.Wasi, inputAssembly);
+            context.InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Imports", inputAssembly },
+            };
+            context.ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { CoreLibSimpleName, TestPaths.SystemPrivateCoreLibPath },
+            };
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = Path.Combine(workingDirectory, "generated"),
+                TargetOS = targetOS,
+                PInvokeModules = new[] { "Native", "QCall" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false));
+            Assert.True(exitCode == 0, log.ToString());
+
+            string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
+            Assert.Contains("DllImportEntry(Native_Test)", table);
+            Assert.Contains("const void* QCallResolveDllImport(const char* name)", table);
+            Assert.DoesNotContain("static const Entry s_QCall", table);
+            Assert.DoesNotContain("QCall_NonCoreLib", table);
+            Assert.DoesNotContain("{\"QCall\",", table);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
     /// <summary>
-    /// Builds an input assembly for the generator to scan. It references the same CoreLib the context
-    /// reads, so the attributes it applies are the ones the type system will resolve.
+    /// Builds an input assembly for the generator to scan, referencing the context's CoreLib
+    /// unless the source defines its own.
     /// </summary>
-    private static string CompileCallbackAssembly(string source, string outputPath, bool allowUnsafe = false)
+    private static string CompileCallbackAssembly(string source, string outputPath, bool allowUnsafe = false, bool useCoreLibReference = true)
     {
         CSharpCompilation compilation = CSharpCompilation.Create(
             Path.GetFileNameWithoutExtension(outputPath),
-            new[] { CSharpSyntaxTree.ParseText(source) },
-            new[] { MetadataReference.CreateFromFile(TestPaths.SystemPrivateCoreLibPath) },
+            [CSharpSyntaxTree.ParseText(source)],
+            useCoreLibReference ? [MetadataReference.CreateFromFile(TestPaths.SystemPrivateCoreLibPath)] : [],
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe));
 
         EmitResult result = compilation.Emit(outputPath);
@@ -1295,12 +1503,17 @@ public class WasmArgumentLayoutTests
     /// app closure, which a real build always supplies alongside CoreLib.
     /// </summary>
     private ReadyToRunCompilerContext CreateWasmContext(params string[] extraInputAssemblyPaths)
+        => CreateWasmContext(TargetOS.Browser, extraInputAssemblyPaths);
+
+    private ReadyToRunCompilerContext CreateWasmContext(TargetOS targetOS, params string[] extraInputAssemblyPaths)
+        => CreateWasmContextWithCoreLib(targetOS, TestPaths.SystemPrivateCoreLibPath, extraInputAssemblyPaths);
+
+    private ReadyToRunCompilerContext CreateWasmContextWithCoreLib(TargetOS targetOS, string coreLibPath, params string[] extraInputAssemblyPaths)
     {
-        string coreLibPath = TestPaths.SystemPrivateCoreLibPath;
         Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found at '{coreLibPath}'");
 
         InstructionSetSupport instructionSetSupport = new(default, default, TargetArchitecture.Wasm32);
-        TargetDetails target = new(TargetArchitecture.Wasm32, TargetOS.Browser, TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
+        TargetDetails target = new(TargetArchitecture.Wasm32, targetOS, TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
         Dictionary<string, string> inputFilePaths = new(StringComparer.OrdinalIgnoreCase) { { CoreLibSimpleName, coreLibPath } };
         foreach (string path in extraInputAssemblyPaths)
