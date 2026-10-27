@@ -4666,6 +4666,9 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
     codeSize   = 2 * maxVirtualIP;
     prologSize = 1;
 
+    // Wasm GC info has an implicit frame register even when there is no linear-memory frame.
+    gcInfoEncoder->SetStackBaseRegister(REG_FPBASE);
+
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).
     gcInfo.gcInfoBlockHdrSave(gcInfoEncoder, codeSize, prologSize);
 
