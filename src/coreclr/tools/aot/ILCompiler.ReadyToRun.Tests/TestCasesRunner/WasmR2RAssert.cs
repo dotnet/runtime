@@ -22,6 +22,62 @@ namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
 internal static class WasmR2RAssert
 {
+    public static void AssertAuxiliaryManagedHelpers(ReadyToRunReader reader)
+    {
+        ReadOnlySpan<byte> primary = reader.CompositeReader.GetEntireImage().AsSpan();
+        string bodyPath = Path.ChangeExtension(reader.Filename, ".1.wasm");
+        ReadOnlySpan<byte> body = File.ReadAllBytes(bodyPath);
+        Dictionary<uint, string> primaryNames = ReadFunctionNames(primary);
+        Dictionary<uint, string> bodyNames = ReadFunctionNames(body);
+        Assert.DoesNotContain(primaryNames.Values, name => name.EndsWith("HelperCalls__SumCold", StringComparison.Ordinal));
+        Assert.Contains(bodyNames.Values, name => name.EndsWith("HelperCalls__SumCold", StringComparison.Ordinal));
+        Assert.Contains(primaryNames.Values, name => name.EndsWith("HelperCalls__Sum", StringComparison.Ordinal));
+        Assert.DoesNotContain(bodyNames.Values, name => name.EndsWith("HelperCalls__Sum", StringComparison.Ordinal));
+
+        ReadyToRunSection metadata = reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.AuxiliaryModuleMetadata];
+        int metadataOffset = reader.CompositeReader.GetOffset(metadata.RelativeVirtualAddress);
+        int hotCount = BinaryPrimitives.ReadInt32LittleEndian(primary.Slice(metadataOffset + 4));
+        int coldCount = BinaryPrimitives.ReadInt32LittleEndian(primary.Slice(metadataOffset + 24));
+        Assert.Equal(hotCount, BinaryPrimitives.ReadInt32LittleEndian(primary.Slice(metadataOffset + 20)));
+        Assert.Equal((hotCount + coldCount) * 8,
+            reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions].Size);
+
+        Assert.True(TryGetWasmSectionBounds(body, WasmSectionKind.Element, out int offset, out int end));
+        Assert.Equal(1u, ReadWasmUleb32(body, ref offset, end));
+        Assert.Equal(1u, ReadWasmUleb32(body, ref offset, end));
+        Assert.Equal(0, ReadWasmByte(body, ref offset, end));
+        Assert.Equal((uint)coldCount, ReadWasmUleb32(body, ref offset, end));
+        HashSet<uint> installedFunctions = new();
+        for (int index = 0; index < coldCount; index++)
+            installedFunctions.Add(ReadWasmUleb32(body, ref offset, end));
+        Assert.Equal(end, offset);
+
+        foreach (string helper in new[] { "ThrowHelpers__ThrowOverflowException", "CastHelpers__ChkCastInterface" })
+        {
+            string helperName = Assert.Single(primaryNames.Values.Where(name => name.EndsWith(helper, StringComparison.Ordinal)));
+            foreach (string frameName in primaryNames.Values.Where(name =>
+                name == helperName || name.StartsWith(helperName + "_funclet_", StringComparison.Ordinal)))
+            {
+                uint localIndex = Assert.Single(bodyNames.Where(entry => entry.Value == frameName)).Key;
+                Assert.DoesNotContain(localIndex, installedFunctions);
+            }
+        }
+
+        static Dictionary<uint, string> ReadFunctionNames(ReadOnlySpan<byte> image)
+        {
+            Assert.True(TryGetWasmFunctionNameSubsection(image, out int offset, out int end));
+            uint count = ReadWasmUleb32(image, ref offset, end);
+            Dictionary<uint, string> names = new();
+            for (uint index = 0; index < count; index++)
+            {
+                uint functionIndex = ReadWasmUleb32(image, ref offset, end);
+                names.Add(functionIndex, ReadWasmName(image, ref offset, end));
+            }
+            Assert.Equal(end, offset);
+            return names;
+        }
+    }
+
     public static void AssertAuxiliaryModuleLayout(ReadyToRunReader reader)
     {
         Assert.True(WasmSymbolMapHasExpectedFunctionNames(reader, out string diagnostic), diagnostic);

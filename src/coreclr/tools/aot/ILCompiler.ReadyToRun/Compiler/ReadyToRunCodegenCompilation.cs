@@ -326,9 +326,6 @@ namespace ILCompiler
 
         internal bool IsDirectManagedHelperEligible(MethodDesc method)
         {
-            if (NodeFactory.UsesWasmAuxiliaryModules)
-                return false;
-
             if (NodeFactory.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.ARM64)
                 return false;
 

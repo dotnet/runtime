@@ -240,6 +240,16 @@ internal sealed partial class WebCilObjectWriter
         HashSet<int> coldFunctions = new();
         for (int slot = 0; slot < managedCount; slot++)
             (slot < primaryCount ? hotFunctions : coldFunctions).Add(tableFunctions[slot]);
+        HashSet<int> managedHelperFunctions = new();
+        foreach (MethodWithGCInfo method in _nodeFactory.EnumerateCompiledMethods())
+        {
+            if (!method.IsJitHelper)
+                continue;
+
+            int firstSlot = _nodeFactory.RuntimeFunctionsTable.GetIndex(method);
+            for (int frame = 0; frame < method.FrameInfos.Length; frame++)
+                managedHelperFunctions.Add(tableFunctions[firstSlot + frame]);
+        }
 
         int functionImports = _wasmSymbolManager.GetImportCount(WasmIndexSpace.Function);
         List<WasmSymbol> functions = new();
@@ -288,7 +298,9 @@ internal sealed partial class WebCilObjectWriter
                     if (physicalModule != 0 && _wasmStubNames.Contains(functions[ordinal].Name))
                         continue;
                     bool managed = hotFunctions.Contains(index) || coldFunctions.Contains(index);
-                    if (!managed || (physicalModule == 0 ? hotFunctions : coldFunctions).Contains(index))
+                    // Helper copies share the primary's logical slots, frame identities and metadata.
+                    if (!managed || managedHelperFunctions.Contains(index) ||
+                        (physicalModule == 0 ? hotFunctions : coldFunctions).Contains(index))
                     {
                         _physicalFunctionIndices[index] = functionImports + kept.Count;
                         kept.Add(ordinal);

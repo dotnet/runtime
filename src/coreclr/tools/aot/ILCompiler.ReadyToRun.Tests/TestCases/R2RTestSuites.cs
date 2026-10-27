@@ -342,6 +342,35 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void WasmManagedHelpersAreLocalToEachBodyModule(int parallelism)
+    {
+        var input = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmManagedHelpersAreLocalToEachBodyModule),
+            SourceResourceNames = ["ManagedHelpers/HelperCalls.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmManagedHelpersAreLocalToEachBodyModule),
+            [
+                new(nameof(WasmManagedHelpersAreLocalToEachBodyModule), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs =
+                    [
+                        "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath,
+                        "--wasm-auxiliary-modules",
+                        "--parallelism", parallelism.ToString(),
+                    ],
+                    OutputFileExtension = ".wasm",
+                    Validate = WasmR2RAssert.AssertAuxiliaryManagedHelpers,
+                },
+            ]));
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void BasicCrossModuleInlining()
     {

@@ -22,8 +22,11 @@ In addition to the composite image and its component forwarding images, this emi
 
 Public nongeneric methods initially stay hot. Compiler-generated wrappers,
 unmanaged entrypoints, runtime helpers and async/resumption methods also stay hot.
-Other eligible IL methods go into the cold module. Managed calls use indirect
-imports, and non-managed helper function bodies are duplicated where needed.
+Other eligible IL methods go into the cold module. Ordinary managed calls use
+indirect imports. Eligible managed JIT helpers remain directly callable: their
+bodies and funclets are copied into body modules while their logical table slots,
+virtual-IP identities and metadata remain canonical in the primary.
+Non-managed helper function bodies are also duplicated where needed.
 
 All modules use the primary image's `webcil` imports and the same memory/table
 bases. Sidecar instantiation does not install code or data. Its idempotent
