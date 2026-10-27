@@ -1487,21 +1487,19 @@ static InterpByteCodeStart* ResolveInterpreterCode(MethodDesc*& targetMethod, In
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
     // This info is not cleared when R2R code is published, so calls through a stale override alias still
-    // reach the prestub and are redirected to the published native code.
+    // reach this check and are redirected to the published native code.
     if (targetIp != nullptr
         && targetIp->Method->auxiliaryMethodInfo.ShouldTryActivateMethod())
     {
         pFrame->ip = ip;
         pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
         MethodDesc* pActualMethod = targetIp->Method->methodHnd;
-        // A method that already switched to R2R code has no interpreter code left, so a call through an alias
-        // only needs the redirect below.
-        if (pActualMethod->GetInterpreterCode() != nullptr)
         {
             GCX_PREEMP_REGION_BEGIN();
             CallWithSEHWrapper(
                 [pActualMethod]() {
-                    return pActualMethod->DoPrestub(nullptr, CallerGCMode::Coop);
+                    pActualMethod->TryActivateDelayedR2RCode(CallerGCMode::Coop);
+                    return true;
                 });
             GCX_PREEMP_REGION_END();
         }

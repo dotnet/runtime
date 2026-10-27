@@ -641,8 +641,9 @@ void MethodDesc::RecordDelayedR2RCode(PrepareCodeConfig* pConfig, PCODE pCode)
     // Otherwise no R2R lookup was done, so there is nothing to wait for and the default InterpretOnly info stays.
 }
 
-// Called by the prestub. A method waiting on its auxiliary module already has interpreter code, so callers
-// only send it back to the prestub once the module is activated. Switch it to its R2R code if it has any.
+// Called by the call sites that check a waiting method's activation state. A method waiting on its auxiliary
+// module already has interpreter code, so they only call this once the module is activated. Switch it to its
+// R2R code if it has any.
 void MethodDesc::TryActivateDelayedR2RCode(CallerGCMode callerGCMode)
 {
     CONTRACTL
@@ -2368,7 +2369,6 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
     InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
     const bool firstCall = (targetIp == NULL);
     bool enterPrestubPortion = firstCall;
-    bool runPrestub = firstCall;
     if (targetIp != NULL)
     {
         // PrepareInterpreterCode may have stored the MethodImpl target's code on the declaration; run as that method.
@@ -2376,11 +2376,7 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
         // This is not only reached on the first call: a method waiting for its R2R code comes back here once the wait
         // is over. A call through a stale alias of a method that already switched to R2R code only needs the dispatch.
-        if (targetIp->Method->auxiliaryMethodInfo.ShouldTryActivateMethod())
-        {
-            enterPrestubPortion = true;
-            runPrestub = pTargetMethod->GetInterpreterCode() != NULL;
-        }
+        enterPrestubPortion = targetIp->Method->auxiliaryMethodInfo.ShouldTryActivateMethod();
 #endif // FEATURE_AUXILIARY_R2R_MODULES
     }
 
@@ -2407,10 +2403,16 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
                 {
                     pTargetMethod = MethodTable::MapMethodDeclToMethodImpl(pMethod);
                 }
-                if (runPrestub)
+                if (firstCall)
                 {
                     (void)pTargetMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
                 }
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+                else
+                {
+                    pTargetMethod->TryActivateDelayedR2RCode(CallerGCMode::Coop);
+                }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
                 targetIp = pTargetMethod->GetInterpreterCode();
                 GCX_PREEMP_REGION_END();
             }
@@ -2709,11 +2711,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         goto Return;
     }
 #endif // FEATURE_CODE_VERSIONING
-
-#ifdef FEATURE_AUXILIARY_R2R_MODULES
-    // A method waiting on its auxiliary module has interpreter code, so ShouldCallPrestub() is false either way.
-    TryActivateDelayedR2RCode(callerGCMode);
-#endif // FEATURE_AUXILIARY_R2R_MODULES
 
     if (!ShouldCallPrestub())
     {
