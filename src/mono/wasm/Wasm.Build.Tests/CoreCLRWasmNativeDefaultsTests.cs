@@ -26,6 +26,8 @@ namespace Wasm.Build.Tests
     {
         private static readonly Regex s_regex = new("\\*\\* WasmBuildNative:.*");
         private static readonly Regex s_r2rDirectoryRegex = new("\\*\\* WasmPublishR2RDir: '([^']*)'");
+        private static readonly Regex s_r2rExtraArgsRegex = new("\\*\\* R2RExtraArgs: '([^']*)'");
+        private static readonly Regex s_r2rPgoFilesRegex = new("\\*\\* R2RPgoFiles: '([^']*)'");
 
         public CoreCLRWasmNativeDefaultsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -185,6 +187,95 @@ namespace Wasm.Build.Tests
             Match match = s_r2rDirectoryRegex.Match(output);
             Assert.True(match.Success, output);
             Assert.Equal(Path.Combine(GetObjDir(config), "R2R") + Path.DirectorySeparatorChar, match.Groups[1].Value);
+        }
+
+        // Verify that explicit PGO items remain available to the SDK ReadyToRun pipeline and enable
+        // --partial only when ReadyToRun is on. Stops before crossgen2; the compiler arguments only let
+        // restore resolve a compiler (in-build when BASE_DIR is set, SDK pack otherwise).
+        [Theory]
+        [InlineData(/*profileSet*/ true,  /*r2r*/ true,  /*expectPartial*/ true)]
+        [InlineData(/*profileSet*/ false, /*r2r*/ true,  /*expectPartial*/ false)]
+        [InlineData(/*profileSet*/ true,  /*r2r*/ false, /*expectPartial*/ false)]
+        [InlineData(/*profileSet*/ false, /*r2r*/ false, /*expectPartial*/ false)]
+        public void PublishReadyToRunPgoFilesControlsPartialCompilation(bool profileSet, bool r2r, bool expectPartial)
+        {
+            Configuration config = Configuration.Release;
+            string profilePath = Path.Combine(BuildEnvironment.TestDataPath, "DotNet_Blazor_Wasm.mibc");
+            string printValueTarget = """
+                <Target Name="PrintR2RProfileFlow"
+                        DependsOnTargets="_WasmCoreClrSelectR2RDirectories;_WasmCoreClrConfigureReadyToRunPgo">
+                    <Message Text="** R2RExtraArgs: '$(PublishReadyToRunCrossgen2ExtraArgs)'" Importance="High" />
+                    <Message Text="** R2RPgoFiles: '@(PublishReadyToRunPgoFiles)'" Importance="High" />
+                    <Error Text="Stopping after validating the R2R profile flow" />
+                </Target>
+                """;
+
+            string profileItem = profileSet ? $"<PublishReadyToRunPgoFiles Include=\"{profilePath}\" />" : "";
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                $"coreclr_r2r_profile_{profileSet}_{r2r}",
+                extraProperties: $"<PublishReadyToRun>{r2r}</PublishReadyToRun>",
+                extraItems: profileItem,
+                insertAtEnd: printValueTarget);
+
+            (string _, string output) = BuildProject(
+                info,
+                config,
+                new BuildOptions(
+                    ExpectSuccess: false,
+                    ExtraMSBuildArgs: $"-t:PrintR2RProfileFlow {ReadyToRunTests.GetR2RBuildArgs(config)}"));
+
+            Assert.Contains("Stopping after validating the R2R profile flow", output);
+
+            Match extraArgs = s_r2rExtraArgsRegex.Match(output);
+            Match pgoFiles = s_r2rPgoFilesRegex.Match(output);
+            Assert.True(extraArgs.Success, output);
+            Assert.True(pgoFiles.Success, output);
+
+            if (expectPartial)
+            {
+                Assert.Contains("--partial", extraArgs.Groups[1].Value);
+            }
+            else
+            {
+                Assert.DoesNotContain("--partial", extraArgs.Groups[1].Value);
+            }
+
+            if (profileSet)
+            {
+                Assert.Equal(profilePath, pgoFiles.Groups[1].Value);
+            }
+            else
+            {
+                Assert.Equal("", pgoFiles.Groups[1].Value);
+            }
+        }
+
+        [Fact]
+        public void PublishReadyToRunPgoFileMustExist()
+        {
+            Configuration config = Configuration.Release;
+            const string profilePath = "missing-profile.mibc";
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_r2r_missing_profile",
+                extraProperties: $"""
+                    <PublishReadyToRun>true</PublishReadyToRun>
+                    """,
+                extraItems: $"<PublishReadyToRunPgoFiles Include=\"{profilePath}\" />");
+
+            (string _, string output) = BuildProject(
+                info,
+                config,
+                new BuildOptions(
+                    ExpectSuccess: false,
+                    ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)));
+
+            Assert.Contains($"PublishReadyToRunPgoFiles item '{profilePath}' does not exist.", output);
         }
 
         [Theory]
