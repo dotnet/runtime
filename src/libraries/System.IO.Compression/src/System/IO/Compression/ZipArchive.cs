@@ -684,16 +684,6 @@ namespace System.IO.Compression
             }
         }
 
-        private void ReadCentralDirectory()
-        {
-            ValueTask vt = ReadCentralDirectoryCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous ReadCentralDirectory completed asynchronously.");
-            vt.GetAwaiter().GetResult();
-        }
-
-        private ValueTask ReadCentralDirectoryAsync(CancellationToken cancellationToken) =>
-            ReadCentralDirectoryCoreAsync<AsyncReadWriteAdapter>(cancellationToken);
-
         private async ValueTask ReadCentralDirectoryCoreAsync<TAdapter>(CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
@@ -862,16 +852,6 @@ namespace System.IO.Compression
 
         // Tries to find the Zip64 End of Central Directory Locator, then the Zip64 End of Central Directory, assuming the
         // End of Central Directory block has already been found, as well as the location in the stream where the EOCD starts.
-        private void TryReadZip64EndOfCentralDirectory(ZipEndOfCentralDirectoryBlock eocd, long eocdStart)
-        {
-            ValueTask vt = TryReadZip64EndOfCentralDirectoryCoreAsync<SyncReadWriteAdapter>(eocd, eocdStart, CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous TryReadZip64EndOfCentralDirectory completed asynchronously.");
-            vt.GetAwaiter().GetResult();
-        }
-
-        private ValueTask TryReadZip64EndOfCentralDirectoryAsync(ZipEndOfCentralDirectoryBlock eocd, long eocdStart, CancellationToken cancellationToken) =>
-            TryReadZip64EndOfCentralDirectoryCoreAsync<AsyncReadWriteAdapter>(eocd, eocdStart, cancellationToken);
-
         private async ValueTask TryReadZip64EndOfCentralDirectoryCoreAsync<TAdapter>(ZipEndOfCentralDirectoryBlock eocd, long eocdStart, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
@@ -1083,16 +1063,6 @@ namespace System.IO.Compression
 
         // writes eocd, and if needed, zip 64 eocd, zip64 eocd locator
         // should only throw an exception in extremely exceptional cases because it is called from dispose
-        private void WriteArchiveEpilogue(long startOfCentralDirectory, long sizeOfCentralDirectory, bool centralDirectoryChanged)
-        {
-            ValueTask vt = WriteArchiveEpilogueCoreAsync<SyncReadWriteAdapter>(startOfCentralDirectory, sizeOfCentralDirectory, centralDirectoryChanged, CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous WriteArchiveEpilogue completed asynchronously.");
-            vt.GetAwaiter().GetResult();
-        }
-
-        private ValueTask WriteArchiveEpilogueAsync(long startOfCentralDirectory, long sizeOfCentralDirectory, bool centralDirectoryChanged, CancellationToken cancellationToken) =>
-            WriteArchiveEpilogueCoreAsync<AsyncReadWriteAdapter>(startOfCentralDirectory, sizeOfCentralDirectory, centralDirectoryChanged, cancellationToken);
-
         private async ValueTask WriteArchiveEpilogueCoreAsync<TAdapter>(long startOfCentralDirectory, long sizeOfCentralDirectory, bool centralDirectoryChanged, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
