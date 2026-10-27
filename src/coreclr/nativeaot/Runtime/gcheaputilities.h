@@ -90,7 +90,7 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    static bool SupportsPauseDataCallbacks();
+    static bool SupportsPauseRecordCallbacks();
 
     // Initializes the GC
     static HRESULT InitializeGC();

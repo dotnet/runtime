@@ -8,9 +8,9 @@ namespace System;
 /// A background collection can have several pauses. Foreground collections during
 /// a background collection have their own collection indices and are not concurrent.
 /// </remarks>
-public readonly struct GCPauseData
+public readonly struct GCPauseRecord
 {
-    internal GCPauseData(long sequenceNumber, long collectionIndex, TimeSpan duration, int generation, bool concurrent)
+    internal GCPauseRecord(long sequenceNumber, long collectionIndex, TimeSpan duration, int generation, bool concurrent)
     {
         SequenceNumber = sequenceNumber;
         CollectionIndex = collectionIndex;
@@ -50,4 +50,4 @@ public readonly struct GCPauseData
 /// subscription, relative to its previous callback or registration. Loss need not
 /// immediately precede the supplied pause. There are no loss-only callbacks.
 /// </remarks>
-public delegate void GCPauseDataCallback(GCPauseData pause, long missedRecords);
+public delegate void GCPauseRecordCallback(GCPauseRecord pause, long missedRecords);

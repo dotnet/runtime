@@ -3317,7 +3317,7 @@
   <data name="PlatformNotSupported_ComInterop" xml:space="preserve">
     <value>COM Interop is not supported on this platform.</value>
   </data>
-  <data name="PlatformNotSupported_GCPauseDataCallback" xml:space="preserve">
+  <data name="PlatformNotSupported_GCPauseRecordCallback" xml:space="preserve">
     <value>Garbage collection pause callbacks are not supported by this runtime or garbage collector.</value>
   </data>
   <data name="PlatformNotSupported_NamedSynchronizationPrimitives" xml:space="preserve">

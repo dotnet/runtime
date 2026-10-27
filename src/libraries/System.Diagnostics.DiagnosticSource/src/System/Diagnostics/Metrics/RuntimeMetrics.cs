@@ -179,7 +179,7 @@ namespace System.Diagnostics.Metrics
             {
                 if (!s_detailedGcMeter.Disposed && s_pauseDuration.Enabled)
                 {
-                    s_pauseSubscription ??= GC.RegisterPauseDataCallback(RecordPause);
+                    s_pauseSubscription ??= GC.RegisterPauseRecordCallback(RecordPause);
                 }
                 else
                 {
@@ -189,7 +189,7 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        private static void RecordPause(GCPauseData pause, long _)
+        private static void RecordPause(GCPauseRecord pause, long _)
         {
             s_pauseDuration.Record(pause.Duration.TotalSeconds,
                 new KeyValuePair<string, object?>("gc.heap.generation", s_genNames[pause.Generation]),

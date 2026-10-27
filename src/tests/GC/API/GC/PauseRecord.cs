@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-public static class PauseDataTests
+public static class PauseRecordTests
 {
     private const int TimeoutMilliseconds = 30_000;
     private const int BufferCapacity = 4_096;
@@ -23,7 +23,7 @@ public static class PauseDataTests
     [Fact]
     public static void TestEntryPoint()
     {
-        Assert.Throws<ArgumentNullException>("callback", () => GC.RegisterPauseDataCallback(null!));
+        Assert.Throws<ArgumentNullException>("callback", () => GC.RegisterPauseRecordCallback(null!));
         CreateFinalizableObject();
         GC.Collect(2, GCCollectionMode.Forced, blocking: true);
         GC.WaitForPendingFinalizers();
@@ -43,10 +43,10 @@ public static class PauseDataTests
 
     private static void VerifyPayloadAndSubscribers()
     {
-        List<GCPauseData> first = new(32);
-        List<GCPauseData> second = new(32);
+        List<GCPauseRecord> first = new(32);
+        List<GCPauseRecord> second = new(32);
         int callbackThread = 0;
-        using IDisposable firstRegistration = GC.RegisterPauseDataCallback((pause, _) =>
+        using IDisposable firstRegistration = GC.RegisterPauseRecordCallback((pause, _) =>
         {
             lock (first)
             {
@@ -54,7 +54,7 @@ public static class PauseDataTests
                 callbackThread = Environment.CurrentManagedThreadId;
             }
         });
-        using IDisposable secondRegistration = GC.RegisterPauseDataCallback((pause, _) =>
+        using IDisposable secondRegistration = GC.RegisterPauseRecordCallback((pause, _) =>
         {
             lock (second)
             {
@@ -66,8 +66,8 @@ public static class PauseDataTests
         {
             GC.Collect(generation, GCCollectionMode.Forced, blocking: true);
             GCMemoryInfo info = GC.GetGCMemoryInfo(generation == GC.MaxGeneration ? GCKind.FullBlocking : GCKind.Ephemeral);
-            GCPauseData firstPause = WaitForPause(first, info.Index);
-            GCPauseData secondPause = WaitForPause(second, info.Index);
+            GCPauseRecord firstPause = WaitForPause(first, info.Index);
+            GCPauseRecord secondPause = WaitForPause(second, info.Index);
             Assert.Equal(generation, firstPause.Generation);
             Assert.False(firstPause.Concurrent);
             Assert.Equal(info.PauseDurations[0], firstPause.Duration);
@@ -85,14 +85,14 @@ public static class PauseDataTests
         }
     }
 
-    private static GCPauseData WaitForPause(List<GCPauseData> pauses, long collectionIndex)
+    private static GCPauseRecord WaitForPause(List<GCPauseRecord> pauses, long collectionIndex)
     {
-        GCPauseData result = default;
+        GCPauseRecord result = default;
         Assert.True(SpinWait.SpinUntil(() =>
         {
             lock (pauses)
             {
-                foreach (GCPauseData pause in pauses)
+                foreach (GCPauseRecord pause in pauses)
                 {
                     if (pause.CollectionIndex == collectionIndex)
                     {
@@ -108,7 +108,7 @@ public static class PauseDataTests
         lock (pauses)
         {
             int matches = 0;
-            foreach (GCPauseData pause in pauses)
+            foreach (GCPauseRecord pause in pauses)
             {
                 if (pause.CollectionIndex == collectionIndex)
                 {
@@ -134,7 +134,7 @@ public static class PauseDataTests
         GC.Collect(2, GCCollectionMode.Forced, blocking: true);
         GC.WaitForPendingFinalizers();
 
-        List<GCPauseData> pauses = new(128);
+        List<GCPauseRecord> pauses = new(128);
         long baseline = 0;
         long missedTotal = 0;
         int backgroundMeasurements = 0;
@@ -144,7 +144,7 @@ public static class PauseDataTests
             lock (pauses)
             {
                 long ticks = 0;
-                foreach (GCPauseData pause in pauses)
+                foreach (GCPauseRecord pause in pauses)
                 {
                     ticks += pause.Duration.Ticks;
                 }
@@ -183,7 +183,7 @@ public static class PauseDataTests
                 Interlocked.Increment(ref backgroundMeasurements);
             }
         });
-        using IDisposable registration = GC.RegisterPauseDataCallback((pause, missed) =>
+        using IDisposable registration = GC.RegisterPauseRecordCallback((pause, missed) =>
         {
             lock (pauses)
             {
@@ -226,7 +226,7 @@ public static class PauseDataTests
                     int backgroundCount = 0;
                     long first = long.MaxValue;
                     long last = 0;
-                    foreach (GCPauseData pause in pauses)
+                    foreach (GCPauseRecord pause in pauses)
                     {
                         if (pause.Concurrent && pause.CollectionIndex == backgroundIndex)
                         {
@@ -237,7 +237,7 @@ public static class PauseDataTests
                         }
                     }
                     Assert.True(backgroundCount >= 2);
-                    foreach (GCPauseData pause in pauses)
+                    foreach (GCPauseRecord pause in pauses)
                     {
                         overlapObserved |= !pause.Concurrent && pause.SequenceNumber > first && pause.SequenceNumber < last;
                     }
@@ -270,7 +270,7 @@ public static class PauseDataTests
         int armed = 0;
         int calls = 0;
         IDisposable? registration = null;
-        registration = GC.RegisterPauseDataCallback((_, _) =>
+        registration = GC.RegisterPauseRecordCallback((_, _) =>
         {
             if (Volatile.Read(ref armed) == 0)
             {
@@ -311,7 +311,7 @@ public static class PauseDataTests
         long oldIndex = 0;
         long expectedIndex = 0;
         IDisposable? late = null;
-        using IDisposable blocker = GC.RegisterPauseDataCallback((_, _) =>
+        using IDisposable blocker = GC.RegisterPauseRecordCallback((_, _) =>
         {
             if (Volatile.Read(ref armed) != 0 && Interlocked.Exchange(ref blocked, 1) == 0)
             {
@@ -322,7 +322,7 @@ public static class PauseDataTests
                 }
             }
         });
-        using IDisposable removed = GC.RegisterPauseDataCallback((_, _) =>
+        using IDisposable removed = GC.RegisterPauseRecordCallback((_, _) =>
         {
             if (Volatile.Read(ref blocked) != 0)
             {
@@ -340,7 +340,7 @@ public static class PauseDataTests
                 GC.Collect(0, GCCollectionMode.Forced, blocking: true);
             }
             oldIndex = GC.GetGCMemoryInfo(GCKind.Ephemeral).Index;
-            late = GC.RegisterPauseDataCallback((pause, missed) =>
+            late = GC.RegisterPauseRecordCallback((pause, missed) =>
             {
                 if (pause.CollectionIndex <= oldIndex || missed != 0)
                 {
@@ -390,7 +390,7 @@ public static class PauseDataTests
                 for (int j = 0; j < RegistrationsPerWorker; j++)
                 {
                     long previousSequence = 0;
-                    using IDisposable subscription = GC.RegisterPauseDataCallback((pause, missed) =>
+                    using IDisposable subscription = GC.RegisterPauseRecordCallback((pause, missed) =>
                     {
                         if (pause.SequenceNumber <= previousSequence || missed < 0)
                         {
@@ -455,7 +455,7 @@ public static class PauseDataTests
         int invalidLoss = 0;
         Thread? disposer = null;
         IDisposable? late = null;
-        IDisposable blocker = GC.RegisterPauseDataCallback((_, _) =>
+        IDisposable blocker = GC.RegisterPauseRecordCallback((_, _) =>
         {
             if (Volatile.Read(ref armed) != 0 && Interlocked.Exchange(ref blocked, 1) == 0)
             {
@@ -466,7 +466,7 @@ public static class PauseDataTests
                 }
             }
         });
-        IDisposable observer = GC.RegisterPauseDataCallback((_, missed) =>
+        IDisposable observer = GC.RegisterPauseRecordCallback((_, missed) =>
         {
             if (missed < 0)
             {
@@ -489,7 +489,7 @@ public static class PauseDataTests
                 GC.Collect(0, GCCollectionMode.Forced, blocking: true);
             }
 
-            late = GC.RegisterPauseDataCallback((_, missed) =>
+            late = GC.RegisterPauseRecordCallback((_, missed) =>
             {
                 if (missed != 0)
                 {

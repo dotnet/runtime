@@ -25,7 +25,7 @@ void gc_heap::schedule_finalizer_work (FinalizerWorkItem* callback)
     }
 }
 
-static uint64_t read_pause_data_counter(uint64_t* counter)
+static uint64_t read_pause_record_counter(uint64_t* counter)
 {
 #ifdef HOST_64BIT
     return VolatileLoad(counter);
@@ -34,85 +34,85 @@ static uint64_t read_pause_data_counter(uint64_t* counter)
 #endif // HOST_64BIT
 }
 
-void gc_heap::get_pause_data_snapshot(uint64_t* sequence, uint64_t* missed_records)
+void gc_heap::get_pause_record_snapshot(uint64_t* sequence, uint64_t* missed_records)
 {
     for (;;)
     {
-        uint32_t version = VolatileLoad(&pause_data_version);
+        uint32_t version = VolatileLoad(&pause_record_version);
         if ((version & 1) != 0)
         {
             continue;
         }
 
-        *sequence = read_pause_data_counter(&pause_data_sequence);
-        *missed_records = read_pause_data_counter(&pause_data_missed);
-        if (version == VolatileLoad(&pause_data_version))
+        *sequence = read_pause_record_counter(&pause_record_sequence);
+        *missed_records = read_pause_record_counter(&pause_record_missed);
+        if (version == VolatileLoad(&pause_record_version))
         {
             return;
         }
     }
 }
 
-void gc_heap::configure_pause_data_callback(GCPauseDataCallback callback, bool enabled, uint64_t* sequence, uint64_t* missed_records)
+void gc_heap::configure_pause_record_callback(GCPauseRecordCallback callback, bool enabled, uint64_t* sequence, uint64_t* missed_records)
 {
     assert(callback != nullptr);
-    VolatileStore(&pause_data_callback, callback);
-    VolatileStore(&pause_data_enabled, uint32_t(enabled));
-    get_pause_data_snapshot(sequence, missed_records);
+    VolatileStore(&pause_record_callback, callback);
+    VolatileStore(&pause_record_enabled, uint32_t(enabled));
+    get_pause_record_snapshot(sequence, missed_records);
 }
 
-void gc_heap::record_pause_data(uint64_t collection_index, size_t duration_microseconds, int generation, bool concurrent)
+void gc_heap::record_pause_record(uint64_t collection_index, size_t duration_microseconds, int generation, bool concurrent)
 {
-    if (VolatileLoad(&pause_data_enabled) == 0)
+    if (VolatileLoad(&pause_record_enabled) == 0)
     {
         return;
     }
 
     // Pause accounting has a single producer. The version makes registration's
     // sequence/loss snapshot consistent without ever waiting in the producer.
-    uint32_t version = Interlocked::Increment(&pause_data_version);
+    uint32_t version = Interlocked::Increment(&pause_record_version);
     assert((version & 1) != 0);
     UNREFERENCED_PARAMETER(version);
-    uint64_t sequence = Interlocked::ExchangeAdd64(&pause_data_sequence, uint64_t(1)) + 1;
-    uint32_t write = pause_data_write;
-    if (write - VolatileLoad(&pause_data_read) == pause_data_capacity)
+    uint64_t sequence = Interlocked::ExchangeAdd64(&pause_record_sequence, uint64_t(1)) + 1;
+    uint32_t write = pause_record_write;
+    if (write - VolatileLoad(&pause_record_read) == pause_record_capacity)
     {
-        Interlocked::ExchangeAdd64(&pause_data_missed, uint64_t(1));
+        Interlocked::ExchangeAdd64(&pause_record_missed, uint64_t(1));
     }
     else
     {
-        pause_data_records[write % pause_data_capacity] =
+        pause_records[write % pause_record_capacity] =
             { sequence, collection_index, static_cast<uint64_t>(duration_microseconds),
               static_cast<uint32_t>(generation), static_cast<uint32_t>(concurrent) };
-        VolatileStore(&pause_data_write, write + 1);
+        VolatileStore(&pause_record_write, write + 1);
     }
-    Interlocked::Increment(&pause_data_version);
+    Interlocked::Increment(&pause_record_version);
 
-    if (Interlocked::CompareExchange(&pause_data_scheduled, int32_t(1), int32_t(0)) == 0)
+    if (Interlocked::CompareExchange(&pause_record_scheduled, int32_t(1), int32_t(0)) == 0)
     {
-        schedule_finalizer_work(&pause_data_work);
+        schedule_finalizer_work(&pause_record_work);
     }
 }
 
-void gc_heap::deliver_pause_data(FinalizerWorkItem* work)
+void gc_heap::deliver_pause_record(FinalizerWorkItem* work)
 {
     // A finite snapshot lets ordinary finalizers run even if callbacks trigger GC.
-    uint32_t end = VolatileLoad(&pause_data_write);
-    uint32_t read = pause_data_read;
+    uint32_t end = VolatileLoad(&pause_record_write);
+    uint32_t read = pause_record_read;
     while (read != end)
     {
-        GCPauseData pause = pause_data_records[read % pause_data_capacity];
-        VolatileStore(&pause_data_read, ++read);
+        GCPauseRecord pause = pause_records[read % pause_record_capacity];
+        VolatileStore(&pause_record_read, ++read);
 
-        uint64_t missed_records = read_pause_data_counter(&pause_data_missed);
-        GCPauseDataCallback callback = VolatileLoad(&pause_data_callback);
+        uint64_t missed_records = read_pause_record_counter(&pause_record_missed);
+        GCPauseRecordCallback callback = VolatileLoad(&pause_record_callback);
         assert(callback != nullptr);
         callback(&pause, missed_records);
     }
 
-    Interlocked::Exchange(&pause_data_scheduled, int32_t(0));
-    if ((VolatileLoad(&pause_data_read) != VolatileLoad(&pause_data_write)) &&
-        (Interlocked::CompareExchange(&pause_data_scheduled, int32_t(1), int32_t(0)) == 0))
+    Interlocked::Exchange(&pause_record_scheduled, int32_t(0));
+    if ((VolatileLoad(&pause_record_read) != VolatileLoad(&pause_record_write)) &&
+        (Interlocked::CompareExchange(&pause_record_scheduled, int32_t(1), int32_t(0)) == 0))
     {
         schedule_finalizer_work(work);
     }

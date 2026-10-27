@@ -2276,10 +2276,10 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void schedule_finalizer_work(FinalizerWorkItem* callback);
 
-    PER_HEAP_ISOLATED_METHOD void record_pause_data(uint64_t collection_index, size_t duration_microseconds, int generation, bool concurrent);
-    PER_HEAP_ISOLATED_METHOD void configure_pause_data_callback(GCPauseDataCallback callback, bool enabled, uint64_t* sequence, uint64_t* missed_records);
-    PER_HEAP_ISOLATED_METHOD void get_pause_data_snapshot(uint64_t* sequence, uint64_t* missed_records);
-    PER_HEAP_ISOLATED_METHOD void deliver_pause_data(FinalizerWorkItem* work);
+    PER_HEAP_ISOLATED_METHOD void record_pause_record(uint64_t collection_index, size_t duration_microseconds, int generation, bool concurrent);
+    PER_HEAP_ISOLATED_METHOD void configure_pause_record_callback(GCPauseRecordCallback callback, bool enabled, uint64_t* sequence, uint64_t* missed_records);
+    PER_HEAP_ISOLATED_METHOD void get_pause_record_snapshot(uint64_t* sequence, uint64_t* missed_records);
+    PER_HEAP_ISOLATED_METHOD void deliver_pause_record(FinalizerWorkItem* work);
 
     PER_HEAP_ISOLATED_METHOD void schedule_no_gc_callback(bool abandoned);
 
@@ -4297,17 +4297,17 @@ private:
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC no_gc_region_info current_no_gc_region_info;
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC FinalizerWorkItem* finalizer_work;
 
-    static constexpr uint32_t pause_data_capacity = 4096;
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC GCPauseData pause_data_records[pause_data_capacity];
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC GCPauseDataCallback pause_data_callback;
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC FinalizerWorkItem pause_data_work;
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC uint32_t pause_data_enabled;
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC uint32_t pause_data_version;
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC uint32_t pause_data_write;
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC uint32_t pause_data_read;
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC int32_t pause_data_scheduled;
-    alignas(8) PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC uint64_t pause_data_sequence;
-    alignas(8) PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC uint64_t pause_data_missed;
+    static constexpr uint32_t pause_record_capacity = 4096;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC GCPauseRecord pause_records[pause_record_capacity];
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC GCPauseRecordCallback pause_record_callback;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC FinalizerWorkItem pause_record_work;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC uint32_t pause_record_enabled;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC uint32_t pause_record_version;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC uint32_t pause_record_write;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC uint32_t pause_record_read;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC int32_t pause_record_scheduled;
+    alignas(8) PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC uint64_t pause_record_sequence;
+    alignas(8) PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC uint64_t pause_record_missed;
 
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint64_t entry_available_physical_mem;
 

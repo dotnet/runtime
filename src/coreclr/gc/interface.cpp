@@ -858,9 +858,9 @@ FinalizerWorkItem* GCHeap::GetExtraWorkForFinalization()
     return Interlocked::ExchangePointer(&gc_heap::finalizer_work, nullptr);
 }
 
-void GCHeap::ConfigurePauseDataCallback(GCPauseDataCallback callback, bool enabled, uint64_t* sequence, uint64_t* missed_records)
+void GCHeap::ConfigurePauseRecordCallback(GCPauseRecordCallback callback, bool enabled, uint64_t* sequence, uint64_t* missed_records)
 {
-    gc_heap::configure_pause_data_callback(callback, enabled, sequence, missed_records);
+    gc_heap::configure_pause_record_callback(callback, enabled, sequence, missed_records);
 }
 
 unsigned int GCHeap::GetGenerationWithRange (Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved)

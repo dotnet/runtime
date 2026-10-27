@@ -356,7 +356,7 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_EnumerateConfigurationValues)
     DllImportEntry(GCInterface_RefreshMemoryLimit)
     DllImportEntry(GCInterface_EnableNoGCRegionCallback)
-    DllImportEntry(GCInterface_ConfigurePauseDataCallback)
+    DllImportEntry(GCInterface_ConfigurePauseRecordCallback)
     DllImportEntry(GCInterface_GetGenerationBudget)
     DllImportEntry(GCHandle_InternalAllocWithGCTransition)
     DllImportEntry(GCHandle_InternalFreeWithGCTransition)

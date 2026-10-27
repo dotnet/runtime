@@ -216,7 +216,7 @@ namespace System.Runtime
         internal static unsafe partial int RhEnableNoGCRegionCallback(void* callback, long totalSize);
 
         [LibraryImport(RuntimeLibrary)]
-        internal static unsafe partial int RhConfigurePauseDataCallback(void* callback, int enabled, out long sequence, out long missedRecords);
+        internal static unsafe partial int RhConfigurePauseRecordCallback(void* callback, int enabled, out long sequence, out long missedRecords);
 
         [LibraryImport(RuntimeLibrary)]
         internal static partial long RhGetGenerationBudget(int generation);

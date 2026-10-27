@@ -333,7 +333,7 @@ public:
 
     virtual uintptr_t* GetPendingBridgeHandles(size_t* count);
 
-    virtual void ConfigurePauseDataCallback(GCPauseDataCallback callback, bool enabled, uint64_t* sequence, uint64_t* missed_records);
+    virtual void ConfigurePauseRecordCallback(GCPauseRecordCallback callback, bool enabled, uint64_t* sequence, uint64_t* missed_records);
 };
 
 #endif  // GCIMPL_H_

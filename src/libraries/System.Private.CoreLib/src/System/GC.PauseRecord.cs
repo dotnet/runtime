@@ -25,15 +25,15 @@ public static partial class GC
     /// may complete after disposal returns. A callback can dispose its own handle.
     /// The caller must dispose the handle to release the subscription.
     /// </remarks>
-    public static IDisposable RegisterPauseDataCallback(GCPauseDataCallback callback)
+    public static IDisposable RegisterPauseRecordCallback(GCPauseRecordCallback callback)
     {
         ArgumentNullException.ThrowIfNull(callback);
-        return PauseDataCallbacks.Register(callback);
+        return PauseRecordCallbacks.Register(callback);
     }
 
-    static unsafe partial void ConfigurePauseDataCallback(void* callback, bool enabled, ref PauseDataCallbackState state);
+    static unsafe partial void ConfigurePauseRecordCallback(void* callback, bool enabled, ref PauseRecordCallbackState state);
 
-    private struct PauseDataCallbackState
+    private struct PauseRecordCallbackState
     {
         public long Sequence;
         public long MissedRecords;
@@ -41,7 +41,7 @@ public static partial class GC
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct NativePauseData
+    private struct NativePauseRecord
     {
         public long SequenceNumber;
         public long CollectionIndex;
@@ -50,19 +50,19 @@ public static partial class GC
         public int Concurrent;
     }
 
-    private static class PauseDataCallbacks
+    private static class PauseRecordCallbacks
     {
         private static readonly Lock s_lock = new();
         private static Registration[] s_registrations = [];
 
-        internal static IDisposable Register(GCPauseDataCallback callback)
+        internal static IDisposable Register(GCPauseRecordCallback callback)
         {
             Registration registration = new(callback);
             lock (s_lock)
             {
                 Registration[] registrations = new Registration[checked(s_registrations.Length + 1)];
                 s_registrations.CopyTo(registrations, 0);
-                PauseDataCallbackState state = Configure(enabled: true);
+                PauseRecordCallbackState state = Configure(enabled: true);
                 registration._firstSequence = state.Sequence;
                 registration._lastMissedRecords = state.MissedRecords;
                 registrations[^1] = registration;
@@ -72,15 +72,15 @@ public static partial class GC
             return registration;
         }
 
-        private static unsafe PauseDataCallbackState Configure(bool enabled)
+        private static unsafe PauseRecordCallbackState Configure(bool enabled)
         {
-            PauseDataCallbackState state = default;
-            ConfigurePauseDataCallback(
-                (void*)(delegate* unmanaged[Cdecl]<NativePauseData*, long, void>)&OnPause,
+            PauseRecordCallbackState state = default;
+            ConfigurePauseRecordCallback(
+                (void*)(delegate* unmanaged[Cdecl]<NativePauseRecord*, long, void>)&OnPause,
                 enabled, ref state);
             if (!state.Supported)
             {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_GCPauseDataCallback);
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_GCPauseRecordCallback);
             }
 
             return state;
@@ -89,17 +89,17 @@ public static partial class GC
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant.
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
 #pragma warning restore CS3016
-        private static unsafe void OnPause(NativePauseData* data, long missedRecords)
+        private static unsafe void OnPause(NativePauseRecord* data, long missedRecords)
         {
-            Debug.Assert(sizeof(NativePauseData) == 32);
-            GCPauseData pause = new(data->SequenceNumber, data->CollectionIndex,
+            Debug.Assert(sizeof(NativePauseRecord) == 32);
+            GCPauseRecord pause = new(data->SequenceNumber, data->CollectionIndex,
                 new TimeSpan(checked(data->DurationMicroseconds * TimeSpan.TicksPerMicrosecond)),
                 data->Generation, data->Concurrent != 0);
             Registration[] registrations = Volatile.Read(ref s_registrations);
 
             foreach (Registration registration in registrations)
             {
-                GCPauseDataCallback? callback = Volatile.Read(ref registration._callback);
+                GCPauseRecordCallback? callback = Volatile.Read(ref registration._callback);
                 if (callback is null || pause.SequenceNumber <= registration._firstSequence)
                 {
                     continue;
@@ -112,9 +112,9 @@ public static partial class GC
             }
         }
 
-        private sealed class Registration(GCPauseDataCallback callback) : IDisposable
+        private sealed class Registration(GCPauseRecordCallback callback) : IDisposable
         {
-            internal GCPauseDataCallback? _callback = callback;
+            internal GCPauseRecordCallback? _callback = callback;
             internal long _firstSequence;
             internal long _lastMissedRecords;
 
