@@ -8,7 +8,7 @@
 
 #define INITIAL_CAPACITY 64
 
-// We have an OwnedString and a DynamicArray class to avoid using the standard library containers.
+// Shared dump code must avoid libstdc++ dependencies so it can also be linked into NativeAOT applications.
 
 template <typename T>
 T&& Move(T& value) noexcept
@@ -16,6 +16,9 @@ T&& Move(T& value) noexcept
     return static_cast<T&&>(value);
 }
 
+// Module filenames must outlive the memory-map parsing buffers. This move-only owner adopts
+// malloc-allocated names or copies borrowed names, ensuring automatic cleanup on error paths
+// and transferring ownership safely when module regions move during array growth.
 class OwnedString
 {
 private:
