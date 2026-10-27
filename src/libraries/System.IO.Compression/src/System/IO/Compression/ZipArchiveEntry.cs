@@ -814,16 +814,6 @@ namespace System.IO.Compression
             }
         }
 
-        private MemoryStream GetUncompressedData(ReadOnlySpan<char> password = default)
-        {
-            ValueTask<MemoryStream> vt = GetUncompressedDataCoreAsync<SyncReadWriteAdapter>(password, CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous GetUncompressedData completed asynchronously.");
-            return vt.GetAwaiter().GetResult();
-        }
-
-        private Task<MemoryStream> GetUncompressedDataAsync(CancellationToken cancellationToken) =>
-            GetUncompressedDataCoreAsync<AsyncReadWriteAdapter>(default, cancellationToken).AsTask();
-
         private ValueTask<MemoryStream> GetUncompressedDataCoreAsync<TAdapter>(ReadOnlySpan<char> password, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
@@ -1388,48 +1378,6 @@ namespace System.IO.Compression
             throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
         }
 
-        /// <summary>
-        /// Creates the appropriate decryption stream for an encrypted entry.
-        /// For AES entries, uses the salt that was pre-read during central directory parsing.
-        /// </summary>
-        private Stream WrapWithDecryptionIfNeeded(Stream compressedStream, ReadOnlySpan<char> password)
-        {
-            if (Encryption == ZipEncryptionMethod.Unknown)
-            {
-                throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
-            }
-
-            if (password.IsEmpty)
-            {
-                throw new InvalidDataException(SR.PasswordRequired);
-            }
-
-            if (IsAesEncrypted)
-            {
-                if (_aesSalt is null)
-                {
-                    throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
-                }
-
-                int keySizeBits = GetAesKeySizeBits(Encryption);
-                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password, _aesSalt, keySizeBits);
-                return WinZipAesStream.Create(
-                    baseStream: compressedStream,
-                    keyMaterial: keyMaterial,
-                    totalStreamSize: _compressedSize,
-                    encrypting: false);
-            }
-
-            if (EncryptionMethod == ZipEncryptionMethod.ZipCrypto)
-            {
-                byte expectedCheckByte = CalculateZipCryptoCheckByte();
-                ZipCryptoKeys keyMaterial = ZipCryptoStream.CreateKey(password);
-                return ZipCryptoStream.Create(compressedStream, keyMaterial, expectedCheckByte, encrypting: false);
-            }
-
-            throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
-        }
-
         private Stream GetDataDecompressor(Stream compressedStreamToRead)
         {
             Stream? uncompressedStream;
@@ -1457,16 +1405,6 @@ namespace System.IO.Compression
 
             return uncompressedStream;
         }
-
-        private Stream OpenInReadMode(bool checkOpenable, ReadOnlySpan<char> password = default)
-        {
-            ValueTask<Stream> vt = OpenInReadModeCoreAsync<SyncReadWriteAdapter>(checkOpenable, password, CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous OpenInReadMode completed asynchronously.");
-            return vt.GetAwaiter().GetResult();
-        }
-
-        private Task<Stream> OpenInReadModeAsync(bool checkOpenable, ReadOnlySpan<char> password, CancellationToken cancellationToken) =>
-            OpenInReadModeCoreAsync<AsyncReadWriteAdapter>(checkOpenable, password, cancellationToken).AsTask();
 
         private ValueTask<Stream> OpenInReadModeCoreAsync<TAdapter>(bool checkOpenable, ReadOnlySpan<char> password, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
@@ -1714,16 +1652,6 @@ namespace System.IO.Compression
         // entry), unlike OpenInReadMode which reads the original bytes directly from the archive. The stream
         // shares the underlying buffer with the entry rather than copying it, so it is not isolated from later
         // in-place writes; callers are expected to finish reading before reopening the entry for writing.
-        private Stream OpenInUpdateModeForRead()
-        {
-            ValueTask<Stream> vt = OpenInUpdateModeForReadCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous OpenInUpdateModeForRead completed asynchronously.");
-            return vt.GetAwaiter().GetResult();
-        }
-
-        private Task<Stream> OpenInUpdateModeForReadAsync(CancellationToken cancellationToken) =>
-            OpenInUpdateModeForReadCoreAsync<AsyncReadWriteAdapter>(cancellationToken).AsTask();
-
         private async ValueTask<Stream> OpenInUpdateModeForReadCoreAsync<TAdapter>(CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
@@ -1927,14 +1855,6 @@ namespace System.IO.Compression
         {
             ZipGenericExtraField.WriteAllBlocksExcludingTag(fields, trailingExtraFieldData, stream, excludeTag);
             return default;
-        }
-
-        private bool IsOpenable(bool needToUncompress, bool needToLoadIntoMemory, out string? message)
-        {
-            ValueTask<(bool Openable, string? Message)> vt = IsOpenableCoreAsync<SyncReadWriteAdapter>(needToUncompress, needToLoadIntoMemory, CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous IsOpenable completed asynchronously.");
-            (bool openable, message) = vt.GetAwaiter().GetResult();
-            return openable;
         }
 
         private async ValueTask<(bool Openable, string? Message)> IsOpenableCoreAsync<TAdapter>(bool needToUncompress, bool needToLoadIntoMemory, CancellationToken cancellationToken)
@@ -2756,16 +2676,6 @@ namespace System.IO.Compression
             _compressedBytes = null;
             _outstandingWriteStream = null;
         }
-
-        private void CloseStreams()
-        {
-            ValueTask vt = CloseStreamsCoreAsync<SyncReadWriteAdapter>();
-            Debug.Assert(vt.IsCompleted, "Synchronous CloseStreams completed asynchronously.");
-            vt.GetAwaiter().GetResult();
-        }
-
-        private Task CloseStreamsAsync() =>
-            CloseStreamsCoreAsync<AsyncReadWriteAdapter>().AsTask();
 
         private async ValueTask CloseStreamsCoreAsync<TAdapter>()
             where TAdapter : IReadWriteAdapter
