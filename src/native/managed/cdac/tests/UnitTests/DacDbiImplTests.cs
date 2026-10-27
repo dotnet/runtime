@@ -30,6 +30,84 @@ public unsafe class DacDbiImplTests
     private const ulong CorDBDefaultEnCFunctionVersion = 1;
 
     [Theory]
+    [MemberData(nameof(RuntimeProductVersions))]
+    public void GetRuntimeVersion_ReportsTargetProductVersion(MockTarget.Architecture arch, string productVersion)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(arch, [(Constants.Globals.RuntimeProductVersionString, productVersion)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        COR_VERSION version = new() { dwMajor = uint.MaxValue, dwMinor = uint.MaxValue, dwBuild = uint.MaxValue, dwSubBuild = uint.MaxValue };
+
+        int hr = dacDbi.GetRuntimeVersion(&version);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(42u, version.dwMajor);
+        Assert.Equal(7u, version.dwMinor);
+        Assert.Equal(19u, version.dwBuild);
+        Assert.Equal(0u, version.dwSubBuild);
+    }
+
+    public static IEnumerable<object[]> RuntimeProductVersions()
+    {
+        foreach (object[] architecture in new MockTarget.StdArch())
+        {
+            foreach (string productVersion in new[] { "42.7.19", "42.7.19-preview.3.12345.6", "42.7.19+build.12345", "42.7.19-preview.3+build.12345" })
+                yield return [architecture[0], productVersion];
+        }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("not-a-version")]
+    [InlineData("42..19")]
+    [InlineData("42.7")]
+    [InlineData("42.7.19.1")]
+    public void GetRuntimeVersion_InvalidVersion_InitializesOutput(string productVersion)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(new() { IsLittleEndian = true, Is64Bit = true },
+            [(Constants.Globals.RuntimeProductVersionString, productVersion)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        COR_VERSION version = new() { dwMajor = uint.MaxValue, dwMinor = uint.MaxValue, dwBuild = uint.MaxValue, dwSubBuild = uint.MaxValue };
+
+        int hr = dacDbi.GetRuntimeVersion(&version);
+
+        Assert.Equal(new FormatException().HResult, hr);
+        Assert.Equal(0u, version.dwMajor);
+        Assert.Equal(0u, version.dwMinor);
+        Assert.Equal(0u, version.dwBuild);
+        Assert.Equal(0u, version.dwSubBuild);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRuntimeVersion_ContractFailure_InitializesOutput(MockTarget.Architecture arch)
+    {
+        InvalidOperationException exception = new("Target version is unavailable.");
+        var runtimeInfo = new Mock<IRuntimeInfo>();
+        runtimeInfo.Setup(r => r.GetRuntimeProductVersion()).Throws(exception);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch).AddMockContract(runtimeInfo).Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        COR_VERSION version = new() { dwMajor = uint.MaxValue, dwMinor = uint.MaxValue, dwBuild = uint.MaxValue, dwSubBuild = uint.MaxValue };
+
+        int hr = dacDbi.GetRuntimeVersion(&version);
+
+        Assert.Equal(exception.HResult, hr);
+        Assert.Equal(0u, version.dwMajor);
+        Assert.Equal(0u, version.dwMinor);
+        Assert.Equal(0u, version.dwBuild);
+        Assert.Equal(0u, version.dwSubBuild);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRuntimeVersion_NullOutput_ReturnsInvalidArgument(MockTarget.Architecture arch)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(arch, []);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        Assert.Equal(System.HResults.E_INVALIDARG, dacDbi.GetRuntimeVersion(null));
+    }
+
+    [Theory]
     [InlineData("wasm", "Browser", TargetArchitecture.Wasm, TargetOperatingSystem.Browser, 4u)]
     [InlineData("wasm", "Unix", TargetArchitecture.Wasm, TargetOperatingSystem.Unix, 4u)]
     [InlineData("arm64", "Apple", TargetArchitecture.Arm64, TargetOperatingSystem.Apple, 8u)]

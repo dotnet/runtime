@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -311,51 +312,64 @@ namespace System.Net.Quic.Tests
                 connectTasks.Add(CreateQuicConnection(listener.LocalEndPoint).AsTask());
             }
 
-            // Count the number of successful connections and refused connections.
-            int success = 0;
-            int failure = 0;
-            await Parallel.ForEachAsync(connectTasks, async (connectTask, cancellationToken) =>
+            var clientConnections = new ConcurrentBag<QuicConnection>();
+            try
             {
-                try
+                // Count the number of successful connections and refused connections.
+                int success = 0;
+                int failure = 0;
+                await Parallel.ForEachAsync(connectTasks, async (connectTask, cancellationToken) =>
                 {
-                    await using var connection = await connectTask;
-                    Interlocked.Increment(ref success);
-                }
-                catch (QuicException qex) when (qex.QuicError == QuicError.ConnectionRefused)
+                    try
+                    {
+                        QuicConnection connection = await connectTask;
+                        // A connected client may still need to retransmit handshake data before the server connects.
+                        clientConnections.Add(connection);
+                        Interlocked.Increment(ref success);
+                    }
+                    catch (QuicException qex) when (qex.QuicError == QuicError.ConnectionRefused)
+                    {
+                        Interlocked.Increment(ref failure);
+                    }
+                });
+
+                // Check that the numbers correspond to backlog limit.
+                int pendingConnections = 0;
+                if (backlogLimit < connectCount)
                 {
-                    Interlocked.Increment(ref failure);
+                    pendingConnections = backlogLimit;
+                    Assert.Equal(backlogLimit, success);
+                    Assert.Equal(connectCount - backlogLimit, failure);
                 }
-            });
+                else
+                {
+                    pendingConnections = connectCount;
+                    Assert.Equal(connectCount, success);
+                    Assert.Equal(0, failure);
+                }
 
-            // Check that the numbers correspond to backlog limit.
-            int pendingConnections = 0;
-            if (backlogLimit < connectCount)
-            {
-                pendingConnections = backlogLimit;
-                Assert.Equal(backlogLimit, success);
-                Assert.Equal(connectCount - backlogLimit, failure);
-            }
-            else
-            {
-                pendingConnections = connectCount;
-                Assert.Equal(connectCount, success);
-                Assert.Equal(0, failure);
-            }
+                // Accept all connections and check that the next accept pends.
+                for (int i = 0; i < pendingConnections; ++i)
+                {
+                    await using var connection = await listener.AcceptConnectionAsync();
+                }
 
-            // Accept all connections and check that the next accept pends.
-            for (int i = 0; i < pendingConnections; ++i)
-            {
-                await using var connection = await listener.AcceptConnectionAsync();
+                // All pending connection should be accepted and the following call needs to be cancelled.
+                var cts = new CancellationTokenSource();
+                var token = cts.Token;
+                ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync(cts.Token);
+                Assert.False(acceptTask.IsCompleted);
+                cts.Cancel();
+                var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await acceptTask);
+                Assert.Equal(cts.Token, oce.CancellationToken);
             }
-
-            // All pending connection should be accepted and the following call needs to be cancelled.
-            var cts = new CancellationTokenSource();
-            var token = cts.Token;
-            ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync(cts.Token);
-            Assert.False(acceptTask.IsCompleted);
-            cts.Cancel();
-            var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await acceptTask);
-            Assert.Equal(cts.Token, oce.CancellationToken);
+            finally
+            {
+                foreach (QuicConnection connection in clientConnections)
+                {
+                    await connection.DisposeAsync();
+                }
+            }
         }
 
         [Fact]

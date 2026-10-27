@@ -1941,6 +1941,10 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                             name.SetTokenNotToLoad(tdAllAssemblies);
                             typeHnd = pAssembly->GetLoader()->LoadTypeHandleThrowing(&name, level);
                         }
+                        else if (fNotFoundAction == ThrowIfNotFound)
+                        {
+                            pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDef, IDS_CLASSLOAD_TYPE_NOT_CREATED);
+                        }
                     }
                 }
             }

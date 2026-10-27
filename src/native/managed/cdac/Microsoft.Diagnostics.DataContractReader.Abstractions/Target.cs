@@ -27,6 +27,11 @@ public abstract class Target
     /// </summary>
     public abstract bool IsLittleEndian { get; }
 
+    /// <summary>Attempts to locate the runtime image in the target.</summary>
+    /// <param name="imageBase">When this method returns, contains the image base, or a null target pointer if unavailable.</param>
+    /// <returns><see langword="true"/> if the image base is available; otherwise, <see langword="false"/>.</returns>
+    public abstract bool TryGetRuntimeImageBase(out TargetPointer imageBase);
+
     /// <summary>
     /// Fills a buffer with the context of the given thread
     /// </summary>

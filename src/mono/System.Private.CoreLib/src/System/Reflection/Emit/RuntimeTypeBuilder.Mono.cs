@@ -1513,7 +1513,8 @@ namespace System.Reflection.Emit
 
         internal override Type RuntimeResolve()
         {
-            check_created();
+            if (!is_created)
+                throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblyTypeNotCreatedError, fullname.DisplayName, Assembly));
             return created!;
         }
 
