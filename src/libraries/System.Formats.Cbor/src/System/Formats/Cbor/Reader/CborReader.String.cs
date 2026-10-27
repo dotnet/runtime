@@ -132,6 +132,7 @@ namespace System.Formats.Cbor
         public void ReadStartIndefiniteLengthByteString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
+            EnsureMaxDepthNotExceeded();
 
             if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
             {
@@ -299,6 +300,7 @@ namespace System.Formats.Cbor
         public void ReadStartIndefiniteLengthTextString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
+            EnsureMaxDepthNotExceeded();
 
             if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
             {
@@ -445,6 +447,8 @@ namespace System.Formats.Cbor
         // containing the individual chunk payloads
         private List<(int Offset, int Length)> ReadIndefiniteLengthStringChunkRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
         {
+            EnsureMaxDepthNotExceeded();
+
             List<(int Offset, int Length)> ranges = AcquireIndefiniteLengthStringRangeList();
             ReadOnlySpan<byte> data = GetRemainingBytes();
             concatenatedBufferSize = 0;

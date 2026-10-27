@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -10,6 +11,10 @@ namespace System.Threading
 {
     public sealed partial class Mutex
     {
+        [FeatureSwitchDefinition("System.Threading.Mutex.UnsafeDefaultMutexScopeGlobal")]
+        private static bool UnsafeDefaultMutexScopeGlobal { get; } =
+            AppContext.TryGetSwitch("System.Threading.Mutex.UnsafeDefaultMutexScopeGlobal", out bool enable) ? enable : false;
+
         private void CreateMutexCore(bool initiallyOwned) => SafeWaitHandle = WaitSubsystem.NewMutex(initiallyOwned);
 
         private void CreateMutexCore(
@@ -62,12 +67,17 @@ namespace System.Threading
                 name = name.Substring(NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length);
             }
 
-            if (options.WasSpecified && options.CurrentUserOnly)
+            if (CalculateUserScope(options))
             {
                 name = @"User\" + name;
             }
 
             return name;
+        }
+
+        private static bool CalculateUserScope(NamedWaitHandleOptionsInternal options)
+        {
+            return options.WasSpecified ? options.CurrentUserOnly : !UnsafeDefaultMutexScopeGlobal;
         }
 
         public void ReleaseMutex()
