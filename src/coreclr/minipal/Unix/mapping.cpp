@@ -12,6 +12,10 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
+#if defined(HOST_APPLE) && !defined(HOST_OSX)
+#include <libkern/OSCacheControl.h>
+#endif
+
 typedef char16_t WCHAR;
 typedef int32_t HRESULT;
 
@@ -131,8 +135,12 @@ static void CopyMemoryToPlaceholder(void* address, const void* source, size_t si
 
     if (executable && size != 0)
     {
+#if defined(HOST_APPLE) && !defined(HOST_OSX)
+        sys_icache_invalidate(address, size);
+#else
         char* begin = static_cast<char*>(address);
         __builtin___clear_cache(begin, begin + size);
+#endif // HOST_APPLE && !HOST_OSX
     }
 }
 
