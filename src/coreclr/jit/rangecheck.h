@@ -944,11 +944,14 @@ private:
     // return "false". For example: CORINFO_Array_MaxLength for array length.
     bool GetLimitMax(Limit& limit, int* pMax);
 
+    // The minimum possible value of the given "limit".
+    bool GetLimitMin(Limit& limit, int* pMin);
+
     // Does the addition of the two limits overflow?
-    bool AddOverflows(Limit& limit1, Limit& limit2);
+    bool AddOverflows(Range* range1, Range* range2);
 
     // Does the multiplication of the two limits overflow?
-    bool MultiplyOverflows(Limit& limit1, Limit& limit2);
+    bool MultiplyOverflows(Range* range1, Range* range2);
 
     // Does the binary operation between the operands overflow? Check recursively.
     bool DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Range& range);

@@ -2171,40 +2171,91 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
     return true;
 }
 
-// Check if the arithmetic overflows.
-bool RangeCheck::AddOverflows(Limit& limit1, Limit& limit2)
+bool RangeCheck::GetLimitMin(Limit& limit, int* pMin)
 {
-    int max1;
-    if (!GetLimitMax(limit1, &max1))
+    int& min1 = *pMin;
+    if (limit.IsConstantOrBinOp())
     {
+        // If the limit is a constant, its value can be used directly as the min;
+        // if it is an array length plus constant,
+        // then arr.Length >= 0, so the minimum is still the constant itself
+        min1 = limit.GetConstant();
         return true;
     }
-
-    int max2;
-    if (!GetLimitMax(limit2, &max2))
-    {
-        return true;
-    }
-
-    return IntAddOverflows(max1, max2);
+    // unknown minimum
+    return false;
 }
 
 // Check if the arithmetic overflows.
-bool RangeCheck::MultiplyOverflows(Limit& limit1, Limit& limit2)
+bool RangeCheck::AddOverflows(Range* range1, Range* range2)
 {
     int max1;
-    if (!GetLimitMax(limit1, &max1))
+    if (!GetLimitMax(range1->UpperLimit(), &max1))
     {
         return true;
     }
 
     int max2;
-    if (!GetLimitMax(limit2, &max2))
+    if (!GetLimitMax(range2->UpperLimit(), &max2))
+    {
+        return true;
+    }
+    if (CheckedOps::AddOverflows(max1, max2, CheckedOps::Signed))
     {
         return true;
     }
 
-    return CheckedOps::MulOverflows(max1, max2, CheckedOps::Signed);
+    int  min1;
+    bool hasMin1 = GetLimitMin(range1->LowerLimit(), &min1);
+
+    int  min2;
+    bool hasMin2 = GetLimitMin(range2->LowerLimit(), &min2);
+
+    // If we have a lower bound for either range that is non-negative, then sum cannot underflow.
+    if ((hasMin1 && min1 >= 0) || (hasMin2 && min2 >= 0))
+    {
+        return false;
+    }
+
+    if (!hasMin1 || !hasMin2)
+    {
+        return true;
+    }
+
+    return CheckedOps::AddOverflows(min1, min2, CheckedOps::Signed);
+}
+
+// Check if the arithmetic overflows.
+bool RangeCheck::MultiplyOverflows(Range* range1, Range* range2)
+{
+    int max1;
+    if (!GetLimitMax(range1->UpperLimit(), &max1))
+    {
+        return true;
+    }
+
+    int max2;
+    if (!GetLimitMax(range2->UpperLimit(), &max2))
+    {
+        return true;
+    }
+
+    int min1;
+    if (!GetLimitMin(range1->LowerLimit(), &min1))
+    {
+        return true;
+    }
+
+    int min2;
+    if (!GetLimitMin(range2->LowerLimit(), &min2))
+    {
+        return true;
+    }
+
+    return CheckedOps::MulOverflows(min1, min2, CheckedOps::Signed) ||
+           CheckedOps::MulOverflows(max1, max2, CheckedOps::Signed) ||
+           CheckedOps::MulOverflows(min1, max2, CheckedOps::Signed) ||
+           CheckedOps::MulOverflows(max1, min2, CheckedOps::Signed);
 }
 
 // Does the bin operation overflow.
@@ -2241,18 +2292,18 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Ra
 
     if (binop->OperIs(GT_ADD))
     {
-        return AddOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
+        return AddOverflows(op1Range, op2Range);
     }
     if (binop->OperIs(GT_MUL))
     {
-        return MultiplyOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
+        return MultiplyOverflows(op1Range, op2Range);
     }
     if (binop->OperIs(GT_LSH))
     {
         // Convert LSH(X, CNS) to MUL(X, CNS) if possible and check that,
         // otherwise, report as "may overflow".
         Range convertedOp2Range = RangeOps::ConvertShiftToMultiply(*op2Range);
-        return MultiplyOverflows(op1Range->UpperLimit(), convertedOp2Range.UpperLimit());
+        return MultiplyOverflows(op1Range, &convertedOp2Range);
     }
     if (binop->OperIs(GT_OR))
     {
