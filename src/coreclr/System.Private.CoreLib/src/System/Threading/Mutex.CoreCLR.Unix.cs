@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,6 +15,10 @@ namespace System.Threading
     /// </summary>
     public sealed partial class Mutex : WaitHandle
     {
+        [FeatureSwitchDefinition("System.Threading.Mutex.UnsafeDefaultMutexScopeGlobal")]
+        private static bool UnsafeDefaultMutexScopeGlobal { get; } =
+            AppContext.TryGetSwitch("System.Threading.Mutex.UnsafeDefaultMutexScopeGlobal", out bool enable) ? enable : false;
+
         private unsafe void CreateMutexCore(bool initiallyOwned)
         {
             SafeWaitHandle handle =
@@ -40,10 +45,13 @@ namespace System.Threading
             out bool createdNew)
         {
             bool currentUserOnly = false;
-            if (!string.IsNullOrEmpty(name) && options.WasSpecified)
+            if (!string.IsNullOrEmpty(name))
             {
-                name = options.GetNameWithSessionPrefix(name);
-                currentUserOnly = options.CurrentUserOnly;
+                if (options.WasSpecified)
+                {
+                    name = options.GetNameWithSessionPrefix(name);
+                }
+                currentUserOnly = CalculateUserScope(options);
             }
 
             SafeWaitHandle mutexHandle =
@@ -71,11 +79,10 @@ namespace System.Threading
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            bool currentUserOnly = false;
+            bool currentUserOnly = CalculateUserScope(options);
             if (options.WasSpecified)
             {
                 name = options.GetNameWithSessionPrefix(name);
-                currentUserOnly = options.CurrentUserOnly;
             }
 
             result = null;
@@ -106,6 +113,11 @@ namespace System.Threading
 
             result = new Mutex(myHandle);
             return OpenExistingResult.Success;
+        }
+
+        private static bool CalculateUserScope(NamedWaitHandleOptionsInternal options)
+        {
+            return options.WasSpecified ? options.CurrentUserOnly : !UnsafeDefaultMutexScopeGlobal;
         }
 
         // Note: To call ReleaseMutex, you must have an ACL granting you

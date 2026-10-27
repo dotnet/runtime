@@ -89,5 +89,17 @@ namespace System.Xml
                 return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.IgnoreObsoleteMembers", ref s_ignoreObsoleteMembers);
             }
         }
+
+        private static int s_disableOptimizedXmlTextReaderAttributeBufferInvalidation;
+        public static bool DisableOptimizedXmlTextReaderAttributeBufferInvalidation
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue(
+                    "Switch.System.Xml.DisableOptimizedXmlTextReaderAttributeBufferInvalidation",
+                    ref s_disableOptimizedXmlTextReaderAttributeBufferInvalidation);
+            }
+        }
     }
 }
