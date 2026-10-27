@@ -51,13 +51,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_typeDesc, otherNode._typeDesc);
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = base.ComputeNonRelocationBasedDependencies(factory);
-
-            factory.AddVirtualMethodDiscoveryDependencies(ref dependencies, _typeDesc);
-
-            return dependencies;
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
+            factory.AddVirtualMethodDiscoveryDependencies(sink, _typeDesc);
         }
     }
 }
