@@ -7,7 +7,7 @@ trigger: none
 
 parameters:
   - name: runAndroidContainerTests
-    displayName: Run the CoreCLR and library container validation only
+    displayName: Run CoreCLR and library API 29 parity validation only
     type: boolean
     default: false
 
@@ -52,10 +52,11 @@ extends:
             jobParameters:
               buildConfig: Release
               runtimeFlavor: coreclr
-              nameSuffix: Container_CoreCLR_RuntimeTests
-              buildArgs: -s clr+libs -c Release
+              nameSuffix: API29_Parity_CoreCLR
+              buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests+host+packs -c Release /p:ArchiveTests=true
               timeoutInMinutes: 240
               helixQueues:
+                - Ubuntu.2204.Amd64.Android.29.Open
                 - $(androidContainerHelixQueue)
               postBuildSteps:
                 - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
@@ -63,7 +64,7 @@ extends:
                     testBuildArgs: test JIT/Directed/Directed_r.csproj
                 - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
                   parameters:
-                    displayName: Run CoreCLR JIT tests in the Android container
+                    displayName: Run CoreCLR JIT tests on API 29 legacy and container queues
                     creator: $(Build.DefinitionName)
                     helixBuild: $(Build.BuildNumber)
                     helixSource: ci/dotnet/runtime/$(Build.SourceBranch)
@@ -75,19 +76,10 @@ extends:
                     timeoutPerTestInMinutes: 10
                     timeoutPerTestCollectionInMinutes: 30
                     helixProjectArguments: $(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj
-                - script: >
-                    ./dotnet.sh build
-                    src/libraries/System.Numerics.Vectors/tests/System.Numerics.Vectors.Tests.csproj
-                    -c Release
-                    /p:TargetOS=android
-                    /p:TargetArchitecture=x64
-                    /p:RuntimeFlavor=CoreCLR
-                    /p:ArchiveTests=true
-                  displayName: Build library tests for the Android container
                 - template: /eng/pipelines/libraries/helix.yml
                   parameters:
                     creator: $(Build.DefinitionName)
-                    testRunNamePrefixSuffix: CoreCLR_Release_Container_Libraries
+                    testRunNamePrefixSuffix: CoreCLR_Release_API29_Parity_Libraries
                     useHelixMonitor: true
 
       - ${{ if not(parameters.runAndroidContainerTests) }}:

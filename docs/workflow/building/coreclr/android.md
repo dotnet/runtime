@@ -179,11 +179,22 @@ To build and run the test on Android with CoreCLR, run the following command fro
 ### Testing in a container
 
 The `runtime-androidemulator` pipeline has an opt-in `runAndroidContainerTests`
-parameter. It builds CoreCLR, the `JIT/Directed/Directed_r.csproj` merged test
-assembly and `System.Numerics.Vectors.Tests`. The runtime and library test APKs
-are submitted through their respective Helix paths to the same KVM-enabled queue
-using a pinned Android API 29 container image. Each work item starts its own
-container and emulator. The default emulator and device jobs are unchanged.
+parameter for API 29 parity validation. It builds CoreCLR, the
+`JIT/Directed/Directed_r.csproj` merged test assembly and the library test
+archives once. Each payload is submitted through its normal Helix path to both
+`Ubuntu.2204.Amd64.Android.29.Open` and the KVM-enabled container queue using a
+pinned Android API 29 image. Library submission uses the normal inner-loop test
+scope, including networking, IO and globalization rather than only Numerics.
+On the container queue each work item starts its own container and emulator;
+the legacy queue retains its host-managed emulator. The default emulator and
+device jobs are unchanged.
+
+Helix job names identify the destination queue; library runs also use the
+`CoreCLR_Release_API29_Parity_Libraries` prefix/suffix. Compare individual test
+identities and outcomes, skipped tests, work-item failures and durations across
+the two queues. A green run alone does not establish parity, and test-result
+comparison is not automated by this pipeline. This lane does not yet cover the
+full CoreCLR runtime suite, NativeAOT or other Android API levels.
 
 The container image supplies the Android SDK, system image and AVD.
 `eng/testing/Android/start-emulator.sh` and `stop-emulator.sh` own the work-item
