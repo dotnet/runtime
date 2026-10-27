@@ -13,11 +13,12 @@ namespace Internal.IL
 {
     enum LifetimeScope : byte
     {
-        Unknown,
-        Function,
-        ReturnOnly,
-        Caller,
-        Global,
+        // Ordered by permitted escape: lower values are narrower and more conservative.
+        Unknown = 0,
+        Function = 1,
+        ReturnOnly = 2,
+        Caller = 3,
+        Global = 4,
     }
 
     partial class ILImporter
@@ -31,6 +32,7 @@ namespace Internal.IL
         }
 
         StackValue[] _lifetimeMemory;
+        bool _lifetimeMemoryIsShared;
         StackValue[] _initialLifetimeMemory;
         StackValue[] _exceptionLifetimeMemory;
         TypeDesc[] _lifetimeCellTypes;
@@ -260,8 +262,8 @@ namespace Internal.IL
         void StartLifetimeBlock(BasicBlock block)
         {
             _lifetimeSelfChanged = false;
-            StackValue[] memory = _exceptionLifetimeMemory ?? block.EntryLifetimeMemory ?? _initialLifetimeMemory;
-            _lifetimeMemory = memory.Length == 0 ? s_emptyStack : (StackValue[])memory.Clone();
+            _lifetimeMemory = _exceptionLifetimeMemory ?? block.EntryLifetimeMemory ?? _initialLifetimeMemory;
+            _lifetimeMemoryIsShared = true;
         }
 
         void EndLifetimeBlock(BasicBlock block)
@@ -355,6 +357,11 @@ namespace Internal.IL
                 return;
             if (_exceptionLifetimeMemory is not null)
                 replace = false;
+            if (_lifetimeMemoryIsShared)
+            {
+                _lifetimeMemory = (StackValue[])_lifetimeMemory.Clone();
+                _lifetimeMemoryIsShared = false;
+            }
             _lifetimeMemory[index] = replace ? value : _lifetimeMemory[index].MergeLifetime(value);
             if (_exceptionLifetimeMemory is not null)
             {
