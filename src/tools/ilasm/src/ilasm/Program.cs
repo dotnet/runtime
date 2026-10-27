@@ -250,27 +250,17 @@ internal sealed class Program
 
             // Report diagnostics
             bool hasErrors = false;
-            foreach (var diagnostic in diagnostics)
+            if (!errorTolerant)
             {
-                if (diagnostic.Severity == DiagnosticSeverity.Error)
+                foreach (var diagnostic in diagnostics)
                 {
-                    hasErrors = true;
-                    Console.Error.WriteLine($"Error: {diagnostic.Location}: {diagnostic.Message}");
-                }
-                else if (diagnostic.Severity == DiagnosticSeverity.Warning && !errorTolerant)
-                {
-                    Console.WriteLine($"Warning: {diagnostic.Location}: {diagnostic.Message}");
+                    hasErrors |= diagnostic.Severity == DiagnosticSeverity.Error;
+                    Console.WriteLine($"{diagnostic.Severity}: {diagnostic.Location}: {diagnostic.Message}");
                 }
             }
 
             // In error-tolerant mode, continue even with errors
-            if (compilationResult is null)
-            {
-                Console.Error.WriteLine("***** FAILURE *****");
-                return 1;
-            }
-
-            if (hasErrors && !errorTolerant)
+            if (compilationResult is null || hasErrors)
             {
                 Console.Error.WriteLine("***** FAILURE *****");
                 return 1;

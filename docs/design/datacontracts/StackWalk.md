@@ -701,7 +701,7 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress)
 TargetCodePointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
 ```
 
-`GetRuntimeFramePointer` returns the debugger frame pointer that uniquely identifies the current frame. On x64 it is the current stack pointer. On ARM, ARM64, RISCV64, and LoongArch64 it is the caller stack pointer. On x86, frameless managed methods use the unwound stack pointer minus the callee-popped argument size and one pointer, while runtime-unwindable native markers use the return-address slot from the recovered hijacked context.
+`GetRuntimeFramePointer` returns the debugger frame pointer that uniquely identifies the current frame. On x64 it is the current stack pointer. On ARM, ARM64, RISCV64, and LoongArch64 it is the caller stack pointer; for interpreted frames the caller stack pointer is the parent `InterpMethodContextFrame` (including the zeroed root frame of an interpreter activation), or the owning `InterpreterFrame` when there is no parent, matching native `VirtualUnwindInterpreterCallFrame`. On x86, frameless managed methods use the unwound stack pointer minus the callee-popped argument size and one pointer, while runtime-unwindable native markers use the return-address slot from the recovered hijacked context.
 
 ```csharp
 TargetPointer GetRuntimeFramePointer(IStackDataFrameHandle stackDataFrameHandle)

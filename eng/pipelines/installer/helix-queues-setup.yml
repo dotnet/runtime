@@ -29,7 +29,7 @@ steps:
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
-      - (Ubuntu.2604.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8@sha256:3c3d0dddb59c5da2f40df2e404de302f1b90c109b186ec21177857a7d68e6f42
+      - (Ubuntu.2604.Arm64.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8@sha256:3c3d0dddb59c5da2f40df2e404de302f1b90c109b186ec21177857a7d68e6f42
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
@@ -37,7 +37,7 @@ steps:
 
     # Linux musl arm64
     - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.isExtraPlatformsBuild, true), eq(parameters.includeAllPlatforms, true))) }}:
-      - (Alpine.324.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:b112398c98cc5c86e4fb3239be505b2d5b22e0a3e5e282339c3796ec4e386baa
+      - (Alpine.324.Arm64.Open)AzureLinux.4.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:b112398c98cc5c86e4fb3239be505b2d5b22e0a3e5e282339c3796ec4e386baa
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:

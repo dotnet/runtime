@@ -372,8 +372,14 @@ internal sealed partial class GrammarActions
         string normalized = text.Replace('.', '_');
         normalized = normalized switch
         {
+            "brnull" or "brzero" => "brfalse",
+            "brnull_s" or "brzero_s" => "brfalse_s",
+            "brinst" => "brtrue",
+            "brinst_s" => "brtrue_s",
             "ldelem_u8" => "ldelem_i8",
             "ldind_u8" => "ldind_i8",
+            "ldelem_any" => "ldelem",
+            "stelem_any" => "stelem",
             "endfault" => "endfinally",
             _ => normalized
         };
