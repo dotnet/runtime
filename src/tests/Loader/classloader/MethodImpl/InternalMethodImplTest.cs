@@ -33,13 +33,11 @@ public class InternalMethodImplTest
 
 class F1
 {
-    public static object Sink;
-
     [MethodImpl(MethodImplOptions.NoInlining)] // The exception is thrown when restoring the caller with R2R
     public F1()
     {
         // Keep the allocation observable so it isn't removed before the type is loaded
-        Sink = new F2();
+        GC.KeepAlive(new F2());
     }
 }
 
