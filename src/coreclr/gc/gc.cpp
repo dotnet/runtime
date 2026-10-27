@@ -1230,8 +1230,8 @@ uint32_t gc_heap::pause_record_version;
 uint32_t gc_heap::pause_record_write;
 uint32_t gc_heap::pause_record_read;
 int32_t gc_heap::pause_record_scheduled;
-uint64_t gc_heap::pause_record_sequence;
-uint64_t gc_heap::pause_record_missed;
+alignas(8) uint64_t gc_heap::pause_record_sequence;
+alignas(8) uint64_t gc_heap::pause_record_missed;
 BOOL gc_heap::proceed_with_gc_p = FALSE;
 GCSpinLock gc_heap::gc_lock;
 

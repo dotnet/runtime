@@ -120,7 +120,25 @@ FORCEINLINE T Interlocked::ExchangeAdd64(T volatile* addend, T value)
 {
 #ifdef _MSC_VER
     static_assert(sizeof(int64_t) == sizeof(T), "Size of LONGLONG must be the same as size of T");
+#ifdef HOST_X86
+    T expected;
+    T result;
+    do
+    {
+        // Compare-exchange validates this read even if it tears on x86.
+        expected = *addend;
+        // Unsigned arithmetic preserves interlocked wraparound for signed inputs.
+        uint64_t exchange = static_cast<uint64_t>(expected) + static_cast<uint64_t>(value);
+        result = static_cast<T>(_InterlockedCompareExchange64(
+            reinterpret_cast<int64_t volatile*>(addend), static_cast<int64_t>(exchange),
+            static_cast<int64_t>(expected)));
+    }
+    while (result != expected);
+
+    return result;
+#else // HOST_X86
     return _InterlockedExchangeAdd64((int64_t*)addend, value);
+#endif // HOST_X86
 #else
     T result = __sync_fetch_and_add(addend, value);
     InterlockedOperationBarrier();
