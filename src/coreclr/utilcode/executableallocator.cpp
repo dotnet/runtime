@@ -97,6 +97,12 @@ void ExecutableAllocator::UnmapRW(void*) noexcept
 #include <configuration.h>
 
 #if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
+// On Unix-like platforms, memory that may written to
+// and later marked with executable protections at the same address
+// at some point may need to be mapped with specific flags like MAP_JIT
+// when initially mapped per OS security rules.
+// On platforms where we don't generate new code (only map existing executable pages as executable),
+// there's no requirement as the memory has always been RX-only.
 static constexpr bool ExecutableBackingRequired = true;
 #else
 static constexpr bool ExecutableBackingRequired = false;
