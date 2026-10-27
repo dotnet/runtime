@@ -3415,6 +3415,9 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
     _ASSERTE(IsVersionable());
     _ASSERTE(mayHaveEntryPointSlotsToBackpatch == MayHaveEntryPointSlotsToBackpatch());
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    SetStableEntryPointInterlocked(entryPoint);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (mayHaveEntryPointSlotsToBackpatch)
     {
         TryBackpatchEntryPointSlotsFromPrestub(entryPoint);
@@ -3424,6 +3427,7 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
         _ASSERTE(IsVersionableWithPrecode());
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint, TRUE /* fOnlyRedirectFromPrestub */);
     }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 #endif // FEATURE_CODE_VERSIONING
 
@@ -3481,8 +3485,10 @@ void MethodDesc::ResetCodeEntryPoint()
 #endif
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Resetting the portable entry point alone is sufficient; these targets have no
+    // backpatchable slots or precode to additionally reset.
     ResetPortableEntryPoint();
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
 
     if (MayHaveEntryPointSlotsToBackpatch())
     {
@@ -3495,6 +3501,7 @@ void MethodDesc::ResetCodeEntryPoint()
     {
         GetPrecode()->ResetTargetInterlocked();
     }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 #endif // FEATURE_CODE_VERSIONING
 

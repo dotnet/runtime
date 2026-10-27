@@ -220,9 +220,9 @@ namespace ILCompiler
 
                 string IDependencyNode<NodeFactory>.GetName(NodeFactory context) => _name;
                 void ISymbolNode.AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb) => sb.Append(_name);
-                IEnumerable<CombinedDependencyListEntry> IDependencyNode<NodeFactory>.GetConditionalStaticDependencies(NodeFactory context) => throw new NotImplementedException();
-                IEnumerable<DependencyListEntry> IDependencyNode<NodeFactory>.GetStaticDependencies(NodeFactory context) => null;
-                IEnumerable<CombinedDependencyListEntry> IDependencyNode<NodeFactory>.SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => throw new NotImplementedException();
+                void IDependencyNode<NodeFactory>.AddConditionalDependencies(DependencySink sink, NodeFactory context) => throw new NotImplementedException();
+                void IDependencyNode<NodeFactory>.AddStaticDependencies(DependencySink sink, NodeFactory context) { }
+                void IDependencyNode<NodeFactory>.SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) => throw new NotImplementedException();
             }
         }
 

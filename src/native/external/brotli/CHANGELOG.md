@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.1.1] - 2026-10-21
+
+### SECURITY
+ - CVE-2026-111497: out-of-bounds write permits remote code execution
+
 ## [1.1.0] - 2023-08-28
 
 ### Added
