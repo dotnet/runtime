@@ -720,6 +720,7 @@ bool ReadyToRunInfo::IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModu
 // tightly associated with the module itself.
 ReadyToRunInfo* s_pGlobalR2RModules = NULL;
 PTR_ReadyToRunInfo ReadyToRunInfo::GetUnrelatedR2RModules() { return s_pGlobalR2RModules; }
+
 void ReadyToRunInfo::RegisterUnrelatedR2RModule()
 {
     LIMITED_METHOD_CONTRACT; // This function takes no locks, and can never fail
@@ -853,6 +854,14 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         // In this case, we'll pull the ready to run image layout from pLayout.
         _ASSERT(pLayout != NULL);
         m_pCompositeInfo = this;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        // TODO: These should point to the location of the flag in the R2R image
+        m_pAuxiliaryModuleActivationFlag = (PTR_DWORD)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DWORD))));
+        // Only composite images have auxiliary modules.
+        *m_pAuxiliaryModuleActivationFlag = pNativeImage != nullptr
+            ? CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_R2RDelayedActivationCallCount)
+            : 0;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
         m_component = ReadyToRunCoreInfo(pLayout, &pHeader->CoreHeader);
         m_pComposite = &m_component;
         m_isComponentAssembly = false;
@@ -1317,6 +1326,9 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    bool mayDelayR2RCode = false;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
     mdToken token = pMD->GetMemberDef();
     int rid = RidFromToken(token);
     if (rid == 0)
@@ -1334,6 +1346,18 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         goto done;
 
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    // There are conditions where we cannot delay the use of R2R code. In the future, the compiler
+    // should ensure these conditions for us.
+    mayDelayR2RCode = pConfig != NULL
+        && pConfig->MayDelayAuxiliaryModule()
+        && !HasStrippedILBodies()
+        && pMD->IsIL()
+        && !pMD->IsWrapperStub()
+        && (!pMD->GetModule()->IsReadyToRun() || !pMD->GetModule()->GetReadyToRunInfo()->HasStrippedILBodies())
+        && !pMD->HasUnmanagedCallersOnlyAttribute();
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
     uint offset;
     // Async variants and unboxing stubs are stored in the instance methods table.
@@ -1368,6 +1392,17 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         if (!m_methodDefEntryPoints.TryGetAt(rid - 1, &offset))
             goto done;
     }
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    if (mayDelayR2RCode
+        && !IsAuxiliaryModuleActivated(m_pCompositeInfo->GetAuxiliaryModuleActivationFlag(pMD)))
+    {
+        // The method exists in this logical R2R image, but is considered an aux method and its aux module is not yet activated.
+        // Mark it as such, telling callers to return when the flag is set.
+        pConfig->SetAuxiliaryModuleActivationFlag(m_pCompositeInfo->GetAuxiliaryModuleActivationFlag(pMD));
+        goto done;
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
 #ifdef PROFILING_SUPPORTED
         {

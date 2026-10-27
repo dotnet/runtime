@@ -201,6 +201,10 @@ class ReadyToRunInfo
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
     TADDR                           m_pLoadedImageBase;
 
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    PTR_DWORD                       m_pAuxiliaryModuleActivationFlag = 0;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
 
@@ -248,6 +252,33 @@ public:
     }
     void RegisterVirtualIPRange(Module* pModule);
 #endif // TARGET_WASM
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    PTR_DWORD GetAuxiliaryModuleActivationFlag(MethodDesc* pMD) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        // If/When we use multiple auxiliary modules, this will need to search the AuxiliaryEntryPointsModule to find which flag to use
+        return m_pAuxiliaryModuleActivationFlag;
+    }
+
+    // The encoding of the activation flag is owned by the R2R image; every reader goes through this.
+    static bool IsAuxiliaryModuleActivated(PTR_DWORD pActivationFlag)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pActivationFlag != nullptr);
+        return VolatileLoad(pActivationFlag) == 0;
+    }
+
+    // TODO: Remove once auxiliary modules are downloaded. Stands in for the download by counting down the
+    // flag once per call, and returns whether the module is now activated.
+    static void AdvanceSimulatedAuxiliaryModuleDownload(PTR_DWORD pActivationFlag)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pActivationFlag != nullptr);
+        if (!IsAuxiliaryModuleActivated(pActivationFlag))
+            VolatileStore(pActivationFlag, VolatileLoad(pActivationFlag) - 1);
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
     void RegisterResumptionStub(PCODE stubEntryPoint);
 

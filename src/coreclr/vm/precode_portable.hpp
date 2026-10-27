@@ -41,6 +41,9 @@ private:
         // closed-static-retbuf resolution list, so a redundant registration attempt
         // can be rejected without a linear scan of that list.
         kPendingClosedStaticRetBufResolution = 0x8,
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        kPendingAuxiliaryModule = 0x10,
+#endif // FEATURE_AUXILIARY_R2R_MODULES
     };
     Volatile<int32_t> _flags;
 
@@ -142,6 +145,30 @@ public:
         _ASSERTE(IsValid());
         ClearFlagsInterlocked(kPendingClosedStaticRetBufResolution);
     }
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    bool IsPendingAuxiliaryModule() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return (_flags & kPendingAuxiliaryModule) != 0;
+    }
+
+    void SetPendingAuxiliaryModule()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        _ASSERTE(PrefersInterpreterEntryPoint());
+        SetFlagsInterlocked(kPendingAuxiliaryModule);
+    }
+
+    void ClearPendingAuxiliaryModule()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        ClearFlagsInterlocked(kPendingAuxiliaryModule);
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
     // Atomically install an interpreter thunk if _pActualCode is still NULL.
     // Returns true if the thunk was installed, false if _pActualCode was already set.

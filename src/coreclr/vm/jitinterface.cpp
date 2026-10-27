@@ -14109,6 +14109,13 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
             PrepareCodeConfig config(NativeCodeVersion(pMD), FALSE, TRUE);
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+            // R2R callers call this method directly, so it must have its R2R entry point now.
+            // Do not simulate a delayed auxiliary module activation for this.
+            // Once we no longer need simulations, we can remove this call.
+            // The compile should ensure we never have a direct call across different auxiliary modules.
+            config.DisableAuxiliaryModuleDelay();
+#endif // FEATURE_AUXILIARY_R2R_MODULES
             PCODE pEntryPoint = pMD->GetModule()->GetReadyToRunInfo()->GetEntryPoint(pMD, &config, TRUE /* fFixups */);
             if (pEntryPoint == (PCODE)NULL)
             {

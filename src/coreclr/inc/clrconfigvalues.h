@@ -301,6 +301,10 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_Interpreter, W("Interpreter"), "Enables Inter
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_InterpMode, W("InterpMode"), 0, "Enables Interpreter for a subset of all methods depending on the specified mode.")
 #endif // FEATURE_INTERPRETER
 
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_R2RDelayedActivationCallCount, W("R2RDelayedActivationCallCount"), 0, "Activate auxiliary R2R code after this many pending interpreter entries across a composite image. Zero preserves eager activation.")
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitHostMaxSlabCache, W("JitHostMaxSlabCache"), 0x1000000, "Sets jit host max slab cache size, 16MB default")
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitOptimizeType, W("JitOptimizeType"), 0 /* OPT_DEFAULT */, "")

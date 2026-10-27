@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>true</Optimize>
+    <Features>$(Features);runtime-async=on</Features>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <CrossGenTestSkipR2RDump>true</CrossGenTestSkipR2RDump>
+    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --compilebubblegenerics --opt-cross-module System.Private.CoreLib</CrossGen2TestExtraArguments>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'browser' or '$(RuntimeFlavor)' != 'coreclr' or '$(WasmEnableThreads)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DelayedR2RActivation.cs" />
+    <Compile Include="../../../async/RuntimeAsyncMethodGenerationAttribute.cs" />
+    <ProjectReference Include="DelayedR2RActivationAliasHelper.ilproj" />
+    <CLRTestEnvironmentVariable Include="DOTNET_R2RDelayedActivationCallCount" Value="1" />
+  </ItemGroup>
+</Project>

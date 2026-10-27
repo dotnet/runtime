@@ -281,6 +281,11 @@ struct MethodDescCodeData final
 #ifdef FEATURE_INTERPRETER
     InterpreterCalliCookie CalliCookie;
 #endif // FEATURE_INTERPRETER
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    // Activation status of the auxiliary module holding this method's R2R code. Zero means activated.
+    // TODO: This points at a shared countdown standing in for the auxiliary module's activation flag.
+    PTR_DWORD AuxiliaryModuleActivationFlag;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 #if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
     PatchpointInfo *AltJitPatchpointInfo;
 #endif // _DEBUG && ALLOW_SXS_JIT
@@ -2350,6 +2355,11 @@ public:
     bool TryPublishR2RCodeForUnmanagedCallersOnly();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    void TryActivateDelayedR2RCode(CallerGCMode callerGCMode);
+    void RecordDelayedR2RCode(PrepareCodeConfig* pConfig, PCODE pCode);
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
 private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
@@ -2433,6 +2443,56 @@ public:
     void SetReadyToRunRejectedPrecompiledCode();
     CallerGCMode GetCallerGCMode();
     void SetCallerGCMode(CallerGCMode mode);
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    // Activation status of the auxiliary module holding the method's R2R code, set when lookup delays it.
+    // TODO: This points at a shared countdown standing in for the auxiliary module's activation flag.
+    PTR_DWORD GetAuxiliaryModuleActivationFlag() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pAuxiliaryModuleActivationFlag;
+    }
+
+    bool HasKnownAuxiliaryModuleDependency() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pAuxiliaryModuleActivationFlag != nullptr;
+    }
+
+    bool IsAuxiliaryModuleActivated() const
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(m_pAuxiliaryModuleActivationFlag != nullptr);
+        }
+        CONTRACTL_END;
+
+        return ReadyToRunInfo::IsAuxiliaryModuleActivated(m_pAuxiliaryModuleActivationFlag);
+    }
+
+    void SetAuxiliaryModuleActivationFlag(PTR_DWORD pAuxiliaryModuleActivationFlag)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pAuxiliaryModuleActivationFlag != nullptr && m_pAuxiliaryModuleActivationFlag == nullptr);
+        m_pAuxiliaryModuleActivationFlag = pAuxiliaryModuleActivationFlag;
+    }
+
+    // Lookups that commit a method to R2R code for direct calls from R2R callers cannot wait for activation.
+    bool MayDelayAuxiliaryModule() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_mayDelayAuxiliaryModule;
+    }
+
+    void DisableAuxiliaryModuleDelay()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_mayDelayAuxiliaryModule = false;
+    }
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
 public:
     bool IsForMulticoreJit() const
@@ -2565,6 +2625,11 @@ protected:
     BOOL m_ProfilerRejectedPrecompiledCode;
     BOOL m_ReadyToRunRejectedPrecompiledCode;
     CallerGCMode m_callerGCMode;
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    PTR_DWORD m_pAuxiliaryModuleActivationFlag = nullptr;
+    bool m_mayDelayAuxiliaryModule = true;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
 #ifdef FEATURE_MULTICOREJIT
 private:

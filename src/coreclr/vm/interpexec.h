@@ -123,4 +123,17 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
 void InterpDispatchCache_ReclaimAll();
 void InterpDispatchCache_ClearForLoaderAllocator(LoaderAllocator* pLoaderAllocator);
 
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+inline bool AuxiliaryMethodInfo::ShouldTryActivateMethod() const
+{
+    LIMITED_METHOD_CONTRACT;
+    if (auxiliaryModuleActivationFlag == nullptr)
+        return false;
+
+    // TODO: remove the simulated download once auxiliary modules are separate
+    ReadyToRunInfo::AdvanceSimulatedAuxiliaryModuleDownload(auxiliaryModuleActivationFlag);
+    return ReadyToRunInfo::IsAuxiliaryModuleActivated(auxiliaryModuleActivationFlag);
+}
+#endif // FEATURE_AUXILIARY_R2R_MODULES
+
 #endif // _INTERPEXEC_H_
