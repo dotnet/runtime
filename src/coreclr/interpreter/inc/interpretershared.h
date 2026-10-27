@@ -7,6 +7,7 @@
 #define _INTERPRETERSHARED_H_
 
 #include "intopsshared.h"
+#include "auxiliaryentrypointsera.h"
 
 #ifdef _MSC_VER
 #define INTERP_API
@@ -33,16 +34,27 @@ class MethodTable;
 struct CallStubHeader;
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
+enum class AuxiliaryMethodInfoDiscriminator : uint8_t
+{
+    InterpretOnly,
+    CheckAuxiliaryModuleActivationFlag,
+    CheckAuxiliaryEntryPointsEra
+};
+
 // Cached on InterpMethod so the interpreter can decide with few memory loads whether a call should try to
 // switch the method to R2R code. Set by the VM; the interpreter compiler only default-constructs it.
 struct AuxiliaryMethodInfo
 {
-    // The activation flag of the auxiliary module holding the method's R2R code, or null if there is nothing to wait for.
-    COMPILER_SHARED_TYPE(uint32_t*, PTR_DWORD, auxiliaryModuleActivationFlag);
+    union
+    {
+        COMPILER_SHARED_TYPE(uint32_t*, PTR_DWORD, auxiliaryModuleActivationFlag);
+        AuxiliaryEntryPointsEra auxiliaryEntryPointsEra;
+    };
+    AuxiliaryMethodInfoDiscriminator discriminator;
 
-    AuxiliaryMethodInfo() : auxiliaryModuleActivationFlag(nullptr) {}
+    AuxiliaryMethodInfo() : auxiliaryModuleActivationFlag(nullptr), discriminator(AuxiliaryMethodInfoDiscriminator::InterpretOnly) {}
 
-    bool MayActivateMethod() const { return auxiliaryModuleActivationFlag != nullptr; }
+    bool MayActivateMethod() const { return discriminator != AuxiliaryMethodInfoDiscriminator::InterpretOnly; }
 
 #ifndef INTERPRETER_COMPILER_INTERNAL
     // Defined in the VM's interpexec.h, since it needs ReadyToRunInfo.
@@ -66,7 +78,7 @@ struct InterpMethod
     bool unmanagedCallersOnly;
     bool publishSecretStubParam;
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    // Set by the VM when the method is interpreted only until an auxiliary module is activated
+    // Set by the VM when the method is interpreted only until an auxiliary module or EntryPoints module is activated
     AuxiliaryMethodInfo auxiliaryMethodInfo;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
     int32_t codeSize; // size in int32_t slots

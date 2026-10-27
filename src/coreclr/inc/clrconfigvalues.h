@@ -303,6 +303,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_InterpMode, W("InterpMode"), 0, "Enables Inter
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_R2RDelayedActivationCallCount, W("R2RDelayedActivationCallCount"), 0, "Activate auxiliary R2R code after this many pending interpreter entries across a composite image. Zero preserves eager activation.")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_R2RDelayedEntryPointsActivationCallCount, W("R2RDelayedEntryPointsActivationCallCount"), 0, "Activate auxiliary R2R EntryPoints modules after this many calls to methods awaiting them. Defaults to R2RDelayedActivationCallCount when not specified.")
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitHostMaxSlabCache, W("JitHostMaxSlabCache"), 0x1000000, "Sets jit host max slab cache size, 16MB default")

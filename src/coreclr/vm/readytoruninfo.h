@@ -14,6 +14,7 @@
 #include "inlinetracking.h"
 #include "wellknownattributes.h"
 #include "nativeimage.h"
+#include "auxiliaryentrypointsera.h"
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
@@ -203,6 +204,13 @@ class ReadyToRunInfo
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
     PTR_DWORD                       m_pAuxiliaryModuleActivationFlag = 0;
+    PTR_DWORD                       m_pAuxiliaryEntryPointsModuleStatus = 0;
+
+    // Starts at 1 so a recorded era is never 0, which callers use to mean "not awaiting EntryPoints".
+    inline static DWORD             s_auxiliaryEntryPointsEra = 1;
+    // TODO: Remove once auxiliary EntryPoints modules are downloaded. Stands in for the EntryPoints module status
+    // of every composite image; (DWORD)-1 means not yet read from config.
+    inline static DWORD             s_simulatedAuxiliaryEntryPointsCallsRemaining = (DWORD)-1;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
 public:
@@ -261,6 +269,48 @@ public:
         return m_pAuxiliaryModuleActivationFlag;
     }
 
+    // The era advances each time an auxiliary EntryPoints module is activated in any R2R image, or a new R2R image
+    // with code for unrelated generics is registered.
+    static AuxiliaryEntryPointsEra GetCurrentAuxiliaryEntryPointsEra()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return AuxiliaryEntryPointsEra(VolatileLoad(&s_auxiliaryEntryPointsEra));
+    }
+
+    // Returns true if auxiliary EntryPoints modules have been activated since the given era was observed.
+    static bool IsAuxiliaryEntryPointsEraStale(AuxiliaryEntryPointsEra era)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(era.IsAwaiting());
+        return era.m_value != VolatileLoad(&s_auxiliaryEntryPointsEra);
+    }
+
+    // Indicates that one or more new auxiliary EntryPoints modules have been activated.
+    static void IncrementAuxiliaryEntryPointsEra()
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&s_auxiliaryEntryPointsEra, VolatileLoad(&s_auxiliaryEntryPointsEra) + 1);
+    }
+
+    PTR_DWORD GetAuxiliaryEntryPointsModuleStatus() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pAuxiliaryEntryPointsModuleStatus;
+    }
+
+    static bool IsAuxiliaryEntryPointsModuleActivated(PTR_DWORD pModuleStatus)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pModuleStatus != nullptr);
+        return VolatileLoad(pModuleStatus) == 0;
+    }
+
+    bool IsAuxiliaryEntryPointsModuleActivated() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsAuxiliaryEntryPointsModuleActivated(m_pAuxiliaryEntryPointsModuleStatus);
+    }
+
     // The encoding of the activation flag is owned by the R2R image; every reader goes through this.
     static bool IsAuxiliaryModuleActivated(PTR_DWORD pActivationFlag)
     {
@@ -277,6 +327,32 @@ public:
         _ASSERTE(pActivationFlag != nullptr);
         if (!IsAuxiliaryModuleActivated(pActivationFlag))
             VolatileStore(pActivationFlag, VolatileLoad(pActivationFlag) - 1);
+    }
+
+    // TODO: Remove the simulation below once auxiliary EntryPoints modules are downloaded. It stands in for
+    // the download by counting calls to methods awaiting EntryPoints, and activates the EntryPoints modules
+    // (advancing the era) once the count reaches zero.
+    static void EnsureAuxiliaryEntryPointsModuleStatus()
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (s_simulatedAuxiliaryEntryPointsCallsRemaining == (DWORD)-1)
+        {
+            s_simulatedAuxiliaryEntryPointsCallsRemaining =
+                CLRConfig::IsConfigOptionSpecified(W("R2RDelayedEntryPointsActivationCallCount"))
+                    ? CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_R2RDelayedEntryPointsActivationCallCount)
+                    : CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_R2RDelayedActivationCallCount);
+        }
+    }
+
+    static void AdvanceSimulatedAuxiliaryEntryPointsDownload()
+    {
+        LIMITED_METHOD_CONTRACT;
+        EnsureAuxiliaryEntryPointsModuleStatus();
+        if (s_simulatedAuxiliaryEntryPointsCallsRemaining == 0)
+            return;
+
+        if (--s_simulatedAuxiliaryEntryPointsCallsRemaining == 0)
+            IncrementAuxiliaryEntryPointsEra();
     }
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 

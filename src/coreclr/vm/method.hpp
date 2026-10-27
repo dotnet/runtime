@@ -285,6 +285,7 @@ struct MethodDescCodeData final
     // Activation status of the auxiliary module holding this method's R2R code. Zero means activated.
     // TODO: This points at a shared countdown standing in for the auxiliary module's activation flag.
     PTR_DWORD AuxiliaryModuleActivationFlag;
+    AuxiliaryEntryPointsEra AuxiliaryEntryPointsEra;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 #if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
     PatchpointInfo *AltJitPatchpointInfo;
@@ -2492,6 +2493,25 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_mayDelayAuxiliaryModule = false;
     }
+
+    bool GetIsAwaitingAuxiliaryModuleEntryPoints() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_auxiliaryEntryPointsEra.IsAwaiting();
+    }
+
+    AuxiliaryEntryPointsEra GetAuxiliaryEntryPointsEra() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_auxiliaryEntryPointsEra;
+    }
+
+    void SetIsAwaitingAuxiliaryModuleEntryPoints(AuxiliaryEntryPointsEra era)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(era.IsAwaiting());
+        m_auxiliaryEntryPointsEra = era;
+    }
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
 public:
@@ -2629,6 +2649,7 @@ protected:
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
     PTR_DWORD m_pAuxiliaryModuleActivationFlag = nullptr;
     bool m_mayDelayAuxiliaryModule = true;
+    AuxiliaryEntryPointsEra m_auxiliaryEntryPointsEra;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
 #ifdef FEATURE_MULTICOREJIT

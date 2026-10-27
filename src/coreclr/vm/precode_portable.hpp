@@ -43,6 +43,7 @@ private:
         kPendingClosedStaticRetBufResolution = 0x8,
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
         kPendingAuxiliaryModule = 0x10,
+        kAwaitingAuxiliaryEntryPoints = 0x20,
 #endif // FEATURE_AUXILIARY_R2R_MODULES
     };
     Volatile<int32_t> _flags;
@@ -167,6 +168,28 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsValid());
         ClearFlagsInterlocked(kPendingAuxiliaryModule);
+    }
+
+    bool IsAwaitingAuxiliaryEntryPoints() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return (_flags & kAwaitingAuxiliaryEntryPoints) != 0;
+    }
+
+    void SetAwaitingAuxiliaryEntryPoints()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        _ASSERTE(PrefersInterpreterEntryPoint());
+        SetFlagsInterlocked(kAwaitingAuxiliaryEntryPoints);
+    }
+
+    void ClearAwaitingAuxiliaryEntryPoints()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        ClearFlagsInterlocked(kAwaitingAuxiliaryEntryPoints);
     }
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 

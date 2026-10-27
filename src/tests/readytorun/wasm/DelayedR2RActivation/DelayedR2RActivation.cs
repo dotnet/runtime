@@ -27,13 +27,19 @@ public class DelayedR2RActivation
     private static readonly int PortableEntryPointFlagsOffset = 3 * IntPtr.Size;
     private const int PrefersInterpreterEntryPoint = 0x4;
     private const int PendingAuxiliaryModule = 0x10;
+    private const int AwaitingAuxiliaryEntryPoints = 0x20;
 
-    // A delayed method waits for the auxiliary module that holds its code (pending auxiliary module). The wait is
-    // simulated by counting calls to the waiting methods.
+    // A delayed method waits twice: first for the auxiliary EntryPoints module that says where its code is
+    // (awaiting EntryPoints), then for the auxiliary module that holds the code (pending auxiliary module).
+    // Each wait is simulated by counting calls to the waiting methods.
     private static readonly int s_activationCallCount = ReadCallCount("DOTNET_R2RDelayedActivationCallCount", 0);
+    private static readonly int s_entryPointsCallCount =
+        ReadCallCount("DOTNET_R2RDelayedEntryPointsActivationCallCount", s_activationCallCount);
+    private static readonly bool s_entryPointsDelayed = s_entryPointsCallCount >= 1000;
     private static readonly bool s_moduleDelayed = s_activationCallCount >= 1000;
     // Counts between 1 and 999 can run out while the test sets up, so only check states for 0 or at least 1000.
-    private static readonly bool s_checkStates = s_activationCallCount == 0 || s_moduleDelayed;
+    private static readonly bool s_checkStates =
+        (s_entryPointsCallCount == 0 || s_entryPointsDelayed) && (s_activationCallCount == 0 || s_moduleDelayed);
     private static Action s_atRecursiveBottom;
 
     [Fact]
@@ -70,13 +76,17 @@ public class DelayedR2RActivation
 
         if (s_checkStates)
         {
-            bool expectPending = s_moduleDelayed;
+            // Methods wait for their EntryPoints first. With EntryPoints available, they wait for their module.
+            bool expectAwaiting = s_entryPointsDelayed;
+            bool expectPending = !s_entryPointsDelayed && s_moduleDelayed;
             for (int index = 0; index < entryPoints.Length; index++)
             {
-                Assert.True(expectPending == PrefersInterpreter(entryPoints[index]), $"PrefersInterpreter, entryPoints[{index}]");
+                Assert.True((expectAwaiting || expectPending) == PrefersInterpreter(entryPoints[index]), $"PrefersInterpreter, entryPoints[{index}]");
+                Assert.True(expectAwaiting == IsAwaitingAuxiliaryEntryPoints(entryPoints[index]), $"IsAwaitingAuxiliaryEntryPoints, entryPoints[{index}]");
                 Assert.True(expectPending == IsPendingAuxiliaryModule(entryPoints[index]), $"IsPendingAuxiliaryModule, entryPoints[{index}]");
             }
-            Assert.Equal(expectPending, untouchedWasDelayed);
+            Assert.Equal(expectAwaiting || expectPending, untouchedWasDelayed);
+            Assert.True(expectAwaiting == IsAwaitingAuxiliaryEntryPoints(cctorEntryPoint), "IsAwaitingAuxiliaryEntryPoints, class constructor");
             Assert.True(expectPending == IsPendingAuxiliaryModule(cctorEntryPoint), "IsPendingAuxiliaryModule, class constructor");
         }
 
@@ -98,7 +108,7 @@ public class DelayedR2RActivation
 
         long[] counts = new long[3];
         Task<object> suspended = RepeatedlySuspendedTargetAsync(pending, value, counts);
-        if (s_checkStates && s_moduleDelayed)
+        if (s_checkStates && (s_entryPointsDelayed || s_moduleDelayed))
         {
             // Both continuations must still be interpreted so they resume after their methods are published.
             Assert.True(IsDelayed(suspendedEntryPoint));
@@ -109,6 +119,21 @@ public class DelayedR2RActivation
         {
             s_atRecursiveBottom = null;
             int invocation = 0;
+            for (int entryPointsInvocation = 0;
+                entryPointsInvocation < s_entryPointsCallCount && IsAwaitingAuxiliaryEntryPoints(entryPoints[0]);
+                entryPointsInvocation++, invocation++)
+            {
+                Assert.Equal(invocation * 7 + 13, DirectTarget(invocation));
+            }
+
+            if (s_checkStates && s_entryPointsDelayed)
+            {
+                // The EntryPoints were activated, and the retried lookup found DirectTarget in its auxiliary module.
+                Assert.False(IsAwaitingAuxiliaryEntryPoints(entryPoints[0]), "IsAwaitingAuxiliaryEntryPoints, DirectTarget after EntryPoints activation");
+                Assert.Equal(s_moduleDelayed, IsPendingAuxiliaryModule(entryPoints[0]));
+                Assert.Equal(s_moduleDelayed, PrefersInterpreter(entryPoints[0]));
+            }
+
             for (int moduleInvocation = 0;
                 moduleInvocation < s_activationCallCount && IsPendingAuxiliaryModule(entryPoints[0]);
                 moduleInvocation++, invocation++)
@@ -116,7 +141,7 @@ public class DelayedR2RActivation
                 Assert.Equal(invocation * 7 + 13, DirectTarget(invocation));
             }
 
-            if (s_checkStates && s_moduleDelayed)
+            if (s_checkStates && (s_entryPointsDelayed || s_moduleDelayed))
             {
                 Assert.False(IsDelayed(entryPoints[0]), "IsDelayed, DirectTarget after activation");
                 Assert.False(PrefersInterpreter(entryPoints[0]), "PrefersInterpreter, DirectTarget after activation");
@@ -151,7 +176,7 @@ public class DelayedR2RActivation
         originalSource.SetResult(43);
         Assert.Same(value, await original);
 
-        // Not called until the wait is over, so its first call finds and publishes its R2R code.
+        // Not called until both waits are over, so its first call finds and publishes its R2R code.
         Assert.Equal(untouchedWasDelayed, IsDelayed(untouchedEntryPoint));
         Assert.Equal(untouchedWasDelayed, PrefersInterpreter(untouchedEntryPoint));
         Assert.Equal(36, UntouchedTarget(5));
@@ -181,8 +206,8 @@ public class DelayedR2RActivation
             // Implementation has already activated, so these calls only take the alias's redirect.
             Assert.Equal(invocation + 53, AliasCaller.CallDeclared(new AliasTarget(), invocation));
             Assert.True(PrefersInterpreter(interpreterOnlyEntryPoint));
-            // It has no R2R code, so there is nothing to wait for.
-            Assert.False(IsDelayed(interpreterOnlyEntryPoint), "IsDelayed, interpreter only");
+            // A later image may still have code for it, so a miss keeps waiting for the next EntryPoints era.
+            Assert.True(IsAwaitingAuxiliaryEntryPoints(interpreterOnlyEntryPoint), "IsAwaitingAuxiliaryEntryPoints, interpreter only");
         }
     }
 
@@ -245,9 +270,18 @@ public class DelayedR2RActivation
         return (Marshal.ReadInt32(entryPoint, PortableEntryPointFlagsOffset) & PendingAuxiliaryModule) != 0;
     }
 
-    // True while the method waits for its auxiliary module.
     [BypassReadyToRun]
-    private static bool IsDelayed(IntPtr entryPoint) => IsPendingAuxiliaryModule(entryPoint);
+    private static bool IsAwaitingAuxiliaryEntryPoints(IntPtr entryPoint)
+    {
+        return (Marshal.ReadInt32(entryPoint, PortableEntryPointFlagsOffset) & AwaitingAuxiliaryEntryPoints) != 0;
+    }
+
+    // True while the method waits for either its EntryPoints or its auxiliary module.
+    [BypassReadyToRun]
+    private static bool IsDelayed(IntPtr entryPoint)
+    {
+        return (Marshal.ReadInt32(entryPoint, PortableEntryPointFlagsOffset) & (PendingAuxiliaryModule | AwaitingAuxiliaryEntryPoints)) != 0;
+    }
 
     [BypassReadyToRun]
     private static bool PrefersInterpreter(IntPtr entryPoint)

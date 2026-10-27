@@ -497,6 +497,10 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 
     PCODE pCode = (PCODE)NULL;
 #ifdef FEATURE_READYTORUN
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    AuxiliaryEntryPointsEra searchedEra = ReadyToRunInfo::GetCurrentAuxiliaryEntryPointsEra();
+#endif
+
     ReadyToRunInfo* pAlreadyExaminedInfos[2] = {NULL, NULL};
     Module * pModule = GetModule();
     if (pModule->IsReadyToRun())
@@ -547,6 +551,16 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
             }
         }
     }
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+    if (pCode == (PCODE)NULL && !pConfig->ReadyToRunRejectedPrecompiledCode())
+    {
+        // Even when every searched image has its EntryPoints module activated, an image registered later may have
+        // the code, which also advances the era.
+        pConfig->SetIsAwaitingAuxiliaryModuleEntryPoints(searchedEra);
+    }
+#endif
+
 #endif // FEATURE_READYTORUN
 
     return pCode;
@@ -576,7 +590,8 @@ bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
 // Records why an interpreted method may get R2R code later, so callers check before interpreting it.
-// A method found in a pending auxiliary module waits for that module.
+// A method found in a pending auxiliary module waits for that module; a method not found while
+// auxiliary EntryPoints modules were pending waits for the EntryPoints era to advance.
 void MethodDesc::RecordDelayedR2RCode(PrepareCodeConfig* pConfig, PCODE pCode)
 {
     STANDARD_VM_CONTRACT;
@@ -604,17 +619,26 @@ void MethodDesc::RecordDelayedR2RCode(PrepareCodeConfig* pConfig, PCODE pCode)
     if (pConfig->HasKnownAuxiliaryModuleDependency())
     {
         m_codeData->AuxiliaryModuleActivationFlag = pConfig->GetAuxiliaryModuleActivationFlag();
+        m_codeData->AuxiliaryEntryPointsEra = AuxiliaryEntryPointsEra();
+        entryPoint->ClearAwaitingAuxiliaryEntryPoints();
         entryPoint->SetPendingAuxiliaryModule();
         if (pInterpMethod != nullptr)
         {
             pInterpMethod->auxiliaryMethodInfo.auxiliaryModuleActivationFlag = pConfig->GetAuxiliaryModuleActivationFlag();
+            pInterpMethod->auxiliaryMethodInfo.discriminator = AuxiliaryMethodInfoDiscriminator::CheckAuxiliaryModuleActivationFlag;
         }
     }
-    else if (pInterpMethod != nullptr)
+    else if (pConfig->GetIsAwaitingAuxiliaryModuleEntryPoints())
     {
-        // Nothing to wait for, so the method stays interpreted.
-        pInterpMethod->auxiliaryMethodInfo = AuxiliaryMethodInfo();
+        m_codeData->AuxiliaryEntryPointsEra = pConfig->GetAuxiliaryEntryPointsEra();
+        entryPoint->SetAwaitingAuxiliaryEntryPoints();
+        if (pInterpMethod != nullptr)
+        {
+            pInterpMethod->auxiliaryMethodInfo.auxiliaryEntryPointsEra = pConfig->GetAuxiliaryEntryPointsEra();
+            pInterpMethod->auxiliaryMethodInfo.discriminator = AuxiliaryMethodInfoDiscriminator::CheckAuxiliaryEntryPointsEra;
+        }
     }
+    // Otherwise no R2R lookup was done, so there is nothing to wait for and the default InterpretOnly info stays.
 }
 
 // Called by the prestub. A method waiting on its auxiliary module already has interpreter code, so callers
@@ -637,11 +661,15 @@ void MethodDesc::TryActivateDelayedR2RCode(CallerGCMode callerGCMode)
     if (!entryPoint->PrefersInterpreterEntryPoint())
         return;
 
-    if (!entryPoint->IsPendingAuxiliaryModule()
-        || !ReadyToRunInfo::IsAuxiliaryModuleActivated(m_codeData->AuxiliaryModuleActivationFlag))
+    bool moduleActivated = entryPoint->IsPendingAuxiliaryModule()
+        && ReadyToRunInfo::IsAuxiliaryModuleActivated(m_codeData->AuxiliaryModuleActivationFlag);
+    bool entryPointsEraStale = entryPoint->IsAwaitingAuxiliaryEntryPoints()
+        && ReadyToRunInfo::IsAuxiliaryEntryPointsEraStale(m_codeData->AuxiliaryEntryPointsEra);
+    if (!moduleActivated && !entryPointsEraStale)
         return;
 
     entryPoint->ClearPendingAuxiliaryModule();
+    entryPoint->ClearAwaitingAuxiliaryEntryPoints();
     EX_TRY
     {
         PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);

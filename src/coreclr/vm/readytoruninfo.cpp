@@ -745,6 +745,11 @@ void ReadyToRunInfo::RegisterUnrelatedR2RModule()
                 oldGlobalValue = s_pGlobalR2RModules;
                 m_pNextR2RForUnrelatedCode = dac_cast<PTR_ReadyToRunInfo>(dac_cast<TADDR>(oldGlobalValue) | 0x1);
             }
+
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+            // Generic methods that missed in every image searched so far may have code in this new image.
+            IncrementAuxiliaryEntryPointsEra();
+#endif // FEATURE_AUXILIARY_R2R_MODULES
         }
     }
     else
@@ -857,10 +862,19 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
         // TODO: These should point to the location of the flag in the R2R image
         m_pAuxiliaryModuleActivationFlag = (PTR_DWORD)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DWORD))));
-        // Only composite images have auxiliary modules.
-        *m_pAuxiliaryModuleActivationFlag = pNativeImage != nullptr
-            ? CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_R2RDelayedActivationCallCount)
-            : 0;
+        if (pNativeImage != nullptr)
+        {
+            EnsureAuxiliaryEntryPointsModuleStatus();
+            m_pAuxiliaryEntryPointsModuleStatus = &s_simulatedAuxiliaryEntryPointsCallsRemaining;
+            *m_pAuxiliaryModuleActivationFlag = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_R2RDelayedActivationCallCount);
+        }
+        else
+        {
+            // Only composite images have auxiliary modules.
+            m_pAuxiliaryEntryPointsModuleStatus = (PTR_DWORD)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DWORD))));
+            *m_pAuxiliaryEntryPointsModuleStatus = 0;
+            *m_pAuxiliaryModuleActivationFlag = 0;
+        }
 #endif // FEATURE_AUXILIARY_R2R_MODULES
         m_component = ReadyToRunCoreInfo(pLayout, &pHeader->CoreHeader);
         m_pComposite = &m_component;
@@ -1357,6 +1371,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         && !pMD->IsWrapperStub()
         && (!pMD->GetModule()->IsReadyToRun() || !pMD->GetModule()->GetReadyToRunInfo()->HasStrippedILBodies())
         && !pMD->HasUnmanagedCallersOnlyAttribute();
+
+    // The EntryPoints for this method may be in an auxiliary EntryPoints module that is not yet activated.
+    if (mayDelayR2RCode && !m_pCompositeInfo->IsAuxiliaryEntryPointsModuleActivated())
+    {
+        goto done;
+    }
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
     uint offset;
@@ -1394,6 +1414,8 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
+    _ASSERTE(!mayDelayR2RCode || m_pCompositeInfo->IsAuxiliaryEntryPointsModuleActivated());
+
     if (mayDelayR2RCode
         && !IsAuxiliaryModuleActivated(m_pCompositeInfo->GetAuxiliaryModuleActivationFlag(pMD)))
     {
