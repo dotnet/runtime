@@ -1366,7 +1366,7 @@ char* SystemNative_GetProcessPath(void)
     return minipal_getexepath();
 }
 
-#if defined(TARGET_BROWSER) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__HAIKU__)
+#if defined(TARGET_BROWSER) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__HAIKU__) || defined(__GLIBC__)
 // Packs the arguments into a single NULL-terminated allocation that can be released with one free().
 static char** PackCommandLine(int32_t count, const char* const* args, int32_t* argc)
 {
@@ -1459,6 +1459,23 @@ extern int __libc_argc;
 extern char** __libc_argv;
 #endif
 
+#if defined(__GLIBC__)
+static int s_initArgc;
+static char** s_initArgv;
+
+// glibc passes argc, argv and envp to .init_array functions as a non-standard extension,
+// including for libraries loaded with dlopen. Other libcs, such as musl, pass no arguments.
+static void CaptureCommandLine(int argc, char** argv, char** envp)
+{
+    (void)envp;
+    s_initArgc = argc;
+    s_initArgv = argv;
+}
+
+__attribute__((section(".init_array"), used))
+static void (*const s_captureCommandLine)(int, char**, char**) = &CaptureCommandLine;
+#endif
+
 char** SystemNative_GetCommandLine(int32_t* argc)
 {
     *argc = 0;
@@ -1467,6 +1484,21 @@ char** SystemNative_GetCommandLine(int32_t* argc)
     static const char* const browserArgs[] = { "/" }; // keep in sync with browserVirtualAppBase in minipal_getexepath
     return PackCommandLine(1, browserArgs, argc);
 #elif defined(__linux__) || defined(__sun)
+#if defined(__GLIBC__)
+    if (s_initArgv != NULL)
+    {
+        // Some command line parsers (e.g. GLib and Qt) move consumed arguments to the end of argv
+        // and replace them with NULL without updating argc.
+        int32_t count = 0;
+        while (count < s_initArgc && s_initArgv[count] != NULL)
+        {
+            count++;
+        }
+
+        return PackCommandLine(count, (const char* const*)s_initArgv, argc);
+    }
+#endif
+
     int fd;
     while ((fd = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC)) < 0 && errno == EINTR);
     if (fd < 0)
