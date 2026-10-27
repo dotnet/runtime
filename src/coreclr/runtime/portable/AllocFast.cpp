@@ -2,23 +2,62 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+#ifdef FEATURE_NATIVEAOT
+#include "common.h"
+#include "gcenv.h"
+#include "gcinterface.h"
+#include "CommonMacros.inl"
+#include "thread.h"
+#include "threadstore.h"
+#include "threadstore.inl"
+#include "thread.inl"
+
+#define FCALL_CONTRACT
+#define ALLOC_FCDECL1 FCDECL1
+#define ALLOC_FCDECL2 FCDECL2
+using PtrArray = Array;
+GPTR_DECL(MethodTable, g_pFreeObjectMethodTable);
+
+#define TRANSITION_HELPER_ARG_DECL , uintptr_t callerSP
+#define TRANSITION_HELPER_ARG_VALUE callerSP
+#define TRANSITION_HELPER_ARG_PREPARED , TRANSITION_ARG_PARAM
+#define TRANSITION_HELPER_ARG_HELPER_PASSTHRU , callerSP
+#define PREPARE_TRANSITION_ARG() do { } while (0)
+
+static Thread* GetThread()
+{
+    return ThreadStore::GetCurrentThread();
+}
+
+#ifdef HOST_WASM
+// This managed helper reuses the caller's shadow stack and never returns to the native allocation frames.
+EXTERN_C [[noreturn]] void RhExceptionHandling_FailedAllocation(uintptr_t sp, MethodTable* pMT, bool isOverflow);
+#define TRANSITION_ARG_PARAM callersStackPointer
+#else
+#define TRANSITION_ARG_PARAM 0
+#endif // HOST_WASM
+
+EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame);
+
+static void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool isOverflow, uintptr_t callerSP)
+{
+#ifdef HOST_WASM
+    RhExceptionHandling_FailedAllocation(callerSP, pMT, isOverflow);
+#else
+    ASSERT_UNCONDITIONALLY("NYI"); // TODO: Throw overflow or OOM
+#endif // HOST_WASM
+}
+#else
 #include <fcall.h>
 #include <gcinterface.h>
 #include <vars.hpp>
 #include <MiscNativeHelpers.h>
 
+#define ALLOC_FCDECL1(...) EXTERN_C FCDECL1(__VA_ARGS__)
+#define ALLOC_FCDECL2(...) EXTERN_C FCDECL2(__VA_ARGS__)
+
 struct TransitionBlock;
 
-#ifdef FEATURE_NATIVEAOT
-extern void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow);
-#define RhExceptionHandling_FailedAllocation_Helper RhExceptionHandling_FailedAllocation
-#define TRANSITION_HELPER_ARG_DECL
-#define RHP_GCALLOC_RETURNS_NULL_ON_FAILURE 1
-#define TRANSITION_ARG_TYPE void*
-#define TRANSITION_HELPER_ARG_VALUE nullptr
-#define TRANSITION_HELPER_ARG_PREPARED
-#define TRANSITION_HELPER_ARG_HELPER_PASSTHRU
-#else
 EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool isOverflow, TransitionBlock* pTransitionBlock);
 #define TRANSITION_ARG_TYPE TransitionBlock*
 #ifdef TARGET_WASM
@@ -32,28 +71,35 @@ EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool
 #define TRANSITION_HELPER_ARG_PREPARED
 #define TRANSITION_HELPER_ARG_HELPER_PASSTHRU
 #endif
-#endif
 
 EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElements, TRANSITION_ARG_TYPE pTransitionArg);
+#endif // FEATURE_NATIVEAOT
 
-
-static Object* AllocateObject(MethodTable* pMT, uint32_t uFlags, INT_PTR numElements TRANSITION_HELPER_ARG_DECL)
+static Object* AllocateObject(MethodTable* pMT, uint32_t uFlags, intptr_t numElements TRANSITION_HELPER_ARG_DECL)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
-    Object* obj = RhpGcAlloc(pMT, uFlags, numElements, TRANSITION_HELPER_ARG_VALUE);
-#ifdef RHP_GCALLOC_RETURNS_NULL_ON_FAILURE
+#ifdef FEATURE_NATIVEAOT
+    PInvokeTransitionFrame* pTransitionFrame = nullptr;
+#ifdef HOST_WASM
+    PInvokeTransitionFrame frame = {};
+    frame.m_ShadowSP = callerSP;
+    pTransitionFrame = &frame;
+#endif // HOST_WASM
+    Object* obj = RhpGcAlloc(pMT, uFlags, numElements, pTransitionFrame);
     if (obj == NULL)
     {
         RhExceptionHandling_FailedAllocation_Helper(pMT, false /* isOverflow */, TRANSITION_HELPER_ARG_VALUE);
     }
-#endif
+#else
+    Object* obj = RhpGcAlloc(pMT, uFlags, numElements, TRANSITION_HELPER_ARG_VALUE);
+#endif // FEATURE_NATIVEAOT
 
     return obj;
 }
 
-EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR numElements);
-FCIMPL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR numElements)
+ALLOC_FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, intptr_t numElements);
+FCIMPL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, intptr_t numElements)
 {
     WRAPPER_NO_CONTRACT;
     PREPARE_TRANSITION_ARG();
@@ -61,7 +107,7 @@ FCIMPL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR numElements
 }
 FCIMPLEND
 
-static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size TRANSITION_HELPER_ARG_DECL)
+static Object* NewArrayFastCore(MethodTable* pMT, intptr_t size TRANSITION_HELPER_ARG_DECL)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -83,7 +129,7 @@ static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size TRANSITION_HELPER
         cxt->setAllocPtr(alloc_ptr + sizeInBytes);
         PtrArray* pObject = (PtrArray *)alloc_ptr;
         pObject->SetMethodTable(pMT);
-        pObject->SetNumComponents((INT32)size);
+        pObject->SetNumComponents((int32_t)size);
         return pObject;
     }
 
@@ -91,7 +137,7 @@ static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size TRANSITION_HELPER
 }
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
-static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size TRANSITION_HELPER_ARG_DECL)
+static Object* NewArrayFastAlign8Core(MethodTable* pMT, intptr_t size TRANSITION_HELPER_ARG_DECL)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -129,15 +175,15 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size TRANSITION_
         _ASSERTE(IS_ALIGNED(alloc_ptr, sizeof(int64_t)));
         PtrArray* pObject = (PtrArray *)alloc_ptr;
         pObject->SetMethodTable(pMT);
-        pObject->SetNumComponents((INT32)size);
+        pObject->SetNumComponents((int32_t)size);
         return pObject;
     }
 
     return AllocateObject(pMT, GC_ALLOC_ALIGN8, size TRANSITION_HELPER_ARG_HELPER_PASSTHRU);
 }
 
-EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size);
-FCIMPL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
+ALLOC_FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, intptr_t size);
+FCIMPL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, intptr_t size)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -156,8 +202,8 @@ FCIMPL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
 FCIMPLEND
 #endif // FEATURE_64BIT_ALIGNMENT
 
-EXTERN_C FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size);
-FCIMPL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size)
+ALLOC_FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, intptr_t size);
+FCIMPL2(Object*, RhpNewArrayFast, MethodTable* pMT, intptr_t size)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -177,8 +223,8 @@ FCIMPL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size)
 }
 FCIMPLEND
 
-EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size);
-FCIMPL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size)
+ALLOC_FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, intptr_t size);
+FCIMPL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, intptr_t size)
 {
     WRAPPER_NO_CONTRACT;
     PREPARE_TRANSITION_ARG();
@@ -196,7 +242,7 @@ FCIMPL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size)
 }
 FCIMPLEND
 
-EXTERN_C FCDECL1(Object*, RhpNewFast, MethodTable* pMT);
+ALLOC_FCDECL1(Object*, RhpNewFast, MethodTable* pMT);
 FCIMPL1(Object*, RhpNewFast, MethodTable* pMT)
 {
     FCALL_CONTRACT;
@@ -222,8 +268,29 @@ FCIMPL1(Object*, RhpNewFast, MethodTable* pMT)
 }
 FCIMPLEND
 
+#ifdef FEATURE_NATIVEAOT
+ALLOC_FCDECL1(Object*, RhpNewFinalizable, MethodTable* pMT);
+FCIMPL1(Object*, RhpNewFinalizable, MethodTable* pMT)
+{
+    _ASSERTE(pMT->HasFinalizer());
+    PREPARE_TRANSITION_ARG();
+    return AllocateObject(pMT, GC_ALLOC_FINALIZE, 0 TRANSITION_HELPER_ARG_PREPARED);
+}
+FCIMPLEND
+#endif // FEATURE_NATIVEAOT
+
 #if defined(FEATURE_64BIT_ALIGNMENT)
-EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT);
+#ifdef FEATURE_NATIVEAOT
+ALLOC_FCDECL1(Object*, RhpNewFinalizableAlign8, MethodTable* pMT);
+FCIMPL1(Object*, RhpNewFinalizableAlign8, MethodTable* pMT)
+{
+    PREPARE_TRANSITION_ARG();
+    return AllocateObject(pMT, GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8, 0 TRANSITION_HELPER_ARG_PREPARED);
+}
+FCIMPLEND
+#endif // FEATURE_NATIVEAOT
+
+ALLOC_FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT);
 FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
 {
     FCALL_CONTRACT;
@@ -264,7 +331,7 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
 }
 FCIMPLEND
 
-EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT);
+ALLOC_FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT);
 FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
 {
     FCALL_CONTRACT;
@@ -308,8 +375,8 @@ FCIMPLEND
 
 #define MAX_STRING_LENGTH 0x3FFFFFDF
 
-EXTERN_C FCDECL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength);
-FCIMPL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength)
+ALLOC_FCDECL2(Object*, RhNewString, MethodTable* pMT, intptr_t stringLength);
+FCIMPL2(Object*, RhNewString, MethodTable* pMT, intptr_t stringLength)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);

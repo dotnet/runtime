@@ -24,6 +24,21 @@ struct _thread_inl_gc_alloc_context
     uint8_t* alloc_limit;
 };
 
+inline uint8_t* ee_alloc_context::getAllocPtr()
+{
+    return ((_thread_inl_gc_alloc_context*)GetGCAllocContext())->alloc_ptr;
+}
+
+inline void ee_alloc_context::setAllocPtr(uint8_t* ptr)
+{
+    ((_thread_inl_gc_alloc_context*)GetGCAllocContext())->alloc_ptr = ptr;
+}
+
+inline uint8_t* ee_alloc_context::getAllocLimit()
+{
+    // Fast allocations must also respect the allocation-sampling limit.
+    return GetCombinedLimit();
+}
 
 inline bool ee_alloc_context::IsRandomizedSamplingEnabled()
 {
