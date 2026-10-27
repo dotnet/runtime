@@ -30,6 +30,7 @@
 
 #ifdef TARGET_WASM
 #include "wasm/WasmCodeManager.h"
+#include "wasm/ExceptionHandling.h"
 #endif
 
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
@@ -630,6 +631,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
 #endif // TARGET_AMD64
+#elif defined(TARGET_WASM)
+    m_RegDisplay.FP = pCtx->GetFp();
 #else
     PORTABILITY_ASSERT("StackFrameIterator::InternalInit");
 #endif // TARGET_ARM
@@ -1055,6 +1058,8 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pR14 = thisFuncletPtrs.pR14;
     m_RegDisplay.pR15 = thisFuncletPtrs.pR15;
 #endif // TARGET_AMD64
+#elif defined(TARGET_WASM)
+    // WASM has no preserved machine registers to merge.
 #else
     PORTABILITY_ASSERT("StackFrameIterator::UpdateFromExceptionDispatch");
 #endif
@@ -1071,15 +1076,17 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(FEATURE_PORTABLE_HELPERS) // @TODO: Currently no funclet invoke defined in a portable way
+#if defined(FEATURE_PORTABLE_HELPERS) && !defined(TARGET_WASM) // @TODO: Currently no funclet invoke defined in a portable way
     return;
-#else // defined(FEATURE_PORTABLE_HELPERS)
+#else // defined(FEATURE_PORTABLE_HELPERS) && !defined(TARGET_WASM)
     ASSERT((CategorizeUnadjustedReturnAddress(m_ControlPC) == InFuncletInvokeThunk) ||
            (CategorizeUnadjustedReturnAddress(m_ControlPC) == InFilterFuncletInvokeThunk));
 
     PTR_uintptr_t SP;
 
+#if !defined(TARGET_WASM)
     bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
+#endif // !defined(TARGET_WASM)
 
 #if defined(UNIX_AMD64_ABI)
     SP = (PTR_uintptr_t)(m_RegDisplay.SP);
@@ -1357,12 +1364,19 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pS10  = SP++;
     m_RegDisplay.pS11  = SP++;
 
+#elif defined(TARGET_WASM)
+    WasmEHFrame* pFrame = reinterpret_cast<WasmEHFrame*>(m_RegDisplay.SP);
+    ASSERT(pFrame->m_identity == WasmEHFrame::Identity);
+    SP = reinterpret_cast<PTR_uintptr_t>(pFrame->m_callerSP);
+    m_RegDisplay.FP = WasmCodeManager::GetFramePointer(pFrame->m_callerSP);
+    m_RegDisplay.IP = WasmCodeManager::GetVirtualIP(pFrame->m_callerSP);
+
 #else
     SP = (PTR_uintptr_t)(m_RegDisplay.SP);
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
     m_RegDisplay.SetIP(PCODEToPINSTR(*SP++));
 #endif
 
@@ -1372,7 +1386,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     // We expect to be called by the runtime's C# EH implementation, and since this function's notion of how
     // to unwind through the stub is brittle relative to the stub itself, we want to check as soon as we can.
     ASSERT(m_pInstance->IsManaged(m_ControlPC) && "unwind from funclet invoke stub failed");
-#endif // defined(FEATURE_PORTABLE_HELPERS)
+#endif // defined(FEATURE_PORTABLE_HELPERS) && !defined(TARGET_WASM)
 }
 
 // For a given target architecture, the layout of this structure must precisely match the
@@ -1697,19 +1711,18 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 #define STACK_ALIGN_SIZE 4
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define STACK_ALIGN_SIZE 16
-#elif defined(TARGET_WASM)
-#define STACK_ALIGN_SIZE 4
 #endif
 
 void StackFrameIterator::UnwindThrowSiteThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable version of throw helpers
+#if defined(FEATURE_PORTABLE_HELPERS) && !defined(TARGET_WASM) // @TODO: no portable version of throw helpers
     return;
-#else // defined(FEATURE_PORTABLE_HELPERS)
+#else // defined(FEATURE_PORTABLE_HELPERS) && !defined(TARGET_WASM)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InThrowSiteThunk);
 
+#if !defined(TARGET_WASM)
     const uintptr_t STACKSIZEOF_ExInfo = ((sizeof(ExInfo) + (STACK_ALIGN_SIZE-1)) & ~(STACK_ALIGN_SIZE-1));
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     const uintptr_t SIZEOF_OutgoingScratch = 0x20;
@@ -1719,6 +1732,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
 
     PTR_PAL_LIMITED_CONTEXT pContext = (PTR_PAL_LIMITED_CONTEXT)
                                         (m_RegDisplay.SP + SIZEOF_OutgoingScratch + STACKSIZEOF_ExInfo);
+#endif // !defined(TARGET_WASM)
 
 #if defined(UNIX_AMD64_ABI)
     m_RegDisplay.pRbp = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, Rbp);
@@ -1794,18 +1808,26 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pS10 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, S10);
     m_RegDisplay.pS11 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, S11);
     m_RegDisplay.pFP = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, FP);
+#elif defined(TARGET_WASM)
+    WasmEHFrame* pFrame = reinterpret_cast<WasmEHFrame*>(m_RegDisplay.SP);
+    ASSERT(pFrame->m_identity == WasmEHFrame::Identity);
+    m_RegDisplay.SP = pFrame->m_callerSP;
+    m_RegDisplay.FP = WasmCodeManager::GetFramePointer(m_RegDisplay.SP);
+    m_RegDisplay.IP = WasmCodeManager::GetVirtualIP(m_RegDisplay.SP);
 #else
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
 
+#if !defined(TARGET_WASM)
     m_RegDisplay.SetIP(ReturnAddressToCanonicalPC(pContext->IP));
     m_RegDisplay.SetSP(pContext->GetSp());
+#endif // !defined(TARGET_WASM)
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
     // We expect the throw site to be in managed code, and since this function's notion of how to unwind
     // through the stub is brittle relative to the stub itself, we want to check as soon as we can.
     ASSERT(m_pInstance->IsManaged(m_ControlPC) && "unwind from throw site stub failed");
-#endif // defined(FEATURE_PORTABLE_HELPERS)
+#endif // defined(FEATURE_PORTABLE_HELPERS) && !defined(TARGET_WASM)
 }
 
 bool StackFrameIterator::IsValid()
@@ -1847,11 +1869,20 @@ UnwindOutOfCurrentManagedFrame:
     uintptr_t DEBUG_preUnwindSP = m_RegDisplay.GetSP();
 #endif
 
+#ifdef TARGET_WASM
+    // WASM cannot unwind native frames. Skipping walks reconnect through the
+    // saved transition frame; EH reports UnwoundReversePInvoke and ends the
+    // iterator without presenting the retained registers as a native frame.
+    ASSERT((m_dwFlags & SkipNativeFrames) != 0 ||
+        (m_dwFlags & EHStackWalkFlags) == EHStackWalkFlags);
+    uint32_t unwindFlags = USFF_StopUnwindOnTransitionFrame;
+#else
     uint32_t unwindFlags = USFF_None;
     if ((m_dwFlags & SkipNativeFrames) != 0)
     {
         unwindFlags |= USFF_StopUnwindOnTransitionFrame;
     }
+#endif // TARGET_WASM
 
     if ((m_dwFlags & GcStackWalkFlags) == GcStackWalkFlags)
     {
@@ -1888,6 +1919,13 @@ UnwindOutOfCurrentManagedFrame:
             ASSERT(m_pInstance->IsManaged(m_ControlPC));
         }
     }
+#ifdef TARGET_WASM
+    else if (m_pPreviousTransitionFrame != NULL)
+    {
+        ASSERT(!doingFuncletUnwind);
+        SetControlPC(0);
+    }
+#endif // TARGET_WASM
     else
     {
         // if the thread is safe to walk, it better not have a hijack in place.
@@ -2341,6 +2379,10 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
     return (PTR_VOID)(((PTR_uint8_t)controlPC) - 2);
 #elif defined(TARGET_ARM64)
     return (PTR_VOID)(((PTR_uint8_t)controlPC) - 4);
+#elif defined(TARGET_WASM)
+    // The virtual IP stored in the shadow frame already identifies the call site's
+    // region, not a return address. Like CoreCLR, leave WASM virtual IPs unadjusted.
+    return controlPC;
 #else
     return (PTR_VOID)(((PTR_uint8_t)controlPC) - 1);
 #endif
@@ -2353,7 +2395,16 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 // static
 StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjustedReturnAddress(PTR_VOID returnAddress)
 {
-#if defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable thunks are defined
+#if defined(TARGET_WASM)
+    uintptr_t address = reinterpret_cast<uintptr_t>(returnAddress);
+    if (address == WasmEHFrame::ThrowIP)
+        return InThrowSiteThunk;
+    if (address == WasmEHFrame::FuncletIP)
+        return InFuncletInvokeThunk;
+    if (address == WasmEHFrame::FilterIP)
+        return InFilterFuncletInvokeThunk;
+    return InManagedCode;
+#elif defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable thunks are defined
 
     return InManagedCode;
 
@@ -2429,6 +2480,11 @@ bool StackFrameIterator::Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundRev
     ExInfo * pCurExInfo = m_pNextExInfo;
     Next();
     bool isValid = IsValid();
+#ifdef TARGET_WASM
+    ASSERT_MSG(!isValid ||
+        (m_dwFlags & (SkipNativeFrames | UnwoundReversePInvoke)) != UnwoundReversePInvoke,
+        "WASM reverse P/Invoke boundary must terminate a non-skipping walk");
+#endif // TARGET_WASM
     if (isValid)
         CalculateCurrentMethodState();
 

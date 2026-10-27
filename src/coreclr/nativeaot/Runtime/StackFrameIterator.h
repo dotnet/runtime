@@ -17,7 +17,10 @@ typedef VPTR(ICodeManager) PTR_ICodeManager;
 
 enum ExKind : uint8_t
 {
+    EK_None = 0,
+    EK_Throw = 1,
     EK_HardwareFault = 2,
+    EK_RethrowFlag = 4,
     EK_SupersededFlag  = 8,
 };
 
@@ -71,6 +74,8 @@ public:
 
     // Implementations of RhpSfiInit and RhpSfiNext called from managed code
     bool             Init(PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault);
+    // WASM EH walks return false with pfUnwoundReversePInvoke set at a native
+    // boundary, since no native caller frame can be exposed.
     bool             Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundReversePInvoke);
 
 private:

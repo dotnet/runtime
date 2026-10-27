@@ -288,6 +288,9 @@ public:
     bool                IsWithinStackBounds(PTR_VOID p);
     void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
     void                PushExInfo(ExInfo * pExInfo);
+#ifdef TARGET_WASM
+    void                PopExInfo(ExInfo* pExInfo, uintptr_t resumeSP);
+#endif // TARGET_WASM
     void                ValidateExInfoPop(ExInfo * pExInfo, void * limitSP);
     void                ValidateExInfoStack();
     bool                IsDoNotTriggerGcSet();

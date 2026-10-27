@@ -7,6 +7,7 @@
 #include "daccess.h"
 #include "regdisplay.h"
 #include "WasmCodeManager.h"
+#include "ExceptionHandling.h"
 #include "CommonMacros.inl"
 #include "NativePrimitiveDecoder.h"
 
@@ -20,6 +21,7 @@ extern "C" void RegisterCodeManager(ICodeManager* pCodeManager, PTR_VOID pvStart
 struct WasmMethodInfo
 {
     uint8_t* m_gcInfo;
+    uint8_t* m_ehInfo;
     uint32_t m_methodStart;
     uint32_t m_frameSize;
     uint8_t m_flags;
@@ -31,11 +33,13 @@ enum WasmFrameFlags
 {
     Funclet = 0x03,
     Filter = 0x02,
+    HasEHInfo = 0x04,
     ReversePInvoke = 0x08,
 };
 
 // xdata starts with a NativeFormat-encoded unsigned frame size in pointer-sized slots and flags.
-// Root records then contain GCInfo.
+// Root records contain an optional EHInfo pointer followed by GCInfo.
+// Funclet records contain a linker-relocated function-table slot.
 static uint8_t* GetUnwindData(const WasmRuntimeFunction* pFunction, uint32_t* pFrameSize)
 {
     uint8_t* p = pFunction->m_unwindData;
@@ -80,15 +84,16 @@ uintptr_t WasmCodeManager::GetFramePointer(uintptr_t shadowSP)
 uintptr_t WasmCodeManager::GetVirtualIP(uintptr_t shadowSP)
 {
     uintptr_t fp = GetPhysicalFramePointer(shadowSP);
+    if (*reinterpret_cast<uintptr_t*>(fp) == WasmEHFrame::Identity)
+        return reinterpret_cast<WasmEHFrame*>(fp)->m_returnIP;
     uint32_t virtualIP = *reinterpret_cast<uint32_t*>(fp + sizeof(uintptr_t));
     uintptr_t identity = *reinterpret_cast<uintptr_t*>(GetFramePointer(shadowSP));
     ASSERT((identity & 1) != 0 && identity != 1);
     return (identity >> 1) + virtualIP;
 }
 
-bool WasmCodeManager::FindMethodInfo(PTR_VOID controlPC, MethodInfo* pMethodInfoOut)
+const WasmRuntimeFunction* WasmCodeManager::FindRuntimeFunction(uintptr_t address)
 {
-    uintptr_t address = reinterpret_cast<uintptr_t>(controlPC);
     uint32_t low = 0;
     uint32_t high = m_nFunctions;
     while (low < high)
@@ -100,8 +105,26 @@ bool WasmCodeManager::FindMethodInfo(PTR_VOID controlPC, MethodInfo* pMethodInfo
             high = middle;
     }
     if (low == 0 || address >= m_pFunctions[low].m_virtualStart)
+        return nullptr;
+    return &m_pFunctions[low - 1];
+}
+
+uintptr_t WasmCodeManager::GetFuncletAddress(uintptr_t virtualIP)
+{
+    const WasmRuntimeFunction* pFunction = FindRuntimeFunction(virtualIP);
+    ASSERT(pFunction != nullptr);
+    uint32_t frameSize;
+    uint8_t* p = GetUnwindData(pFunction, &frameSize);
+    ASSERT((*p & Funclet) != 0);
+    p++;
+    return NativePrimitiveDecoder::ReadUInt32(p);
+}
+
+bool WasmCodeManager::FindMethodInfo(PTR_VOID controlPC, MethodInfo* pMethodInfoOut)
+{
+    const WasmRuntimeFunction* pFunction = FindRuntimeFunction(reinterpret_cast<uintptr_t>(controlPC));
+    if (pFunction == nullptr)
         return false;
-    const WasmRuntimeFunction* pFunction = &m_pFunctions[low - 1];
     WasmMethodInfo* pMethodInfo = reinterpret_cast<WasmMethodInfo*>(pMethodInfoOut);
     uint8_t* p = GetUnwindData(pFunction, &pMethodInfo->m_frameSize);
     pMethodInfo->m_flags = *p;
@@ -113,7 +136,10 @@ bool WasmCodeManager::FindMethodInfo(PTR_VOID controlPC, MethodInfo* pMethodInfo
         p = GetUnwindData(pFunction, &frameSize);
     }
     pMethodInfo->m_methodStart = pFunction->m_virtualStart;
-    pMethodInfo->m_gcInfo = p + sizeof(uint8_t);
+    uint8_t flags = *p++;
+    pMethodInfo->m_ehInfo = (flags & HasEHInfo) != 0
+        ? reinterpret_cast<uint8_t*>(NativePrimitiveDecoder::ReadUInt32(p)) : nullptr;
+    pMethodInfo->m_gcInfo = p;
     return true;
 }
 
@@ -162,16 +188,17 @@ bool WasmCodeManager::UnwindStackFrame(MethodInfo* pMethodInfo, uint32_t flags,
     *ppPreviousTransitionFrame = nullptr;
     if ((pWasmMethodInfo->m_flags & ReversePInvoke) != 0)
     {
+        ASSERT((flags & USFF_StopUnwindOnTransitionFrame) != 0);
         GcInfoDecoder decoder(GCInfoToken(pWasmMethodInfo->m_gcInfo), DECODE_REVERSE_PINVOKE_VAR);
         int32_t slot = decoder.GetReversePInvokeFrameStackSlot();
         ASSERT(slot != NO_REVERSE_PINVOKE_FRAME);
         uintptr_t base = decoder.GetStackBaseRegister() == NO_STACK_BASE_REGISTER
             ? pRegisterSet->GetSP() : pRegisterSet->GetFP();
         *ppPreviousTransitionFrame = *reinterpret_cast<PInvokeTransitionFrame**>(base + slot);
-        if ((flags & USFF_StopUnwindOnTransitionFrame) != 0)
-            return true;
-        PORTABILITY_ASSERT("WASM unwind across native frames");
-        return false;
+        // The register display still describes the current managed frame.
+        // The iterator either reconnects through the published transition frame
+        // or terminates EH with UnwoundReversePInvoke set.
+        return true;
     }
 
     uintptr_t fp = GetPhysicalFramePointer(pRegisterSet->GetSP());
@@ -207,16 +234,97 @@ PTR_VOID WasmCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo* pMethodInf
     return controlPC;
 }
 
-bool WasmCodeManager::EHEnumInit(MethodInfo* pMethodInfo, PTR_VOID* pMethodStartAddress, EHEnumState* pEHEnumState)
+struct WasmEHEnumState
 {
-    PORTABILITY_ASSERT("WASM exception handling");
-    return false;
+    PTR_uint8_t pMethodStartAddress;
+    PTR_uint8_t pEHInfo;
+    uint32_t uClause;
+    uint32_t nClauses;
+};
+
+// Ensure that WasmEHEnumState fits into the space reserved by EHEnumState
+static_assert(sizeof(WasmEHEnumState) <= sizeof(EHEnumState), "WasmEHEnumState too big");
+
+bool WasmCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddress, EHEnumState * pEHEnumStateOut)
+{
+    assert(pMethodInfo != NULL);
+    assert(pMethodStartAddress != NULL);
+    assert(pEHEnumStateOut != NULL);
+
+    WasmMethodInfo * pNativeMethodInfo = (WasmMethodInfo *)pMethodInfo;
+
+    // return if there is no EH info associated with this method
+    if (pNativeMethodInfo->m_ehInfo == nullptr)
+    {
+        return false;
+    }
+
+    WasmEHEnumState * pEnumState = (WasmEHEnumState *)pEHEnumStateOut;
+
+    *pMethodStartAddress = reinterpret_cast<PTR_VOID>(pNativeMethodInfo->m_methodStart);
+
+    pEnumState->pMethodStartAddress = dac_cast<PTR_uint8_t>(*pMethodStartAddress);
+    pEnumState->pEHInfo = pNativeMethodInfo->m_ehInfo;
+    pEnumState->uClause = 0;
+    pEnumState->nClauses = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+
+    return true;
 }
 
-bool WasmCodeManager::EHEnumNext(EHEnumState* pEHEnumState, EHClause* pEHClause)
+bool WasmCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut)
 {
-    PORTABILITY_ASSERT("WASM exception handling");
-    return false;
+    assert(pEHEnumState != NULL);
+    assert(pEHClauseOut != NULL);
+
+    WasmEHEnumState * pEnumState = (WasmEHEnumState *)pEHEnumState;
+    if (pEnumState->uClause >= pEnumState->nClauses)
+    {
+        return false;
+    }
+
+    pEnumState->uClause++;
+
+    pEHClauseOut->m_tryStartOffset = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+
+    uint32_t tryEndDeltaAndClauseKind = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+    pEHClauseOut->m_clauseKind = (EHClauseKind)(tryEndDeltaAndClauseKind & 0x3);
+    pEHClauseOut->m_tryEndOffset = pEHClauseOut->m_tryStartOffset + (tryEndDeltaAndClauseKind >> 2);
+
+    // For each clause, we have up to 4 integers:
+    //      1)  try start offset
+    //      2)  (try length << 2) | clauseKind
+    //      3)  if (typed || fault || filter)    { handler start offset }
+    //      4a) if (typed)                       { type RVA }
+    //      4b) if (filter)                      { filter start offset }
+    //
+    // The first two integers have already been decoded
+
+    switch (pEHClauseOut->m_clauseKind)
+    {
+    case EH_CLAUSE_TYPED:
+        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+
+        // Read target type
+        {
+            // @TODO: Compress EHInfo using type table index scheme
+            // https://github.com/dotnet/corert/issues/972
+            uint8_t* pBase = pEnumState->pEHInfo;
+            int32_t typeRelAddr = NativePrimitiveDecoder::ReadInt32(pEnumState->pEHInfo);
+            pEHClauseOut->m_pTargetType = dac_cast<PTR_VOID>(pBase + typeRelAddr);
+        }
+        break;
+    case EH_CLAUSE_FAULT:
+        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+        break;
+    case EH_CLAUSE_FILTER:
+        pEHClauseOut->m_handlerAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_filterAddress = dac_cast<uint8_t*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+        break;
+    default:
+        UNREACHABLE_MSG("unexpected EHClauseKind");
+    }
+
+    return true;
 }
 
 PTR_VOID WasmCodeManager::GetMethodStartAddress(MethodInfo* pMethodInfo)

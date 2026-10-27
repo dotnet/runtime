@@ -205,6 +205,7 @@ else()
 
   if(CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND COMMON_RUNTIME_SOURCES
+      wasm/ExceptionHandling.cpp
       wasm/MiscStubs.cpp
       wasm/PInvoke.cpp
       wasm/WasmCodeManager.cpp
