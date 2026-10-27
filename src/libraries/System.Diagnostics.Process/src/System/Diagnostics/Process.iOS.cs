@@ -82,16 +82,6 @@ namespace System.Diagnostics
 
 #pragma warning restore IDE0060
 
-        /// <summary>Gets execution path</summary>
-        internal static string GetPathToOpenFile()
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-#pragma warning disable CA1822
-        private int ParentProcessId => throw new PlatformNotSupportedException();
-#pragma warning restore CA1822
-
         private static bool IsProcessInvalidException(Exception e) =>
             // InvalidOperationException signifies conditions such as the process already being dead.
             // Win32Exception signifies issues such as insufficient permissions to get details on the process.

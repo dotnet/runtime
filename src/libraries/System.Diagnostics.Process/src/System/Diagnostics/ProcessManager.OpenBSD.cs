@@ -9,6 +9,23 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
+        internal static unsafe bool TryGetParentProcessId(int processId, out int parentProcessId)
+        {
+            Interop.Process.kinfo_proc* info = Interop.Process.GetProcInfo(processId, false, out int count);
+            try
+            {
+                parentProcessId = count > 0 ? info->p_ppid : 0;
+                return count > 0;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal((IntPtr)info);
+            }
+        }
+
+        internal static string? GetPathToOpenFile() =>
+            Interop.Sys.Stat("/usr/local/bin/open", out _) == 0 ? "/usr/local/bin/open" : null;
+
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
         public static int[] GetProcessIds()
         {

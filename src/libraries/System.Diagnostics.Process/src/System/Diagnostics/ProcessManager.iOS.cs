@@ -8,6 +8,13 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
+        internal static IEnumerable<int> EnumerateProcessIds() => GetProcessIds();
+
+        internal static bool TryGetParentProcessId(int processId, out int parentProcessId) =>
+            throw new PlatformNotSupportedException();
+
+        internal static string GetPathToOpenFile() => throw new PlatformNotSupportedException();
+
 #pragma warning disable IDE0060
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
         public static int[] GetProcessIds()

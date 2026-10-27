@@ -11,6 +11,7 @@
 ===========================================================*/
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -251,19 +252,18 @@ namespace Microsoft.Win32.SafeHandles
         [SupportedOSPlatform("maccatalyst")]
         internal void Kill(bool entireProcessTree)
         {
+            Validate();
+
             if (!entireProcessTree)
             {
                 Kill();
                 return;
             }
 
-            if (!TryWaitForExit(TimeSpan.Zero, out _) &&
-                Process.TryGetProcessById(ProcessId, out Process? process))
+            List<Exception>? exceptions = KillTree();
+            if (exceptions is { Count: > 0 })
             {
-                using (process)
-                {
-                    process.Kill(entireProcessTree: true);
-                }
+                throw new AggregateException(SR.KillEntireProcessTree_TerminationIncomplete, exceptions);
             }
         }
 

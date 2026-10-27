@@ -60,25 +60,6 @@ namespace System.Diagnostics
            }
        }
 
-        /// <summary>Gets the parent process ID</summary>
-        private int ParentProcessId =>
-            GetStat().ppid;
-
-        /// <summary>Gets execution path</summary>
-        internal static string? GetPathToOpenFile()
-        {
-            ReadOnlySpan<string> allowedProgramsToRun = ["xdg-open", "gnome-open", "kfmclient"];
-            foreach (var program in allowedProgramsToRun)
-            {
-                string? pathToProgram = ProcessUtils.FindProgramInPath(program);
-                if (!string.IsNullOrEmpty(pathToProgram))
-                {
-                    return pathToProgram;
-                }
-            }
-            return null;
-        }
-
         public partial TimeSpan TotalProcessorTime
         {
             get

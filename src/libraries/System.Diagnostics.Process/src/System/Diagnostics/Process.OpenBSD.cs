@@ -69,43 +69,6 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Gets parent process ID</summary>
-        private unsafe int ParentProcessId
-        {
-            get
-            {
-                EnsureState(State.HaveNonExitedId);
-
-                Interop.Process.kinfo_proc* processInfo = Interop.Process.GetProcInfo(_processId, false, out int count);
-                try
-                {
-                    if (count <= 0)
-                    {
-                        throw new Win32Exception(SR.ProcessInformationUnavailable);
-                    }
-
-                    return processInfo->p_ppid;
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal((IntPtr)processInfo);
-                }
-            }
-        }
-
-        // <summary>Gets execution path</summary>
-        internal static string? GetPathToOpenFile()
-        {
-            if (Interop.Sys.Stat("/usr/local/bin/open", out _) == 0)
-            {
-                return "/usr/local/bin/open";
-            }
-            else
-            {
-                return null;
-            }
-        }
-
         // ----------------------------------
         // ---- Unix PAL layer ends here ----
         // ----------------------------------

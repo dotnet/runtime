@@ -10,6 +10,15 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
+        internal static bool TryGetParentProcessId(int processId, out int parentProcessId)
+        {
+            Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(processId);
+            parentProcessId = info.HasValue ? Convert.ToInt32(info.Value.pbsd.pbi_ppid) : 0;
+            return info.HasValue;
+        }
+
+        internal static string GetPathToOpenFile() => "/usr/bin/open";
+
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
         public static int[] GetProcessIds()
         {
