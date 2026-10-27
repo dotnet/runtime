@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -391,14 +392,16 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         private ProcessExitStatus WaitForExitOrKillEntireProcessTreeOnTimeout(TimeSpan timeout)
         {
-            if (TryWaitForExitStatus(timeout, out ProcessExitStatus? exitStatus))
+            SafeProcessHandle safeProcessHandle = _processHandle!;
+            if (safeProcessHandle.TryWaitForExit(timeout, out ProcessExitStatus? exitStatus))
             {
                 return exitStatus;
             }
 
-            Kill(entireProcessTree: true);
-            exitStatus = WaitForExitStatus();
-            return new ProcessExitStatus(exitStatus.ExitCode, canceled: true, exitStatus.Signal);
+            safeProcessHandle.Canceled = true;
+            try { Kill(entireProcessTree: true); } catch { }
+
+            return safeProcessHandle.WaitForExit();
         }
 
         [UnsupportedOSPlatform("ios")]
@@ -406,16 +409,19 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         private async Task<ProcessExitStatus> WaitForExitOrKillEntireProcessTreeOnCancellationAsync(CancellationToken cancellationToken)
         {
-            try
+            SafeProcessHandle safeProcessHandle = _processHandle!;
+
+            // If the token can be canceled, the registration will ensure that the process is killed if cancellation is requested.
+            // In such case, the WaitForExitAsync will complete when the process exits.
+
+            await using CancellationTokenRegistration? registration = !cancellationToken.CanBeCanceled ? null : cancellationToken.UnsafeRegister(sph =>
             {
-                return await WaitForExitStatusAsync(cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                Kill(entireProcessTree: true);
-                ProcessExitStatus exitStatus = await WaitForExitStatusAsync().ConfigureAwait(false);
-                return new ProcessExitStatus(exitStatus.ExitCode, canceled: true, exitStatus.Signal);
-            }
+                ((SafeProcessHandle)sph!).Canceled = true;
+
+                try { Kill(entireProcessTree: true); } catch { }
+            }, safeProcessHandle);
+
+            return await safeProcessHandle.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
         }
 
         private static void ThrowIfUseShellExecute(ProcessStartInfo startInfo, string methodName)
