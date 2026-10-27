@@ -358,7 +358,7 @@ V1 will focus on single-threaded, composite mode support. The designs shouldn't 
 
 Using either call-counting in the interpreter or a timer in the host JavaScript code, force methods to be interpreted (even if R2R code exists for them in the primary module) before installing R2R code. This doesn't require any changes to crossgen2 or the webcil format.
 
-The prototype simulates both phases of the flow above and is compiled with `FEATURE_AUXILIARY_R2R_MODULES`, enabled by default on single-threaded Browser-WASM builds with `FEATURE_INTERPRETER`. It can be excluded with `-cmakeargs "-DFEATURE_AUXILIARY_R2R_MODULES=0"`. This prototype does not split modules, download code, or change image formats.
+The prototype simulates both phases of the flow above and is compiled with `FEATURE_AUXILIARY_R2R_MODULES`, enabled by default on single-threaded Browser-WASM builds with `FEATURE_INTERPRETER`. It can be excluded with `-cmakeargs "-DFEATURE_AUXILIARY_R2R_MODULES=0"`, but the `DelayedR2RActivation` tests assume the feature is compiled in and fail without it. This prototype does not split modules, download code, or change image formats.
 
 **Simulated downloads.** Each simulated download is a countdown that saturates at zero, and zero means activated. The "activation flag" cell therefore counts down, rather than being nonzero once activated as in the real design. A call-boundary check of a method waiting on the countdown consumes one count. Preparing a method, resuming an existing interpreter continuation, and executing an exception clause do not.
 
