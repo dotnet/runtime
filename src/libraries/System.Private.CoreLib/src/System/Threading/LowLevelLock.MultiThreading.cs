@@ -145,7 +145,7 @@ namespace System.Threading
         {
             VerifyIsNotLocked();
 
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+            RuntimeFeature.ThrowIfBlockingIsNotSupported();
 
             // Atomically either register this thread as a waiter or acquire the lock.
             uint collisions = 0;
