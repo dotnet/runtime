@@ -18,6 +18,7 @@ public record Diagnostic(string Id, DiagnosticSeverity Severity, string Message,
 /// </summary>
 public static class DiagnosticIds
 {
+    public const string Parser = "ILA0000";
     public const string LiteralOutOfRange = "ILA0001";
     public const string UnsealedValueType = "ILA0002";
     public const string ThisOutsideClass = "ILA0003";
@@ -51,7 +52,6 @@ public static class DiagnosticIds
     public const string MissingExportedTypeImplementation = "ILA0031";
     public const string KeyFileError = "ILA0032";
     public const string TooManyGenericParameters = "ILA0033";
-    public const string UnsupportedTlsData = "ILA0034";
     public const string GenericParameterConstraintOwnerOutOfRange = "ILA0035";
     public const string InvalidExportOrdinal = "ILA0036";
     public const string ExportOrdinalRangeTooLarge = "ILA0037";
@@ -71,6 +71,15 @@ public static class DiagnosticIds
     public const string PseudoCustomAttributeInvalidBlob = "ILA0051";
     public const string PseudoCustomAttributeUnknownArgument = "ILA0052";
     public const string PseudoCustomAttributeRepeatedArgument = "ILA0053";
+    public const string LocalSlotInUse = "ILA0054";
+    public const string LocalSlotTypeConflict = "ILA0055";
+    public const string UndefinedLocalSlotType = "ILA0056";
+    public const string LocalSlotOutOfRange = "ILA0057";
+    public const string LocalScopeWithoutInstructions = "ILA0058";
+    public const string LocalNameDeclaredTwiceInScope = "ILA0059";
+    public const string LocalSlotNamedTwiceInScope = "ILA0060";
+    public const string DuplicateEntryPoint = "ILA0063";
+    public const string InstanceEntryPoint = "ILA0064";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -107,7 +116,6 @@ internal static class DiagnosticMessageTemplates
     public const string DuplicateMethod = "Duplicate method definition";
     public const string MissingExportedTypeImplementation = "Undefined implementation in ExportedType '{0}' -- ExportedType not emitted";
     public const string TooManyGenericParameters = "Generic parameter count {0} exceeds the maximum of {1}";
-    public const string UnsupportedTlsData = "TLS RVA data declarations are not supported";
     public const string GenericParameterConstraintOwnerOutOfRange = "Generic parameter constraint owner index {0} exceeds the maximum encodable generic parameter index of {1}";
     public const string InvalidExportOrdinal = "Export ordinal {0} must be positive";
     public const string ExportOrdinalRangeTooLarge = "Export ordinal {0} is too far from base ordinal {1}; the export address table index must not exceed {2}";
@@ -129,4 +137,13 @@ internal static class DiagnosticMessageTemplates
     public const string PseudoCustomAttributeInvalidBlob = "Custom attribute '{0}' has a malformed value blob";
     public const string PseudoCustomAttributeUnknownArgument = "Custom attribute '{0}' does not have a field or property named '{1}'";
     public const string PseudoCustomAttributeRepeatedArgument = "Custom attribute '{0}' specifies '{1}' more than once";
+    public const string LocalSlotInUse = "Local var slot {0} is in use";
+    public const string LocalSlotTypeConflict = "Local var slot {0}: type conflict";
+    public const string UndefinedLocalSlotType = "Undefined type of local var slot {0} in method {1}";
+    public const string LocalSlotOutOfRange = "Local var slot {0} is out of range; a slot index must be between 0 and {1}";
+    public const string LocalScopeWithoutInstructions = "Local var '{0}' is declared in a scope that has no instructions; a PDB local scope must not be empty";
+    public const string LocalNameDeclaredTwiceInScope = "Local var '{0}' is already declared in this scope";
+    public const string LocalSlotNamedTwiceInScope = "Local var '{0}': slot {1} is already named '{2}' in this scope";
+    public const string DuplicateEntryPoint = "Multiple entry points declared";
+    public const string InstanceEntryPoint = "Entry point method must be static";
 }

@@ -5167,13 +5167,58 @@ void PromoteCarefully(promote_func   fn,
 
 class ByRefPointerOffsetsReporter
 {
+    struct OverlappingFields
+    {
+        PTR_MethodTable methodTable;
+        FieldDesc* currentField;
+        SIZE_T baseOffset;
+        OverlappingFields* previous;
+    };
+
     promote_func* _fn;
     ScanContext* _sc;
     PTR_VOID _src;
+    OverlappingFields* _overlappingFields;
+    SIZE_T _targetOffset;
+    bool _checkingOverlap;
+    bool _foundOverlap;
 
     void Report(SIZE_T pointerOffset)
     {
         WRAPPER_NO_CONTRACT;
+
+        if (_checkingOverlap)
+        {
+            _foundOverlap |= pointerOffset == _targetOffset;
+            return;
+        }
+
+        // Explicit layout can declare the same physical byref more than once.
+        // Earlier fields have already reported any byrefs in their ranges.
+        // Re-walking them avoids allocating during GC. This can be quadratic in
+        // the field count, but overlapping byref-like layouts are rare.
+        for (OverlappingFields* overlap = _overlappingFields; overlap != nullptr; overlap = overlap->previous)
+        {
+            ApproxFieldDescIterator fields(overlap->methodTable, ApproxFieldDescIterator::INSTANCE_FIELDS);
+            for (FieldDesc* field = fields.Next(); field != overlap->currentField; field = fields.Next())
+            {
+                _ASSERTE(field != nullptr);
+                SIZE_T offset = overlap->baseOffset + field->GetOffset();
+                if (pointerOffset >= offset && pointerOffset - offset < field->GetSize(nullptr))
+                {
+                    _targetOffset = pointerOffset;
+                    _foundOverlap = false;
+                    _checkingOverlap = true;
+                    Find(field, overlap->baseOffset);
+                    _checkingOverlap = false;
+                    if (_foundOverlap)
+                    {
+                        return;
+                    }
+                }
+            }
+        }
+
         PTR_PTR_Object fieldRef = dac_cast<PTR_PTR_Object>(PTR_BYTE(_src) + pointerOffset);
         (*_fn)(fieldRef, _sc, GC_CALL_INTERIOR);
     }
@@ -5183,6 +5228,10 @@ public:
         : _fn{fn}
         , _sc{sc}
         , _src{pSrc}
+        , _overlappingFields{nullptr}
+        , _targetOffset{0}
+        , _checkingOverlap{false}
+        , _foundOverlap{false}
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -5191,7 +5240,9 @@ public:
     {
         if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
         {
-            PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            TypeHandle fieldType = pFD->LookupApproxFieldTypeHandle();
+            _ASSERTE(!fieldType.IsNull());
+            PTR_MethodTable pFieldMT = fieldType.AsMethodTable();
             if (pFieldMT->IsByRefLike())
             {
                 Find(pFieldMT, baseOffset + pFD->GetOffset());
@@ -5210,9 +5261,16 @@ public:
         _ASSERTE(pMT->IsByRefLike());
 
         bool isValArray = pMT->GetClass()->IsInlineArray();
+        OverlappingFields overlappingFields{pMT, nullptr, baseOffset, _overlappingFields};
+        if (!_checkingOverlap && pMT->GetClass()->HasOverlaidField())
+        {
+            _overlappingFields = &overlappingFields;
+        }
+
         ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
         for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
         {
+            overlappingFields.currentField = pFD;
             if (isValArray)
             {
                 _ASSERTE(pFD->GetOffset() == 0);
@@ -5228,6 +5286,7 @@ public:
                 Find(pFD, baseOffset);
             }
         }
+        _overlappingFields = overlappingFields.previous;
     }
 };
 

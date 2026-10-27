@@ -525,6 +525,19 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native"), TestCategory("mono")]
+        public void EnsureUnmanagedCallConvCompilesInAOT(Configuration config, bool aot)
+        {
+            // Regression coverage for https://github.com/dotnet/runtime/issues/136351: decoding the
+            // CallConvs of [UnmanagedCallConv] allocated a managed Type[] inside the AOT compiler,
+            // which asserted in sgen while the native wrappers were built.
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "unmanaged_callconv");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallConv.cs"));
+            PublishProject(info, config, new PublishOptions(AOT: aot));
+        }
+
+        [Theory]
         [BuildAndRun(aot: false)]
         public async Task UCOWithSpecialCharacters(Configuration config, bool aot)
         {

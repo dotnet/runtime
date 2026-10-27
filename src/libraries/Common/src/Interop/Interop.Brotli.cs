@@ -14,6 +14,9 @@ internal static partial class Interop
         internal static partial SafeBrotliDecoderHandle BrotliDecoderCreateInstance(IntPtr allocFunc, IntPtr freeFunc, IntPtr opaque);
 
         [LibraryImport(Libraries.CompressionNative)]
+        internal static partial BOOL BrotliDecoderSetParameter(SafeBrotliDecoderHandle state, BrotliDecoderParameter parameter, uint value);
+
+        [LibraryImport(Libraries.CompressionNative)]
         internal static unsafe partial int BrotliDecoderDecompressStream(
             SafeBrotliDecoderHandle state, ref nuint availableIn, byte** nextIn,
             ref nuint availableOut, byte** nextOut, out nuint totalOut);

@@ -539,7 +539,7 @@ namespace ILCompiler
             }
 
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
-            flags |= _nodeFactory.Header.Flags & ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions;
+            flags |= _nodeFactory.Header.Flags & (ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions | ReadyToRunFlags.READYTORUN_FLAG_SingleThreaded);
 
             bool isNativeCompositeImage = false;
             if (NodeFactory.Target.IsWindows && NodeFactory.Format == ReadyToRunContainerFormat.PE)
@@ -642,8 +642,8 @@ namespace ILCompiler
 
             if (VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(defType))
             {
-                // Vector<T> always needs a layout check
-                return false;
+                // Non-optimistic Vector<T> support fixes the SIMD width at compile time.
+                return !InstructionSetSupport.IsVectorTOptimistic;
             }
 
             if (!NodeFactory.CompilationModuleGroup.VersionsWithModule(defType.Module))

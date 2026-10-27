@@ -112,3 +112,5 @@ src/libraries/Microsoft.Extensions.Configuration.Binder/tests/SourceGenerationTe
 src/mono/mono/cil/opcode.def linguist-generated
 src/tools/ilasm/src/ILAssembler/gen/CILLexer.cs linguist-generated
 src/tools/ilasm/src/ILAssembler/gen/CILParser.cs linguist-generated
+src/tools/ilasm/src/ILAssembler/gen/CIL.interp linguist-generated
+src/tools/ilasm/src/ILAssembler/gen/CILLexer.interp linguist-generated

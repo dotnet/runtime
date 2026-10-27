@@ -11,6 +11,19 @@
 #include <minipal/entrypoints.h>
 
 extern "C" {
+    void * BrotliDecoderCreateInstance (void *, void *, void *);
+    int32_t BrotliDecoderDecompress (void *, void *, void *, void *);
+    int32_t BrotliDecoderDecompressStream (void *, void *, void *, void *, void *, void *);
+    void BrotliDecoderDestroyInstance (void *);
+    int32_t BrotliDecoderIsFinished (void *);
+    int32_t BrotliDecoderSetParameter (void *, int32_t, uint32_t);
+    int32_t BrotliEncoderCompress (int32_t, int32_t, int32_t, void *, void *, void *, void *);
+    int32_t BrotliEncoderCompressStream (void *, int32_t, void *, void *, void *, void *, void *);
+    void * BrotliEncoderCreateInstance (void *, void *, void *);
+    void BrotliEncoderDestroyInstance (void *);
+    int32_t BrotliEncoderHasMoreOutput (void *);
+    void * BrotliEncoderMaxCompressedSize (void *);
+    int32_t BrotliEncoderSetParameter (void *, int32_t, uint32_t);
     uint32_t CompressionNative_Crc32 (uint32_t, void *, int32_t);
     int32_t CompressionNative_Deflate (void *, int32_t);
     int32_t CompressionNative_DeflateEnd (void *);
@@ -94,7 +107,6 @@ extern "C" {
     int32_t SystemNative_GetControlMessageBufferSize (int32_t, int32_t);
     double SystemNative_GetCpuUtilization (void *);
     int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
-    uint64_t SystemNative_GetCurrentThreadId ();
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
@@ -134,13 +146,6 @@ extern "C" {
     int32_t SystemNative_LockFileRegion (void *, int64_t, int64_t, int32_t);
     void SystemNative_Log (void *, int32_t);
     void SystemNative_LogError (void *, int32_t);
-    void SystemNative_LowLevelMonitor_Acquire (void *);
-    void * SystemNative_LowLevelMonitor_Create ();
-    void SystemNative_LowLevelMonitor_Destroy (void *);
-    void SystemNative_LowLevelMonitor_Release (void *);
-    void SystemNative_LowLevelMonitor_Signal_Release (void *);
-    int32_t SystemNative_LowLevelMonitor_TimedWait (void *, int32_t);
-    void SystemNative_LowLevelMonitor_Wait (void *);
     int32_t SystemNative_MAdvise (void *, uint64_t, int32_t);
     void * SystemNative_MMap (void *, uint64_t, int32_t, int32_t, void *, int64_t);
     int32_t SystemNative_MSync (void *, uint64_t, int32_t);
@@ -170,7 +175,6 @@ extern "C" {
     int32_t SystemNative_ReceiveMessage (void *, void *, int32_t, void *);
     int32_t SystemNative_Rename (void *, void *);
     int32_t SystemNative_RmDir (void *);
-    int32_t SystemNative_SchedGetCpu ();
     int32_t SystemNative_Select (void *, int32_t, void *, int32_t, void *, int32_t, int32_t, int32_t, void *);
     int32_t SystemNative_Send (void *, void *, int32_t, int32_t, void *);
     int32_t SystemNative_SendFile (void *, void *, int64_t, int64_t, void *);
@@ -196,6 +200,7 @@ extern "C" {
     int32_t SystemNative_SymLink (void *, void *);
     int64_t SystemNative_SysConf (int32_t);
     void SystemNative_SysLog (int32_t, void *, void *);
+    int32_t SystemNative_ThreadSleep (int32_t);
     int32_t SystemNative_TryGetIPPacketInformation (void *, int32_t, void *);
     int32_t SystemNative_UTimensat (void *, void *);
     int32_t SystemNative_Unlink (void *);
@@ -203,6 +208,36 @@ extern "C" {
     int32_t SystemNative_Write (void *, void *, int32_t);
     int32_t SystemNative_WriteToNonblocking (void *, void *, int32_t);
     int64_t SystemNative_WriteV (void *, void *, int32_t);
+    void * ZDICT_trainFromBuffer (void *, void *, void *, void *, uint32_t);
+    void * ZSTD_CCtx_refCDict (void *, void *);
+    void * ZSTD_CCtx_refPrefix (void *, void *, void *);
+    void * ZSTD_CCtx_reset (void *, int32_t);
+    void * ZSTD_CCtx_setParameter (void *, int32_t, int32_t);
+    void * ZSTD_CCtx_setPledgedSrcSize (void *, uint64_t);
+    void * ZSTD_DCtx_refDDict (void *, void *);
+    void * ZSTD_DCtx_refPrefix (void *, void *, void *);
+    void * ZSTD_DCtx_reset (void *, int32_t);
+    void * ZSTD_DCtx_setParameter (void *, int32_t, int32_t);
+    void * ZSTD_compress2 (void *, void *, void *, void *, void *);
+    void * ZSTD_compressBound (void *);
+    void * ZSTD_compressStream2 (void *, void *, void *, int32_t);
+    void * ZSTD_createCCtx ();
+    void * ZSTD_createCDict_byReference (void *, void *, int32_t);
+    void * ZSTD_createDCtx ();
+    void * ZSTD_createDDict_byReference (void *, void *);
+    void * ZSTD_decompress (void *, void *, void *, void *);
+    uint64_t ZSTD_decompressBound (void *, void *);
+    void * ZSTD_decompressStream (void *, void *, void *);
+    void * ZSTD_decompress_usingDDict (void *, void *, void *, void *, void *, void *);
+    int32_t ZSTD_defaultCLevel ();
+    void * ZSTD_freeCCtx (void *);
+    void * ZSTD_freeCDict (void *);
+    void * ZSTD_freeDCtx (void *);
+    void * ZSTD_freeDDict (void *);
+    void * ZSTD_getErrorName (void *);
+    uint32_t ZSTD_isError (void *);
+    int32_t ZSTD_maxCLevel ();
+    int32_t ZSTD_minCLevel ();
     __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[constructor]outgoing-request"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_constructor_5D_outgoing_request (int32_t);
     __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]fields.entries"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_fields_entries (int32_t, void *);
     __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]future-incoming-response.get"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_future_incoming_response_get (int32_t, void *);
@@ -291,6 +326,19 @@ static const Entry s_libSystem_Globalization_Native [] = {
 };
 
 static const Entry s_libSystem_IO_Compression_Native [] = {
+    DllImportEntry(BrotliDecoderCreateInstance) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliDecoderDecompress) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliDecoderDecompressStream) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliDecoderDestroyInstance) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliDecoderIsFinished) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliDecoderSetParameter) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderCompress) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderCompressStream) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderCreateInstance) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderDestroyInstance) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderHasMoreOutput) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderMaxCompressedSize) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliEncoderSetParameter) // System.IO.Compression.Brotli
     DllImportEntry(CompressionNative_Crc32) // System.IO.Compression
     DllImportEntry(CompressionNative_Deflate) // System.IO.Compression
     DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression
@@ -300,6 +348,36 @@ static const Entry s_libSystem_IO_Compression_Native [] = {
     DllImportEntry(CompressionNative_InflateEnd) // System.IO.Compression
     DllImportEntry(CompressionNative_InflateInit2_) // System.IO.Compression
     DllImportEntry(CompressionNative_InflateReset2_) // System.IO.Compression
+    DllImportEntry(ZDICT_trainFromBuffer) // System.IO.Compression
+    DllImportEntry(ZSTD_CCtx_refCDict) // System.IO.Compression
+    DllImportEntry(ZSTD_CCtx_refPrefix) // System.IO.Compression
+    DllImportEntry(ZSTD_CCtx_reset) // System.IO.Compression
+    DllImportEntry(ZSTD_CCtx_setParameter) // System.IO.Compression
+    DllImportEntry(ZSTD_CCtx_setPledgedSrcSize) // System.IO.Compression
+    DllImportEntry(ZSTD_DCtx_refDDict) // System.IO.Compression
+    DllImportEntry(ZSTD_DCtx_refPrefix) // System.IO.Compression
+    DllImportEntry(ZSTD_DCtx_reset) // System.IO.Compression
+    DllImportEntry(ZSTD_DCtx_setParameter) // System.IO.Compression
+    DllImportEntry(ZSTD_compress2) // System.IO.Compression
+    DllImportEntry(ZSTD_compressBound) // System.IO.Compression
+    DllImportEntry(ZSTD_compressStream2) // System.IO.Compression
+    DllImportEntry(ZSTD_createCCtx) // System.IO.Compression
+    DllImportEntry(ZSTD_createCDict_byReference) // System.IO.Compression
+    DllImportEntry(ZSTD_createDCtx) // System.IO.Compression
+    DllImportEntry(ZSTD_createDDict_byReference) // System.IO.Compression
+    DllImportEntry(ZSTD_decompress) // System.IO.Compression
+    DllImportEntry(ZSTD_decompressBound) // System.IO.Compression
+    DllImportEntry(ZSTD_decompressStream) // System.IO.Compression
+    DllImportEntry(ZSTD_decompress_usingDDict) // System.IO.Compression
+    DllImportEntry(ZSTD_defaultCLevel) // System.IO.Compression
+    DllImportEntry(ZSTD_freeCCtx) // System.IO.Compression
+    DllImportEntry(ZSTD_freeCDict) // System.IO.Compression
+    DllImportEntry(ZSTD_freeDCtx) // System.IO.Compression
+    DllImportEntry(ZSTD_freeDDict) // System.IO.Compression
+    DllImportEntry(ZSTD_getErrorName) // System.IO.Compression
+    DllImportEntry(ZSTD_isError) // System.IO.Compression
+    DllImportEntry(ZSTD_maxCLevel) // System.IO.Compression
+    DllImportEntry(ZSTD_minCLevel) // System.IO.Compression
 };
 
 static const Entry s_libSystem_Native [] = {
@@ -343,7 +421,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetControlMessageBufferSize) // System.Net.Sockets
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression, System.Security.Cryptography
-    DllImportEntry(SystemNative_GetCurrentThreadId) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
@@ -383,13 +460,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_LockFileRegion) // System.Private.CoreLib
     DllImportEntry(SystemNative_Log) // System.Private.CoreLib
     DllImportEntry(SystemNative_LogError) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_Acquire) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_Create) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_Destroy) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_Release) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_Signal_Release) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_TimedWait) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_Wait) // System.Private.CoreLib
     DllImportEntry(SystemNative_MAdvise) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_MMap) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_MSync) // System.IO.MemoryMappedFiles
@@ -419,7 +489,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_ReceiveMessage) // System.Net.Sockets
     DllImportEntry(SystemNative_Rename) // System.Private.CoreLib
     DllImportEntry(SystemNative_RmDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_SchedGetCpu) // System.Private.CoreLib
     DllImportEntry(SystemNative_Select) // System.Net.Sockets
     DllImportEntry(SystemNative_Send) // System.Net.Sockets
     DllImportEntry(SystemNative_SendFile) // System.Net.Sockets
@@ -445,6 +514,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_SymLink) // System.Private.CoreLib
     DllImportEntry(SystemNative_SysConf) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_SysLog) // System.Private.CoreLib
+    DllImportEntry(SystemNative_ThreadSleep) // System.Private.CoreLib
     DllImportEntry(SystemNative_TryGetIPPacketInformation) // System.Net.Sockets
     DllImportEntry(SystemNative_UTimensat) // System.Private.CoreLib
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
@@ -522,8 +592,8 @@ typedef struct PInvokeTable {
 
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
-    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
-    {"libSystem.Native", s_libSystem_Native, 149},
+    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 52},
+    {"libSystem.Native", s_libSystem_Native, 141},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},
