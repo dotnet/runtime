@@ -498,7 +498,7 @@ public class ExecutionManagerTests
     }
 
     [Fact]
-    public void ReadyToRunInfo_WasmMissingOptionalFields_EnsureAllFieldsRead()
+    public void ReadyToRunInfo_WasmMissingOptionalFields_TryReadAllFields()
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
         MockExecutionManagerBuilder emBuilder = new(
@@ -516,7 +516,7 @@ public class ExecutionManagerTests
 
         Data.ReadyToRunInfo data =
             target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(r2rInfo.Address);
-        ((Data.IReadableData)data).EnsureAllFieldsRead();
+        Assert.True(data.TryReadAllFields());
 
         Assert.Null(data.NumHotColdMap);
         Assert.Null(data.DelayLoadMethodCallThunks);
