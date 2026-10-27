@@ -1090,13 +1090,18 @@ public class Crossgen2CacheTests
     }, location).Dispose();
 
     [WindowsCacheTheory]
-    [InlineData("non-portable")]
-    [InlineData("mismatched")]
-    [InlineData("drive-relative")]
-    [InlineData("absent")]
-    public void ExternalInputSymbolReadersBypass(string shape) => RemoteExecutor.Invoke(value =>
+    [InlineData("non-portable", true)]
+    [InlineData("non-portable", false)]
+    [InlineData("mismatched", true)]
+    [InlineData("mismatched", false)]
+    [InlineData("drive-relative", true)]
+    [InlineData("drive-relative", false)]
+    [InlineData("absent", true)]
+    [InlineData("absent", false)]
+    public void ExternalInputSymbolReadersBypass(string shape, bool caching) => RemoteExecutor.Invoke((value, enabled) =>
     {
         using var fixture = new Fixture();
+        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", enabled);
         string pdb = Path.ChangeExtension(fixture.Input, ".pdb");
         if (value == "non-portable")
         {
@@ -1127,7 +1132,12 @@ public class Crossgen2CacheTests
         MockCompiler task = fixture.Create();
         Assert.True(task.Execute());
         Assert.Equal(1, task.Executions);
-        if (value == "absent")
+        if (!bool.Parse(enabled))
+        {
+            Assert.False(Directory.Exists(fixture.Cache));
+            Assert.DoesNotContain(task.Engine.Messages, m => m.Contains("cache bypass:", StringComparison.Ordinal));
+        }
+        else if (value == "absent")
         {
             Assert.Contains(task.Engine.Messages, m => m.Contains("cache stored:", StringComparison.Ordinal));
             MockCompiler hit = fixture.Create();
@@ -1139,7 +1149,54 @@ public class Crossgen2CacheTests
             Assert.Contains(task.Engine.Messages, m => m.Contains("cache bypass:", StringComparison.Ordinal));
             Assert.False(Directory.Exists(fixture.Cache));
         }
-    }, shape).Dispose();
+    }, shape, caching.ToString()).Dispose();
+
+    [WindowsCacheTheory]
+    [InlineData("enabled", false)]
+    [InlineData("disabled", false)]
+    [InlineData("bypassed", false)]
+    [InlineData("enabled", true)]
+    [InlineData("disabled", true)]
+    [InlineData("bypassed", true)]
+    public void DriveRelativeInputPdbOverlapsFailBeforeCleanup(string configuration, bool adjacent) =>
+        RemoteExecutor.Invoke((mode, besideAssembly) =>
+    {
+        using var fixture = new Fixture();
+        Directory.CreateDirectory(Path.GetDirectoryName(fixture.Output)!);
+        string assembly = Path.Combine(Path.GetDirectoryName(fixture.Output)!, "assembly.dll");
+        File.Copy(fixture.Input, assembly);
+        string pdb = Path.GetPathRoot(fixture.Root)!.TrimEnd('\\') +
+            (bool.Parse(besideAssembly) ? @"missing\" : "") + Path.GetFileName(fixture.Map);
+        using (FileStream stream = File.Open(assembly, FileMode.Open, FileAccess.ReadWrite))
+        {
+            using var pe = new PEReader(stream, PEStreamOptions.LeaveOpen);
+            DebugDirectoryEntry entry = pe.ReadDebugDirectory().Single(e => e.Type == DebugDirectoryEntryType.CodeView);
+            stream.Position = entry.DataPointer + 24;
+            stream.Write(System.Text.Encoding.UTF8.GetBytes(pdb + "\0"));
+        }
+        File.Copy(Path.ChangeExtension(fixture.Input, ".pdb"), fixture.Map);
+        byte[] before = File.ReadAllBytes(fixture.Map);
+        MockCompiler task = fixture.Create();
+        task.CompilationEntry.ItemSpec = assembly;
+        task.CompilationEntry.SetMetadata("EmitSymbols", "false");
+        task.ImplementationAssemblyReferences = Array.Empty<ITaskItem>();
+        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
+        task.ShowCompilerWarnings = mode == "bypassed";
+        string directory = Environment.CurrentDirectory;
+        try
+        {
+            Environment.CurrentDirectory = bool.Parse(besideAssembly) ? fixture.Root : Path.GetDirectoryName(fixture.Output)!;
+            Assert.False(task.Execute());
+            Assert.Equal(0, task.Executions);
+            Assert.Equal(before, File.ReadAllBytes(fixture.Map));
+            Assert.Contains(task.Engine.Errors, message => message.Contains("overlaps compiler input", StringComparison.Ordinal));
+            Assert.False(Directory.Exists(fixture.Cache));
+        }
+        finally
+        {
+            Environment.CurrentDirectory = directory;
+        }
+    }, configuration, adjacent.ToString()).Dispose();
 
     [RealCrossgen2Theory]
     [InlineData(false, false)]

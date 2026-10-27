@@ -152,10 +152,14 @@ internal static class Crossgen2Cache
             {
                 if (!Path.IsPathFullyQualified(pdb) && Path.GetPathRoot(pdb)!.Length != 1)
                 {
-                    throw new InvalidDataException($"Drive-relative CodeView path is not supported: '{pdb}'.");
+                    // Preserve per-drive resolution for normal execution; AddFile rejects this for caching.
+                    yield return (pdb, identity);
                 }
-                // Unix-style CodeView paths in Windows assemblies are rooted on the compiler's current drive.
-                yield return (Path.GetFullPath(pdb, Path.GetFullPath(workingDirectory)), identity);
+                else
+                {
+                    // Unix-style CodeView paths in Windows assemblies are rooted on the compiler's current drive.
+                    yield return (Path.GetFullPath(pdb, Path.GetFullPath(workingDirectory)), identity);
+                }
             }
             yield return (Path.Combine(Path.GetDirectoryName(assembly)!, Path.GetFileName(pdb)), identity);
         }
