@@ -96,8 +96,10 @@ PEImage::~PEImage()
     if (m_hFile != VMToOSInterface::InvalidFileHandle)
     {
         if (!VMToOSInterface::CloseFile(m_hFile))
+        {
             LOG((LF_LOADER, LL_INFO100, "PEImage: Could not close file (0x%08x)\n",
                 static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
+        }
     }
 
     for (unsigned int i=0;i<ARRAY_SIZE(m_pLayouts);i++)

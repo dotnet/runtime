@@ -530,20 +530,26 @@ void ConvertedImageLayout::FreeImageParts()
 #ifdef TARGET_WASM
         _ASSERTE(imagePart.IsAllocated());
         if (!VMToOSInterface::ReleaseMemoryReservation(imagePart.GetAddress(), partSize))
+        {
             LOG((LF_LOADER, LL_INFO100, "PEImage: Could not release image reservation (0x%08x)\n",
                 static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
+        }
 #else
         if (imagePart.IsAllocated())
         {
             if (!VMToOSInterface::ReleaseMemoryReservation(imagePart.GetAddress(), partSize))
+            {
                 LOG((LF_LOADER, LL_INFO100, "PEImage: Could not release image reservation (0x%08x)\n",
                     static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
+            }
         }
         else
         {
             if (VMToOSInterface::UnmapMemory(imagePart.GetAddress(), partSize) != 0)
+            {
                 LOG((LF_LOADER, LL_INFO100, "PEImage: Could not unmap image part (0x%08x)\n",
                     static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
+            }
         }
 #endif // TARGET_WASM
     }

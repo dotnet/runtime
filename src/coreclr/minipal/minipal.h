@@ -14,7 +14,7 @@ public:
     VMToOSInterface() = delete;
     ~VMToOSInterface() = delete;
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     using MemoryMapHandle = HANDLE;
     static inline const MemoryMapHandle InvalidFileHandle = INVALID_HANDLE_VALUE;
     static constexpr MemoryMapHandle InvalidMemoryMapHandle = nullptr;
@@ -24,7 +24,7 @@ public:
     static constexpr MemoryMapHandle InvalidFileHandle = -1;
     static constexpr MemoryMapHandle InvalidMemoryMapHandle = -1;
     static constexpr bool MappingFailureAllowsCopyFallback = true;
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 
     enum class MemoryProtection
     {
