@@ -1350,11 +1350,14 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     // If R2R code is disabled for this module, simply behave as if it is never found
     if (ReadyToRunCodeDisabled())
         goto done;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
     // TODO: Temporary workaround for a bug on main. A composite image's components register the composite's own
     // ReadyToRunInfo, which has no module, on the unrelated R2R modules list. Looking it up decodes signatures
-    // against a NULL module and crashes. Skip it until the registration is fixed.
+    // against a NULL module and crashes. Skip it until the registration is fixed. Only gated to the browser-wasm
+    // prototype builds, since other targets use that lookup for unrelated generics in composite images.
     if (m_pModule == NULL)
         goto done;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
 
     // Return-dropping async thunks are VM-synthesized. They share the same metadata
     // token and signature shape as a regular async variant, so the R2R lookup below
