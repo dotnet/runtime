@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/seh.hpp
 
 Abstract:
     Header file for public Structured Exception Handling stuff
-
-
-
 --*/
 
 #ifndef _PAL_SEH_HPP_
@@ -87,29 +80,6 @@ Parameters:
 VOID
 AllocateExceptionRecords(EXCEPTION_RECORD** exceptionRecord, CONTEXT** contextRecord);
 
-#if !HAVE_MACH_EXCEPTIONS
-// TODO: Implement for Mach exceptions.  Not in CoreCLR surface area.
-/*++
-Function :
-    SEHHandleControlEvent
-
-    handle Control-C and Control-Break events (call handler routines,
-    notify debugger)
-
-Parameters :
-    DWORD event : event that occurred
-    LPVOID eip  : instruction pointer when exception occurred
-
-(no return value)
-
-Notes :
-    Handlers are called on a last-installed, first called basis, until a
-    handler returns TRUE. If no handler returns TRUE (or no hanlder is
-    installed), the default behavior is to call ExitProcess
---*/
-void SEHHandleControlEvent(DWORD event, LPVOID eip);
-#endif // !HAVE_MACH_EXCEPTIONS
-
 extern "C"
 {
 
@@ -153,4 +123,3 @@ extern int g_hardware_exception_context_locvar_offset;
 extern int g_inject_activation_context_locvar_offset;
 
 #endif /* _PAL_SEH_HPP_ */
-

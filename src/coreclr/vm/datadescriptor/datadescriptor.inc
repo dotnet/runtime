@@ -55,7 +55,9 @@ CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), ExposedObject, cdac_data<Thread>::Ex
 CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, T_UINT32, LastThrownObjectIsUnhandled, cdac_data<Thread>::LastThrownObjectIsUnhandled)
 CDAC_TYPE_FIELD(Thread, T_POINTER, LinkNext, cdac_data<Thread>::Link)
+#ifdef FEATURE_MULTITHREADING
 CDAC_TYPE_FIELD(Thread, T_POINTER, ThreadLocalDataPtr, cdac_data<Thread>::ThreadLocalDataPtr)
+#endif // FEATURE_MULTITHREADING
 CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), CurrentCustomDebuggerNotification, cdac_data<Thread>::CurrentCustomDebuggerNotification)
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(Thread, T_POINTER, UEWatsonBucketTrackerBuckets, cdac_data<Thread>::UEWatsonBucketTrackerBuckets)
@@ -91,6 +93,7 @@ CDAC_TYPE_FIELD(IdDispenser, T_POINTER, IdToThread, cdac_data<IdDispenser>::IdTo
 CDAC_TYPE_FIELD(IdDispenser, T_UINT32, HighestId, cdac_data<IdDispenser>::HighestId)
 CDAC_TYPE_END(IdDispenser)
 
+#ifdef FEATURE_MULTITHREADING
 CDAC_TYPE_BEGIN(ThreadStaticsInfo)
 CDAC_TYPE_SIZE(sizeof(ThreadStaticsInfo))
 CDAC_TYPE_FIELD(ThreadStaticsInfo, TYPE(TLSIndex), GCTlsIndex, offsetof(ThreadStaticsInfo, GCTlsIndex))
@@ -117,6 +120,7 @@ CDAC_TYPE_BEGIN(TLSIndex)
 CDAC_TYPE_INDETERMINATE(TLSIndex)
 CDAC_TYPE_FIELD(TLSIndex, T_UINT32, TLSIndexRawIndex, offsetof(TLSIndex, TLSIndexRawIndex))
 CDAC_TYPE_END(TLSIndex)
+#endif // FEATURE_MULTITHREADING
 
 CDAC_TYPE_BEGIN(EEAllocContext)
 CDAC_TYPE_INDETERMINATE(EEAllocContext)
@@ -1311,6 +1315,9 @@ CDAC_TYPE_END(InterpreterFrame)
 CDAC_TYPE_BEGIN(TransitionBlock)
 CDAC_TYPE_SIZE(sizeof(TransitionBlock))
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CodePointer), ReturnAddress, offsetof(TransitionBlock, m_ReturnAddress))
+#ifdef TARGET_WASM
+CDAC_TYPE_FIELD(TransitionBlock, T_POINTER, StackPointer, offsetof(TransitionBlock, m_StackPointer))
+#endif // TARGET_WASM
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CalleeSavedRegisters), CalleeSavedRegisters, offsetof(TransitionBlock, m_calleeSavedRegisters))
 // Offset to argument registers and first GCRefMap slot (platform-specific)
 #if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
@@ -1798,7 +1805,9 @@ CDAC_GLOBAL(SizeOfGenericModeBlock, T_UINT32, sizeof(GenericModeBlock))
 #endif
 CDAC_GLOBAL(StaticsPointerMask, T_NUINT, DynamicStaticsInfo::STATICSPOINTERMASK)
 CDAC_GLOBAL(PtrArrayOffsetToDataArray, T_NUINT, offsetof(PtrArray, m_Array))
+#ifdef FEATURE_MULTITHREADING
 CDAC_GLOBAL(NumberOfTlsOffsetsNotUsedInNoncollectibleArray, T_UINT8, NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)
+#endif // FEATURE_MULTITHREADING
 CDAC_GLOBAL(MaxClrNotificationArgs, T_UINT32, MAX_CLR_NOTIFICATION_ARGS)
 CDAC_GLOBAL(FieldOffsetNewEnc, T_UINT32, FIELD_OFFSET_NEW_ENC)
 CDAC_GLOBAL(FieldOffsetBigRVA, T_UINT32, FIELD_OFFSET_BIG_RVA)
@@ -1922,9 +1931,7 @@ CDAC_GLOBAL_CONTRACT(ObjectiveCMarshal, c1)
 CDAC_GLOBAL_CONTRACT(Object, c1)
 CDAC_GLOBAL_CONTRACT(FeatureFlags, c1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, c1)
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-CDAC_GLOBAL_CONTRACT(PrecodeStubs, c2)
-#else
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, c1)
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef PROFILING_SUPPORTED

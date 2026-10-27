@@ -622,11 +622,13 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
         }
     }
 
+#ifdef FEATURE_MULTITHREADING
     if (!s_PriorityBoosted)
     {
         if (GetFinalizerThread()->SetThreadPriority(THREAD_PRIORITY_HIGHEST))
             s_PriorityBoosted = true;
     }
+#endif // FEATURE_MULTITHREADING
 
     // The Finalizer thread is started very early in EE startup. We deferred
     // some initialization until a point we are sure the EE is up and running. At
@@ -663,6 +665,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
 #endif // !TARGET_WASM
 }
 
+#ifdef FEATURE_MULTITHREADING
 DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 {
     CONTRACTL
@@ -710,22 +713,37 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
         {
             GetFinalizerThread()->SetBackground(TRUE);
 
-            while (!fQuitFinalizer)
+            HRESULT startupStatus;
             {
-                ManagedThreadBase::KickOff(FinalizerThreadWorker, NULL);
-
-                // If we came out on an exception, then we probably lost the signal that
-                // there are objects in the queue ready to finalize.  The safest thing is
-                // to reenable finalization.
-                if (!fQuitFinalizer)
-                    EnableFinalization();
+                GCX_PREEMP();
+                // EEStartup creates this thread while holding the startup lock, so this waits
+                // for startup to finish without initiating loading on the finalizer thread.
+                startupStatus = EnsureEEStarted();
             }
 
-            AppDomain::RaiseExitProcessEvent();
+            if (SUCCEEDED(startupStatus))
+            {
+                while (!fQuitFinalizer)
+                {
+                    ManagedThreadBase::KickOff(FinalizerThreadWorker, NULL);
 
-            // We have been asked to quit, so must be shutting down
-            _ASSERTE(g_fEEShutDown);
-            _ASSERTE(GetFinalizerThread()->PreemptiveGCDisabled());
+                    // If we came out on an exception, then we probably lost the signal that
+                    // there are objects in the queue ready to finalize.  The safest thing is
+                    // to reenable finalization.
+                    if (!fQuitFinalizer)
+                        EnableFinalization();
+                }
+
+                AppDomain::RaiseExitProcessEvent();
+
+                // We have been asked to quit, so must be shutting down
+                _ASSERTE(g_fEEShutDown);
+                _ASSERTE(GetFinalizerThread()->PreemptiveGCDisabled());
+            }
+            else
+            {
+                LOG((LF_GC, LL_ERROR, "Finalizer thread skipping managed execution because EnsureEEStarted failed: 0x%08x\n", startupStatus));
+            }
 
             hEventFinalizerToShutDown->Set();
         }
@@ -748,6 +766,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
     return 0;
 }
+#endif // FEATURE_MULTITHREADING
 
 void FinalizerThread::FinalizerThreadCreate()
 {
@@ -757,7 +776,7 @@ void FinalizerThread::FinalizerThreadCreate()
         MODE_ANY;
     } CONTRACTL_END;
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
 #ifndef TARGET_UNIX
     MHandles[kLowMemoryNotification] =
         CreateMemoryResourceNotification(LowMemoryResourceNotification);
@@ -795,10 +814,10 @@ void FinalizerThread::FinalizerThreadCreate()
         // and the moment we execute the test below.
         _ASSERTE(dwRet == 1 || dwRet == 2);
     }
-#else // !TARGET_WASM
+#else // FEATURE_MULTITHREADING
     // capture the current (single) thread as the finalizer thread
     g_pFinalizerThread = PTR_Thread(GetThread());
-#endif // !TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 }
 
 static int g_fullGcCountSeenByFinalization;

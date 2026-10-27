@@ -174,8 +174,8 @@ OBJECTREF *PinnedHeapHandleBucket::TryAllocateEmbeddedFreeHandle()
     }
     CONTRACTL_END;
 
-    OBJECTREF pPreallocatedSentinelObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
-    _ASSERTE(pPreallocatedSentinelObject  != NULL);
+    OBJECTREF pPreallocatedSentinelObject = g_pPreallocatedSentinelObject;
+    _ASSERTE(pPreallocatedSentinelObject != NULL);
 
     for (int  i = m_CurrentEmbeddedFreePos; i < m_CurrentPos; i++)
     {
@@ -405,8 +405,8 @@ void PinnedHeapHandleTable::ReleaseHandlesLocked(OBJECTREF *pObjRef, DWORD nRele
     _ASSERTE(m_Crst.OwnedByCurrentThread());
 #endif
 
-    OBJECTREF pPreallocatedSentinelObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
-    _ASSERTE(pPreallocatedSentinelObject  != NULL);
+    OBJECTREF pPreallocatedSentinelObject = g_pPreallocatedSentinelObject;
+    _ASSERTE(pPreallocatedSentinelObject != NULL);
 
 
     // Add the released handles to the list of available handles.
@@ -428,23 +428,6 @@ void PinnedHeapHandleTable::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 }
 
 #undef LOADERHEAP_PROFILE_COUNTER
-
-void AppDomain::ClearBinderContext()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if (m_pDefaultBinder)
-    {
-        delete m_pDefaultBinder;
-        m_pDefaultBinder = NULL;
-    }
-}
 
 void AppDomain::ShutdownFreeLoaderAllocators()
 {
@@ -769,26 +752,6 @@ void SystemDomain::DetachBegin()
         m_pSystemDomain->Stop();
 }
 
-void SystemDomain::DetachEnd()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    // Shut down the domain and its children (but don't deallocate anything just
-    // yet).
-    if(m_pSystemDomain)
-    {
-        GCX_PREEMP();
-        AppDomain* pAppDomain = GetAppDomain();
-        if (pAppDomain)
-            pAppDomain->ClearBinderContext();
-    }
-}
-
 void SystemDomain::Stop()
 {
     WRAPPER_NO_CONTRACT;
@@ -807,8 +770,14 @@ void SystemDomain::PreallocateSpecialObjects()
 
     _ASSERTE(g_pPreallocatedSentinelObject == NULL);
 
-    OBJECTREF pPreallocatedSentinelObject = AllocateObject(g_pObjectClass);
-    g_pPreallocatedSentinelObject = AppDomain::GetCurrentDomain()->CreatePinningHandle( pPreallocatedSentinelObject );
+    g_pPreallocatedSentinelObject = TryAllocateFrozenObject(g_pObjectClass);
+    if (g_pPreallocatedSentinelObject == NULL)
+    {
+        OBJECTREF pPreallocatedSentinelObject = AllocateObject(g_pObjectClass);
+        // Keep the fallback object alive and immovable for the lifetime of the runtime.
+        OBJECTHANDLE handle = AppDomain::GetCurrentDomain()->CreatePinningHandle(pPreallocatedSentinelObject);
+        g_pPreallocatedSentinelObject = ObjectFromHandle(handle);
+    }
 }
 
 void SystemDomain::CreatePreallocatedExceptions()
@@ -958,8 +927,10 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
     }
 }
 
+#ifndef TARGET_WASM
 extern "C" PCODE g_pPollGC;
 PCODE g_pPollGC;
+#endif // !TARGET_WASM
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 extern "C" PCODE g_pThrowOverflowException;
 PCODE g_pThrowOverflowException;
@@ -1096,7 +1067,13 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pExceptionServicesInternalCallsClass = CoreLibBinder::GetClass(CLASS__EXCEPTIONSERVICES_INTERNALCALLS);
         g_pStackFrameIteratorClass = CoreLibBinder::GetClass(CLASS__STACKFRAMEITERATOR);
 
+#ifndef TARGET_WASM
         g_pPollGC = CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC)->GetMultiCallableAddrOfCode();
+#endif // !TARGET_WASM
+#if defined(FEATURE_PERFTRACING) && defined(FEATURE_MULTITHREADING)
+        // Bind before managed execution; stack walks cannot load methods.
+        CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC_WORKER);
+#endif // FEATURE_PERFTRACING && FEATURE_MULTITHREADING
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
         g_pThrowOverflowException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWOVERFLOWEXCEPTION)->GetMultiCallableAddrOfCode();
         g_pThrowDivideByZeroException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWDIVIDEBYZEROEXCEPTION)->GetMultiCallableAddrOfCode();
@@ -1330,12 +1307,6 @@ Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
         return NULL;
 }
 
-struct CallersData
-{
-    int skip;
-    MethodDesc* pMethod;
-};
-
 /*static*/
 Assembly* SystemDomain::GetCallersAssembly(StackCrawlMark *stackMark)
 {
@@ -1442,26 +1413,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     return SWA_ABORT;
 }
 
-/*private static*/
-StackWalkAction SystemDomain::CallersMethodCallback(CrawlFrame* pCf, VOID* data)
-{
-    LIMITED_METHOD_CONTRACT;
-    MethodDesc *pFunc = pCf->GetFunction();
-
-    /* We asked to be called back only for functions */
-    _ASSERTE(pFunc);
-
-    CallersData* pCaller = (CallersData*) data;
-    if(pCaller->skip == 0) {
-        pCaller->pMethod = pFunc;
-        return SWA_ABORT;
-    }
-    else {
-        pCaller->skip--;
-        return SWA_CONTINUE;
-    }
-}
-
 void AppDomain::Create()
 {
     STANDARD_VM_CONTRACT;
@@ -1558,45 +1509,6 @@ void SystemDomain::NotifyProfilerStartup()
     }
 }
 
-HRESULT SystemDomain::NotifyProfilerShutdown()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(System());
-        (&g_profControlBlock)->AppDomainShutdownStarted((AppDomainID) System());
-        END_PROFILER_CALLBACK();
-    }
-
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(System());
-        (&g_profControlBlock)->AppDomainShutdownFinished((AppDomainID) System(), S_OK);
-        END_PROFILER_CALLBACK();
-    }
-
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(AppDomain::GetCurrentDomain());
-        (&g_profControlBlock)->AppDomainShutdownStarted((AppDomainID) AppDomain::GetCurrentDomain());
-        END_PROFILER_CALLBACK();
-    }
-
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(AppDomain::GetCurrentDomain());
-        (&g_profControlBlock)->AppDomainShutdownFinished((AppDomainID) AppDomain::GetCurrentDomain(), S_OK);
-        END_PROFILER_CALLBACK();
-    }
-    return S_OK;
-}
 #endif // PROFILING_SUPPORTED
 
 AppDomain::AppDomain()
@@ -2929,6 +2841,7 @@ BOOL AppDomain::RemoveFileFromCache(PEAssembly * pPEAssembly)
     CONTRACTL
     {
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pPEAssembly));
     }
     CONTRACTL_END;
@@ -3796,10 +3709,13 @@ PTR_LoaderAllocator AppDomain::GetLoaderAllocator()
 
 //------------------------------------------------------------------------
 UINT32 AppDomain::GetTypeID(PTR_MethodTable pMT) {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     return m_typeIDMap.GetTypeID(pMT, true);
 }

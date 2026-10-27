@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Project="$(RepositoryEngineeringDir)restore\browserWasmMibcProfile.props" />
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
@@ -54,6 +55,7 @@
     <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.10" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
+    <ProjectReference Include="$(RepoTasksDir)MonoTargetsTasks\MonoTargetsTasks.csproj" />
     <!-- Only needed to build the task used by GenerateHelixJobsList below. -->
     <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" ReferenceOutputAssembly="false" />
 
@@ -68,6 +70,10 @@
     <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(BrowserWasmMibcProfile)"
+          Condition="'$(BrowserWasmMibcProfile)' != ''"
+          Link="data\DotNet_Blazor_Wasm.mibc"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Deploy dotnet-pgo (and its managed dependencies) into a dotnet-pgo/ subfolder next to the test so

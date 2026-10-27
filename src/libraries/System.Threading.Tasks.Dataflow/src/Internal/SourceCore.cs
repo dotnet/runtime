@@ -158,7 +158,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-            if (target == null) throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
 
             TOutput? consumedMessageValue = default(TOutput);
 
@@ -214,7 +214,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-            if (target == null) throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
 
             lock (OutgoingLock)
             {
@@ -241,7 +241,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-            if (target == null) throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
 
             lock (OutgoingLock)
             {

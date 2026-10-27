@@ -87,8 +87,10 @@ else()
         append_extra_compression_libs(NATIVE_LIBS)
 
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
-        if (CLR_CMAKE_TARGET_BROWSER)
+        if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             include(./wasm/testkit.cmake)
+        endif()
+        if (CLR_CMAKE_TARGET_BROWSER)
             target_link_libraries(corerun PRIVATE
                 System.Native.Browser-Static)
             set(JS_SYSTEM_NATIVE_BROWSER
@@ -145,6 +147,7 @@ else()
                 COMPONENT hosts
                 SOURCES ${CORERUN_SOURCES}
                 LINK_OPTIONS ${CORERUN_BROWSER_LINK_OPTIONS}
+                COMPILE_OPTIONS -fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128
                 JS_LIBRARIES "${JS_SYSTEM_NATIVE_BROWSER}" "${JS_SYSTEM_BROWSER_UTILS}" "${JS_CORE_RUN}"
                 EXTERN_POST_JS "${JS_CORE_RUN_EXTPOST}")
         elseif (CLR_CMAKE_TARGET_WASI)
@@ -156,17 +159,15 @@ else()
             get_filename_component(_wasi_sdk_bin "${CMAKE_C_COMPILER}" DIRECTORY)
             set(_wasi_http_world_wit
                 "${CLR_DIR}/../libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit")
-            target_link_options(corerun PRIVATE
-                "-fuse-ld=${_wasi_sdk_bin}/wasm-component-ld"
+            set(CORERUN_WASI_LINK_OPTIONS
                 -Wl,-z,stack-size=8388608
                 -Wl,--initial-memory=134217728
                 -Wl,--max-memory=4294967296
-                "-Wl,--component-type,${_wasi_http_world_wit}"
                 -Wl,--export=GetDotNetRuntimeContractDescriptor
                 -Wl,--export=__async_continuation)
 
             if (CORERUN_WASI_COMPOSITE_R2R)
-                target_link_options(corerun PRIVATE
+                list(APPEND CORERUN_WASI_LINK_OPTIONS
                     -Wl,--table-base=${CORERUN_WASI_R2R_TABLE_BASE}
                     -Wl,--export-table
                     -Wl,--export=__stack_pointer
@@ -174,6 +175,24 @@ else()
             else()
                 target_compile_definitions(corerun PRIVATE WASI_R2R_IMAGE_CAP=64u)
             endif()
+
+            target_link_options(corerun PRIVATE
+                "-fuse-ld=${_wasi_sdk_bin}/wasm-component-ld"
+                "-Wl,--component-type,${_wasi_http_world_wit}"
+                ${CORERUN_WASI_LINK_OPTIONS})
+
+            # Export everything a runtime test needs to re-link corerun with its
+            # own native library and generated call tables. The kit carries the
+            # wasi:http world and names it relatively. The consumer supplies the
+            # wasi-sdk target, sysroot and component linker, which are host paths.
+            get_filename_component(_wasi_http_world_wit_name "${_wasi_http_world_wit}" NAME)
+            corerun_kit_export(
+                COMPONENT hosts
+                WHOLE_ARCHIVE_HOST
+                SOURCES ${CORERUN_SOURCES}
+                LINK_OPTIONS ${CORERUN_WASI_LINK_OPTIONS} "-Wl,--component-type,${_wasi_http_world_wit_name}"
+                COMPILE_OPTIONS -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false
+                EXTRA_FILES "${_wasi_http_world_wit}")
         endif()
 
         if (CORERUN_IN_BROWSER)

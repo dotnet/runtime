@@ -24,7 +24,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
 
         public MethodBaseInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant, out Exception exception)
         {
-            return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(DeclaringType, new QMethodDefinition(Reader, MethodHandle), methodArguments, exceptionPertainant, out exception);
+            return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(DeclaringType, new QMethodDefinition(Reader, MethodHandle), methodArguments, exceptionPertainant, MethodSignature.Parameters.Count, out exception);
         }
 
         public QSignatureTypeHandle[] QualifiedMethodSignature
