@@ -133,7 +133,7 @@ namespace System.Threading.Tasks.Dataflow
                 // Validate arguments.  Some targets may have a null source, but FilteredLinkPropagator
                 // is an internal target that should only ever have source non-null.
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-                if (source == null) throw new ArgumentNullException(nameof(source));
+                ArgumentNullException.ThrowIfNull(source);
 
                 // Run the filter.
                 bool passedFilter = RunPredicate(messageValue);
@@ -619,7 +619,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-                if (target == null) throw new ArgumentNullException(nameof(target));
+                ArgumentNullException.ThrowIfNull(target);
 
                 // If the task has already completed, there's nothing to consume.  This could happen if
                 // cancellation was already requested and completed the task as a result.
@@ -664,7 +664,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-                if (target == null) throw new ArgumentNullException(nameof(target));
+                ArgumentNullException.ThrowIfNull(target);
 
                 // If the task has already completed, such as due to cancellation, there's nothing to reserve.
                 if (Task.IsCompleted) return false;
@@ -681,7 +681,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-                if (target == null) throw new ArgumentNullException(nameof(target));
+                ArgumentNullException.ThrowIfNull(target);
 
                 // If this is not the message we posted, bail
                 if (messageHeader.Id != Common.SINGLE_MESSAGE_ID)
@@ -1401,8 +1401,9 @@ namespace System.Threading.Tasks.Dataflow
         public static Task<bool> OutputAvailableAsync<TOutput>(
             this ISourceBlock<TOutput> source, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             return
-                source is null ? throw new ArgumentNullException(nameof(source)) :
                 cancellationToken.IsCancellationRequested ? Common.CreateTaskFromCancellation<bool>(cancellationToken) :
                 Impl(source, cancellationToken);
 
@@ -1460,7 +1461,7 @@ namespace System.Threading.Tasks.Dataflow
             DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T>? source, bool consumeToAccept)
             {
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-                if (source == null) throw new ArgumentNullException(nameof(source));
+                ArgumentNullException.ThrowIfNull(source);
 
                 TrySetResult(true);
 

@@ -17,6 +17,7 @@ using ILLink.Shared.TypeSystemProxy;
 using Internal.IL;
 using Internal.TypeSystem;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 using InteropTypes = Internal.TypeSystem.Interop.InteropTypes;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 using NodeFactory = ILCompiler.DependencyAnalysis.NodeFactory;
@@ -138,7 +139,7 @@ namespace ILCompiler.Dataflow
             return scanner._reflectionMarker.Dependencies;
         }
 
-        public static DependencyList ProcessTypeGetTypeDataflow(NodeFactory factory, FlowAnnotations flowAnnotations, Logger logger, MetadataType type)
+        public static void AddTypeGetTypeDataflowDependencies(DependencySink dependencies, NodeFactory factory, FlowAnnotations flowAnnotations, Logger logger, MetadataType type)
         {
             DynamicallyAccessedMemberTypes annotation = flowAnnotations.GetTypeAnnotation(type);
             Debug.Assert(annotation != DynamicallyAccessedMemberTypes.None);
@@ -157,11 +158,11 @@ namespace ILCompiler.Dataflow
 
                     // If we're left with nothing, we're done
                     if (annotation == DynamicallyAccessedMemberTypes.None)
-                        return new DependencyList();
+                        return;
                 }
             }
 
-            var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlowOrigin: type, enabled: true);
+            var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlowOrigin: type, enabled: true, dependencySink: dependencies);
 
             // We need to apply annotations to this type, and its base/interface types (recursively)
             // But the annotations on base/interfaces may already be applied so we don't need to apply those
@@ -198,7 +199,6 @@ namespace ILCompiler.Dataflow
             // warnings on the respective base/interface members, since those are already covered by applying
             // the annotations to those types. So we only need to handle the members directly declared on this type.
             reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type, declaredOnly: true);
-            return reflectionMarker.Dependencies;
         }
 
         protected override void WarnAboutInvalidILInMethod(MethodIL method, int ilOffset)

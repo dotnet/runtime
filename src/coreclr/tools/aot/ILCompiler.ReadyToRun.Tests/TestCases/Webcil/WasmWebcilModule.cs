@@ -17,6 +17,28 @@ public static class WasmWebcilModule
     {
     }
 
+    public sealed class OtherLdtokenType
+    {
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool FoldTypeTokenEquality() => typeof(LdtokenType) == typeof(LdtokenType);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool FoldTypeTokenInequality() => typeof(LdtokenType) == typeof(OtherLdtokenType);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadTypeToken() => typeof(LdtokenType);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static RuntimeTypeHandle ReadTypeTokenHandle() => typeof(LdtokenType).TypeHandle;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadConstructedTypeToken() => typeof(LdtokenHolder<LdtokenType[]>);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadGenericTypeToken<T>() => typeof(T);
+
     public struct GenericTokenValue
     {
         public int Value;

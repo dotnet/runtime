@@ -5,6 +5,9 @@ using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
+using ILCompiler.DependencyAnalysisFramework;
 
 #nullable enable
 
@@ -14,26 +17,51 @@ namespace ILCompiler
     // that a type/method/field was accessed via reflection.
     public static class RootingHelpers
     {
-        public static bool TryGetDependenciesForReflectedType(
-            ref DependencyList dependencies, NodeFactory factory, TypeDesc type, string reason)
+        public static bool TryAddDependenciesForReflectedType(
+            IDependencySink dependencies,
+            NodeFactory factory,
+            TypeDesc type,
+            string reason)
         {
-            dependencies ??= new DependencyList();
             dependencies.Add(factory.ReflectedType(type), reason);
             return true;
         }
 
-        public static bool TryGetDependenciesForReflectedMethod(
-            ref DependencyList dependencies, NodeFactory factory, MethodDesc method, string reason)
+        public static bool TryAddDependenciesForReflectedType(
+            DependencySink dependencies,
+            NodeFactory factory,
+            TypeDesc type,
+            string reason,
+            DependencyNodeCore<NodeFactory> otherReasonNode)
         {
-            dependencies ??= new DependencyList();
+            dependencies.AddConditional(factory.ReflectedType(type), otherReasonNode, reason);
+            return true;
+        }
+
+        public static bool TryAddDependenciesForReflectedMethod(
+            IDependencySink dependencies,
+            NodeFactory factory,
+            MethodDesc method,
+            string reason)
+        {
             dependencies.Add(factory.ReflectedMethod(method), reason);
             return true;
         }
 
-        public static bool TryGetDependenciesForReflectedField(
-            ref DependencyList dependencies, NodeFactory factory, FieldDesc field, string reason)
+        public static bool TryAddDependenciesForReflectedMethod(
+            DependencySink dependencies,
+            NodeFactory factory,
+            MethodDesc method,
+            string reason,
+            DependencyNodeCore<NodeFactory> otherReasonNode)
         {
-            dependencies ??= new DependencyList();
+            dependencies.AddConditional(factory.ReflectedMethod(method), otherReasonNode, reason);
+            return true;
+        }
+
+        public static bool TryAddDependenciesForReflectedField(
+            IDependencySink dependencies, NodeFactory factory, FieldDesc field, string reason)
+        {
             dependencies.Add(factory.ReflectedField(field), reason);
             return true;
         }

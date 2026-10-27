@@ -903,30 +903,6 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out TypeForwarderHandleCollection values)
-        {
-            values = new TypeForwarderHandleCollection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            for (uint i = 0; i < count; ++i)
-            {
-                offset = reader.SkipInteger(offset);
-            }
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out NamespaceDefinitionHandleCollection values)
-        {
-            values = new NamespaceDefinitionHandleCollection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            for (uint i = 0; i < count; ++i)
-            {
-                offset = reader.SkipInteger(offset);
-            }
-            return offset;
-        } // Read
-
         public static uint Read(this NativeReader reader, uint offset, out MethodHandleCollection values)
         {
             values = new MethodHandleCollection(reader, offset);
@@ -975,6 +951,18 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
+        public static uint Read(this NativeReader reader, uint offset, out TypeForwarderHandleCollection values)
+        {
+            values = new TypeForwarderHandleCollection(reader, offset);
+            uint count;
+            offset = reader.DecodeUnsigned(offset, out count);
+            for (uint i = 0; i < count; ++i)
+            {
+                offset = reader.SkipInteger(offset);
+            }
+            return offset;
+        } // Read
+
         public static uint Read(this NativeReader reader, uint offset, out ScopeDefinitionHandleCollection values)
         {
             values = new ScopeDefinitionHandleCollection(reader, offset);
@@ -985,6 +973,20 @@ namespace Internal.Metadata.NativeFormat
                 offset = reader.SkipInteger(offset);
             }
             return offset;
+        } // Read
+
+        public static uint Read(this NativeReader reader, uint offset, out TypeDefinitionHandleHashtable values)
+        {
+            NativeParser parser = new NativeParser(reader, offset);
+            values = new TypeDefinitionHandleHashtable(new NativeHashtable(parser.GetParserFromRelativeOffset()));
+            return parser.Offset;
+        } // Read
+
+        public static uint Read(this NativeReader reader, uint offset, out TypeForwarderHandleHashtable values)
+        {
+            NativeParser parser = new NativeParser(reader, offset);
+            values = new TypeForwarderHandleHashtable(new NativeHashtable(parser.GetParserFromRelativeOffset()));
+            return parser.Offset;
         } // Read
     } // MdBinaryReader
 } // Internal.Metadata.NativeFormat
