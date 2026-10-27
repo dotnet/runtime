@@ -785,6 +785,14 @@ DEFINE_FIELD_U(Next,                ConditionalWeakTableContainerObject::Entry, 
 DEFINE_CLASS(RAW_DATA,              CompilerServices,       RawData)
 DEFINE_FIELD(RAW_DATA,              DATA,                   Data)
 
+#ifdef FOR_ILLINK
+#ifdef TARGET_64BIT
+// Preserve the padding so unsafe array accesses through RawArrayData.Data retain the correct offset.
+DEFINE_CLASS(RAW_ARRAY_DATA,        CompilerServices,       RawArrayData)
+DEFINE_FIELD(RAW_ARRAY_DATA,        PADDING,                Padding)
+#endif // TARGET_64BIT
+#endif // FOR_ILLINK
+
 DEFINE_CLASS(PORTABLE_TAIL_CALL_FRAME, CompilerServices,              PortableTailCallFrame)
 DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, TAILCALL_AWARE_RETURN_ADDRESS, TailCallAwareReturnAddress)
 DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, NEXT_CALL,                     NextCall)
