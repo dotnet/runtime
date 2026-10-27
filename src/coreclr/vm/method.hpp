@@ -1013,6 +1013,9 @@ public:
         return IsMdInstanceInitializer(GetAttrs(), GetName());
     }
 
+    bool IsStringCtor();
+    bool IsObjectReturningCtor();
+
     inline DWORD IsFinal()
     {
         WRAPPER_NO_CONTRACT;

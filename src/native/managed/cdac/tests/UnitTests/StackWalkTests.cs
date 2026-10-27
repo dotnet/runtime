@@ -396,9 +396,14 @@ public unsafe class StackWalkTests
     }
 
     [Theory]
-    [InlineData(".ctor", true)]
-    [InlineData("Method", false)]
-    public void TransitionFrame_DoesNotReadConstructorReceiver(string name, bool constructor)
+    [InlineData(".ctor", 0, false, true)]
+    [InlineData(".ctor", 0, true, false)]
+    [InlineData(".ctor", 4, false, false)]
+    [InlineData("Method", 0, true, true)]
+    [InlineData("Method", 0, false, true)]
+    [InlineData("FastAllocateString", 0x80, true, false)]
+    public void TransitionFrame_ReceiverEligibilityDistinguishesStringAndArrayConstructors(
+        string name, ushort methodFlags, bool stringOwner, bool hasReceiver)
     {
         MetadataBuilder metadata = new();
         metadata.AddModule(0, metadata.GetOrAddString("M"), default, default, default);
@@ -409,9 +414,11 @@ public unsafe class StackWalkTests
         BlobBuilder image = new();
         new MetadataRootBuilder(metadata).Serialize(image, 0, 0);
         using MetadataReaderProvider provider = MetadataReaderProvider.FromMetadataImage(ImmutableArray.Create(image.ToArray()));
-        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
-            "interface", metadata: provider.GetMetadataReader(), unreadableThis: constructor);
-        Assert.Equal(constructor ? 0UL : 0xa000UL,
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(
+            "interface", metadata: provider.GetMetadataReader(), unreadableThis: !hasReceiver, methodFlags: methodFlags);
+        if (stringOwner)
+            rts.StringTypes.Add(rts.Methods[0x6000].Owner);
+        Assert.Equal(hasReceiver ? 0xa000UL : 0UL,
             new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
     }
 
@@ -598,11 +605,29 @@ public unsafe class StackWalkTests
             rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false));
     }
 
-    [Fact]
-    public void TransitionFrame_MissingMetadataDoesNotReadPotentialConstructorReceiver()
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void TransitionFrame_MissingMetadataOnlyPreventsStringReceiverLookup(bool stringOwner, bool ownMap)
     {
-        (TestPlaceholderTarget target, _) = CreateVirtualMapTarget("interface", unreadableThis: true, metadataMissing: true);
-        Assert.Equal(TargetPointer.Null, new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)));
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(
+            "interface", metadataMissing: true, unreadableThis: stringOwner, ownMap: ownMap);
+        if (stringOwner)
+            rts.StringTypes.Add(rts.Methods[0x6000].Owner);
+        Assert.Equal(!stringOwner || ownMap ? 0xa000UL : 0UL,
+            new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+    }
+
+    [Theory]
+    [InlineData(ArrayFunctionType.Get)]
+    [InlineData(ArrayFunctionType.Set)]
+    [InlineData(ArrayFunctionType.Address)]
+    public void TransitionFrame_ArrayAccessorsHaveReceiver(ArrayFunctionType function)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget("interface", methodFlags: 4);
+        rts.ArrayFunction = function;
+        Assert.Equal(0xa000UL, new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
     }
 
     [Fact]
@@ -637,23 +662,26 @@ public unsafe class StackWalkTests
         internal readonly Dictionary<ulong, ulong> Canonical = [];
         internal readonly HashSet<ulong> UnboxingStubs = [];
         internal readonly HashSet<ulong> GenericMethods = [];
+        internal readonly HashSet<ulong> StringTypes = [];
         internal readonly Dictionary<ulong, GenericContextLoc> MethodContexts = [];
         internal readonly Dictionary<ulong, uint> MethodTokens = [];
         internal readonly Dictionary<ulong, ulong> Modules = [];
         internal readonly Dictionary<ulong, AsyncMethodFlags> AsyncFlags = [];
         internal uint MethodToken = 0x06000000;
+        internal ArrayFunctionType ArrayFunction = ArrayFunctionType.Constructor;
         public ITypeHandle GetTypeHandle(TargetPointer address) => new VirtualMapTypeHandle(address);
         public MethodDescHandle GetMethodDescHandle(TargetPointer address) => new(address);
         public TargetPointer GetMethodTable(MethodDescHandle method) => new(Methods[method.Address.Value].Owner);
         public ushort GetSlotNumber(MethodDescHandle method) => Methods[method.Address.Value].Slot;
         public bool IsUnboxingStub(MethodDescHandle method) => UnboxingStubs.Contains(method.Address.Value);
         public bool IsValueType(ITypeHandle type) => false;
+        public bool IsString(ITypeHandle type) => StringTypes.Contains(type.Address.Value);
         public uint GetMethodToken(MethodDescHandle method) => MethodTokens.GetValueOrDefault(method.Address.Value, MethodToken);
         public TargetPointer GetModule(ITypeHandle type) => new(Modules.GetValueOrDefault(type.Address.Value, 0xc000UL));
         public AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle method) => AsyncFlags.GetValueOrDefault(method.Address.Value);
         public bool IsArrayMethod(MethodDescHandle method, out ArrayFunctionType function)
         {
-            function = ArrayFunctionType.Constructor;
+            function = ArrayFunction;
             return true;
         }
         public GenericContextLoc GetGenericContextLoc(MethodDescHandle method) => MethodContexts.GetValueOrDefault(method.Address.Value);

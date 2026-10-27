@@ -1478,7 +1478,7 @@ InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD)
 
     MetaSig metaSig(pMD);
 
-    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
+    if (pMD->IsStringCtor())
     {
         const char *thunkKey = nullptr;
 
@@ -1588,7 +1588,7 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     MetaSig sig(pMD);
     void* thunk;
 
-    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
+    if (pMD->IsStringCtor())
     {
         const char *thunkKey = nullptr;
 

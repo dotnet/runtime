@@ -251,11 +251,16 @@ internal sealed class FrameHelpers
         Data.MethodDesc data = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(method.Address);
         if ((data.Flags & (ushort)MethodDescFlags_1.MethodDescFlags.ClassificationMask) == (ushort)MethodClassification.Array)
             return !rts.IsArrayMethod(method, out ArrayFunctionType function) || function is not ArrayFunctionType.Constructor;
+        if (!rts.IsString(rts.GetTypeHandle(owner)))
+            return true;
+
         uint token = rts.GetMethodToken(method);
         if ((token & 0x00ffffff) == 0)
-            return true;
+            return false;
         ModuleHandle module = _target.Contracts.Loader.GetModuleHandleFromModulePtr(rts.GetModule(rts.GetTypeHandle(owner)));
         MetadataReader? metadata = _target.Contracts.EcmaMetadata.GetMetadata(module);
+        // Without String metadata, the saved argument could belong to a constructor's
+        // static factory rather than be a receiver.
         if (metadata is null)
             return false;
         MethodDefinition definition = metadata.GetMethodDefinition((MethodDefinitionHandle)MetadataTokens.Handle((int)token));

@@ -1621,8 +1621,7 @@ ReturnKind MethodDesc::GetReturnKind()
             break;
 
         case ELEMENT_TYPE_VOID:
-            // String constructors return objects..
-            if (IsCtor() && GetMethodTable()->HasComponentSize())
+            if (IsObjectReturningCtor())
             {
                 return RT_Object;
             }
@@ -2059,8 +2058,7 @@ UINT MethodDesc::CbStackPop()
     MetaSig msig(this);
     ArgIterator argit(&msig);
 
-    bool fCtorOfVariableSizedObject = msig.HasThis() && (GetMethodTable() == g_pStringClass) && IsCtor();
-    if (fCtorOfVariableSizedObject)
+    if (IsStringCtor())
     {
         msig.ClearHasThis();
     }

@@ -961,7 +961,9 @@ preparation. The runtime rejects images predating the contextual-receiver format
 concrete import-map rejection is not part of Version 2 lookup.
 If lookup in the method's owning type fails during root enumeration, obtain the actual receiver
 type from the saved `this` object for reference types, boxed wrappers, and dispatch frames. Do not dereference
-`this` for constructors, static methods, excluded generic bodies, or unboxed value-type bodies.
+`this` for object-returning constructors (String constructors and synthetic array
+constructors), static methods, excluded generic bodies, or unboxed value-type bodies.
+Ordinary instance constructors have a receiver and are eligible for receiver-based lookup.
 The live runtime saves successful lookups and completed misses on the frame before
 reporting argument roots. A single pointer field holds null for an uninitialized lookup,
 an all-ones target pointer for a completed miss, or the map address for a successful lookup.
@@ -980,9 +982,12 @@ diagnostic unwind may perform the same metadata and receiver lookup as the first
 walk: relocation that needed this lookup would already have completed it during marking.
 This lets x86 unwind before the first GC without requiring signature layouts that
 map-based preparation deliberately left unloaded. A completed miss retains signature fallback.
-Reading method metadata to recognize `.ctor` does not load signature value-type layouts.
-When metadata is unavailable, do not dereference a potentially synthetic constructor receiver;
-retain the signature fallback, which can defer frames whose layouts are unavailable.
+For diagnostic receiver eligibility, recognize String constructors from their String owning
+type and instance-initializer metadata (`RTSpecialName` and `.ctor`), and synthetic array
+constructors from their array-method kind. Missing String method metadata prevents receiver
+lookup for that method; it does not prevent receiver lookup for methods on other types.
+A String constructor frame can retain the instance constructor MethodDesc even though its
+actual static-factory ABI supplies no receiver.
 
 When the method belongs to an interface, first find its exact interface method-table pointer
 and source slot in the receiver hierarchy's dispatch maps. Normalize the matching target slot

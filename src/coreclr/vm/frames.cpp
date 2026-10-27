@@ -1509,7 +1509,9 @@ PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc(ScanContext* sc)
         // dereferencing it here could read an invalid MethodTable.
         if (sc != nullptr && !sc->promotion)
             return map;
-        if (map == nullptr && !pMD->IsStatic() && !pMD->IsCtor() && !pMD->HasMethodInstantiation() &&
+        // Object-returning constructors do not supply an ordinary receiver. A String prestub
+        // frame can still name the instance constructor rather than its static factory.
+        if (map == nullptr && !pMD->IsStatic() && !pMD->IsObjectReturningCtor() && !pMD->HasMethodInstantiation() &&
             (dispatch || !pMD->RequiresInstArg()))
         {
             MethodTable* pReceiverMT = pMD->GetMethodTable();
@@ -1592,8 +1594,7 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 
         MetaSig msig(pSig, cbSigSize, pFunction->GetModule(), &typeContext);
 
-        bool fCtorOfVariableSizedObject = msig.HasThis() && (pFunction->GetMethodTable() == g_pStringClass) && pFunction->IsCtor();
-        if (fCtorOfVariableSizedObject)
+        if (pFunction->IsStringCtor())
             msig.ClearHasThis();
 
         if (pFunction->RequiresInstArg() && !SuppressParamTypeArg())
@@ -2140,8 +2141,7 @@ void ComputeCallRefMap(MethodDesc* pMD,
     pMD->GetSig(&pSig, &cbSigSize);
     MetaSig msig(pSig, cbSigSize, pMD->GetModule(), &typeContext);
 
-    bool fCtorOfVariableSizedObject = msig.HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
-    if (fCtorOfVariableSizedObject)
+    if (pMD->IsStringCtor())
     {
         msig.ClearHasThis();
     }
