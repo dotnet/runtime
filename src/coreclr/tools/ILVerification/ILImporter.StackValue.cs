@@ -91,14 +91,6 @@ namespace Internal.IL
             Flags |= StackValueFlags.ReadOnly;
         }
 
-        public void SetIsPermanentHome()
-        {
-            Debug.Assert(Kind == StackValueKind.ByRef);
-            Flags |= StackValueFlags.PermanentHome;
-            EscapeScope = LifetimeScope.Global;
-            LifetimeCapacity = LifetimeScope.Global;
-        }
-
         public void SetIsThisPtr()
         {
             Flags |= StackValueFlags.ThisPtr;

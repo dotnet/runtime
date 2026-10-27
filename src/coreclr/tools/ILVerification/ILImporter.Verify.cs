@@ -1896,15 +1896,10 @@ namespace Internal.IL
             if (tailCall)
                 CheckTailCallReturn(sig.ReturnType);
 
+            InvalidateLifetimeMemory();
+
             if (!sig.ReturnType.IsVoid)
-            {
-                var returnValue = StackValue.CreateFromType(sig.ReturnType);
-
-                if (returnValue.Kind == StackValueKind.ByRef)
-                    returnValue.SetIsPermanentHome();
-
-                Push(returnValue);
-            }
+                Push(StackValue.CreateFromType(sig.ReturnType).WithLifetime(LifetimeScope.Unknown));
         }
 
         void ImportLdFtn(int token, ILOpcode opCode)

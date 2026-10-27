@@ -5,6 +5,10 @@
 {
 }
 
+.assembly extern ReturnTests
+{
+}
+
 .assembly CalliTests
 {
 }
@@ -152,10 +156,21 @@
         ret
     }
 
-    .method public hidebysig static int32& Calli.ByRefReturn_Invalid_Unverifiable(method int32& *() f) cil managed
+    .method public hidebysig static int32& Calli.ByRefReturn_Invalid_Unverifiable.ReturnPtrToStack(method int32& *() f) cil managed
     {
         ldarg.0
         calli int32&()
+        ret
+    }
+
+    .method public hidebysig static valuetype [ReturnTests]RefCarrier Calli.UnknownMutation_Invalid_Unverifiable.ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype [ReturnTests]RefCarrier)
+        ldloca.s 1
+        ldloca.s 0
+        ldftn void [ReturnTests]ReturnTestsType::Return.StoreCarrier_Valid(valuetype [ReturnTests]RefCarrier&, int32&)
+        calli void(valuetype [ReturnTests]RefCarrier&, int32&)
+        ldloc.1
         ret
     }
 

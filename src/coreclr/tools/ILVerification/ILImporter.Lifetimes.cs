@@ -129,8 +129,8 @@ namespace Internal.IL
                 bool receiver = i < firstParameter;
                 TypeDesc type = receiver ? method.OwningType : signature[i - firstParameter];
                 bool byRef = receiver ? type.IsValueType : type.IsByRef;
-                contract.References[i] = !byRef ? LifetimeScope.Function :
-                    modern ? receiver ? LifetimeScope.Function : LifetimeScope.ReturnOnly : LifetimeScope.Caller;
+                contract.References[i] = !byRef || receiver ? LifetimeScope.Function :
+                    modern ? LifetimeScope.ReturnOnly : LifetimeScope.Caller;
                 contract.Contents[i] = receiver && method.IsConstructor && type.IsValueType ?
                     LifetimeScope.ReturnOnly : LifetimeScope.Caller;
                 contract.Outputs[i] = receiver && method.IsConstructor && type.IsValueType;
@@ -139,9 +139,7 @@ namespace Internal.IL
             if (ecma is not null)
             {
                 MetadataReader reader = ecma.MetadataReader;
-                if (firstParameter != 0 && HasLifetimeMarker(reader,
-                    reader.GetMethodDefinition(ecma.Handle).GetCustomAttributes(),
-                    "System.Diagnostics.CodeAnalysis", "UnscopedRefAttribute", contract))
+                if (firstParameter != 0 && HasUnscopedReceiver(ecma, contract))
                     contract.References[0] = LifetimeScope.ReturnOnly;
 
                 foreach (ParameterHandle handle in reader.GetMethodDefinition(ecma.Handle).GetParameters())
@@ -178,6 +176,27 @@ namespace Internal.IL
                 }
             }
             return contract;
+        }
+
+        static bool HasUnscopedReceiver(EcmaMethod method, LifetimeContract contract)
+        {
+            MetadataReader reader = method.MetadataReader;
+            bool unscoped = HasLifetimeMarker(reader,
+                reader.GetMethodDefinition(method.Handle).GetCustomAttributes(),
+                "System.Diagnostics.CodeAnalysis", "UnscopedRefAttribute", contract);
+
+            foreach (PropertyDefinitionHandle handle in reader.GetTypeDefinition(method.OwningType.Handle).GetProperties())
+            {
+                PropertyDefinition property = reader.GetPropertyDefinition(handle);
+                PropertyAccessors accessors = property.GetAccessors();
+                bool associated = accessors.Getter == method.Handle || accessors.Setter == method.Handle;
+                foreach (MethodDefinitionHandle other in accessors.Others)
+                    associated |= other == method.Handle;
+                if (associated)
+                    unscoped |= HasLifetimeMarker(reader, property.GetCustomAttributes(),
+                        "System.Diagnostics.CodeAnalysis", "UnscopedRefAttribute", contract);
+            }
+            return unscoped;
         }
 
         static bool HasLifetimeMarker(MetadataReader reader, CustomAttributeHandleCollection attributes,
@@ -463,6 +482,15 @@ namespace Internal.IL
             }
         }
 
+        void InvalidateLifetimeMemory()
+        {
+            for (int i = 0; i < _lifetimeMemory.Length; i++)
+            {
+                if (_lifetimeCellTypes[i] is TypeDesc type && HasLifetime(type))
+                    StoreLifetimeCell(i, _lifetimeMemory[i].WithLifetime(LifetimeScope.Unknown), false);
+            }
+        }
+
         bool NeedsCallLifetimes(MethodDesc method, TypeDesc constrained)
         {
             if (HasLifetimeContents(constrained) || HasLifetime(method.Signature.ReturnType) ||
@@ -508,8 +536,9 @@ namespace Internal.IL
                 (!method.IsVirtual || method.IsFinal || exactTarget));
             LifetimeScope returned = contract.Valid ? LifetimeScope.Global : LifetimeScope.Unknown;
             LifetimeScope returnedContents = returned;
-            int target = -1;
+            int target = 0;
             bool hasTarget = false;
+            bool wholeTarget = true;
             LifetimeScope capacity = LifetimeScope.Function;
             for (int i = 0; i < arguments.Length; i++)
             {
@@ -521,9 +550,10 @@ namespace Internal.IL
                     returned = Narrower(returned, argument.EscapeScope);
                     if (HasLifetimeContents(argument.Type))
                     {
-                        hasTarget = true;
                         returnedContents = Narrower(returnedContents, ReadLifetime(argument));
-                        target = target == -1 ? argument.LifetimeTarget : target == argument.LifetimeTarget ? target : 0;
+                        target = !hasTarget ? argument.LifetimeTarget : target == argument.LifetimeTarget ? target : 0;
+                        hasTarget = true;
+                        wholeTarget &= argument.IsWholeLifetimeTarget;
                         capacity = capacity > argument.LifetimeCapacity ? capacity : argument.LifetimeCapacity;
                     }
                 }
@@ -550,8 +580,10 @@ namespace Internal.IL
                 StoreLifetime(address, StackValue.CreateFromType(address.Type).WithLifetime(written), address.Type);
             }
 
+            wholeTarget &= target > 0 && resultType.IsByRef &&
+                _lifetimeCellTypes[target - 1] == ((ByRefType)resultType).ParameterType;
             return result.WithLifetime(returned, returnedContents, target < 0 ? 0 : target,
-                target > 0, hasTarget ? capacity : LifetimeScope.Caller);
+                wholeTarget, hasTarget ? capacity : LifetimeScope.Caller);
         }
     }
 }
