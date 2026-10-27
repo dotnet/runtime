@@ -72,7 +72,18 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        [SkipOnMono("Mono's SignatureHelper does not reject function pointer types.")]
+        public void GetMethodSigHelper_FunctionPointerParameterWithGenericDefinitionReturn_ThrowsNotSupportedException()
+        {
+            // MakeFunctionPointerType rejects a generic type definition as a return type, so the later check, which
+            // rebuilds a runtime function pointer type, would throw InvalidOperationException; only the early rejection
+            // of a signature type gives NotSupportedException.
+            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(CallingConventions.Standard, typeof(void));
+            AssertExtensions.Throws<NotSupportedException>(() => sig.AddArgument(Type.MakeFunctionPointerSignatureType(typeof(List<>), [])));
+        }
+
+        [Fact]
+        [SkipOnMono("Mono's SignatureHelper does not reject function pointer types.")]
         public unsafe void GetMethodSigHelper_ModuleFunctionPointerParameter_ThrowsNotSupportedException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -99,7 +110,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        [SkipOnMono("Mono's SignatureHelper does not reject function pointer types.")]
         [InlineData((byte)0x05)] // vararg
         [InlineData((byte)0x20)] // instance
         [InlineData((byte)0x29)] // instance unmanaged
@@ -124,7 +135,8 @@ namespace System.Reflection.Emit.Tests
             return Concat([0x21], IntPtr.Size == 8 ? BitConverter.GetBytes((long)handle) : BitConverter.GetBytes((int)handle));
         }
 
-        // The type of a field whose signature is FIELD FNPTR <callingConvention>, no parameters, returning int.
+        // C# and Type.MakeFunctionPointerType can't create a vararg or instance function pointer type, so read one
+        // from a field whose signature is FIELD FNPTR <callingConvention>, no parameters, returning int.
         private static Type GetFunctionPointerFieldType(byte callingConvention)
         {
             string name = $"FunctionPointer{callingConvention:X2}";

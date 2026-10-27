@@ -430,6 +430,8 @@ namespace System.Reflection.Emit.Tests
 
         private unsafe static delegate*<int, int, int> GetInt32Sum() => &Int32Sum;
 
+        // Returns nint: Mono cannot create the UnmanagedCallersOnly wrapper for a function pointer return type
+        // (https://github.com/dotnet/runtime/issues/136448).
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         private unsafe static nint GetInt32SumUnmanaged() => (nint)(delegate*<int, int, int>)&Int32Sum;
 
