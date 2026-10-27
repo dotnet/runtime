@@ -5843,8 +5843,6 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 {
     LIMITED_METHOD_CONTRACT;
 
-    classMustBeLoadedBeforeCodeIsRun(clsHnd);
-
     TypeHandle VMClsHnd(clsHnd);
     if (Nullable::IsNullableType(VMClsHnd))
         return CORINFO_HELP_UNBOX_NULLABLE;
@@ -9504,11 +9502,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
             // NOTE: in some IJW cases, when the type pointed at is unmanaged,
             // the GetTypeHandle may fail, because there is no TypeDef for such type.
             // Usage of GetTypeHandleThrowing would lead to class load exception
-            TypeHandle thPtr = ptr.GetTypeHandleNT(pModule, &typeContext);
-            if(!thPtr.IsNull())
-            {
-                classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(thPtr.AsPtr()));
-            }
+            ptr.GetTypeHandleNT(pModule, &typeContext);
         }
         FALLTHROUGH;
 
