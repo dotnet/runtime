@@ -20,12 +20,14 @@ namespace System.Net.Security
         }
 
         internal const bool StartMutualAuthAsAnonymous = false;
-        internal const bool CertValidationInCallback = false;
+        // The trust manager runs managed validation inside SSLEngine. Do not reenter
+        // the handshake to generate an alert when that callback rejects a certificate.
+        internal const bool CertValidationInCallback = true;
         internal const bool CanEncryptEmptyMessage = false;
 
-        // There is no API to generate custom alerts on Android, but the interop layer currently
-        // depends on SslStream calling HandshakeInternal one last time when tearing down the connection
-        // due to handshake failures.
+        // Android has no public custom-alert API. The managed alert path also requires
+        // !CertValidationInCallback, so this flag does not enable it here. SSLEngine
+        // generates certificate-rejection alerts; HandshakeInternal drains that output.
         internal const bool CanGenerateCustomAlerts = true;
 
         internal static bool CanGenerateCustomAlertsForContext(SafeDeleteContext? _)
@@ -247,6 +249,19 @@ namespace System.Net.Security
                 };
 
                 Exception? validationException = sslContext?.SslStreamProxy.ValidationException;
+                if (validationException is not null)
+                {
+                    statusCode = SecurityStatusPalErrorCode.InternalError;
+                }
+                else if (sslContext!.SslStreamProxy.ValidationResult is { IsValid: false } validationResult)
+                {
+                    // Some providers request more data after emitting the validation alert.
+                    // The local validation has already failed, so do not wait for the peer.
+                    statusCode = SecurityStatusPalErrorCode.CertValidationFailed;
+                    validationException = SslStream.CreateCertificateValidationException(
+                        sslAuthenticationOptions, validationResult.SslPolicyErrors, validationResult.ChainStatus);
+                }
+
                 token.Status = new SecurityStatusPal(statusCode, validationException);
                 sslContext!.ReadPendingWrites(ref token);
                 return token;
