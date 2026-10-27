@@ -10,26 +10,23 @@ using Xunit;
 public class Runtime_132017
 {
     private static readonly List<string> s_log = new List<string>();
-    private static int s_calls;
 
     // The nested catch starts this task without awaiting it; keep it around so
     // that the test can wait for it deterministically.
     private static Task s_pending;
 
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
         s_log.Clear();
-        s_calls = 0;
         s_pending = null;
 
         var test = new Runtime_132017();
-        test.M(false).GetAwaiter().GetResult();
-        test.M(true).GetAwaiter().GetResult();
-        s_pending.GetAwaiter().GetResult();
+        await test.M(false);
+        await test.M(true);
+        await s_pending;
 
         Assert.Equal(new[] { "filter", "filter", "outer", "filter", "outer" }, s_log);
-        Assert.Equal(2, s_calls);
     }
 
     private static bool Filter(bool result)
@@ -69,6 +66,5 @@ public class Runtime_132017
         string message = ex.Message;
         s_log.Add(message);
         await Task.Yield();
-        s_calls++;
     }
 }

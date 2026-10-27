@@ -30,5 +30,6 @@ namespace Microsoft.Extensions.Options.Generators
         INamedTypeSymbol? IAsyncValidatableObjectSymbol = null,
         bool HasTryValidateValueAsyncMethod = false,
         INamedTypeSymbol? AsyncValidateOptionsSymbol = null,
-        INamedTypeSymbol? AsyncValidationAttributeSymbol = null);
+        INamedTypeSymbol? AsyncValidationAttributeSymbol = null,
+        bool HasValidationAttributeFormatMessageMethod = false);
 }

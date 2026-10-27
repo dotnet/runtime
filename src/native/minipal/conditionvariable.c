@@ -1,6 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+// pthread_cond_timedwait_relative_np is hidden by _XOPEN_SOURCE unless
+// _DARWIN_C_SOURCE is defined before <pthread.h>.
+#define _DARWIN_C_SOURCE
+#endif
+
 #include <assert.h>
 #include <errno.h>
 #include <time.h>

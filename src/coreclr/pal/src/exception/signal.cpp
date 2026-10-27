@@ -548,7 +548,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
     invoke_previous_action(&g_previous_sigfpe, code, siginfo, context);
 }
 
-void UnmaskActivationSignal()
+void PALAPI PAL_UnmaskActivationSignal()
 {
     sigset_t signal_set;
     sigemptyset(&signal_set);
@@ -600,7 +600,7 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
         // Unmask the activation signal now that we are running on the original stack of the thread
         // except for the stack overflow case when we are actually running on a special stack overflow
         // stack.
-        UnmaskActivationSignal();
+        PAL_UnmaskActivationSignal();
     }
 
     returnPoint->returnFromHandler = common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
@@ -934,8 +934,8 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 {
     // Only accept activations from the current process
     if (g_activationFunction != NULL && (siginfo->si_pid == getpid()
-#ifdef HOST_OSX
-    // On OSX si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+#ifdef HOST_APPLE
+    // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
     // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
     || siginfo->si_pid == 0
 #endif
@@ -975,15 +975,14 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
     else
     {
         // Call the original handler when it is not ignored or default (terminate).
-        if (g_previous_activation.sa_flags & SA_SIGINFO)
+        if (!IsSigDfl(&g_previous_activation) && !IsSigIgn(&g_previous_activation))
         {
-            _ASSERTE(g_previous_activation.sa_sigaction != NULL);
-            g_previous_activation.sa_sigaction(code, siginfo, context);
-        }
-        else
-        {
-            if (g_previous_activation.sa_handler != SIG_IGN &&
-                g_previous_activation.sa_handler != SIG_DFL)
+            if (IsSaSigInfo(&g_previous_activation))
+            {
+                _ASSERTE(g_previous_activation.sa_sigaction != NULL);
+                g_previous_activation.sa_sigaction(code, siginfo, context);
+            }
+            else
             {
                 _ASSERTE(g_previous_activation.sa_handler != NULL);
                 g_previous_activation.sa_handler(code);

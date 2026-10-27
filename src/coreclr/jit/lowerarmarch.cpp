@@ -196,7 +196,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
     if (parentNode->isContained())
         return false;
 
-    if (!varTypeIsIntegral(parentNode))
+    if (!varTypeIsIntegral(parentNode) && !parentNode->TypeIs(TYP_BYREF))
         return false;
 
     if (parentNode->gtGetOp1()->isContained() || (parentNode->OperIsBinary() && parentNode->gtGetOp2()->isContained()))
@@ -761,7 +761,9 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
         return;
     }
 #else  // !TARGET_ARM
-    if ((ClrSafeInt<int>(offset) + ClrSafeInt<int>(size)).IsOverflow())
+    // Keep offset + size strictly below INT32_MAX, as required by unrolled block codegen.
+    ClrSafeInt<int> endOffset = ClrSafeInt<int>(offset) + ClrSafeInt<int>(size);
+    if (endOffset.IsOverflow() || (endOffset.Value() == INT32_MAX))
     {
         return;
     }
@@ -1214,7 +1216,9 @@ bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclV
         {
             // 'cur' is part of data flow of 'store', so we will be moving the
             // currently recorded effects past 'cur'.
-            if (m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
+            // MarkTree does not track implicit flags dependencies.
+            if (cur->OperConsumesFlags() || cur->gtSetFlags() ||
+                m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
                 return false;
@@ -1393,12 +1397,13 @@ bool Lowering::TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next
 void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
 {
     assert(node->GetHWIntrinsicId() == NI_AdvSimd_FusedMultiplyAddScalar);
+    assert(varTypeIsFloating(node->GetSimdBaseType()));
 
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
     GenTree* op3 = node->Op(3);
 
-    auto lowerOperand = [this](GenTree* op) {
+    auto lowerOperand = [this, node](GenTree* op) {
         bool wasNegated = false;
 
         if (op->OperIsHWIntrinsic())
@@ -1412,7 +1417,8 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
             {
                 GenTree* valueOp = opIntrinsic->Op(1);
 
-                if (valueOp->OperIs(GT_NEG))
+                // Reinterprets can make the scalar's negation differ from negating an FMA element.
+                if (valueOp->OperIs(GT_NEG) && valueOp->TypeIs(node->GetSimdBaseType()))
                 {
                     opIntrinsic->Op(1) = valueOp->gtGetOp1();
                     BlockRange().Remove(valueOp);
@@ -2265,9 +2271,10 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
 
-    bool   isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal);
-    bool   isCreateScalar = HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId);
-    size_t argCnt         = node->GetOperandCount();
+    simdmask_t cnsMask        = {};
+    bool       isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal, &cnsMask);
+    bool       isCreateScalar = HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId);
+    size_t     argCnt         = node->GetOperandCount();
 
     // Check if we have a cast that we can remove. Note that "IsValidConstForMovImm"
     // will reset Op(1) if it finds such a cast, so we do not need to handle it here.
@@ -2356,6 +2363,16 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     //          +--*  opN T
     //   node = *  HWINTRINSIC   simd   T Create
 
+    // If two or more of the operands are constants that are not all-bits-zero, we can materialize
+    // them as a vector constant and insert the remaining non-constant operands into it. This is both
+    // fewer nodes and typically cheaper than a chain of inserts starting from CreateScalarUnsafe. We
+    // only consider such constants because all-bits-zero lanes are effectively free to produce, so
+    // materializing them into a constant can regress.
+    if (NonZeroConstantElementCount(&simdVal, cnsMask, simdBaseType) >= 2)
+    {
+        return LowerHWIntrinsicCreateWithInserts(node, &simdVal, cnsMask);
+    }
+
     // We will be constructing the following parts:
     //          /--*  op1  T
     //   tmp1 = *  HWINTRINSIC   simd8  T CreateScalarUnsafe
@@ -2428,6 +2445,11 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
     assert(varTypeIsSIMD(node));
+
+    // Morph 'fgOptimizeHWIntrinsic' transforms 'Create(ToScalar(Dot(...' into 'Dot('...,
+    // so a DotProduct not consumed as a scalar value needs an explicit broadcast
+    LIR::Use use;
+    bool     needsBroadcast = BlockRange().TryGetUse(node, &use) && !use.User()->OperIsHWIntrinsic(NI_Vector_ToScalar);
 
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
@@ -2641,12 +2663,25 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                                                         simdSize);
             BlockRange().InsertAfter(tmp1, tmp2);
             LowerNode(tmp2);
+
+            if (needsBroadcast)
+            {
+                // Broadcast the AddAcross result from element 0 to every element of the vector.
+                idx = m_compiler->gtNewIconNode(0);
+                BlockRange().InsertAfter(tmp2, idx);
+
+                NamedIntrinsic duplicate = (simdSize == 8) ? NI_AdvSimd_DuplicateSelectedScalarToVector64
+                                                           : NI_AdvSimd_DuplicateSelectedScalarToVector128;
+
+                tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp2, idx, duplicate, simdBaseType,
+                                                            genTypeSize(tmp2->TypeGet()));
+                BlockRange().InsertAfter(idx, tmp2);
+                LowerNode(tmp2);
+            }
         }
     }
 
     // We're producing a vector result, so just return the result directly
-    LIR::Use use;
-
     if (BlockRange().TryGetUse(node, &use))
     {
         use.ReplaceWith(tmp2);
@@ -2908,7 +2943,8 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
-    if (op1->OperIs(GT_BITCAST))
+    // A small store implicitly truncates its source, so it cannot store directly from the other type.
+    if (op1->OperIs(GT_BITCAST) && !varTypeIsSmall(storeLoc))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
         // the bitcast itself contained. This will allow us to store directly from the other
@@ -3419,6 +3455,11 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
                     GenTree* revCond = m_compiler->gtReverseCond(cond);
                     assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
                 }
+                else
+                {
+                    std::swap(select->gtOp1, select->gtOp2);
+                }
+
                 BlockRange().Remove(select->gtOp2, true);
                 select->gtOp2 = nullptr;
                 select->SetOper(GT_SELECT_INC);

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser doesn't support X.509 certificates")]
     public static class MLKemCertTests
     {
         public static bool MLKemIsNotSupported => !MLKem.IsSupported;

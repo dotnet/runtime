@@ -193,21 +193,6 @@ namespace Internal.Reflection.Augments
             return fieldInfo;
         }
 
-        public static EventInfo GetImplicitlyOverriddenBaseClassEvent(EventInfo e)
-        {
-            return e.GetImplicitlyOverriddenBaseClassMember(EventPolicies.Instance);
-        }
-
-        public static MethodInfo GetImplicitlyOverriddenBaseClassMethod(MethodInfo m)
-        {
-            return m.GetImplicitlyOverriddenBaseClassMember(MethodPolicies.Instance);
-        }
-
-        public static PropertyInfo GetImplicitlyOverriddenBaseClassProperty(PropertyInfo p)
-        {
-            return p.GetImplicitlyOverriddenBaseClassMember(PropertyPolicies.Instance);
-        }
-
         private static RuntimeFieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle();

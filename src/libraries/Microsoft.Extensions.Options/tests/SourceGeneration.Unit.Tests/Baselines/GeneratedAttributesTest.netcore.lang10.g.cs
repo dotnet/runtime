@@ -256,6 +256,10 @@ namespace __OptionValidationGeneratedAttributes
             return null;
         }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, OtherProperty);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, OtherProperty);
+        }
     }
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
     [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
@@ -305,6 +309,10 @@ namespace __OptionValidationGeneratedAttributes
             return (uint)(length - MinimumLength) <= (uint)(MaximumLength - MinimumLength);
         }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, MinimumLength, MaximumLength);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, MinimumLength, MaximumLength);
+        }
     }
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
     [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
@@ -316,6 +324,10 @@ namespace __OptionValidationGeneratedAttributes
         public __SourceGen__2C497155_MaxLengthAttribute(): base(() => DefaultErrorMessageString) { Length = MaxAllowableLength; }
         public int Length { get; }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, Length);
+        }
         public override bool IsValid(object? value)
         {
             if (Length == 0 || Length < -1)
@@ -396,6 +408,10 @@ namespace __OptionValidationGeneratedAttributes
             return length >= Length;
         }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, Length);
+        }
     }
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
     [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
@@ -429,6 +445,12 @@ namespace __OptionValidationGeneratedAttributes
         public bool ConvertValueInInvariantCulture { get; set; }
         public override string FormatErrorMessage(string name) =>
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            EnsureInitialized();
+
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, Minimum, Maximum);
+        }
         private readonly bool _needToConvertMinMax;
         private volatile bool _initialized;
         private readonly object _lock = new();
@@ -436,48 +458,7 @@ namespace __OptionValidationGeneratedAttributes
 
         public override bool IsValid(object? value)
         {
-            if (!_initialized)
-            {
-                lock (_lock)
-                {
-                    if (!_initialized)
-                    {
-                        if (Minimum is null || Maximum is null)
-                        {
-                            throw new global::System.InvalidOperationException(MinMaxError);
-                        }
-                        if (_needToConvertMinMax)
-                        {
-                            global::System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-                            if (OperandType == typeof(global::System.TimeSpan))
-                            {
-                                if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
-                                    !global::System.TimeSpan.TryParse((string)Maximum, culture, out global::System.TimeSpan timeSpanMaximum))
-                                {
-                                    throw new global::System.InvalidOperationException(MinMaxError);
-                                }
-                                Minimum = timeSpanMinimum;
-                                Maximum = timeSpanMaximum;
-                            }
-                            else
-                            {
-                                Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
-                                Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
-                            }
-                        }
-                        int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
-                        if (cmp > 0)
-                        {
-                            throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
-                        }
-                        else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
-                        {
-                            throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
-                        }
-                        _initialized = true;
-                    }
-                }
-            }
+            EnsureInitialized();
 
             if (value is null or string { Length: 0 })
             {
@@ -524,6 +505,51 @@ namespace __OptionValidationGeneratedAttributes
             return
                 (MinimumIsExclusive ? min.CompareTo(convertedValue) < 0 : min.CompareTo(convertedValue) <= 0) &&
                 (MaximumIsExclusive ? max.CompareTo(convertedValue) > 0 : max.CompareTo(convertedValue) >= 0);
+        }
+        private void EnsureInitialized()
+        {
+            if (!_initialized)
+            {
+                lock (_lock)
+                {
+                    if (!_initialized)
+                    {
+                        if (Minimum is null || Maximum is null)
+                        {
+                            throw new global::System.InvalidOperationException(MinMaxError);
+                        }
+                        if (_needToConvertMinMax)
+                        {
+                            global::System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+                            if (OperandType == typeof(global::System.TimeSpan))
+                            {
+                                if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
+                                    !global::System.TimeSpan.TryParse((string)Maximum, culture, out global::System.TimeSpan timeSpanMaximum))
+                                {
+                                    throw new global::System.InvalidOperationException(MinMaxError);
+                                }
+                                Minimum = timeSpanMinimum;
+                                Maximum = timeSpanMaximum;
+                            }
+                            else
+                            {
+                                Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
+                                Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
+                            }
+                        }
+                        int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
+                        if (cmp > 0)
+                        {
+                            throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
+                        }
+                        else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
+                        {
+                            throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
+                        }
+                        _initialized = true;
+                    }
+                }
+            }
         }
         private string GetValidationErrorMessage()
         {

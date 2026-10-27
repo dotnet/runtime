@@ -40,6 +40,24 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void ResolverReturnsNullForLoadedAssembly()
+        {
+            var resolver = new ResolverReturnsNull();
+            using (MetadataLoadContext lc = new MetadataLoadContext(resolver, "EmptyCore"))
+            {
+                Assembly loaded = lc.LoadFromByteArray(TestData.s_BaseClassesImage);
+                AssemblyName name = loaded.GetName();
+
+                Assert.Throws<FileNotFoundException>(() => lc.LoadFromAssemblyName(name));
+                Assert.Equal(name.FullName, resolver.AssemblyName.FullName);
+                Assert.Equal(2, resolver.CallCount);
+
+                Assert.Throws<FileNotFoundException>(() => lc.LoadFromAssemblyName(name));
+                Assert.Equal(2, resolver.CallCount);
+            }
+        }
+
+        [Fact]
         public static void ResolverReturnsSomething()
         {
             var resolver = new ResolverReturnsSomething();

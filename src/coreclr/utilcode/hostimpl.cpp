@@ -32,15 +32,10 @@ void ClrEnterCriticalSection(CRITSEC_COOKIE cookie)
     minipal_mutex_enter((minipal_mutex*)cookie);
 }
 
-void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
+void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie) noexcept
 {
     _ASSERTE(cookie);
     minipal_mutex_leave((minipal_mutex*)cookie);
-}
-
-DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
-{
-    return SleepEx(dwMilliseconds, bAlertable);
 }
 
 LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect)

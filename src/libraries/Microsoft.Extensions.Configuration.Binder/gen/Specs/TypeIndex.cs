@@ -28,14 +28,38 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             _ => throw new InvalidOperationException(),
         };
 
+        /// <summary>
+        /// Whether binding logic is generated for <paramref name="typeSpec"/>, i.e. whether a non-empty
+        /// <c>BindCore</c> method exists for it. Emitters rely on this to decide between emitting a bind
+        /// call and emitting nothing at all, so it must never report <see langword="true"/> for a type
+        /// whose binding logic would be a no-op.
+        /// </summary>
         public bool HasBindableMembers(ComplexTypeSpec typeSpec) =>
             typeSpec switch
             {
                 ObjectSpec objectSpec => objectSpec.Properties?.Any(ShouldBindTo) is true,
                 DictionarySpec dictSpec => KeyIsSupported(dictSpec) && CanBindTo(dictSpec.ElementTypeRef),
-                CollectionSpec collectionSpec => CanBindTo(collectionSpec.ElementTypeRef),
+                CollectionSpec collectionSpec => CanConstructElementsOf(collectionSpec),
                 _ => throw new InvalidOperationException(),
             };
+
+        /// <summary>
+        /// Whether elements can be created for <paramref name="typeSpec"/>. Every element of a non-dictionary
+        /// collection is constructed and then appended; unlike a dictionary entry, there is no pre-existing
+        /// element to populate in place. A complex element type that cannot be instantiated therefore yields
+        /// no binding logic at all, leaving the collection with nothing to bind.
+        /// </summary>
+        private bool CanConstructElementsOf(CollectionSpec typeSpec)
+        {
+            Debug.Assert(typeSpec is not DictionarySpec, "Dictionary entries are bound in place, not constructed.");
+
+            return GetEffectiveTypeSpec(typeSpec.ElementTypeRef) switch
+            {
+                SimpleTypeSpec => true,
+                ComplexTypeSpec elementSpec => CanInstantiate(elementSpec),
+                _ => throw new InvalidOperationException(),
+            };
+        }
 
         public bool ShouldBindTo(PropertySpec property)
         {

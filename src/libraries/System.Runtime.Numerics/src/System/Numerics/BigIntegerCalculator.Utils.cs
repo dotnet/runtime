@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
 namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
@@ -19,13 +17,6 @@ namespace System.Numerics
             }
 
             return bits.Length;
-        }
-
-        [Conditional("DEBUG")]
-        public static void InitializeForDebug(Span<nuint> bits)
-        {
-            // Reproduce the case where the return value of `stackalloc nuint` is not initialized to zero.
-            bits.Fill(0xCD);
         }
     }
 }

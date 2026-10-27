@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Use the tool TFM so the tests run on the SDK's own runtime, the way Wasm.Build.Tests and
+         ILAssembler.Tests do. Nothing here needs the runtime that is being built. -->
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The tests drive the real proxy project, so it has to travel with the test payload. It is laid
+         out under 'data' to mirror the directory it is shipped from. -->
+    <None Include="..\..\data\ProxyProjectForAOTOnHelix.proj"
+          Link="data\ProxyProjectForAOTOnHelix.proj"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -1,14 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: CEELOAD.CPP
 //
-
-//
-
 // CEELOAD reads in the PE file format using LoadLibrary
 // ===========================================================================
-
 
 #include "common.h"
 
@@ -81,10 +78,9 @@
 #define COR_VTABLE_NOT_PTRSIZED COR_VTABLE_64BIT
 #endif // !TARGET_64BIT
 
-#define CEE_FILE_GEN_GROWTH_COLLECTIBLE 2048
-
 #define NGEN_STATICS_ALLCLASSES_WERE_LOADED -1
 
+#ifdef FEATURE_INLINE_TRACKING
 BOOL Module::HasReadyToRunInlineTrackingMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -108,8 +104,9 @@ COUNT_T Module::GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef in
 #endif
     return 0;
 }
+#endif // FEATURE_INLINE_TRACKING
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
 BOOL Module::HasJitInlineTrackingMap()
 {
     LIMITED_METHOD_CONTRACT;
@@ -128,7 +125,7 @@ void Module::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
         m_pJitInlinerTrackingMap->AddInlining(inliner, inlinee);
     }
 }
-#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
 
 #ifndef DACCESS_COMPILE
 // ===========================================================================
@@ -220,13 +217,8 @@ void Module::UpdateNewlyAddedTypes()
     }
     CONTRACTL_END
 
-    DWORD countTypesAfterProfilerUpdate = GetMDImport()->GetCountWithTokenKind(mdtTypeDef);
-    DWORD countExportedTypesAfterProfilerUpdate = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
-    DWORD countCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
-
-    if (m_dwTypeCount == countTypesAfterProfilerUpdate
-        && m_dwExportedTypeCount == countExportedTypesAfterProfilerUpdate
-        && m_dwCustomAttributeCount == countCustomAttributeCount)
+    TypeCounts currTypeCounts = GetCurrentTypeCounts();
+    if (m_typeCounts == currTypeCounts)
     {
         // The profiler added no new types, do not create the in memory hashes
         return;
@@ -245,27 +237,46 @@ void Module::UpdateNewlyAddedTypes()
         // If the hash tables already exist (either R2R and we've previously populated the ) we need to manually add the types.
 
         // typeDefs rids 0 and 1 aren't included in the count, thus X typeDefs before means rid X+1 was valid and our incremental addition should start at X+2
-        for (DWORD typeDefRid = m_dwTypeCount + 2; typeDefRid < countTypesAfterProfilerUpdate + 2; typeDefRid++)
+        for (DWORD typeDefRid = m_typeCounts.TypeCount + 2; typeDefRid < currTypeCounts.TypeCount + 2; typeDefRid++)
         {
             GetAssembly()->AddType(this, TokenFromRid(typeDefRid, mdtTypeDef));
         }
 
         // exportedType rid 0 isn't included in the count, thus X exportedTypes before means rid X was valid and our incremental addition should start at X+1
-        for (DWORD exportedTypeDef = m_dwExportedTypeCount + 1; exportedTypeDef < countExportedTypesAfterProfilerUpdate + 1; exportedTypeDef++)
+        for (DWORD exportedTypeDef = m_typeCounts.ExportedTypeCount + 1; exportedTypeDef < currTypeCounts.ExportedTypeCount + 1; exportedTypeDef++)
         {
             GetAssembly()->AddExportedType(TokenFromRid(exportedTypeDef, mdtExportedType));
         }
 
-        if ((countCustomAttributeCount != m_dwCustomAttributeCount) && IsReadyToRun())
+        if ((currTypeCounts.CustomAttributeCount != m_typeCounts.CustomAttributeCount) && IsReadyToRun())
         {
             // Set of custom attributes has changed. Disable the cuckoo filter from ready to run, and do normal custom attribute parsing
             GetReadyToRunInfo()->DisableCustomAttributeFilter();
         }
     }
 
-    m_dwTypeCount = countTypesAfterProfilerUpdate;
-    m_dwExportedTypeCount = countExportedTypesAfterProfilerUpdate;
-    m_dwCustomAttributeCount = countCustomAttributeCount;
+    m_typeCounts = currTypeCounts;
+}
+
+Module::TypeCounts Module::GetCurrentTypeCounts()
+{
+    WRAPPER_NO_CONTRACT;
+
+    IMDInternalImport* pMDImport = GetMDImport();
+    _ASSERTE(pMDImport != NULL);
+
+    TypeCounts typeCounts;
+    typeCounts.TypeCount = pMDImport->GetCountWithTokenKind(mdtTypeDef);
+    typeCounts.ExportedTypeCount = pMDImport->GetCountWithTokenKind(mdtExportedType);
+    typeCounts.CustomAttributeCount = pMDImport->GetCountWithTokenKind(mdtCustomAttribute);
+    return typeCounts;
+}
+
+void Module::CaptureInitialTypeCounts()
+{
+    WRAPPER_NO_CONTRACT;
+
+    m_typeCounts = GetCurrentTypeCounts();
 }
 #endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
@@ -285,11 +296,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
     // the profiler once.
     if (SetTransientFlagInterlocked(IS_PROFILER_NOTIFIED))
     {
-        // Record how many types are already present
-        m_dwTypeCount = GetMDImport()->GetCountWithTokenKind(mdtTypeDef);
-        m_dwExportedTypeCount = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
-        m_dwCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
-
         BOOL profilerCallbackHappened = FALSE;
         // Notify the profiler, this may cause metadata to be updated
         {
@@ -500,13 +506,9 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         m_pInstMethodHashTable = InstMethodHashTable::Create(GetLoaderAllocator(), this, PARAMMETHODS_HASH_BUCKETS, pamTracker);
     }
 
-#ifdef PROFILING_SUPPORTED_DATA
-    // These will be initialized in NotifyProfilerLoadFinished, set them to
-    // a safe initial value now.
-    m_dwTypeCount = 0;
-    m_dwExportedTypeCount = 0;
-    m_dwCustomAttributeCount = 0;
-#endif // PROFILING_SUPPORTED_DATA
+#if defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_METADATA_UPDATER)
+    m_typeCounts = {};
+#endif // PROFILING_SUPPORTED_DATA || FEATURE_METADATA_UPDATER
 
 #ifdef PROFILING_SUPPORTED
     // set profiler related JIT flags
@@ -520,13 +522,15 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     }
 
     UpdateJitOptimizationDisabledState();
+#endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_REJIT
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
     {
         m_pJitInlinerTrackingMap = new JITInlineTrackingMap(GetLoaderAllocator());
     }
-#endif // PROFILING_SUPPORTED
+#endif // FEATURE_REJIT
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%s\".\n", GetDebugName()));
 }
@@ -785,9 +789,9 @@ void Module::Destruct()
     if (m_pDynamicMethodTable)
         m_pDynamicMethodTable->Destroy();
 
-#if defined(PROFILING_SUPPORTED)
+#ifdef FEATURE_REJIT
     delete m_pJitInlinerTrackingMap;
-#endif
+#endif // FEATURE_REJIT
 }
 
 bool Module::NeedsGlobalMethodTable()
@@ -866,8 +870,6 @@ BOOL Module::IsCollectible()
 }
 
 #ifndef DACCESS_COMPILE
-#include "staticallocationhelpers.inl"
-
 // initialize Crst controlling the Dynamic IL hashtable
 void Module::InitializeDynamicILCrst()
 {
@@ -910,12 +912,11 @@ void Module::SetDynamicIL(mdToken token, TADDR blobAddress)
 
 #endif // !DACCESS_COMPILE
 
-// Get the stored address of the IL blob for reflection/dynamics
+// Get the stored address of an IL body or RVA field's data for reflection/dynamics
 // Arguments:
 //     Input:
-//         token        method token
-//         fAllowTemporary also check the temporary overrides
-// Return Value: starting (target) address of the IL blob corresponding to the input token
+//         token        method token or field token
+// Return Value: starting (target) address of the data corresponding to the input token
 
 TADDR Module::GetDynamicIL(mdToken token)
 {
@@ -1561,67 +1562,8 @@ void Module::StartUnload()
     SetBeingUnloaded();
 }
 
-#if defined(FEATURE_READYTORUN)
 //---------------------------------------------------------------------------------------
-// Check if the target module is in the same version bubble as this one
-// The current implementation uses the presence of an AssemblyRef for the target module's assembly in
-// the native manifest metadata.
-//
-// Arguments:
-//      * target - target module to check
-//
-// Return Value:
-//      TRUE if the target module is in the same version bubble as this one
-//
-BOOL Module::IsInSameVersionBubble(Module *target)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (this == target)
-    {
-        return TRUE;
-    }
-
-    if (!IsReadyToRun())
-    {
-        return FALSE;
-    }
-
-    NativeImage *nativeImage = this->GetCompositeNativeImage();
-
-    if (nativeImage != NULL)
-    {
-        if (nativeImage == target->GetCompositeNativeImage())
-        {
-            // Fast path for modules contained within the same native image
-            return TRUE;
-        }
-    }
-
-    IMDInternalImport* pMdImport = GetReadyToRunInfo()->GetNativeManifestModule()->GetMDImport();
-    if (pMdImport == NULL)
-        return FALSE;
-
-    LPCUTF8 targetName = target->GetAssembly()->GetSimpleName();
-
-    HENUMInternal assemblyEnum;
-    HRESULT hr = pMdImport->EnumAllInit(mdtAssemblyRef, &assemblyEnum);
-    mdAssemblyRef assemblyRef;
-    while (pMdImport->EnumNext(&assemblyEnum, &assemblyRef))
-    {
-        LPCSTR assemblyName;
-        hr = pMdImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL);
-        if (strcmp(assemblyName, targetName) == 0)
-        {
-            return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-#endif // FEATURE_READYTORUN
-
-//---------------------------------------------------------------------------------------
+#ifdef PROFILING_SUPPORTED
 //
 // Wrapper for Module::GetRWImporter + QI when writing is not needed.
 //
@@ -1671,6 +1613,7 @@ HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID rii
 
     return hr;
 }
+#endif // PROFILING_SUPPORTED
 
 // a special token that indicates no reader could be created - don't try again
 static ISymUnmanagedReader* const k_pInvalidSymReader = (ISymUnmanagedReader*)0x1;
@@ -2020,9 +1963,7 @@ void Module::AddClass(mdTypeDef classdef)
     CONTRACTL
     {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
 
@@ -2911,6 +2852,7 @@ void Module::SetJMCStatus(bool fStatus)
     m_debuggerSpecificData.m_fDefaultJMCStatus = fStatus;
 }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 // Update the dynamic metadata if needed. Nop for non-dynamic modules
 void Module::UpdateDynamicMetadataIfNeeded()
 {
@@ -2943,6 +2885,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
     }
 
 }
+#endif
 
 #ifdef DEBUGGING_SUPPORTED
 
@@ -2953,12 +2896,14 @@ BOOL Module::NotifyDebuggerLoad(Assembly * pAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
         Module * pModule = pAssembly->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
+#endif
 
     //
     // Remaining work is only needed if a debugger is attached
@@ -3095,9 +3040,7 @@ mdToken GetTokenForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
 //=================================================================================
 void SetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry, BYTE *pTarget)
 {
-    CONTRACTL{
-        THROWS;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     DWORD oldProtect;
     if (!ClrVirtualProtect(ppVTEntry, sizeof(BYTE*), PAGE_READWRITE, &oldProtect))
@@ -3569,6 +3512,16 @@ void Module::RunEagerFixupsUnlocked()
     PTR_READYTORUN_IMPORT_SECTION pSections = GetImportSections(&nSections);
     ReadyToRunLoadedImage *pNativeImage = GetReadyToRunImage();
 
+#ifndef TARGET_WASM
+    TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
+
+    ExecutionManager::AddCodeRange(
+        base, base + (TADDR)pNativeImage->GetVirtualSize(),
+        ExecutionManager::GetReadyToRunJitManager(),
+        RangeSection::RANGE_SECTION_NONE,
+        this /* pHeapListOrZapModule */);
+#endif // !TARGET_WASM
+
     for (COUNT_T iSection = 0; iSection < nSections; iSection++)
     {
         PTR_READYTORUN_IMPORT_SECTION pSection = pSections + iSection;
@@ -3604,15 +3557,6 @@ void Module::RunEagerFixupsUnlocked()
         }
     }
 
-#ifndef TARGET_WASM
-    TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
-
-    ExecutionManager::AddCodeRange(
-        base, base + (TADDR)pNativeImage->GetVirtualSize(),
-        ExecutionManager::GetReadyToRunJitManager(),
-        RangeSection::RANGE_SECTION_NONE,
-        this /* pHeapListOrZapModule */);
-#endif // !TARGET_WASM
 }
 #endif // !DACCESS_COMPILE
 
@@ -3834,11 +3778,7 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
     CONTRACTL_END
 
     m_pInMemoryWriter = NULL;
-    m_sdataSection = NULL;
-    m_pCeeFileGen = NULL;
 }
-
-HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);
 
 // Module initialization occurs in two phases: the constructor phase and the Initialize phase.
 //
@@ -3858,20 +3798,12 @@ void ReflectionModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     Module::Initialize(pamTracker);
 
-    IfFailThrow(CreateICeeGen(IID_ICeeGenInternal, (void **)&m_pCeeFileGen));
-
-    // Collectible modules should try to limit the growth of their associate IL section, as common scenarios for collectible
-    // modules include single type modules
-    if (IsCollectible())
-    {
-        ReleaseHolder<ICeeGenInternal> pCeeGenInternal(NULL);
-        IfFailThrow(m_pCeeFileGen->QueryInterface(IID_ICeeGenInternal, (void **)&pCeeGenInternal));
-        IfFailThrow(pCeeGenInternal->SetInitialGrowth(CEE_FILE_GEN_GROWTH_COLLECTIBLE));
-    }
-
     m_pInMemoryWriter = new RefClassWriter();
 
-    IfFailThrow(m_pInMemoryWriter->Init(GetCeeGen(), GetEmitter(), szName));
+    IfFailThrow(m_pInMemoryWriter->Init(
+        GetPEAssembly()->GetMDInternalEmit(),
+        GetMDImport(),
+        szName));
 
     m_CrstLeafLock.Init(CrstLeafLock);
 }
@@ -3887,9 +3819,6 @@ void ReflectionModule::Destruct()
     CONTRACTL_END;
 
     delete m_pInMemoryWriter;
-
-    if (m_pCeeFileGen)
-        m_pCeeFileGen->Release();
 
     Module::Destruct();
 
@@ -3916,15 +3845,15 @@ public:
         WRAPPER_NO_CONTRACT;
         (void)Release();
     }
-    HRESULT SetMDUpdateMode(IMetaDataEmit *pEmitter, ULONG updateMode)
+    HRESULT SetMDUpdateMode(IMDInternalEmit *pEmitter, ULONG updateMode)
     {
         LIMITED_METHOD_CONTRACT;
         HRESULT hr = S_OK;
 
         _ASSERTE(updateMode != UINT32_MAX);
 
-        IfFailRet(pEmitter->QueryInterface(IID_IMDInternalEmit, (void **)&m_pInternalEmitter));
-        _ASSERTE(m_pInternalEmitter != NULL);
+        m_pInternalEmitter = pEmitter;
+        m_pInternalEmitter->AddRef();
 
         IfFailRet(m_pInternalEmitter->SetMDUpdateMode(updateMode, &m_OriginalMDUpdateMode));
         _ASSERTE(m_OriginalMDUpdateMode != UINT32_MAX);
@@ -3969,6 +3898,7 @@ private:
     ULONG            m_OriginalMDUpdateMode;
 };
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 // Called in live paths to fetch metadata for dynamic modules. This makes the metadata available to the
 // debugger from out-of-process.
 //
@@ -3996,7 +3926,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     CONTRACTL_END;
 
     // Do not release the emitter. This is a weak reference.
-    IMetaDataEmit *pEmitter = this->GetEmitter();
+    IMDInternalEmit *pEmitter = m_pInMemoryWriter->GetEmitter();
     _ASSERTE(pEmitter != NULL);
 
     HRESULT hr;
@@ -4042,6 +3972,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     // Will be S_FALSE if someone changed the MDUpdateMode (from MDUpdateExtension) meanwhile
     _ASSERTE(hr == S_OK);
 }
+#endif
 
 
 #endif // !DACCESS_COMPILE
@@ -4071,33 +4002,20 @@ TADDR ReflectionModule::GetDynamicMetadataBuffer() const
 }
 #endif
 
-TADDR ReflectionModule::GetIL(RVA il) // virtual
+TADDR ReflectionModule::GetIL(RVA methodToken) // virtual
 {
 #ifndef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
-    BYTE* pByte = NULL;
-    if (il != 0)
-        m_pCeeFileGen->GetMethodBuffer(il, &pByte);
-    return TADDR(pByte);
-#else // DACCESS_COMPILE
-    SUPPORTS_DAC;
-    DacNotImpl();
-    return (TADDR)NULL;
-#endif // DACCESS_COMPILE
-}
 
-PTR_VOID ReflectionModule::GetRvaField(RVA field) // virtual
-{
-#ifndef DACCESS_COMPILE
-    WRAPPER_NO_CONTRACT;
-    // This function should be call only if the target is a field or a field with RVA.
-    PTR_BYTE pByte = NULL;
-    m_pCeeFileGen->ComputePointer(m_sdataSection, field, &pByte);
-    return dac_cast<PTR_VOID>(pByte);
+    if (methodToken == 0)
+        return 0;
+
+    _ASSERTE(TypeFromToken(methodToken) == mdtMethodDef);
+    return GetDynamicIL(methodToken);
 #else // DACCESS_COMPILE
     SUPPORTS_DAC;
     DacNotImpl();
-    return NULL;
+    return 0;
 #endif // DACCESS_COMPILE
 }
 
@@ -4260,6 +4178,7 @@ Module* Module::GetLoaderModuleForSignature(Signature signature, SigTypeContext*
     return ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, pTypeContext->m_classInst, pTypeContext->m_methodInst);
 }
 
+#ifdef FEATURE_VARARGS
 //==========================================================================
 // Enregisters a VASig.
 //==========================================================================
@@ -4423,6 +4342,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
     return pCookie;
 }
+#endif // FEATURE_VARARGS
 
 #endif // !DACCESS_COMPILE
 
@@ -4793,7 +4713,9 @@ void Module::ExpandAll()
 // Wrap all static_assert's in asmconstants.h with a class definition.  Many of the
 // fields referenced below are private, and this class is a friend of the
 // enclosing type.
+#ifdef FEATURE_VARARGS
 #include "clrvarargs.h" /* for VARARG C_ASSERTs in asmconstants.h */
+#endif // FEATURE_VARARGS
 class CheckAsmOffsets
 {
 #ifndef CROSSBITNESS_COMPILE

@@ -52,7 +52,7 @@ namespace System.Data.Tests.SqlTypes
         {
             Assert.Throws<OverflowException>(() => new SqlMoney(1000000000000000m));
 
-            SqlMoney CreationTest = new SqlMoney((decimal)913.3);
+            SqlMoney CreationTest = new SqlMoney(913.3m);
             Assert.Equal(913.3m, CreationTest.Value);
 
             Assert.Throws<OverflowException>(() => new SqlMoney(1e200));
@@ -205,7 +205,7 @@ namespace System.Data.Tests.SqlTypes
             SqlMoney testMoney100 = new SqlMoney(100);
 
             // ToDecimal
-            Assert.Equal((decimal)6464.6464, _test1.ToDecimal());
+            Assert.Equal(6464.6464m, _test1.ToDecimal());
 
             // ToDouble
             Assert.Equal(6464.6464, _test1.ToDouble());
@@ -229,7 +229,7 @@ namespace System.Data.Tests.SqlTypes
             Assert.Throws<OverflowException>(() => _test2.ToSqlByte());
 
             // ToSqlDecimal ()
-            Assert.Equal((decimal)6464.6464, _test1.ToSqlDecimal().Value);
+            Assert.Equal(6464.6464m, _test1.ToSqlDecimal().Value);
             Assert.Equal(-45000m, _test4.ToSqlDecimal().Value);
 
             // ToSqlInt16 ()
@@ -326,7 +326,7 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void UnaryNegation()
         {
-            Assert.Equal((decimal)(-6464.6464), -(_test1).Value);
+            Assert.Equal(-6464.6464m, -(_test1).Value);
             Assert.Equal(45000M, -(_test4).Value);
         }
 
@@ -366,7 +366,7 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void SqlMoneyToDecimal()
         {
-            Assert.Equal((decimal)6464.6464, (decimal)_test1);
+            Assert.Equal(6464.6464m, (decimal)_test1);
             Assert.Equal(-45000M, (decimal)_test4);
         }
 

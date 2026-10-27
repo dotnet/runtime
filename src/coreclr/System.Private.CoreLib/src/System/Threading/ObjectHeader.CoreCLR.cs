@@ -88,6 +88,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetLockHandleIfExists(object obj);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectHeader_GetOrCreateLockObject")]
         private static partial void GetOrCreateLockObject(ObjectHandleOnStack obj, ObjectHandleOnStack lockObj);
 

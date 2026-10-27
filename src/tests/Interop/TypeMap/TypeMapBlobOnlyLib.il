@@ -34,5 +34,15 @@
            = {type(class 'Lib5Type1, TypeMapLib5')
               type(class 'Lib5Proxy1, TypeMapLib5')}
 
+    // These source types have the same full name but come from different assemblies, so their
+    // proxy map entries share a hash bucket and require exact lazy type resolution.
+    .custom instance void class [System.Runtime.InteropServices]System.Runtime.InteropServices.TypeMapAssociationAttribute`1<class [TypeMapLib1]BlobOnlyAttributeTypeNames>::.ctor(class [System.Runtime]System.Type, class [System.Runtime]System.Type)
+           = {type(class 'Lib.AliasedName, TypeMapLib2')
+              type(class 'C1, TypeMapLib1')}
+
+    .custom instance void class [System.Runtime.InteropServices]System.Runtime.InteropServices.TypeMapAssociationAttribute`1<class [TypeMapLib1]BlobOnlyAttributeTypeNames>::.ctor(class [System.Runtime]System.Type, class [System.Runtime]System.Type)
+           = {type(class 'Lib.AliasedName, TypeMapApp')
+              type(class 'S1, TypeMapLib1')}
+
     .ver 0:0:0:0
 }

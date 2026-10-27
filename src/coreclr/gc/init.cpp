@@ -217,11 +217,11 @@ void gc_heap::hb_log_new_allocation()
 BOOL gc_heap::create_thread_support (int number_of_heaps)
 {
     BOOL ret = FALSE;
-    if (!gc_start_event.CreateOSManualEventNoThrow (FALSE))
+    if (!gc_start_event.CreateManualEventNoThrow (FALSE))
     {
         goto cleanup;
     }
-    if (!ee_suspend_event.CreateOSAutoEventNoThrow (FALSE))
+    if (!ee_suspend_event.CreateAutoEventNoThrow (FALSE))
     {
         goto cleanup;
     }
@@ -1111,25 +1111,6 @@ gc_heap* gc_heap::make_gc_heap (
 #else
     return (gc_heap*)1;
 #endif //MULTIPLE_HEAPS
-}
-
-// Destroys resources owned by gc. It is assumed that a last GC has been performed and that
-// the finalizer queue has been drained.
-void gc_heap::shutdown_gc()
-{
-    destroy_semi_shared();
-
-#ifdef MULTIPLE_HEAPS
-    //delete the heaps array
-    delete[] g_heaps;
-    destroy_thread_support();
-    n_heaps = 0;
-#endif //MULTIPLE_HEAPS
-    //destroy seg_manager
-
-    destroy_initial_memory();
-
-    GCToOSInterface::Shutdown();
 }
 
 void gc_heap::init_records()

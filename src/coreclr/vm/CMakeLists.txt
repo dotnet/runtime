@@ -17,6 +17,10 @@ include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_OPENBSD)
+    add_definitions(-DFEATURE_READONLY_GS_COOKIE)
+endif()
+
 if(CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_OPENBSD)
     # OpenBSD's ld.so cannot resolve native TLS relocations in shared objects and has no
     # __tls_get_addr, so the runtime must use emulated TLS (like Android).
@@ -80,6 +84,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     excep.cpp
     exinfo.cpp
     exstate.cpp
+    externalmemoryhandle.cpp
     field.cpp
     formattype.cpp
     fptrstubs.cpp
@@ -125,7 +130,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     stubmgr.cpp
     syncblk.cpp
     threads.cpp
-    threadstatics.cpp
     tieredcompilation.cpp
     typectxt.cpp
     typedesc.cpp
@@ -141,6 +145,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
 )
 
 set(VM_HEADERS_DAC_AND_WKS_COMMON
+    externalmemoryhandle.h
     ../inc/corjit.h
     ../inc/corjitflags.h
     ../inc/corjithost.h
@@ -231,7 +236,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     syncblk.h
     threads.h
     threads.inl
-    threadstatics.h
     typectxt.h
     typedesc.h
     typedesc.inl
@@ -268,6 +272,15 @@ if(FEATURE_READYTORUN)
         readytoruninfo.h
     )
 endif(FEATURE_READYTORUN)
+
+if(FEATURE_MULTITHREADING)
+    list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
+        threadstatics.cpp
+    )
+    list(APPEND VM_HEADERS_DAC_AND_WKS_COMMON
+        threadstatics.h
+    )
+endif(FEATURE_MULTITHREADING)
 
 list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
     pregeneratedstringthunks.cpp
@@ -309,8 +322,6 @@ set(VM_SOURCES_WKS
     callstubgenerator.cpp
     clrconfignative.cpp
     clrex.cpp
-    clrvarargs.cpp
-    comdatetime.cpp
     comdelegate.cpp
     comdependenthandle.cpp
     comdynamic.cpp
@@ -357,8 +368,6 @@ set(VM_SOURCES_WKS
     marshalnative.cpp
     methodtablebuilder.cpp
     mlinfo.cpp
-    multicorejit.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
-    multicorejitplayer.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
@@ -386,11 +395,24 @@ set(VM_SOURCES_WKS
     typeparse.cpp
     unsafeaccessors.cpp
     asyncthunks.cpp
-    varargsnative.cpp
     weakreferencenative.cpp
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
 )
+
+if (FEATURE_MULTICOREJIT)
+    list(APPEND VM_SOURCES_WKS
+        multicorejit.cpp
+        multicorejitplayer.cpp
+    )
+endif()
+
+if (FEATURE_VARARGS)
+    list(APPEND VM_SOURCES_WKS
+        clrvarargs.cpp
+        varargsnative.cpp
+    )
+endif()
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND VM_SOURCES_WKS
@@ -419,8 +441,6 @@ set(VM_HEADERS_WKS
     ceemain.h
     clrconfignative.h
     clrex.h
-    clrvarargs.h
-    comdatetime.h
     comdelegate.h
     comdependenthandle.h
     comdynamic.h
@@ -489,10 +509,16 @@ set(VM_HEADERS_WKS
     tieredcompilation.h
     threadsuspend.h
     typeparse.h
-    varargsnative.h
     weakreferencenative.h
     ${VM_HEADERS_GDBJIT}
 )
+
+if (FEATURE_VARARGS)
+    list(APPEND VM_HEADERS_WKS
+        clrvarargs.h
+        varargsnative.h
+    )
+endif()
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND VM_HEADERS_WKS
@@ -668,7 +694,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/getstate.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
-            ${ARCH_SOURCES_DIR}/JitHelpers_SingleAppDomain.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
             ${ARCH_SOURCES_DIR}/patchedcode.asm
             ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
@@ -737,7 +762,6 @@ else()
             ${ARCH_SOURCES_DIR}/getstate.S
             ${ARCH_SOURCES_DIR}/jithelpers_fast.S
             ${ARCH_SOURCES_DIR}/jithelpers_fastwritebarriers.S
-            ${ARCH_SOURCES_DIR}/jithelpers_singleappdomain.S
             ${ARCH_SOURCES_DIR}/jithelpers_slow.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S

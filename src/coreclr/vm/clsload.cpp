@@ -1941,6 +1941,10 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                             name.SetTokenNotToLoad(tdAllAssemblies);
                             typeHnd = pAssembly->GetLoader()->LoadTypeHandleThrowing(&name, level);
                         }
+                        else if (fNotFoundAction == ThrowIfNotFound)
+                        {
+                            pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDef, IDS_CLASSLOAD_TYPE_NOT_CREATED);
+                        }
                     }
                 }
             }
@@ -2851,11 +2855,13 @@ void ClassLoader::NotifyLoad(TypeHandle typeHnd)
         LOG((LF_CLASSLOADER, LL_INFO100, "Successfully loaded class %s\n", pMT->GetDebugClassName()));
 
 #ifdef DEBUGGING_SUPPORTED
+#ifdef FEATURE_METADATA_PERSISTENCE
         {
             Module * pModule = pMT->GetModule();
             // Update metadata for dynamic module.
             pModule->UpdateDynamicMetadataIfNeeded();
         }
+#endif
 
         if (CORDebuggerAttached())
         {
@@ -4046,6 +4052,7 @@ static BOOL AssemblyOrFriendAccessAllowed(Assembly       *pAccessingAssembly,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pAccessingAssembly));
         PRECONDITION(CheckPointer(pTargetAssembly));
     }

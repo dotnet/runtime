@@ -1,0 +1,44 @@
+<Project>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UseMonoRuntime>false</UseMonoRuntime>
+    <UseNativeAOTRuntime>false</UseNativeAOTRuntime>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <TestRuntime>true</TestRuntime>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IncludesTestRunner>false</IncludesTestRunner>
+    <ExpectedExitCode>100</ExpectedExitCode>
+    <DefineConstants>$(DefineConstants);INPROC_APPLE</DefineConstants>
+    <CrashReportAppleDir>$(MSBuildThisFileDirectory)</CrashReportAppleDir>
+    <CrashReportSharedDir>$(RepoRoot)src/tests/baseservices/exceptions/inproccrashreport/Shared/</CrashReportSharedDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CrashReportSharedDir)Program.cs" />
+  </ItemGroup>
+
+  <Target Name="BuildCrashReportAppleNative" BeforeTargets="PrepareForAppleBuildApp">
+    <Error Condition="'$(RuntimeFlavor)' != 'CoreCLR' or '$(UseMonoRuntime)' == 'true' or '$(UseNativeAOTRuntime)' == 'true' or '$(TestNativeAot)' == 'true'"
+           Text="InProcCrashReport tests require CoreCLR, not Mono or NativeAOT." />
+    <Error Condition="'$(TargetArchitecture)' != 'arm64' or ('$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'maccatalyst')"
+           Text="InProcCrashReport Apple adapters support ios, iossimulator and maccatalyst arm64." />
+    <PropertyGroup>
+      <CrashReportNativeBuildDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'crashreport-native'))</CrashReportNativeBuildDir>
+      <CrashReportPalLibrary>$(CoreCLRArtifactsPath)lib/libcoreclrpal.a</CrashReportPalLibrary>
+      <CrashReportMinipalLibrary>$(ArtifactsObjDir)coreclr/$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)/shared_minipal/libminipal.a</CrashReportMinipalLibrary>
+      <CrashReportCMakePlatformArgs Condition="'$(TargetOS)' == 'ios'">-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=$(iOSVersionMin)</CrashReportCMakePlatformArgs>
+      <CrashReportCMakePlatformArgs Condition="'$(TargetOS)' == 'iossimulator'">-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=$(iOSVersionMin)</CrashReportCMakePlatformArgs>
+      <CrashReportCMakePlatformArgs Condition="'$(TargetOS)' == 'maccatalyst'">-DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_SYSROOT=macosx -DCMAKE_SYSTEM_VARIANT=maccatalyst</CrashReportCMakePlatformArgs>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(CrashReportPalLibrary)')" Text="Build the matching CoreCLR first; missing PAL: $(CrashReportPalLibrary)" />
+    <Error Condition="!Exists('$(CrashReportMinipalLibrary)')" Text="Build the matching CoreCLR first; missing minipal: $(CrashReportMinipalLibrary)" />
+
+    <Exec Command="cmake -S &quot;$(CrashReportAppleDir)&quot; -B &quot;$(CrashReportNativeBuildDir)&quot; -G Ninja -DCMAKE_BUILD_TYPE=$(CoreCLRConfiguration) -DCMAKE_OSX_ARCHITECTURES=arm64 -DCLR_CMAKE_TARGET_ARCH=arm64 $(CrashReportCMakePlatformArgs) -DCRASH_REPORT_PAL_LIBRARY=&quot;$(CrashReportPalLibrary)&quot; -DCRASH_REPORT_MINIPAL_LIBRARY=&quot;$(CrashReportMinipalLibrary)&quot;" />
+    <Exec Command="cmake --build &quot;$(CrashReportNativeBuildDir)&quot; --target InProcCrashReportNative" />
+    <!-- A separate dylib keeps PAL symbols private. AppleAppBuilder bundles and signs
+         dylib resources; no native sources or developer-only link inputs go to Helix. -->
+    <Copy SourceFiles="$(CrashReportNativeBuildDir)fixture/libInProcCrashReportNative.dylib"
+          DestinationFolder="$(PublishDir)" />
+  </Target>
+</Project>

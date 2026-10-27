@@ -140,6 +140,75 @@ class Test7A<T> : ITest7<T>
 {
 }
 
+// Test8 -- Interface and virtual dispatch on a non-generic value type. Both need an unboxing
+// thunk because 'this' arrives boxed.
+interface ITest8
+{
+    int Test8Method();
+}
+
+struct Test8 : ITest8
+{
+    private int _value;
+    public Test8(int value) => _value = value;
+    public int Test8Method() => _value;
+    public override string ToString() => "Test8";
+}
+
+// Test9 -- Same, on a generic value type. Instantiated over both a value type (exact code, plain
+// unboxing thunk) and a reference type (shared code, thunk must also supply the generic context).
+interface ITest9
+{
+    int Test9Method();
+}
+
+struct Test9<T> : ITest9
+{
+    private T _value;
+    public Test9(T value) => _value = value;
+    public int Test9Method() => 42;
+    public override string ToString() => "Test9";
+}
+
+struct Test10Result
+{
+    public long A;
+    public long B;
+}
+
+interface ITest10
+{
+    Test10Result GetValue();
+    void SetValue(nint value);
+}
+
+struct Test10<T> : ITest10
+{
+    public Test10Result GetValue() => new Test10Result();
+    public void SetValue(nint value) { }
+}
+
+struct Test11Result
+{
+    public long A;
+    public long B;
+    public long C;
+    public long D;
+    public long E;
+    public long F;
+    public long G;
+}
+
+interface ITest11
+{
+    Test11Result GetValue();
+}
+
+struct Test11<T> : ITest11
+{
+    public Test11Result GetValue() => new Test11Result();
+}
+
 // Entry points that drive dependency analysis
 static class NonGVMTests
 {
@@ -164,6 +233,24 @@ static class NonGVMTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     static ITest7<T> CreateTest7<T>() => new Test7A<T>();
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int CallTest8(ITest8 value) => value.Test8Method();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int CallTest9(ITest9 value) => value.Test9Method();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static string CallToString(object value) => value.ToString();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Test10Result CallGetValue(ITest10 value) => value.GetValue();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void CallSetValue(ITest10 value) => value.SetValue(0);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Test11Result CallTest11(ITest11 value) => value.GetValue();
+
     static void Run()
     {
         ITest1<int> t1 = CreateTest1(42);
@@ -186,5 +273,28 @@ static class NonGVMTests
 
         ITest7<int> t7 = CreateTest7<int>();
         Console.WriteLine(t7.Test7Method());
+
+        // Test8: non-generic value type reached through an interface and through Object.ToString
+        Console.WriteLine(CallTest8(new Test8(42)));
+        Console.WriteLine(CallToString(new Test8(42)));
+
+        // Test9: generic value type, exact instantiation
+        Console.WriteLine(CallTest9(new Test9<int>(42)));
+        Console.WriteLine(CallToString(new Test9<int>(42)));
+
+        // Test9: generic value type, shared instantiation over a reference type
+        Console.WriteLine(CallTest9(new Test9<object>(new object())));
+        Console.WriteLine(CallToString(new Test9<object>(new object())));
+
+        // Test10: shared generic unboxing stubs whose structural Wasm signatures differ only
+        // by whether the first argument after 'this' is a return buffer.
+        ITest10 t10 = new Test10<object>();
+        Console.WriteLine(CallGetValue(t10).A);
+        CallSetValue(t10);
+
+        // Test11: the interpreter-to-R2R adapter for a shared generic unboxing thunk with a
+        // 56-byte struct return must be rooted along with the target method.
+        ITest11 t11 = new Test11<object>();
+        Console.WriteLine(CallTest11(t11).A);
     }
 }

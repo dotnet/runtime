@@ -17,4 +17,3 @@ extends:
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isLinuxBionicOnlyBuild: ${{ variables.isLinuxBionicOnlyBuild }}
-          isRollingBuild: ${{ variables.isRollingBuild }}

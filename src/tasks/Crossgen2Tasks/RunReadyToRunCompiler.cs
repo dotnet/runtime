@@ -1,6 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// This task is replicated in dotnet/sdk at src/Tasks/Microsoft.NET.Build.Tasks/RunReadyToRunCompiler.cs.
+// Keep both copies synchronized.
+
 #nullable disable
 
 using Microsoft.Build.Framework;
@@ -23,6 +26,7 @@ namespace Microsoft.NET.Build.Tasks
         public bool ShowCompilerWarnings { get; set; }
         public bool UseCrossgen2 { get; set; }
         public string Crossgen2ExtraCommandLineArgs { get; set; }
+        public string Crossgen2CompositeExtraCommandLineArgs { get; set; }
         public ITaskItem[] Crossgen2PgoFiles { get; set; }
         public string Crossgen2ContainerFormat { get; set; }
 
@@ -380,6 +384,14 @@ namespace Microsoft.NET.Build.Tasks
                     foreach (var unrooted in ReadyToRunCompositeUnrootedBuildInput)
                     {
                         result.AppendLine($"-u:\"{unrooted.ItemSpec}\"");
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(Crossgen2CompositeExtraCommandLineArgs))
+                {
+                    foreach (string extraArg in Crossgen2CompositeExtraCommandLineArgs.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        result.AppendLine(extraArg);
                     }
                 }
             }

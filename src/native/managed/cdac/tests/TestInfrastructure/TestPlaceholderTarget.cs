@@ -340,7 +340,7 @@ public class TestPlaceholderTarget : Target
 
     public override T Read<T>(ulong address) => DefaultRead<T>(address);
 
-    public override T ReadLittleEndian<T>(ulong address)
+    public override unsafe T ReadLittleEndian<T>(ulong address)
     {
         T value = default;
         Span<byte> buffer = stackalloc byte[sizeof(T)];
@@ -362,7 +362,7 @@ public class TestPlaceholderTarget : Target
         return true;
     }
 
-    public override void Write<T>(ulong address, T value)
+    public override unsafe void Write<T>(ulong address, T value)
     {
         if (_dataWriter is null)
             throw new NotImplementedException();
@@ -531,7 +531,13 @@ public class TestPlaceholderTarget : Target
     }
     #endregion subclass reader helpers
 
-    public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
+    public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
+    {
+        ulong value = PointerSize == sizeof(uint)
+            ? ReadFromSpan<uint>(bytes.Slice(0, sizeof(uint)), IsLittleEndian)
+            : ReadFromSpan<ulong>(bytes.Slice(0, sizeof(ulong)), IsLittleEndian);
+        return new TargetPointer(value);
+    }
 
     public override Target.TypeInfo GetTypeInfo(string typeName)
     {
@@ -544,8 +550,10 @@ public class TestPlaceholderTarget : Target
     public override bool TryGetTypeInfo(string typeName, out Target.TypeInfo info)
         => _typeInfoCache.TryGetValue(typeName, out info);
 
-    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => throw new NotImplementedException();
+    // No OS thread context is available (as on WASM); stack walks fall back to the Frame chain.
+    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => false;
     public override bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context) => throw new NotImplementedException();
+    public override bool TryGetRuntimeImageBase(out TargetPointer imageBase) => throw new NotImplementedException();
 
     public override Target.IDataCache ProcessedData => _dataCache;
     public override ContractRegistry Contracts => _contractRegistry;
@@ -659,7 +667,13 @@ public class TestPlaceholderTarget : Target
             return true;
         }
 
-        public override void Flush(FlushScope scope) { }
+        public override void Flush(FlushScope scope)
+        {
+            foreach (IContract contract in _resolved.Values)
+            {
+                contract.Flush(scope);
+            }
+        }
     }
 
 }

@@ -232,6 +232,16 @@ namespace System.Collections.Tests
         }
 
         [Theory]
+        [InlineData(132, 137)]
+        [InlineData(607, 613)]
+        public void HashSet_Generic_TrimExcess_UsesNearestValidPrime(int requestedCapacity, int expectedCapacity)
+        {
+            var set = new HashSet<T>(1000);
+            set.TrimExcess(requestedCapacity);
+            Assert.Equal(expectedCapacity, set.Capacity);
+        }
+
+        [Theory]
         [InlineData(10, 20, 0)]
         [InlineData(10, 20, 7)]
         public void HashHet_Generic_TrimExcess_LargePopulatedHashSet_TrimCapacityIsLessThanCount_ThrowsArgumentOutOfRangeException(int initialCount, int initialCapacity, int trimCapacity)

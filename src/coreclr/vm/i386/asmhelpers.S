@@ -353,52 +353,6 @@ LEAF_ENTRY GetCurrentSP, _TEXT
     ret
 LEAF_END GetCurrentSP, _TEXT
 
-// ==========================================================================
-// Invoked for vararg forward P/Invoke calls as a stub.
-// Except for secret return buffer, arguments come on the stack so EDX is available as scratch.
-// EAX       - the PInvokeMethodDesc
-// ECX       - may be return buffer address
-// [ESP + 4] - the VASigCookie
-//
-NESTED_ENTRY VarargPInvokeStub, _TEXT, NoHandler
-    // EDX <- VASigCookie
-    mov     edx, [esp + 4]           // skip retaddr
-
-    mov     edx, [edx + VASigCookie__StubOffset]
-    test    edx, edx
-
-    jz      LOCAL_LABEL(GoCallVarargWorker)
-    // ---------------------------------------
-
-    // EAX contains MD ptr for the IL stub
-    jmp     edx
-
-LOCAL_LABEL(GoCallVarargWorker):
-    //
-    // MD ptr in EAX, VASigCookie ptr at [esp+4]
-    //
-    STUB_PROLOG
-
-    mov         esi, esp
-
-    // save pMD
-    push        eax
-
-    push        eax                     // pMD
-    push        dword ptr [esi + 4*7]   // pVaSigCookie
-    push        esi                     // pTransitionBlock
-
-    call        C_FUNC(VarargPInvokeStubWorker)
-
-    // restore pMD
-    pop     eax
-
-    STUB_EPILOG
-
-    // jump back to the helper - this time it won't come back here as the stub already exists
-    jmp C_FUNC(VarargPInvokeStub)
-NESTED_END VarargPInvokeStub, _TEXT
-
 #ifdef FEATURE_READYTORUN
 NESTED_ENTRY DynamicHelperArgsStub, _TEXT, NoHandler
     .cfi_def_cfa_offset 16
@@ -730,6 +684,8 @@ NESTED_ENTRY BackPatchWorkerAsmStub, _TEXT, NoHandler
     ret
 NESTED_END BackPatchWorkerAsmStub, _TEXT
 
+#ifdef PROFILING_SUPPORTED
+
 NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
     push    esi
     push    edi
@@ -927,6 +883,8 @@ NESTED_END ProfileTailcallNaked, _TEXT
 NESTED_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT, NoHandler
     ret
 NESTED_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
+
+#endif // PROFILING_SUPPORTED
 
 #ifdef FEATURE_TIERED_COMPILATION
 

@@ -400,9 +400,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 {
     CONTRACTL
     {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pExactMT));
         PRECONDITION(CheckPointer(pGenericMDescInRepMT));
         PRECONDITION(methodInst.IsEmpty() || pGenericMDescInRepMT->IsGenericMethodDefinition());
@@ -854,7 +852,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     // - we don't need instantiating stubs for these.
     if (    methodInst.IsEmpty()
         && (allowInstParam || !pMDescInCanonMT->RequiresInstArg())
-        && (forceBoxedEntryPoint == pMDescInCanonMT->IsUnboxingStub())
+        && (static_cast<bool>(forceBoxedEntryPoint) == pMDescInCanonMT->IsUnboxingStub())
         && (!forceRemotableMethod || !pMDescInCanonMT->IsInterface() || !pMDescInCanonMT->GetMethodTable()->IsSharedByGenericInstantiations())
         && (pMDescInCanonMT->MatchesAsyncVariantLookup(asyncVariantLookup)))
     {
@@ -1281,9 +1279,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     Instantiation methodInst)
 {
     CONTRACTL {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;    // Because allowCreate is TRUE
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pMethod));
     }
     CONTRACTL_END;

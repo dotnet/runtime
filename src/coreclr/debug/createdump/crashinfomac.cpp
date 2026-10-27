@@ -239,22 +239,31 @@ void CrashInfo::VisitModule(MachOModule& module)
             m_coreclrPath = module.Name().substr(0, last + 1);
             m_runtimeBaseAddress = module.BaseAddress();
 
-            uint64_t symbolOffset;
-            if (!module.TryLookupSymbol(DACCESS_TABLE_SYMBOL, &symbolOffset))
+            uint64_t symbolAddress;
+            if (!module.TryLookupSymbol(DACCESS_TABLE_SYMBOL, &symbolAddress))
             {
                 TRACE("TryLookupSymbol(" DACCESS_TABLE_SYMBOL ") FAILED\n");
+            }
+            if (module.TryLookupSymbol(CONTRACT_DESCRIPTOR_SYMBOL, &symbolAddress))
+            {
+                m_contractDescriptorAddress = symbolAddress;
             }
         }
         else if (m_appModel == AppModelType::SingleFile)
         {
-            uint64_t symbolOffset;
-            if (module.TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))
+            uint64_t runtimeInfoAddress;
+            if (module.TryLookupSymbol("DotNetRuntimeInfo", &runtimeInfoAddress))
             {
                 m_coreclrPath = GetDirectory(module.Name());
                 m_runtimeBaseAddress = module.BaseAddress();
+                uint64_t contractDescriptorAddress;
+                if (module.TryLookupSymbol(CONTRACT_DESCRIPTOR_SYMBOL, &contractDescriptorAddress))
+                {
+                    m_contractDescriptorAddress = contractDescriptorAddress;
+                }
 
                 RuntimeInfo runtimeInfo { };
-                if (ReadMemory(module.BaseAddress() + symbolOffset, &runtimeInfo, sizeof(RuntimeInfo)))
+                if (ReadMemory(runtimeInfoAddress, &runtimeInfo, sizeof(RuntimeInfo)))
                 {
                     if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
                     {
@@ -265,11 +274,12 @@ void CrashInfo::VisitModule(MachOModule& module)
         }
         else if (m_appModel == AppModelType::NativeAOT)
         {
-            uint64_t symbolOffset;
-            if (module.TryLookupSymbol("DotNetRuntimeContractDescriptor", &symbolOffset))
+            uint64_t symbolAddress;
+            if (module.TryLookupSymbol(CONTRACT_DESCRIPTOR_SYMBOL, &symbolAddress))
             {
                 m_coreclrPath = GetDirectory(module.Name());
                 m_runtimeBaseAddress = module.BaseAddress();
+                m_contractDescriptorAddress = symbolAddress;
                 TRACE("Found valid NativeAOT runtime module\n");
             }
         }

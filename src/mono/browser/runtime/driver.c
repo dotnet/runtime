@@ -215,15 +215,13 @@ int initialize_runtime()
 	return 0;
 }
 
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
+static void
+invoke_jsexport_method (MonoMethod *method, void **invoke_args)
 {
 	PVOLATILE(MonoObject) temp_exc = NULL;
 
-	void *invoke_args[1] = { args };
-
 	MONO_ENTER_GC_UNSAFE;
-	mono_runtime_invoke (method, NULL, args ? invoke_args : NULL, (MonoObject **)&temp_exc);
+	mono_runtime_invoke (method, NULL, invoke_args, (MonoObject **)&temp_exc);
 
 	// this failure is unlikely because it would be runtime error, not application exception.
 	// the application exception is passed inside JSMarshalerArguments `args`
@@ -239,6 +237,32 @@ mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
 		abort ();
 	}
 	MONO_EXIT_GC_UNSAFE;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
+{
+	void *invoke_args[1] = { args };
+
+	invoke_jsexport_method (method, args ? invoke_args : NULL);
+}
+
+// JavaScriptExports.CallJSExport, which dispatches to the [JSExport] wrapper registered under a handle
+static MonoMethod *jsexport_dispatcher = NULL;
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_set_jsexport_dispatcher (MonoMethod *method)
+{
+	jsexport_dispatcher = method;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_by_handle (int handle, void* args)
+{
+	void *invoke_args[2] = { &handle, args };
+
+	assert (jsexport_dispatcher);
+	invoke_jsexport_method (jsexport_dispatcher, invoke_args);
 }
 
 #ifndef DISABLE_THREADS
@@ -273,6 +297,26 @@ mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, v
 	mono_threads_wasm_async_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_async_post_cb, method, args);
 }
 
+// this is running on the target thread
+static void
+mono_wasm_invoke_jsexport_by_handle_async_post_cb (gpointer handle, void* args)
+{
+	mono_wasm_invoke_jsexport_by_handle ((int)(intptr_t)handle, args);
+	if (args) {
+		MonoBoolean *is_receiver_should_free = (MonoBoolean *)(((char *) args) + 20/*JSMarshalerArgumentOffsets.ReceiverShouldFree*/);
+		if(*is_receiver_should_free != 0){
+			free (args);
+		}
+	}
+}
+
+// async
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_by_handle_async_post (void* target_thread, int handle, void* args /*JSMarshalerArguments*/)
+{
+	mono_threads_wasm_async_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_by_handle_async_post_cb, (gpointer)(intptr_t)handle, args);
+}
+
 
 typedef void (*js_interop_event)(void* args);
 typedef void (*sync_context_pump)(void);
@@ -294,6 +338,22 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
 {
 	mono_threads_wasm_sync_run_in_target_thread_vii (target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_sync, method, args);
+}
+
+// this is running on the target thread
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_by_handle_sync (int handle, void* args)
+{
+	before_sync_js_import (args);
+	mono_wasm_invoke_jsexport_by_handle (handle, args);
+	after_sync_js_import (args);
+}
+
+// sync
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_by_handle_sync_send (void* target_thread, int handle, void* args /*JSMarshalerArguments*/)
+{
+	mono_threads_wasm_sync_run_in_target_thread_vii (target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_by_handle_sync, (gpointer)(intptr_t)handle, args);
 }
 
 EMSCRIPTEN_KEEPALIVE void mono_wasm_synchronization_context_pump (void)

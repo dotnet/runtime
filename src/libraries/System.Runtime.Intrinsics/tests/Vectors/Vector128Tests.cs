@@ -5626,6 +5626,40 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Theory]
+        [InlineData(double.Epsilon, 1e-12)]
+        [InlineData(double.MaxValue, 1e-12)]
+        [InlineData(-0.0, 0.0)]
+        [InlineData(-1.0, 0.0)]
+        [InlineData(double.NegativeInfinity, 0.0)]
+        [InlineData(double.PositiveInfinity, 0.0)]
+        [InlineData(double.NaN, 0.0)]
+        public void LogAndLog2DoubleMixedLanesTest(double value, double variance)
+        {
+            Vector128<double> input = Vector128.Create(value, 2.0);
+            Vector128<double> allowedVariance = Vector128.Create(variance, GenericMathTestMemberData.DoubleCrossPlatformMachineEpsilon);
+
+            AssertEqual(Vector128.Create(double.Log(value), double.Log(2.0)), Vector128.Log(input), allowedVariance);
+            AssertEqual(Vector128.Create(double.Log2(value), 1.0), Vector128.Log2(input), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(float.Epsilon, 1e-4f)]
+        [InlineData(float.MaxValue, 1e-4f)]
+        [InlineData(-0.0f, 0.0f)]
+        [InlineData(-1.0f, 0.0f)]
+        [InlineData(float.NegativeInfinity, 0.0f)]
+        [InlineData(float.PositiveInfinity, 0.0f)]
+        [InlineData(float.NaN, 0.0f)]
+        public void LogAndLog2SingleMixedLanesTest(float value, float variance)
+        {
+            Vector128<float> input = Vector128.Create(value, 2.0f, value, 2.0f);
+            Vector128<float> allowedVariance = Vector128.Create(variance, 4.76837158e-07f, variance, 4.76837158e-07f);
+
+            AssertEqual(Vector128.Create(float.Log(value), float.Log(2.0f), float.Log(value), float.Log(2.0f)), Vector128.Log(input), allowedVariance);
+            AssertEqual(Vector128.Create(float.Log2(value), 1.0f, float.Log2(value), 1.0f), Vector128.Log2(input), allowedVariance);
+        }
+
+        [Theory]
         [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddDouble), MemberType = typeof(GenericMathTestMemberData))]
         public void FusedMultiplyAddDoubleTest(double left, double right, double addend, double expectedResult)
         {
@@ -5803,6 +5837,38 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertEqual(Vector128.Create(expectedResult), Vector128.Hypot(Vector128.Create(+y), Vector128.Create(-x)), Vector128.Create(variance));
             AssertEqual(Vector128.Create(expectedResult), Vector128.Hypot(Vector128.Create(+y), Vector128.Create(+x)), Vector128.Create(variance));
         }
+
+        private void IntegerClassification<T>(T value)
+            where T : IFloatingPointIeee754<T>
+        {
+            Vector128<T> vector = Vector128<T>.Zero;
+            Vector128<T> integer = Vector128<T>.Zero;
+            Vector128<T> even = Vector128<T>.Zero;
+            Vector128<T> odd = Vector128<T>.Zero;
+            T allBitsSet = Vector128<T>.AllBitsSet.GetElement(0);
+            T two = T.CreateChecked(2);
+
+            for (int i = 0; i < Vector128<T>.Count; i++)
+            {
+                T element = (i % 2 == 0) ? value : T.CreateChecked(i - 1);
+                vector = vector.WithElement(i, element);
+                integer = integer.WithElement(i, (element % T.One == T.Zero) ? allBitsSet : T.Zero);
+                even = even.WithElement(i, (element % two == T.Zero) ? allBitsSet : T.Zero);
+                odd = odd.WithElement(i, (T.Abs(element % two) == T.One) ? allBitsSet : T.Zero);
+            }
+
+            Assert.Equal(integer.AsByte(), Vector128.IsInteger(vector).AsByte());
+            Assert.Equal(even.AsByte(), Vector128.IsEvenInteger(vector).AsByte());
+            Assert.Equal(odd.AsByte(), Vector128.IsOddInteger(vector).AsByte());
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IntegerClassificationDoubleTest(double value) => IntegerClassification(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IntegerClassificationSingleTest(float value) => IntegerClassification(value);
 
         private void IsEvenInteger<T>(T value)
             where T : INumber<T>

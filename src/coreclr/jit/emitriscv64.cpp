@@ -1865,7 +1865,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         if (doEmit)
         {
             assert(!emitGeneratingPrologOrFuncletProlog() && !emitGeneratingEpilogOrFuncletEpilog());
-            auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
+            auto constAddr = emitDataConst(&originalImm, sizeof(originalImm), sizeof(originalImm), TYP_LONG);
             emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, m_compiler->eeFindJitDataOffs(constAddr));
         }
         return -1;
@@ -4772,7 +4772,7 @@ void emitter::emitDispInsName(
         default:
         {
             printf("CODE: %#x\n", code);
-            printf("MajorOpcode: %d\n", GetMajorOpcode(code));
+            printf("MajorOpcode: %d\n", static_cast<int>(GetMajorOpcode(code)));
             NO_WAY("illegal ins within emitDisInsName!");
         }
     }

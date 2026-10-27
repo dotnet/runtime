@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -817,10 +818,12 @@ namespace System.Numerics
         public static Decimal128 Ceiling(Decimal128 x) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), 0, MidpointRounding.ToPositiveInfinity));
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToInteger<TInteger>(Decimal128 value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        [SuppressReadyToRunCanonicalRooting]
         public static TInteger ConvertToIntegerNative<TInteger>(Decimal128 value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
@@ -1302,6 +1305,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static Decimal128 CreateChecked<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1321,6 +1325,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static Decimal128 CreateSaturating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1340,6 +1345,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         public static Decimal128 CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
@@ -1359,17 +1365,21 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal128>.TryConvertFromChecked<TOther>(TOther value, out Decimal128 result) => TryConvertFrom(value, out result);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal128>.TryConvertFromSaturating<TOther>(TOther value, out Decimal128 result) => TryConvertFrom(value, out result);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal128>.TryConvertFromTruncating<TOther>(TOther value, out Decimal128 result) => TryConvertFrom(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertFrom<TOther>(TOther value, out Decimal128 result)
             where TOther : INumberBase<TOther>
         {
@@ -1481,6 +1491,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal128>.TryConvertToChecked<TOther>(Decimal128 value, [MaybeNullWhen(false)] out TOther result)
         {
             // Conversions to an integer target throw on overflow, NaN, or infinity. Conversions to a
@@ -1604,13 +1615,16 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal128>.TryConvertToSaturating<TOther>(Decimal128 value, [MaybeNullWhen(false)] out TOther result) => TryConvertTo(value, out result);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         static bool INumberBase<Decimal128>.TryConvertToTruncating<TOther>(Decimal128 value, [MaybeNullWhen(false)] out TOther result) => TryConvertTo(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressReadyToRunCanonicalRooting]
         private static bool TryConvertTo<TOther>(Decimal128 value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
@@ -1724,56 +1738,16 @@ namespace System.Numerics
             }
         }
 
-
-        private static readonly UInt128[] UInt128Powers10 =
-            [
-                new UInt128(0, 1),
-                new UInt128(0, 10),
-                new UInt128(0, 100),
-                new UInt128(0, 1000),
-                new UInt128(0, 10000),
-                new UInt128(0, 100000),
-                new UInt128(0, 1000000),
-                new UInt128(0, 10000000),
-                new UInt128(0, 100000000),
-                new UInt128(0, 1000000000),
-                new UInt128(0, 10000000000),
-                new UInt128(0, 100000000000),
-                new UInt128(0, 1000000000000),
-                new UInt128(0, 10000000000000),
-                new UInt128(0, 100000000000000),
-                new UInt128(0, 1000000000000000),
-                new UInt128(0, 10000000000000000),
-                new UInt128(0, 100000000000000000),
-                new UInt128(0, 1000000000000000000),
-                new UInt128(0, 10000000000000000000),
-                new UInt128(5, 7766279631452241920),
-                new UInt128(54, 3875820019684212736),
-                new UInt128(542, 1864712049423024128),
-                new UInt128(5421, 200376420520689664),
-                new UInt128(54210, 2003764205206896640),
-                new UInt128(542101, 1590897978359414784),
-                new UInt128(5421010, 15908979783594147840),
-                new UInt128(54210108, 11515845246265065472),
-                new UInt128(542101086, 4477988020393345024),
-                new UInt128(5421010862, 7886392056514347008),
-                new UInt128(54210108624, 5076944270305263616),
-                new UInt128(542101086242, 13875954555633532928),
-                new UInt128(5421010862427, 9632337040368467968),
-                new UInt128(54210108624275, 4089650035136921600),
-                new UInt128(542101086242752, 4003012203950112768),
-            ];
-
         static string IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ToDecStr(UInt128 significand)
         {
             return Number.UInt128ToDecStr(significand);
         }
 
-        static unsafe UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
         {
             if (digits <= 19)
             {
-                return Number.DigitsToUInt64(number.DigitsPtr, digits);
+                return Number.DigitsToUInt64(number.Digits.Slice(0, digits));
             }
             else
             {
@@ -1786,11 +1760,11 @@ namespace System.Numerics
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ConvertToExponent(UInt128 value) => (int)value;
 
-        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Power10(int exponent) => UInt128Powers10[exponent];
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Power10(int exponent) => UInt128.PowersOf10[exponent];
 
         static (UInt128 Quotient, UInt128 Remainder) IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.DivRemPow10(UInt128 value, int exponent)
         {
-            UInt128 power = UInt128Powers10[exponent];
+            UInt128 power = UInt128.PowersOf10[exponent];
             return UInt128.DivRem(value, power);
         }
 

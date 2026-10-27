@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 
 namespace System.Diagnostics
 {
@@ -63,7 +63,9 @@ namespace System.Diagnostics
                 if (taskInfo.HasValue && string.IsNullOrEmpty(processName))
                 {
                     Interop.libproc.proc_taskallinfo temp = taskInfo.Value;
-                    unsafe { processName = Utf8StringMarshaller.ConvertToManaged(temp.pbsd.pbi_comm); }
+                    ReadOnlySpan<byte> comm = temp.pbsd.pbi_comm;
+                    int nul = comm.IndexOf((byte)0);
+                    processName = Encoding.UTF8.GetString(nul >= 0 ? comm[..nul] : comm);
                 }
             }
             else

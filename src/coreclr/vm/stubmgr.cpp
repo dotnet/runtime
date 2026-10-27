@@ -1770,42 +1770,23 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
         trace->InitForManaged(target);
     }
-    else if (pStubMD->HasMDContextArg())
+#ifdef FEATURE_VARARGS
+    else if (pStubMD->IsPInvokeVarArgStub())
     {
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Hidden argument is MethodDesc\n"));
 
+        // This is a vararg P/Invoke, the argument is the MD.
         MethodDesc *pMD = (MethodDesc *)arg;
+        _ASSERTE(pMD->IsPInvoke());
 
-        // This is either vararg PInvoke or a CLR-to-COM call, the argument is MD
-        if (pMD->IsPInvoke())
-        {
-            PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(pMD);
-            _ASSERTE_IMPL(!pNMD->PInvokeTargetIsImportThunk());
-            target = (PCODE)pNMD->GetPInvokeTarget();
-            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward P/Invoke case %p\n",
-                 reinterpret_cast<void*>(target)));
-            trace->InitForUnmanaged(target);
-        }
-#ifdef FEATURE_COMINTEROP
-        else
-        {
-            LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Stub is CLR-to-COM\n"));
-            _ASSERTE(pMD->IsCLRToCOMCall());
-            _ASSERTE(!pMD->IsStatic() && !pMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
-
-            DWORD dwStubFlags;
-            CLRToCOMCallInfo* pInfo = CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(pMD, &dwStubFlags);
-
-            if (pThis != NULL)
-            {
-                target = SF_IsCOMLateBoundStub(dwStubFlags) ? GetLateBoundCOMTarget(pThis, pInfo) : GetCOMTarget(pThis, pInfo);
-                LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM case %p\n",
-                     reinterpret_cast<void*>(target)));
-                trace->InitForUnmanaged(target);
-            }
-        }
-#endif // FEATURE_COMINTEROP
+        PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(pMD);
+        _ASSERTE_IMPL(!pNMD->PInvokeTargetIsImportThunk());
+        target = (PCODE)pNMD->GetPInvokeTarget();
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward P/Invoke case %p\n",
+             reinterpret_cast<void*>(target)));
+        trace->InitForUnmanaged(target);
     }
+#endif // FEATURE_VARARGS
     else if (pStubMD->IsDelegateInvokeMethodStub())
     {
         if (pThis == NULL)
@@ -1899,7 +1880,132 @@ BOOL PInvokeStubManager::DoTraceStub(PCODE stubStartAddress,
 #endif // !DACCESS_COMPILE
 }
 
-// This is used to recognize VarargPInvokeStub.
+#ifdef FEATURE_COMINTEROP
+
+//
+// This is the stub manager for CLR->COM calls.
+//
+
+#ifndef DACCESS_COMPILE
+
+/* static */
+void CLRToCOMStubManager::Init()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    StubManager::AddStubManager(new CLRToCOMStubManager());
+}
+
+#endif // #ifndef DACCESS_COMPILE
+
+BOOL CLRToCOMStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+
+    MethodDesc *pMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
+
+    return (pMD != NULL) && pMD->IsCLRToCOMCall();
+}
+
+BOOL CLRToCOMStubManager::DoTraceStub(PCODE stubStartAddress,
+                                      TraceDestination *trace)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    LOG((LF_CORDB, LL_EVERYTHING, "CLRToCOMStubManager::DoTraceStub called\n"));
+
+#ifndef DACCESS_COMPILE
+
+    // The target of a CLR->COM call is derived from the RCW being called on, so it
+    // can only be computed once the call is actually made. Ask the debugger to run
+    // to the start of the stub and call back into TraceManager.
+    trace->InitForManagerPush(stubStartAddress, this);
+
+    LOG_TRACE_DESTINATION(trace, stubStartAddress, "CLRToCOMStubManager::DoTraceStub");
+
+    return TRUE;
+
+#else // !DACCESS_COMPILE
+    trace->InitForOther((PCODE)NULL);
+    return FALSE;
+
+#endif // !DACCESS_COMPILE
+}
+
+#ifndef DACCESS_COMPILE
+BOOL CLRToCOMStubManager::TraceManager(Thread *thread,
+                                       TraceDestination *trace,
+                                       T_CONTEXT *pContext,
+                                       BYTE **pRetAddr)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    PCODE stubIP = GetIP(pContext);
+    *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
+
+    MethodDesc *pMD = NonVirtualEntry2MethodDesc(stubIP);
+    if (pMD == NULL || !pMD->IsCLRToCOMCall())
+    {
+        LOG((LF_CORDB, LL_INFO1000, "CTCSM::TraceManager: Not a CLR->COM call\n"));
+        return FALSE;
+    }
+
+    _ASSERTE(!pMD->IsStatic() && !pMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
+
+    DWORD dwStubFlags;
+    CLRToCOMCallInfo *pInfo = CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(pMD, &dwStubFlags);
+
+    if (SF_IsCOMEventCallStub(dwStubFlags))
+    {
+        // COM event calls don't call out to COM directly, they forward to a managed
+        // event provider method instead.
+        MethodDesc *pEventProviderMD = pInfo->m_pEventProviderMD;
+        if (pEventProviderMD == NULL)
+        {
+            LOG((LF_CORDB, LL_INFO1000, "CTCSM::TraceManager: COM event call has no target\n"));
+            return FALSE;
+        }
+
+        PCODE target = GetStubTarget(pEventProviderMD);
+        if (target == (PCODE)NULL)
+            return FALSE;
+
+        LOG((LF_CORDB, LL_INFO10000, "CTCSM::TraceManager: COM event call case %p\n", reinterpret_cast<void*>(target)));
+        trace->InitForManaged(target);
+        return TRUE;
+    }
+
+    Object *pThis = StubManagerHelpers::GetThisPtr(pContext);
+    if (pThis == NULL)
+    {
+        LOG((LF_CORDB, LL_INFO1000, "CTCSM::TraceManager: No 'this' object to compute the COM target from\n"));
+        return FALSE;
+    }
+
+    PCODE target = SF_IsCOMLateBoundStub(dwStubFlags) ? GetLateBoundCOMTarget(pThis, pInfo) : GetCOMTarget(pThis, pInfo);
+    LOG((LF_CORDB, LL_INFO10000, "CTCSM::TraceManager: CLR-to-COM case %p\n", reinterpret_cast<void*>(target)));
+    trace->InitForUnmanaged(target);
+
+    return TRUE;
+}
+#endif // !DACCESS_COMPILE
+
+#endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_VARARGS
 
 #ifndef DACCESS_COMPILE
 
@@ -1927,7 +2033,7 @@ static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub))
         return TRUE;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg))
         return TRUE;
 #endif
@@ -1995,23 +2101,18 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
     PCODE stubIP = GetIP(pContext);
     if (IsVarargPInvokeStub(stubIP))
     {
-#if defined(TARGET_ARM64) && defined(__APPLE__)
-        //On ARM64 Mac, we cannot put a breakpoint inside of VarargPInvokeStub
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on arm64-macOS\n"));
-        return FALSE;
-#else
         PInvokeMethodDesc *pNMD = (PInvokeMethodDesc *)arg;
         PCODE target = (PCODE)pNMD->GetPInvokeTarget();
 
         LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Vararg P/Invoke case %p\n",
              reinterpret_cast<void*>(target)));
         trace->InitForUnmanaged(target);
-#endif //defined(TARGET_ARM64) && defined(__APPLE__)
     }
 
     return TRUE;
 }
 #endif //!DACCESS_COMPILE
+#endif // FEATURE_VARARGS
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 
@@ -2198,14 +2299,15 @@ BOOL AsyncThunkStubManager::TraceManager(Thread *thread,
     MethodDesc* pMD = NonVirtualEntry2MethodDesc(stubIP);
     if (pMD->IsAsyncThunkMethod())
     {
-        MethodDesc* pOtherMD = pMD->GetOrdinaryVariant();
-        _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk does not have non-async variant");
+        MethodDesc* pOtherMD = pMD->IsReturnDroppingThunk()
+            ? pMD->GetAsyncVariantNoCreate()
+            : pMD->GetOrdinaryVariantNoCreate();
 
         // An ordinary variant may be a thunk in a rare case when we start from ReturnDroppingThunk.
         // In such case the regular async variant must not be a thunk.
         if (pOtherMD->IsAsyncThunkMethod())
         {
-            pOtherMD = pMD->GetAsyncVariant();
+            pOtherMD = pMD->GetAsyncVariantNoCreate();
             _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk has no non-thunk variant to step through to");
             _ASSERTE(!pOtherMD->IsAsyncThunkMethod());
         }
@@ -2274,6 +2376,18 @@ PInvokeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     EMEM_OUT(("MEM: %p PInvokeStubManager\n", dac_cast<TADDR>(this)));
 }
 
+#ifdef FEATURE_COMINTEROP
+void
+CLRToCOMStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+{
+    SUPPORTS_DAC;
+    WRAPPER_NO_CONTRACT;
+    DAC_ENUM_VTHIS();
+    EMEM_OUT(("MEM: %p CLRToCOMStubManager\n", dac_cast<TADDR>(this)));
+}
+#endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_VARARGS
 void
 InteropDispatchStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
@@ -2282,6 +2396,7 @@ InteropDispatchStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p InteropDispatchStubManager\n", dac_cast<TADDR>(this)));
 }
+#endif // FEATURE_VARARGS
 
 void
 VirtualCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)

@@ -26,7 +26,7 @@ FCIMPL2(OBJECTHANDLE, DependentHandle::InternalAlloc, Object *target, Object *de
 }
 FCIMPLEND
 
-extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack target, QCall::ObjectHandleOnStack dependent)
+extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack target, QCall::ObjectHandleOnStack dependent, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -122,7 +122,7 @@ FCIMPL1(FC_BOOL_RET, DependentHandle::InternalFree, OBJECTHANDLE handle)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle)
+extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

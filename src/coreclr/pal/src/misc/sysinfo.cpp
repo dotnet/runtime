@@ -173,16 +173,18 @@ PAL_GetLogicalCpuCountFromOS()
             configuredCpuCount = CPU_SETSIZE;
         }
 
-        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
+
+        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
         if (pCpuSet != nullptr)
         {
-            size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+            size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
             CPU_ZERO_S(cpuSetSize, pCpuSet);
 
             int st = sched_getaffinity(gPID, cpuSetSize, pCpuSet);
             if (st == 0)
             {
-                nrcpus = CPU_COUNT_S(CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+                nrcpus = CPU_COUNT_S(cpuSetSize, pCpuSet);
             }
             else
             {

@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs, marshal_task_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid, get_sync_done_semaphore_ptr, get_arg } from "./marshal";
+import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid, get_sync_done_semaphore_ptr, get_arg, get_arg_type } from "./marshal";
 import { fixupPointer, forceThreadMemoryViewRefresh, free } from "./memory";
 import { JSFunctionSignature, JSMarshalerArguments, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType, VoidPtrNull } from "./types/internal";
 import { VoidPtr } from "./types/emscripten";
@@ -335,7 +335,14 @@ function bind_fn (closure: BindingClosure) {
                 }
             }
         } catch (ex) {
-            marshal_exception_to_cs(<any>args, ex);
+            // on the async post path the caller already has the pre-created Task and is gone, so it
+            // would never read the exception slot. Deliver the failure through the Task instead.
+            const res = receiver_should_free ? get_arg(args, 1) : null;
+            if (res && get_arg_type(res) === MarshalerType.TaskPreCreated) {
+                marshal_task_to_cs(res, Promise.reject(ex));
+            } else {
+                marshal_exception_to_cs(<any>args, ex);
+            }
         } finally {
             if (receiver_should_free) {
                 free(args as any);
