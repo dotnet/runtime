@@ -72,9 +72,7 @@ namespace ILCompiler
         private readonly SortedSet<MetadataType> _typesWithThreadStaticsGenerated = new SortedSet<MetadataType>(CompilerComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithConstructedEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
-        private readonly SortedSet<MethodDesc> _methodsGenerated = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
-        private readonly SortedSet<GenericDictionaryNode> _genericDictionariesGenerated = new SortedSet<GenericDictionaryNode>(CompilerComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
         private readonly SortedSet<FrozenObjectNode> _frozenObjects = new SortedSet<FrozenObjectNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeGVMEntriesNode> _typeGVMEntries
@@ -279,11 +277,8 @@ namespace ILCompiler
                     _reflectableMethods.Add(methodNode.Method);
             }
 
-            methodNode ??= obj as ShadowConcreteMethodNode;
-
-            if (methodNode != null)
+            if (methodNode is not null || obj is ShadowConcreteMethodNode)
             {
-                _methodsGenerated.Add(methodNode.Method);
                 return;
             }
 
@@ -315,12 +310,6 @@ namespace ILCompiler
             if (gvmEntryNode != null)
             {
                 _typeGVMEntries.Add(gvmEntryNode);
-            }
-
-            var dictionaryNode = obj as GenericDictionaryNode;
-            if (dictionaryNode != null)
-            {
-                _genericDictionariesGenerated.Add(dictionaryNode);
             }
 
             if (obj is DispatchCellNode dispatchCell)
@@ -1091,11 +1080,6 @@ namespace ILCompiler
             return _typeGVMEntries;
         }
 
-        internal IReadOnlyCollection<GenericDictionaryNode> GetCompiledGenericDictionaries()
-        {
-            return _genericDictionariesGenerated;
-        }
-
         internal IEnumerable<DefType> GetTypesWithStructMarshalling()
         {
             return _typesWithStructMarshalling;
@@ -1104,11 +1088,6 @@ namespace ILCompiler
         internal IEnumerable<DefType> GetTypesWithDelegateMarshalling()
         {
             return _typesWithDelegateMarshalling;
-        }
-
-        public IEnumerable<MethodDesc> GetCompiledMethods()
-        {
-            return _methodsGenerated;
         }
 
         public IEnumerable<MethodDesc> GetReflectableMethods()
