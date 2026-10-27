@@ -17,6 +17,8 @@
 #include "auxiliaryentrypointsera.h"
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
+typedef DPTR(struct READYTORUN_AUXILIARY_MODULE_METADATA) PTR_READYTORUN_AUXILIARY_MODULE_METADATA;
+typedef DPTR(struct READYTORUN_AUXILIARY_MODULE) PTR_READYTORUN_AUXILIARY_MODULE;
 
 class NativeImage;
 class PrepareCodeConfig;
@@ -145,6 +147,7 @@ class ReadyToRunInfo
     friend class HotColdMappingLookupTable;
 
     PTR_Module                      m_pModule;
+    PTR_Module                      m_pEntryPointModule = nullptr;
     PTR_ModuleBase                  m_pNativeManifestModule;
     PTR_READYTORUN_HEADER           m_pHeader;
     bool                            m_isComponentAssembly;
@@ -203,13 +206,13 @@ class ReadyToRunInfo
     TADDR                           m_pLoadedImageBase;
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
+    PTR_READYTORUN_AUXILIARY_MODULE_METADATA m_pAuxiliaryModuleMetadata = nullptr;
     PTR_DWORD                       m_pAuxiliaryModuleActivationFlag = 0;
     PTR_DWORD                       m_pAuxiliaryEntryPointsModuleStatus = 0;
 
     // Starts at 1 so a recorded era is never 0, which callers use to mean "not awaiting EntryPoints".
     inline static DWORD             s_auxiliaryEntryPointsEra = 1;
-    // TODO: Remove once auxiliary EntryPoints modules are downloaded. Stands in for the EntryPoints module status
-    // of every composite image; (DWORD)-1 means not yet read from config.
+    // Legacy call-count simulation for unpartitioned composite images; (DWORD)-1 means not configured.
     inline static DWORD             s_simulatedAuxiliaryEntryPointsCallsRemaining = (DWORD)-1;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
@@ -259,13 +262,37 @@ public:
         return (PCODE)(GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[r2rFunctionIndex]));
     }
     void RegisterVirtualIPRange(Module* pModule);
+    int FindRuntimeFunction(DWORD relativeVirtualIP) const;
+    bool IsRuntimeFunctionActive(DWORD index) const;
+    DWORD GetRuntimeFunctionRangeEnd(DWORD index) const;
 #endif // TARGET_WASM
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    PTR_DWORD GetAuxiliaryModuleActivationFlag(MethodDesc* pMD) const
+    PTR_READYTORUN_AUXILIARY_MODULE GetAuxiliaryModule(DWORD runtimeFunctionIndex) const
     {
         LIMITED_METHOD_CONTRACT;
-        // If/When we use multiple auxiliary modules, this will need to search the AuxiliaryEntryPointsModule to find which flag to use
+        if (m_pAuxiliaryModuleMetadata != nullptr)
+        {
+            PTR_READYTORUN_AUXILIARY_MODULE entries = dac_cast<PTR_READYTORUN_AUXILIARY_MODULE>(
+                dac_cast<TADDR>(m_pAuxiliaryModuleMetadata) + sizeof(READYTORUN_AUXILIARY_MODULE_METADATA));
+            for (DWORD i = 0; i < m_pAuxiliaryModuleMetadata->AuxiliaryModuleCount; i++)
+            {
+                if (runtimeFunctionIndex >= entries[i].RelativeTableBase &&
+                    runtimeFunctionIndex - entries[i].RelativeTableBase < entries[i].MethodCount)
+                    return entries + i;
+            }
+        }
+        return nullptr;
+    }
+
+    PTR_DWORD GetAuxiliaryModuleActivationFlag(DWORD runtimeFunctionIndex) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (m_pAuxiliaryModuleMetadata != nullptr)
+        {
+            PTR_READYTORUN_AUXILIARY_MODULE entry = GetAuxiliaryModule(runtimeFunctionIndex);
+            return entry == nullptr ? nullptr : &entry->ActivationStatus;
+        }
         return m_pAuxiliaryModuleActivationFlag;
     }
 
@@ -308,7 +335,10 @@ public:
     bool IsAuxiliaryEntryPointsModuleActivated() const
     {
         LIMITED_METHOD_CONTRACT;
-        return IsAuxiliaryEntryPointsModuleActivated(m_pAuxiliaryEntryPointsModuleStatus);
+        if (m_pAuxiliaryModuleMetadata != nullptr)
+            return VolatileLoad(&m_pAuxiliaryModuleMetadata->EntryPointsModuleActivationStatus) == 1;
+        return m_pAuxiliaryEntryPointsModuleStatus == nullptr ||
+            IsAuxiliaryEntryPointsModuleActivated(m_pAuxiliaryEntryPointsModuleStatus);
     }
 
     // The encoding of the activation flag is owned by the R2R image; every reader goes through this.
@@ -316,22 +346,18 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pActivationFlag != nullptr);
-        return VolatileLoad(pActivationFlag) == 0;
+        return VolatileLoad(pActivationFlag) == 1;
     }
 
-    // TODO: Remove once auxiliary modules are downloaded. Stands in for the download by counting down the
-    // flag once per call, and returns whether the module is now activated.
     static void AdvanceSimulatedAuxiliaryModuleDownload(PTR_DWORD pActivationFlag)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pActivationFlag != nullptr);
-        if (!IsAuxiliaryModuleActivated(pActivationFlag))
+        // Real activation flags are 0 or 1. Only the legacy countdown simulation uses values above 1.
+        if (VolatileLoad(pActivationFlag) > 1)
             VolatileStore(pActivationFlag, VolatileLoad(pActivationFlag) - 1);
     }
 
-    // TODO: Remove the simulation below once auxiliary EntryPoints modules are downloaded. It stands in for
-    // the download by counting calls to methods awaiting EntryPoints, and activates the EntryPoints modules
-    // (advancing the era) once the count reaches zero.
     static void EnsureAuxiliaryEntryPointsModuleStatus()
     {
         LIMITED_METHOD_CONTRACT;
@@ -347,7 +373,8 @@ public:
     static void AdvanceSimulatedAuxiliaryEntryPointsDownload()
     {
         LIMITED_METHOD_CONTRACT;
-        EnsureAuxiliaryEntryPointsModuleStatus();
+        if (s_simulatedAuxiliaryEntryPointsCallsRemaining == (DWORD)-1)
+            return;
         if (s_simulatedAuxiliaryEntryPointsCallsRemaining == 0)
             return;
 
@@ -460,6 +487,11 @@ public:
         ReadyToRunInfo * m_pInfo;
         int m_methodDefIndex;
 
+        NativeFormat::NativeArray m_methodDefEntryPoints;
+        NativeFormat::NativeHashtable m_instMethodEntryPoints;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
+        bool m_enumeratingAuxiliary = false;
+#endif // FEATURE_AUXILIARY_R2R_MODULES
         NativeFormat::NativeHashtable::AllEntriesEnumerator m_genericEnum;
         NativeFormat::NativeParser m_genericParser;
         uint m_genericCurrentOffset;
@@ -472,6 +504,8 @@ public:
         MethodIterator(ReadyToRunInfo * pInfo) :
             m_pInfo(pInfo),
             m_methodDefIndex(-1),
+            m_methodDefEntryPoints(pInfo->m_methodDefEntryPoints),
+            m_instMethodEntryPoints(pInfo->m_instMethodEntryPoints),
             m_genericEnum(),
             m_genericParser(),
             m_genericCurrentOffset(-1),
@@ -479,9 +513,9 @@ public:
             m_genericCurrentSig(NULL)
         {
             NativeFormat::PTR_NativeHashtable pHash = NULL;
-            if (!pInfo->m_instMethodEntryPoints.IsNull())
+            if (!m_instMethodEntryPoints.IsNull())
             {
-                pHash = NativeFormat::PTR_NativeHashtable(&pInfo->m_instMethodEntryPoints);
+                pHash = NativeFormat::PTR_NativeHashtable(&m_instMethodEntryPoints);
             }
 
             m_genericEnum = NativeFormat::NativeHashtable::AllEntriesEnumerator(pHash);

@@ -129,6 +129,24 @@ public static class WasmWebcilModule
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int CallAuxiliaryMethod(int value) => AuxiliaryMethod(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    private static int AuxiliaryMethod(int value)
+    {
+        try
+        {
+            if (value < 0)
+                throw new InvalidOperationException("auxiliary method");
+            return s_primes[value % s_primes.Length];
+        }
+        finally
+        {
+            s_counter++;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void FoldableBodyOne()
     {
     }

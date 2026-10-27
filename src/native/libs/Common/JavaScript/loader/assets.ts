@@ -177,13 +177,30 @@ async function fetchWebcil(assetInternal: AssetEntryInternal): Promise<void> {
         const webcilPromise = loadResource(assetInternal);
 
         const memory = await wasmMemoryPromiseController.promise;
-        const instancePromise = dotnetBrowserHostExports.instantiateWebcilModule(webcilPromise, memory, assetInternal.virtualPath!, assetInternal.tableSize, assetInternal.payloadSize);
+        const instancePromise = dotnetBrowserHostExports.instantiateWebcilModule(webcilPromise, memory, assetInternal.virtualPath!, assetInternal.tableSize, assetInternal.payloadSize, loadAuxiliaryModule);
         await instancePromise;
     } finally {
         onDownloadedAsset(assetInternal);
     }
 }
 
+async function loadAuxiliaryModule(name: string): Promise<Response> {
+    const asset = loaderConfig.resources?.auxiliaryAssembly?.find(asset => asset.virtualPath === name);
+    if (!asset) {
+        throw new Error(`Auxiliary R2R module '${name}' is missing from boot resources.`);
+    }
+    const assetInternal = asset as AssetEntryInternal;
+    assetInternal.behavior = "webcil";
+    assetInternal.resolvedUrl ??= locateFile(assetInternal.name);
+    // These are background resources and must not enter the startup download barrier/counters.
+    try {
+        return await loadResource(assetInternal);
+    } finally {
+        if (assetInternal.inprogress) finishThrottling(assetInternal);
+        assetInternal.buffer = null!;
+        assetInternal.pendingDownload = undefined;
+    }
+}
 async function fetchDll(assetInternal: AssetEntryInternal): Promise<void> {
     const virtualPath = assetInternal.virtualPath!;
     assetInternal.behavior = "assembly";
@@ -644,6 +661,7 @@ export async function prefetchAllResources(extraVfs?: VfsAsset[]): Promise<void>
     // Data assets: fetch and discard
     if (resources.coreAssembly) resources.coreAssembly.forEach(a => enqueueAsset(a, "assembly"));
     if (resources.assembly) resources.assembly.forEach(a => enqueueAsset(a, "assembly"));
+    if (resources.auxiliaryAssembly) resources.auxiliaryAssembly.forEach(a => enqueueAsset(a, "webcil"));
     if (resources.vfs) resources.vfs.forEach(a => enqueueAsset(a, "vfs"));
     if (extraVfs) extraVfs.forEach(a => enqueueAsset(a, "vfs"));
     if (resources.icu) resources.icu.forEach(a => enqueueAsset(a, "icu"));

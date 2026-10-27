@@ -256,11 +256,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             NodeFactory _factory;
             public bool Equals(MethodGCInfoNode a, MethodGCInfoNode b)
             {
-                return a.EncodeDataCore(_factory).SequenceEqual(b.EncodeDataCore(_factory));
+                return _factory.IsAuxiliaryMethod(a._methodNode) == _factory.IsAuxiliaryMethod(b._methodNode) &&
+                    a.EncodeDataCore(_factory).SequenceEqual(b.EncodeDataCore(_factory));
             }
             public int GetHashCode(MethodGCInfoNode node)
             {
                 HashCode hashcode = new HashCode();
+                hashcode.Add(_factory.IsAuxiliaryMethod(node._methodNode));
                 foreach (var item in node.EncodeDataCore(_factory))
                 {
                     hashcode.Add(item);
@@ -285,6 +287,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             factory.RuntimeFunctionsGCInfo.Deduplicator.Add(this);
             bool targetAlignsGCInfoComponents = TargetAlignsGCInfoComponents(factory.Target.Architecture);
+            int startOffset = dataBuilder.CountBytes;
 
             foreach (var item in EncodeDataCore(factory))
             {
@@ -303,6 +306,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     dataBuilder.EmitReloc(item.Symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, item.SymbolDelta);
                 }
             }
+            if (factory.IsAuxiliaryMethod(_methodNode))
+                factory.RuntimeFunctionsGCInfo.AuxiliaryDataRanges.Add((startOffset, dataBuilder.CountBytes - startOffset));
         }
 
         protected override string GetName(NodeFactory context)

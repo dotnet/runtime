@@ -9,9 +9,27 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+#if !PARTITIONED_WASM_R2R_BOUNDARY
 using DelayedR2RActivationHelpers;
 using Xunit;
+#endif
 
+#if PARTITIONED_WASM_R2R_BOUNDARY
+public static class PartitionedR2RBoundary
+{
+#if PARTITIONED_WASM_R2R_ALL_HOT
+    public static int Main()
+    {
+        const int PrefersInterpreterEntryPoint = 0x4;
+        MethodInfo method = typeof(PartitionedR2RBoundary).GetMethod(nameof(Main));
+        IntPtr entryPoint = method.MethodHandle.GetFunctionPointer();
+        return (Marshal.ReadInt32(entryPoint, 3 * IntPtr.Size) & PrefersInterpreterEntryPoint) == 0 ? 100 : 101;
+    }
+#else
+    private static int Main() => 100;
+#endif
+}
+#else
 namespace System.Runtime
 {
     [AttributeUsage(AttributeTargets.Method)]
@@ -42,6 +60,185 @@ public class DelayedR2RActivation
         (s_entryPointsCallCount == 0 || s_entryPointsDelayed) && (s_activationCallCount == 0 || s_moduleDelayed);
     private static Action s_atRecursiveBottom;
 
+#if PARTITIONED_WASM_R2R
+    [Fact]
+    [BypassReadyToRun]
+    [RuntimeAsyncMethodGeneration(false)]
+    public static async Task ActivatesDownloadedModulesAsync()
+    {
+        bool manualActivation = Environment.GetEnvironmentVariable("DOTNET_WasmAuxiliaryManualActivation") == "1";
+        bool bodyFirst = Environment.GetEnvironmentVariable("DOTNET_WasmAuxiliaryBodyFirst") == "1";
+        MethodInfo coldMethod = typeof(DelayedR2RActivation).GetMethod(
+            nameof(PartitionedColdTarget), BindingFlags.Static | BindingFlags.NonPublic);
+        MethodInfo genericMethod = typeof(DelayedR2RActivation).GetMethod(
+            nameof(PartitionedGenericTarget), BindingFlags.Static | BindingFlags.NonPublic).MakeGenericMethod(typeof(int));
+        IntPtr coldEntryPoint = PrepareMethod(coldMethod);
+        IntPtr genericEntryPoint = PrepareMethod(genericMethod);
+        IntPtr virtualEntryPoint = PrepareMethod(
+            typeof(PartitionedVirtualTarget<string>).GetMethod(nameof(PartitionedVirtualTarget<string>.Invoke)));
+        IntPtr exceptionEntryPoint = PrepareMethod(typeof(DelayedR2RActivation).GetMethod(
+            nameof(PartitionedExceptionTarget), BindingFlags.Static | BindingFlags.NonPublic));
+        IntPtr suspendedEntryPoint = PrepareMethod(typeof(DelayedR2RActivation).GetMethod(
+            nameof(PartitionedSuspendedTarget), BindingFlags.Static | BindingFlags.NonPublic));
+        IntPtr crossModuleEntryPoint = PrepareMethod(
+            typeof(List<CrossModuleValue>).GetMethod("AddWithResize", BindingFlags.Instance | BindingFlags.NonPublic));
+        // Unmanaged function pointers are Wasm table indices, not PortableEntryPoint addresses.
+        PrepareMethod(typeof(DelayedR2RActivation).GetMethod(nameof(PartitionedUnmanagedTarget)));
+        Assert.Equal(42, CallPartitionedUnmanagedTarget(1));
+        object marker = new();
+        TaskCompletionSource<int> source = new();
+        Task<object> suspended = PartitionedSuspendedTarget(source.Task, marker);
+        Assert.False(suspended.IsCompleted, nameof(PartitionedSuspendedTarget));
+
+        if (manualActivation)
+        {
+            Assert.True(PrefersInterpreter(coldEntryPoint));
+            Assert.True(IsAwaitingAuxiliaryEntryPoints(coldEntryPoint));
+            Assert.True(IsAwaitingAuxiliaryEntryPoints(genericEntryPoint));
+            Assert.True(IsAwaitingAuxiliaryEntryPoints(virtualEntryPoint));
+            Assert.True(IsAwaitingAuxiliaryEntryPoints(exceptionEntryPoint));
+            Assert.True(IsAwaitingAuxiliaryEntryPoints(suspendedEntryPoint));
+            Assert.True(IsAwaitingAuxiliaryEntryPoints(crossModuleEntryPoint));
+            VerifyPartitionedCalls(2, marker);
+
+            if (bodyFirst)
+            {
+                Console.WriteLine("AUXILIARY_R2R_ACTIVATE_MODULES");
+                await Task.Delay(20);
+                VerifyPartitionedCalls(3, marker);
+                Assert.True(IsAwaitingAuxiliaryEntryPoints(coldEntryPoint));
+                Assert.True(PrefersInterpreter(coldEntryPoint));
+                Console.WriteLine("AUXILIARY_R2R_ACTIVATE_ENTRYPOINTS");
+            }
+            else
+            {
+                Console.WriteLine("AUXILIARY_R2R_ACTIVATE_ENTRYPOINTS");
+                long deadline = Environment.TickCount64 + 30000;
+                while (IsAwaitingAuxiliaryEntryPoints(coldEntryPoint) && Environment.TickCount64 < deadline)
+                {
+                    await Task.Delay(1);
+                    Assert.Equal(34, PartitionedColdTarget(3));
+                }
+                Assert.True(IsPendingAuxiliaryModule(coldEntryPoint));
+                Assert.True(PrefersInterpreter(coldEntryPoint));
+                VerifyPartitionedCalls(3, marker);
+                Console.WriteLine("AUXILIARY_R2R_ACTIVATE_MODULES");
+            }
+        }
+
+        long activationDeadline = Environment.TickCount64 + 30000;
+        while (PrefersInterpreter(coldEntryPoint) && Environment.TickCount64 < activationDeadline)
+        {
+            await Task.Delay(1);
+            Assert.Equal(41, PartitionedColdTarget(4));
+        }
+        Assert.False(PrefersInterpreter(coldEntryPoint), nameof(PartitionedColdTarget));
+        VerifyPartitionedCalls(5, marker);
+        Assert.False(PrefersInterpreter(genericEntryPoint), nameof(PartitionedGenericTarget));
+        Assert.False(PrefersInterpreter(virtualEntryPoint), nameof(PartitionedVirtualTarget<string>.Invoke));
+        Assert.False(PrefersInterpreter(exceptionEntryPoint), nameof(PartitionedExceptionTarget));
+        Assert.False(PrefersInterpreter(crossModuleEntryPoint), "AddWithResize");
+        Assert.False(IsDelayed(coldEntryPoint));
+        Assert.False(IsDelayed(genericEntryPoint));
+
+        GC.Collect();
+        source.SetResult(17);
+        Assert.Same(marker, await suspended);
+        Assert.Same(marker, await PartitionedSuspendedTarget(Task.FromResult(19), marker));
+        Assert.False(PrefersInterpreter(suspendedEntryPoint), nameof(PartitionedSuspendedTarget));
+    }
+
+    [BypassReadyToRun]
+    private static void VerifyPartitionedCalls(int value, object marker)
+    {
+        Func<int, int> callback = PartitionedColdTarget;
+        Assert.Equal(value * 7 + 13, PartitionedColdTarget(value));
+        Assert.Equal(value * 7 + 13, callback(value));
+        Assert.Equal(value * 7 + 13, CallPartitionedFunctionPointer(value));
+        MethodInfo method = typeof(DelayedR2RActivation).GetMethod(
+            nameof(PartitionedColdTarget), BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.Equal(value * 7 + 13, (int)method.Invoke(null, new object[] { value }));
+        Assert.Equal(value + 23, PartitionedGenericTarget<int>(value));
+        Assert.Equal(value + 29, ((IVirtualTarget)new PartitionedVirtualTarget<string>()).Invoke(value));
+        Assert.Same(marker, PartitionedExceptionTarget(marker));
+        Assert.Equal(5, CrossModuleGenericCaller());
+        Assert.Equal(value * 9 + 65, PartitionedCompiledCaller(value));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int PartitionedColdTarget(int value) => value * 7 + 13;
+
+    [BypassReadyToRun]
+    private static unsafe int CallPartitionedFunctionPointer(int value)
+    {
+        delegate*<int, int> target = &PartitionedColdTarget;
+        return target(value);
+    }
+
+    [BypassReadyToRun]
+    private static unsafe int CallPartitionedUnmanagedTarget(int value)
+    {
+        delegate* unmanaged<int, int> target = &PartitionedUnmanagedTarget;
+        return target(value);
+    }
+
+    [UnmanagedCallersOnly]
+    public static int PartitionedUnmanagedTarget(int value) => value + 41;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int PartitionedGenericTarget<T>(int value)
+    {
+        GC.KeepAlive(typeof(T));
+        return value + 23;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int PartitionedCompiledCaller(int value)
+    {
+        object marker = new();
+        if (!ReferenceEquals(marker, PartitionedExceptionTarget(marker)))
+            throw new InvalidOperationException();
+
+        return PartitionedColdTarget(value) + PartitionedGenericTarget<int>(value) +
+            ((IVirtualTarget)new PartitionedVirtualTarget<string>()).Invoke(value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static object PartitionedExceptionTarget(object value)
+    {
+        try
+        {
+            throw new InvalidOperationException();
+        }
+        catch (InvalidOperationException)
+        {
+            GC.Collect();
+            return value;
+        }
+        finally
+        {
+            GC.KeepAlive(value);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<object> PartitionedSuspendedTarget(Task<int> pending, object value)
+    {
+        await pending;
+        GC.KeepAlive(value);
+        return value;
+    }
+
+    private sealed class PartitionedVirtualTarget<T> : IVirtualTarget
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public int Invoke(int value)
+        {
+            GC.KeepAlive(typeof(T));
+            return value + 29;
+        }
+    }
+#else
     [Fact]
     [BypassReadyToRun]
     [RuntimeAsyncMethodGeneration(false)]
@@ -210,6 +407,8 @@ public class DelayedR2RActivation
             Assert.True(IsAwaitingAuxiliaryEntryPoints(interpreterOnlyEntryPoint), "IsAwaitingAuxiliaryEntryPoints, interpreter only");
         }
     }
+
+#endif
 
     [BypassReadyToRun]
     private static IntPtr PrepareMethod(string methodName) =>
@@ -444,3 +643,4 @@ public class DelayedR2RActivation
         }
     }
 }
+#endif

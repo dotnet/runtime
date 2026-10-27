@@ -25,12 +25,17 @@ namespace ILCompiler.ObjectWriter
     /// <summary>
     /// WebCIL object file format writer.
     /// </summary>
-    internal sealed class WebCilObjectWriter : WasmObjectWriter
+    internal sealed partial class WebCilObjectWriter : WasmObjectWriter
     {
         public const int WebcilSectionAlignment = 16;
 
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
-        private protected override bool ShouldDeduplicateFunctionBodies => true;
+        private protected override bool ShouldDeduplicateFunctionBodies =>
+#if READYTORUN
+            !_nodeFactory.UsesWasmAuxiliaryModules;
+#else
+            true;
+#endif
 
         // We use 2 Wasm data segments for webcil,
         // 1 for the payload size, and the second for the payload itself.
@@ -279,10 +284,16 @@ namespace ILCompiler.ObjectWriter
             // and function table via active segments, so the only stub the host calls beyond
             // getWebcilSize is patchWebcilHeader: the header's tableBase field is read from linear memory
             // and cannot come from a segment.
-            const int stubCount = 2;
+            const int stubCount = 3;
             int totalMethodCount = MethodCount + stubCount;
             InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
             InsertWasmStub(new Utf8String("patchWebcilHeader"), PatchWebcilHeader);
+            InsertWasmStub(new Utf8String("getAuxiliaryModuleMetadata"),
+                new WasmFunctionBody(new WasmFuncType(new([]), new([WasmValueType.I32])), [I32.Const(0)]));
+#if READYTORUN
+            if (_nodeFactory.UsesWasmAuxiliaryModules)
+                _activationSignature = RegisterSignature(new WasmFuncType(new([]), new([])));
+#endif
 
             Debug.Assert(MethodCount == totalMethodCount);
 
@@ -479,6 +490,10 @@ namespace ILCompiler.ObjectWriter
             // which is required for resolving file-level relocations whose RVA depends on the section VAs.
             AssignWebcilSectionVirtualAddresses(webcilSections);
 
+#if READYTORUN
+            if (_nodeFactory.UsesWasmAuxiliaryModules)
+                _auxiliaryDataRanges = GetAuxiliaryDataRanges();
+#endif
             // We can now build our base relocs with the correct addresses
             BuildBaseRelocMap();
 
@@ -497,6 +512,13 @@ namespace ILCompiler.ObjectWriter
                 webcilSections,
                 ImageBaseOffsetExpr);
 
+#if READYTORUN
+            if (_nodeFactory.UsesWasmAuxiliaryModules)
+            {
+                EmitPartitionedObjectFile(outputFileStream, webcilPayloadSegment, webcilSections);
+                return;
+            }
+#endif
             // Writing our memory import <- size of the webcil segment (for an accurate minimum size)
             WriteMemoryImport((ulong)webcilPayloadSegment.ContentSize);
             FinalizeSectionEntryCounts();
@@ -590,7 +612,16 @@ namespace ILCompiler.ObjectWriter
             using var writer = new StreamWriter(path, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
             foreach (WasmSymbol symbol in _wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function))
             {
-                writer.Write(symbol.Index.ToString(CultureInfo.InvariantCulture));
+                int index = symbol.Index;
+#if READYTORUN
+                if (_primaryFunctionIndices is not null)
+                {
+                    index = _primaryFunctionIndices[index];
+                    if (index < 0)
+                        continue;
+                }
+#endif
+                writer.Write(index.ToString(CultureInfo.InvariantCulture));
                 writer.Write(':');
                 writer.WriteLine(symbol.Name);
             }
@@ -653,6 +684,10 @@ namespace ILCompiler.ObjectWriter
                 // (page RVA -> list of (type<<12 | offsetInPage) WORD entries).
                 // Note that this handling is logically the same as the implementation in the PE Object Writer.
                 uint targetRva = webcilSection.Header.VirtualAddress + (uint)pending.Offset;
+#if READYTORUN
+                if (_auxiliaryDataRanges is not null && ContainsAuxiliaryData(_auxiliaryDataRanges, checked((int)targetRva)))
+                    continue;
+#endif
                 Debug.Assert(targetRva != 0); // this section should have been assigned a non-zero VirtualAddress at this point.
                 uint pageRva = targetRva & ~(WebcilRelocPageSize - 1);
                 ushort offsetInPage = (ushort)(targetRva & (WebcilRelocPageSize - 1));
@@ -906,12 +941,14 @@ namespace ILCompiler.ObjectWriter
 
                         if (shrink && Relocation.IsVariableLength(reloc.Type))
                         {
-                            actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, symbol.Index + addend);
+                            actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData,
+                                GetPhysicalSymbolIndex(symbol) + addend);
                         }
                         else
                         {
-                            Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
+                            Relocation.WriteValue(reloc.Type, pData, GetPhysicalSymbolIndex(symbol) + addend);
                         }
+
                         break;
                     }
 
@@ -1044,6 +1081,15 @@ namespace ILCompiler.ObjectWriter
                 destStream.Write(new Span<byte>(pData, length));
                 return length;
             }
+        }
+
+        private int GetPhysicalSymbolIndex(WasmSymbol symbol)
+        {
+#if READYTORUN
+            if (_physicalFunctionIndices is not null && symbol.IndexSpace == WasmIndexSpace.Function)
+                return Math.Max(_physicalFunctionIndices[symbol.Index], 0);
+#endif
+            return symbol.Index;
         }
 
         private void ResolveRelocations(int sectionIndex, Stream sectionStream, MemoryStream dstStream, List<SymbolicRelocation> relocs, long sectionStart = 0, bool shrink = false)

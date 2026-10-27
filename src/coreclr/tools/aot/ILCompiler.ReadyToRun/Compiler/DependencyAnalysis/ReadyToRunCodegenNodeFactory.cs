@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
@@ -72,6 +73,7 @@ namespace ILCompiler.DependencyAnalysis
         public bool StripInliningInfo;
         public bool StripDebugInfo;
         public bool StripILBodies;
+        public bool WasmAuxiliaryModules;
         public HashSet<MethodDesc> CompiledMethodDefs;
     }
 
@@ -106,6 +108,23 @@ namespace ILCompiler.DependencyAnalysis
         List<ILBodyFixupSignature> _markedILBodyFixupSignatures = new List<ILBodyFixupSignature>();
 
         public bool MarkingComplete => _markingComplete;
+        public bool UsesWasmAuxiliaryModules => OptimizationFlags.WasmAuxiliaryModules && !OptimizationFlags.IsComponentModule;
+
+        public bool IsAuxiliaryMethod(MethodWithGCInfo method)
+        {
+            if (!UsesWasmAuxiliaryModules || method.IsJitHelper)
+                return false;
+
+            MethodDesc target = method.Method;
+            MethodDesc definition = target.GetTypicalMethodDefinition();
+            if (definition is not EcmaMethod ecmaMethod || target.IsAsyncVariant() ||
+                target.IsAsyncCall() || target.IsUnmanagedCallersOnly ||
+                target.IsPInvoke || ecmaMethod.MetadataReader.GetMethodDefinition(ecmaMethod.Handle).RelativeVirtualAddress == 0)
+                return false;
+
+            return (ecmaMethod.Attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public ||
+                target.HasInstantiation || target.OwningType.HasInstantiation;
+        }
 
         public void GenerateHotColdMap(DependencyAnalyzerBase<NodeFactory> dependencyGraph)
         {
@@ -598,6 +617,7 @@ namespace ILCompiler.DependencyAnalysis
         public SymbolNodeRange DelayLoadMethodCallThunks;
 
         public InstanceEntryPointTableNode InstanceEntryPointTable;
+        public AuxiliaryModuleMetadataNode AuxiliaryModuleMetadata;
 
         public ManifestMetadataTableNode ManifestMetadataTable;
 
@@ -1144,6 +1164,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 MethodEntryPointTableNode methodEntryPointTable = new MethodEntryPointTableNode(inputModule);
                 tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, methodEntryPointTable);
+                if (UsesWasmAuxiliaryModules)
+                {
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AuxiliaryMethodDefEntryPoints,
+                        new MethodEntryPointTableNode(inputModule, auxiliary: true));
+                }
 
                 TypesTableNode typesTable = new TypesTableNode(inputModule);
                 tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable);
@@ -1200,6 +1225,13 @@ namespace ILCompiler.DependencyAnalysis
 
             InstanceEntryPointTable = new InstanceEntryPointTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable);
+            if (UsesWasmAuxiliaryModules)
+            {
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.AuxiliaryInstanceMethodEntryPoints,
+                    new InstanceEntryPointTableNode(this, auxiliary: true));
+                AuxiliaryModuleMetadata = new AuxiliaryModuleMetadataNode();
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.AuxiliaryModuleMetadata, AuxiliaryModuleMetadata);
+            }
 
             ImportSectionsTable = new ImportSectionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable);

@@ -258,6 +258,9 @@ interface Assets {
     jsModuleRuntime: JsAsset[];
     wasmSymbols?: SymbolsAsset[];
     wasmNative: WasmAsset[];
+    auxiliaryAssembly?: (WasmAsset & {
+        virtualPath: string;
+    })[];
     icu?: IcuAsset[];
     satelliteResources?: {
         [cultureName: string]: AssemblyAsset[];

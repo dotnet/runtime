@@ -14,6 +14,26 @@ The mapping for which methods have code in the auxiliary modules is in a separat
 
 Metadata and activation info about auxiliary modules is stored in the AuxiliaryModuleMetadata section in the primary module.
 
+### Implemented V1
+
+Phases 1 through 4 are implemented for single-threaded CoreCLR Browser-WASM composite images with retained IL. The feature is opt-in:
+
+```shell
+dotnet publish -p:PublishReadyToRun=true -p:PublishReadyToRunComposite=true -p:WasmEnableAuxiliaryR2RModules=true
+```
+
+Publishing requires matching locally built runtime and WebAssembly SDK packs. Crossgen2 exposes the corresponding `--wasm-auxiliary-modules` option. Non-browser, non-composite, multithreaded, and stripped-IL configurations are rejected.
+
+The compiler emits a primary module, an `.entrypoints.wasm` mapping module, and a `.1.wasm` cold-code module, plus an `.auxiliary.json` publication manifest. Helpers and public non-generic methods are hot; methods that cannot use interpreter fallback are also kept primary. Direct managed-call optimization is disabled in this mode. Shared fallback thunks and eagerly accessed data remain primary.
+
+The cold-code module owns its methods and funclets, runtime-function records, GC/unwind and exception-handling data, fixup lists, and exclusively cold import cells and signatures. The mapping module owns auxiliary entrypoint tables and their method-identification signatures. Shared imports, async-resume data rebased during image registration, and the final runtime-function/unwind record needed to reserve the virtual-IP range remain primary. Activation never overwrites those resident data.
+
+Both sidecars import the primary module's memory, table, bases, stack pointer, exception tag, and async global. Their data and element segments are passive. `ActivateModule()` installs those segments and writes its activation cell last; repeated activation is a no-op. Mapping activation also notifies the runtime to advance the global EntryPoints era. The browser host starts sidecar loading without adding it to the startup barrier.
+
+The existing five `DelayedR2RActivation` test variants retain the phase-1 simulation. Five `PartitionedR2RActivation` variants exercise real sidecars, eager loading, both manually controlled activation orders, and all-hot/all-cold partition boundaries. Coverage includes GC, exception handlers, generics from another image, delegates, reflection, managed and unmanaged function pointers, and suspended interpreter continuations. Zero-length partitions are valid; their empty sidecars preserve the same activation contract and contiguous runtime-function ranges.
+
+See the [compiler usage and restrictions](../../../src/coreclr/tools/aot/crossgen2/README.md) and [browser build integration](../../../src/mono/browser/build/README.md) for the emitted-file contract and supported diagnostic options.
+
 ## Flow
 
 When a new method is discovered to be executed, the runtime will attempt to resolve R2R code for the method, first in the primary module, then in the auxiliary modules, if the Auxiliary EntryPoints Module information is available. If the method is determined to be in an auxiliary module, the runtime will check if the module has been activated, and activate the method if it is. Otherwise, flags on the PEP will track what is holding activation of the method: the Auxiliary EntryPoints Module, or the auxiliary module containing the code. Subsequent calls to the interpreted method will check activation status and attempt activation of the R2R code. Checking for activation of the EntryPoints module and the auxiliary module should be as cheap as possible. In this design, it is a simple flag check in the WASM memory.
@@ -268,9 +288,19 @@ Following the header is the Auxiliary Module Metadata table. The table is an arr
 
 The `MethodDefEntryPointsInfoRVA` points to data identical to the format of the `ComponentAssemblies` section. Once filled in by the Auxiliary EntryPoints Module, the `CorHeader` will point to the same location in the assembly as the entry in the `ComponentAssemblies` section (right now crossgen2 emits these as zeros and relies on correlated order with the `ManifestMetadata` assembly names - this ordering must be preserved). The `MethodDefEntryPointsRVA` will point to the auxiliary `MethodDefEntryPoints` section for that assembly. All this data would reside within the Auxiliary Module Metadata section.
 
-### Alternative data format
+### Implemented alternative data format
 
-Instead of putting bookkeeping for the Auxiliary EntryPoints Module inside the Auxiliary Module Metadata section, new sections could be created for the image-wide `AuxiliaryInstanceMethodEntryPoints` section and per-assembly auxiliary `AuxiliaryMethodDefEntryPoints` sections. The AuxiliaryModuleMetadata header could remove the `InstanceMethodEntryPointsRVA` and `MethodDefEntryPointsInfoRVA` fields.
+V1 uses separate sections for the image-wide `AuxiliaryInstanceMethodEntryPoints` and per-assembly `AuxiliaryMethodDefEntryPoints`, rather than the two entrypoint-directory fields described above. ReadyToRun format version 33 identifies this layout, so older runtimes do not search an incomplete runtime-function table.
+
+| Section | Value | Scope |
+|---|---|---|
+| `AuxiliaryModuleMetadata` | 128 | Image-wide |
+| `AuxiliaryMethodDefEntryPoints` | 129 | Per component assembly |
+| `AuxiliaryInstanceMethodEntryPoints` | 130 | Image-wide |
+
+The metadata header consists of four 32-bit fields, in order: `EntryPointsModuleActivationStatus`, `PrimaryModuleMethodCount`, `AuxiliaryModuleCount`, and `EntryPointsFilenameRVA`. It is followed by `AuxiliaryModuleCount` entries, each containing four 32-bit fields: `FilenameRVA`, `RelativeTableBase`, `MethodCount`, and `ActivationStatus`. Filename RVAs are relative to the primary WebCIL payload and identify sibling basenames. Real activation cells are `0` while pending and `1` when active. The primary export `getAuxiliaryModuleMetadata()` returns the metadata's address in shared memory.
+
+Virtual-IP lookup searches only active contiguous ranges and checks a function's own unwind data for its end address. Funclet enumeration is bounded by the owning module's runtime-function range, rather than reading unloaded entries in the next range.
 
 ### Index relationships
 
@@ -360,7 +390,7 @@ Using either call-counting in the interpreter or a timer in the host JavaScript 
 
 The prototype simulates both phases of the flow above and is compiled with `FEATURE_AUXILIARY_R2R_MODULES`, enabled by default on single-threaded Browser-WASM builds with `FEATURE_INTERPRETER`. It can be excluded with `-cmakeargs "-DFEATURE_AUXILIARY_R2R_MODULES=0"`. This prototype does not split modules, download code, or change image formats.
 
-**Simulated downloads.** Each simulated download is a countdown that saturates at zero, and zero means activated. The "activation flag" cell therefore counts down, rather than being nonzero once activated as in the real design. A call-boundary check of a method waiting on the countdown consumes one count. Preparing a method, resuming an existing interpreter continuation, and executing an exception clause do not.
+**Simulated downloads.** Each simulated download consumes a configured number of call-boundary checks. The simulated EntryPoints countdown saturates at zero. The simulated body-module cell encodes the remaining count plus one and saturates at one, keeping its ready value consistent with real activation cells while distinguishing countdowns from a real pending cell (`0`). Preparing a method, resuming an existing interpreter continuation, and executing an exception clause do not consume a count.
 
 - `DOTNET_R2RDelayedActivationCallCount` simulates the auxiliary module download. Each composite image has its own countdown, shared by all its component assemblies and by every method waiting on that image. It defaults to `0`, marking auxiliary code ready immediately and preserving eager R2R resolution. Setting it to `3e8` (hexadecimal for 1,000) marks the image ready after 1,000 checks.
 - `DOTNET_R2RDelayedEntryPointsActivationCallCount` simulates the Auxiliary EntryPoints Module download. A single countdown stands in for every composite image, and counts calls to methods awaiting EntryPoints. It defaults to `DOTNET_R2RDelayedActivationCallCount` when not specified. When it reaches zero, the auxiliary EntryPoints era advances.

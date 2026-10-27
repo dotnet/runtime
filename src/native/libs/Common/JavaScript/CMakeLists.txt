@@ -23,6 +23,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/cross-module/index.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/ems-ambient/index.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/assets.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/auxiliary-modules.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/cross-module.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/host.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/index.ts"

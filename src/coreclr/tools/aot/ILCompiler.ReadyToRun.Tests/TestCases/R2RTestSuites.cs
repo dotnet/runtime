@@ -30,6 +30,30 @@ public class R2RTestSuites
         _output = output;
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AuxiliaryModulesSeparateEntryPointsAndColdData(bool optimize)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(AuxiliaryModulesSeparateEntryPointsAndColdData),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AuxiliaryModulesSeparateEntryPointsAndColdData),
+            [
+                new(nameof(AuxiliaryModulesSeparateEntryPointsAndColdData), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite],
+                    AdditionalArgs = ["--wasm-auxiliary-modules", "--wasm-debug-info", "all",
+                        optimize ? "--optimize" : "--optimize-disabled"],
+                    OutputFileExtension = ".wasm",
+                    Validate = WasmR2RAssert.AssertAuxiliaryModuleLayout,
+                },
+            ]));
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]

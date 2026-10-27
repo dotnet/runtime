@@ -130,11 +130,9 @@ inline bool AuxiliaryMethodInfo::ShouldTryActivateMethod() const
     switch (discriminator)
     {
         case AuxiliaryMethodInfoDiscriminator::CheckAuxiliaryModuleActivationFlag:
-            // TODO: remove the simulated download once auxiliary modules are separate
             ReadyToRunInfo::AdvanceSimulatedAuxiliaryModuleDownload(auxiliaryModuleActivationFlag);
             return ReadyToRunInfo::IsAuxiliaryModuleActivated(auxiliaryModuleActivationFlag);
         case AuxiliaryMethodInfoDiscriminator::CheckAuxiliaryEntryPointsEra:
-            // TODO: remove the simulated download once auxiliary EntryPoints modules are separate
             ReadyToRunInfo::AdvanceSimulatedAuxiliaryEntryPointsDownload();
             return ReadyToRunInfo::IsAuxiliaryEntryPointsEraStale(auxiliaryEntryPointsEra);
         default:

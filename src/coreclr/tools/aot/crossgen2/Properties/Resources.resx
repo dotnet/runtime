@@ -477,4 +477,13 @@
   <data name="StripILBodiesOption" xml:space="preserve">
     <value>Replace IL method bodies of compiled methods with a throwing stub in composite R2R output assemblies.</value>
   </data>
+  <data name="WasmAuxiliaryModulesOption" xml:space="preserve">
+    <value>Partition a single-threaded composite Browser WebAssembly image into a primary image and delayed auxiliary modules.</value>
+  </data>
+  <data name="WasmAuxiliaryModulesUnsupportedConfiguration" xml:space="preserve">
+    <value>--wasm-auxiliary-modules requires --targetarch wasm --targetos browser --composite, the WebAssembly output format, a single-threaded target, and retained IL bodies (without --strip-il-bodies).</value>
+  </data>
+  <data name="WasmAuxiliaryModulesUnsupportedDiagnostics" xml:space="preserve">
+    <value>--wasm-auxiliary-modules supports WebAssembly name sections and symbol maps, but not single-image map, PDB, perfmap, or call-chain profile files.</value>
+  </data>
 </root>

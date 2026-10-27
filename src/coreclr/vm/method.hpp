@@ -2447,7 +2447,6 @@ public:
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
     // Activation status of the auxiliary module holding the method's R2R code, set when lookup delays it.
-    // TODO: This points at a shared countdown standing in for the auxiliary module's activation flag.
     PTR_DWORD GetAuxiliaryModuleActivationFlag() const
     {
         LIMITED_METHOD_CONTRACT;

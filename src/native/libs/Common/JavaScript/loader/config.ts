@@ -63,6 +63,7 @@ function mergeResources(target: Assets, source: Assets): Assets {
     source.hash = source.hash ?? target.hash;
     source.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly || []];
     source.assembly = [...target.assembly!, ...source.assembly || []];
+    source.auxiliaryAssembly = [...target.auxiliaryAssembly!, ...source.auxiliaryAssembly || []];
     source.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly || []];
     source.corePdb = [...target.corePdb!, ...source.corePdb || []];
     source.pdb = [...target.pdb!, ...source.pdb || []];
@@ -114,6 +115,7 @@ function normalizeConfig(target: LoaderConfigInternal) {
 function normalizeResources(target: Assets) {
     if (!target.coreAssembly) target.coreAssembly = [];
     if (!target.assembly) target.assembly = [];
+    if (!target.auxiliaryAssembly) target.auxiliaryAssembly = [];
     if (!target.lazyAssembly) target.lazyAssembly = [];
     if (!target.corePdb) target.corePdb = [];
     if (!target.pdb) target.pdb = [];

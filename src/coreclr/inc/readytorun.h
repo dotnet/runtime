@@ -19,7 +19,7 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 32
+#define READYTORUN_MAJOR_VERSION 33
 #define READYTORUN_MINOR_VERSION 0x0000
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
@@ -82,6 +82,7 @@
 // method's ReadyToRun entry point and fixups.
 // R2R Version 31.1 adds READYTORUN_FLAG_SINGLE_THREADED, which records that the image lays out [ThreadStatic] fields as regular statics
 // for a runtime built without FEATURE_MULTITHREADING.
+// R2R Version 33 adds partitioned WebAssembly images with auxiliary entrypoints and partially populated runtime-function tables.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -156,6 +157,9 @@ enum class ReadyToRunSectionType : uint32_t
     ProxyTypeMaps               = 125, // Added in V18.3
     TypeMapAssemblyTargets      = 126, // Added in V18.3
     WasmAsyncResumeInfo         = 127, // Added in V29
+    AuxiliaryModuleMetadata     = 128,
+    AuxiliaryMethodDefEntryPoints = 129,
+    AuxiliaryInstanceMethodEntryPoints = 130,
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -169,6 +173,27 @@ struct READYTORUN_SECTION
     ReadyToRunSectionType   Type;           // READYTORUN_SECTION_XXX
     IMAGE_DATA_DIRECTORY    Section;
 };
+
+struct READYTORUN_AUXILIARY_MODULE_METADATA
+{
+    DWORD EntryPointsModuleActivationStatus;
+    DWORD PrimaryModuleMethodCount;
+    DWORD AuxiliaryModuleCount;
+    DWORD EntryPointsFilenameRVA;
+};
+
+struct READYTORUN_AUXILIARY_MODULE
+{
+    DWORD FilenameRVA;
+    DWORD RelativeTableBase;
+    DWORD MethodCount;
+    DWORD ActivationStatus;
+};
+
+static_assert(sizeof(READYTORUN_AUXILIARY_MODULE_METADATA) == 16);
+static_assert(sizeof(READYTORUN_AUXILIARY_MODULE) == 16);
+static_assert(offsetof(READYTORUN_AUXILIARY_MODULE_METADATA, EntryPointsModuleActivationStatus) == 0);
+static_assert(offsetof(READYTORUN_AUXILIARY_MODULE, ActivationStatus) == 12);
 
 enum class ReadyToRunImportSectionType : uint8_t
 {

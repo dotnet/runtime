@@ -441,10 +441,12 @@ namespace ILCompiler.ObjectWriter
                 {
                     Utf8String mangledName = n == node ? currentSymbolName : GetMangledName(n);
                     Debug.Assert(((ulong)thumbBit & (ulong)(uint)n.Offset) == 0);
-                    sectionWriter.EmitSymbolDefinition(
-                        mangledName,
-                        n.Offset + thumbBit,
-                        n.Offset == 0 ? nodeContents.Data.Length : 0);
+                    int symbolSize = n.Offset == 0 ? nodeContents.Data.Length : 0;
+#if READYTORUN
+                    if (_nodeFactory.UsesWasmAuxiliaryModules && n == node)
+                        symbolSize = nodeContents.Data.Length - n.Offset;
+#endif
+                    sectionWriter.EmitSymbolDefinition(mangledName, n.Offset + thumbBit, symbolSize);
 
                     _outputInfoBuilder?.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, (ulong)(sectionWriter.Position + n.Offset), mangledName));
 

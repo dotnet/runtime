@@ -215,6 +215,9 @@ public class ResourcesData
     /// </summary>
     public ResourceHashesByNameDictionary assembly { get; set; } = new ResourceHashesByNameDictionary();
 
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary auxiliaryAssembly { get; set; }
+
     /// <summary>
     /// "debug" (.pdb) resources needed to start MonoVM
     /// </summary>
@@ -312,6 +315,9 @@ public class AssetsData
     /// "assembly" (.dll) resources
     /// </summary>
     public List<WebcilAsset> assembly { get; set; } = new();
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<GeneralAsset> auxiliaryAssembly { get; set; }
 
     /// <summary>
     /// "debug" (.pdb) resources needed to start MonoVM

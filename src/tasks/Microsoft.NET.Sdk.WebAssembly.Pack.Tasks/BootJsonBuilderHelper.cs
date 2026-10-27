@@ -123,6 +123,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             }
 
             AddDictionary(sb, resources.assembly);
+            AddDictionary(sb, resources.auxiliaryAssembly);
             AddDictionary(sb, resources.coreAssembly);
 
             AddDictionary(sb, resources.jsModuleWorker);
@@ -254,6 +255,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.icu = MapGeneralAssets(resources.icu);
             assets.coreAssembly = MapWebcilAssets(resources.coreAssembly);
             assets.assembly = MapWebcilAssets(resources.assembly);
+            assets.auxiliaryAssembly = MapGeneralAssets(resources.auxiliaryAssembly);
             assets.corePdb = MapGeneralAssets(resources.corePdb);
             assets.pdb = MapGeneralAssets(resources.pdb);
             assets.lazyAssembly = MapWebcilAssets(resources.lazyAssembly);
