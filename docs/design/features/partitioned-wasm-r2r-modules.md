@@ -18,69 +18,65 @@ Metadata and activation info about auxiliary modules is stored in the AuxiliaryM
 
 When a new method is discovered to be executed, the runtime will attempt to resolve R2R code for the method, first in the primary module, then in the auxiliary modules, if the Auxiliary EntryPoints Module information is available. If the method is determined to be in an auxiliary module, the runtime will check if the module has been activated, and activate the method if it is. Otherwise, flags on the PEP will track what is holding activation of the method: the Auxiliary EntryPoints Module, or the auxiliary module containing the code. Subsequent calls to the interpreted method will check activation status and attempt activation of the R2R code. Checking for activation of the EntryPoints module and the auxiliary module should be as cheap as possible. In this design, it is a simple flag check in the WASM memory.
 
+A lookup that finds nothing does not prove the method will always be interpreted. Generic code can live in an image other than the method's defining module, and an image that is loaded later can have the code. A method that misses therefore records the *auxiliary EntryPoints era* it observed, and repeats the lookup once the era has advanced. The era is global, and advances each time an Auxiliary EntryPoints Module is activated or a new image with code for unrelated generics is registered. For the same reason, the module that will eventually hold a missed method's code is not known up front, so the method waits on the era rather than on a specific module's EntryPoints status.
+
 Auxiliary modules are downloaded eagerly unless it is determined better to wait and download on demand.
 
-To reduce cold download size, the mapping of method to auxiliary module resides in a separate module, the Auxiliary EntryPoints Module, that is downloaded eagerly.
+The Auxiliary EntryPoints Module and the auxiliary modules can be activated in either order. An auxiliary module that is activated first is not observable, because no lookup can find its methods until the EntryPoints module arrives. The era then advances, and the retried lookup finds the method and activates it directly. An EntryPoints module activated first leaves the methods it maps in the pending-module state until their module arrives.
+
+To reduce cold download size, the mapping of method to auxiliary module resides in a separate module, the Auxiliary EntryPoints Module, which is downloaded eagerly.
 
 Once an auxiliary module is downloaded (we may also require the module to be "requested"), the host calls the exported `ActivateModule()` function, which copies over all data required for methods to be activated and executed, fills the global function table (table 0) with funcrefs, and marks itself as activated via a well-known location in the primary module's data. Once the module is activated, its methods can be activated.
 
 ### Pseudocode
 
-The following code describes the interpreter flow for activation of aux methods. 2 new PEP flags and a field in the interpreter data are introduced to track activation status and cache lookups: `kPendingAuxiliaryEntryPoints`, `kPendingAuxiliaryModule`, and `InterpreterData.pAuxActivationFlag`.
+The following code describes the interpreter flow for activation of aux methods. 2 PEP flags track what a method is waiting on: `kAwaitingAuxiliaryEntryPoints` (the lookup missed and may succeed after the era advances) and `kPendingAuxiliaryModule` (the code is in an auxiliary module that is not yet activated). The interpreter method data caches the same state as a discriminated value, so call sites decide with a few loads whether to try activation: nothing to wait for (the default), the address of an auxiliary module activation flag, or the era observed by the missed lookup.
 
-The helper names below are illustrative only. Entry-point lookup only reads the method's entry-point record; it does not run fixups or publish a callable target. Status addresses refer to cells in shared memory. `EnsureInterpreterFallback` ensures interpreter bytecode and data exist and leaves `kPrefersInterpreterEntryPoint` set.
+The helper names below are illustrative only. Entry-point lookup only reads the method's entry-point record; it does not run fixups or publish a callable target. Status addresses refer to cells in shared memory. `EnsureInterpreterFallback` ensures interpreter bytecode and data exist and leaves `kPrefersInterpreterEntryPoint` set. `CandidateImages` is the defining module's image, then the alternate generic location, then the images registered for unrelated generics.
 
 ```csharp
 InterpOrR2R DiscoverMethod(PEP pep)
 {
-    var primary = pep.GetModule();
-    EntryPoint entry = LookupEntryPoint(
-        primary.MethodDefEntryPoints, primary.InstanceMethodEntryPoints, pep.MethodDesc);
-    if (entry is not null)
+    // Read before any lookup, so an activation or registration that happens during the lookup is not missed.
+    var era = CurrentAuxiliaryEntryPointsEra;
+
+    foreach (var image in CandidateImages(pep.MethodDesc))
     {
+        EntryPoint entry = LookupEntryPoint(
+            image.MethodDefEntryPoints, image.InstanceMethodEntryPoints, pep.MethodDesc);
+        if (entry is null && image.AuxiliaryEntryPointsModuleActivationStatus != 0)
+        {
+            entry = LookupEntryPoint(
+                image.AuxMethodDefEntryPoints, image.AuxInstanceMethodEntryPoints, pep.MethodDesc);
+        }
+
+        if (entry is null)
+        {
+            continue;
+        }
+
+        AuxiliaryModuleMetadataEntry auxModule = FindAuxiliaryModuleMetadataForRuntimeIndex(entry.RuntimeFunctionIndex);
+        if (auxModule is not null && auxModule.ActivationStatus == 0)
+        {
+            // Found, but the code has not arrived. Stop searching: this is the image that owns the method.
+            EnsureInterpreterFallback(pep);
+            pep.InterpreterData.AuxiliaryMethodInfo = CheckActivationFlag(&auxModule.ActivationStatus);
+            pep.SetFlag(kPendingAuxiliaryModule);
+            return InterpOrR2R.Interp;
+        }
+
         return ActivateOrFallBackToInterpreter(pep, entry);
     }
 
-    if (primary.AuxiliaryModuleMetadataHeader.EntryPointsModuleActivationStatus == 0)
-    {
-        EnsureInterpreterFallback(pep);
-        pep.InterpreterData.pAuxActivationFlag = &primary.AuxiliaryModuleMetadataHeader.EntryPointsModuleActivationStatus;
-        pep.SetFlag(kPendingAuxiliaryEntryPoints);
-        return InterpOrR2R.Interp;
-    }
-
-    return ResolveAuxiliaryMethod(pep);
-}
-
-InterpOrR2R ResolveAuxiliaryMethod(PEP pep)
-{
-    // Only called after the auxiliary entry-point tables are activated.
-    pep.ClearFlag(kPendingAuxiliaryEntryPoints);
-    pep.ClearFlag(kPendingAuxiliaryModule);
-
-    AuxiliaryModuleMetadataHeader metadata = pep.GetModule().AuxiliaryModuleMetadataHeader;
-    EntryPoint entry = LookupEntryPoint(
-        metadata.MethodDefEntryPointsInfoRVA, metadata.InstanceMethodEntryPointsRVA, pep.MethodDesc);
-    if (entry is null)
-    {
-        EnsureInterpreterFallback(pep);
-        return InterpOrR2R.Interp;
-    }
-
-    AuxiliaryModuleMetadataEntry auxModuleMetadata = FindAuxiliaryModuleMetadataForRuntimeIndex(entry.RuntimeFunctionIndex);
-    if (auxModuleMetadata.ActivationStatus == 0)
-    {
-        EnsureInterpreterFallback(pep);
-        pep.InterpreterData.pAuxActivationFlag = &auxModuleMetadata.ActivationStatus;
-        pep.SetFlag(kPendingAuxiliaryModule);
-        return InterpOrR2R.Interp;
-    }
-
-    return ActivateOrFallBackToInterpreter(pep, entry);
+    // Nothing found. An Auxiliary EntryPoints Module activated later, or an image registered later, may have the code.
+    EnsureInterpreterFallback(pep);
+    pep.InterpreterData.AuxiliaryMethodInfo = CheckEra(era);
+    pep.SetFlag(kAwaitingAuxiliaryEntryPoints);
+    return InterpOrR2R.Interp;
 }
 ```
 
-On subsequent invocations (but not continuation resumption), the interpreter checks the pending flags and their cached status flag address before executing the method body:
+On subsequent invocations (but not continuation resumption), the interpreter checks the cached state before executing the method body:
 
 ```csharp
 InterpOrR2R ReenterDiscoveredMethod(PEP pep)
@@ -90,17 +86,23 @@ InterpOrR2R ReenterDiscoveredMethod(PEP pep)
         return InterpOrR2R.R2R;
     }
 
-    if (!pep.HasFlag(kPendingAuxiliaryEntryPoints) && !pep.HasFlag(kPendingAuxiliaryModule))
+    var info = pep.InterpreterData.AuxiliaryMethodInfo;
+    bool ready = info.Kind switch
+    {
+        CheckActivationFlag => IsActivated(info.ActivationFlagAddress),
+        CheckEra => info.Era != CurrentAuxiliaryEntryPointsEra,
+        _ => false,
+    };
+
+    if (!ready)
     {
         return InterpOrR2R.Interp;
     }
 
-    if (!IsActivated(pep.InterpreterData.pAuxActivationFlag))
-    {
-        return InterpOrR2R.Interp;
-    }
-
-    return ResolveAuxiliaryMethod(pep);
+    // Clear before the lookup and fixups so a reentrant call does not activate the method twice.
+    pep.ClearFlag(kAwaitingAuxiliaryEntryPoints);
+    pep.ClearFlag(kPendingAuxiliaryModule);
+    return DiscoverMethod(pep);
 }
 ```
 
@@ -135,7 +137,7 @@ The entire table is allocated space in the primary module. Slots 0-2 are populat
 
 ### MethodDefEntryPoints and InstanceMethodEntryPoints
 
-Each `MethodDefEntryPoints` section (one for each assembly in the R2R image), as well as the image-wide `InstanceMethodEntryPoints` section will have a partial entry in each  (shared by all assemblies in the R2R image), one in the primary module and the Auxiliary EntryPoints Module. Fixup lists for the entries in the Auxiliary EntryPoints Module exist in the auxiliary modules. The runtime must check both sections when the Auxiliary EntryPoints Module is downloaded. The primary module will allocate space for each section at the RVA designated in the Auxiliary Module Metadata. The entries for each method and their RuntimeFunctions index are present in the Auxiliary EntryPoints Module, but the fixup lists are placed in the auxiliary modules and copied during activation.
+Each `MethodDefEntryPoints` section (one for each assembly in the R2R image), as well as the image-wide `InstanceMethodEntryPoints` section (shared by all assemblies in the R2R image), will have a partial copy in each of the primary module and the Auxiliary EntryPoints Module. Fixup lists for the entries in the Auxiliary EntryPoints Module exist in the auxiliary modules. The runtime must check both sections when the Auxiliary EntryPoints Module is downloaded. The primary module will allocate space for each section at the RVA designated in the Auxiliary Module Metadata. The entries for each method and their RuntimeFunctions index are present in the Auxiliary EntryPoints Module, but the fixup lists are placed in the auxiliary modules and copied during activation.
 
 ### ImportSection
 
@@ -160,7 +162,7 @@ The primary module contains:
 
 ### Method activation behavior
 
-If activation is unsuccessful because fixup resolution fails, the `kPrefersInterpreterEntryPoint` flag is left set. Method activation should not be retried after a failure. After failed activation, the runtime should treat the method as any other interpreter-only method.
+If activation is unsuccessful because fixup resolution fails (or throws), the `kPrefersInterpreterEntryPoint` flag is left set. Method activation should not be retried after a failure. After failed activation, the runtime should treat the method as any other interpreter-only method, including resetting the cached interpreter method data so calls no longer re-enter the prestub.
 
 ## Auxiliary Modules
 
@@ -184,9 +186,9 @@ It exports:
 
 ## Auxiliary EntryPoints Module
 
-The auxiliary entrypoints holds information about what methods have code in any auxiliary module. There is one AuxiliaryEntryPointsModule per logical R2R module. It contains one or more `MethodDefEntryPoints` sections (one for each assembly in the R2R image), and one `InstanceMethodEntryPoints` (for the entire image). Together, these hold a mappings from method to `RuntimeFunctions` index. Each section for the aux methods, excluding the fixup cell info. These sections tell which index in the `RuntimeFunctions` table to find information for the method, as well as which fixups to resolve. A single logical `RuntimeFunctions` is spread across the primary and auxiliary modules. Using the length of the primary module's `RuntimeFunctions` range, and the `MethodCount` field in each Auxiliary module metadata entry (see below), the owning auxiliary module can be determined.
+The Auxiliary EntryPoints Module holds information about what methods have code in any auxiliary module. There is one AuxiliaryEntryPointsModule per logical R2R module. It contains one or more `MethodDefEntryPoints` sections (one for each assembly in the R2R image), and one `InstanceMethodEntryPoints` (for the entire image). Together, these hold a mapping from method to `RuntimeFunctions` index. Each section covers only the aux methods, excluding the fixup cell info. These sections tell which index in the `RuntimeFunctions` table to find information for the method, as well as which fixups to resolve. A single logical `RuntimeFunctions` is spread across the primary and auxiliary modules. Using the length of the primary module's `RuntimeFunctions` range, and the `MethodCount` field in each Auxiliary module metadata entry (see below), the owning auxiliary module can be determined.
 
-The EntryPoints sections in the Auxiliary EntryPoints Module will leave space for the fixup lists that will be filled in by the auxiliary module during activation. To enable auxiliary modules to activate before the Auxiliary EntryPoints Module, this space should not be written overwritten during activation of the Auxiliary EntryPoints Module. Fixups for methods from the auxiliary module cannot be run until the module is activated and these indices are filled in. This enables the EntryPoints Module to be smaller, and allow methods without R2R code to be identified as interpreter-only sooner.
+The EntryPoints sections in the Auxiliary EntryPoints Module will leave space for the fixup lists that will be filled in by the auxiliary module during activation. To enable auxiliary modules to activate before the Auxiliary EntryPoints Module, this space should not be overwritten during activation of the Auxiliary EntryPoints Module. Fixups for methods from the auxiliary module cannot be run until the module is activated and these indices are filled in. This enables the EntryPoints Module to be smaller, and allows methods without R2R code to be identified as interpreter-only sooner.
 
 ### Auxiliary MethodDefEntryPoints format
 
@@ -338,7 +340,7 @@ A module's `RuntimeFunctions` table may be only partially filled. VirtualIP look
 
 ### Interpreter changes
 
-The interpreter must implement the tracking and activation flow defined above.
+The interpreter must implement the tracking and activation flow defined above. Call sites check the cached state on the interpreter method data, which is shared by every alias of the same bytecode, such as the declaration of a `MethodImpl` that remaps a vtable slot within its own type. The state is not cleared when R2R code is published, so calls through such an alias still reach the prestub and are redirected to the published native code.
 
 ## JavaScript Hosting Changes
 
@@ -350,11 +352,30 @@ The JavaScript host must:
 
 ## Implementation phases
 
-V1 will focus on single-threaded, composite mode support. The designs shouldn't make multithreaded WASM or non-composite mode incompatible, but it will disabled for those configurations in the initial implementation.
+V1 will focus on single-threaded, composite mode support. The designs shouldn't make multithreaded WASM or non-composite mode incompatible, but it will be disabled for those configurations in the initial implementation.
 
 ### 1. Support delayed resolution of R2R code within the same module.
 
 Using either call-counting in the interpreter or a timer in the host JavaScript code, force methods to be interpreted (even if R2R code exists for them in the primary module) before installing R2R code. This doesn't require any changes to crossgen2 or the webcil format.
+
+The prototype simulates both phases of the flow above and is compiled with `FEATURE_AUXILIARY_R2R_MODULES`, enabled by default on single-threaded Browser-WASM builds with `FEATURE_INTERPRETER`. It can be excluded with `-cmakeargs "-DFEATURE_AUXILIARY_R2R_MODULES=0"`. This prototype does not split modules, download code, or change image formats.
+
+**Simulated downloads.** Each simulated download is a countdown that saturates at zero, and zero means activated. The "activation flag" cell therefore counts down, rather than being nonzero once activated as in the real design. A call-boundary check of a method waiting on the countdown consumes one count. Preparing a method, resuming an existing interpreter continuation, and executing an exception clause do not.
+
+- `DOTNET_R2RDelayedActivationCallCount` simulates the auxiliary module download. Each composite image has its own countdown, shared by all its component assemblies and by every method waiting on that image. It defaults to `0`, marking auxiliary code ready immediately and preserving eager R2R resolution. Setting it to `3e8` (hexadecimal for 1,000) marks the image ready after 1,000 checks.
+- `DOTNET_R2RDelayedEntryPointsActivationCallCount` simulates the Auxiliary EntryPoints Module download. A single countdown stands in for every composite image, and counts calls to methods awaiting EntryPoints. It defaults to `DOTNET_R2RDelayedActivationCallCount` when not specified. When it reaches zero, the auxiliary EntryPoints era advances.
+
+**Eligibility.** Delay applies to IL methods in a composite image whose IL bodies are retained, including when generic code is found outside its defining assembly. Wrapper stubs, `UnmanagedCallersOnly` methods, methods whose defining module has stripped IL, and lookups for direct calls from R2R code (which cannot wait) keep their existing preparation paths. Non-composite images and images with stripped IL are unchanged. This is decided once, before the EntryPoints-activation check in the R2R lookup, so an ineligible method is never kept interpreted merely because its image's EntryPoints are inactive.
+
+**Phase 1: awaiting EntryPoints.** While an image's EntryPoints module is inactive, the lookup treats its methods as not found. When any lookup misses, the method records the era read before the lookup began and waits for the era to advance. The era is a static field next to the list of unrelated R2R modules. It advances when the EntryPoints simulation completes and when a new image is registered for unrelated generics, since either can make a previous miss succeed. The era is an opaque type in `auxiliaryentrypointsera.h`, shared with the interpreter compiler because `InterpMethod` stores it; only `ReadyToRunInfo` creates or compares eras. Because a miss always waits, interpreted methods with no R2R code do a cheap era check on each call and repeat their lookup once per era advance.
+
+**Phase 2: pending module.** When the lookup finds the method in an image whose auxiliary module is not yet activated, it records a pointer to that image's activation flag and stops searching other images. Generic code found outside the defining assembly records the code-owning image's flag, not the defining module's.
+
+**Cached state.** The state is cached in an `AuxiliaryMethodInfo` on `InterpMethod`, a discriminated union of the activation flag pointer and the era. `ShouldTryActivateMethod()` advances the corresponding simulated countdown and reports whether the call should try activation. The method's portable entrypoint also carries `kPendingAuxiliaryModule` or `kAwaitingAuxiliaryEntryPoints`, and the method's runtime code data holds the same pointer or era for the prestub.
+
+**Activation.** Once ready, activation runs synchronously in the prestub, repeating the lookup with the existing R2R fixup processing before publishing native code through the method's portable entrypoint. Call sites only check readiness, then call the prestub as they would for an unprepared method. Readiness is checked at call boundaries, before the callee's interpreter frame exists. Interpreter-to-interpreter calls (including `calli` and delegate calls) check in `ResolveInterpreterCode`. Calls from R2R code arrive through the R2R-to-interpreter thunk, which checks in `ExecuteInterpretedMethodWithArgs_PortableEntryPoint` and activates under a `PrestubMethodFrame` so the incoming arguments stay reported to the GC. Debugger function evaluation, the remaining caller of `CallDescrWorkerInternal`, checks there and activates the same way. When activation succeeds, the call that observed readiness runs the native code. Resuming an interpreter continuation or executing an exception clause never checks readiness, so a method with a suspended interpreted continuation activates on its next fresh call. A method prepared for the first time after activation uses ordinary eager R2R resolution. Interpreter dispatch caches are bypassed after publication, while active interpreter frames and suspended interpreter continuations retain their bytecode.
+
+**Failure.** The pending and awaiting flags are cleared before the lookup and fixups to prevent reentrant activation. If the lookup finds no R2R body again, the method records the new era or flag and keeps waiting. If fixups reject the R2R body or throw, the method stays interpreted, its cached `AuxiliaryMethodInfo` is reset so later calls skip the prestub, and activation is not retried.
 
 ### 2. Split InstanceMethodEntryPoints and MethodDefEntryPoints sections out
 
