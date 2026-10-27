@@ -10,11 +10,16 @@ internal static class NativeTestProcess
 {
     internal static (int ExitCode, string Output, string Error) Run(string executable, params string[] arguments)
     {
+        string baseDirectory = AppContext.BaseDirectory;
+        if (string.IsNullOrEmpty(baseDirectory))
+        {
+            baseDirectory = Environment.CurrentDirectory;
+        }
         string directory = TestLibrary.Utilities.IsNativeAot
-            ? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, ".."))
-            : AppContext.BaseDirectory;
+            ? Path.Combine(baseDirectory, "..")
+            : baseDirectory;
         string fileName = executable + (OperatingSystem.IsWindows() ? ".exe" : "");
-        var startInfo = new ProcessStartInfo(Path.Combine(directory, fileName))
+        var startInfo = new ProcessStartInfo(Path.GetFullPath(Path.Combine(directory, fileName)))
         {
             RedirectStandardError = true,
             RedirectStandardOutput = true,

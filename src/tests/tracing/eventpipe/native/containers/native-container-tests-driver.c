@@ -20,7 +20,7 @@ static const Group test_groups[] = {
     {NULL, NULL}
 };
 
-int main(int argc, char **argv)
+int DN_CALLBACK_CALLTYPE main(int argc, char **argv)
 {
     return run_tests_main(test_groups, argc, argv);
 }

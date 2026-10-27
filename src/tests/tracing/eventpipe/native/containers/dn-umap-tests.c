@@ -11,6 +11,9 @@
 #include <containers/dn-umap.h>
 #include <containers/dn-umap-t.h>
 
+#if defined(_MSC_VER) && !defined(strdup)
+#define strdup _strdup
+#endif
 
 #ifdef _CRTDBG_MAP_ALLOC
 static _CrtMemState dn_umap_memory_start_snapshot;

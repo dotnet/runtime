@@ -34,6 +34,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <containers/dn-utils.h>
+
 typedef char *RESULT;
 typedef RESULT (*RunTestHandler)(void);
 

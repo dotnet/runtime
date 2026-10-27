@@ -161,11 +161,11 @@ _Static_assert(sizeof(atomic_uint) == sizeof(uint32_t),
 _Static_assert(sizeof(_Atomic(void *)) == sizeof(void *) && ATOMIC_POINTER_LOCK_FREE == 2,
     "Standalone EventPipe tests require lock-free pointer atomics");
 
+typedef _Atomic(int64_t) ep_test_atomic_int64_t;
+
 #if LONG_MAX == INT64_MAX
-typedef atomic_long ep_test_atomic_int64_t;
 _Static_assert(ATOMIC_LONG_LOCK_FREE == 2, "Standalone EventPipe tests require lock-free 64-bit atomics");
 #elif LLONG_MAX == INT64_MAX
-typedef atomic_llong ep_test_atomic_int64_t;
 _Static_assert(ATOMIC_LLONG_LOCK_FREE == 2, "Standalone EventPipe tests require lock-free 64-bit atomics");
 #else
 #error No matching 64-bit atomic integer type

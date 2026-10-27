@@ -1,4 +1,21 @@
 <Project>
   <!-- Native component tests use the root test build configuration instead of the managed tracing test configuration. -->
   <Import Project="$(MSBuildThisFileDirectory)..\..\..\Directory.Build.targets" />
+
+  <Target Name="WriteNativeTestExecutableList"
+          BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
+          Condition="'$(TargetOS)' != 'windows' and '@(CMakeProjectReference)' != ''">
+    <PropertyGroup>
+      <_NativeTestDestDir>$(TargetDir)</_NativeTestDestDir>
+      <_NativeTestDestDir Condition="'$(_NativeTestDestDir)' == ''">$(OutputPath)</_NativeTestDestDir>
+      <_NativeTestExecutable>$(MSBuildProjectName)Driver</_NativeTestExecutable>
+      <_NativeTestExecutableRelative Condition="'$(BuildProjectRelativeDir)' != ''">$(BuildProjectRelativeDir)$(_NativeTestExecutable)</_NativeTestExecutableRelative>
+      <_NativeTestExecutableRelative Condition="'$(_NativeTestExecutableRelative)' == ''">$([System.IO.Path]::GetRelativePath('$(TestBinDir)', '$(_NativeTestDestDir)$(_NativeTestExecutable)'))</_NativeTestExecutableRelative>
+    </PropertyGroup>
+    <!-- Helix deployment resets execute permissions; register the driver for the existing chmod step. -->
+    <WriteLinesToFile File="$(_NativeTestDestDir)helix-extra-executables.list"
+                      Lines="$(_NativeTestExecutableRelative)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+  </Target>
 </Project>
