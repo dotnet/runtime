@@ -323,7 +323,6 @@ DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT_BSTR,  GetHelpContextBstr, 
 DEFINE_METHOD(EXCEPTION,            CREATE_TARGET_INVOCATION_EXCEPTION, CreateTargetInvocationException, SM_PtrException_PtrObj_PtrException_RetVoid)
 DEFINE_METHOD(EXCEPTION,            CREATE_ARGUMENT_EXCEPTION, CreateArgumentException,         NoSig)
 
-
 DEFINE_CLASS(TYPE_LOAD_EXCEPTION,   System,                 TypeLoadException)
 DEFINE_METHOD(TYPE_LOAD_EXCEPTION,  CREATE,                 Create,    NoSig)
 
@@ -378,7 +377,6 @@ DEFINE_METHOD(FIELD_HANDLE,         GETFIELDADDR,           GetFieldAddr,       
 DEFINE_METHOD(FIELD_HANDLE,         GETSTATICFIELDADDR,     GetStaticFieldAddr, SM_VoidPtr_RetVoidPtr)
 
 DEFINE_CLASS(FIELD_INFO,            Reflection,             FieldInfo)
-
 
 DEFINE_CLASS(GUID,                  System,                 Guid)
 
