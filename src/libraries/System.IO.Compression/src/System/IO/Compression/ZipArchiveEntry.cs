@@ -1630,7 +1630,7 @@ namespace System.IO.Compression
 
         // Returns a read-only, seekable view over the entry's current uncompressed buffer in Update mode.
         // It reflects modifications made earlier in the current session (and is empty for a freshly created
-        // entry), unlike OpenInReadMode which reads the original bytes directly from the archive. The stream
+        // entry), unlike OpenInReadModeCoreAsync which reads the original bytes directly from the archive. The stream
         // shares the underlying buffer with the entry rather than copying it, so it is not isolated from later
         // in-place writes; callers are expected to finish reading before reopening the entry for writing.
         private async ValueTask<Stream> OpenInUpdateModeForReadCoreAsync<TAdapter>(CancellationToken cancellationToken)
