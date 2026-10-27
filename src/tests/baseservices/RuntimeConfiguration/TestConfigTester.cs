@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime;
-using System.Text;
 
 using Xunit;
 using TestLibrary;
@@ -37,23 +36,20 @@ public class TestConfigTester
                 continue;
             }
 
-            ProcessStartInfo startInfo = new();
+            ProcessStartInfo startInfo = new(corerunPath);
             startInfo.InheritedHandles = [];
-
-            StringBuilder arguments = new();
 
             foreach (Attribute cp in configProperties)
             {
                 TestConfig.ConfigPropertyAttribute configProp = (TestConfig.ConfigPropertyAttribute)cp;
-                arguments.Append($"-p {configProp.Name}={configProp.Value} ");
+                startInfo.ArgumentList.Add("-p");
+                startInfo.ArgumentList.Add($"{configProp.Name}={configProp.Value}");
             }
 
-            arguments.Append($"\"{testConfigApp}\" {mi.Name}");
+            startInfo.ArgumentList.Add(testConfigApp);
+            startInfo.ArgumentList.Add(mi.Name);
 
-            startInfo.FileName = corerunPath;
-            startInfo.Arguments = arguments.ToString();
-
-            Console.WriteLine($"Running: {startInfo.Arguments}");
+            Console.WriteLine($"Running: {string.Join(" ", startInfo.ArgumentList)}");
             foreach (Attribute ev in envVariables)
             {
                 TestConfig.EnvVarAttribute envVar = (TestConfig.EnvVarAttribute)ev;

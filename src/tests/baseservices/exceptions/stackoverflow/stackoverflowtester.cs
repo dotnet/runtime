@@ -13,12 +13,12 @@ namespace TestStackOverflow
 {
     public class Program
     {
-        static void TestStackOverflow(string testName, string testArgs, out List<string> stderrLines)
+        static void TestStackOverflow(string testName, string[] testArgs, out List<string> stderrLines)
         {
-            Console.WriteLine($"Running {testName} test({testArgs})");
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
-            startInfo.Arguments = $"{Path.Combine(Directory.GetCurrentDirectory(), "..", testName, $"{testName}.dll")} {testArgs}";
+            Console.WriteLine($"Running {testName} test({string.Join(" ", testArgs)})");
+            ProcessStartInfo startInfo = new ProcessStartInfo(
+                Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun"),
+                [Path.Combine(Directory.GetCurrentDirectory(), "..", testName, $"{testName}.dll"), .. testArgs]);
             startInfo.InheritedHandles = [];
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
@@ -96,7 +96,7 @@ namespace TestStackOverflow
         [Fact]
         public static void TestStackOverflowSmallFrameMainThread()
         {
-            TestStackOverflow("stackoverflow", "smallframe main", out List<string> lines);
+            TestStackOverflow("stackoverflow", ["smallframe", "main"], out List<string> lines);
 
             if (!lines[lines.Count - 1].EndsWith(".Main(System.String[])"))
             {
@@ -144,7 +144,7 @@ namespace TestStackOverflow
                 return;
             }
 
-            TestStackOverflow("stackoverflow", "largeframe main", out List<string> lines);
+            TestStackOverflow("stackoverflow", ["largeframe", "main"], out List<string> lines);
 
             if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow.Program.Main(System.String[])"))
             {
@@ -179,7 +179,7 @@ namespace TestStackOverflow
         [Fact]
         public static void TestStackOverflowSmallFrameSecondaryThread()
         {
-            TestStackOverflow("stackoverflow", "smallframe secondary", out List<string> lines);
+            TestStackOverflow("stackoverflow", ["smallframe", "secondary"], out List<string> lines);
 
             if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.Test(Boolean)")))
             {
@@ -222,7 +222,7 @@ namespace TestStackOverflow
                 return;
             }
 
-            TestStackOverflow("stackoverflow", "largeframe secondary", out List<string> lines);
+            TestStackOverflow("stackoverflow", ["largeframe", "secondary"], out List<string> lines);
 
             if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.Test(Boolean)")))
             {
@@ -258,7 +258,7 @@ namespace TestStackOverflow
                 return;
             }
 
-            TestStackOverflow("stackoverflow3", "", out List<string> lines);
+            TestStackOverflow("stackoverflow3", [], out List<string> lines);
 
             if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow3.Program.Main()"))
             {

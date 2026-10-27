@@ -539,18 +539,17 @@ public class XUnitLogChecker
     private const string TO_BE_CONTINUE_TAG = "<TO_BE_CONTINUE>";
     private const string SKIP_LINE_TAG = "# <SKIP_LINE>";
 
-    static bool RunProcess(string fileName, string arguments, TextWriter outputWriter)
+    static bool RunProcess(string fileName, string[] arguments, TextWriter outputWriter)
     {
-        ProcessStartInfo startInfo = new ProcessStartInfo()
+        ProcessStartInfo startInfo = new ProcessStartInfo(fileName, arguments)
         {
-            FileName = fileName,
-            Arguments = arguments,
             InheritedHandles = [],
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
 
-        outputWriter.WriteLine($"Invoking: {startInfo.FileName} {startInfo.Arguments}");
+        string commandLine = $"{fileName} {string.Join(" ", arguments)}";
+        outputWriter.WriteLine($"Invoking: {commandLine}");
         ProcessTextOutput result;
         try
         {
@@ -558,13 +557,13 @@ public class XUnitLogChecker
         }
         catch (TimeoutException)
         {
-            outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
+            outputWriter.WriteLine($"Timedout: '{commandLine}");
             return false;
         }
 
         if (result.ExitStatus.Canceled)
         {
-            outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
+            outputWriter.WriteLine($"Timedout: '{commandLine}");
             return false;
         }
 
@@ -592,7 +591,7 @@ public class XUnitLogChecker
     {
         if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
         {
-            if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
+            if (!RunProcess("sudo", ["ls", "-l", crashReportJsonFile], Console.Out))
             {
                 return false;
             }
@@ -604,24 +603,24 @@ public class XUnitLogChecker
                 userName = "helixbot";
             }
 
-            if (!RunProcess("sudo", $"chmod a+rw {crashReportJsonFile}", Console.Out))
+            if (!RunProcess("sudo", ["chmod", "a+rw", crashReportJsonFile], Console.Out))
             {
                 return false;
             }
 
-            if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
-            {
-                return false;
-            }
-
-            Console.WriteLine("=========================================");
-            if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
+            if (!RunProcess("sudo", ["chown", userName, crashReportJsonFile], Console.Out))
             {
                 return false;
             }
 
             Console.WriteLine("=========================================");
-            if (!RunProcess("ls", $"-l {crashReportJsonFile}", Console.Out))
+            if (!RunProcess("sudo", ["ls", "-l", crashReportJsonFile], Console.Out))
+            {
+                return false;
+            }
+
+            Console.WriteLine("=========================================");
+            if (!RunProcess("ls", ["-l", crashReportJsonFile], Console.Out))
             {
                 return false;
             }
@@ -726,16 +725,14 @@ public class XUnitLogChecker
 
         string? symbolizerOutput = null;
 
-        ProcessStartInfo symbolizerStartInfo = new ProcessStartInfo()
+        ProcessStartInfo symbolizerStartInfo = new ProcessStartInfo("llvm-symbolizer", ["--pretty-print"])
         {
-            FileName = "llvm-symbolizer",
-            Arguments = "--pretty-print",
             InheritedHandles = [],
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
 
-        outputWriter.WriteLine($"Invoking {symbolizerStartInfo.FileName} {symbolizerStartInfo.Arguments}");
+        outputWriter.WriteLine($"Invoking {symbolizerStartInfo.FileName} {string.Join(" ", symbolizerStartInfo.ArgumentList)}");
 
         try
         {
@@ -858,7 +855,7 @@ public class XUnitLogChecker
             """);
 
         // cdb outputs the stacks directly, so we don't need to parse the output.
-        if (!RunProcess(cdbPath, $@"-c ""$<{cdbScriptPath}"" -z ""{dmpFile}""", outputWriter))
+        if (!RunProcess(cdbPath, ["-c", $"$<{cdbScriptPath}", "-z", dmpFile], outputWriter))
         {
             outputWriter.WriteLine("Unable to run cdb.exe");
             return false;

@@ -55,12 +55,10 @@ class Program
         EventLog logBefore = new EventLog("Application");
         int logBeforeCount = logBefore.Entries.Count;
 
-        ProcessStartInfo startInfo = new ProcessStartInfo();
         string currentPath = Directory.GetCurrentDirectory();
         string corerunPath = Environment.GetEnvironmentVariable("CORE_ROOT") + "\\corerun.exe";
 
-        startInfo.FileName = corerunPath;
-        startInfo.Arguments = currentPath + "\\WindowsEventLog.exe " + testName + " " + randomCookie;
+        ProcessStartInfo startInfo = new ProcessStartInfo(corerunPath, [Path.Combine(currentPath, "WindowsEventLog.exe"), testName, randomCookie]);
         startInfo.EnvironmentVariables["CORE_ROOT"] = Environment.GetEnvironmentVariable("CORE_ROOT");
         startInfo.EnvironmentVariables["DOTNET_Corhost_Swallow_Uncaught_Exceptions"] = swallowExcep ? "1" : "0";
         startInfo.EnvironmentVariables["DOTNET_UseEntryPointFilter"] = useEntryPointFilter ? "1" : "0";

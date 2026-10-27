@@ -337,7 +337,9 @@ internal class RFLogging
     {
         if (File.Exists(Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js")))
         {
-            ProcessStartInfo psi = new ProcessStartInfo("cscript.exe", Environment.ExpandEnvironmentVariables("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a UPDATE_RECORD -s RUNNING"));
+            ProcessStartInfo psi = new ProcessStartInfo("cscript.exe",
+                ["//b", "//nologo", Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js"),
+                 "-i", Environment.ExpandEnvironmentVariables("%STRESSID%"), "-a", "UPDATE_RECORD", "-s", "RUNNING"]);
             psi.InheritedHandles = [];
             using Microsoft.Win32.SafeHandles.SafeFileHandle nullHandle = File.OpenNullHandle();
             psi.StandardOutputHandle = nullHandle;
@@ -378,7 +380,9 @@ internal class RFLogging
             {
                 if (File.Exists(Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js")))
                 {
-                    ProcessStartInfo psi = new ProcessStartInfo("cscript.exe", Environment.ExpandEnvironmentVariables("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a UPDATE_RECORD -s RUNNING"));
+                    ProcessStartInfo psi = new ProcessStartInfo("cscript.exe",
+                        ["//b", "//nologo", Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js"),
+                         "-i", Environment.ExpandEnvironmentVariables("%STRESSID%"), "-a", "UPDATE_RECORD", "-s", "RUNNING"]);
                     psi.InheritedHandles = [];
                     psi.RedirectStandardOutput = true;
                     psi.RedirectStandardError = true;

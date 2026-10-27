@@ -21,7 +21,7 @@ public class InterpreterTester
         string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
         string interpreterApp = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Interpreter.dll");
 
-        ProcessStartInfo startInfo = new ProcessStartInfo(Path.Combine(coreRoot, "corerun"), interpreterApp);
+        ProcessStartInfo startInfo = new ProcessStartInfo(Path.Combine(coreRoot, "corerun"), [interpreterApp]);
         startInfo.InheritedHandles = [];
         startInfo.EnvironmentVariables["DOTNET_Interpreter"] = "RunInterpreterTests";
 

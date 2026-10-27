@@ -100,20 +100,15 @@ public class MethodImplOptionsTests : IDisposable
 
         string currentDirectory = Environment.CurrentDirectory;
 
-        ilasmPsi = new ProcessStartInfo();
+        string asmDllFileName = $"{Path.GetFileNameWithoutExtension(ilFileName)}.dll";
+        ilasmPsi = new ProcessStartInfo(ilasmFile, ["-nologo", "-dll", "-optimize", $"-output={asmDllFileName}", ilFileName]);
         ilasmPsi.InheritedHandles = [];
         ilasmPsi.WorkingDirectory = currentDirectory;
-        ilasmPsi.FileName = ilasmFile;
-        string asmDllFileName = $"{Path.GetFileNameWithoutExtension(ilFileName)}.dll";
-        ilasmPsi.Arguments =
-            $"-nologo -dll -optimize -output={asmDllFileName} {ilFileName}";
 
-        ildasmPsi = new ProcessStartInfo();
+        disasmIlFileName = $"{Path.GetFileNameWithoutExtension(ilFileName)}_dis{Path.GetExtension(ilFileName)}";
+        ildasmPsi = new ProcessStartInfo(ildasmFile, [$"-out={disasmIlFileName}", asmDllFileName]);
         ildasmPsi.InheritedHandles = [];
         ildasmPsi.WorkingDirectory = currentDirectory;
-        ildasmPsi.FileName = ildasmFile;
-        disasmIlFileName = $"{Path.GetFileNameWithoutExtension(ilFileName)}_dis{Path.GetExtension(ilFileName)}";
-        ildasmPsi.Arguments = $"-out={disasmIlFileName} {asmDllFileName}";
     }
 
     public void Dispose() {}

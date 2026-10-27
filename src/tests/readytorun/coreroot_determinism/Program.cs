@@ -95,12 +95,14 @@ public class Program
             Directory.Delete(outDir, true);
         }
         Directory.CreateDirectory(outDir);
-        ProcessStartInfo processStartInfo = new ProcessStartInfo(coreRunPath, $"{superIlcPath} compile-directory -cr {coreRootPath} -in {compilationInputFolder} --nojit --noexe --large-bubble --release --nocleanup -ct 30 -out {outDir}");
+        ProcessStartInfo processStartInfo = new ProcessStartInfo(coreRunPath,
+            [superIlcPath, "compile-directory", "-cr", coreRootPath, "-in", compilationInputFolder,
+             "--nojit", "--noexe", "--large-bubble", "--release", "--nocleanup", "-ct", "30", "-out", outDir]);
         processStartInfo.InheritedHandles = [];
         ProcessExitStatus status = Process.Run(processStartInfo);
         if (status.ExitCode != 0)
         {
-            Console.WriteLine($"Compilation failed. {processStartInfo.FileName} {processStartInfo.Arguments} failed with exit code {status.ExitCode}");
+            Console.WriteLine($"Compilation failed. {processStartInfo.FileName} {string.Join(" ", processStartInfo.ArgumentList)} failed with exit code {status.ExitCode}");
         }
         return 0 == status.ExitCode;
     }

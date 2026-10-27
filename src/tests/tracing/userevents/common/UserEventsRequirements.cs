@@ -30,9 +30,7 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static bool IsTracefsMounted()
         {
-            ProcessStartInfo checkTracefsStartInfo = new();
-            checkTracefsStartInfo.FileName = "sudo";
-            checkTracefsStartInfo.Arguments = $"-n test -d {TracefsPath}";
+            ProcessStartInfo checkTracefsStartInfo = new("sudo", ["-n", "test", "-d", TracefsPath]);
             checkTracefsStartInfo.InheritedHandles = [];
             checkTracefsStartInfo.RedirectStandardOutput = true;
             checkTracefsStartInfo.RedirectStandardError = true;
@@ -69,9 +67,7 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static bool IsUserEventsDataAvailable()
         {
-            ProcessStartInfo checkUserEventsDataStartInfo = new();
-            checkUserEventsDataStartInfo.FileName = "sudo";
-            checkUserEventsDataStartInfo.Arguments = $"-n test -e {UserEventsDataPath}";
+            ProcessStartInfo checkUserEventsDataStartInfo = new("sudo", ["-n", "test", "-e", UserEventsDataPath]);
             checkUserEventsDataStartInfo.InheritedHandles = [];
             checkUserEventsDataStartInfo.RedirectStandardOutput = true;
             checkUserEventsDataStartInfo.RedirectStandardError = true;
@@ -108,9 +104,7 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static bool IsGlibcAtLeast(Version minVersion)
         {
-            ProcessStartInfo lddStartInfo = new();
-            lddStartInfo.FileName = "ldd";
-            lddStartInfo.Arguments = "--version";
+            ProcessStartInfo lddStartInfo = new("ldd", ["--version"]);
             lddStartInfo.InheritedHandles = [];
             lddStartInfo.RedirectStandardOutput = true;
             lddStartInfo.RedirectStandardError = true;

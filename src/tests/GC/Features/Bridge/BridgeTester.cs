@@ -20,7 +20,7 @@ public class BridgeTester
         string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
         string bridgeTestApp = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Bridge.dll");
 
-        ProcessStartInfo startInfo = new ProcessStartInfo(Path.Combine(coreRoot, corerun), bridgeTestApp);
+        ProcessStartInfo startInfo = new ProcessStartInfo(Path.Combine(coreRoot, corerun), [bridgeTestApp]);
         startInfo.InheritedHandles = [];
         startInfo.EnvironmentVariables["MONO_GC_DEBUG"] = monoGCDebug;
         startInfo.EnvironmentVariables["MONO_GC_PARAMS"] = monoGCParams;

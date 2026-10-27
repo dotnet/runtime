@@ -46,21 +46,20 @@ class NameConfigWithPid
             string outputPathBaseName = $"eventPipeStream{Thread.CurrentThread.ManagedThreadId}_{(ulong)Stopwatch.GetTimestamp()}";
             string outputPathPattern = Path.Combine(tempDir, outputPathBaseName + "_{pid}_{pid}.nettrace");
 
-            process.StartInfo.FileName = Environment.ProcessPath;
-            process.StartInfo.Arguments = TestLibrary.Utilities.IsNativeAot
-                ? WaitForInput
-                : $"{typeof(NameConfigWithPid).Assembly.Location} {WaitForInput}";
+            ProcessStartInfo startInfo = new(Environment.ProcessPath,
+                TestLibrary.Utilities.IsNativeAot ? [WaitForInput] : [typeof(NameConfigWithPid).Assembly.Location, WaitForInput]);
+            process.StartInfo = startInfo;
             using Process processToDispose = process;
-            process.StartInfo.InheritedHandles = [];
-            process.StartInfo.RedirectStandardInput = true;
-            process.StartInfo.RedirectStandardError = true;
+            startInfo.InheritedHandles = [];
+            startInfo.RedirectStandardInput = true;
+            startInfo.RedirectStandardError = true;
 
-            process.StartInfo.Environment.Add("DOTNET_EnableEventPipe", "1");
-            process.StartInfo.Environment.Add("DOTNET_EventPipeConfig", "Microsoft-Windows-DotNETRuntime:4c14fccbd:4");
-            process.StartInfo.Environment.Add("DOTNET_EventPipeOutputPath", outputPathPattern);
-            process.StartInfo.Environment.Add("CORE_ROOT", coreRoot);
+            startInfo.Environment.Add("DOTNET_EnableEventPipe", "1");
+            startInfo.Environment.Add("DOTNET_EventPipeConfig", "Microsoft-Windows-DotNETRuntime:4c14fccbd:4");
+            startInfo.Environment.Add("DOTNET_EventPipeOutputPath", outputPathPattern);
+            startInfo.Environment.Add("CORE_ROOT", coreRoot);
 
-            Console.WriteLine($"Starting process '{process.StartInfo.FileName}' '{process.StartInfo.Arguments}'");
+            Console.WriteLine($"Starting process '{startInfo.FileName}' '{string.Join(" ", startInfo.ArgumentList)}'");
             Console.Out.Flush();
             process.Start();
 

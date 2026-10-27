@@ -55,12 +55,11 @@ namespace R2RDumpTests
             Environment.SetEnvironmentVariable("DOTNET_GCName", String.Empty);
             string DotNetAbsolutePath = string.IsNullOrEmpty(TestDotNetCmdVar) ? FindExePath("dotnet") : TestDotNetCmdVar;
 
-            ProcessStartInfo processStartInfo = new ProcessStartInfo
+            // TODO, what flags do we like to test?
+            ProcessStartInfo processStartInfo = new ProcessStartInfo(DotNetAbsolutePath,
+                ["exec", R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile, "--val"])
             {
                 InheritedHandles = [],
-                FileName = DotNetAbsolutePath,
-                // TODO, what flags do we like to test?
-                Arguments = string.Join(" ", new string[]{"exec", R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile, "--val"})
             };
 
             ProcessExitStatus status = Process.Run(processStartInfo);

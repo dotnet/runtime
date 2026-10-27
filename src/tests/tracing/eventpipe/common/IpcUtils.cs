@@ -65,20 +65,21 @@ namespace Tracing.Tests.Common
                 var stdoutSb = new StringBuilder();
                 var stderrSb = new StringBuilder();
 
-                process.StartInfo.InheritedHandles = [];
-                process.StartInfo.CreateNoWindow = true;
-                process.StartInfo.Environment.Add("DOTNET_StressLog",   "1");    // Turn on stresslog for subprocess
-                process.StartInfo.Environment.Add("DOTNET_LogFacility", "1000"); // Diagnostics Server Log Facility
-                process.StartInfo.Environment.Add("DOTNET_LogLevel",    "10");   // Log everything
+                ProcessStartInfo startInfo = new(Environment.ProcessPath,
+                    TestLibrary.Utilities.IsNativeAot ? ["0"] : [new Uri(currentAssembly.Location).LocalPath, "0"]);
+                process.StartInfo = startInfo;
+                startInfo.InheritedHandles = [];
+                startInfo.CreateNoWindow = true;
+                startInfo.Environment.Add("DOTNET_StressLog",   "1");    // Turn on stresslog for subprocess
+                startInfo.Environment.Add("DOTNET_LogFacility", "1000"); // Diagnostics Server Log Facility
+                startInfo.Environment.Add("DOTNET_LogLevel",    "10");   // Log everything
                 foreach ((string key, string value) in environment)
-                    process.StartInfo.Environment.Add(key, value);
-                process.StartInfo.FileName = Environment.ProcessPath;
-                process.StartInfo.Arguments = TestLibrary.Utilities.IsNativeAot ? "0" : $"{new Uri(currentAssembly.Location).LocalPath} 0";
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.RedirectStandardInput = true;
-                process.StartInfo.RedirectStandardError = true;
+                    startInfo.Environment.Add(key, value);
+                startInfo.RedirectStandardOutput = true;
+                startInfo.RedirectStandardInput = true;
+                startInfo.RedirectStandardError = true;
 
-                Logger.logger.Log($"running sub-process: {process.StartInfo.FileName} {process.StartInfo.Arguments}");
+                Logger.logger.Log($"running sub-process: {startInfo.FileName} {string.Join(" ", startInfo.ArgumentList)}");
                 DateTime startTime = DateTime.Now;
                 process.OutputDataReceived += new DataReceivedEventHandler((s,e) =>
                 {

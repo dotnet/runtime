@@ -35,11 +35,9 @@ public class Program
             return 3;
         }
 
-        ProcessTextOutput result = Process.RunAndCaptureText(new ProcessStartInfo
+        ProcessTextOutput result = Process.RunAndCaptureText(new ProcessStartInfo(llvmDwarfDumpPath, ["--verify", Environment.ProcessPath])
         {
             InheritedHandles = [],
-            FileName = llvmDwarfDumpPath,
-            Arguments = $"--verify {Environment.ProcessPath}",
             RedirectStandardOutput = true,
             RedirectStandardError = true
         });
