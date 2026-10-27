@@ -3,9 +3,110 @@
 
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createContext } from "node:vm";
+import { readFile } from "node:fs/promises";
+import { createContext, SourceTextModule, SyntheticModule } from "node:vm";
 import { Worker as NodeWorker } from "node:worker_threads";
 import { createWorkerModuleLoader } from "./worker-transport-worker.mjs";
+
+for (const worker of [false, true]) {
+    test(`library harness selects ${worker ? "worker" : "ordinary"} runtime and bootstraps UI imports`, async () => {
+        const calls = [];
+        let environment;
+        const runtime = {
+            runtimeBuildInfo: { productVersion: "test", gitHash: "test" },
+            Module: worker ? {} : { HEAPU8: new Uint8Array(64) },
+            INTERNAL: { workerMemoryViews: { refreshIfNeeded: () => ({ u8: new Uint8Array(128) }) } },
+            runMain: async (assembly, args) => {
+                calls.push(["runMain", assembly, Array.from(args)]);
+                return 0;
+            },
+            runMainAndExit: async (assembly, args) => {
+                calls.push(["runMainAndExit", assembly, Array.from(args)]);
+                return 0;
+            },
+            exit: code => calls.push(["runtimeExit", code]),
+        };
+        const builder = {
+            withVirtualWorkingDirectory() {
+                return this;
+            },
+            withEnvironmentVariables(value) {
+                environment = value;
+                return this;
+            },
+            withEnvironmentVariable() {
+                return this;
+            },
+            withDiagnosticTracing() {
+                return this;
+            },
+            withConfig() {
+                return this;
+            },
+            withWorker() {
+                calls.push(["withWorker"]);
+                return this;
+            },
+            async create() {
+                calls.push(["create"]);
+                return runtime;
+            },
+        };
+        const args = [
+            ...(worker ? ["--with-worker"] : []), "--test-module=./test-bootstrap.mjs",
+            "--run", "WasmTestRunner.dll", "Test.dll",
+        ];
+        const location = new URL("https://example.test/");
+        for (const arg of args) location.searchParams.append("arg", arg);
+        const context = createContext({
+            URL, window: {}, location, navigator: { userAgent: "Chrome" },
+            document: {
+                createElement: () => ({}),
+                body: { appendChild: element => {
+                    assert.equal(element.id, "tests_done");
+                    calls.push(["testDone", Number(element.textContent)]);
+                } },
+            },
+            fetch: async () => ({ ok: true, json: async () => ({}) }),
+            console: { log() {}, info() {}, debug() {} },
+        });
+        const dotnetModule = new SyntheticModule(["dotnet", "exit"], function () {
+            this.setExport("dotnet", builder);
+            this.setExport("exit", code => calls.push(["exit", code]));
+        }, { context });
+        const bootstrapModule = new SyntheticModule(["setup"], function () {
+            this.setExport("setup", async value => {
+                assert.equal(value, runtime);
+                calls.push(["setup"]);
+            });
+        }, { context });
+        await bootstrapModule.link(() => {
+            throw new Error("Unexpected bootstrap import");
+        });
+        await bootstrapModule.evaluate();
+        const source = await readFile(new URL("../../mono/browser/test-main.mjs", import.meta.url), "utf8");
+        const harness = new SourceTextModule(source, {
+            context,
+            initializeImportMeta: meta => meta.url = "https://example.test/test-main.mjs",
+            importModuleDynamically: async specifier => {
+                assert.equal(specifier, "https://example.test/test-bootstrap.mjs");
+                return bootstrapModule;
+            },
+        });
+        await harness.link(specifier => {
+            assert.equal(specifier, "./_framework/dotnet.js");
+            return dotnetModule;
+        });
+        await harness.evaluate();
+        assert.equal(environment.DOTNET_TEST_WITH_WORKER, worker ? "1" : "0");
+        assert.equal(environment.IsBrowserDomSupported, worker ? "false" : "true");
+        assert.deepEqual(calls, [
+            ...(worker ? [["withWorker"]] : []), ["create"], ["setup"],
+            [worker ? "runMainAndExit" : "runMain", "WasmTestRunner.dll", ["Test.dll"]],
+            ...(worker ? [["runtimeExit", 0], ["testDone", 0]] : [["exit", 0]]),
+        ]);
+    });
+}
 
 async function createFixture(options = {}) {
     const workers = [];
@@ -254,7 +355,7 @@ async function createFixture(options = {}) {
         promiseHelpers: (await load("./promise-completion-source")).namespace,
         promiseTransport: (await load("./worker-promises")).namespace,
         failWorker: error => workerErrorListeners.forEach(listener => listener({ error, message: error.message })),
-        create: async (config = { workerOptions: { timeoutMs: 1000 } }) => {
+        create: async (config = { workerOptions: { timeoutMs: options.threaded ? 10000 : 1000 } }) => {
             uiApi = await proxyModule.namespace.createWorkerProxy(config);
             return uiApi;
         },
@@ -487,6 +588,21 @@ test("exports called from a runMain import complete synchronously", { timeout: 3
         scalar = (await api.getAssemblyExports("Test")).Sample.Test.Scalar;
         assert.equal(await api.runMain("Test", ["41"]), 42);
         assert.equal(scalar(1), 2);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("runMainAndExit permits nested exports until Main completes", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    let scalar;
+    try {
+        api.setModuleImports("main.js", { update: value => scalar(value) });
+        scalar = (await api.getAssemblyExports("Test")).Sample.Test.Scalar;
+        assert.equal(await api.runMainAndExit("Test", ["41"]), 42);
+        assert.throws(() => scalar(1), /exited/);
     } finally {
         api.exit(0);
         await fixture.termination;

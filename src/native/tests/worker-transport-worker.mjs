@@ -132,6 +132,7 @@ async function runWorker() {
                 throw error;
             }
         },
+        runMainAndExit: async (...args) => runtime.runMain(...args),
         exit: code => {
             throw { status: code };
         },

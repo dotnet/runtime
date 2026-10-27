@@ -70,6 +70,27 @@ Promises, not custom thenables. Shutdown rejects pending proxy calls but does no
 cancel arbitrary user Promises. Broader marshaling and the full RuntimeAPI remain
 unsupported; this prototype still requires API/design review.
 
+### Scalar library tests in worker mode
+
+The JS interop test project supports an explicit `WasmTestWithWorker` mode.
+It registers its UI imports before managed execution and checks that managed
+code runs without a DOM while its registered imports execute on the UI thread.
+Run the currently supported scalar subset in Chrome:
+
+```powershell
+.\dotnet.cmd build -bl /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Debug /p:RuntimeFlavor=CoreCLR /t:Test /p:Scenario=WasmTestOnChrome /p:InstallChromeForTests=false /p:EnableHotReloadInRuntimeConfigDevFile=false /p:WasmTestWithWorker=true /p:XUnitClassName=System.Runtime.InteropServices.JavaScript.Tests.WorkerInteropTest .\src\libraries\System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj
+```
+
+Use `WasmTestWithWorker=false` for the same subset on the ordinary runtime.
+This filter is not the full JS interop suite: strings, object identity, arrays,
+callbacks and other marshaled signatures still need worker-bridge support.
+When using the shared browser cache, set `CHROME_PATH_FOR_TESTS` and put its
+matching ChromeDriver on `PATH`; a cached driver cannot drive an unrelated
+system Chrome major version.
+Hot-reload browser tools are disabled for this test run: they are unrelated to
+the interop assertions and recent SDKs otherwise inject conflicting assets into
+the two referenced HTTP test servers.
+
 ## Installation of JavaScript engines
 
 The latest engines can be installed with jsvu (JavaScript engine Version Updater https://github.com/GoogleChromeLabs/jsvu)

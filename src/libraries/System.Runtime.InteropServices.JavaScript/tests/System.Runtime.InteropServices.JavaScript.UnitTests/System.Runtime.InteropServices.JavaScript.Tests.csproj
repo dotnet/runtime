@@ -20,10 +20,21 @@
          Suppress the NU1511 warning in the whole project as putting it on a P2P doesn't work: https://github.com/NuGet/Home/issues/14121 -->
     <NoWarn>$(NoWarn);NU1511</NoWarn>
     <WasmEnableStreamingResponse>false</WasmEnableStreamingResponse>
+    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --test-module=./JavaScriptWorkerTest.mjs</WasmXHarnessMonoArgs>
 
     <!-- Remove when PublishReadyToRun becomes default https://github.com/dotnet/runtime/issues/132466 -->
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">true</PublishReadyToRun>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(WasmTestWithWorker)' == 'true'">
+    <WasmEnableSharedMemory>true</WasmEnableSharedMemory>
+    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --with-worker</WasmXHarnessMonoArgs>
+  </PropertyGroup>
+  <Target Name="ValidateWorkerInteropTests" BeforeTargets="PrepareForBuild"
+          Condition="'$(WasmTestWithWorker)' == 'true'">
+    <Error Condition="'$(RuntimeFlavor)' != 'CoreCLR'"
+           Text="WasmTestWithWorker currently requires CoreCLR." />
+  </Target>
 
   <!-- Make debugging easier -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -45,6 +56,7 @@
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JsExportGenerator\JSExports.g.cs" />
 
     <Content Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" Link="wwwroot\JavaScriptTestHelper.mjs" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptWorkerTest.mjs" Link="wwwroot\JavaScriptWorkerTest.mjs" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.js" Link="wwwroot\SecondRuntimeTest.js" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\timers.mjs" Link="wwwroot\timers.mjs" CopyToOutputDirectory="PreserveNewest" />
 

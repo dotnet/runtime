@@ -12,6 +12,102 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
+    [ConditionalClass(typeof(WorkerInteropTest), nameof(IsBrowserDomSupportedOrWorker))]
+    public partial class WorkerInteropTest
+    {
+        public static bool IsBrowserDomSupportedOrWorker => PlatformDetection.IsBrowserDomSupported
+            || Environment.GetEnvironmentVariable("DOTNET_TEST_WITH_WORKER") == "1";
+
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial int EchoOnUI(int value);
+
+        [JSImport("invokeEcho", nameof(WorkerInteropTest))]
+        private static partial int InvokeEchoOnUI(int value);
+
+        [JSImport("invokeNested", nameof(WorkerInteropTest))]
+        private static partial int InvokeNestedOnUI(int value);
+
+        [JSImport("echoAsync", nameof(WorkerInteropTest))]
+        private static partial Task<int> EchoAsyncOnUI(int value);
+
+        [JSImport("invokeAsync", nameof(WorkerInteropTest))]
+        private static partial Task<int> InvokeAsyncOnUI(int value);
+
+        [JSImport("fail", nameof(WorkerInteropTest))]
+        private static partial int FailOnUI(int value);
+
+        [JSImport("mode", nameof(WorkerInteropTest))]
+        private static partial int GetModeOnUI(int value);
+
+        [JSExport]
+        internal static int Echo(int value) => value;
+
+        [JSExport]
+        internal static int Nested(int value) => value == 0 ? 0 : InvokeNestedOnUI(value - 1) + 1;
+
+        [JSExport]
+        internal static async Task<int> EchoAsync(int value)
+        {
+            await Task.Delay(1);
+            return await EchoAsyncOnUI(value);
+        }
+
+        [JSExport]
+        internal static int HasDocument(int value) => JSHost.GlobalThis.HasProperty("document") ? 1 : 0;
+
+        [Fact]
+        public void ExecutionRealm()
+        {
+            int expected = Environment.GetEnvironmentVariable("DOTNET_TEST_WITH_WORKER") == "1" ? 1 : 0;
+            Assert.Equal(expected, GetModeOnUI(0));
+        }
+
+        [Theory]
+        [MemberData(nameof(JSInteropTestBase.MarshalInt32Cases), MemberType = typeof(JSInteropTestBase))]
+        public void ScalarImportAndExport(int value)
+        {
+            Assert.Equal(value, EchoOnUI(value));
+            Assert.Equal(value, InvokeEchoOnUI(value));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(4)]
+        [InlineData(15)]
+        public void NestedSynchronousCalls(int depth)
+        {
+            Assert.Equal(depth, InvokeNestedOnUI(depth));
+        }
+
+        [Theory]
+        [MemberData(nameof(JSInteropTestBase.MarshalInt32Cases), MemberType = typeof(JSInteropTestBase))]
+        public async Task AsynchronousImportAndExport(int value)
+        {
+            Assert.Equal(value, await EchoAsyncOnUI(value));
+            Assert.Equal(value, await InvokeAsyncOnUI(value));
+        }
+
+        [Fact]
+        public async Task ConcurrentAsynchronousCalls()
+        {
+            Task<int>[] pending = new Task<int>[70];
+            for (int value = 0; value < pending.Length; value++)
+                pending[value] = InvokeAsyncOnUI(value);
+            int[] results = await Task.WhenAll(pending);
+            for (int value = 0; value < results.Length; value++)
+                Assert.Equal(value, results[value]);
+        }
+
+        [Fact]
+        public void ImportFailureAndRecovery()
+        {
+            JSException error = Assert.Throws<JSException>(() => FailOnUI(-1));
+            Assert.Contains("Worker UI import failure", error.Message);
+            Assert.Contains(nameof(ImportFailureAndRecovery), error.StackTrace);
+            Assert.Equal(42, FailOnUI(42));
+        }
+    }
+
     public class JSImportTest : JSInteropTestBase, IAsyncLifetime
     {
         [Fact]

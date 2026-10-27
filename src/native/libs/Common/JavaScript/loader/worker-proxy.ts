@@ -176,7 +176,6 @@ function buildProxyRuntimeAPI(
         runMainAndExit: async (mainAssemblyName?: string, args?: string[]): Promise<number> => {
             if (exiting) throw exited ?? new Error("withWorker(): runtime is exiting");
             if (pendingCommand) throw new Error("withWorker(): another command is already running");
-            exiting = true;
             try {
                 return await sendCommandAndWait(CommandId.RUN_MAIN_AND_EXIT, mainAssemblyName, args);
             } finally {
