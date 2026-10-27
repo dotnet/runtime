@@ -339,7 +339,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
     }
 }
 
-bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
+bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop, bool rejectNegativeConst)
 {
     assert(binop->OperIs(GT_ADD));
 
@@ -373,7 +373,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
                 return false;
             }
 
-            return IsMonotonicallyIncreasing(op1, false);
+            return IsMonotonicallyIncreasing(op1, rejectNegativeConst);
 
         default:
             JITDUMP("Not monotonically increasing because expression is not recognized.\n");
@@ -433,7 +433,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     }
     else if (expr->OperIs(GT_ADD))
     {
-        return IsBinOpMonotonicallyIncreasing(expr->AsOp());
+        return IsBinOpMonotonicallyIncreasing(expr->AsOp(), rejectNegativeConst);
     }
     else if (expr->OperIs(GT_PHI))
     {
@@ -1306,6 +1306,11 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         AssertionIndex assertionIndex = GetAssertionIndex(index);
 
         const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(assertionIndex);
+
+        if (curAssertion.GetOp2().KindIs(Compiler::O2K_CONST_INT) && (curAssertion.GetOp1().GetVN() != normalLclVN))
+        {
+            continue;
+        }
 
         Limit      limit(Limit::keUndef);
         genTreeOps cmpOper    = GT_NONE;

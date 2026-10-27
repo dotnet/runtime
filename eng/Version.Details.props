@@ -89,6 +89,7 @@ This file should be imported by eng/Versions.props
     <runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>11.0.0-alpha.1.26459.1</runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>11.0.0-alpha.1.26459.1</runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <!-- dotnet-optimization dependencies -->
+    <optimizationbrowserwasmMIBCRuntimePackageVersion>1.0.0-prerelease.26502.1</optimizationbrowserwasmMIBCRuntimePackageVersion>
     <optimizationlinuxarm64MIBCRuntimePackageVersion>1.0.0-prerelease.26451.1</optimizationlinuxarm64MIBCRuntimePackageVersion>
     <optimizationlinuxx64MIBCRuntimePackageVersion>1.0.0-prerelease.26451.1</optimizationlinuxx64MIBCRuntimePackageVersion>
     <optimizationPGOCoreCLRPackageVersion>1.0.0-prerelease.26451.1</optimizationPGOCoreCLRPackageVersion>
@@ -203,6 +204,7 @@ This file should be imported by eng/Versions.props
     <runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion>$(runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion>
     <runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion>
     <!-- dotnet-optimization dependencies -->
+    <optimizationbrowserwasmMIBCRuntimeVersion>$(optimizationbrowserwasmMIBCRuntimePackageVersion)</optimizationbrowserwasmMIBCRuntimeVersion>
     <optimizationlinuxarm64MIBCRuntimeVersion>$(optimizationlinuxarm64MIBCRuntimePackageVersion)</optimizationlinuxarm64MIBCRuntimeVersion>
     <optimizationlinuxx64MIBCRuntimeVersion>$(optimizationlinuxx64MIBCRuntimePackageVersion)</optimizationlinuxx64MIBCRuntimeVersion>
     <optimizationPGOCoreCLRVersion>$(optimizationPGOCoreCLRPackageVersion)</optimizationPGOCoreCLRVersion>

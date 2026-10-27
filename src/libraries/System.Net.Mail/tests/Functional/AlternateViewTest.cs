@@ -72,5 +72,38 @@ namespace System.Net.Mail.Tests
             AlternateView av = AlternateView.CreateAlternateViewFromString("<p>test message</p>", null, "text/html");
             Assert.Equal(Text.Encoding.ASCII.BodyName, av.ContentType.CharSet);
         }
+
+        [Theory]
+        [InlineData("", UriKind.Relative)]
+        [InlineData("aaaa", UriKind.Relative)]
+        [InlineData("aaaň", UriKind.Relative)]
+        [InlineData("aa-aa", UriKind.Relative)]
+        [InlineData("aa_aa", UriKind.Relative)]
+        [InlineData("aa\"aa", UriKind.Relative)]
+        [InlineData("aa\\aa", UriKind.Relative)]
+        [InlineData("aa/aa", UriKind.Relative)]
+        [InlineData("aa@aa", UriKind.Relative)]
+        [InlineData("aa; bb=cc", UriKind.Relative)]
+        [InlineData("C:\\foo.txt", UriKind.Absolute)]
+        public void ContentLocation_Validation_Valid(string uri, UriKind kind)
+        {
+            AlternateView av = AlternateView.CreateAlternateViewFromString("foo");
+            av.BaseUri = new Uri(uri, kind);
+        }
+
+        [Theory]
+        [InlineData("aa\raa", UriKind.Relative)]
+        [InlineData("aa\naa", UriKind.Relative)]
+        [InlineData("aa\r\naa", UriKind.Relative)]
+        [InlineData("aa\r\n aa", UriKind.Relative)]
+        public void ContentLocation_Validation_Invalid(string uri, UriKind kind)
+        {
+            AlternateView av = AlternateView.CreateAlternateViewFromString("foo");
+            Uri u = new Uri(uri, kind);
+            Assert.Throws<ArgumentException>(() =>
+            {
+                av.BaseUri = u;
+            });
+        }
     }
 }

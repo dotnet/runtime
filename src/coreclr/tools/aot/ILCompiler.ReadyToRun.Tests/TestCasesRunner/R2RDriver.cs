@@ -56,7 +56,7 @@ internal static class Crossgen2OptionsExtensions
     public static string ToArg(this Crossgen2Option kind) => kind switch
     {
         Crossgen2Option.Composite => $"--composite",
-        Crossgen2Option.InputBubble => $"--input-bubble",
+        Crossgen2Option.InputBubble => $"--inputbubble",
         Crossgen2Option.HotColdSplitting => $"--hot-cold-splitting",
         Crossgen2Option.Optimize => $"--optimize",
         Crossgen2Option.StripILBodies => $"--strip-il-bodies",

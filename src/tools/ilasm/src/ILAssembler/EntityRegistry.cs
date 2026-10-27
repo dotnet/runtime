@@ -94,6 +94,7 @@ namespace ILAssembler
             ModuleType = GetOrCreateTypeDefinition(null, "", "<Module>", moduleType =>
             {
                 moduleType.BaseType = null;
+                moduleType.IsDefined = true;
             });
         }
 
@@ -106,7 +107,7 @@ namespace ILAssembler
             return Array.Empty<EntityBase>();
         }
 
-        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames, bool deterministic, bool fold)
+        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, DataLocation> mappedFieldDataNames, out ImmutableArray<DataLocation> mappedFields, bool deterministic, bool fold)
         {
             // Set the assembly handle early since DeclarativeSecurityAttribute needs it
             // The assembly definition handle is always row 1 (there's only ever one assembly per module)
@@ -312,6 +313,7 @@ namespace ILAssembler
                 }
             }
 
+            var mappedFieldLocations = ImmutableArray.CreateBuilder<DataLocation>();
             foreach (FieldDefinitionEntity fieldDef in GetSeenEntities(TableIndex.Field))
             {
                 var fieldAttributes = fieldDef.Attributes;
@@ -339,9 +341,10 @@ namespace ILAssembler
                     builder.AddFieldLayout((FieldDefinitionHandle)fieldDef.Handle, fieldDef.Offset.Value);
                 }
 
-                if (fieldDef.DataDeclarationName is not null && mappedFieldDataNames.TryGetValue(fieldDef.DataDeclarationName, out int dataOffset))
+                if (fieldDef.DataDeclarationName is not null && mappedFieldDataNames.TryGetValue(fieldDef.DataDeclarationName, out DataLocation dataLocation))
                 {
-                    builder.AddFieldRelativeVirtualAddress((FieldDefinitionHandle)fieldDef.Handle, dataOffset);
+                    builder.AddFieldRelativeVirtualAddress((FieldDefinitionHandle)fieldDef.Handle, dataLocation.Offset);
+                    mappedFieldLocations.Add(dataLocation);
                 }
 
                 if (fieldDef.MarshallingDescriptor is { Count: > 0 })
@@ -355,6 +358,7 @@ namespace ILAssembler
                 }
             }
 
+            mappedFields = mappedFieldLocations.ToImmutable();
             var bodyStreamEncoder = new MethodBodyStreamEncoder(ilStream);
             Dictionary<byte[], int>? foldedBodies = fold ? new(new MethodBodyContentEqualityComparer()) : null;
 
@@ -1865,6 +1869,7 @@ namespace ILAssembler
             public string Name { get; }
             public TypeAttributes Attributes { get; set; }
             public TypeEntity? BaseType { get; set; }
+            public bool IsDefined { get; set; }
 
             public NamedElementList<GenericParameterEntity> GenericParameters { get; } = new();
 
@@ -2247,8 +2252,9 @@ namespace ILAssembler
             }
 
             /// <summary>
-            /// Gets the index in the compilation's <see cref="PdbDocumentTable"/> of the document that was current
-            /// when the directive that produced this point was applied.
+            /// Gets the index in the compilation's <see cref="PdbDocumentTable"/> of the point's document: the
+            /// <c>.il</c> source the instruction is in when no <c>.line</c> directive is in effect, otherwise the
+            /// current document of that source.
             /// </summary>
             public int DocumentIndex { get; }
             public int ILOffset { get; }
@@ -2256,19 +2262,13 @@ namespace ILAssembler
             public int StartColumn { get; }
             public int EndLine { get; }
             public int EndColumn { get; }
-
-            /// <summary>
-            /// Creates a hidden sequence point (used for compiler-generated code).
-            /// </summary>
-            public static SequencePoint Hidden(int documentIndex, int ilOffset) => new(documentIndex, ilOffset, 0xFEEFEE, 0, 0xFEEFEE, 0);
-
-            public bool IsHidden => StartLine == 0xFEEFEE;
+            public bool IsHidden => StartLine == System.Reflection.Metadata.SequencePoint.HiddenLine;
         }
 
         /// <summary>
-        /// Debug information for a method: the sequence points recorded from its <c>.line</c> and <c>#line</c>
-        /// directives, in increasing IL offset order, with at most one point per offset, and the local signature
-        /// of its body. The points of one method may belong to different documents.
+        /// Debug information for a method: the sequence points recorded as its instructions were emitted, in
+        /// increasing IL offset order, with at most one point per offset, and the local signature of its body. The
+        /// points of one method may belong to different documents. Points are recorded only when a PDB is requested.
         /// </summary>
         public sealed class MethodDebugInfo
         {
@@ -2280,7 +2280,39 @@ namespace ILAssembler
             /// PDB is built.
             /// </summary>
             public StandaloneSignatureHandle LocalSignature { get; set; }
+
+            /// <summary>
+            /// Gets the lexical scopes of the method body, in the order they closed: each <c>{ }</c> block, then the
+            /// root scope, which spans the whole body and holds the method-level <c>.locals</c>. The PDB gets a
+            /// LocalScope row for each scope that declares a named local, as declared, and an empty scope or a
+            /// repeated name or slot is reported (<c>AddLocalScopes</c>). Recorded only when a PDB is requested;
+            /// otherwise empty, so none of this is checked without a PDB.
+            /// </summary>
+            public List<LocalScopeRecord> LocalScopes { get; } = new();
         }
+
+        /// <summary>
+        /// A closed lexical scope of a method body: the root scope or a <c>{ }</c> block, including the bodies of
+        /// <c>.try</c>, <c>catch</c>, <c>filter</c>, <c>finally</c> and <c>fault</c>.
+        /// </summary>
+        /// <param name="StartOffset">The IL offset at which the scope starts: 0 for the root scope, the offset at <c>{</c> for a block.</param>
+        /// <param name="EndOffset">The IL offset at which the scope ends: the body's size for the root scope, the offset at <c>}</c> for a block.</param>
+        /// <param name="Order">
+        /// The position of the scope in source order, counting the root scope as 0 and each block as it opens, so an
+        /// enclosing scope comes before the scopes it contains.
+        /// </param>
+        /// <param name="Variables">The named locals declared directly in the scope, in declaration order.</param>
+        public sealed record LocalScopeRecord(int StartOffset, int EndOffset, int Order, ImmutableArray<LocalVariableRecord> Variables)
+        {
+            /// <summary>Gets the length of the scope in bytes of IL.</summary>
+            public int Length => EndOffset - StartOffset;
+        }
+
+        /// <summary>A named local declared in a lexical scope.</summary>
+        /// <param name="Name">The name of the local.</param>
+        /// <param name="Slot">Its slot in the method's local signature.</param>
+        /// <param name="Location">Where the local is declared: its name in the <c>.locals</c> directive.</param>
+        public readonly record struct LocalVariableRecord(string Name, int Slot, Location Location);
 
         /// <summary>
         /// A deferred exception region entry. Stored during parsing and applied to the

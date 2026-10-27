@@ -213,5 +213,84 @@ namespace System.Net.Tests
             
             await listenerTask.WaitAsync(TimeSpan.FromSeconds(10));
         }
+
+        [Theory]
+        [InlineData("Stop")]
+        [InlineData("Abort")]
+        [InlineData("Close")]
+        public async Task BeginGetContext_RacesWithTerminationMethod_AllOperationsComplete(string terminationMethod)
+        {
+            const int Iterations = 5;
+            const int Callers = 4;
+
+            for (int i = 0; i < Iterations; i++)
+            {
+                using var listenerFactory = new HttpListenerFactory();
+                var listener = listenerFactory.GetListener();
+                listener.Start();
+
+                // Start at one so that the count can't reach zero until all of the callers have finished.
+                int pending = 1;
+                var allCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                void OnCompleted()
+                {
+                    if (Interlocked.Decrement(ref pending) == 0)
+                    {
+                        allCompleted.TrySetResult();
+                    }
+                }
+                AsyncCallback callback = _ => OnCompleted();
+
+                using var started = new CountdownEvent(Callers);
+                Task[] callers = new Task[Callers];
+                for (int j = 0; j < callers.Length; j++)
+                {
+                    callers[j] = Task.Factory.StartNew(() =>
+                    {
+                        started.Signal();
+
+                        // Keep calling BeginGetContext until the listener is terminated so that
+                        // some calls race with the termination method.
+                        while (true)
+                        {
+                            Interlocked.Increment(ref pending);
+                            try
+                            {
+                                listener.BeginGetContext(callback, null);
+                            }
+                            catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException or HttpListenerException)
+                            {
+                                Interlocked.Decrement(ref pending);
+                                return;
+                            }
+                        }
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                }
+
+                started.Wait();
+                await Task.Delay(10);
+
+                switch (terminationMethod)
+                {
+                    case "Stop":
+                        listener.Stop();
+                        break;
+                    case "Abort":
+                        listener.Abort();
+                        break;
+                    case "Close":
+                        listener.Close();
+                        break;
+                }
+
+                await Task.WhenAll(callers).WaitAsync(TimeSpan.FromSeconds(30));
+
+                // Every call to BeginGetContext that returned must be completed by the termination method.
+                OnCompleted();
+                await allCompleted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+                listener.Close();
+            }
+        }
     }
 }

@@ -34,7 +34,7 @@ namespace ILAssembler
             // Apply DebuggableAttribute AFTER all source declarations have been processed,
             // so that GetCoreLibAssemblyReference() can find the correct corelib assembly ref
             // declared in the source (e.g., System.Runtime) instead of creating a fallback mscorlib.
-            if (_entityRegistry.Assembly is not null && (_options.Debug || _options.DebugMode is not null))
+            if (_options.Debug || _options.DebugMode is not null)
             {
                 ApplyDebuggableAttribute();
             }
@@ -50,7 +50,7 @@ namespace ILAssembler
                 ValidateVTableFixups(machine);
             ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations =
                 ValidateVTableAssociations(validatedVTableFixups);
-            ImmutableArray<VTableExportPEBuilder.DataLabelFixup> validatedDataLabelFixups =
+            ImmutableArray<ILAssemblerPEBuilder.DataLabelFixup> validatedDataLabelFixups =
                 ValidateDataLabelFixups();
             ImmutableArray<ValidatedExport> validatedExports =
                 ValidateExports(validatedVTableAssociations, machine);
@@ -70,7 +70,7 @@ namespace ILAssembler
             }
 
             BlobBuilder ilStream = new();
-            Blob mvidFixup = _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames, _options.Deterministic, _options.Fold);
+            Blob mvidFixup = _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames, out ImmutableArray<DataLocation> mappedFields, _options.Deterministic, _options.Fold);
             // MetadataRootBuilder only supports module-wide validation suppression, which is
             // required because wrapped GenericParam numbers intentionally violate table ordering.
             bool suppressMetadataValidation =
@@ -144,61 +144,38 @@ namespace ILAssembler
                 ? GetDeterministicContentId
                 : null;
 
-            // Use custom PE builder if we have vtable fixups, exports, or data label reference fixups
-            if (validatedVTableFixups.Length > 0 ||
-                validatedExports.Length > 0 ||
-                validatedDataLabelFixups.Length > 0)
-            {
-                ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> vtableFixupInfos =
-                    BuildVTableFixupInfos(
-                        validatedVTableFixups,
-                        validatedVTableAssociations);
-                ImmutableArray<VTableExportPEBuilder.ExportInfo> exports =
-                    BuildExportInfos(validatedExports);
-
-                // Apply CorFlags from options or directive
-                CorFlags corFlags = _options.CorFlags ?? _corflags;
-                if (_options.Prefer32Bit)
-                {
-                    corFlags |= CorFlags.Prefers32Bit;
-                }
-
-                VTableExportPEBuilder peBuilder = new(
-                    header,
-                    rootBuilder,
-                    ilStream,
-                    _mappedFieldData,
-                    _manifestResources,
-                    debugDirectoryBuilder: debugDirectoryBuilder,
-                    entryPoint: entryPoint,
-                    flags: corFlags,
-                    deterministicIdProvider: deterministicIdProvider,
-                    vtableFixups: vtableFixupInfos,
-                    exports: exports,
-                    dataLabelFixups: validatedDataLabelFixups);
-
-                return (_diagnostics.ToImmutable(), new CompilationResult(peBuilder, mvidFixup, portablePdb));
-            }
+            ImmutableArray<ILAssemblerPEBuilder.VTableFixupInfo> vtableFixupInfos =
+                BuildVTableFixupInfos(
+                    validatedVTableFixups,
+                    validatedVTableAssociations);
+            ImmutableArray<ILAssemblerPEBuilder.ExportInfo> exports =
+                BuildExportInfos(validatedExports);
 
             // Apply CorFlags from options or directive
-            CorFlags standardCorFlags = _options.CorFlags ?? _corflags;
+            CorFlags corFlags = _options.CorFlags ?? _corflags;
             if (_options.Prefer32Bit)
             {
-                standardCorFlags |= CorFlags.Prefers32Bit;
+                corFlags |= CorFlags.Requires32Bit | CorFlags.Prefers32Bit;
             }
 
-            ILAssemblerPEBuilder standardBuilder = new(
+            ILAssemblerPEBuilder peBuilder = new(
                 header,
                 rootBuilder,
                 ilStream,
                 _mappedFieldData,
                 _manifestResources,
-                flags: standardCorFlags,
-                entryPoint: entryPoint,
                 debugDirectoryBuilder: debugDirectoryBuilder,
-                deterministicIdProvider: deterministicIdProvider);
+                entryPoint: entryPoint,
+                flags: corFlags,
+                deterministicIdProvider: deterministicIdProvider,
+                vtableFixups: vtableFixupInfos,
+                exports: exports,
+                dataLabelFixups: validatedDataLabelFixups,
+                tlsData: _tlsData,
+                cilData: _cilData,
+                mappedFields: mappedFields);
 
-            return (_diagnostics.ToImmutable(), new CompilationResult(standardBuilder, mvidFixup, portablePdb));
+            return (_diagnostics.ToImmutable(), new CompilationResult(peBuilder, mvidFixup, portablePdb));
         }
 
         private static BlobContentId GetDeterministicContentId(IEnumerable<Blob> content)
@@ -255,7 +232,7 @@ namespace ILAssembler
                     continue;
                 }
 
-                if (!_mappedFieldDataNames.TryGetValue(entry.DataLabel, out int dataOffset))
+                if (!_mappedFieldDataNames.TryGetValue(entry.DataLabel, out DataLocation dataLocation))
                 {
                     ReportError(
                         DiagnosticIds.LabelNotFound,
@@ -264,7 +241,7 @@ namespace ILAssembler
                     continue;
                 }
 
-                int availableBytes = GetAvailableMappedFieldDataBytes(dataOffset);
+                int availableBytes = GetAvailableMappedFieldDataBytes(dataLocation);
                 int requiredBytes = checked(
                     entry.SlotCount * VTableFixupSupport.GetSlotSize(entry.Flags));
                 if (requiredBytes > availableBytes)
@@ -280,35 +257,36 @@ namespace ILAssembler
                     continue;
                 }
 
-                builder.Add(new ValidatedVTableFixup(i + 1, entry, dataOffset));
+                builder.Add(new ValidatedVTableFixup(i + 1, entry, dataLocation));
             }
 
             return builder.ToImmutable();
         }
 
-        private int GetAvailableMappedFieldDataBytes(int dataOffset)
+        private int GetAvailableMappedFieldDataBytes(DataLocation location)
         {
-            int endOffset = _mappedFieldData.Count;
-            foreach (int otherOffset in _mappedFieldDataNames.Values)
+            int endOffset = GetDataBuilder(location.Section).Count;
+            foreach (DataLocation other in _mappedFieldDataNames.Values)
             {
-                if (otherOffset > dataOffset && otherOffset < endOffset)
+                if (other.Section == location.Section &&
+                    other.Offset > location.Offset && other.Offset < endOffset)
                 {
-                    endOffset = otherOffset;
+                    endOffset = other.Offset;
                 }
             }
 
-            return endOffset - dataOffset;
+            return endOffset - location.Offset;
         }
 
-        private ImmutableArray<VTableExportPEBuilder.DataLabelFixup> ValidateDataLabelFixups()
+        private ImmutableArray<ILAssemblerPEBuilder.DataLabelFixup> ValidateDataLabelFixups()
         {
             var builder =
-                ImmutableArray.CreateBuilder<VTableExportPEBuilder.DataLabelFixup>(
+                ImmutableArray.CreateBuilder<ILAssemblerPEBuilder.DataLabelFixup>(
                     _mappedFieldDataReferenceFixups.Count);
 
             foreach (CILParser.DataLabelReferenceValue reference in _mappedFieldDataReferenceFixups)
             {
-                if (!_mappedFieldDataNames.TryGetValue(reference.TargetLabel, out int targetOffset))
+                if (!_mappedFieldDataNames.TryGetValue(reference.TargetLabel, out DataLocation target))
                 {
                     ReportError(
                         DiagnosticIds.LabelNotFound,
@@ -319,9 +297,9 @@ namespace ILAssembler
                     continue;
                 }
 
-                builder.Add(new VTableExportPEBuilder.DataLabelFixup(
-                    reference.DataOffset,
-                    targetOffset,
+                builder.Add(new ILAssemblerPEBuilder.DataLabelFixup(
+                    new DataLocation(reference.Section, reference.DataOffset),
+                    target,
                     reference.PointerSize));
             }
 
@@ -331,6 +309,11 @@ namespace ILAssembler
         private ImmutableArray<ValidatedVTableAssociation> ValidateVTableAssociations(
             ImmutableArray<ValidatedVTableFixup> validatedVTableFixups)
         {
+            if (_vtableFixups.Count == 0)
+            {
+                return ImmutableArray<ValidatedVTableAssociation>.Empty;
+            }
+
             var fixupsByOriginalIndex = new Dictionary<int, (int SerializedIndex, ValidatedVTableFixup Fixup)>(
                 validatedVTableFixups.Length);
             for (int i = 0; i < validatedVTableFixups.Length; i++)
@@ -409,7 +392,7 @@ namespace ILAssembler
 
                 ParserRuleContext context = _exportDirectiveContexts[method];
                 string exportName = method.ExportAlias ?? method.Name;
-                if (!VTableExportPEBuilder.IsExportMachineSupported(machine))
+                if (!ILAssemblerPEBuilder.IsExportMachineSupported(machine))
                 {
                     ReportError(
                         DiagnosticIds.UnsupportedNativeExportMachine,
@@ -494,12 +477,12 @@ namespace ILAssembler
             return validatedExports.ToImmutable();
         }
 
-        private static ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> BuildVTableFixupInfos(
+        private static ImmutableArray<ILAssemblerPEBuilder.VTableFixupInfo> BuildVTableFixupInfos(
             ImmutableArray<ValidatedVTableFixup> validatedVTableFixups,
             ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations)
         {
             var builder =
-                ImmutableArray.CreateBuilder<VTableExportPEBuilder.VTableFixupInfo>(
+                ImmutableArray.CreateBuilder<ILAssemblerPEBuilder.VTableFixupInfo>(
                     validatedVTableFixups.Length);
 
             for (int i = 0; i < validatedVTableFixups.Length; i++)
@@ -517,8 +500,8 @@ namespace ILAssembler
                     }
                 }
 
-                builder.Add(new VTableExportPEBuilder.VTableFixupInfo(
-                    fixup.DataOffset,
+                builder.Add(new ILAssemblerPEBuilder.VTableFixupInfo(
+                    fixup.DataLocation,
                     fixup.Entry.SlotCount,
                     fixup.Entry.Flags,
                     methodTokens.MoveToImmutable()));
@@ -527,16 +510,16 @@ namespace ILAssembler
             return builder.MoveToImmutable();
         }
 
-        private static ImmutableArray<VTableExportPEBuilder.ExportInfo> BuildExportInfos(
+        private static ImmutableArray<ILAssemblerPEBuilder.ExportInfo> BuildExportInfos(
             ImmutableArray<ValidatedExport> validatedExports)
         {
             var builder =
-                ImmutableArray.CreateBuilder<VTableExportPEBuilder.ExportInfo>(
+                ImmutableArray.CreateBuilder<ILAssemblerPEBuilder.ExportInfo>(
                     validatedExports.Length);
 
             foreach (ValidatedExport export in validatedExports)
             {
-                builder.Add(new VTableExportPEBuilder.ExportInfo(
+                builder.Add(new ILAssemblerPEBuilder.ExportInfo(
                     export.Method.ExportOrdinal,
                     export.Method.ExportAlias ?? export.Method.Name,
                     export.VTableEntryIndex,
@@ -556,6 +539,13 @@ namespace ILAssembler
                 }
             }
         }
+
+        /// <summary>
+        /// Gets whether a PDB is requested: <see cref="Options.Debug"/>, <see cref="Options.DebugMode"/> or
+        /// <see cref="Options.Pdb"/> is set. Information that only the PDB uses, such as the lexical scopes of
+        /// method bodies, is kept only when this is <see langword="true"/>.
+        /// </summary>
+        private bool GeneratesPdb => _options.Debug || _options.DebugMode is not null || _options.Pdb;
 
         /// <summary>
         /// Builds the Portable PDB and the debug directory that references it, when a PDB is requested.
@@ -582,7 +572,7 @@ namespace ILAssembler
         /// the CodeView entry records that path as given (after <see cref="Options.PathMap"/>), so the same input
         /// and the same recorded PDB path give the same image bytes, and a PDB path that is a file name alone
         /// keeps the image independent of its directory. Without <see cref="Options.Deterministic"/>, the id's
-        /// GUID is random. The checksum is the
+        /// GUID is random and its stamp is the current Unix time in seconds. The checksum is the
         /// content hash in both cases.
         /// </para>
         /// </remarks>
@@ -590,10 +580,9 @@ namespace ILAssembler
         {
             portablePdb = null;
 
-            // As in native ilasm, only /DEBUG (any mode) or /PDB produces a PDB. Without them, sequence
-            // points from .line directives are parsed and validated but not emitted.
-            bool generatePdb = _options.Debug || _options.DebugMode is not null || _options.Pdb;
-            if (!generatePdb)
+            // Only /DEBUG (any mode) or /PDB produces a PDB. Without them, .line
+            // directives are still parsed and validated, and no sequence points are recorded.
+            if (!GeneratesPdb)
             {
                 return null;
             }
@@ -607,12 +596,13 @@ namespace ILAssembler
             // PortablePdbBuilder hands the id provider the serialized PDB with its 20-byte id zeroed.
             // The SHA-256 of that content is the PdbChecksum value, and the deterministic id.
             byte[]? pdbContentHash = null;
+            Func<IEnumerable<Blob>, BlobContentId> timeBasedIdProvider = BlobContentId.GetTimeBasedProvider();
             BlobContentId PdbIdProvider(IEnumerable<Blob> content)
             {
                 pdbContentHash = ComputeSha256(content);
                 return _options.Deterministic
                     ? BlobContentId.FromHash(pdbContentHash)
-                    : new BlobContentId(Guid.NewGuid(), 0x04030201);
+                    : timeBasedIdProvider(content);
             }
 
             // Create the portable PDB
@@ -628,7 +618,7 @@ namespace ILAssembler
                 ?? throw new InvalidOperationException("The Portable PDB was serialized without calling its id provider.");
 
             // Reference the PDB file from the image: CodeView, then PdbChecksum, then (deterministic only)
-            // Reproducible, as native ilasm and the C# compiler do.
+            // Reproducible, as the C# compiler does.
             var debugDirectoryBuilder = new DebugDirectoryBuilder();
             debugDirectoryBuilder.AddCodeViewEntry(
                 GetPdbFilePath(),
@@ -667,7 +657,8 @@ namespace ILAssembler
         }
 
         /// <summary>
-        /// Adds the Document rows and one MethodDebugInformation row per MethodDef row to the PDB metadata.
+        /// Adds the Document rows, one MethodDebugInformation row per MethodDef row, and each method's LocalScope and
+        /// LocalVariable rows (<see cref="AddLocalScopes"/>) to the PDB metadata.
         /// </summary>
         /// <remarks>
         /// The documents are added in <see cref="PdbDocumentTable"/> order. A method without sequence points, or
@@ -701,30 +692,143 @@ namespace ILAssembler
                 List<EntityRegistry.SequencePoint> sequencePoints = method.DebugInfo.SequencePoints;
                 if (sequencePoints.Count == 0 || !method.HasBody)
                 {
+                    // Points are recorded as instructions are emitted, so a method without an IL body has none
+                    // to map; a .line directive inside it applies to the next instruction, in a later method.
                     _pdbBuilder.AddMethodDebugInformation(default, default);
-                    continue;
                 }
-
-                int firstDocument = sequencePoints[0].DocumentIndex;
-                bool singleDocument = true;
-                for (int i = 1; i < sequencePoints.Count && singleDocument; i++)
+                else
                 {
-                    singleDocument = sequencePoints[i].DocumentIndex == firstDocument;
+                    int firstDocument = sequencePoints[0].DocumentIndex;
+                    bool singleDocument = true;
+                    for (int i = 1; i < sequencePoints.Count && singleDocument; i++)
+                    {
+                        singleDocument = sequencePoints[i].DocumentIndex == firstDocument;
+                    }
+
+                    BlobBuilder sequencePointsBlob = EncodeSequencePoints(
+                        sequencePoints,
+                        method.DebugInfo.LocalSignature,
+                        documentHandles,
+                        singleDocument);
+                    // docs/design/specs/PortablePdb-Metadata.md, MethodDebugInformation table: Document is "the row id of the
+                    // single document containing all sequence points of the method, or 0 if the method doesn't have sequence
+                    // points or spans multiple documents", and "_InitialDocument_ is only present if the _Document_ field of
+                    // the _MethodDebugInformation_ table is nil"; the blob then names the documents (EncodeSequencePoints).
+                    _pdbBuilder.AddMethodDebugInformation(
+                        singleDocument ? documentHandles[firstDocument] : default,
+                        _pdbBuilder.GetOrAddBlob(sequencePointsBlob));
                 }
 
-                BlobBuilder sequencePointsBlob = EncodeSequencePoints(
-                    sequencePoints,
-                    method.DebugInfo.LocalSignature,
-                    documentHandles,
-                    singleDocument);
+                AddLocalScopes((MethodDefinitionHandle)method.Handle, method.DebugInfo.LocalScopes);
+            }
+        }
 
-                // docs/design/specs/PortablePdb-Metadata.md, MethodDebugInformation table: Document is "the row id of the
-                // single document containing all sequence points of the method, or 0 if the method doesn't have sequence
-                // points or spans multiple documents", and "_InitialDocument_ is only present if the _Document_ field of
-                // the _MethodDebugInformation_ table is nil"; the blob then names the documents (EncodeSequencePoints).
-                _pdbBuilder.AddMethodDebugInformation(
-                    singleDocument ? documentHandles[firstDocument] : default,
-                    _pdbBuilder.GetOrAddBlob(sequencePointsBlob));
+        /// <summary>
+        /// Adds a method's LocalScope rows, each followed by its LocalVariable rows, to the PDB metadata
+        /// (docs/design/specs/PortablePdb-Metadata.md, "LocalScope Table" and "LocalVariable Table").
+        /// </summary>
+        /// <param name="method">The method's MethodDef row. Methods must be added in MethodDef order.</param>
+        /// <param name="scopes">The method's lexical scopes (<see cref="EntityRegistry.MethodDebugInfo.LocalScopes"/>).</param>
+        /// <remarks>
+        /// <para>
+        /// A scope gets a row only when it declares a named local, and an unnamed local gets no
+        /// row; so the root scope, which spans the whole body, has a row only when the method-level <c>.locals</c>
+        /// name a local. Each variable's Index is its slot in the local signature, and its attributes are 0.
+        /// Import scopes and local constants are not recorded.
+        /// </para>
+        /// <para>
+        /// The rows are written as declared: each scope that declares a named local gets a
+        /// LocalScope row whatever its length, and each named local of the scope gets a LocalVariable row, in
+        /// declaration order. Rows that the specification does not allow are reported as errors, so they are
+        /// written only to error-tolerant output (<see cref="Options.ErrorTolerant"/>):
+        /// </para>
+        /// <list type="bullet">
+        /// <item><description>
+        /// A scope without IL (a block with no instructions, or the root scope of a method without instructions)
+        /// has length 0, but a LocalScope row's Length is in "(0..0x80000000)". It is reported at the scope's first
+        /// named local (<see cref="DiagnosticIds.LocalScopeWithoutInstructions"/>).
+        /// </description></item>
+        /// <item><description>
+        /// "There shall be no duplicate rows in the LocalVariable table, based upon owner and _Name_", and none
+        /// "based upon owner and _Index_". A named local whose name an earlier named local of the scope has is
+        /// reported at its declaration (<see cref="DiagnosticIds.LocalNameDeclaredTwiceInScope"/>), and so is one
+        /// whose slot an earlier named local of the scope has
+        /// (<see cref="DiagnosticIds.LocalSlotNamedTwiceInScope"/>); a local that repeats both is reported twice.
+        /// Unnamed locals have no row, so they take no part.
+        /// </description></item>
+        /// </list>
+        /// <para>
+        /// The scopes are recorded only when a PDB is requested, so neither is checked without one.
+        /// </para>
+        /// <para>
+        /// The rows are sorted by start offset, then by length with the longest first, as the table requires;
+        /// scopes with the same range keep their source order, enclosing scope first. Scopes of a method nest or
+        /// are disjoint because blocks do, and the variables of a scope are added together right after it, so its
+        /// VariableList run holds exactly its variables.
+        /// </para>
+        /// </remarks>
+        private void AddLocalScopes(MethodDefinitionHandle method, List<EntityRegistry.LocalScopeRecord> scopes)
+        {
+            // Most methods name no local; they get no rows and need no sorting.
+            if (!scopes.Exists(static scope => !scope.Variables.IsEmpty))
+            {
+                return;
+            }
+
+            IEnumerable<EntityRegistry.LocalScopeRecord> ordered = scopes
+                .Where(scope => !scope.Variables.IsEmpty)
+                .OrderBy(scope => scope.StartOffset)
+                .ThenByDescending(scope => scope.Length)
+                .ThenBy(scope => scope.Order);
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            var slotNames = new Dictionary<int, string>();
+            foreach (EntityRegistry.LocalScopeRecord scope in ordered)
+            {
+                if (scope.Length == 0)
+                {
+                    EntityRegistry.LocalVariableRecord first = scope.Variables[0];
+                    ReportError(
+                        DiagnosticIds.LocalScopeWithoutInstructions,
+                        string.Format(DiagnosticMessageTemplates.LocalScopeWithoutInstructions, first.Name),
+                        first.Location);
+                }
+
+                _pdbBuilder.AddLocalScope(
+                    method,
+                    importScope: default,
+                    variableList: MetadataTokens.LocalVariableHandle(_pdbBuilder.GetRowCount(TableIndex.LocalVariable) + 1),
+                    constantList: default,
+                    scope.StartOffset,
+                    scope.Length);
+                names.Clear();
+                slotNames.Clear();
+                foreach (EntityRegistry.LocalVariableRecord variable in scope.Variables)
+                {
+                    if (!names.Add(variable.Name))
+                    {
+                        ReportError(
+                            DiagnosticIds.LocalNameDeclaredTwiceInScope,
+                            string.Format(DiagnosticMessageTemplates.LocalNameDeclaredTwiceInScope, variable.Name),
+                            variable.Location);
+                    }
+
+                    if (!slotNames.TryAdd(variable.Slot, variable.Name))
+                    {
+                        ReportError(
+                            DiagnosticIds.LocalSlotNamedTwiceInScope,
+                            string.Format(
+                                DiagnosticMessageTemplates.LocalSlotNamedTwiceInScope,
+                                variable.Name,
+                                variable.Slot,
+                                slotNames[variable.Slot]),
+                            variable.Location);
+                    }
+
+                    _pdbBuilder.AddLocalVariable(
+                        LocalVariableAttributes.None,
+                        variable.Slot,
+                        _pdbBuilder.GetOrAddString(variable.Name));
+                }
             }
         }
 
@@ -743,11 +847,11 @@ namespace ILAssembler
         /// MethodDebugInformation row then names.
         /// </param>
         /// <remarks>
-        /// The header is the LocalSignature, the StandAloneSig row number of the body's local signature or 0 when
-        /// the body has none, followed, when the points span several documents, by the InitialDocument: the
-        /// document of the first point. A document-record precedes each non-hidden point whose document differs
-        /// from the current one. A hidden point has no document-record of its own and belongs to the current
-        /// document. This is the encoding native ilasm writes.
+        /// The header is the LocalSignature, the StandAloneSig row number of the body's local signature or 0
+        /// when the body has none, followed, when the points span several documents, by the InitialDocument:
+        /// the document of the first point. A document-record precedes each non-hidden point whose
+        /// document differs from the current one. A hidden point has no document-record of its own and
+        /// belongs to the current document.
         /// </remarks>
         private static BlobBuilder EncodeSequencePoints(
             List<EntityRegistry.SequencePoint> sequencePoints,
@@ -846,11 +950,6 @@ namespace ILAssembler
         /// </summary>
         private void ApplyDebuggableAttribute()
         {
-            if (_entityRegistry.Assembly is null)
-            {
-                return;
-            }
-
             // DebuggingModes enum values from System.Diagnostics.DebuggableAttribute:
             // None = 0x00, Default = 0x01, IgnoreSymbolStoreSequencePoints = 0x02,
             // EnableEditAndContinue = 0x04, DisableOptimizations = 0x100
@@ -873,12 +972,10 @@ namespace ILAssembler
                 coreAsmRef,
                 new TypeName(null, "System.Diagnostics.DebuggableAttribute"));
 
-            // Create reference to nested type DebuggingModes
             var debuggingModesType = _entityRegistry.GetOrCreateTypeReference(
                 debuggableAttrType,
                 new TypeName(null, "DebuggingModes"));
 
-            // Create constructor signature: .ctor(DebuggingModes)
             BlobBuilder ctorSig = new();
             var sigEncoder = new BlobEncoder(ctorSig);
             sigEncoder.MethodSignature(SignatureCallingConvention.Default, 0, isInstanceMethod: true)
@@ -888,15 +985,18 @@ namespace ILAssembler
 
             var ctor = _entityRegistry.CreateLazilyRecordedMemberReference(debuggableAttrType, ".ctor", ctorSig);
 
-            // Create custom attribute blob: prolog (0x0001) + int32 value + named args count (0x0000)
             BlobBuilder attrValue = new();
             attrValue.WriteUInt16(0x0001); // Prolog
-            attrValue.WriteInt32(debuggingModes); // DebuggingModes value
+            attrValue.WriteInt32(debuggingModes);
             attrValue.WriteUInt16(0x0000); // No named arguments
 
             // Create and attach the custom attribute
             var customAttr = _entityRegistry.CreateCustomAttribute(ctor, attrValue);
-            customAttr.Owner = _entityRegistry.Assembly;
+            // Netmodules carry assembly attributes on this TypeRef for the assembly linker.
+            customAttr.Owner = (EntityRegistry.EntityBase?)_entityRegistry.Assembly
+                ?? _entityRegistry.GetOrCreateTypeReference(
+                    coreAsmRef,
+                    new TypeName(null, "System.Runtime.CompilerServices.AssemblyAttributesGoHere"));
         }
 
     }

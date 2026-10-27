@@ -31,7 +31,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// </remarks>
 [GeneratedComClass]
 public sealed unsafe partial class SOSDacImpl
-    : ICustomQueryInterface, ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
+    : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
       ISOSDacInterface6, ISOSDacInterface7, ISOSDacInterface8, ISOSDacInterface9, ISOSDacInterface10,
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
       ISOSDacInterface16, ISOSDacInterface17
@@ -103,15 +103,6 @@ public sealed unsafe partial class SOSDacImpl
         _legacyImpl13 = null;
         _legacyProcess = null;
 #endif
-    }
-
-    CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
-    {
-        ppv = default;
-
-        return iid == typeof(ICLRDataEnumMemoryRegions).GUID
-            ? CustomQueryInterfaceResult.Failed
-            : CustomQueryInterfaceResult.NotHandled;
     }
 
     #region ISOSDacInterface
@@ -2647,6 +2638,8 @@ public sealed unsafe partial class SOSDacImpl
                 // kStateActive
                 case RejitState.Active:
                     flags = DacpReJitData.Flags.kActive;
+                    break;
+                case RejitState.Unknown:
                     break;
                 default:
                     Debug.Fail("Unknown RejitState. cDAC should be updated to understand this new state.");
@@ -5706,8 +5699,11 @@ public sealed unsafe partial class SOSDacImpl
                     case RejitState.Active:
                         pRejitData->flags = DacpReJitData2.Flags.kActive;
                         break;
+                    case RejitState.Unknown:
+                        pRejitData->flags = DacpReJitData2.Flags.kUnknown;
+                        break;
                     default:
-                        Debug.Assert(true, "Unknown SharedRejitInfo state.  cDAC should be updated to understand this new state.");
+                        Debug.Fail("Unknown SharedRejitInfo state.  cDAC should be updated to understand this new state.");
                         pRejitData->flags = DacpReJitData2.Flags.kUnknown;
                         break;
                 }
