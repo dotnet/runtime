@@ -169,6 +169,10 @@ internal sealed partial class GrammarActions
             ? (long)directiveToken.Line + (value.AppliesToNextLine ? 1 : 0)
             : null;
         _lastSequencePointSpan = null;
+        if (_currentMethod is not null)
+        {
+            _currentMethod.LastRejectedSequencePointSpan = null;
+        }
     }
 
     private bool ValidateSourceDirective(SourceDirectiveValue value, IToken directiveToken)
@@ -265,12 +269,11 @@ internal sealed partial class GrammarActions
         }
 
         var span = new SequencePointSpan(document, startLine, startColumn, endLine, endColumn);
-        if (_lastSequencePointSpan == span)
+        if (_lastSequencePointSpan == span || method.LastRejectedSequencePointSpan == span)
         {
             return;
         }
 
-        _lastSequencePointSpan = span;
         int ilOffset = method.Definition.MethodBody.Offset;
         var point = new EntityRegistry.SequencePoint(document, ilOffset, startLine, startColumn, endLine, endColumn);
         List<EntityRegistry.SequencePoint> sequencePoints = method.Definition.DebugInfo.SequencePoints;
@@ -289,6 +292,7 @@ internal sealed partial class GrammarActions
                 int delta = startLine - previous.StartLine;
                 if (delta is < -0x10000000 or > 0x0fffffff)
                 {
+                    method.LastRejectedSequencePointSpan = span;
                     ReportError(
                         DiagnosticIds.InvalidSequencePoint,
                         DiagnosticMessageTemplates.SequencePointLineDeltaOutOfRange,
@@ -311,6 +315,9 @@ internal sealed partial class GrammarActions
         {
             sequencePoints.Add(point);
         }
+
+        _lastSequencePointSpan = span;
+        method.LastRejectedSequencePointSpan = null;
     }
 
     /// <summary>Gets the <c>.line</c> state of the source a token was read from, creating it on first use.</summary>

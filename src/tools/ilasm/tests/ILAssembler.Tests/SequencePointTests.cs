@@ -149,6 +149,51 @@ namespace ILAssembler.Tests
             Assert.Equal(0, blob.RemainingBytes);
         }
 
+        [Theory]
+        [InlineData(0, 0x10000000, false)]
+        [InlineData(0, 0x10000000, true)]
+        [InlineData(0x10000001, 0, false)]
+        [InlineData(0x10000001, 0, true)]
+        public void RejectedStartLineDelta_DoesNotSuppressTheNextMethodsFirstPoint(int firstLine, int secondLine, bool repeatDirective)
+        {
+            string directive = $".line {secondLine},{secondLine} : 1,2 'a.cs'";
+            string source = Program(
+                Method("A", $"""
+                    .line {firstLine},{firstLine} : 1,2 'a.cs'
+                    nop
+                    {directive}
+                    nop
+                    {(repeatDirective ? directive : "")}
+                    ret
+                    """) +
+                Method("B", "nop\nret") +
+                Method("C", "ret"));
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { Debug = true, ErrorTolerant = true });
+
+            Assert.Equal(repeatDirective ? 2 : 1, diagnostics.Length);
+            Assert.All(diagnostics, diagnostic => Assert.Equal(DiagnosticIds.InvalidSequencePoint, diagnostic.Id));
+            using var pdb = new PortablePdbTestReader(Assert.IsType<CompilationResult>(result));
+            AssertSinglePoint("A", firstLine);
+            AssertSinglePoint("B", secondLine);
+            Assert.True(pdb.GetDebugInformation("C").SequencePointsBlob.IsNil);
+
+            void AssertSinglePoint(string method, int line)
+            {
+                MethodDebugInformation info = pdb.GetDebugInformation(method);
+                Assert.False(info.SequencePointsBlob.IsNil);
+                Assert.Equal("a.cs", pdb.GetDocumentName(info.Document));
+                BlobReader blob = pdb.Pdb.GetBlobReader(info.SequencePointsBlob);
+                Assert.Equal(0, blob.ReadCompressedInteger());
+                Assert.Equal(0, blob.ReadCompressedInteger());
+                Assert.Equal(0, blob.ReadCompressedInteger());
+                Assert.Equal(1, blob.ReadCompressedInteger());
+                Assert.Equal(line, blob.ReadCompressedInteger());
+                Assert.Equal(1, blob.ReadCompressedInteger());
+                Assert.Equal(0, blob.RemainingBytes);
+            }
+        }
+
         [Fact]
         public void StartLineDelta_DoesNotCrossMethodBoundaries()
         {
