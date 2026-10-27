@@ -1586,10 +1586,10 @@ namespace System.IO.Compression
                 GetReadModeDecryptionState(password, out aesKeys, out zipCryptoKeys, out zipCryptoCheckByte);
             }
 
-            return OpenInUpdateModeWithPasswordCoreAsync<TAdapter>(loadExistingContent, aesKeys, zipCryptoKeys, zipCryptoCheckByte, cancellationToken);
+            return OpenInUpdateModeCoreAsync<TAdapter>(loadExistingContent, aesKeys, zipCryptoKeys, zipCryptoCheckByte, cancellationToken);
         }
 
-        private async ValueTask<Stream> OpenInUpdateModeWithPasswordCoreAsync<TAdapter>(bool loadExistingContent, WinZipAesKeyMaterial? aesKeys, ZipCryptoKeys? zipCryptoKeys, byte zipCryptoCheckByte, CancellationToken cancellationToken)
+        private async ValueTask<Stream> OpenInUpdateModeCoreAsync<TAdapter>(bool loadExistingContent, WinZipAesKeyMaterial? aesKeys, ZipCryptoKeys? zipCryptoKeys, byte zipCryptoCheckByte, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
             if (loadExistingContent)
