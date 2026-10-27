@@ -258,6 +258,26 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(new BoolAttribute(true), objVals[0]);
         }
 
+        [Fact]
+        public void EnumNotCreated_UsedByCreatedType_ThrowsWithHelpfulMessage()
+        {
+            EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
+            TypeBuilder type = ((ModuleBuilder)enumBuilder.Module).DefineType("TestType", TypeAttributes.Public);
+
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(object), Type.EmptyTypes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4_0);
+            ilGenerator.Emit(OpCodes.Box, enumBuilder);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateType();
+
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => createdType.GetMethod("Method").Invoke(null, null));
+            TypeLoadException typeLoadException = Assert.IsType<TypeLoadException>(ex.InnerException);
+            if (!PlatformDetection.IsMonoRuntime)
+                Assert.Contains("CreateType", typeLoadException.Message);
+        }
+
         public class BoolAttribute : Attribute
         {
             private bool _b;

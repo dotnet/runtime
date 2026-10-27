@@ -9311,6 +9311,7 @@ protected:
     VNSet*         optAssertionVNsMap = nullptr;
     AssertionIndex optAssertionCount  = 0; // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
+    AssertionIndex optAssertionTabCapacity;
     bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
     bool           optCanPropLclVar;
