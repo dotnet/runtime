@@ -79,7 +79,7 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     MethodDesc * pFunc = GetFunction();
     _ASSERTE(pFunc != NULL);
 
-    // The first GC walk caches the lookup before any relocation walk can see an updated receiver.
+    // The map supplies the stack-pop size without requiring signature value-type layouts.
     PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc(nullptr);
     UpdateRegDisplayHelper(pRD, pGCRefMap != nullptr ? CbStackPopUsingGCRefMap(pGCRefMap) : pFunc->CbStackPop());
 

@@ -153,7 +153,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            // Plain signature references alias the tail; map-bearing imports reference the prefix.
+            // Keep the symbol at the fixup opcode so plain signature consumers do not mistake
+            // the preceding GCRefMap for a fixup.
             dataBuilder.AddSymbol(this);
 
             // Optimize some of the fixups into a more compact form.

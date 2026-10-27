@@ -760,10 +760,10 @@ namespace
                ((pVector512MT != nullptr) && pMT->HasSameTypeDefAs(pVector512MT));
     }
 
-    // Walks a known multi-slot CoreLib type's first fields down to the wasm value type its slots use,
-    // and reports that slot's width. This is safe only after IsWasmMultiSlotTypeHandle succeeds: the
-    // known integer and decimal types have homogeneous uint64 fields, and the known vectors have
-    // homogeneous vector fields. It is not valid for an arbitrary aggregate.
+    // Only IsWasmMultiSlotTypeHandle's homogeneous CoreLib types reach this function:
+    // Int128/UInt128/Decimal128 use i64 slots, and Vector256<T>/Vector512<T> use v128 slots.
+    // Recursing through their first field identifies the slot width; arbitrary aggregates
+    // must not be classified this way.
     static bool GetWasmSlotSize(TypeHandle th, uint32_t* pSlotSize)
     {
         _ASSERTE(IsWasmMultiSlotTypeHandle(th));
@@ -809,6 +809,9 @@ namespace
                 return false;
             }
 
+            // GetSignatureKey is NOTHROW/GC_NOTRIGGER. Signature preparation supplies value-type
+            // layouts, but need not load MethodTables for their primitive fields. Read primitive
+            // kinds directly and use existing handles for nested value types to avoid type loading.
             FieldDesc* pField = pMT->GetApproxFieldDescListRaw();
             CorElementType fieldType = pField->GetFieldType();
             if (fieldType == ELEMENT_TYPE_I8 || fieldType == ELEMENT_TYPE_U8)

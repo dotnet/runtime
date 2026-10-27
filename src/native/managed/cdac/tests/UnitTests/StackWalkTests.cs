@@ -1258,7 +1258,7 @@ public unsafe class StackWalkTests
             byte[] maps = new byte[mapOffset + gcRefMap.Length];
             if (!inlineGCRefMap)
             {
-                // The first two import entries have empty maps; select the third entry.
+                // Use the third import to exercise skipping the two preceding empty maps.
                 helpers.Write(maps.AsSpan(0), 4u);
             }
             gcRefMap.CopyTo(maps, mapOffset);
