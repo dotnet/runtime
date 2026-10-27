@@ -195,32 +195,52 @@
   <!-- OperatingSystem.IsXxx() are constants in the OS-specific System.Private.CoreLib, but the library build
        resolves them from the System.Runtime reference assembly. Substitute their values for the OS being
        built so that the library build trims code guarded by checks for other operating systems.
-       Only applied to shared framework libraries built for the current TargetOS: binaries shipped in
-       packages (e.g. a runtimes/unix asset) must remain valid on every OS that their flavor covers. -->
+       Not applied to packages: binaries shipped in them (e.g. a runtimes/unix asset) must remain valid on every
+       OS that their flavor covers. -->
   <PropertyGroup>
     <!-- The linux, ios and tvos flavors are also used by the TargetOS values that fall back to them:
          android and openharmony (linux), maccatalyst and iossimulator (ios), tvossimulator (tvos). -->
-    <_OSSubstitutionsApply Condition="'$(TargetPlatformIdentifier)' != '' and
-                                      '$(TargetOS)' != '' and
+    <_OSSubstitutionsFlavorMatchesTargetOS Condition="'$(TargetOS)' != '' and
+                                                      ('$(TargetPlatformIdentifier)' == '$(TargetOS)' or
+                                                       ('$(TargetPlatformIdentifier)' == 'unix' and '$(TargetsUnix)' == 'true') or
+                                                       ('$(TargetPlatformIdentifier)' == 'linux' and '$(TargetsLinux)' == 'true') or
+                                                       ('$(TargetPlatformIdentifier)' == 'ios' and ('$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true')) or
+                                                       ('$(TargetPlatformIdentifier)' == 'tvos' and '$(TargetstvOS)' == 'true'))">true</_OSSubstitutionsFlavorMatchesTargetOS>
+    <!-- The OS whose values are substituted: the TargetOS for the flavors it uses, otherwise the OS of an OS-specific
+         flavor, so that a flavor produces the same binary regardless of the TargetOS the build was invoked for.
+         The unix flavor covers multiple operating systems, so it is only substituted when built for one of them. -->
+    <_OSSubstitutionsTargetOS Condition="'$(_OSSubstitutionsFlavorMatchesTargetOS)' == 'true'">$(TargetOS)</_OSSubstitutionsTargetOS>
+    <_OSSubstitutionsTargetOS Condition="'$(_OSSubstitutionsFlavorMatchesTargetOS)' != 'true' and '$(TargetPlatformIdentifier)' != 'unix'">$(TargetPlatformIdentifier.ToLowerInvariant())</_OSSubstitutionsTargetOS>
+    <_OSSubstitutionsApply Condition="'$(_OSSubstitutionsTargetOS)' != '' and
                                       '$(IsPackable)' != 'true' and
                                       '$(BuildAllConfigurations)' != 'true' and
-                                      '$(ILLinkSubstitutionsLibraryBuildXml)' == '' and
-                                      ('$(TargetPlatformIdentifier)' == '$(TargetOS)' or
-                                       ('$(TargetPlatformIdentifier)' == 'unix' and '$(TargetsUnix)' == 'true') or
-                                       ('$(TargetPlatformIdentifier)' == 'linux' and '$(TargetsLinux)' == 'true') or
-                                       ('$(TargetPlatformIdentifier)' == 'ios' and ('$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true')) or
-                                       ('$(TargetPlatformIdentifier)' == 'tvos' and '$(TargetstvOS)' == 'true'))">true</_OSSubstitutionsApply>
+                                      '$(ILLinkSubstitutionsLibraryBuildXml)' == ''">true</_OSSubstitutionsApply>
   </PropertyGroup>
+
+  <Target Name="_GetTargetOperatingSystemChecks"
+          Returns="@(TargetOperatingSystemCheck)" />
 
   <Target Name="_GenerateOperatingSystemSubstitutions"
           Condition="'$(_OSSubstitutionsApply)' == 'true' and '$(ILLinkTrimAssembly)' == 'true'"
           BeforeTargets="ILLinkTrimAssembly">
+    <ItemGroup Condition="'$(_OSSubstitutionsTargetOS)' == '$(TargetOS)'">
+      <_OSSubstitutionsCheck Include="@(TargetOperatingSystemCheck)" />
+    </ItemGroup>
+
+    <!-- Evaluate the checks for the flavor's OS from the same definitions in RuntimeIdentifier.props. -->
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Targets="_GetTargetOperatingSystemChecks"
+             Properties="TargetOS=$(_OSSubstitutionsTargetOS);TargetFramework=$(TargetFramework)"
+             Condition="'$(_OSSubstitutionsTargetOS)' != '$(TargetOS)'">
+      <Output TaskParameter="TargetOutputs" ItemName="_OSSubstitutionsCheck" />
+    </MSBuild>
+
     <PropertyGroup>
       <ILLinkSubstitutionsLibraryBuildXml>$(IntermediateOutputPath)ILLink.Substitutions.OperatingSystem.LibraryBuild.xml</ILLinkSubstitutionsLibraryBuildXml>
       <_OSSubstitutions><![CDATA[<linker>
   <assembly fullname="System.Runtime">
     <type fullname="System.OperatingSystem">
-@(TargetOperatingSystemCheck->'      <method signature="System.Boolean %(Identity)()" body="stub" value="%(Value)" />', '%0A')
+@(_OSSubstitutionsCheck->'      <method signature="System.Boolean %(Identity)()" body="stub" value="%(Value)" />', '%0A')
     </type>
   </assembly>
 </linker>]]></_OSSubstitutions>
