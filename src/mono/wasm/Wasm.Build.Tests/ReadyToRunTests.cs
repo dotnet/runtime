@@ -11,6 +11,7 @@ using Microsoft.NET.WebAssembly.Webcil;
 using Microsoft.Playwright;
 using Xunit;
 using Xunit.Abstractions;
+using SL = Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -73,6 +74,49 @@ namespace Wasm.Build.Tests
         [TestCategory("no-workload")]
         public Task PublishRunAllPagesNativeRelink(Configuration config, bool trimmed)
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: true, composite: false);
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(Configuration.Debug, false, null, null, "", false, false)]
+        [InlineData(Configuration.Release, false, null, null, "", true, true)]
+        [InlineData(Configuration.Release, true, null, null, "", false, false)]
+        [InlineData(Configuration.Release, true, "true", "false", "", true, false)]
+        [InlineData(Configuration.Release, true, "false", "true", "", false, true)]
+        [InlineData(Configuration.Debug, false, "true", "true", "--test-extra-flag", true, true)]
+        [TestCategory("no-workload")]
+        public void PublishCrossgen2ArgumentsReflectWasmDebugInfoProperties(
+            Configuration config,
+            bool debuggerSupport,
+            string? stripInliningInfo,
+            string? stripDebugInfo,
+            string extraCrossgen2Args,
+            bool expectStripInliningInfo,
+            bool expectStripDebugInfo)
+        {
+            string extraProperties = $"<PublishReadyToRun>true</PublishReadyToRun><DebuggerSupport>{debuggerSupport.ToString().ToLowerInvariant()}</DebuggerSupport>";
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_args",
+                extraProperties: extraProperties);
+
+            List<string> extraBuildArgs = [GetR2RBuildArgs(config, composite: false)];
+            if (stripInliningInfo is not null)
+                extraBuildArgs.Add($"-p:PublishReadyToRunStripInliningInfo={stripInliningInfo}");
+            if (stripDebugInfo is not null)
+                extraBuildArgs.Add($"-p:PublishReadyToRunStripDebugInfo={stripDebugInfo}");
+            if (extraCrossgen2Args.Length > 0)
+                extraBuildArgs.Add($"-p:PublishReadyToRunCrossgen2ExtraArgs={extraCrossgen2Args}");
+
+            (_, string binlogPath) = BuildProjectWithoutAssert(config, info.ProjectName,
+                new PublishOptions(ExtraMSBuildArgs: string.Join(" ", extraBuildArgs)));
+            AssertPerAppCrossgenRan(config, expected: true);
+
+            string crossgen2Args = GetCrossgen2ExtraCommandLineArgs(binlogPath);
+            string expectedWasmDebugInfo = config == Configuration.Debug ? "--wasm-debug-info=all" : "--wasm-debug-info=none";
+            Assert.Contains(expectedWasmDebugInfo, crossgen2Args);
+            Assert.Equal(expectStripInliningInfo, crossgen2Args.Contains("--strip-inlining-info", System.StringComparison.Ordinal));
+            Assert.Equal(expectStripDebugInfo, crossgen2Args.Contains("--strip-debug-info", System.StringComparison.Ordinal));
+            Assert.Contains("--opt-cross-module:*", crossgen2Args);
+            if (extraCrossgen2Args.Length > 0)
+                Assert.Contains(extraCrossgen2Args, crossgen2Args);
+        }
 
         private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink, bool composite)
         {
@@ -262,6 +306,26 @@ namespace Wasm.Build.Tests
                 Assert.True(imageCount > 0, $"Expected per-app ReadyToRun images under '{r2rDir}'.");
             else
                 Assert.True(imageCount == 0, $"Expected no per-app crossgen2 output, found {imageCount} file(s) under '{r2rDir}'.");
+        }
+
+        private static string GetCrossgen2ExtraCommandLineArgs(string binlogPath)
+        {
+            SL.Build build = SL.BinaryLog.ReadBuild(binlogPath);
+            List<string> extraArgs = [];
+            build.VisitAllChildren<SL.Task>(task =>
+            {
+                if (task.Name != "RunReadyToRunCompiler")
+                    return;
+
+                task.VisitAllChildren<SL.TaskParameterProperty>(parameter =>
+                {
+                    if (parameter.ParameterName == "Crossgen2ExtraCommandLineArgs")
+                        extraArgs.Add(parameter.Value);
+                });
+            });
+
+            Assert.NotEmpty(extraArgs);
+            return string.Join(" ", extraArgs);
         }
 
         // Wire the in-build crossgen2 when this leg shipped it, and for composite the wasm-aware Crossgen2Tasks shim:
