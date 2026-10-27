@@ -238,9 +238,6 @@ enum MethodDescFlags
     // Method is static
     mdfStatic                           = 0x0080,
 
-    mdfValueTypeParametersWalked        = 0x0100, // Indicates that all typeref's in the signature of the method have been resolved
-                                                  // to typedefs (or that process failed).
-
     mdfValueTypeParametersLoaded        = 0x0200, // Indicates if the valuetype parameter types have been loaded.
 
     // Duplicate method. When a method needs to be placed in multiple slots in the
@@ -2307,20 +2304,6 @@ public:
     }
 
     SIZE_T SizeOf();
-
-    inline BOOL HaveValueTypeParametersBeenWalked()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdfValueTypeParametersWalked) != 0;
-    }
-
-#ifndef DACCESS_COMPILE
-    inline void SetValueTypeParametersWalked()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags(mdfValueTypeParametersWalked, TRUE);
-    }
-#endif // DACCESS_COMPILE
 
     inline BOOL HaveValueTypeParametersBeenLoaded()
     {

@@ -4419,11 +4419,6 @@ moveToNextToken:
         // move to next argument token
         IfFailThrowBF(ptr.SkipExactlyOne(), BFA_BAD_SIGNATURE, pModule);
     }
-
-    if (!HaveValueTypeParametersBeenWalked())
-    {
-        SetValueTypeParametersWalked();
-    }
 }
 
 PrecodeType MethodDesc::GetPrecodeType()
