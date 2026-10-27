@@ -414,14 +414,17 @@ namespace System.Diagnostics
             // If the token can be canceled, the registration will ensure that the process is killed if cancellation is requested.
             // In such case, the WaitForExitAsync will complete when the process exits.
 
-            await using CancellationTokenRegistration? registration = !cancellationToken.CanBeCanceled ? null : cancellationToken.UnsafeRegister(sph =>
+            CancellationTokenRegistration registration = !cancellationToken.CanBeCanceled ? default : cancellationToken.UnsafeRegister(sph =>
             {
                 ((SafeProcessHandle)sph!).Canceled = true;
 
                 try { Kill(entireProcessTree: true); } catch { }
             }, safeProcessHandle);
 
-            return await safeProcessHandle.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+            await using (registration.ConfigureAwait(false))
+            {
+                return await safeProcessHandle.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+            }
         }
 
         private static void ThrowIfUseShellExecute(ProcessStartInfo startInfo, string methodName)
