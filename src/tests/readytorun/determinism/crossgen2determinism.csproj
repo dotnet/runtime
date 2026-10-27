@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current" InitialTargets="PrepareDLLs">
+<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, CrossGenTest -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
@@ -15,12 +15,20 @@
     <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\crossgen2\crossgen2smoke.csproj" ReferenceOutputAssembly="false" Private="false" />
     <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 
-  <Target Name="PrepareDLLs">
-    <MSBuild Projects="..\crossgen2\crossgen2smoke.csproj" Properties="OutputPath=$(OutputPath)\crossgen2smoke" />
-    <Delete Files="$(OutputPath)\crossgen2smoke\crossgen2smoke.sh" />
+  <Target Name="PrepareDLLs" AfterTargets="Build" Condition="'$(CLRTestTargetUnsupported)' != 'true'">
+    <PropertyGroup>
+      <SmokeTestOutputPath>$(BaseOutputPathWithConfig)readytorun/crossgen2/crossgen2smoke</SmokeTestOutputPath>
+    </PropertyGroup>
+    <ItemGroup>
+      <SmokeTestAssemblies Include="$(SmokeTestOutputPath)/crossgen2smoke.dll" />
+      <SmokeTestAssemblies Include="$(SmokeTestOutputPath)/helperdll.dll" />
+      <SmokeTestAssemblies Include="$(SmokeTestOutputPath)/helperildll.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SmokeTestAssemblies)" DestinationFolder="$(OutputPath)/crossgen2smoke" />
   </Target>
 
   <PropertyGroup>

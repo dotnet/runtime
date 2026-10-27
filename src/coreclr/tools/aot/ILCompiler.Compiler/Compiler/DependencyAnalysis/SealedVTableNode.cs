@@ -8,6 +8,7 @@ using System.Diagnostics;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -244,20 +245,24 @@ namespace ILCompiler.DependencyAnalysis
             return true;
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             BuildSealedVTableSlots(factory, relocsOnly: true);
 
-            var result = new DependencyList(_nonRelocationDependencies ?? []);
+            if (_nonRelocationDependencies is not null)
+            {
+                foreach (DependencyListEntry dependency in _nonRelocationDependencies)
+                {
+                    sink.Add(dependency);
+                }
+            }
 
             // When building the sealed vtable, we consult the vtable layout of these types
             TypeDesc declType = _type.GetClosestDefType();
-            result.Add(factory.VTable(declType), "VTable of the type");
+            sink.Add(factory.VTable(declType), "VTable of the type");
 
             foreach (var interfaceType in declType.RuntimeInterfaces)
-                result.Add(factory.VTable(interfaceType), "VTable of the interface");
-
-            return result;
+                sink.Add(factory.VTable(interfaceType), "VTable of the interface");
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
@@ -274,6 +279,13 @@ namespace ILCompiler.DependencyAnalysis
 
                 for (int i = 0; i < _sealedVTableEntries.Count; i++)
                 {
+                    // TODO: shared IDynamicInterfaceCastable methods are problematic on WASM
+                    if (factory.Target.IsWasm && isSharedDynamicInterfaceCastableImpl)
+                    {
+                        objData.EmitZeroPointer();
+                        continue;
+                    }
+
                     IMethodNode relocTarget = _sealedVTableEntries[i].Target;
 
                     int delta = isSharedDynamicInterfaceCastableImpl ? DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag : 0;

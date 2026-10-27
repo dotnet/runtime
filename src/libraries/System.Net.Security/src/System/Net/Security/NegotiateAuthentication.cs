@@ -91,9 +91,22 @@ namespace System.Net.Security
         }
 
         /// <summary>
-        /// Indicates whether authentication was successfully completed and the session
-        /// was established.
+        /// Gets a value that indicates whether the authentication exchange has completed.
         /// </summary>
+        /// <value>
+        /// <see langword="true" /> if the authentication exchange has completed; otherwise, <see langword="false" />.
+        /// </value>
+        /// <remarks>
+        /// This property indicates whether the authentication exchange has completed, not whether authentication
+        /// succeeded. A <see langword="true" /> value can be returned after either successful authentication or a
+        /// terminal authentication failure.
+        ///
+        /// To determine whether authentication actually succeeded, inspect the <see cref="NegotiateAuthenticationStatusCode" />
+        /// returned by the most recent call to <see cref="GetOutgoingBlob(ReadOnlySpan{byte}, out NegotiateAuthenticationStatusCode)" />
+        /// or <see cref="GetOutgoingBlob(string, out NegotiateAuthenticationStatusCode)" />. The status is
+        /// <see cref="NegotiateAuthenticationStatusCode.Completed" /> on success; any other value indicates that
+        /// authentication didn't complete successfully.
+        /// </remarks>
         public bool IsAuthenticated => _isDisposed ? false : _pal.IsAuthenticated;
 
         /// <summary>
@@ -157,7 +170,7 @@ namespace System.Net.Security
         /// </summary>
         /// <remarks>
         /// For server-side of the authentication the property returns the target name
-        /// specified by the client after successful authentication (see <see cref="IsAuthenticated" />).
+        /// specified by the client after authentication completes successfully.
         ///
         /// For client-side of the authentication the property returns the target name
         /// specified in <see cref="NegotiateAuthenticationClientOptions.TargetName" />.

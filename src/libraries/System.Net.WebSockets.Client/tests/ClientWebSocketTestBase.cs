@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Functional.Tests;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -35,7 +36,7 @@ namespace System.Net.WebSockets.Client.Tests
         public static object[][] ToMemberData<TA, TB, TC>(IEnumerable<TA> dataA, IEnumerable<TB> dataB, IEnumerable<TC> dataC)
             => dataA.SelectMany(a => dataB.SelectMany(b => dataC.Select(c => new object[] { a, b, c }))).ToArray();
 
-        public const int TimeOutMilliseconds = 30000;
+        public const int TimeOutMilliseconds = TestHelper.PassingTestTimeoutMilliseconds;
         public const int CloseDescriptionMaxLength = 123;
         public readonly ITestOutputHelper _output = output;
 

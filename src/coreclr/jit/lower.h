@@ -154,6 +154,7 @@ private:
     bool     LowerCallMemset(GenTreeCall* call, GenTree** next);
     void     LowerCFGCall(GenTreeCall* call);
 #ifdef TARGET_WASM
+    void AddWasmPortableEntryPointArg(GenTreeCall* call, GenTree* value);
     void LowerPEPCall(GenTreeCall* call);
 #endif
     void MovePutArgNodesUpToCall(GenTreeCall* call);
@@ -489,8 +490,10 @@ private:
     void     LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
     GenTree* LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
     GenTree* LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
-    GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
-    GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicCreateWithInserts(GenTreeHWIntrinsic* node, const simd_t* simdVal, simdmask_t cnsMask);
+    static unsigned NonZeroConstantElementCount(const simd_t* simdVal, simdmask_t cnsMask, var_types simdBaseType);
+    GenTree*        LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
+    GenTree*        LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
     void     LowerFusedMultiplyOp(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);

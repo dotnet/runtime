@@ -92,7 +92,10 @@ RSInitHolder<T>::~RSInitHolder()
     if (m_pObject != NULL)
     {
         CordbProcess * pProcess = m_pObject->GetProcess();
-        RSLockHolder lockHolder(pProcess->GetProcessLock());
+        RSLock *pLock = pProcess == nullptr ? nullptr : pProcess->GetProcessLock();
+        RSLockHolder lockHolder(pLock, FALSE);
+        if (pLock != nullptr)
+            lockHolder.Acquire();
 
         m_pObject->Neuter();
 
@@ -630,19 +633,14 @@ inline void CordbSafeHashTable<T>::CopyToArray(RSPtrArray<T> * pArray)
     pArray->AllocOrThrow(count);
 
 
-    HASHFIND find;
     UINT32 idx = 0;
 
-    T * pCordbBase = FindFirst(&find);
-    while(idx < count)
+    for (Iterator iterator = Begin(), end = End(); iterator != end; iterator++)
     {
-        pArray->Assign(idx, pCordbBase);
-        idx++;
-        pCordbBase = FindNext(&find);
+        pArray->Assign(idx++, static_cast<T *>(*iterator));
     }
 
-    // Assert is at end.
-    _ASSERTE(pCordbBase == NULL);
+    _ASSERTE(idx == count);
 }
 
 // Empty the contents of the hash to an array. Array gets ownersship.
@@ -660,25 +658,21 @@ inline void CordbSafeHashTable<T>::TransferToArray(RSPtrArray<T> * pArray)
 {
     // Assumes caller has necessary locks
 
-    HASHFIND find;
     UINT32 count = GetCount();
     UINT32 idx = 0;
 
     pArray->AllocOrThrow(count);
 
-    while(idx < count)
+    for (Iterator iterator = Begin(), end = End(); iterator != end; iterator++)
     {
-        T * pCordbBase = FindFirst(&find);
-        _ASSERTE(pCordbBase != NULL);
-        pArray->Assign(idx, pCordbBase);
+        T *pCordbBase = static_cast<T *>(*iterator);
+        pArray->Assign(idx++, pCordbBase);
 
-        idx++;
-        // We're removing while iterating the collection.
-        // But we reset the iteration each time by calling FindFirst.
         RemoveBase((ULONG_PTR)pCordbBase->m_id); // this will call release, adjust GetCount()
     }
 
     // Assert is at end.
+    _ASSERTE(idx == count);
     _ASSERTE(GetCount() == 0);
 }
 
@@ -697,19 +691,11 @@ inline void CordbSafeHashTable<T>::NeuterAndClear(RSLock * pLock)
 {
     _ASSERTE(pLock->HasLock());
 
-    HASHFIND find;
-    UINT32 count = GetCount();
-    UINT32 idx = 0;
-
-    while(idx < count)
+    for (Iterator iterator = Begin(), end = End(); iterator != end; iterator++)
     {
-        T * pCordbBase = FindFirst(&find);
-        _ASSERTE(pCordbBase != NULL);
+        T *pCordbBase = static_cast<T *>(*iterator);
         pCordbBase->Neuter();
-        idx++;
 
-        // We're removing while iterating the collection.
-        // But we reset the iteration each time by calling FindFirst.
         RemoveBase((ULONG_PTR)pCordbBase->m_id); // this will call release, adjust GetCount()
     }
 

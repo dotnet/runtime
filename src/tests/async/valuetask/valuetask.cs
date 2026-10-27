@@ -5,14 +5,12 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
-
-[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2ValueTask
 {
     [Fact]
-    public static int TestBasic()
+    public static async Task<int> TestBasic()
     {
-        return (int)AsyncTestBasicEntryPoint(100).Result;
+        return (int)(await AsyncTestBasicEntryPoint(100));
     }
 
     private static ValueTask<int> AsyncTestBasicEntryPoint(int arg)
@@ -27,12 +25,7 @@ public class Async2ValueTask
     }
 
     [Fact]
-    public static void RuntimeAsyncCallableThunks()
-    {
-        RuntimeAsyncCallableThunksAsync().GetAwaiter().GetResult();
-    }
-
-    private static async ValueTask RuntimeAsyncCallableThunksAsync()
+    public static async ValueTask RuntimeAsyncCallableThunksAsync()
     {
         int result = await Foo();
         Assert.Equal(123, result);

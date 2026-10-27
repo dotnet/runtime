@@ -695,8 +695,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     if (isa == InstructionSet_Vector)
     {
-        return impXplatIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseType, retType, simdSize,
-                                 mustExpand);
+        return impXplatIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseType, retType, simdSize);
     }
 
     const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);

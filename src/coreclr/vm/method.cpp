@@ -351,6 +351,8 @@ LPCUTF8 MethodDesc::GetNameThrowing()
     CONTRACTL
     {
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1537,6 +1539,16 @@ DWORD MethodDesc::GetAttrs() const
         _ASSERTE(!"If this ever fires, then this method should return HRESULT");
         return 0;
     }
+
+    if (IsReturnDroppingThunk())
+    {
+        // A return-dropping thunk is synthesized by the runtime and always has an implementation -
+        // it calls the ordinary async variant virtually and drops the result.
+        // The metadata method that the thunk is derived from may be abstract (i.e. when the covariant
+        // override that needs the thunk is abstract), but the thunk itself never is.
+        dwAttributes &= ~mdAbstract;
+    }
+
     return dwAttributes;
 }
 
@@ -2006,9 +2018,7 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis, MethodTab
 {
     CONTRACTL
     {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(IsVtableMethod());
         PRECONDITION(HasMethodInstantiation());
@@ -2073,11 +2083,9 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
 {
     CONTRACTL
     {
-        THROWS;
+        STANDARD_VM_CHECK;
         // On portable entrypoint platforms resolving the entrypoint may need to run the prestub
         // (e.g. to publish R2R native code for the method), which can trigger a GC.
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
         PRECONDITION(HasUnmanagedCallersOnlyAttribute());
     }
     CONTRACTL_END;
@@ -2098,13 +2106,8 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
 //*******************************************************************************
 PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
-    CONTRACTL
-    {
-        THROWS;                 // Resolving a generic virtual method can throw
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    // Resolving a generic virtual method can throw.
+    STANDARD_VM_CONTRACT;
 
     PRECONDITION(IsVtableMethod());
 
@@ -2114,20 +2117,12 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Meth
         CheckRestore();
         MethodDesc *pResultMD = ResolveGenericVirtualMethod(orThis, pMTOfThis);
 
-        // If we're remoting this call we can't call directly on the returned
-        // method desc, we need to go through a stub that guarantees we end up
-        // in the remoting handler. The stub we use below is normally just for
-        // non-virtual calls on virtual methods (that have the same problem
-        // where we could end up bypassing the remoting system), but it serves
-        // our purpose here (basically pushes our correctly instantiated,
-        // resolved method desc on the stack and calls the remoting code).
-
         return pResultMD->GetSingleCallableAddrOfCode();
     }
 
     if (IsInterface())
     {
-        MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH,this,orThis, pMTOfThis);
+        MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, this, orThis, pMTOfThis);
         return pTargetMD->GetSingleCallableAddrOfCode();
     }
 
@@ -2138,9 +2133,7 @@ MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, Method
 {
     CONTRACTL
     {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(IsVtableMethod());
         PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
@@ -2172,13 +2165,7 @@ MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, Method
 // handling of context proxies and other thunking layers.
 PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
-    CONTRACTL
-    {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     MethodDesc *pTargetMD = GetMethodDescOfVirtualizedCode(orThis, pMTOfThis, staticTH);
     return pTargetMD->GetMultiCallableAddrOfCode();
@@ -3006,7 +2993,7 @@ PCODE MethodDesc::GetPortableEntryPointIfExists()
 // fill in the native code slot, but if it is possible to do so it will.
 // This must be called before any R2R code may call the target method.
 //
-// This is called from GetMultiCallableAddrOfCode and from R2R virtual dispatch fixup.
+// This is called from GetMultiCallableAddrOfCode and from R2R external method fixups.
 void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
 {
     WRAPPER_NO_CONTRACT;
@@ -3217,8 +3204,10 @@ bool MethodDesc::DetermineIsEligibleForTieredCompilationInvariantForAllMethodsIn
         // be tiered currently, so make the method ineligible for tiering to avoid some unnecessary overhead
         (g_pConfig->TieredCompilation_QuickJit() || GetMethodTable()->GetModule()->IsReadyToRun()) &&
 
+#ifdef PROFILING_SUPPORTED
         // Policy - Tiered compilation is not disabled by the profiler
         !CORProfilerDisableTieredCompilation() &&
+#endif // PROFILING_SUPPORTED
 
         // Policy - Generating optimized code is not disabled
         !IsJitOptimizationDisabledForAllMethodsInChunk();
@@ -3426,6 +3415,9 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
     _ASSERTE(IsVersionable());
     _ASSERTE(mayHaveEntryPointSlotsToBackpatch == MayHaveEntryPointSlotsToBackpatch());
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    SetStableEntryPointInterlocked(entryPoint);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (mayHaveEntryPointSlotsToBackpatch)
     {
         TryBackpatchEntryPointSlotsFromPrestub(entryPoint);
@@ -3435,6 +3427,7 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
         _ASSERTE(IsVersionableWithPrecode());
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint, TRUE /* fOnlyRedirectFromPrestub */);
     }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 #endif // FEATURE_CODE_VERSIONING
 
@@ -3492,8 +3485,10 @@ void MethodDesc::ResetCodeEntryPoint()
 #endif
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Resetting the portable entry point alone is sufficient; these targets have no
+    // backpatchable slots or precode to additionally reset.
     ResetPortableEntryPoint();
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
 
     if (MayHaveEntryPointSlotsToBackpatch())
     {
@@ -3506,6 +3501,7 @@ void MethodDesc::ResetCodeEntryPoint()
     {
         GetPrecode()->ResetTargetInterlocked();
     }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 #endif // FEATURE_CODE_VERSIONING
 
@@ -3848,6 +3844,7 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -4104,12 +4101,15 @@ MethodDescChunk::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 //*******************************************************************************
 MethodDesc *MethodDesc::GetInterfaceMD()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         INSTANCE_CHECK;
         PRECONDITION(!IsInterface());
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
     MethodTable *pMT = GetMethodTable();
     return pMT->ReverseInterfaceMDLookup(GetSlot());
 }
@@ -4163,6 +4163,7 @@ void MethodDesc::WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParamete
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -4253,16 +4254,21 @@ PrecodeType MethodDesc::GetPrecodeType()
 #ifndef DACCESS_COMPILE
 void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     // This function ensures that a method is ready for use as a dependency of a native image
     // The current requirement is only that valuetypes can be resolved to their type defs as much
     // as is possible. (If the method is actually called, then this will not throw, but there
     // are cases where we call this method and we are unaware if this method will actually be called
-    // or accessed as a native image dependency. This explains the contract (STANDARD_VM_CONTRACT)
-    //  - This method should be callable only when general purpose VM code can be called
-    // , as well as the TRY/CATCH.
-    //  - This function should not introduce failures
+    // or accessed as a native image dependency.) Resolving valuetypes may throw and trigger GC,
+    // so this method requires general purpose VM execution, but accepts either GC mode (MODE_ANY).
+    // Nonterminal exceptions are swallowed to avoid introducing failures.
 
     EX_TRY
     {
@@ -4274,12 +4280,7 @@ void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
 
 static void CheckForEquivalenceAndLoadType(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     BOOL *pHasEquivalentParam = (BOOL *)pData;
 

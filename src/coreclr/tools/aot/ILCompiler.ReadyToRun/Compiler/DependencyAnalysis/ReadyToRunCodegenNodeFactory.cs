@@ -23,6 +23,7 @@ using ILCompiler.ReadyToRun.TypeSystem;
 using ILCompiler.ReadyToRun;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -224,7 +225,7 @@ namespace ILCompiler.DependencyAnalysis
             return _arrayInterfaceMethods.GetOrAdd((ArrayType)arrayType.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
-        public void AddVirtualMethodDiscoveryDependencies(ref DependencyList dependencies, TypeDesc type)
+        public void AddVirtualMethodDiscoveryDependencies(DependencySink dependencies, TypeDesc type)
         {
             if (CompilationCurrentPhase != 0)
                 return;
@@ -239,14 +240,12 @@ namespace ILCompiler.DependencyAnalysis
                 type.IsDefType &&
                 CompilationModuleGroup.VersionsWithType(type))
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(InheritedVirtualMethods(type), "Inherited virtual/interface methods on type");
             }
             // Arrays implement the generic collection interfaces through SZArrayHelper. Discover those
             // implementations so that e.g. ((ICollection<int>)intArray).Count gets discovered.
             else if (type.IsSzArray)
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(ArrayInterfaceMethods((ArrayType)type), "Array generic interface methods");
             }
         }
@@ -466,6 +465,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new WasmInterpreterToR2RThunkNode(this, key);
             });
 
+            _wasmClosedStaticRetBufThunks = new NodeCache<WasmClosedStaticRetBufThunkKey, WasmClosedStaticRetBufThunkNode>(key =>
+            {
+                return new WasmClosedStaticRetBufThunkNode(this, key.Signature);
+            });
+
             _wasmVirtualDispatchThunks = new NodeCache<WasmVirtualDispatchThunkKey, WasmVirtualDispatchThunkNode>(key =>
             {
                 return new WasmVirtualDispatchThunkNode(this, key.Signature);
@@ -562,6 +566,10 @@ namespace ILCompiler.DependencyAnalysis
             _wasmMethodRelativeVirtualIPs = new(method =>
             {
                 return new WasmMethodRelativeVirtualIPNode(this, method);
+            });
+            _wasmMethodFrameIdentities = new(method =>
+            {
+                return new WasmMethodFrameIdentityNode(this, method);
             });
         }
 
@@ -1019,6 +1027,30 @@ namespace ILCompiler.DependencyAnalysis
             return _wasmInterpreterToR2RThunks.GetOrAdd(wasmSignature);
         }
 
+        private readonly struct WasmClosedStaticRetBufThunkKey : IEquatable<WasmClosedStaticRetBufThunkKey>
+        {
+            public WasmSignature Signature { get; }
+
+            public WasmClosedStaticRetBufThunkKey(WasmSignature signature)
+            {
+                Signature = signature;
+            }
+
+            public bool Equals(WasmClosedStaticRetBufThunkKey other) =>
+                Signature.FuncType.Equals(other.Signature.FuncType);
+
+            public override bool Equals(object obj) =>
+                obj is WasmClosedStaticRetBufThunkKey other && Equals(other);
+
+            public override int GetHashCode() => Signature.FuncType.GetHashCode();
+        }
+
+        private NodeCache<WasmClosedStaticRetBufThunkKey, WasmClosedStaticRetBufThunkNode> _wasmClosedStaticRetBufThunks;
+        public WasmClosedStaticRetBufThunkNode WasmClosedStaticRetBufThunk(WasmSignature wasmSignature)
+        {
+            return _wasmClosedStaticRetBufThunks.GetOrAdd(new WasmClosedStaticRetBufThunkKey(wasmSignature));
+        }
+
         private readonly struct WasmVirtualDispatchThunkKey : IEquatable<WasmVirtualDispatchThunkKey>
         {
             public WasmSignature Signature { get; }
@@ -1470,7 +1502,9 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
+
         private NodeCache<MethodWithGCInfo, WasmMethodRelativeVirtualIPNode> _wasmMethodRelativeVirtualIPs;
+        private NodeCache<MethodWithGCInfo, WasmMethodFrameIdentityNode> _wasmMethodFrameIdentities;
 
         private readonly struct WasmUnboxingStubKey : IEquatable<WasmUnboxingStubKey>
         {
@@ -1526,6 +1560,11 @@ namespace ILCompiler.DependencyAnalysis
         internal WasmMethodRelativeVirtualIPNode WasmMethodRelativeVirtualIP(MethodWithGCInfo method)
         {
             return _wasmMethodRelativeVirtualIPs.GetOrAdd(method);
+        }
+
+        internal WasmMethodFrameIdentityNode WasmMethodFrameIdentity(MethodWithGCInfo method)
+        {
+            return _wasmMethodFrameIdentities.GetOrAdd(method);
         }
     }
 }

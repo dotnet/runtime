@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime;
+
 namespace System.Numerics
 {
     /// <summary>Defines a mechanism for computing the quotient of two values.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="TOther">The type that will divide <typeparamref name="TSelf" />.</typeparam>
     /// <typeparam name="TResult">The type that contains the quotient of <typeparamref name="TSelf" /> and <typeparamref name="TOther" />.</typeparam>
+    [SuppressReadyToRunCanonicalRooting]
     public interface IDivisionOperators<TSelf, TOther, TResult>
         where TSelf : IDivisionOperators<TSelf, TOther, TResult>?
     {

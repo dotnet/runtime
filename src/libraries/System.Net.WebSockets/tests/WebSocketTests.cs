@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Net.Http.Functional.Tests;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -227,9 +228,9 @@ namespace System.Net.WebSockets.Tests
 
             websocket.Dispose();
 
-            await Assert.ThrowsAsync<WebSocketException>(() => r1.WaitAsync(TimeSpan.FromSeconds(1)));
-            await Assert.ThrowsAsync<WebSocketException>(() => r2.WaitAsync(TimeSpan.FromSeconds(1)));
-            await Assert.ThrowsAsync<WebSocketException>(() => r3.WaitAsync(TimeSpan.FromSeconds(1)));
+            await Assert.ThrowsAsync<WebSocketException>(() => r1.WaitAsync(TestHelper.PassingTestTimeout));
+            await Assert.ThrowsAsync<WebSocketException>(() => r2.WaitAsync(TestHelper.PassingTestTimeout));
+            await Assert.ThrowsAsync<WebSocketException>(() => r3.WaitAsync(TestHelper.PassingTestTimeout));
         }
 
         [Fact]

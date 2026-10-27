@@ -139,6 +139,7 @@ struct READYTORUN_CORE_HEADER
 | READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE | 0x00000040 | This R2R module has multiple modules within its version bubble (For versions before version 6.3, all modules are assumed to possibly have this characteristic)
 | READYTORUN_FLAG_UNRELATED_R2R_CODE         | 0x00000080 | This R2R module has code in it that would not be naturally encoded into this module
 | READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE      | 0x00000100 | The owning composite executable is in the platform native format
+| READYTORUN_FLAG_SINGLE_THREADED            | 0x00002000 | The image targets a single-threaded runtime (built without `FEATURE_MULTITHREADING`) and lays out `[ThreadStatic]` fields as regular statics. The runtime rejects the image if its threading model doesn't match.
 
 ## READYTORUN_SECTION
 
@@ -225,6 +226,11 @@ struct READYTORUN_IMPORT_SECTION
 | ReadyToRunImportSectionFlags::PCode    | 0x0004  | Section contains pointers to code
 
 
+Module-eager fixups in `System.Private.CoreLib`, including composite images containing
+`System.Private.CoreLib`, may refer to any type, method, or field in CoreLib and may trigger
+loading of CoreLib types needed to resolve those references. In other modules, module-eager
+fixups must not trigger type loading; the required types must already be loaded.
+
 ### READYTORUN_IMPORT_SECTIONS::Type
 
 | ReadyToRunImportSectionType                 | Value  | Description
@@ -237,6 +243,11 @@ struct READYTORUN_IMPORT_SECTION
 *Future*: The section type can be used to group slots of the same type together. For example, all virtual
 stub dispatch slots may be grouped together to simplify resetting of virtual stub dispatch cells into their
 initial state.
+
+When `Vector<T>` support is non-optimistic, its SIMD width is fixed at compile time and does
+not require a type-layout check. This includes Wasm, where `Vector<T>` has a fixed 16-byte
+layout. Types containing vectors also have fixed layout when their remaining layout is fixed
+within the version bubble. Optimistic `Vector<T>` support retains runtime-dependent layout checks.
 
 ### READYTORUN_IMPORT_SECTIONS::Signatures
 
@@ -336,7 +347,7 @@ ECMA 335 does not have a natural encoding for describing an overridden method. T
 
 #### IL Body signatures
 
-ECMA 335 does not define a format that can represent the exact implementation of a method by itself. This signature holds all of the IL of the method, the EH table, the locals table, and each token (other than type references) in those tables is replaced with an index into a local stream of signatures. Those signatures are simply verbatim copies of the needed metadata to describe MemberRefs, TypeSpecs, MethodSpecs, StandaloneSignatures and strings. All of that is bundled into a large byte array. In addition, a series of TypeSignatures follows which allow the type references to be resolved, as well as a methodreference to the uninstantiated method. Assuming all of this matches with the data that is present at runtime, the fixup is considered to be satisfied. See ReadyToRunStandaloneMetadata.cs for the exact details of the format.
+ECMA 335 does not define a format that can represent the exact implementation of a method by itself. This signature holds all of the IL of the method, the EH table, the locals table, and each token (other than type references) in those tables is replaced with an index into a local stream of signatures. Those signatures are simply verbatim copies of the needed metadata to describe MemberRefs, TypeSpecs, MethodSpecs, StandaloneSignatures and strings. All of that is bundled into a large byte array. The byte that describes the locals table also records the method implementation flags that change how the same IL executes: `0x04` is set for `miAsync` (runtime-async) methods and `0x08` for `miSynchronized` methods. In addition, a series of TypeSignatures follows which allow the type references to be resolved, as well as a methodreference to the uninstantiated method. Assuming all of this matches with the data that is present at runtime, the fixup is considered to be satisfied. See ReadyToRunStandaloneMethodMetadata.cs for the exact details of the format.
 
 #### InjectStringThunks signatures
 
@@ -592,6 +603,8 @@ will proceed to every module which specified `READYTORUN_FLAG_UNRELATED_R2R_CODE
 
 **TODO**: document inlining info encoding
 
+CoreCLR no longer consumes this legacy section. R2R inspection tools retain support for reading it.
+
 ## ReadyToRunSectionType.ProfileDataInfo (v2.2+)
 
 **TODO**: document profile data encoding
@@ -644,6 +657,7 @@ section pointed to by the `READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header stru
 ## ReadyToRunSectionType.InliningInfo2 (v4.1+)
 
 The inlining information section captures what methods got inlined into other methods. It consists of a single _Native Format Hashtable_ (described below).
+CoreCLR loads this section only in builds that support profiling, ReJIT, or code versioning.
 
 The entries in the hashtable are lists of inliners for each inlinee. One entry in the hashtable corresponds to one inlinee. The hashtable is hashed by hashcode of the module name XORed with inlinee RID.
 
@@ -704,6 +718,7 @@ manifest metadata representing the versioning bubble.
 
 ## ReadyToRunSectionType.CrossModuleInlineInfo (v6.3+)
 The inlining information section captures what methods got inlined into other methods. It consists of a single _Native Format Hashtable_ (described below).
+CoreCLR loads this section only in builds that support profiling, ReJIT, or code versioning.
 
 The entries in the hashtable are lists of inliners for each inlinee. One entry in the hashtable corresponds to one inlinee. The hashtable is hashed with the version resilient hashcode of the uninstantiated methoddef inlinee.
 
@@ -1187,7 +1202,9 @@ for parameters because their placement in the transition block depends on it.
 **Hidden parameters** (inserted between `this` and explicit parameters, in order):
 
 1. **Generic context** (`i`): present when the method requires an inst method desc or
-   method table argument.
+   method table argument. It is encoded like a pointer argument: without an async
+   continuation it occupies the same slot as a leading pointer argument, and callers such as
+   `InitHelpers.CallClassConstructor` pass it as one.
 2. **Async continuation** (`a`): present for async calls.
 
 Note: the hidden return buffer pointer is **not** encoded in the signature string. Its

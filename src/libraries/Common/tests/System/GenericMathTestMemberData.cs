@@ -733,6 +733,40 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> IntegerClassificationDouble
+        {
+            get
+            {
+                double[] boundaries = [1.0, 2.0, 4_503_599_627_370_496.0, 9_007_199_254_740_992.0];
+                foreach (double boundary in boundaries)
+                {
+                    yield return new object[] { boundary };
+                    yield return new object[] { -boundary };
+                    yield return new object[] { double.BitDecrement(boundary) };
+                    yield return new object[] { -double.BitDecrement(boundary) };
+                    yield return new object[] { double.BitIncrement(boundary) };
+                    yield return new object[] { -double.BitIncrement(boundary) };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> IntegerClassificationSingle
+        {
+            get
+            {
+                float[] boundaries = [1.0f, 2.0f, 8_388_608.0f, 16_777_216.0f];
+                foreach (float boundary in boundaries)
+                {
+                    yield return new object[] { boundary };
+                    yield return new object[] { -boundary };
+                    yield return new object[] { float.BitDecrement(boundary) };
+                    yield return new object[] { -float.BitDecrement(boundary) };
+                    yield return new object[] { float.BitIncrement(boundary) };
+                    yield return new object[] { -float.BitIncrement(boundary) };
+                }
+            }
+        }
+
         public static IEnumerable<object[]> IsTestByte
         {
             get
@@ -1372,13 +1406,8 @@ namespace System.Tests
                 yield return new object[] {  double.NegativeInfinity,    double.NaN,                double.NaN };
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,   double.NaN };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,   double.NaN };
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/133311")]
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/134268")]
-                if (!((PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm) || PlatformDetection.IsWasmReadyToRun))
-                {
-                    yield return new object[] {  PositiveNaNDouble,          -0.0,                      PositiveNaNDouble };
-                    yield return new object[] { -0.0,                        NegativeNaNDouble,          NegativeNaNDouble };
-                }
+                yield return new object[] {  PositiveNaNDouble,          -0.0,                      PositiveNaNDouble };
+                yield return new object[] { -0.0,                        NegativeNaNDouble,          NegativeNaNDouble };
                 yield return new object[] { -0.0f,                       0.0f,                      0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      2.0f };
@@ -1577,13 +1606,8 @@ namespace System.Tests
                 yield return new object[] {  double.NegativeInfinity,    double.NaN,                 double.NaN };
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,    double.NaN };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,    double.NaN };
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/133311")]
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/134268")]
-                if (!((PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm) || PlatformDetection.IsWasmReadyToRun))
-                {
-                    yield return new object[] {  PositiveNaNDouble,          -0.0,                       PositiveNaNDouble };
-                    yield return new object[] { -0.0,                        NegativeNaNDouble,           NegativeNaNDouble };
-                }
+                yield return new object[] {  PositiveNaNDouble,          -0.0,                       PositiveNaNDouble };
+                yield return new object[] { -0.0,                        NegativeNaNDouble,           NegativeNaNDouble };
                 yield return new object[] { -0.0f,                       0.0f,                      -0.0f };
                 yield return new object[] {  0.0f,                      -0.0f,                      -0.0f };
                 yield return new object[] {  2.0f,                      -3.0f,                      -3.0f };

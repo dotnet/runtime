@@ -46,11 +46,16 @@ if(CLR_CMAKE_TARGET_ARCH_WASM)
     # corerun instead (see src/tests/Common/CLRTest.WasmCorerun.targets).
     set(TEST_LIB_TYPE STATIC)
 
-    # That corerun is only produced for browser CoreCLR. CLR_CMAKE_TARGET_ARCH_WASM is also true
-    # for wasi, and the same tree is configured for the mono browser leg, so gate on both.
+    # That corerun is only produced for CoreCLR. The same tree is configured for the mono browser
+    # leg, so gate on the runtime flavor as well.
     string(TOLOWER "${CMAKE_BUILD_RUNTIME_FLAVOR}" _TESTS_RUNTIME_FLAVOR)
-    if(CLR_CMAKE_TARGET_BROWSER AND _TESTS_RUNTIME_FLAVOR STREQUAL "coreclr")
+    if((CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI) AND _TESTS_RUNTIME_FLAVOR STREQUAL "coreclr")
         set(_TESTS_WASM_BUILDS_CORERUN 1)
+    endif()
+
+    if(CLR_CMAKE_TARGET_WASI)
+        # The wasi-libc emulations the CoreCLR PAL also uses; the test corerun links their libraries.
+        add_compile_definitions(_WASI_EMULATED_MMAN _WASI_EMULATED_SIGNAL _WASI_EMULATED_PROCESS_CLOCKS _WASI_EMULATED_GETPID)
     endif()
 else()
     set(TEST_LIB_TYPE SHARED)

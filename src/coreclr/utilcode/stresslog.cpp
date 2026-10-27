@@ -1,20 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*************************************************************************************/
-/*                                   StressLog.cpp                                   */
-/*************************************************************************************/
-
-/*************************************************************************************/
-
 #include "stdafx.h"			// precompiled headers
 
 #include "switches.h"
 #include "stresslog.h"
 #include "clrhost.h"
 #include "ex.h"
-#define DONOT_DEFINE_ETW_CALLBACK
+#ifndef SELF_NO_HOST
 #include "eventtracebase.h"
+#endif // !SELF_NO_HOST
 #include "minipal/time.h"
 
  #if !defined(STRESS_LOG_READONLY)
@@ -708,26 +703,6 @@ BOOL StressLog::ReserveStressLogChunks (unsigned chunksToReserve)
     }
 
     return msgs->chunkListLength >= (LONG)chunksToReserve;
-}
-
-void (*FSwitchToSOTolerant)();
-void (*FSwitchToSOIntolerant)();
-void TrackSO(BOOL tolerance)
-{
-    if (tolerance)
-    {
-        if (FSwitchToSOTolerant)
-        {
-            FSwitchToSOTolerant();
-        }
-    }
-    else
-    {
-        if (FSwitchToSOIntolerant)
-        {
-            FSwitchToSOIntolerant();
-        }
-    }
 }
 
 /*********************************************************************************/

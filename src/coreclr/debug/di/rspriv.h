@@ -1709,48 +1709,42 @@ typedef CordbEnumerator<RSSmartPtr<CordbVariableHome>,
 //   explicitly associate w/ an optional RSLock and assert that lock is held on access.
 // ----------------------------------------------------------------------------
 
-struct CordbHashEntry
+class EMPTY_BASES CordbHashTraits : public NonDacAwareSHashTraits<DefaultSHashTraits<CordbBase *>>
 {
-    FREEHASHENTRY entry;
-    CordbBase *pBase;
+public:
+    typedef ULONG_PTR key_t;
+    static const bool s_DestructPerEntryCleanupAction = true;
+    static void OnDestructPerEntryCleanupAction(CordbBase *element) { element->InternalRelease(); }
+    static key_t GetKey(CordbBase *const &element) { return element->m_id; }
+    static BOOL Equals(key_t left, key_t right) { return left == right; }
+    static count_t Hash(key_t key)
+    {
+        count_t hash = static_cast<count_t>(key);
+#ifdef HOST_64BIT
+        hash = HashCOUNT_T(hash, static_cast<count_t>(key >> 32));
+#endif
+        return hash;
+    }
 };
 
-class CordbHashTable : private CHashTableAndData<CNewDataNoThrow>
+class CordbHashTable
 {
 private:
-    bool    m_initialized;
-    SIZE_T  m_count;
-
-    BOOL Cmp(SIZE_T k1, const HASHENTRY * pc2)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return ((ULONG_PTR)k1) != (reinterpret_cast<const CordbHashEntry *>(pc2))->pBase->m_id;
-    }
-
-    ULONG HASH(ULONG_PTR id)
-    {
-        return (ULONG)(id);
-    }
-
-    SIZE_T KEY(UINT_PTR id)
-    {
-        return (SIZE_T)id;
-    }
+    SHash<CordbHashTraits> m_table;
 
 public:
+    typedef SHash<CordbHashTraits>::Iterator Iterator;
+
     bool IsInitialized();
 
 #ifndef DACCESS_COMPILE
-    CordbHashTable(ULONG size)
-    : CHashTableAndData<CNewDataNoThrow>(size), m_initialized(false), m_count(0)
+    CordbHashTable()
     {
 #ifdef _DEBUG
     m_pDbgLock = NULL;
-    m_dbgChangeCount = 0;
 #endif
     }
-    virtual ~CordbHashTable();
+    virtual ~CordbHashTable() = default;
 
 #ifdef _DEBUG
     // CordbHashTables may be protected by a lock. For debug-builds, we can associate
@@ -1759,19 +1753,13 @@ public:
     {
         m_pDbgLock = pLock;
     }
-    int GetChangeCount() { return m_dbgChangeCount; }
 private:
     void AssertIsProtected();
 
-    // Increment the Change count. This can be used to check if the hashtable changes while being enumerated.
-    void DbgIncChangeCount() { m_dbgChangeCount++; }
-
-    int m_dbgChangeCount;
     RSLock * m_pDbgLock;
 #else
     // RSLock association is a no-op on free builds.
     void AssertIsProtected() { };
-    void DbgIncChangeCount() { };
 #endif // _DEBUG
 
 public:
@@ -1781,7 +1769,7 @@ public:
 
     ULONG32 GetCount()
     {
-        return ((ULONG32)m_count);
+        return m_table.GetCount();
     }
 
     // These operators are unsafe b/c they have no typesafety.
@@ -1791,13 +1779,8 @@ public:
     CordbBase *UnsafeGetBase(ULONG_PTR id, BOOL fFab = TRUE);
     CordbBase *UnsafeRemoveBase(ULONG_PTR id);
 
-    CordbBase *UnsafeFindFirst(HASHFIND *find);
-    CordbBase *UnsafeFindNext(HASHFIND *find);
-
-    // Unlocked versions don't assert that the lock us held.
-    CordbBase *UnsafeUnlockedFindFirst(HASHFIND *find);
-    CordbBase *UnsafeUnlockedFindNext(HASHFIND *find);
-
+    Iterator Begin();
+    Iterator End();
 };
 
 
@@ -1811,9 +1794,7 @@ class CordbSafeHashTable : public CordbHashTable
 {
 public:
 #ifndef DACCESS_COMPILE
-    CordbSafeHashTable<T>(ULONG size) : CordbHashTable(size)
-    {
-    }
+    CordbSafeHashTable() = default;
 #endif
     // Typesafe wrappers
     HRESULT AddBase(T * pBase) { return UnsafeAddBase(pBase); }
@@ -1830,9 +1811,6 @@ public:
     T* GetBaseOrThrow(ULONG_PTR id, BOOL fFab = TRUE);
 
     T* RemoveBase(ULONG_PTR id) { return static_cast<T*>(UnsafeRemoveBase(id)); }
-
-    T* FindFirst(HASHFIND *find) { return static_cast<T*>(UnsafeFindFirst(find)); }
-    T* FindNext(HASHFIND *find)  { return static_cast<T*>(UnsafeFindNext(find)); }
 
     // Neuter all items and clear
     void NeuterAndClear(RSLock * pLock);
@@ -1855,7 +1833,6 @@ public ICorDebugAssemblyEnum
     CordbHashTableEnum(
         CordbBase * pOwnerObj,
         NeuterList * pOwnerList,
-        CordbHashTable *table,
         const GUID &id);
 
 public:
@@ -2007,38 +1984,15 @@ private:
     NeuterList *    m_pOwnerNeuterList;
 
 
-    CordbHashTable *m_table;
-    bool            m_started;
-    bool            m_done;
-    HASHFIND        m_hashfind;
+    RSPtrArray<CordbBase> m_items;
     REFIID          m_guid;
     ULONG           m_iCurElt;
-    ULONG           m_count;
-    BOOL            m_fCountInit;
 
 #ifdef _DEBUG
-    // timestampt of hashtable when we start enumerating it. Useful for detecting if the table
-    // changes underneath us.
-    int             m_DbgChangeCount;
     void AssertValid();
 #else
     void AssertValid() { }
 #endif
-
-private:
-    //These factor code between Next & Skip
-    HRESULT PrepForEnum(CordbBase **pBase);
-
-    // Note that the set of types advanced by Pre & by Post are disjoint, and
-    // that the union of these two sets are all possible types enuerated by
-    // the CordbHashTableEnum.
-    HRESULT AdvancePreAssign(CordbBase **pBase);
-    HRESULT AdvancePostAssign(CordbBase **pBase,
-                              CordbBase     **b,
-                              CordbBase   **bEnd);
-
-    // This factors some code that initializes the module enumerator.
-    HRESULT SetupModuleEnum();
 
 };
 
@@ -2862,6 +2816,8 @@ public:
 
     virtual bool IsThreadSuspendedOrHijacked(ICorDebugThread * pThread) = 0;
 
+    virtual HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo) = 0;
+
 #ifdef FEATURE_INTEROP_DEBUGGING
     virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
 #endif
@@ -3341,8 +3297,6 @@ public:
 
     void MarkAllThreadsDirty();
 
-    bool CheckIfLSExited();
-
     void Lock()
     {
         // Lock Hierarchy - shouldn't have List lock when taking/release the process lock.
@@ -3599,6 +3553,10 @@ public:
 
     // Get the DAC interface.
     IDacDbiInterface * GetDAC();
+
+    HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo);
+
+    HRESULT GetStackwalkControlPCAdjustOffset(ULONG32 * pcbOffset);
 
     // Get the data-target, which provides access to the debuggee.
     ICorDebugDataTarget * GetDataTarget();
@@ -3968,7 +3926,7 @@ public:
     PRD_TYPE             *m_rgUncommittedOpcode;
 
     // CORDB_ADDRESS's are UINT_PTR's (64 bit under HOST_64BIT, 32 bit otherwise)
-#if defined(TARGET_64BIT)
+#if defined(HOST_64BIT)
 #define MAX_ADDRESS     (UINT64_MAX)
 #else
 #define MAX_ADDRESS     (UINT32_MAX)
@@ -3977,13 +3935,9 @@ public:
     CORDB_ADDRESS       m_minPatchAddr; //smallest patch in table
     CORDB_ADDRESS       m_maxPatchAddr;
 
-    // <TODO>@todo port : if slots of CHashTable change, so should these</TODO>
 #define DPT_TERMINATING_INDEX (UINT32_MAX)
     // Index into m_pPatchTable of the first patch (first used entry).
     ULONG                  m_iFirstPatch;
-
-    // Initializes the DAC
-    void InitDac();
 
     // copy new data from LS DCB to RS buffer
     void UpdateRightSideDCB();
@@ -4094,6 +4048,9 @@ private:
     IDacDbiInterface *  m_pDacPrimitives;
     // Keeps the native fallback DAC alive until the managed cDAC has been released.
     IUnknown *           m_pLegacyDac;
+
+    IDacDbiInterface::TargetInfo m_cachedTargetInfo;
+    bool                m_fHasCachedTargetInfo;
 
     IEventChannel *     m_pEventChannel;
 
@@ -4438,69 +4395,57 @@ private:
 };
 
 
-struct CordbHangingField
+class EMPTY_BASES CordbHangingFieldTraits : public NonDacAwareSHashTraits<DefaultSHashTraits<FieldData>>
 {
-    FREEHASHENTRY   entry;
-    FieldData data;
+public:
+    typedef mdFieldDef key_t;
+    static key_t GetKey(const FieldData &element) { return element.m_fldMetadataToken; }
+    static BOOL Equals(key_t left, key_t right) { return left == right; }
+    static count_t Hash(key_t key) { return key; }
+    static FieldData Null() { return {}; }
+    static FieldData Deleted()
+    {
+        FieldData element = {};
+        element.m_fldMetadataToken = static_cast<mdFieldDef>(-1);
+        return element;
+    }
+    static bool IsNull(const FieldData &element) { return element.m_fldMetadataToken == 0; }
+    static bool IsDeleted(const FieldData &element) { return element.m_fldMetadataToken == static_cast<mdFieldDef>(-1); }
 };
 
 // A hashtable for storing EnC hanging field information
 // FieldData.m_fldMetadataToken is the key
-class CordbHangingFieldTable : public CHashTableAndData<CNewDataNoThrow>
+class CordbHangingFieldTable
 {
-  private:
-
-    BOOL Cmp(SIZE_T k1, const HASHENTRY *pc2)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (ULONG)(UINT_PTR)(k1) !=
-               (reinterpret_cast<const CordbHangingField *>(pc2))->data.m_fldMetadataToken;
-    }
-
-    ULONG HASH(mdFieldDef fldToken)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fldToken;
-    }
-
-    SIZE_T KEY(mdFieldDef fldToken)
-    {
-        return (SIZE_T)fldToken;
-    }
+    SHash<CordbHangingFieldTraits> m_table;
 
   public:
 
 #ifndef DACCESS_COMPILE
 
-    CordbHangingFieldTable() : CHashTableAndData<CNewDataNoThrow>(11)
+    void Clear()
     {
-        NewInit(11, sizeof(CordbHangingField), 11);
+        m_table.RemoveAll();
     }
 
-    FieldData * AddFieldInfo(FieldData * pInfo)
+    const FieldData * AddFieldInfo(const FieldData * pInfo)
     {
         _ASSERTE(pInfo != NULL);
 
-        CordbHangingField *pEntry = (CordbHangingField *)Add(HASH(pInfo->m_fldMetadataToken));
-        pEntry->data = *pInfo; // copy everything over
-
-        // Return a pointer to the data
-        return &(pEntry->data);
+        m_table.Add(*pInfo);
+        return GetFieldInfo(pInfo->m_fldMetadataToken);
     }
 
     void RemoveFieldInfo(mdFieldDef fldToken)
     {
-        CordbHangingField *entry = (CordbHangingField*)Find(HASH(fldToken), KEY(fldToken));
-        _ASSERTE(entry != NULL);
-        Delete(HASH(fldToken), (HASHENTRY*)entry);
+        m_table.Remove(fldToken);
    }
 
 #endif // #ifndef DACCESS_COMPILE
 
-    FieldData * GetFieldInfo(mdFieldDef fldToken)
+    const FieldData * GetFieldInfo(mdFieldDef fldToken) const
     {
-        CordbHangingField * entry = (CordbHangingField *)Find(HASH(fldToken), KEY(fldToken));
-        return (entry!=NULL?&(entry->data):NULL);
+        return m_table.LookupPtr(fldToken);
     }
 };
 
@@ -4770,7 +4715,7 @@ public:
 
     // These are available after Init() has been called....
     HRESULT GetUnboxedObjectSize(ULONG32 *res);
-    HRESULT GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData);
+    HRESULT GetFieldInfo(mdFieldDef fldToken, const FieldData ** ppFieldData);
 
     CordbAppDomain *GetAppDomain() { return m_appdomain; }
 
@@ -4779,11 +4724,9 @@ public:
     // Is this type a GC-root.
     bool IsGCRoot();
 
-#ifdef FEATURE_64BIT_ALIGNMENT
     // checks if the type requires 8-byte alignment.
     // this is not exposed via ICorDebug at present.
     HRESULT RequiresAlign8(BOOL* isRequired);
-#endif
 
     //-----------------------------------------------------------
     // Data members
@@ -5000,10 +4943,10 @@ public:
                                    DacDbiArrayList<FieldData> * pFieldList,
                                    mdTypeDef                    classToken,
                                    mdFieldDef                   fldToken,
-                                   FieldData **                 ppFieldData);
+                                   const FieldData **           ppFieldData);
 
     static HRESULT GetStaticFieldValue2(CordbModule *         pModule,
-                                        FieldData *           pFieldData,
+                                        const FieldData *     pFieldData,
                                         BOOL                  fEnCHangingField,
                                         const Instantiation * pInst,
                                         ICorDebugFrame *      pFrame,
@@ -5015,12 +4958,12 @@ public:
 
     // Get information about a field that was added by EnC
     HRESULT GetEnCHangingField(mdFieldDef         fldToken,
-                               FieldData **       ppFieldData,
+                               const FieldData ** ppFieldData,
                                CordbObjectValue * pObject);
 
 private:
     // Get information via the DAC about a field added with Edit and Continue.
-    FieldData * GetEnCFieldFromDac(BOOL               fStatic,
+    const FieldData * GetEnCFieldFromDac(BOOL               fStatic,
                                    CordbObjectValue * pObject,
                                    mdFieldDef         fieldToken);
 
@@ -5034,7 +4977,7 @@ private:
 
 public:
 
-    HRESULT GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData);
+    HRESULT GetFieldInfo(mdFieldDef fldToken, const FieldData ** ppFieldData);
 
     // If you want to force the init to happen even if we think the class
     // is up to date, set fForceInit to TRUE
@@ -8689,6 +8632,7 @@ public:
                                TargetBuffer                   remoteValue,
                                MemoryRange                    localValue,
                                EnregisteredValueHomeHolder *  ppRemoteRegAddr,
+                               VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner,
                                ICorDebugValue**               ppValue);
 
     // Create the proper ICDValue instance based on the given element type.
@@ -8698,6 +8642,7 @@ public:
                                   TargetBuffer                   remoteValue,
                                   MemoryRange                    localValue,
                                   EnregisteredValueHomeHolder *  ppRemoteRegAddr,
+                                  VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner,
                                   ICorDebugValue**               ppValue);
 
     // Create the proper ICDValue instance based on the given remote heap object
@@ -9318,6 +9263,8 @@ public:
                        TargetBuffer                   remoteValue,
                        EnregisteredValueHomeHolder *  ppRemoteRegAddr);
     virtual ~CordbVCObjectValue();
+    virtual void Neuter();
+    virtual void NeuterLeftSideResources();
 
 #ifdef _DEBUG
     virtual const char * DbgGetName() { return "CordbVCObjectValue"; }
@@ -9415,6 +9362,7 @@ public:
 
     // Initializes the Right-Side's representation of a Value Class object.
     HRESULT Init(MemoryRange localValue);
+    void SetExternalMemoryOwner(VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner);
     //HRESULT ResolveValueClass();
     CordbClass *GetClass();
 
@@ -9433,6 +9381,8 @@ private:
 
     // location information
     ValueHome * m_pValueHome;
+
+    VMPTR_DebuggerExternalMemoryOwner m_vmExternalMemoryOwner;
 };
 
 
@@ -10007,8 +9957,10 @@ public:
     // This is an External reference, which keeps the Value from being neutered
     // on a NeuterAtWill sweep.
     RSExtSmartPtr<CordbHandleValue> m_pHandleValue;
+    RSExtSmartPtr<CordbVCObjectValue> m_pValueClassResult;
 
     DebuggerIPCE_ExpandedTypeData m_resultType;
+    VMPTR_DebuggerExternalMemoryOwner m_vmExternalMemoryOwner;
     VMPTR_AppDomain            m_resultAppDomainToken;
 
     // Left-side memory that needs to be freed.
@@ -10375,17 +10327,13 @@ enum CordbUnmanagedThreadState
     CUTS_None                        = 0x0000,
     CUTS_Deleted                     = 0x0001,
     CUTS_FirstChanceHijacked         = 0x0002,
-    // Set when interop debugging needs the SS flag to be enabled
-    // regardless of what the user wants it to be
-    CUTS_IsSSFlagNeeded              = 0x0004,
+    // unused                        = 0x0004,
     CUTS_GenericHijacked             = 0x0008,
-    // when the m_raiseExceptionEntryContext is valid
-    CUTS_HasRaiseExceptionEntryCtx   = 0x0010,
+    // unused                        = 0x0010,
     CUTS_BlockingForSync             = 0x0020,
     CUTS_Suspended                   = 0x0040,
     CUTS_IsSpecialDebuggerThread     = 0x0080,
-    // when the thread is re-executing RaiseException to retrigger an exception
-    CUTS_IsRaiseExceptionHijacked    = 0x0100,
+    // unused                        = 0x0100,
     CUTS_HasIBEvent                  = 0x0200,
     CUTS_HasOOBEvent                 = 0x0400,
     CUTS_HasSpecialStackOverflowCase = 0x0800,
@@ -10394,9 +10342,7 @@ enum CordbUnmanagedThreadState
 #endif
     CUTS_SkippingNativePatch         = 0x2000,
     CUTS_HasContextSet               = 0x4000,
-    // Set when interop debugging is making use of the single step flag
-    // but the user has not set it
-    CUTS_IsSSFlagHidden              = 0x8000
+    // unused                        = 0x8000,
 
 };
 
@@ -10447,10 +10393,6 @@ public:
     HRESULT GetThreadContext(DT_CONTEXT * pContext);
     HRESULT SetThreadContext(DT_CONTEXT * pContext);
 
-    // Turns on and off the internal usage of the SS flag
-    VOID BeginStepping();
-    VOID EndStepping();
-
     // An accessor for &m_context, this value generally stores
     // a context we may need to restore after a hijack completes
     DT_CONTEXT * GetHijackCtx();
@@ -10476,10 +10418,6 @@ public:
 #endif
     BOOL IsSkippingNativePatch() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_SkippingNativePatch; }
     BOOL IsContextSet() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_HasContextSet; }
-    BOOL IsSSFlagNeeded() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsSSFlagNeeded; }
-    BOOL IsSSFlagHidden() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsSSFlagHidden; }
-    BOOL HasRaiseExceptionEntryCtx() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_HasRaiseExceptionEntryCtx; }
-    BOOL IsRaiseExceptionHijacked() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsRaiseExceptionHijacked; }
 
     void SetState(CordbUnmanagedThreadState state)
     {
@@ -10490,12 +10428,6 @@ public:
     }
     void ClearState(CordbUnmanagedThreadState state) {LIMITED_METHOD_CONTRACT;  m_state = (CordbUnmanagedThreadState)(m_state & ~state); }
 
-    void HijackToRaiseException();
-    void RestoreFromRaiseExceptionHijack();
-    void SaveRaiseExceptionEntryContext();
-    void ClearRaiseExceptionEntryContext();
-    BOOL IsExceptionFromLastRaiseException(const EXCEPTION_RECORD* pExceptionRecord);
-
     CordbUnmanagedEvent *IBEvent()  {LIMITED_METHOD_CONTRACT;  return &m_IBEvent; }
     CordbUnmanagedEvent *IBEvent2() {LIMITED_METHOD_CONTRACT;  return &m_IBEvent2; }
     CordbUnmanagedEvent *OOBEvent() { return &m_OOBEvent; }
@@ -10505,12 +10437,10 @@ public:
         return (DWORD) this->m_id;
     }
 
-#ifdef TARGET_X86
     // Stores the thread's current leaf SEH handler
     HRESULT SaveCurrentLeafSeh();
     // Restores the thread's leaf SEH handler from the previously saved value
     HRESULT RestoreLeafSeh();
-#endif
 
     // Logs basic data about a context to the debugging log
     static VOID LogContext(DT_CONTEXT* pContext);
@@ -10544,19 +10474,8 @@ private:
     // See CordbUnmanagedThread::GetThreadContext for details
     DT_CONTEXT                 m_context;
 
-    // The context of the thread the last time it called into kernel32!RaiseException
-    DT_CONTEXT                 m_raiseExceptionEntryContext;
-
-    DWORD                      m_raiseExceptionExceptionCode;
-    DWORD                      m_raiseExceptionExceptionFlags;
-    DWORD                      m_raiseExceptionNumberParameters;
-    ULONG_PTR                  m_raiseExceptionExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
-
-
-#ifdef TARGET_X86
     // the SEH handler which was the leaf when SaveCurrentSeh was called (prior to hijack)
     REMOTE_PTR                 m_pSavedLeafSeh;
-#endif
 
     HRESULT EnableSSAfterBP();
 
@@ -10578,7 +10497,6 @@ public:
 
     bool GetEEPGCDisabled();
     void GetEEState(bool *threadStepping, bool *specialManagedException);
-    bool GetEEFrame();
 };
 #endif // FEATURE_INTEROP_DEBUGGING
 
@@ -11395,17 +11313,11 @@ inline void ValidateOrThrow(const void * p)
 // aligns argBase on platforms that require it else it's a no-op
 inline void AlignAddressForType(CordbType* pArgType, CORDB_ADDRESS& argBase)
 {
-#ifdef TARGET_ARM
-// TODO: review the following
-#ifdef FEATURE_64BIT_ALIGNMENT
     BOOL align = FALSE;
-    HRESULT hr = pArgType->RequiresAlign8(&align);
-    _ASSERTE(SUCCEEDED(hr));
+    pArgType->RequiresAlign8(&align);
 
     if (align)
         argBase = ALIGN_ADDRESS(argBase, 8);
-#endif // FEATURE_64BIT_ALIGNMENT
-#endif // TARGET_ARM
 }
 
 //-----------------------------------------------------------------------------
