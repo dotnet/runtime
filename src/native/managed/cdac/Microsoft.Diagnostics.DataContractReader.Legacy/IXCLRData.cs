@@ -989,6 +989,7 @@ public unsafe partial interface IXCLRDataMethodDefinition
 public enum CLRDataGeneralRequest : uint
 {
     CLRDATA_REQUEST_REVISION = 0xe0000000,
+    DACPRIV_REQUEST_CDAC_CLOSE = 0xf1000000,
 }
 
 public enum CLRDataStackWalkRequest : uint

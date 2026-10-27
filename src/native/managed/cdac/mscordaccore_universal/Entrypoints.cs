@@ -334,15 +334,24 @@ internal static class Entrypoints
             return HResults.E_INVALIDARG;
         *iface = null;
 
+        ComObject? dataTargetComObject = null;
         try
         {
-            object legacyTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
-            return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractDescriptorAddr, legacyImplPtr: IntPtr.Zero, new Lock(), iface);
+            object legacyTarget = UniqueComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
+            dataTargetComObject = (ComObject)legacyTarget;
+            int hr = CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractDescriptorAddr, legacyImplPtr: IntPtr.Zero, new Lock(), iface);
+            if (hr >= 0)
+                dataTargetComObject = null;
+            return hr;
         }
         catch (Exception ex)
         {
             int hr = ex.HResult;
             return hr < 0 ? hr : HResults.E_FAIL;
+        }
+        finally
+        {
+            dataTargetComObject?.FinalRelease();
         }
     }
 
@@ -365,23 +374,33 @@ internal static class Entrypoints
 
     private static unsafe int CLRDataCreateInstanceCore(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, Lock apiLock, void** iface)
     {
-        object legacyTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
-
-        ICLRContractLocator contractLocator = legacyTarget as ICLRContractLocator ?? throw new ArgumentException(
-            $"{nameof(pLegacyTarget)} does not implement {nameof(ICLRContractLocator)}", nameof(pLegacyTarget));
-
-        ulong contractAddress;
-        int hr = contractLocator.GetContractDescriptor(&contractAddress);
-        if (hr != 0)
+        object legacyTarget = UniqueComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
+        ComObject? dataTargetComObject = (ComObject)legacyTarget;
+        try
         {
-            throw new InvalidOperationException(
-                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.")
-            {
-                HResult = CdacHResults.CDAC_E_DESCRIPTOR_NOT_FOUND
-            };
-        }
+            ICLRContractLocator contractLocator = legacyTarget as ICLRContractLocator ?? throw new ArgumentException(
+                $"{nameof(pLegacyTarget)} does not implement {nameof(ICLRContractLocator)}", nameof(pLegacyTarget));
 
-        return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractAddress, pLegacyImpl, apiLock, iface);
+            ulong contractAddress;
+            int hr = contractLocator.GetContractDescriptor(&contractAddress);
+            if (hr != 0)
+            {
+                throw new InvalidOperationException(
+                    $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.")
+                {
+                    HResult = CdacHResults.CDAC_E_DESCRIPTOR_NOT_FOUND
+                };
+            }
+
+            hr = CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractAddress, pLegacyImpl, apiLock, iface);
+            if (hr >= 0)
+                dataTargetComObject = null;
+            return hr;
+        }
+        finally
+        {
+            dataTargetComObject?.FinalRelease();
+        }
     }
 
     private static unsafe int CreateInstanceFromContractDescriptorCore(Guid* pIID, object legacyTarget, ulong contractAddress, IntPtr legacyImplPtr, Lock apiLock, void** iface)
@@ -469,7 +488,7 @@ internal static class Entrypoints
             ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
             : null;
 
-        Legacy.SOSDacImpl impl = new(target, legacyImpl, apiLock);
+        Legacy.SOSDacImpl impl = new(target, legacyImpl, apiLock, (ComObject)legacyTarget);
         void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
         int hrQI = Marshal.QueryInterface((nint)ccw, *pIID, out nint ptrToIface);
 

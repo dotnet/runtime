@@ -1325,6 +1325,16 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
+        if (reqCode == (uint)CLRDataGeneralRequest.DACPRIV_REQUEST_CDAC_CLOSE)
+        {
+            if (inBufferSize != 0 || inBuffer is not null || outBufferSize != 0 || outBuffer is not null)
+                return HResults.E_INVALIDARG;
+
+            _dataTargetComObject?.FinalRelease();
+            _dataTargetComObject = null;
+            return HResults.S_OK;
+        }
+
         int hr = HResults.E_INVALIDARG;
 
         if (reqCode == (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION)

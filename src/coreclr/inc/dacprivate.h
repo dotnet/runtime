@@ -51,6 +51,12 @@
 //----------------------------------------------------------------------------
 
 
+// cDAC-only terminal session close. All data-access interfaces become invalid.
+enum
+{
+    DACPRIV_REQUEST_CDAC_CLOSE = 0xf1000000
+};
+
 // Private requests for DataModules
 enum
 {

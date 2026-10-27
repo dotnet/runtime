@@ -39,6 +39,7 @@ public sealed unsafe partial class SOSDacImpl
     private const uint DefaultAppDomainId = 1;
 
     private readonly Lock _apiLock;
+    private ComObject? _dataTargetComObject;
     private readonly Target _target;
 
     private readonly ulong _rcwMask = 1UL;
@@ -71,9 +72,10 @@ public sealed unsafe partial class SOSDacImpl
     private readonly IXCLRDataProcess2? _legacyProcess2;
 #endif
 
-    public SOSDacImpl(Target target, object? legacyObj, Lock apiLock)
+    public SOSDacImpl(Target target, object? legacyObj, Lock apiLock, ComObject? dataTargetComObject = null)
     {
         _apiLock = apiLock;
+        _dataTargetComObject = dataTargetComObject;
         _target = target;
         _legacyLifetime = legacyObj;
 
