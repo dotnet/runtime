@@ -2,8 +2,9 @@
 ***********************************************************************************************
 CLRTest.WasmCorerun.targets
 
-Builds a test-specific 'corerun' host for browser-wasm runtime tests whose managed code calls
-into native code supplied by the test itself through CMakeProjectReference or NativeFileReference.
+Builds a test-specific 'corerun' host for browser-wasm and wasi-wasm runtime tests whose managed
+code calls into native code supplied by the test itself through CMakeProjectReference or
+NativeFileReference.
 
 WebAssembly has no dynamic library loading, so a test's native library cannot be resolved at run
 time the way a .so/.dylib/.dll is elsewhere. It has to be linked into the host up front, together
@@ -12,14 +13,14 @@ file does, once per test that has a CMakeProjectReference:
 
   1. crossgen2, in its portable call-helpers generation mode, scans the test's managed assemblies
      plus the whole framework closure and emits callhelpers-{pinvoke,reverse,interp-to-managed}.cpp.
-  2. Those three sources are compiled with em++ using the response file exported by the CoreCLR
-     build (see src/coreclr/hosts/corerun/wasm/testkit.cmake).
+  2. Those three sources are compiled with em++ (browser) or the wasi-sdk clang++ (WASI) using the
+     response file exported by the CoreCLR build (see src/coreclr/hosts/corerun/wasm/testkit.cmake).
   3. They are linked, together with the test's own static libraries, against the same archives
-     that produce CORE_ROOT/corerun.js, minus libcoreclr_gen_static.a, which holds the
+     that produce CORE_ROOT/corerun(.js), minus libcoreclr_gen_static.a, which holds the
      framework-only tables that this build replaces.
 
-The result is <test output dir>/corerun.js (+ .wasm), which the generated run script prefers over
-CORE_ROOT/corerun.js.
+The result is <test output dir>/corerun.js (+ .wasm) on browser and <test output dir>/corerun.wasm
+on WASI, which the generated run script prefers over the shared host in CORE_ROOT.
 
 This is deliberately independent of the WebAssembly *app* build
 (src/mono/browser/build/BrowserWasmApp.CoreCLR.targets): runtime tests are not apps, they run
@@ -41,11 +42,16 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   <!-- Where em++ and the bundled python sit inside EMSDK_PATH, from the same file the app-side
        build derives them from rather than restated here. -->
   <Import Project="$(MonoProjectRoot)browser\build\EmSdkRepo.Defaults.props"
-          Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
+          Condition="'$(TargetOS)' == 'browser' and '$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
+
+  <!-- Resolves the same WASI SDK the runtime build links with: $(WASI_SDK_PATH) only when it is the
+       expected version, otherwise the shared tool cache, provisioning it if needed. -->
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets"
+          Condition="'$(TargetOS)' == 'wasi'" />
 
   <PropertyGroup>
     <!--
-      Engage implicitly for any browser CoreCLR test that brings its own native code. BuildOnly
+      Engage implicitly for any WebAssembly CoreCLR test that brings its own native code. BuildOnly
       projects are excluded: they never launch a host of their own, so a corerun built next to
       them would only waste build time and disk. Set WasmBuildTestCorerun=false to opt out.
 
@@ -59,6 +65,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <WasmBuildTestCorerun Condition="'$(WasmBuildTestCorerun)' == ''">false</WasmBuildTestCorerun>
 
     <_WasmCorerunScriptExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.bat</_WasmCorerunScriptExt>
+    <_WasmCorerunToolchainTargets Condition="'$(TargetOS)' == 'wasi'">AcquireWasiSdkUnconditional</_WasmCorerunToolchainTargets>
   </PropertyGroup>
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.FilterManagedAssemblies"
@@ -81,7 +88,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   -->
   <Target Name="_WasmBuildTestCorerunAfterBuild"
           AfterTargets="Build"
-          Condition="('@(CMakeProjectReference)' != '' or '@(NativeFileReference)' != '' or Exists('$(OutDir)corerun.js')) and
+          Condition="('@(CMakeProjectReference)' != '' or '@(NativeFileReference)' != '' or Exists('$(OutDir)corerun.wasm')) and
                      '$(__CopyNativeTestBinaries)' != '1' and
                      '$(CLRTestBuildAllTargets)' != 'allTargets' and
                      '$(_WillCLRTestProjectBuild)' == 'true'"
@@ -89,7 +96,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
   <Target Name="_WasmBuildTestCorerunAfterCopyNative"
           AfterTargets="CopyAllNativeProjectReferenceBinaries"
-          Condition="('@(CMakeProjectReference)' != '' or '@(NativeFileReference)' != '' or Exists('$(OutDir)corerun.js')) and
+          Condition="('@(CMakeProjectReference)' != '' or '@(NativeFileReference)' != '' or Exists('$(OutDir)corerun.wasm')) and
                      '$(__CopyNativeTestBinaries)' == '1' and
                      '$(CLRTestBuildAllTargets)' != 'allTargets' and
                      '$(_WillCLRTestProjectBuild)' == 'true'"
@@ -104,7 +111,8 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
   <!-- ======================== Resolve inputs ======================== -->
 
-  <Target Name="_WasmResolveTestCorerunInputs">
+  <Target Name="_WasmResolveTestCorerunInputs"
+          DependsOnTargets="$(_WasmCorerunToolchainTargets)">
     <PropertyGroup>
       <!-- Produced by src/coreclr/hosts/corerun/wasm/testkit.cmake during the 'clr.hosts' build.
            Resolved here rather than during evaluation because eng/liveBuilds.targets, which
@@ -112,6 +120,13 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <WasmCorerunKitDir Condition="'$(WasmCorerunKitDir)' == ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'corerun-link'))</WasmCorerunKitDir>
       <_WasmCorerunDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'wasm-corerun'))</_WasmCorerunDir>
     </PropertyGroup>
+
+    <ItemGroup>
+      <!-- em++ emits the loader and the module as a pair. Both are outputs of the link: tracking
+           only the loader would leave the target up to date after corerun.wasm alone is lost. -->
+      <_WasmCorerunOutput Include="$(OutDir)corerun.js" Condition="'$(TargetOS)' == 'browser'" />
+      <_WasmCorerunOutput Include="$(OutDir)corerun.wasm" />
+    </ItemGroup>
 
     <ItemGroup>
       <!-- Native static libraries produced by the test's own CMake project(s), already staged into
@@ -147,7 +162,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunSkipReason Condition="'$(_WasmCorerunSkipReason)' == '' and '$(_WasmCorerunSkip)' == 'true'">it runs from a merged wrapper's directory, which builds no corerun, so its native code stays unlinked and the checks that need it skip themselves</_WasmCorerunSkipReason>
     </PropertyGroup>
 
-    <!-- Leave the test on CORE_ROOT/corerun.js. -->
+    <!-- Leave the test on the shared host in CORE_ROOT. -->
     <Message Condition="'$(_WasmCorerunSkip)' == 'true'"
              Importance="Normal"
              Text="$(MSBuildProjectName): skipping the test-specific corerun because $(_WasmCorerunSkipReason)." />
@@ -158,15 +173,15 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
          directory it runs from may clean it: a test merged into a wrapper shares the wrapper's
          output directory, and the corerun there belongs to the wrapper. -->
     <Delete Condition="'$(_WasmCorerunSkip)' == 'true' and '$(_WasmCorerunRunsFromOutDir)' == 'true'"
-            Files="$(OutDir)corerun.js;$(OutDir)corerun.wasm" />
+            Files="@(_WasmCorerunOutput)" />
 
     <!-- Anything else that produced a static library but does not run from its own output directory
-         would have corerun.js/.wasm dropped and silently fall back to CORE_ROOT. -->
+         would have its corerun dropped and silently fall back to CORE_ROOT. -->
     <Error Condition="'$(_WasmCorerunSkip)' != 'true' and '$(_WasmCorerunRunsFromOutDir)' != 'true'"
-           Text="$(MSBuildProjectName) links native test code into a test-specific corerun on browser-wasm, so it must set &lt;RequiresProcessIsolation&gt;true&lt;/RequiresProcessIsolation&gt;; otherwise its output directory is not sent to Helix." />
+           Text="$(MSBuildProjectName) links native test code into a test-specific corerun on $(TargetOS)-wasm, so it must set &lt;RequiresProcessIsolation&gt;true&lt;/RequiresProcessIsolation&gt;; otherwise its output directory is not sent to Helix." />
 
     <Error Condition="'$(_WasmCorerunSkip)' != 'true' and !Exists('$(WasmCorerunKitDir)corerun-link.rsp')"
-           Text="The corerun link kit is missing from '$(WasmCorerunKitDir)'. Build the 'clr.hosts' subset for browser-wasm first (the kit is produced by src/coreclr/hosts/corerun/wasm/testkit.cmake)." />
+           Text="The corerun link kit is missing from '$(WasmCorerunKitDir)'. Build the 'clr.hosts' subset for $(TargetOS)-wasm first (the kit is produced by src/coreclr/hosts/corerun/wasm/testkit.cmake)." />
 
     <!-- '%24' below is an escaped '$': these messages name the property literally and then show its
          value, so they read as e.g. "$(TasksConfiguration)='Checked'". Writing a bare '$' would
@@ -174,36 +189,49 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <Error Condition="'$(_WasmCorerunSkip)' != 'true' and !Exists('$(WasmAppBuilderDir)WasmAppBuilder.dll')"
            Text="WasmAppBuilder.dll was not found at '$(WasmAppBuilderDir)'. It is built by the 'tasks' subset into %24(TasksConfiguration)='$(TasksConfiguration)'; build the repo in that configuration, or pass /p:TasksConfiguration=&lt;config&gt; to the test build." />
 
-    <PropertyGroup Condition="'$(_WasmCorerunSkip)' != 'true'">
-      <_WasmCorerunEmcc Condition="'$(EmscriptenUpstreamEmscriptenPath)' != ''">$(EmscriptenUpstreamEmscriptenPath)emcc$(_WasmCorerunScriptExt)</_WasmCorerunEmcc>
-      <_WasmCorerunEmxx Condition="'$(EmscriptenUpstreamEmscriptenPath)' != ''">$(EmscriptenUpstreamEmscriptenPath)em++$(_WasmCorerunScriptExt)</_WasmCorerunEmxx>
+    <PropertyGroup Condition="'$(_WasmCorerunSkip)' != 'true' and '$(TargetOS)' == 'browser'">
+      <_WasmCorerunCc Condition="'$(EmscriptenUpstreamEmscriptenPath)' != ''">$(EmscriptenUpstreamEmscriptenPath)emcc$(_WasmCorerunScriptExt)</_WasmCorerunCc>
+      <_WasmCorerunCxx Condition="'$(EmscriptenUpstreamEmscriptenPath)' != ''">$(EmscriptenUpstreamEmscriptenPath)em++$(_WasmCorerunScriptExt)</_WasmCorerunCxx>
+      <_WasmCorerunToolchainMissing>Set %24(EMSDK_PATH), or build the browser-wasm runtime first so that the Emscripten SDK is provisioned into '$(EmscriptenSdkCacheDir)'.</_WasmCorerunToolchainMissing>
+    </PropertyGroup>
+
+    <!-- The kit is relocatable, so the wasi-sdk target, sysroot and component linker, which are
+         host paths, are supplied here rather than in its response files. -->
+    <PropertyGroup Condition="'$(_WasmCorerunSkip)' != 'true' and '$(TargetOS)' == 'wasi'">
+      <_WasmCorerunWasiSdk>$(RuntimeBuildWasiSdkPath)</_WasmCorerunWasiSdk>
+      <_WasmCorerunWasiExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_WasmCorerunWasiExeExt>
+      <_WasmCorerunCc Condition="'$(_WasmCorerunWasiSdk)' != ''">$(_WasmCorerunWasiSdk)bin/clang$(_WasmCorerunWasiExeExt)</_WasmCorerunCc>
+      <_WasmCorerunCxx Condition="'$(_WasmCorerunWasiSdk)' != ''">$(_WasmCorerunWasiSdk)bin/clang++$(_WasmCorerunWasiExeExt)</_WasmCorerunCxx>
+      <_WasmCorerunToolArgs>--target=wasm32-wasip2 --sysroot=&quot;$(_WasmCorerunWasiSdk.Replace('\','/'))share/wasi-sysroot&quot;</_WasmCorerunToolArgs>
+      <_WasmCorerunLinkToolArgs>-fuse-ld=&quot;$(_WasmCorerunWasiSdk.Replace('\','/'))bin/wasm-component-ld$(_WasmCorerunWasiExeExt)&quot;</_WasmCorerunLinkToolArgs>
+      <_WasmCorerunToolchainMissing>The WASI SDK $(WasiSdkVersion) was not found at '$(_WasmCorerunWasiSdk)'.</_WasmCorerunToolchainMissing>
     </PropertyGroup>
 
     <Error Condition="'$(_WasmCorerunSkip)' != 'true' and
                       @(_WasmCorerunNativeSource->WithMetadataValue('Extension', '.c')->Count()) > 0 and
-                      ('$(_WasmCorerunEmcc)' == '' or !Exists('$(_WasmCorerunEmcc)'))"
-           Text="Could not find emcc for the test-specific corerun. Set %24(EMSDK_PATH), or build the browser-wasm runtime first so that the Emscripten SDK is provisioned into '$(EmscriptenSdkCacheDir)'." />
-    <Error Condition="'$(_WasmCorerunSkip)' != 'true' and ('$(_WasmCorerunEmxx)' == '' or !Exists('$(_WasmCorerunEmxx)'))"
-           Text="Could not find em++ for the test-specific corerun. Set %24(EMSDK_PATH), or build the browser-wasm runtime first so that the Emscripten SDK is provisioned into '$(EmscriptenSdkCacheDir)'." />
+                      ('$(_WasmCorerunCc)' == '' or !Exists('$(_WasmCorerunCc)'))"
+           Text="Could not find the C compiler for the test-specific corerun. $(_WasmCorerunToolchainMissing)" />
+    <Error Condition="'$(_WasmCorerunSkip)' != 'true' and ('$(_WasmCorerunCxx)' == '' or !Exists('$(_WasmCorerunCxx)'))"
+           Text="Could not find the C++ compiler for the test-specific corerun. $(_WasmCorerunToolchainMissing)" />
 
     <!-- em++ finds its own toolchain through the self-relative .emscripten config next to it. Only
          the Windows launcher needs help, because it shells out to a bundled python. That is also
          the only platform EmSdkRepo.Defaults.props resolves a python path for. -->
     <ItemGroup Condition="'$(_WasmCorerunSkip)' != 'true' and '$(EmscriptenPythonToolsPath)' != ''">
-      <_WasmCorerunEmscriptenEnv Include="EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe"
+      <_WasmCorerunToolEnv Include="EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe"
                                  Condition="Exists('$(EmscriptenPythonToolsPath)python.exe')" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(_WasmCorerunSkip)' != 'true'">
       <!-- Build intermediates (generated sources, objects, response files, the generator's cache)
            live under obj, not next to the test: everything in $(OutDir) is sent to Helix, and
-           these are worth about 300 KB per test there for no run-time purpose. Only corerun.js
-           and corerun.wasm below belong in the output directory. -->
+           these are worth about 300 KB per test there for no run-time purpose. Only
+           @(_WasmCorerunOutput) belongs in the output directory. -->
       <_WasmCorerunInputManifest>$(_WasmCorerunDir)inputs.txt</_WasmCorerunInputManifest>
       <_Crossgen2GeneratorRsp>$(_WasmCorerunDir)callhelpers-generator.rsp</_Crossgen2GeneratorRsp>
 
       <!-- Consumed straight out of the kit: the paths in them are relative to the kit directory,
-           which is why both em++ invocations below run from there. The generated call tables use
+           which is why the compiler invocations below run from there. The generated call tables use
            the full compile rsp (force-includes coreclr_compat.h); user NativeFileReference sources
            use the user rsp, which omits the generated-helper-only compat header/include path so a
            raw .c/.cpp does not inherit CoreCLR typedefs/macros. This mirrors the app build's split
@@ -212,10 +240,9 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunUserCompileRsp>$(WasmCorerunKitDir)corerun-compile-user.rsp</_WasmCorerunUserCompileRsp>
       <_WasmCorerunLinkRsp>$(WasmCorerunKitDir)corerun-link.rsp</_WasmCorerunLinkRsp>
 
-      <_WasmCorerunJs>$(OutDir)corerun.js</_WasmCorerunJs>
-      <!-- em++ emits the loader and the module as a pair. Both are outputs of the link: tracking
-           only the loader would leave the target up to date after corerun.wasm alone is lost. -->
-      <_WasmCorerunWasm>$(OutDir)corerun.wasm</_WasmCorerunWasm>
+      <!-- The file the linker is asked to produce: the loader on browser, the module on WASI. -->
+      <_WasmCorerunLinkOutput>$(OutDir)corerun.wasm</_WasmCorerunLinkOutput>
+      <_WasmCorerunLinkOutput Condition="'$(TargetOS)' == 'browser'">$(OutDir)corerun.js</_WasmCorerunLinkOutput>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_WasmCorerunSkip)' != 'true'">
@@ -233,6 +260,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunKitInclude Include="$(WasmCorerunKitDir)include/**/*" />
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*$(StaticLibSuffix)" />
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*.js" />
+      <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*.wit" />
 
       <!-- src/tests/Common/Platform is the shared native helper library for tests, and several of
            the CMake projects that produce a test library link it (Interop, Runtime_101046,
@@ -277,7 +305,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     </ItemGroup>
 
     <Error Condition="'@(_WasmCorerunFrameworkAssembly)' == ''"
-           Text="No framework assemblies found in '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)'. The 'libs' subset must be built for browser-wasm before building tests that need a test-specific corerun." />
+           Text="No framework assemblies found in '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)'. The 'libs' subset must be built for $(TargetOS)-wasm before building tests that need a test-specific corerun." />
   </Target>
 
   <!--
@@ -353,8 +381,6 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            Text="Set %24(Crossgen2Path) to a crossgen2 executable, not the DLL '$(Crossgen2Path)'." />
 
     <ItemGroup>
-      <!-- This file is only imported for browser, so $(TargetOS) is that; naming it rather than
-           repeating the literal keeps the two from drifting if wasi ever links a test corerun. -->
       <_Crossgen2GeneratorArg Include="--targetos:$(TargetOS)" />
       <_Crossgen2GeneratorArg Include="--targetarch:wasm" />
       <_Crossgen2GeneratorArg Include="--generate-portable-callhelpers:$(_WasmCorerunDir)" />
@@ -381,19 +407,19 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
           Outputs="@(_WasmCorerunGeneratedSource->'%(ObjectFile)');@(_WasmCorerunNativeSource->'%(ObjectFile)')">
     <Message Importance="High" Text="$(MSBuildProjectName) -> compiling native sources and managed-to-native tables for a test-specific corerun" />
 
-    <Exec Command="&quot;$(_WasmCorerunEmxx)&quot; &quot;@$(_WasmCorerunCompileRsp)&quot; -c &quot;%(_WasmCorerunGeneratedSource.Identity)&quot; -o &quot;%(_WasmCorerunGeneratedSource.ObjectFile)&quot;"
+    <Exec Command="&quot;$(_WasmCorerunCxx)&quot; $(_WasmCorerunToolArgs) &quot;@$(_WasmCorerunCompileRsp)&quot; -c &quot;%(_WasmCorerunGeneratedSource.Identity)&quot; -o &quot;%(_WasmCorerunGeneratedSource.ObjectFile)&quot;"
           WorkingDirectory="$(WasmCorerunKitDir)"
-          EnvironmentVariables="@(_WasmCorerunEmscriptenEnv)" />
+          EnvironmentVariables="@(_WasmCorerunToolEnv)" />
 
-    <Exec Command="&quot;$(_WasmCorerunEmcc)&quot; &quot;@$(_WasmCorerunUserCompileRsp)&quot; -c &quot;%(_WasmCorerunNativeSource.FullPath)&quot; -o &quot;%(_WasmCorerunNativeSource.ObjectFile)&quot;"
+    <Exec Command="&quot;$(_WasmCorerunCc)&quot; $(_WasmCorerunToolArgs) &quot;@$(_WasmCorerunUserCompileRsp)&quot; -c &quot;%(_WasmCorerunNativeSource.FullPath)&quot; -o &quot;%(_WasmCorerunNativeSource.ObjectFile)&quot;"
           Condition="'%(_WasmCorerunNativeSource.Extension)' == '.c'"
           WorkingDirectory="$(WasmCorerunKitDir)"
-          EnvironmentVariables="@(_WasmCorerunEmscriptenEnv)" />
+          EnvironmentVariables="@(_WasmCorerunToolEnv)" />
 
-    <Exec Command="&quot;$(_WasmCorerunEmxx)&quot; &quot;@$(_WasmCorerunUserCompileRsp)&quot; -c &quot;%(_WasmCorerunNativeSource.FullPath)&quot; -o &quot;%(_WasmCorerunNativeSource.ObjectFile)&quot;"
+    <Exec Command="&quot;$(_WasmCorerunCxx)&quot; $(_WasmCorerunToolArgs) &quot;@$(_WasmCorerunUserCompileRsp)&quot; -c &quot;%(_WasmCorerunNativeSource.FullPath)&quot; -o &quot;%(_WasmCorerunNativeSource.ObjectFile)&quot;"
           Condition="'%(_WasmCorerunNativeSource.Extension)' == '.cpp'"
           WorkingDirectory="$(WasmCorerunKitDir)"
-          EnvironmentVariables="@(_WasmCorerunEmscriptenEnv)" />
+          EnvironmentVariables="@(_WasmCorerunToolEnv)" />
 
     <ItemGroup>
       <FileWrites Include="@(_WasmCorerunGeneratedSource->'%(ObjectFile)')" />
@@ -413,19 +439,19 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
           DependsOnTargets="_WasmResolveTestCorerunInputs;_WasmWriteTestCorerunInputManifest"
           Condition="'$(_WasmCorerunSkip)' != 'true'"
           Inputs="@(_WasmCorerunGeneratedSource->'%(ObjectFile)');@(_WasmCorerunNativeSource->'%(ObjectFile)');@(_WasmCorerunTestLib);@(_WasmCorerunCommonLib);@(_WasmCorerunKitLinkInput);$(_WasmCorerunLinkRsp);$(_WasmCorerunInputManifest)"
-          Outputs="$(_WasmCorerunJs);$(_WasmCorerunWasm)">
-    <Message Importance="High" Text="$(MSBuildProjectName) -> $(_WasmCorerunJs)" />
+          Outputs="@(_WasmCorerunOutput)">
+    <Message Importance="High" Text="$(MSBuildProjectName) -> $(_WasmCorerunLinkOutput)" />
 
     <PropertyGroup>
       <_WasmCorerunLinkInputs>@(_WasmCorerunGeneratedSource->'&quot;%(ObjectFile)&quot;', ' ') @(_WasmCorerunNativeSource->'&quot;%(ObjectFile)&quot;', ' ') @(_WasmCorerunTestLib->'&quot;%(FullPath)&quot;', ' ') @(_WasmCorerunCommonLib->'&quot;%(FullPath)&quot;', ' ')</_WasmCorerunLinkInputs>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(_WasmCorerunEmxx)&quot; $(_WasmCorerunLinkInputs) &quot;@$(_WasmCorerunLinkRsp)&quot; -o &quot;$(_WasmCorerunJs)&quot;"
+    <Exec Command="&quot;$(_WasmCorerunCxx)&quot; $(_WasmCorerunToolArgs) $(_WasmCorerunLinkInputs) &quot;@$(_WasmCorerunLinkRsp)&quot; $(_WasmCorerunLinkToolArgs) -o &quot;$(_WasmCorerunLinkOutput)&quot;"
           WorkingDirectory="$(WasmCorerunKitDir)"
-          EnvironmentVariables="@(_WasmCorerunEmscriptenEnv)" />
+          EnvironmentVariables="@(_WasmCorerunToolEnv)" />
 
     <ItemGroup>
-      <FileWrites Include="$(_WasmCorerunJs);$(_WasmCorerunWasm)" />
+      <FileWrites Include="@(_WasmCorerunOutput)" />
     </ItemGroup>
   </Target>
 

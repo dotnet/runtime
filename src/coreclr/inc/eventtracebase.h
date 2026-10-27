@@ -605,7 +605,7 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
 
 #ifndef  HOST_UNIX
 // Callback and stack support
-#if !defined(DONOT_DEFINE_ETW_CALLBACK) && !defined(DACCESS_COMPILE)
+#if !defined(DISABLE_ETW_CALLBACK_HOOKS) && !defined(DACCESS_COMPILE)
 extern "C" {
     /* ETW control callback
          * Desc:        This function handles the ETW control
@@ -651,7 +651,7 @@ extern "C" {
 //
 #define MCGEN_CALLOUT(RegHandle, Descriptor, NumberOfArguments, EventData) \
         EtwCallout(RegHandle, Descriptor, NumberOfArguments, EventData)
-#endif //!DONOT_DEFINE_ETW_CALLBACK && !DACCESS_COMPILE
+#endif // !DISABLE_ETW_CALLBACK_HOOKS && !DACCESS_COMPILE
 
 #endif //!HOST_UNIX
 #include "clretwallmain.h"

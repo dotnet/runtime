@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "CLREventBase.h"
+#include <clrdata.h>
 #include <minipal/time.h>
 #include "primitives.h"
 #include "safewrap.h"
@@ -8336,15 +8337,14 @@ CordbProcess::GetVersion(COR_VERSION* pVersion)
         return E_INVALIDARG;
     }
 
-    //
-    // Because we require a matching version of mscordbi.dll to debug a certain version of the runtime,
-    // we can just use constants found in this particular mscordbi.dll to determine the version of the left side.
-    pVersion->dwMajor = RuntimeProductMajorVersion;
-    pVersion->dwMinor = RuntimeProductMinorVersion;
-    pVersion->dwBuild = RuntimeProductPatchVersion;
-    pVersion->dwSubBuild = 0;
+    *pVersion = {};
 
-    return S_OK;
+    HRESULT hr = S_OK;
+    PUBLIC_API_BEGIN(this);
+    hr = IsDacInitialized() ? GetDAC()->GetRuntimeVersion(pVersion) : CORDBG_E_NOTREADY;
+    PUBLIC_API_END(hr);
+
+    return hr;
 }
 
 #ifdef FEATURE_INTEROP_DEBUGGING
