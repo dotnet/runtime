@@ -2,7 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -243,7 +245,7 @@ namespace ILLink.Tasks
         private const string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
 
         private string _dotnetPath;
-        private List<(string Line, MessageImportance Importance)> _cachedOutput;
+        private ConcurrentQueue<(string Line, bool IsStandardError)> _cachedOutput;
 
         private string DotNetPath
         {
@@ -277,7 +279,7 @@ namespace ILLink.Tasks
             if (cache is not null && !TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out inputHash))
                 cache = null;
 
-            if (cache is not null && cache.TryRestore(inputHash, OutputDirectory.ItemSpec, outputTimestampUtc, LogEventsFromTextOutput))
+            if (cache is not null && cache.TryRestore(inputHash, OutputDirectory.ItemSpec, outputTimestampUtc, LogCachedOutput))
                 return Log.HasLoggedErrors ? -1 : 0;
 
             try
@@ -294,12 +296,12 @@ namespace ILLink.Tasks
                 return -1;
             }
 
-            _cachedOutput = cache is not null ? new List<(string Line, MessageImportance Importance)>() : null;
+            _cachedOutput = cache is not null ? new ConcurrentQueue<(string Line, bool IsStandardError)>() : null;
             try
             {
                 int exitCode = base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
                 if (exitCode == 0 && !Log.HasLoggedErrors && cache is not null)
-                    cache.Store(inputHash, OutputDirectory.ItemSpec, _cachedOutput);
+                    cache.Store(inputHash, OutputDirectory.ItemSpec, _cachedOutput.ToArray());
 
                 return exitCode;
             }
@@ -309,11 +311,32 @@ namespace ILLink.Tasks
             }
         }
 
-        protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
+        protected override Process StartToolProcess(Process process)
         {
-            // Preserve the compiler text before MSBuild applies its current warning policy.
-            _cachedOutput?.Add((singleLine, messageImportance));
-            base.LogEventsFromTextOutput(singleLine, messageImportance);
+            if (_cachedOutput is { } output)
+            {
+                // Capture before ToolTask applies stream logging policy, including LogStandardErrorAsError.
+                process.OutputDataReceived += (_, args) =>
+                {
+                    if (args.Data is not null)
+                        output.Enqueue((args.Data, false));
+                };
+                process.ErrorDataReceived += (_, args) =>
+                {
+                    if (args.Data is not null)
+                        output.Enqueue((args.Data, true));
+                };
+            }
+
+            return base.StartToolProcess(process);
+        }
+
+        private void LogCachedOutput(string line, bool isStandardError)
+        {
+            if (isStandardError && LogStandardErrorAsError)
+                Log.LogError(line);
+            else
+                LogEventsFromTextOutput(line, isStandardError ? StandardErrorImportanceToUse : StandardOutputImportanceToUse);
         }
 
         private bool TryComputeCacheKey(string pathToTool, string commandLineCommands, string responseFileCommands, out string inputHash)
@@ -372,9 +395,6 @@ namespace ILLink.Tasks
                 writer.Write("ILLink task cache key v1");
                 writer.Write(commandLineCommands);
                 writer.Write(responseFileCommands);
-                writer.Write(StandardOutputImportance ?? string.Empty);
-                writer.Write(StandardErrorImportance ?? string.Empty);
-                writer.Write(LogStandardErrorAsError);
                 writer.Write(Environment.CurrentDirectory);
                 writer.Write(Path.GetFullPath(OutputDirectory.ItemSpec));
                 writer.Write(RuntimeInformation.OSDescription);

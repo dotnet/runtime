@@ -1356,7 +1356,7 @@ namespace ILLink.Tasks.Tests
         [Theory]
         [InlineData("truncated")]
         [InlineData("negative-count")]
-        [InlineData("invalid-importance")]
+        [InlineData("invalid-stream")]
         [InlineData("trailing-data")]
         public void CacheRejectsMalformedDiagnosticsBeforeCopying(string damage)
         {
@@ -1368,7 +1368,7 @@ namespace ILLink.Tasks.Tests
                 diagnostics.Write(damage == "negative-count" ? -1 : 1);
                 diagnostics.Write("warning IL2026: warning");
                 if (damage != "truncated")
-                    diagnostics.Write(damage == "invalid-importance" ? -1 : (int)MessageImportance.High);
+                    diagnostics.Write((byte)(damage == "invalid-stream" ? 2 : 0));
                 if (damage == "trailing-data")
                     diagnostics.Write(0);
             }
@@ -1399,20 +1399,21 @@ namespace ILLink.Tasks.Tests
         {
             using var test = new CacheTestDirectory();
             test.WriteSource("app.dll", "output");
-            var output = new List<(string Line, MessageImportance Importance)>
+            var output = new List<(string Line, bool IsStandardError)>
             {
-                ("source.cs(4,2,4,8): Trim analysis warning IL2026: text {0}", MessageImportance.High),
-                ("ILLink : warning IL2104: more text", MessageImportance.Normal),
-                ("compiler message", MessageImportance.Low)
+                ("source.cs(4,2,4,8): Trim analysis warning IL2026: text {0}", true),
+                ("ILLink : warning IL2104: more text", false),
+                ("compiler message", true),
+                ("", false)
             };
             test.Cache.Store(CacheTestDirectory.Key, test.Source, output);
             if (failCopy)
                 File.WriteAllText(test.Output, "blocks directory creation");
-            var replayed = new List<(string Line, MessageImportance Importance)>();
+            var replayed = new List<(string Line, bool IsStandardError)>();
 
             Assert.Equal(!failCopy, test.Cache.TryRestore(CacheTestDirectory.Key, test.Output, CacheTestDirectory.Timestamp,
-                (line, importance) => replayed.Add((line, importance))));
-            Assert.Equal(failCopy ? new List<(string Line, MessageImportance Importance)>() : output, replayed);
+                (line, isStandardError) => replayed.Add((line, isStandardError))));
+            Assert.Equal(failCopy ? new List<(string Line, bool IsStandardError)>() : output, replayed);
         }
 
         [Fact]
@@ -1420,7 +1421,7 @@ namespace ILLink.Tasks.Tests
         {
             using var test = new CacheTestDirectory();
             test.Cache.Store(CacheTestDirectory.Key, test.Source,
-                new[] { ("warning IL2026: warning", MessageImportance.High) });
+                new[] { ("warning IL2026: warning", true) });
             var exception = new IOException("Logging failed.");
 
             Assert.Same(exception, Assert.Throws<IOException>(() =>
@@ -1995,14 +1996,14 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData("argument")]
-        [InlineData("metadata")]
-        [InlineData("output")]
-        [InlineData("input-path")]
-        [InlineData("stdout-importance")]
-        [InlineData("stderr-importance")]
-        [InlineData("stderr-as-error")]
-        public void CacheKeyTracksInvocation(string change)
+        [InlineData("argument", true)]
+        [InlineData("metadata", true)]
+        [InlineData("output", true)]
+        [InlineData("input-path", true)]
+        [InlineData("stdout-importance", false)]
+        [InlineData("stderr-importance", false)]
+        [InlineData("stderr-as-error", false)]
+        public void CacheKeyTracksInvocation(string change, bool affectsKey)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
@@ -2035,7 +2036,7 @@ namespace ILLink.Tasks.Tests
             }
 
             Assert.True(test.Task.TryGetCacheKey(host, out string changed));
-            Assert.NotEqual(original, changed);
+            Assert.Equal(affectsKey, original != changed);
         }
 
         [Theory]
@@ -2381,6 +2382,120 @@ namespace ILLink.Tasks.Tests
                     SingleWarn = false
                 };
             }, mode).Dispose();
+        }
+
+        [Theory]
+        [InlineData("unchanged")]
+        [InlineData("stdout-importance")]
+        [InlineData("stderr-importance")]
+        [InlineData("stderr-as-error")]
+        [InlineData("cold-stderr-as-error")]
+        public void TaskReplaysCurrentStreamPolicy(string mode)
+        {
+            RemoteExecutor.Invoke(static mode =>
+            {
+                using var test = new OutputDirectoryTest();
+                string input = Path.Combine(test.Root, "Input.dll");
+                WriteTestAssembly(input);
+                string tool = Path.Combine(test.Root, "OutputTool.dll");
+                WriteOutputTool(tool);
+                File.Copy(Path.ChangeExtension(typeof(TaskArgumentTests).Assembly.Location, ".runtimeconfig.json"),
+                    Path.ChangeExtension(tool, ".runtimeconfig.json"));
+                string cacheDirectory = Path.Combine(test.Root, "cache");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE", "true");
+                Environment.SetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH", cacheDirectory);
+                ILLink task = CreateTask();
+                bool coldError = mode == "cold-stderr-as-error";
+                task.LogStandardErrorAsError = coldError;
+
+                Assert.Equal(!coldError, task.Execute());
+                if (coldError)
+                {
+                    Assert.False(Directory.Exists(cacheDirectory));
+                    Assert.Equal(2, test.BuildEngine.Errors.Count);
+                    return;
+                }
+
+                Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
+                Assert.Equal(MessageImportance.Low, Assert.Single(test.BuildEngine.Messages, message => message.Message == "stdout {0}").Importance);
+                Assert.Equal(MessageImportance.High, Assert.Single(test.BuildEngine.Messages, message => message.Message == "stderr {0}").Importance);
+                Assert.Equal("IL2026", Assert.Single(test.BuildEngine.Warnings).Code);
+                test.BuildEngine.Messages.Clear();
+                test.BuildEngine.Warnings.Clear();
+
+                task = CreateTask();
+                task.StandardOutputImportance = mode == "stdout-importance" ? "hIgH" : null;
+                task.StandardErrorImportance = mode == "stderr-importance" ? "Low" : null;
+                task.LogStandardErrorAsError = mode == "stderr-as-error";
+                bool escalated = task.LogStandardErrorAsError;
+                Assert.Equal(!escalated, task.Execute());
+                Assert.Equal(escalated ? -1 : 0, task.ExitCode);
+                Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache hit:"));
+                Assert.Single(Directory.GetDirectories(Path.Combine(cacheDirectory, "v1")));
+                Assert.Equal(mode == "stdout-importance" ? MessageImportance.High : MessageImportance.Low,
+                    Assert.Single(test.BuildEngine.Messages, message => message.Message == "stdout {0}").Importance);
+                if (escalated)
+                {
+                    Assert.Empty(test.BuildEngine.Warnings);
+                    Assert.Contains(test.BuildEngine.Errors, error => error.Message == "stderr {0}");
+                    Assert.Contains(test.BuildEngine.Errors, error =>
+                        error.Message == "source.cs(4,2,4,8): Trim analysis warning IL2026: warning {0}");
+                    Assert.Equal(2, test.BuildEngine.Errors.Count);
+                }
+                else
+                {
+                    Assert.Empty(test.BuildEngine.Errors);
+                    Assert.Equal(mode == "stderr-importance" ? MessageImportance.Low : MessageImportance.High,
+                        Assert.Single(test.BuildEngine.Messages, message => message.Message == "stderr {0}").Importance);
+                    BuildWarningEventArgs warning = Assert.Single(test.BuildEngine.Warnings);
+                    Assert.Equal("IL2026", warning.Code);
+                    Assert.Equal("warning {0}", warning.Message);
+                    Assert.Equal("Trim analysis", warning.Subcategory);
+                    Assert.Equal("source.cs", warning.File);
+                    Assert.Equal(4, warning.LineNumber);
+                    Assert.Equal(2, warning.ColumnNumber);
+                    Assert.Equal(4, warning.EndLineNumber);
+                    Assert.Equal(8, warning.EndColumnNumber);
+                }
+
+                ILLink CreateTask() => new ILLink
+                {
+                    BuildEngine = test.BuildEngine,
+                    ToolPath = test.Task.ToolPath,
+                    ToolExe = test.Task.ToolExe,
+                    ILLinkPath = tool,
+                    AssemblyPaths = new ITaskItem[] { new TaskItem(input) },
+                    RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") },
+                    OutputDirectory = new TaskItem(test.Output)
+                };
+            }, mode).Dispose();
+        }
+
+        private static void WriteOutputTool(string path)
+        {
+            using var assembly = Mono.Cecil.AssemblyDefinition.CreateAssembly(
+                new Mono.Cecil.AssemblyNameDefinition("OutputTool", new Version(1, 0)),
+                "OutputTool.dll", Mono.Cecil.ModuleKind.Console);
+            Mono.Cecil.ModuleDefinition module = assembly.MainModule;
+            var type = new Mono.Cecil.TypeDefinition("", "Program", Mono.Cecil.TypeAttributes.Public, module.TypeSystem.Object);
+            module.Types.Add(type);
+            var main = new Mono.Cecil.MethodDefinition("Main",
+                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, module.TypeSystem.Void);
+            Mono.Cecil.Cil.ILProcessor il = main.Body.GetILProcessor();
+            il.Emit(Mono.Cecil.Cil.OpCodes.Ldstr, "stdout {0}");
+            il.Emit(Mono.Cecil.Cil.OpCodes.Call, module.ImportReference(
+                typeof(Console).GetMethod(nameof(Console.WriteLine), new[] { typeof(string) })));
+            foreach (string line in new[] { "stderr {0}", "source.cs(4,2,4,8): Trim analysis warning IL2026: warning {0}" })
+            {
+                il.Emit(Mono.Cecil.Cil.OpCodes.Call, module.ImportReference(typeof(Console).GetProperty(nameof(Console.Error)).GetMethod));
+                il.Emit(Mono.Cecil.Cil.OpCodes.Ldstr, line);
+                il.Emit(Mono.Cecil.Cil.OpCodes.Callvirt, module.ImportReference(
+                    typeof(TextWriter).GetMethod(nameof(TextWriter.WriteLine), new[] { typeof(string) })));
+            }
+            il.Emit(Mono.Cecil.Cil.OpCodes.Ret);
+            type.Methods.Add(main);
+            module.EntryPoint = main;
+            assembly.Write(path);
         }
 
         private static void WriteWarningAssembly(string path)

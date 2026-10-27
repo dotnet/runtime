@@ -97,7 +97,7 @@ internal sealed class ILLinkCache
     }
 
     internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc,
-        Action<string, MessageImportance>? logOutput = null)
+        Action<string, bool>? logOutput = null)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
         outputDirectory = ValidateOutputDirectory(outputDirectory);
@@ -110,7 +110,7 @@ internal sealed class ILLinkCache
             return false;
         }
 
-        List<(string Line, MessageImportance Importance)> output;
+        List<(string Line, bool IsStandardError)> output;
         try
         {
             List<string> files = ReadManifest(entryDirectory, out output);
@@ -139,13 +139,13 @@ internal sealed class ILLinkCache
 
         // Logging must not turn a completed restore into a retry that duplicates diagnostics.
         foreach (var line in output)
-            logOutput?.Invoke(line.Line, line.Importance);
+            logOutput?.Invoke(line.Line, line.IsStandardError);
 
         return true;
     }
 
     internal void Store(string inputHash, string outputDirectory,
-        IReadOnlyList<(string Line, MessageImportance Importance)>? output = null)
+        IReadOnlyList<(string Line, bool IsStandardError)>? output = null)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
         outputDirectory = ValidateOutputDirectory(outputDirectory);
@@ -211,7 +211,7 @@ internal sealed class ILLinkCache
                             foreach (var line in output)
                             {
                                 diagnostics.Write(line.Line);
-                                diagnostics.Write((int)line.Importance);
+                                diagnostics.Write(line.IsStandardError);
                             }
                         }
                     }
@@ -310,7 +310,7 @@ internal sealed class ILLinkCache
     }
 
     private static List<string> ReadManifest(string entryDirectory,
-        out List<(string Line, MessageImportance Importance)> output)
+        out List<(string Line, bool IsStandardError)> output)
     {
         using var manifest = new BinaryReader(File.OpenRead(Path.Combine(entryDirectory, "manifest")));
         if (manifest.ReadInt32() != FormatVersion)
@@ -356,15 +356,15 @@ internal sealed class ILLinkCache
         if (count < 0 || count > diagnostics.BaseStream.Length - diagnostics.BaseStream.Position)
             throw new InvalidDataException("Invalid ILLink cache diagnostic count.");
 
-        output = new List<(string Line, MessageImportance Importance)>();
+        output = new List<(string Line, bool IsStandardError)>();
         for (int i = 0; i < count; i++)
         {
             string line = diagnostics.ReadString();
-            var importance = (MessageImportance)diagnostics.ReadInt32();
-            if (importance is not (MessageImportance.High or MessageImportance.Normal or MessageImportance.Low))
-                throw new InvalidDataException("Invalid ILLink cache diagnostic importance.");
+            byte stream = diagnostics.ReadByte();
+            if (stream is not (0 or 1))
+                throw new InvalidDataException("Invalid ILLink cache diagnostic stream.");
 
-            output.Add((line, importance));
+            output.Add((line, stream == 1));
         }
         if (diagnostics.BaseStream.Position != diagnostics.BaseStream.Length)
             throw new InvalidDataException("Unexpected data in ILLink cache diagnostics.");
