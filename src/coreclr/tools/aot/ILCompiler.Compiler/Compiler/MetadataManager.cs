@@ -277,11 +277,6 @@ namespace ILCompiler
                     _reflectableMethods.Add(methodNode.Method);
             }
 
-            if (methodNode is not null || obj is ShadowConcreteMethodNode)
-            {
-                return;
-            }
-
             var reflectedMethodNode = obj as ReflectedMethodNode;
             if (reflectedMethodNode != null)
             {
