@@ -876,7 +876,7 @@ namespace System.IO.Compression
                         decompressor = await streamTask.ConfigureAwait(false);
                         await TAdapter.CopyToAsync(decompressor, _storedUncompressedData, token).ConfigureAwait(false);
                     }
-                    catch (InvalidDataException)
+                    catch (Exception ex) when (ex is InvalidDataException or IOException or OperationCanceledException)
                     {
                         MemoryStream storedUncompressedData = _storedUncompressedData;
                         await TAdapter.DisposeAsync(storedUncompressedData).ConfigureAwait(false);
@@ -1598,27 +1598,34 @@ namespace System.IO.Compression
             }
 
             _currentlyOpenForWrite = true;
-
-            if (loadExistingContent)
+            try
             {
-                _storedUncompressedData = await GetUncompressedDataCoreAsync<TAdapter>(aesKeys, zipCryptoKeys, zipCryptoCheckByte, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                if (_storedUncompressedData is not null)
+                if (loadExistingContent)
                 {
-                    await TAdapter.DisposeAsync(_storedUncompressedData).ConfigureAwait(false);
+                    _storedUncompressedData = await GetUncompressedDataCoreAsync<TAdapter>(aesKeys, zipCryptoKeys, zipCryptoCheckByte, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    if (_storedUncompressedData is not null)
+                    {
+                        await TAdapter.DisposeAsync(_storedUncompressedData).ConfigureAwait(false);
+                    }
+
+                    _storedUncompressedData = new MemoryStream();
+                    MarkAsModified();
                 }
 
-                _storedUncompressedData = new MemoryStream();
-                MarkAsModified();
+                _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+
+                return new WrappedStream(_storedUncompressedData, this,
+                    onClosed: thisRef => thisRef!._currentlyOpenForWrite = false,
+                    notifyEntryOnWrite: true);
             }
-
-            _storedUncompressedData.Seek(0, SeekOrigin.Begin);
-
-            return new WrappedStream(_storedUncompressedData, this,
-                onClosed: thisRef => thisRef!._currentlyOpenForWrite = false,
-                notifyEntryOnWrite: true);
+            catch
+            {
+                _currentlyOpenForWrite = false;
+                throw;
+            }
         }
 
         // Returns a read-only, seekable view over the entry's current uncompressed buffer in Update mode.
