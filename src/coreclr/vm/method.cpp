@@ -3014,12 +3014,12 @@ void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
     WRAPPER_NO_CONTRACT;
 
     PortableEntryPoint *pep = PortableEntryPoint::ToPortableEntryPoint(entryPoint);
-    MethodDesc* pMD = pep->GetMethodDescIfExists();
-    if (pMD == nullptr)
+    if (pep->HasNativeCode())
     {
-        _ASSERTE(pep->HasNativeCode());
         return;
     }
+
+    MethodDesc* pMD = PortableEntryPoint::GetMethodDesc(entryPoint);
 
 #ifdef FEATURE_READYTORUN
     // R2R disabled: no R2R code can call this method, so no R2R->interpreter thunk is needed.
@@ -3028,12 +3028,6 @@ void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
         return;
     }
 #endif
-
-    pMD->PrepareForUseAsADependencyOfANativeImage();
-    if (pep->HasNativeCode())
-    {
-        return;
-    }
 
     void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(pMD);
     if (pPortableEntryPointToInterpreter != nullptr)
@@ -4259,34 +4253,25 @@ PrecodeType MethodDesc::GetPrecodeType()
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-static void LoadNativeImageSignatureType(const SigPointer& signature, Module* pModule, const SigTypeContext* pTypeContext)
-{
-    STANDARD_VM_CONTRACT;
-
-    CorElementType type = signature.PeekElemTypeClosed(pModule, pTypeContext);
-    if (type == ELEMENT_TYPE_VALUETYPE || type == ELEMENT_TYPE_TYPEDBYREF)
-    {
-        TypeHandle th = signature.GetTypeHandleThrowing(pModule, pTypeContext);
-        if (th.IsNull())
-            COMPlusThrowHR(COR_E_TYPELOAD);
-    }
-}
-
 void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
 {
     STANDARD_VM_CONTRACT;
 
-    // Signature-scanning transition frames cannot load value-type layouts during GC.
-    // Publish completion only after the return type and every parameter have loaded successfully.
-    MetaSig sig(this);
-    LoadNativeImageSignatureType(sig.GetReturnProps(), GetModule(), sig.GetSigTypeContext());
-    for (UINT i = 0; i < sig.NumFixedArgs(); i++)
-    {
-        sig.SkipArg();
-        LoadNativeImageSignatureType(sig.GetArgProps(), GetModule(), sig.GetSigTypeContext());
-    }
+    // This function ensures that a method is ready for use as a dependency of a native image
+    // The current requirement is only that valuetypes can be resolved to their type defs as much
+    // as is possible. (If the method is actually called, then this will not throw, but there
+    // are cases where we call this method and we are unaware if this method will actually be called
+    // or accessed as a native image dependency. This explains the contract (STANDARD_VM_CONTRACT)
+    //  - This method should be callable only when general purpose VM code can be called
+    // , as well as the TRY/CATCH.
+    //  - This function should not introduce failures
 
-    SetNativeImageDependenciesPrepared();
+    EX_TRY
+    {
+        WalkValueTypeParameters(this->GetMethodTable(), NULL, NULL);
+    }
+    EX_SWALLOW_NONTERMINAL
+    _ASSERTE(HaveValueTypeParametersBeenWalked());
 }
 
 static void CheckForEquivalenceAndLoadType(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)

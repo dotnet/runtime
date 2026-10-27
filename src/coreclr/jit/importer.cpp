@@ -10620,10 +10620,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 tokenType = info.compCompHnd->getTokenTypeAsHandle(&resolvedToken);
 
-                // Surviving R2R type handle references carry their own load fixups.
-                const bool mustRestoreHandle =
-                    !IsReadyToRun() || (resolvedToken.hMethod != nullptr) || (resolvedToken.hField != nullptr);
-                op1 = impTokenToHandle(&resolvedToken, nullptr, mustRestoreHandle);
+                op1 = impTokenToHandle(&resolvedToken, nullptr, true);
                 if (op1 == nullptr)
                 { // compDonotInline()
                     return;

@@ -11,7 +11,7 @@ using Internal.JitInterface;
 namespace ILCompiler
 {
     /// <summary>
-    /// Roots methods in the input IL module, choosing representative instantiations for generic definitions.
+    /// Roots all methods in the input IL module.
     /// </summary>
     public class ReadyToRunLibraryRootProvider : ICompilationRootProvider
     {
@@ -145,9 +145,6 @@ namespace ILCompiler
 
         public static InstantiatedType InstantiateIfPossible(MetadataType type)
         {
-            if (SkipCanonicalInstantiation(type))
-                return null;
-
             Instantiation inst = GetInstantiationThatMeetsConstraints(type.Instantiation);
             if (inst.IsNull)
             {
@@ -159,9 +156,6 @@ namespace ILCompiler
 
         public static MethodDesc InstantiateIfPossible(MethodDesc method)
         {
-            if (method.OwningType is MetadataType type && SkipCanonicalInstantiation(type))
-                return null;
-
             Instantiation inst = GetInstantiationThatMeetsConstraints(method.Instantiation);
             if (inst.IsNull)
             {
@@ -169,32 +163,6 @@ namespace ILCompiler
             }
 
             return method.MakeInstantiatedMethod(inst);
-        }
-
-        private static bool SkipCanonicalInstantiation(MetadataType type)
-        {
-            if (type.Module != type.Context.SystemModule)
-                return false;
-
-            // Extension members also have compiler-generated nested generic types.
-            while (type.ContainingType is MetadataType containingType)
-                type = containingType;
-
-            // SIMD operations only support numeric value types; canonical reference instantiations
-            // mostly produce throwing bodies. Leave their compilation to actual dependencies.
-            if (type.Namespace == "System.Numerics"u8)
-                return type.Name == "Vector"u8 || type.Name == "Vector`1"u8;
-
-            if (type.Namespace == "System.Runtime.Intrinsics"u8)
-            {
-                return type.Name == "Scalar`1"u8
-                    || type.Name == "Vector64"u8 || type.Name == "Vector64`1"u8
-                    || type.Name == "Vector128"u8 || type.Name == "Vector128`1"u8
-                    || type.Name == "Vector256"u8 || type.Name == "Vector256`1"u8
-                    || type.Name == "Vector512"u8 || type.Name == "Vector512`1"u8;
-            }
-
-            return false;
         }
     }
 }

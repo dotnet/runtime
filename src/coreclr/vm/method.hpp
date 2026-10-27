@@ -1883,27 +1883,12 @@ public:
 
     void WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParameterFnPtr function, void *pData);
 
-    // Load closed value-type signature layouts before publishing a callable native-image dependency.
     void PrepareForUseAsADependencyOfANativeImage()
     {
         WRAPPER_NO_CONTRACT;
-        if (!HaveNativeImageDependenciesBeenPrepared())
+        if (!HaveValueTypeParametersBeenWalked())
             PrepareForUseAsADependencyOfANativeImageWorker();
     }
-
-    bool HaveNativeImageDependenciesBeenPrepared()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (VolatileLoad(&m_bFlags4) & enum_flag4_NativeImageDependenciesPrepared) != 0;
-    }
-
-#ifndef DACCESS_COMPILE
-    void SetNativeImageDependenciesPrepared()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags4(enum_flag4_NativeImageDependenciesPrepared, TRUE);
-    }
-#endif // !DACCESS_COMPILE
 
     void PrepareForUseAsAFunctionPointer();
 
@@ -1952,7 +1937,6 @@ protected:
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         enum_flag4_PendingThunkResolution                   = 0x10,
 #endif
-        enum_flag4_NativeImageDependenciesPrepared          = 0x20,
     };
 
     BYTE        m_bFlags4; // Used to hold more flags
