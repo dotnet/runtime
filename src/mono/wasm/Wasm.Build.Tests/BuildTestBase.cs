@@ -387,7 +387,7 @@ namespace Wasm.Build.Tests
 
         // Use the in-build crossgen2 when the test leg provides it. Composite builds also need the
         // wasm-aware task shim until the base SDK supports wasm R2R output naming.
-        protected static string GetR2RBuildArgs(Configuration config, bool composite = false)
+        internal static string GetR2RBuildArgs(Configuration config, bool composite = false)
         {
             string? baseDir = EnvironmentVariables.BaseDir;
             if (string.IsNullOrEmpty(baseDir))
