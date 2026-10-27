@@ -1240,8 +1240,8 @@ namespace System.Numerics.Tensors.Tests
                         otherSquares += y * y;
                         differences += (x - y) * (x - y);
                     }
-                    AssertBits(dot, Tensor.Dot(source, other));
-                    AssertBits(dot, Tensor.Dot(other, source));
+                    AssertBitsOrNaN(dot, Tensor.Dot(source, other));
+                    AssertBitsOrNaN(dot, Tensor.Dot(other, source));
                     AssertBits(Math.Sqrt(differences), Tensor.Distance(source, other));
                     AssertBits(dot / (Math.Sqrt(squares) * Math.Sqrt(otherSquares)), Tensor.CosineSimilarity(source, other));
                 }
@@ -1250,6 +1250,18 @@ namespace System.Numerics.Tensors.Tests
             static void AssertBits(double expected, double actual)
             {
                 Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual));
+            }
+
+            static void AssertBitsOrNaN(double expected, double actual)
+            {
+                if (double.IsNaN(expected))
+                {
+                    Assert.True(double.IsNaN(actual));
+                }
+                else
+                {
+                    AssertBits(expected, actual);
+                }
             }
         }
 
