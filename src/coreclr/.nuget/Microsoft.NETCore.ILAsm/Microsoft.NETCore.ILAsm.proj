@@ -3,6 +3,8 @@
     <IsILToolPackage>true</IsILToolPackage>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Build="false" Pack="false" />
+    <ProjectReference Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm_inbuild.csproj" Build="false" Pack="false" />
     <!-- identity project, runtime specific projects are included by props above -->
     <Project Include="$(MSBuildProjectName).pkgproj" />
   </ItemGroup>

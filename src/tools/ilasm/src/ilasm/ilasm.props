@@ -1,0 +1,27 @@
+<Project>
+  <PropertyGroup>
+    <AssemblyName>ilasm</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+    <ProjectReference Include="..\ILAssembler\ILAssembler.csproj" />
+  </ItemGroup>
+
+  <Target Name="GetFilesToPackage" DependsOnTargets="Publish;PublishItemsOutputGroup" Returns="@(_ILAsmPackageFile)">
+    <ItemGroup>
+      <_ILAsmPackageFile Include="@(PublishItemsOutputGroupOutputs->'%(OutputPath)')">
+        <TargetPath>runtimes/$(ILAsmPackageRuntime)/native/$([System.IO.Path]::GetDirectoryName('%(PublishItemsOutputGroupOutputs.TargetPath)'))</TargetPath>
+        <HarvestDependencies>false</HarvestDependencies>
+        <IsSymbolFile Condition="'%(Extension)' == '.pdb' or '%(Extension)' == '.dbg' or '%(Extension)' == '.dwarf'">true</IsSymbolFile>
+      </_ILAsmPackageFile>
+    </ItemGroup>
+  </Target>
+</Project>
