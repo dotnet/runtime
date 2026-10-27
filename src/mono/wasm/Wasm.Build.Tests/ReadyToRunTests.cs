@@ -103,6 +103,7 @@ namespace Wasm.Build.Tests
                 extraBuildArgs.Add($"-p:PublishReadyToRunStripInliningInfo={stripInliningInfo}");
             if (stripDebugInfo is not null)
                 extraBuildArgs.Add($"-p:PublishReadyToRunStripDebugInfo={stripDebugInfo}");
+            extraBuildArgs.Add("-v:diag");
 
             (_, string binlogPath) = BuildProjectWithoutAssert(config, info.ProjectName,
                 new PublishOptions(ExtraMSBuildArgs: string.Join(" ", extraBuildArgs)));
