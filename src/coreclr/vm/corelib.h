@@ -899,6 +899,9 @@ DEFINE_CLASS_U(Threading,              Thread,                     ThreadBaseObj
 DEFINE_FIELD_U(_name,                     ThreadBaseObject,   m_Name)
 #ifdef FEATURE_MULTITHREADING
 DEFINE_FIELD_U(_startHelper,              ThreadBaseObject,   m_StartHelper)
+#else
+DEFINE_FIELD_U(_isBackground,             ThreadBaseObject,   m_IsBackground)
+DEFINE_FIELD_U(_isPendingInterrupt,       ThreadBaseObject,   m_IsPendingInterrupt)
 #endif // FEATURE_MULTITHREADING
 DEFINE_FIELD_U(_DONT_USE_InternalThread,  ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
