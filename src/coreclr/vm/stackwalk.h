@@ -676,7 +676,6 @@ private:
     // then this is equal to m_pThread->GetFrame().  Otherwise this is equal to m_pStartFrame.
     INDEBUG(PTR_Frame m_pRealStartFrame);
     ULONG32               m_flags;          // StackWalkFrames flags.
-    ICodeManagerFlags     m_codeManFlags;
     ExecutionManager::ScanFlag m_scanFlag;
 
     // the following fields are used to cache information about a managed stack frame

@@ -997,7 +997,7 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
 #endif // _DEBUG
 
     m_flags        = flags;
-    m_codeManFlags = (ICodeManagerFlags)0;
+    m_crawl.codeManFlags = 0;
 
     m_pCachedGSCookie = NULL;
 
@@ -1086,11 +1086,10 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
     _ASSERTE(!(flags & GC_ROOT_SCAN) || !(flags & (UNWIND_FLOATS | PROFILER_DO_STACK_SNAPSHOT | NOTIFY_ON_U2M_TRANSITIONS | NOTIFY_ON_NO_FRAME_TRANSITIONS | NOTIFY_ON_INITIAL_NATIVE_CONTEXT)));
 
-    m_codeManFlags = (ICodeManagerFlags)
+    m_crawl.codeManFlags = static_cast<uint16_t>(
         (((flags & (QUICKUNWIND | LIGHTUNWIND)) ? 0 : UpdateAllRegs) |
          ((flags & LIGHTUNWIND) ? LightUnwind : 0) |
-         ((flags & GC_ROOT_SCAN) ? GcRootScan : 0));
-    m_crawl.codeManFlags = static_cast<uint16_t>(m_codeManFlags);
+         ((flags & GC_ROOT_SCAN) ? GcRootScan : 0)));
     m_scanFlag = ExecutionManager::GetScanFlags();
 
     m_pNextExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
@@ -1196,11 +1195,10 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
 
     _ASSERTE(!(m_flags & GC_ROOT_SCAN) || !(m_flags & (UNWIND_FLOATS | PROFILER_DO_STACK_SNAPSHOT | NOTIFY_ON_U2M_TRANSITIONS | NOTIFY_ON_NO_FRAME_TRANSITIONS | NOTIFY_ON_INITIAL_NATIVE_CONTEXT)));
 
-    m_codeManFlags = (ICodeManagerFlags)
+    m_crawl.codeManFlags = static_cast<uint16_t>(
         (((m_flags & (QUICKUNWIND | LIGHTUNWIND)) ? 0 : UpdateAllRegs) |
          ((m_flags & LIGHTUNWIND) ? LightUnwind : 0) |
-         ((m_flags & GC_ROOT_SCAN) ? GcRootScan : 0));
-    m_crawl.codeManFlags = static_cast<uint16_t>(m_codeManFlags);
+         ((m_flags & GC_ROOT_SCAN) ? GcRootScan : 0)));
 
     // make sure the REGDISPLAY is synchronized with the CONTEXT
     UpdateRegDisp();
@@ -2227,7 +2225,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         if (!m_crawl.GetCodeManager()->UnwindStackFrame(
                             m_crawl.pRD,
                             &m_cachedCodeInfo,
-                            m_codeManFlags
+                            m_crawl.codeManFlags
                                 | m_crawl.GetCodeManagerFlags()
                                 | ((m_flags & PROFILER_DO_STACK_SNAPSHOT) ?  SpeculativeStackwalk : 0)))
         {
@@ -2609,7 +2607,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // this makes it so that any Frame that is in a managed call
     // frame will be reported before its containing method.
 
-    TADDR pvReferenceSP = EECodeManager::GetCallerSp(m_crawl.pRD, m_crawl.isFrameless ? &m_cachedCodeInfo : NULL, m_codeManFlags);
+    TADDR pvReferenceSP = EECodeManager::GetCallerSp(m_crawl.pRD, m_crawl.isFrameless ? &m_cachedCodeInfo : NULL, m_crawl.codeManFlags);
 
     if ( !( (m_crawl.pFrame != FRAME_TOP) &&
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP) )
@@ -2692,7 +2690,7 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
     m_pCachedGSCookie = (GSCookie*)m_crawl.GetCodeManager()->GetGSCookieAddr(
                                                         m_crawl.pRD,
                                                         &m_crawl.codeInfo,
-                                                        m_codeManFlags);
+                                                        m_crawl.codeManFlags);
 #endif // !DACCESS_COMPILE
 
     if (!(m_flags & SKIP_GSCOOKIE_CHECK) && m_pCachedGSCookie)
