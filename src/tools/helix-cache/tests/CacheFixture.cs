@@ -24,6 +24,7 @@ internal sealed class CacheFixture : IDisposable
         UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
     internal const string FirstJob = "00000000-0000-0000-0000-000000000001";
     internal const string SecondJob = "00000000-0000-0000-0000-000000000002";
+    internal const string WorkItem = "shared";
     internal const string Report = """
         <assemblies><assembly name="/worker/Suite.dll" total="2" passed="1" failed="0" skipped="1">
         <collection><test name="one" result="Pass"/><test name="two" result="Skip"/></collection>
@@ -128,15 +129,18 @@ internal sealed class CacheFixture : IDisposable
         Invoke(success, "store", Write("execution.json", execution, CacheJsonContext.Default.ExecutionRecord),
             "--results", Path.Combine(Root, "results"), "--cache", CacheDirectory);
 
-    internal string Prepare(string name = "shadow")
+    internal string Prepare(string name = "shadow", params string[] payloads)
     {
         string output = Path.Combine(Root, name);
-        ShadowValidation.Prepare(new Cache(CacheDirectory), output, Archive, Archive, Queues[0].QueueId, Archive, new LinuxEnvironment(Queues));
+        ShadowValidation.Prepare(new Cache(CacheDirectory), output, payloads.Length == 0 ? [Archive] : [.. payloads],
+            Archive, Queues[0].QueueId, Archive, new LinuxEnvironment(Queues));
         return output;
     }
 
     internal static LookupEntry ShadowLookup(string output) =>
         Assert.Single(Read(Path.Combine(output, "lookup.json"), CacheJsonContext.Default.LookupResult).Entries);
+
+    internal static string ShadowResults(string output, string name = WorkItem) => Path.Combine(output, "work-items", name, "results");
 
     internal string Invoke(bool success, params string[] arguments)
     {

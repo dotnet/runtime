@@ -8,19 +8,15 @@
 
   <ItemGroup>
     <ShadowCorrelationPayload Include="$(ShadowRuntime)" AsArchive="true" />
-    <ShadowWorkItem Include="$(ShadowName)">
-      <PayloadArchive>$(ShadowPayload)</PayloadArchive>
-      <Command>$(ShadowCommand)</Command>
-      <PostCommands>$(ShadowPostCommand)</PostCommands>
-      <Timeout>$(ShadowTimeout)</Timeout>
-    </ShadowWorkItem>
   </ItemGroup>
 
   <Target Name="Validate">
-    <Error Condition="'$(ShadowQueue)' == '' or '$(ShadowName)' != 'System.Memory.Data.Tests'"
-           Text="Expected a prepared System.Memory.Data.Tests shadow submission." />
-    <Error Condition="!Exists('$(ShadowPayload)') or !Exists('$(ShadowRuntime)')"
-           Text="Frozen shadow payload archives are missing." />
+    <Error Condition="'$(ShadowQueue)' == '' or '@(ShadowWorkItem)' == ''"
+           Text="Expected a prepared shadow submission with at least one work item." />
+    <Error Condition="'$(ShadowRuntime)' == '' or !Exists('$(ShadowRuntime)')"
+           Text="The frozen shadow runtime archive is missing." />
+    <Error Condition="'%(ShadowWorkItem.PayloadArchive)' == '' or !Exists('%(ShadowWorkItem.PayloadArchive)')"
+           Text="The frozen shadow payload archive is missing for %(ShadowWorkItem.Identity)." />
     <GetFileHash Files="$(HelixCacheSdkPackage)" Algorithm="SHA256">
       <Output TaskParameter="Hash" PropertyName="HelixCacheSdkDigest" />
     </GetFileHash>
@@ -44,7 +40,7 @@
                       Lines="$(ShadowJobId)" Overwrite="true" />
     <ItemGroup>
       <ShadowSentJob Include="$(ShadowJobId)">
-        <WorkItemCount>1</WorkItemCount>
+        <WorkItemCount>@(ShadowWorkItem->Count())</WorkItemCount>
         <HelixJobCancellationToken>$(ShadowCancellationToken)</HelixJobCancellationToken>
       </ShadowSentJob>
     </ItemGroup>

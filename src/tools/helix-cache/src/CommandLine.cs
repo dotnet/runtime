@@ -12,7 +12,7 @@ namespace HelixCache;
 internal abstract record Command(string CacheDirectory);
 internal sealed record LookupCommand(string Manifest, string CacheDirectory, string Output, string? QueueInfo) : Command(CacheDirectory);
 internal sealed record StoreCommand(string Manifest, string CacheDirectory, string Results) : Command(CacheDirectory);
-internal sealed record PrepareCommand(string CacheDirectory, string Output, string Payload, string Runtime, string Queue, string HelixSdk, string? QueueInfo) : Command(CacheDirectory);
+internal sealed record PrepareCommand(string CacheDirectory, string Output, List<string> Payloads, string Runtime, string Queue, string HelixSdk, string? QueueInfo) : Command(CacheDirectory);
 internal sealed record CollectCommand(string CacheDirectory, string Output, TimeSpan Wait) : Command(CacheDirectory);
 
 internal static class CommandLine
@@ -20,7 +20,7 @@ internal static class CommandLine
     internal const string Usage = """
         Usage: helix-cache lookup submission.json --cache DIRECTORY --output lookup.json [--queue-info queues.json]
                helix-cache store execution.json --results DIRECTORY --cache DIRECTORY
-               helix-cache prepare --cache DIRECTORY --output DIRECTORY --payload tests.zip --runtime runtime.zip --queue QUEUE --helix-sdk SDK.nupkg [--queue-info queues.json]
+               helix-cache prepare --cache DIRECTORY --output DIRECTORY --payload tests.zip [--payload more-tests.zip ...] --runtime runtime.zip --queue QUEUE --helix-sdk SDK.nupkg [--queue-info queues.json]
                helix-cache collect --cache DIRECTORY --output DIRECTORY [--wait-seconds SECONDS]
         Only Linux x64 queues and digest-pinned container references are supported.
         """;
@@ -39,6 +39,7 @@ internal static class CommandLine
             throw new InvalidDataException($"Missing manifest for '{args[0]}'.\n{Usage}");
         }
         Dictionary<string, string> options = new(StringComparer.Ordinal);
+        List<string> payloads = [];
         for (int i = firstOption; i < args.Length; i += 2)
         {
             string name = args[i];
@@ -47,7 +48,11 @@ internal static class CommandLine
             {
                 throw new InvalidDataException($"Expected an option and value at '{name}'.\n{Usage}");
             }
-            if (!options.TryAdd(name, args[i + 1]))
+            if (args[0] == "prepare" && name == "--payload")
+            {
+                payloads.Add(args[i + 1]);
+            }
+            else if (!options.TryAdd(name, args[i + 1]))
             {
                 throw new InvalidDataException($"Duplicate option '{name}'.");
             }
@@ -58,7 +63,8 @@ internal static class CommandLine
         {
             "lookup" => new LookupCommand(args[1], cache, Required("--output"), Optional("--queue-info")),
             "store" => new StoreCommand(args[1], cache, Required("--results")),
-            "prepare" => new PrepareCommand(cache, Required("--output"), Required("--payload"),
+            "prepare" => new PrepareCommand(cache, Required("--output"),
+                payloads.Count > 0 ? payloads : throw new InvalidDataException($"Missing required option '--payload'.\n{Usage}"),
                 Required("--runtime"), Required("--queue"), Required("--helix-sdk"), Optional("--queue-info")),
             "collect" => new CollectCommand(cache, Required("--output"), ParseWait(Optional("--wait-seconds"))),
             _ => throw new UnreachableException(),

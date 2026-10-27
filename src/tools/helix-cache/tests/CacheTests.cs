@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Xunit;
 
 namespace HelixCache.Tests;
@@ -525,10 +526,72 @@ public sealed class CacheTests
     [InlineData("store missing.json --cache cache", "Missing required option '--results'")]
     [InlineData("collect --cache cache --output output --wait-seconds -1", "--wait-seconds")]
     [InlineData("collect --cache --output output", "Expected an option and value")]
+    [InlineData("prepare --cache cache --output output", "Missing required option '--payload'")]
     public void CommandLineErrorsIdentifyTheInvalidArgument(string arguments, string diagnostic)
     {
         InvalidDataException error = Assert.Throws<InvalidDataException>(() => CommandLine.Parse(arguments.Split(' ')));
         Assert.Contains(diagnostic, error.Message);
+    }
+
+    [Fact]
+    public void NativePrepareSupportsSeveralPayloadsAndSharesTheRuntimeSnapshot()
+    {
+        using CacheFixture f = new();
+        string second = Path.Combine(f.Root, "Second.Tests.zip");
+        File.Copy(f.Archive, second);
+        string output = Path.Combine(f.Root, "batch");
+        f.Invoke(true, "prepare", "--cache", f.CacheDirectory, "--output", output,
+            "--payload", f.Archive, "--payload", second,
+            "--runtime", f.Archive, "--queue", f.Queues[0].QueueId, "--helix-sdk", f.Archive,
+            "--queue-info", f.Write("queues.json", f.Queues, HelixJsonContext.Default.ListHelixQueue));
+
+        LookupResult lookup = CacheFixture.Read(Path.Combine(output, "lookup.json"), CacheJsonContext.Default.LookupResult);
+        Assert.Equal(new[] { "shared", "Second.Tests" }, lookup.Entries.Select(e => e.Execution.Inputs.Name));
+        Assert.All(lookup.Entries, entry => Assert.Equal(LookupStatus.Miss, entry.Status));
+        Assert.Equal(lookup.Entries[0].Execution.CorrelationPayloadPaths, lookup.Entries[1].Execution.CorrelationPayloadPaths);
+        Assert.NotEqual(lookup.Entries[0].Execution.Key, lookup.Entries[1].Execution.Key);
+        Assert.All(lookup.Entries, entry => Assert.True(File.Exists(
+            Path.Combine(output, "work-items", entry.Execution.Inputs.Name, "execution.json"))));
+        XDocument props = XDocument.Load(Path.Combine(output, "submission.props"));
+        Assert.Equal(new[] { "shared", "Second.Tests" },
+            props.Descendants("ShadowWorkItem").Select(item => item.Attribute("Include")!.Value));
+        Assert.Equal(lookup.Entries.Select(e => e.Execution.PayloadPath),
+            props.Descendants("PayloadArchive").Select(item => item.Value));
+    }
+
+    [Theory]
+    [InlineData("shared.zip")]
+    [InlineData("SHARED.zip")]
+    public void NativePrepareRejectsDuplicateSuiteNamesBeforeCreatingSnapshots(string name)
+    {
+        using CacheFixture f = new();
+        string payload = Path.Combine(Directory.CreateDirectory(Path.Combine(f.Root, "other")).FullName, name);
+        File.Copy(f.Archive, payload);
+        string output = Path.Combine(f.Root, "batch");
+        f.Invoke(false, "prepare", "--cache", f.CacheDirectory, "--output", output,
+            "--payload", f.Archive, "--payload", payload,
+            "--runtime", f.Archive, "--queue", f.Queues[0].QueueId, "--helix-sdk", f.Archive,
+            "--queue-info", f.Write("queues.json", f.Queues, HelixJsonContext.Default.ListHelixQueue));
+        Assert.False(Directory.Exists(output));
+        Assert.False(Directory.Exists(f.CacheDirectory));
+    }
+
+    [Theory]
+    [InlineData(".zip")]
+    [InlineData("...zip")]
+    [InlineData("invalid name.zip")]
+    [InlineData("invalid;name.zip")]
+    public void NativePrepareRejectsUnsafeSuiteNamesBeforeCreatingSnapshots(string name)
+    {
+        using CacheFixture f = new();
+        string payload = Path.Combine(f.Root, name);
+        File.Copy(f.Archive, payload);
+        string output = Path.Combine(f.Root, "batch");
+        f.Invoke(false, "prepare", "--cache", f.CacheDirectory, "--output", output, "--payload", payload,
+            "--runtime", f.Archive, "--queue", f.Queues[0].QueueId, "--helix-sdk", f.Archive,
+            "--queue-info", f.Write("queues.json", f.Queues, HelixJsonContext.Default.ListHelixQueue));
+        Assert.False(Directory.Exists(output));
+        Assert.False(Directory.Exists(f.CacheDirectory));
     }
 
     [Fact]

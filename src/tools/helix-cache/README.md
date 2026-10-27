@@ -152,19 +152,27 @@ Queue `eng/pipelines/runtime.yml` with its `helixCacheShadow` boolean parameter
 enabled. This draft temporarily defaults to **true** for validation; disable it
 before merging. The additional steps run only in the public
 project's Linux x64 `CoreCLR_AllSubsets` job, after its normal submissions.
-They use the existing build's `System.Memory.Data.Tests.zip` and runtime archive
-and submit one additional work item to `AzureLinux.3.Amd64.Open`.
+They use the existing build's test archives for `System.Memory.Data.Tests`,
+`System.Runtime.CompilerServices.Unsafe.Tests`, `System.IO.Hashing.Tests`, and
+`System.Text.Encodings.Web.Tests`. All four work items are submitted in one
+additional job to `AzureLinux.3.Amd64.Open`, sharing one frozen runtime archive.
 
 `Cache@2` restores `$(Pipeline.Workspace)/.helix-cache/entries`, using a rolling
 per-build snapshot key and a stable restore prefix, as the compiler caches do.
 The cache task's build ID is **not** part of an execution digest. Only completed
 entries are persisted; frozen input snapshots are recreated in each job.
 Existing Azure Pipelines branch/PR cache scoping applies.
+An Azure restore hit is not a native result hit. Check the post-job cache-save
+log before concluding that a new snapshot persisted: the agent can print
+`Failed to cache item.` followed by `Saved item.` while leaving the task green.
 
 All orchestration runs in the C# NativeAOT executable. Its `prepare` command
 records the full command, upload post-command, timeout, queue and SHA-256 digest
 of the pinned Helix SDK package, runs native lookup, and exports frozen paths to
-`submission.props`. `--helix-sdk` must identify that installed SDK's `.nupkg`.
+`submission.props`. Repeat `--payload` for each suite; work-item names come from
+archive basenames and must be unique (case-insensitively), using ASCII letters,
+digits, dots, underscores or hyphens, excluding empty names, `.` and `..`.
+`--helix-sdk` must identify that installed SDK's `.nupkg`.
 `eng/testing/helix-cache-shadow.proj` submits those exact archives through the
 pinned Helix SDK without injecting extra reporters. The SDK generates its own
 command wrapper, including chmod and exit-code handling; its package digest
@@ -184,12 +192,14 @@ passes the report through native admission, and compares any hit with the fresh
 test identities/outcomes/skip reasons. Ordering, worker directory prefixes and
 execution timings are ignored. The resolved physical queue ID and submitted
 alias are preserved in provenance alongside the original cached job.
-On a hit, mismatched outcomes fail validation before store. Every hit still
+Every suite's report and comparison must pass before any suite is stored.
+Each entry is published atomically, not the entire batch. Every hit still
 executes on Helix; no cached result is published as a new run.
 
 Evidence is included in the existing build-log artifact under
 `artifacts/log/<Configuration>/helix-cache-shadow/`, including `lookup.json`,
-`execution.json`, `work-item.json`, `summary.json`, and fresh results. Shadow
+`summary.json` with per-suite keys, hit/miss status, test counts and comparisons,
+and `work-items/<suite>/{execution.json,work-item.json,results/}`. Shadow
 errors are visible but use `continueOnError`, so they do not replace or weaken
 the normal test decision. Internal queues and authentication are not supported
 by this first shadow lane.
@@ -202,6 +212,7 @@ artifacts/tools/helix-cache/helix-cache prepare \
   --cache artifacts/tmp/helix-cache \
   --output artifacts/log/Release/helix-cache-shadow \
   --payload artifacts/helix/tests/linux.AnyCPU.Release/System.Memory.Data.Tests.zip \
+  --payload artifacts/helix/tests/linux.AnyCPU.Release/System.IO.Hashing.Tests.zip \
   --runtime artifacts/helix/runtime/test-runtime-net11.0-linux-Release-x64.zip \
   --queue AzureLinux.3.Amd64.Open --helix-sdk "$sdk"
 dotnet msbuild eng/testing/helix-cache-shadow.proj -t:Validate \

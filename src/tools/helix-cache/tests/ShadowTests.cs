@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -18,12 +19,128 @@ namespace HelixCache.Tests;
 public sealed class ShadowTests
 {
     [Fact]
+    public async Task SeveralSuitesShareOneJobAndCompareMixedHitsAndMisses()
+    {
+        using CacheFixture f = new();
+        string secondPayload = Path.Combine(f.Root, "Second.Tests.zip");
+        File.Copy(f.Archive, secondPayload);
+        string first = f.Prepare("first", f.Archive, secondPayload);
+        Dictionary<string, string> reports = SuiteReports(CacheFixture.WorkItem, "Second.Tests");
+        ShadowSummary cold = await CollectBatch(f, first, CacheFixture.FirstJob, reports);
+        Assert.Equal(2, cold.WorkItems.Count);
+        Assert.All(cold.WorkItems, item =>
+        {
+            Assert.Equal(LookupStatus.Miss, item.Lookup);
+            Assert.Equal(OutcomeComparison.NotApplicable, item.Comparison);
+            Assert.Equal(2, item.Tests);
+            Assert.True(item.Stored);
+        });
+
+        string restored = Path.Combine(f.Root, "restored-cache");
+        Snapshot.Copy(Path.Combine(f.CacheDirectory, "entries"), Path.Combine(restored, "entries"));
+        Directory.Move(f.CacheDirectory, Path.Combine(f.Root, "previous-cache"));
+        f.CacheDirectory = restored;
+        CacheFixture.WriteArchive(secondPayload, [("changed.txt", "changed input", CacheFixture.ArchiveFileMode)]);
+        string second = f.Prepare("second", f.Archive, secondPayload);
+        ShadowSummary mixed = await CollectBatch(f, second, CacheFixture.SecondJob, reports);
+        Assert.Equal(CacheFixture.SecondJob, mixed.JobId);
+        Assert.Equal(LookupStatus.Hit, mixed.WorkItems[0].Lookup);
+        Assert.Equal(OutcomeComparison.Match, mixed.WorkItems[0].Comparison);
+        Assert.Equal(CacheFixture.FirstJob, mixed.WorkItems[0].CachedJobId);
+        Assert.Equal(cold.WorkItems[0].Key, mixed.WorkItems[0].Key);
+        Assert.Equal(LookupStatus.Miss, mixed.WorkItems[1].Lookup);
+        Assert.Equal(OutcomeComparison.NotApplicable, mixed.WorkItems[1].Comparison);
+        Assert.Null(mixed.WorkItems[1].CachedJobId);
+        Assert.NotEqual(cold.WorkItems[1].Key, mixed.WorkItems[1].Key);
+        Assert.All(mixed.WorkItems, item =>
+        {
+            Assert.True(item.Stored);
+            string results = CacheFixture.ShadowResults(second, item.Name);
+            Assert.Equal(reports[item.Name], File.ReadAllText(Path.Combine(results, "testResults.xml")));
+            ResultReceipt receipt = CacheFixture.Read(Path.Combine(results, "result.json"), CacheJsonContext.Default.ResultReceipt);
+            Assert.Equal(item.Name, receipt.WorkItemName);
+            Assert.Equal(CacheFixture.SecondJob, receipt.JobId);
+            ExecutionProvenance provenance = CacheFixture.Read(Path.Combine(results, "provenance.json"), CacheJsonContext.Default.ExecutionProvenance);
+            Assert.Equal(item.Name + "-worker", provenance.MachineName);
+        });
+        LookupResult lookup = CacheFixture.Read(Path.Combine(second, "lookup.json"), CacheJsonContext.Default.LookupResult);
+        Assert.Equal(CacheFixture.FirstJob, new Cache(f.CacheDirectory).ReadResults(lookup.Entries[0].Execution).Receipt.JobId);
+        Assert.Equal(CacheFixture.SecondJob, new Cache(f.CacheDirectory).ReadResults(lookup.Entries[1].Execution).Receipt.JobId);
+    }
+
+    [Theory]
+    [InlineData("remote")]
+    [InlineData("report")]
+    [InlineData("mismatch")]
+    public async Task LaterSuiteFailuresPreventAdmissionOfTheWholeBatch(string failure)
+    {
+        using CacheFixture f = new();
+        string secondPayload = Path.Combine(f.Root, "Second.Tests.zip");
+        File.Copy(f.Archive, secondPayload);
+        string seeded = f.Prepare("seed", secondPayload);
+        await CollectBatch(f, seeded, CacheFixture.FirstJob, SuiteReports("Second.Tests"));
+        string output = f.Prepare("batch", f.Archive, secondPayload);
+        Dictionary<string, string> reports = SuiteReports(CacheFixture.WorkItem, "Second.Tests");
+        if (failure is "report" or "mismatch")
+        {
+            reports["Second.Tests"] = failure == "report" ? "<assemblies/>" :
+                reports["Second.Tests"].Replace("Second.Tests.one", "different", StringComparison.Ordinal);
+        }
+        await Assert.ThrowsAsync<InvalidDataException>(() =>
+            CollectBatch(f, output, CacheFixture.SecondJob, reports, failure == "remote" ? "Second.Tests" : null));
+        ShadowSummary summary = CacheFixture.Read(Path.Combine(output, "summary.json"), CacheJsonContext.Default.ShadowSummary);
+        Assert.All(summary.WorkItems, item => Assert.False(item.Stored));
+        Assert.Equal(OutcomeComparison.NotApplicable, summary.WorkItems[0].Comparison);
+        if (failure == "mismatch")
+        {
+            Assert.Equal(OutcomeComparison.Mismatch, summary.WorkItems[1].Comparison);
+        }
+        Assert.Single(Directory.EnumerateFiles(f.CacheDirectory, "entry.json", SearchOption.AllDirectories));
+        LookupResult lookup = CacheFixture.Read(Path.Combine(output, "lookup.json"), CacheJsonContext.Default.LookupResult);
+        Assert.Equal(CacheFixture.FirstJob, new Cache(f.CacheDirectory).ReadResults(lookup.Entries[1].Execution).Receipt.JobId);
+        Assert.Equal(LookupStatus.Miss,
+            Assert.Single(ShadowValidation.Prepare(new Cache(f.CacheDirectory), Path.Combine(f.Root, "retry"),
+                [f.Archive], f.Archive, f.Queues[0].QueueId, f.Archive, new LinuxEnvironment(f.Queues)).Entries).Status);
+    }
+
+    [Theory]
+    [InlineData("duplicate")]
+    [InlineData("unsafe")]
+    [InlineData("status")]
+    public async Task InvalidLaterLookupEntriesAreRejectedBeforeContactingHelix(string invalid)
+    {
+        using CacheFixture f = new();
+        string secondPayload = Path.Combine(f.Root, "Second.Tests.zip");
+        File.Copy(f.Archive, secondPayload);
+        string output = f.Prepare("batch", f.Archive, secondPayload);
+        LookupResult lookup = CacheFixture.Read(Path.Combine(output, "lookup.json"), CacheJsonContext.Default.LookupResult);
+        ExecutionRecord execution = lookup.Entries[1].Execution;
+        ExecutionInputs inputs = execution.Inputs with
+        {
+            Name = invalid == "duplicate" ? CacheFixture.WorkItem : invalid == "unsafe" ? "../escape" : execution.Inputs.Name,
+        };
+        lookup.Entries[1] = new LookupEntry
+        {
+            Status = invalid == "status" ? (LookupStatus)123 : LookupStatus.Miss,
+            Execution = execution with { Inputs = inputs, Key = ExecutionKey.Create(inputs) },
+        };
+        File.WriteAllText(Path.Combine(output, "lookup.json"), JsonSerializer.Serialize(lookup, CacheJsonContext.Default.LookupResult));
+        File.WriteAllText(Path.Combine(output, "job-id.txt"), CacheFixture.FirstJob);
+        using HttpClient client = new(new Stub((_, _) => throw new InvalidOperationException("Unexpected HTTP request")));
+        await Assert.ThrowsAsync<InvalidDataException>(() =>
+            ShadowValidation.CollectAsync(new Cache(f.CacheDirectory), output, TimeSpan.FromMinutes(1), new HelixClient(client)));
+        Assert.All(lookup.Entries, item => Assert.False(Directory.Exists(CacheFixture.ShadowResults(output, item.Execution.Inputs.Name))));
+        Assert.Empty(Directory.EnumerateFiles(f.CacheDirectory, "entry.json", SearchOption.AllDirectories));
+    }
+
+    [Fact]
     public async Task ColdStoreAndRestoredEntriesCompareActualOutcomes()
     {
         using CacheFixture f = new();
         string first = f.Prepare();
         await Collect(f, first, CacheFixture.FirstJob);
-        ShadowSummary cold = CacheFixture.Read(Path.Combine(first, "summary.json"), CacheJsonContext.Default.ShadowSummary);
+        ShadowWorkItemSummary cold = Assert.Single(
+            CacheFixture.Read(Path.Combine(first, "summary.json"), CacheJsonContext.Default.ShadowSummary).WorkItems);
         Assert.Equal(LookupStatus.Miss, cold.Lookup);
         Assert.Equal(2, cold.Tests);
         string restored = Path.Combine(f.Root, "restored-cache");
@@ -38,10 +155,11 @@ public sealed class ShadowTests
             </assembly></assemblies>
             """;
         await Collect(f, second, CacheFixture.SecondJob, report: reordered);
-        ShadowSummary summary = CacheFixture.Read(Path.Combine(second, "summary.json"), CacheJsonContext.Default.ShadowSummary);
+        ShadowSummary batch = CacheFixture.Read(Path.Combine(second, "summary.json"), CacheJsonContext.Default.ShadowSummary);
+        ShadowWorkItemSummary summary = Assert.Single(batch.WorkItems);
         Assert.Equal(OutcomeComparison.Match, summary.Comparison);
         Assert.Equal(CacheFixture.FirstJob, summary.CachedJobId);
-        Assert.Equal(CacheFixture.SecondJob, summary.JobId);
+        Assert.Equal(CacheFixture.SecondJob, batch.JobId);
         Assert.Equal(cold.Key, summary.Key);
     }
 
@@ -67,7 +185,8 @@ public sealed class ShadowTests
         InvalidDataException error = await Assert.ThrowsAsync<InvalidDataException>(
             () => Collect(f, second, CacheFixture.SecondJob, report: changed));
         Assert.Contains("outcomes differ", error.Message);
-        ShadowSummary summary = CacheFixture.Read(Path.Combine(second, "summary.json"), CacheJsonContext.Default.ShadowSummary);
+        ShadowWorkItemSummary summary = Assert.Single(
+            CacheFixture.Read(Path.Combine(second, "summary.json"), CacheJsonContext.Default.ShadowSummary).WorkItems);
         Assert.Equal(OutcomeComparison.Mismatch, summary.Comparison);
         Assert.False(summary.Stored);
         Assert.Equal(CacheFixture.FirstJob, summary.CachedJobId);
@@ -99,7 +218,7 @@ public sealed class ShadowTests
         InvalidDataException error = await Assert.ThrowsAsync<InvalidDataException>(
             () => Collect(f, output, CacheFixture.FirstJob, item: item));
         Assert.Contains("did not complete", error.Message);
-        Assert.False(Directory.Exists(Path.Combine(output, "results")));
+        Assert.False(Directory.Exists(CacheFixture.ShadowResults(output)));
         Assert.Empty(Directory.EnumerateFiles(f.CacheDirectory, "entry.json", SearchOption.AllDirectories));
     }
 
@@ -127,7 +246,7 @@ public sealed class ShadowTests
             InvalidDataException error = await Assert.ThrowsAsync<InvalidDataException>(
                 () => Collect(f, output, CacheFixture.FirstJob, job: job));
             Assert.Contains("job or target queue", error.Message);
-            Assert.False(Directory.Exists(Path.Combine(output, "results")));
+            Assert.False(Directory.Exists(CacheFixture.ShadowResults(output)));
             Assert.Empty(Directory.EnumerateFiles(f.CacheDirectory, "entry.json", SearchOption.AllDirectories));
             return;
         }
@@ -163,7 +282,7 @@ public sealed class ShadowTests
         InvalidDataException error = await Assert.ThrowsAsync<InvalidDataException>(
             () => Collect(f, output, CacheFixture.FirstJob, files: files));
         Assert.Contains("exactly one", error.Message);
-        Assert.False(Directory.Exists(Path.Combine(output, "results")));
+        Assert.False(Directory.Exists(CacheFixture.ShadowResults(output)));
     }
 
     [Theory]
@@ -187,7 +306,7 @@ public sealed class ShadowTests
         string cachedReport = Path.Combine(CacheFixture.ShadowLookup(second).ResultsPath!, "testResults.xml");
         File.WriteAllText(cachedReport, "corrupt");
         await Assert.ThrowsAsync<InvalidDataException>(() => Collect(f, second, CacheFixture.SecondJob));
-        Assert.False(Directory.Exists(Path.Combine(second, "results")));
+        Assert.False(Directory.Exists(CacheFixture.ShadowResults(second)));
         Assert.Equal("corrupt", File.ReadAllText(cachedReport));
     }
 
@@ -201,11 +320,11 @@ public sealed class ShadowTests
         {
             State = state,
             Job = wrongJob ? CacheFixture.SecondJob : CacheFixture.FirstJob,
-            Name = wrongName ? "other" : ShadowValidation.WorkItem,
+            Name = wrongName ? "other" : CacheFixture.WorkItem,
         };
         using HttpClient client = Client(new HelixJob { Name = CacheFixture.FirstJob, QueueId = "queue" }, item);
         await Assert.ThrowsAsync<InvalidDataException>(() =>
-            new HelixClient(client).WaitForCompletionAsync(CacheFixture.FirstJob, ShadowValidation.WorkItem, TimeSpan.FromMinutes(1)));
+            new HelixClient(client).WaitForCompletionAsync(CacheFixture.FirstJob, CacheFixture.WorkItem, TimeSpan.FromMinutes(1)));
     }
 
     [Theory]
@@ -223,12 +342,12 @@ public sealed class ShadowTests
         {
             cancellation.Cancel();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new HelixClient(client).WaitForCompletionAsync(
-                CacheFixture.FirstJob, ShadowValidation.WorkItem, TimeSpan.FromMinutes(1), cancellation.Token));
+                CacheFixture.FirstJob, CacheFixture.WorkItem, TimeSpan.FromMinutes(1), cancellation.Token));
         }
         else
         {
             await Assert.ThrowsAsync<TimeoutException>(() => new HelixClient(client).WaitForCompletionAsync(
-                CacheFixture.FirstJob, ShadowValidation.WorkItem, TimeSpan.FromMilliseconds(20)));
+                CacheFixture.FirstJob, CacheFixture.WorkItem, TimeSpan.FromMilliseconds(20)));
         }
     }
 
@@ -245,7 +364,7 @@ public sealed class ShadowTests
             });
         }));
         HelixWorkItem completed = await new HelixClient(client).WaitForCompletionAsync(
-            CacheFixture.FirstJob, ShadowValidation.WorkItem, TimeSpan.FromMinutes(1));
+            CacheFixture.FirstJob, CacheFixture.WorkItem, TimeSpan.FromMinutes(1));
         Assert.Equal("Finished", completed.State);
         Assert.Equal(2, requests);
     }
@@ -255,8 +374,55 @@ public sealed class ShadowTests
     {
         using HttpClient client = new(new Stub((_, _) => throw new TaskCanceledException("HTTP request timed out")));
         TaskCanceledException error = await Assert.ThrowsAsync<TaskCanceledException>(() =>
-            new HelixClient(client).WaitForCompletionAsync(CacheFixture.FirstJob, ShadowValidation.WorkItem, TimeSpan.FromMinutes(1)));
+            new HelixClient(client).WaitForCompletionAsync(CacheFixture.FirstJob, CacheFixture.WorkItem, TimeSpan.FromMinutes(1)));
         Assert.Equal("HTTP request timed out", error.Message);
+    }
+
+    private static Dictionary<string, string> SuiteReports(params string[] names) =>
+        names.ToDictionary(name => name, name => CacheFixture.Report.Replace("name=\"one\"", $"name=\"{name}.one\"", StringComparison.Ordinal));
+
+    private static async Task<ShadowSummary> CollectBatch(CacheFixture f, string output, string jobId,
+        Dictionary<string, string> reports, string? failingSuite = null)
+    {
+        File.WriteAllText(Path.Combine(output, "job-id.txt"), jobId);
+        int jobRequests = 0;
+        using HttpClient client = new(new Stub((request, _) =>
+        {
+            string path = request.RequestUri!.AbsolutePath;
+            string[] segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            HttpContent content;
+            if (path.EndsWith("/details", StringComparison.Ordinal))
+            {
+                jobRequests++;
+                content = JsonContent.Create(new HelixJob { Name = jobId, QueueId = f.Queues[0].QueueId }, HelixJsonContext.Default.HelixJob);
+            }
+            else if (path.StartsWith("/reports/", StringComparison.Ordinal))
+            {
+                content = new StringContent(reports[segments[^1]], Encoding.UTF8, "application/xml");
+            }
+            else if (path.EndsWith("/files", StringComparison.Ordinal))
+            {
+                content = JsonContent.Create(new List<HelixFile>
+                {
+                    new() { Name = "testResults.xml", Link = $"https://example.invalid/reports/{segments[^2]}" },
+                }, HelixJsonContext.Default.ListHelixFile);
+            }
+            else
+            {
+                string name = segments[^1];
+                Assert.Contains(name, reports.Keys);
+                content = JsonContent.Create(PassedItem(jobId) with
+                {
+                    Name = name,
+                    MachineName = name + "-worker",
+                    State = name == failingSuite ? "Failed" : "Passed",
+                }, HelixJsonContext.Default.HelixWorkItem);
+            }
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = content });
+        }));
+        ShadowSummary summary = await ShadowValidation.CollectAsync(new Cache(f.CacheDirectory), output, TimeSpan.FromMinutes(1), new HelixClient(client));
+        Assert.Equal(1, jobRequests);
+        return summary;
     }
 
     private static async Task Collect(CacheFixture f, string output, string jobId,
@@ -271,7 +437,7 @@ public sealed class ShadowTests
     private static HelixWorkItem PassedItem(string jobId) => new()
     {
         Job = jobId,
-        Name = ShadowValidation.WorkItem,
+        Name = CacheFixture.WorkItem,
         State = "Passed",
         ExitCode = 0,
         MachineName = "test-worker",

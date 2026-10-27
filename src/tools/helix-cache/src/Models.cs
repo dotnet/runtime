@@ -242,10 +242,16 @@ internal sealed class StoredEntry
 
 internal sealed record ShadowSummary
 {
-    public required string Key { get; init; }
-    public required LookupStatus Lookup { get; init; }
     public required string JobId { get; init; }
     public string Mode { get; init; } = "shadow";
+    public required List<ShadowWorkItemSummary> WorkItems { get; init; }
+}
+
+internal sealed record ShadowWorkItemSummary
+{
+    public required string Name { get; init; }
+    public required string Key { get; init; }
+    public required LookupStatus Lookup { get; init; }
     public int? Tests { get; init; }
     public OutcomeComparison? Comparison { get; init; }
     public string? CachedJobId { get; init; }

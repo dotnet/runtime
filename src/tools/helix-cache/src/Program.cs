@@ -86,9 +86,12 @@ internal static class Program
             case PrepareCommand prepare:
             {
                 LinuxEnvironment environment = await LinuxEnvironment.LoadAsync(prepare.QueueInfo, helix, cancellationToken);
-                LookupEntry entry = ShadowValidation.Prepare(cache, prepare.Output, prepare.Payload, prepare.Runtime, prepare.Queue,
+                LookupResult result = ShadowValidation.Prepare(cache, prepare.Output, prepare.Payloads, prepare.Runtime, prepare.Queue,
                     prepare.HelixSdk, environment);
-                Console.WriteLine($"Helix cache shadow: {entry.Status.ToString().ToLowerInvariant()} {entry.Execution.Key}; execution will NOT be skipped.");
+                foreach (LookupEntry entry in result.Entries)
+                {
+                    Console.WriteLine($"Helix cache shadow: {entry.Execution.Inputs.Name}: {entry.Status.ToString().ToLowerInvariant()} {entry.Execution.Key}; execution will NOT be skipped.");
+                }
                 break;
             }
             case CollectCommand collect:
