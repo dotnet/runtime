@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -24,7 +25,13 @@ namespace CustomTaskCovariantReturn
 
         public class MyTask<T> : Task<T>
         {
-            public MyTask(Func<T> func) : base(func) => RunSynchronously();
+            public MyTask(Func<T> func, bool runSynchronously = true) : base(func)
+            {
+                if (runSynchronously)
+                {
+                    RunSynchronously();
+                }
+            }
         }
 
         public class Base
@@ -54,6 +61,10 @@ namespace CustomTaskCovariantReturn
 
         public class Derived2 : Derived
         {
+            public Task<int> CallBase() => base.M2();
+
+            public async Task<int> AwaitBase() => await base.M2();
+
             public override MyTask M1() => new MyTask(() =>
             {
                 Trace += "Derived2.M1;";
@@ -65,6 +76,36 @@ namespace CustomTaskCovariantReturn
                 Trace += "Derived2.M2;";
                 return base.M2().GetAwaiter().GetResult() + 1;
             });
+        }
+
+        public class GenericTaskDerived : Base
+        {
+            public override MyTask<int> M1() => new MyTask<int>(() =>
+            {
+                Trace += "GenericTaskDerived.M1;";
+                return 42;
+            });
+        }
+
+        public class SynchronizedDerived : Base
+        {
+            public readonly MyTask<int> PendingTask = new MyTask<int>(() => 42, runSynchronously: false);
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override MyTask<int> M2()
+            {
+                Assert.True(Monitor.IsEntered(this));
+                return PendingTask;
+            }
+        }
+
+        public class UnsynchronizedDerived : SynchronizedDerived
+        {
+            public override MyTask<int> M2()
+            {
+                Assert.False(Monitor.IsEntered(this));
+                return PendingTask;
+            }
         }
 
         public abstract class AbstractDerived : Base
@@ -191,6 +232,65 @@ namespace CustomTaskCovariantReturn
             Trace = null;
             Assert.Equal(43, d.M2().GetAwaiter().GetResult());
             Assert.Equal("Derived2.M2;Derived.M2;", Trace);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static async Task TestNonvirtualCustomTaskOverride(bool explicitAwait)
+        {
+            Derived2 d = new Derived2();
+
+            Trace = null;
+            int result = explicitAwait ? await d.AwaitBase() : await d.CallBase();
+            Assert.Equal(42, result);
+            Assert.Equal("Derived.M2;", Trace);
+        }
+
+        [Fact]
+        public static async Task TestGenericTaskOverrideOfNonGenericTask()
+        {
+            GenericTaskDerived d = new GenericTaskDerived();
+
+            Trace = null;
+            Assert.Equal(42, await d.M1());
+            Assert.Equal("GenericTaskDerived.M1;", Trace);
+
+            Trace = null;
+            await CallM1(d);
+            Assert.Equal("GenericTaskDerived.M1;", Trace);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TestSynchronizedCustomTaskOverride(bool furtherOverride)
+        {
+            SynchronizedDerived d = furtherOverride ? new UnsynchronizedDerived() : new SynchronizedDerived();
+            Task<int> result = CallM2(d);
+
+            try
+            {
+                Assert.False(result.IsCompleted);
+                bool monitorAvailable = false;
+                Thread probe = new Thread(() =>
+                {
+                    if (Monitor.TryEnter(d))
+                    {
+                        monitorAvailable = true;
+                        Monitor.Exit(d);
+                    }
+                });
+                probe.Start();
+                probe.Join();
+                Assert.True(monitorAvailable);
+            }
+            finally
+            {
+                d.PendingTask.RunSynchronously();
+            }
+
+            Assert.Equal(42, result.GetAwaiter().GetResult());
         }
     }
 }
