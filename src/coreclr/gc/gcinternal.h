@@ -3211,7 +3211,10 @@ ptrdiff_t  gc_heap::get_allocation (int gen_number)
 {
     dynamic_data* dd = dynamic_data_of (gen_number);
 
-    return dd_desired_allocation (dd) - dd_new_allocation (dd);
+    // A NoGC region can increase the remaining budget beyond the desired allocation.
+    // Do not let a negative estimate wrap around to a large heap size.
+    ptrdiff_t allocated = dd_desired_allocation (dd) - dd_new_allocation (dd);
+    return max (allocated, static_cast<ptrdiff_t>(0));
 }
 
 #ifdef BACKGROUND_GC
