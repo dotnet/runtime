@@ -1547,33 +1547,7 @@ namespace System.IO.Compression
                 throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
             }
 
-            if (loadExistingContent)
-            {
-                await ThrowIfNotOpenableCoreAsync<TAdapter>(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
-            }
-
-            _currentlyOpenForWrite = true;
-
-            if (loadExistingContent)
-            {
-                _storedUncompressedData = await GetUncompressedDataCoreAsync<TAdapter>(default, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                if (_storedUncompressedData is not null)
-                {
-                    await TAdapter.DisposeAsync(_storedUncompressedData).ConfigureAwait(false);
-                }
-
-                _storedUncompressedData = new MemoryStream();
-                MarkAsModified();
-            }
-
-            _storedUncompressedData.Seek(0, SeekOrigin.Begin);
-
-            return new WrappedStream(_storedUncompressedData, this,
-                onClosed: thisRef => thisRef!._currentlyOpenForWrite = false,
-                notifyEntryOnWrite: true);
+            return await OpenInUpdateModeCoreAsync<TAdapter>(loadExistingContent, aesKeys: null, zipCryptoKeys: null, zipCryptoCheckByte: 0, cancellationToken).ConfigureAwait(false);
         }
 
         private ValueTask<Stream> OpenInUpdateModeWithPasswordCoreAsync<TAdapter>(bool loadExistingContent, ReadOnlySpan<char> password, CancellationToken cancellationToken)
