@@ -81,7 +81,7 @@ namespace Wasm.Build.Tests
         [InlineData(Configuration.Release, true, null, null, "", false, false)]
         [InlineData(Configuration.Release, true, "true", "false", "", true, false)]
         [InlineData(Configuration.Release, true, "false", "true", "", false, true)]
-        [InlineData(Configuration.Debug, false, "true", "true", "--test-extra-flag", true, true)]
+        [InlineData(Configuration.Debug, false, "true", "true", "--optimize", true, true)]
         [TestCategory("no-workload")]
         public void PublishCrossgen2ArgumentsReflectWasmDebugInfoProperties(
             Configuration config,
@@ -93,6 +93,8 @@ namespace Wasm.Build.Tests
             bool expectStripDebugInfo)
         {
             string extraProperties = $"<PublishReadyToRun>true</PublishReadyToRun><DebuggerSupport>{debuggerSupport.ToString().ToLowerInvariant()}</DebuggerSupport>";
+            if (extraCrossgen2Args.Length > 0)
+                extraProperties += $"<PublishReadyToRunCrossgen2ExtraArgs>{extraCrossgen2Args}</PublishReadyToRunCrossgen2ExtraArgs>";
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_args",
                 extraProperties: extraProperties);
 
@@ -101,8 +103,6 @@ namespace Wasm.Build.Tests
                 extraBuildArgs.Add($"-p:PublishReadyToRunStripInliningInfo={stripInliningInfo}");
             if (stripDebugInfo is not null)
                 extraBuildArgs.Add($"-p:PublishReadyToRunStripDebugInfo={stripDebugInfo}");
-            if (extraCrossgen2Args.Length > 0)
-                extraBuildArgs.Add($"-p:PublishReadyToRunCrossgen2ExtraArgs={extraCrossgen2Args}");
 
             (_, string binlogPath) = BuildProjectWithoutAssert(config, info.ProjectName,
                 new PublishOptions(ExtraMSBuildArgs: string.Join(" ", extraBuildArgs)));
