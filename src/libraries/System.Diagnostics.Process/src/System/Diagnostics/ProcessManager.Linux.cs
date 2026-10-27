@@ -11,27 +11,6 @@ namespace System.Diagnostics
     {
         private static NullableBool _procMatchesPidNamespace;
 
-        internal static bool TryGetParentProcessId(int processId, out int parentProcessId)
-        {
-            bool found = TryReadStatFile(processId, out Interop.procfs.ParsedStat stat);
-            parentProcessId = found ? stat.ppid : 0;
-            return found;
-        }
-
-        internal static string? GetPathToOpenFile()
-        {
-            ReadOnlySpan<string> allowedProgramsToRun = ["xdg-open", "gnome-open", "kfmclient"];
-            foreach (string program in allowedProgramsToRun)
-            {
-                string? pathToProgram = ProcessUtils.FindProgramInPath(program);
-                if (!string.IsNullOrEmpty(pathToProgram))
-                {
-                    return pathToProgram;
-                }
-            }
-            return null;
-        }
-
         /// <summary>Gets process infos for each process on the local machine.</summary>
         /// <param name="builder">The builder to add found process infos to.</param>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>

@@ -106,11 +106,17 @@ namespace System.Diagnostics
 
             ThrowIfUseShellExecute(startInfo, nameof(Run));
 
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
+            startInfo.ThrowIfInvalid(out bool anyRedirection, out _);
+            if (anyRedirection)
+            {
+                throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
+            }
+
+            using Process process = Start(startInfo)!;
 
             return timeout.HasValue
-                ? processHandle.WaitForExitOrKillOnTimeout(timeout.Value, entireProcessTree: true)
-                : processHandle.WaitForExit();
+                ? process.WaitForExitOrKillOnTimeout(timeout.Value)
+                : process.WaitForExitStatus();
         }
 
         /// <summary>
@@ -171,9 +177,15 @@ namespace System.Diagnostics
 
             ThrowIfUseShellExecute(startInfo, nameof(RunAsync));
 
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
+            startInfo.ThrowIfInvalid(out bool anyRedirection, out _);
+            if (anyRedirection)
+            {
+                throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
+            }
 
-            return await processHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken, entireProcessTree: true).ConfigureAwait(false);
+            using Process process = Start(startInfo)!;
+
+            return await process.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -259,11 +271,11 @@ namespace System.Diagnostics
                 TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
                 TimeSpan remaining = timeout.Value - elapsed;
                 remaining = remaining >= TimeSpan.Zero ? remaining : TimeSpan.Zero;
-                exitStatus = process.SafeHandle.WaitForExitOrKillOnTimeout(remaining, entireProcessTree: true);
+                exitStatus = process.WaitForExitOrKillOnTimeout(remaining);
             }
             else
             {
-                exitStatus = process.SafeHandle.WaitForExit();
+                exitStatus = process.WaitForExitStatus();
             }
 
             return new ProcessTextOutput(exitStatus, standardOutput, standardError, process.Id);
@@ -331,7 +343,7 @@ namespace System.Diagnostics
                 throw;
             }
 
-            ProcessExitStatus exitStatus = await process.SafeHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken, entireProcessTree: true).ConfigureAwait(false);
+            ProcessExitStatus exitStatus = await process.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false);
 
             return new ProcessTextOutput(exitStatus, standardOutput, standardError, process.Id);
         }
@@ -372,6 +384,38 @@ namespace System.Diagnostics
             startInfo.RedirectStandardError = true;
 
             return startInfo;
+        }
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private ProcessExitStatus WaitForExitOrKillOnTimeout(TimeSpan timeout)
+        {
+            if (TryWaitForExitStatus(timeout, out ProcessExitStatus? exitStatus))
+            {
+                return exitStatus;
+            }
+
+            Kill(entireProcessTree: true);
+            exitStatus = WaitForExitStatus();
+            return new ProcessExitStatus(exitStatus.ExitCode, canceled: true, exitStatus.Signal);
+        }
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await WaitForExitStatusAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                Kill(entireProcessTree: true);
+                ProcessExitStatus exitStatus = await WaitForExitStatusAsync().ConfigureAwait(false);
+                return new ProcessExitStatus(exitStatus.ExitCode, canceled: true, exitStatus.Signal);
+            }
         }
 
         private static void ThrowIfUseShellExecute(ProcessStartInfo startInfo, string methodName)

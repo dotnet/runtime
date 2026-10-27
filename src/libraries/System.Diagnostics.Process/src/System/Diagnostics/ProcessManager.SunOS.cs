@@ -10,15 +10,6 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
-        internal static bool TryGetParentProcessId(int processId, out int parentProcessId)
-        {
-            bool found = Interop.procfs.GetProcessInfoById(processId, out Interop.procfs.ProcessInfo info, out _);
-            parentProcessId = found ? info.ParentPid : 0;
-            return found;
-        }
-
-        internal static string? GetPathToOpenFile() => ProcessUtils.FindProgramInPath("xdg-open");
-
         /// <summary>Gets process infos for each process on the local machine.</summary>
         /// <param name="builder">The builder to add found process infos to.</param>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>

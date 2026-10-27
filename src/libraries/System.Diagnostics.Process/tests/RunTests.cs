@@ -415,6 +415,32 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [InlineData(false, true, false, false)]
+        [InlineData(false, false, true, false)]
+        [InlineData(false, false, false, true)]
+        [InlineData(true, true, false, false)]
+        [InlineData(true, false, true, false)]
+        [InlineData(true, false, false, true)]
+        public async Task Run_Redirected_ThrowsInvalidOperationException(bool useAsync, bool redirectInput, bool redirectOutput, bool redirectError)
+        {
+            ProcessStartInfo startInfo = new("someprocess")
+            {
+                RedirectStandardInput = redirectInput,
+                RedirectStandardOutput = redirectOutput,
+                RedirectStandardError = redirectError
+            };
+
+            if (useAsync)
+            {
+                await Assert.ThrowsAsync<InvalidOperationException>(() => Process.RunAsync(startInfo));
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => Process.Run(startInfo));
+            }
+        }
+
+        [Theory]
         [InlineData(false, false, true)]
         [InlineData(false, true, false)]
         [InlineData(false, false, false)]

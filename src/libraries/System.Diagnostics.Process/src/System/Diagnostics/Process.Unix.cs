@@ -101,25 +101,104 @@ namespace System.Diagnostics
         private bool GetHasExited(bool refresh)
             => GetWaitState().GetExited(out _, refresh);
 
-        private int ParentProcessId
+        private List<Exception>? KillTree()
         {
-            get
-            {
-                EnsureState(State.HaveNonExitedId);
-                if (!ProcessManager.TryGetParentProcessId(_processId, out int parentProcessId))
-                {
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                }
+            List<Exception>? exceptions = null;
+            KillTree(ref exceptions);
+            return exceptions;
+        }
 
-                return parentProcessId;
+        private void KillTree(ref List<Exception>? exceptions)
+        {
+            // First, stop and collect the entire process tree before killing any process.
+            // This is necessary because killing a parent process may cause children with
+            // PR_SET_PDEATHSIG (KillOnParentExit) to be killed by the kernel immediately,
+            // making it impossible to discover their descendants afterward.
+            List<Process> stoppedProcesses = [];
+            try
+            {
+                StopTree(ref exceptions, stoppedProcesses);
+            }
+            catch (Exception ex)
+            {
+                (exceptions ??= new List<Exception>()).Add(ex);
+            }
+            finally
+            {
+                // Kill all stopped processes even if StopTree threw partway through.
+                // stoppedProcesses is in depth-first pre-order, so walking it backwards kills
+                // descendants before their ancestors. Killing a parent first would reparent its
+                // still-stopped children. When a reparented process exits, macOS can orphan the
+                // process group without correctly accounting for the reparenting. If the group
+                // still has stopped members, the kernel then sends SIGHUP and SIGCONT to every
+                // process in it, including unrelated processes that share the group (such as the
+                // caller and its ancestors).
+                for (int i = stoppedProcesses.Count - 1; i >= 0; i--)
+                {
+                    Process process = stoppedProcesses[i];
+                    int killResult = Interop.Sys.Kill(process._processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
+                    if (killResult != 0)
+                    {
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                        // Ignore 'process no longer exists' error.
+                        if (errorInfo.Error != Interop.Error.ESRCH)
+                        {
+                            (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
+                        }
+                    }
+
+                    if (process != this)
+                    {
+                        process.Dispose();
+                    }
+                }
             }
         }
 
-        private List<Exception>? KillTree()
+        /// <summary>
+        /// Recursively stops all processes in the tree (depth-first) and collects them into a flat list.
+        /// Stopping (SIGSTOP) before enumerating children ensures we can discover the entire tree
+        /// before any kill signals cause cascading terminations.
+        /// </summary>
+        /// <returns>
+        /// <see langword="true"/> if the process was successfully stopped and added to
+        /// <paramref name="stoppedProcesses"/>; <see langword="false"/> if the process had already
+        /// exited or could not be stopped, in which case the caller is responsible for disposing it.
+        /// </returns>
+        private bool StopTree(ref List<Exception>? exceptions, List<Process> stoppedProcesses)
         {
-            GetWaitState();
-            Debug.Assert(_waitStateHolder is not null);
-            return SafeProcessHandle.KillTree(_waitStateHolder);
+            // If the process has exited, we can no longer determine its children.
+            if (GetHasExited(refresh: false))
+            {
+                return false;
+            }
+
+            // Stop the process, so it won't start additional children.
+            // This is best effort: kill can return before the process is stopped.
+            int stopResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSIGSTOP());
+            if (stopResult != 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                // Ignore 'process no longer exists' error.
+                if (errorInfo.Error != Interop.Error.ESRCH)
+                {
+                    (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
+                }
+                return false;
+            }
+
+            stoppedProcesses.Add(this);
+
+            List<Process> children = GetChildProcesses();
+            foreach (Process childProcess in children)
+            {
+                if (!childProcess.StopTree(ref exceptions, stoppedProcesses))
+                {
+                    childProcess.Dispose();
+                }
+            }
+
+            return true;
         }
 
         /// <summary>Discards any information about the associated process.</summary>

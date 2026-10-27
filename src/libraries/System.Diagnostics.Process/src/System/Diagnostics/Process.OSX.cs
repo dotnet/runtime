@@ -47,6 +47,12 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets execution path</summary>
+        internal static string GetPathToOpenFile()
+        {
+            return "/usr/bin/open";
+        }
+
         public partial TimeSpan TotalProcessorTime
         {
             get
@@ -74,6 +80,21 @@ namespace System.Diagnostics
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return MapTime(info.ri_user_time);
+            }
+        }
+
+        /// <summary>Gets parent process ID</summary>
+        private int ParentProcessId
+        {
+            get
+            {
+                EnsureState(State.HaveNonExitedId);
+                Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(Id);
+
+                if (info == null)
+                    throw new Win32Exception(SR.ProcessInformationUnavailable);
+
+                return Convert.ToInt32(info.Value.pbsd.pbi_ppid);
             }
         }
 

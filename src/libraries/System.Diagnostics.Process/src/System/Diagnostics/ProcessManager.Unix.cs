@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Runtime.Versioning;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -11,27 +10,6 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
-        internal static List<int> GetChildProcessIds(int processId)
-        {
-            List<int> children = [];
-            foreach (int candidateId in EnumerateProcessIds())
-            {
-                try
-                {
-                    if (TryGetParentProcessId(candidateId, out int parentId) && parentId == processId)
-                    {
-                        children.Add(candidateId);
-                    }
-                }
-                catch (Win32Exception)
-                {
-                    // The process may have exited or may not permit querying its parent.
-                }
-            }
-
-            return children;
-        }
-
         /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
         /// <param name="processId">The process ID.</param>
         /// <param name="machineName">The machine name.</param>

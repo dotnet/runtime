@@ -694,14 +694,23 @@ namespace System.Diagnostics
                     return false;
                 }
 
-                return handle.TryGetStartTime(out startTime);
+                ProcessThreadTimes processTimes = new ProcessThreadTimes();
+                if (!Interop.Kernel32.GetProcessTimes(handle,
+                    out processTimes._create, out processTimes._exit,
+                    out processTimes._kernel, out processTimes._user))
+                {
+                    return false;
+                }
+
+                startTime = processTimes.StartTime;
+                return true;
             }
         }
 
         /// <summary>
         /// Try to get the parent process ID without throwing exceptions.
         /// </summary>
-        private bool TryGetParentProcessId(out int parentProcessId)
+        private unsafe bool TryGetParentProcessId(out int parentProcessId)
         {
             parentProcessId = 0;
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, false))
@@ -711,7 +720,14 @@ namespace System.Diagnostics
                     return false;
                 }
 
-                return handle.TryGetParentProcessId(out parentProcessId);
+                Interop.NtDll.PROCESS_BASIC_INFORMATION info;
+                if (Interop.NtDll.NtQueryInformationProcess(handle, Interop.NtDll.ProcessBasicInformation, &info, (uint)sizeof(Interop.NtDll.PROCESS_BASIC_INFORMATION), out _) != 0)
+                {
+                    return false;
+                }
+
+                parentProcessId = (int)info.InheritedFromUniqueProcessId;
+                return true;
             }
         }
 
@@ -762,7 +778,82 @@ namespace System.Diagnostics
                 if (handle.IsInvalid)
                     return null;
 
-                return handle.KillTree(useExistingHandle: _haveProcessHandle);
+                return KillTree(handle);
+            }
+        }
+
+        private List<Exception>? KillTree(SafeProcessHandle handle)
+        {
+            Debug.Assert(!handle.IsInvalid);
+
+            List<Exception>? exceptions = null;
+
+            try
+            {
+                // Kill the process, so that no further children can be created.
+                //
+                // This method can return before stopping has completed. Down the road, could possibly wait for termination to complete before continuing.
+                Kill();
+            }
+            catch (Win32Exception e)
+            {
+                (exceptions ??= new List<Exception>()).Add(e);
+            }
+
+            List<(Process Process, SafeProcessHandle Handle)> children = GetProcessHandlePairs((thisProcess, otherProcess) => thisProcess.IsParentOf(otherProcess));
+            try
+            {
+                foreach ((Process Process, SafeProcessHandle Handle) child in children)
+                {
+                    List<Exception>? exceptionsFromChild = child.Process.KillTree(child.Handle);
+                    if (exceptionsFromChild != null)
+                    {
+                        (exceptions ??= new List<Exception>()).AddRange(exceptionsFromChild);
+                    }
+                }
+            }
+            finally
+            {
+                foreach ((Process Process, SafeProcessHandle Handle) child in children)
+                {
+                    child.Process.Dispose();
+                    child.Handle.Dispose();
+                }
+            }
+
+            return exceptions;
+        }
+
+        private List<(Process Process, SafeProcessHandle Handle)> GetProcessHandlePairs(Func<Process, Process, bool> predicate)
+        {
+            var results = new List<(Process Process, SafeProcessHandle Handle)>();
+
+            foreach (Process p in GetProcesses())
+            {
+                SafeProcessHandle h = SafeGetHandle(p);
+                if (!h.IsInvalid && predicate(this, p))
+                {
+                    results.Add((p, h));
+                }
+                else
+                {
+                    p.Dispose();
+                    h.Dispose();
+                }
+            }
+
+            return results;
+
+            static SafeProcessHandle SafeGetHandle(Process process)
+            {
+                try
+                {
+                    return process.GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, false);
+                }
+                catch (Win32Exception)
+                {
+                    return SafeProcessHandle.InvalidHandle;
+                }
             }
         }
     }

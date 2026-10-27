@@ -879,134 +879,6 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        internal bool TryGetStartTime(out DateTime startTime)
-        {
-            startTime = default;
-            if (!Interop.Kernel32.GetProcessTimes(this, out long create, out _, out _, out _))
-            {
-                return false;
-            }
-
-            startTime = DateTime.FromFileTime(create);
-            return true;
-        }
-
-        internal unsafe bool TryGetParentProcessId(out int parentProcessId)
-        {
-            parentProcessId = 0;
-            Interop.NtDll.PROCESS_BASIC_INFORMATION info;
-            if (Interop.NtDll.NtQueryInformationProcess(this, Interop.NtDll.ProcessBasicInformation,
-                &info, (uint)sizeof(Interop.NtDll.PROCESS_BASIC_INFORMATION), out _) != 0)
-            {
-                return false;
-            }
-
-            parentProcessId = (int)info.InheritedFromUniqueProcessId;
-            return true;
-        }
-
-        internal List<Exception>? KillTree(bool useExistingHandle = true)
-        {
-            List<Exception>? exceptions = null;
-            KillTree(ref exceptions, useExistingHandle);
-            return exceptions;
-        }
-
-        private void KillTree(ref List<Exception>? exceptions, bool useExistingHandle)
-        {
-            try
-            {
-                // Keep the query handle alive throughout traversal to prevent PID reuse.
-                // Terminate the parent before discovering children so it cannot start more.
-                if (useExistingHandle)
-                {
-                    Kill();
-                }
-                else
-                {
-                    using SafeProcessHandle killHandle = Interop.Kernel32.OpenProcess(
-                        Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE |
-                        Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION,
-                        inherit: false, ProcessId);
-                    if (killHandle.IsInvalid)
-                    {
-                        int error = Marshal.GetLastPInvokeError();
-                        if (!Interop.Kernel32.GetExitCodeProcess(this, out int exitCode) ||
-                            exitCode == Interop.Kernel32.HandleOptions.STILL_ACTIVE)
-                        {
-                            throw new Win32Exception(error);
-                        }
-                    }
-                    else
-                    {
-                        killHandle.Kill();
-                    }
-                }
-            }
-            catch (Win32Exception exception)
-            {
-                (exceptions ??= new List<Exception>()).Add(exception);
-            }
-
-            List<SafeProcessHandle> children = GetChildProcessHandles();
-            try
-            {
-                foreach (SafeProcessHandle child in children)
-                {
-                    child.KillTree(ref exceptions, useExistingHandle: false);
-                }
-            }
-            finally
-            {
-                foreach (SafeProcessHandle child in children)
-                {
-                    child.Dispose();
-                }
-            }
-        }
-
-        private List<SafeProcessHandle> GetChildProcessHandles()
-        {
-            List<SafeProcessHandle> children = [];
-            if (!TryGetStartTime(out DateTime startTime))
-            {
-                return children;
-            }
-
-            int processId = ProcessId;
-            try
-            {
-                foreach (int candidateId in ProcessManager.GetProcessIds())
-                {
-                    SafeProcessHandle candidate = Interop.Kernel32.OpenProcess(
-                        Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION,
-                        inherit: false, candidateId);
-                    if (!candidate.IsInvalid &&
-                        candidate.TryGetStartTime(out DateTime childStartTime) &&
-                        startTime < childStartTime &&
-                        candidate.TryGetParentProcessId(out int parentProcessId) &&
-                        processId == parentProcessId)
-                    {
-                        children.Add(candidate);
-                    }
-                    else
-                    {
-                        candidate.Dispose();
-                    }
-                }
-            }
-            catch
-            {
-                foreach (SafeProcessHandle child in children)
-                {
-                    child.Dispose();
-                }
-                throw;
-            }
-
-            return children;
-        }
-
         private ProcessExitStatus WaitForExitCore()
         {
             using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
@@ -1028,13 +900,15 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds, bool entireProcessTree)
+        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
         {
             using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
             if (!processWaitHandle.WaitOne(milliseconds))
             {
+#pragma warning disable CA1416 // PosixSignal.SIGKILL is supported on Windows via SignalCore
                 Canceled = true;
-                Kill(entireProcessTree);
+                SignalCore(PosixSignal.SIGKILL);
+#pragma warning restore CA1416
                 processWaitHandle.WaitOne(Timeout.Infinite);
             }
 

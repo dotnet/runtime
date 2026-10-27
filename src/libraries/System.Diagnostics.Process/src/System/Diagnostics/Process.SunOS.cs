@@ -32,6 +32,15 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets the parent process ID</summary>
+        private int ParentProcessId => GetProcInfo().ParentPid;
+
+        /// <summary>Gets execution path</summary>
+        internal static string? GetPathToOpenFile()
+        {
+            return ProcessUtils.FindProgramInPath("xdg-open");
+        }
+
         public partial TimeSpan TotalProcessorTime
         {
             get

@@ -136,94 +136,6 @@ namespace Microsoft.Win32.SafeHandles
 
         private void ResumeCore() => SignalCore(PosixSignal.SIGCONT);
 
-        internal List<Exception>? KillTree()
-        {
-            if (_waitStateHolder is null)
-            {
-                throw new InvalidOperationException(SR.InvalidProcessHandle);
-            }
-
-            return KillTree(_waitStateHolder);
-        }
-
-        internal static List<Exception>? KillTree(ProcessWaitState.Holder waitStateHolder)
-        {
-            List<Exception>? exceptions = null;
-            List<ProcessWaitState.Holder> stoppedProcesses = [];
-            try
-            {
-                // Collect the entire tree before killing any process: KillOnParentExit can
-                // otherwise terminate children before their descendants have been discovered.
-                StopTree(waitStateHolder.IncrementRefCount(), ref exceptions, stoppedProcesses);
-            }
-            catch (Exception exception)
-            {
-                (exceptions ??= new List<Exception>()).Add(exception);
-            }
-            finally
-            {
-                // Kill descendants before ancestors. Reparenting stopped children can cause
-                // macOS to send SIGHUP and SIGCONT to unrelated members of the process group.
-                for (int i = stoppedProcesses.Count - 1; i >= 0; i--)
-                {
-                    ProcessWaitState.Holder holder = stoppedProcesses[i];
-                    int killResult = Interop.Sys.Kill(holder._state._processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
-                    if (killResult != 0)
-                    {
-                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                        if (errorInfo.Error != Interop.Error.ESRCH)
-                        {
-                            (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
-                        }
-                    }
-
-                    holder.Dispose();
-                }
-            }
-
-            return exceptions;
-        }
-
-        private static void StopTree(ProcessWaitState.Holder holder, ref List<Exception>? exceptions,
-            List<ProcessWaitState.Holder> stoppedProcesses)
-        {
-            bool added = false;
-            try
-            {
-                ProcessWaitState waitState = holder._state;
-                if (waitState.GetExited(out _, refresh: false))
-                {
-                    return;
-                }
-
-                // SIGSTOP prevents new children from being created, on a best-effort basis.
-                int stopResult = Interop.Sys.Kill(waitState._processId, Interop.Sys.GetPlatformSIGSTOP());
-                if (stopResult != 0)
-                {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    if (errorInfo.Error != Interop.Error.ESRCH)
-                    {
-                        (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
-                    }
-                    return;
-                }
-
-                stoppedProcesses.Add(holder);
-                added = true;
-                foreach (int childId in ProcessManager.GetChildProcessIds(waitState._processId))
-                {
-                    StopTree(new ProcessWaitState.Holder(childId), ref exceptions, stoppedProcesses);
-                }
-            }
-            finally
-            {
-                if (!added)
-                {
-                    holder.Dispose();
-                }
-            }
-        }
-
         private ProcessExitStatus WaitForExitCore()
         {
             ProcessWaitState waitState = GetWaitState();
@@ -245,14 +157,14 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds, bool entireProcessTree)
+        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
         {
             ProcessWaitState waitState = GetWaitState();
 
             if (!waitState.WaitForExit(milliseconds))
             {
                 waitState._canceled = true;
-                Kill(entireProcessTree);
+                SignalCore(PosixSignal.SIGKILL);
                 waitState.WaitForExit(Timeout.Infinite);
             }
 
@@ -493,7 +405,7 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             // use default program to open file/url
-            filename = ProcessManager.GetPathToOpenFile() ?? throw new Win32Exception(Interop.Errors.ERROR_NO_ASSOCIATION, SR.UseShellExecuteNoOpenProgram);
+            filename = Process.GetPathToOpenFile() ?? throw new Win32Exception(Interop.Errors.ERROR_NO_ASSOCIATION, SR.UseShellExecuteNoOpenProgram);
             string[] openFileArgv = ProcessUtils.ParseArgv(startInfo, filename, ignoreArguments: true);
 
             SafeProcessHandle result = ForkAndExecProcess(
