@@ -221,8 +221,6 @@ namespace ILAssembler.Tests
         [InlineData("10,11 : 9,1", 10, 9, 11, 1)]
         [InlineData("10,11 : 5,5", 10, 5, 11, 5)]
         [InlineData("10,10 : 1,65534", 10, 1, 10, 65534)]
-        [InlineData("10,10 : 1,65535", 10, 1, 10, 65535)]
-        [InlineData("10,11 : 65535,65535", 10, 65535, 11, 65535)]
         [InlineData("0xFEEFEE,0xFEEFEE : 0,0", 0xFEEFEE, 0, 0xFEEFEE, 0)]
         [InlineData("0xFEEFEE", 0xFEEFEE, 0, 0xFEEFEE, 0)]
         [InlineData("0xFEEFEE : 0", 0xFEEFEE, 0, 0xFEEFEE, 0)]
@@ -232,6 +230,28 @@ namespace ILAssembler.Tests
             using var pdb = PortablePdbTestReader.Compile(Program(Method("M", $".line {coordinates} 'a.cs'\nret")));
 
             Assert.Equal(new[] { (0, startLine, startColumn, endLine, endColumn, "a.cs") }, Points(pdb, "M"));
+        }
+
+        [Theory]
+        [InlineData("10,10 : 1,65535", 1, 0, 65534)]
+        [InlineData("10,11 : 65535,65535", 65535, 1, 0)]
+        public void MaximumColumn_IsEncodedWithoutClamping(string coordinates, int startColumn, int deltaLines, int deltaColumns)
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", $".line {coordinates} 'a.cs'\nret")));
+            MethodDebugInformation info = pdb.GetDebugInformation("M");
+            Assert.Equal("a.cs", pdb.GetDocumentName(info.Document));
+
+            // Read the encoding directly because the SDK sequence-point reader rejects legal maximum columns.
+            BlobReader blob = pdb.Pdb.GetBlobReader(info.SequencePointsBlob);
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(deltaLines, blob.ReadCompressedInteger());
+            Assert.Equal(deltaColumns, deltaLines == 0
+                ? blob.ReadCompressedInteger()
+                : blob.ReadCompressedSignedInteger());
+            Assert.Equal(10, blob.ReadCompressedInteger());
+            Assert.Equal(startColumn, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.RemainingBytes);
         }
 
         [Theory]
@@ -476,7 +496,18 @@ namespace ILAssembler.Tests
                     ret
             """)));
 
-            Assert.Equal(new[] { (0, 0x1ffffffe, 1, 0x1fffffff, 3, "a.cs") }, Points(pdb, "M"));
+            MethodDebugInformation info = pdb.GetDebugInformation("M");
+            Assert.Equal("a.cs", pdb.GetDocumentName(info.Document));
+
+            // Read the encoding directly because the SDK sequence-point reader rejects this legal line range.
+            BlobReader blob = pdb.Pdb.GetBlobReader(info.SequencePointsBlob);
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(2, blob.ReadCompressedSignedInteger());
+            Assert.Equal(0x1ffffffe, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.RemainingBytes);
         }
 
         [Theory]
