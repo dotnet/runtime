@@ -644,6 +644,15 @@ internal sealed class FrameHelpers
         }
     }
 
+    // The SP that native VirtualUnwindInterpreterCallFrame (eetwain.cpp) gives the caller context: the parent
+    // InterpMethodContextFrame whenever there is one -- including the zeroed root frame (ip == NULL) of an
+    // interpreter activation -- otherwise the owning InterpreterFrame (first-argument register).
+    public TargetPointer InterpreterCallerStackPointer(IPlatformAgnosticContext context)
+    {
+        Data.InterpMethodContextFrame currentFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(context.StackPointer);
+        return currentFrame.ParentPtr != TargetPointer.Null ? currentFrame.ParentPtr : GetFirstArgRegister(context);
+    }
+
     private bool VirtualUnwindInterpreterCallFrame(IPlatformAgnosticContext context)
     {
         TargetPointer currentFramePtr = context.StackPointer;

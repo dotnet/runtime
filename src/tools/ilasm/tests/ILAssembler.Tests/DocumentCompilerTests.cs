@@ -40,8 +40,9 @@ namespace ILAssembler.Tests
                 _ => throw new InvalidOperationException("Unexpected include"),
                 _ => throw new InvalidOperationException("Unexpected resource"),
                 new Options { ErrorTolerant = true });
-            var parserDiagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == "Parser"));
+            var parserDiagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == DiagnosticIds.Parser));
 
+            Assert.Equal("ILA0000", parserDiagnostic.Id);
             Assert.Equal("broken.il", parserDiagnostic.Location.Source.Path);
             Assert.True(parserDiagnostic.Location.Span.Start >= 0);
             Assert.True(parserDiagnostic.Location.Span.Length > 0);
@@ -409,7 +410,7 @@ namespace ILAssembler.Tests
                 _ => throw new InvalidOperationException("Unexpected resource"),
                 new Options { ErrorTolerant = true });
 
-            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.Parser);
             Assert.NotNull(image);
 
             var imageBuilder = new BlobBuilder();

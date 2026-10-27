@@ -40,4 +40,6 @@ public record Location(SourceSpan Span, SourceText Source)
             : (int)Math.Min((long)stop - start + 1, int.MaxValue);
         return new SourceSpan(start, length);
     }
+
+    public override string ToString() => $"{Source.Path}({Span.Start},{Span.Length})";
 }
