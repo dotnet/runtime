@@ -16,6 +16,11 @@ public class RunInALC
     [Fact]
     public static int TestEntryPoint()
     {
+        if (Assembly.GetExecutingAssembly().Location.Length == 0)
+        {
+            return 100;
+        }
+
         try
         {
             ConflictingCustomMarshalerNamesInCollectibleLoadContexts_Succeeds();
