@@ -318,9 +318,9 @@ namespace Wasm.Build.Tests
                 if (task.Name != "RunReadyToRunCompiler")
                     return;
 
-                task.VisitAllChildren<SL.TaskParameterProperty>(parameter =>
+                task.VisitAllChildren<SL.Property>(parameter =>
                 {
-                    if (parameter.ParameterName == "Crossgen2ExtraCommandLineArgs")
+                    if (parameter.Name == "Crossgen2ExtraCommandLineArgs")
                         extraArgs.Add(parameter.Value);
                 });
             });
