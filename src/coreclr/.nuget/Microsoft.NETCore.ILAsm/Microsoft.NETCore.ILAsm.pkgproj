@@ -3,22 +3,15 @@
 
   <PropertyGroup>
     <PackageDescription>The .NET IL Assembler.</PackageDescription>
+    <IsLineupPackage>true</IsLineupPackage>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
-    <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
-    <PackageTargetRuntime Condition="'$(_packageTargetOSGroup)' == 'windows'">$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <_ILAsmProject>ilasm</_ILAsmProject>
-    <_ILAsmProject Condition="'$(PackCrossComponent)' == 'true'">ilasm_inbuild</_ILAsmProject>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(IsLineupPackage)' != 'true' and ('$(PackageTargetRuntime)' == '$(TargetRid)' or '$(PackCrossComponent)' == 'true')">
-    <ProjectReference Include="$(ToolsProjectRoot)ilasm\src\ilasm\$(_ILAsmProject).csproj"
-                      ReferenceOutputAssembly="false"
-                      AdditionalProperties="ILAsmPackageRuntime=$(PackageTargetRuntime)" />
+  <ItemGroup>
+    <ProjectReference Remove="@(ProjectReference)" />
+    <_ILAsmRuntimeDependency Include="@(BuildRID)" TargetRuntime="%(Identity)" />
+    <RuntimeDependency Include="@(_ILAsmRuntimeDependency->'runtime.%(Identity).Microsoft.NETCore.ILAsm')"
+                       Version="$(PackageVersion)"
+                       TargetPackage="Microsoft.NETCore.ILAsm" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

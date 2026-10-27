@@ -8,6 +8,26 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' == ''">$(TargetRid)</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(IsInBuildToolProject)' == 'true'">$(NETCoreSdkRuntimeIdentifier)</PackageTargetRuntime>
+    <PackageId>runtime.$(PackageTargetRuntime).Microsoft.NETCore.ILAsm</PackageId>
+    <Title>$(PackageId)</Title>
+    <PackageDescription>The .NET IL Assembler.</PackageDescription>
+    <PackageProjectUrl>https://dot.net/</PackageProjectUrl>
+    <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</PackageIconUrl>
+    <MinClientVersion>2.12</MinClientVersion>
+    <!-- NuGet requires IncludeBuildOutput to include native symbols; only published files are packaged. -->
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);ExcludeILAsmBuildOutput</TargetsForTfmSpecificBuildOutput>
+    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);ExcludeILAsmDebugOutput</TargetsForTfmSpecificDebugSymbolsInPackage>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <IncludeDesignerMarker>false</IncludeDesignerMarker>
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>$(AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder);.pdb;.dbg;.dwarf</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <BeforePack>$(BeforePack);GetILAsmPackageFiles</BeforePack>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,13 +35,32 @@
     <ProjectReference Include="..\ILAssembler\ILAssembler.csproj" />
   </ItemGroup>
 
-  <Target Name="GetFilesToPackage" DependsOnTargets="Publish;PublishItemsOutputGroup" Returns="@(_ILAsmPackageFile)">
+  <Target Name="ExcludeILAsmBuildOutput">
+    <ItemGroup>
+      <BuiltProjectOutputGroupOutput Remove="@(BuiltProjectOutputGroupOutput)" />
+      <DocumentationProjectOutputGroupOutput Remove="@(DocumentationProjectOutputGroupOutput)" />
+      <SatelliteDllsProjectOutputGroupOutput Remove="@(SatelliteDllsProjectOutputGroupOutput)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ExcludeILAsmDebugOutput">
+    <ItemGroup>
+      <DebugSymbolsProjectOutputGroupOutput Remove="@(DebugSymbolsProjectOutputGroupOutput)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetILAsmPackageFiles" DependsOnTargets="Publish;PublishItemsOutputGroup">
     <ItemGroup>
       <_ILAsmPackageFile Include="@(PublishItemsOutputGroupOutputs->'%(OutputPath)')">
-        <TargetPath>runtimes/$(ILAsmPackageRuntime)/native/$([System.IO.Path]::GetDirectoryName('%(PublishItemsOutputGroupOutputs.TargetPath)'))</TargetPath>
-        <HarvestDependencies>false</HarvestDependencies>
+        <PackagePath>runtimes/$(PackageTargetRuntime)/native/%(PublishItemsOutputGroupOutputs.TargetPath)</PackagePath>
         <IsSymbolFile Condition="'%(Extension)' == '.pdb' or '%(Extension)' == '.dbg' or '%(Extension)' == '.dwarf'">true</IsSymbolFile>
       </_ILAsmPackageFile>
+      <Content Include="@(_ILAsmPackageFile)" Pack="true" Condition="'%(_ILAsmPackageFile.IsSymbolFile)' != 'true'" />
+      <_TargetPathsToSymbols Include="@(_ILAsmPackageFile)"
+                             Condition="'%(_ILAsmPackageFile.IsSymbolFile)' == 'true'"
+                             FinalOutputPath="%(_ILAsmPackageFile.Identity)"
+                             TargetPath="/%(_ILAsmPackageFile.PackagePath)"
+                             TargetFramework="$(TargetFramework)" />
     </ItemGroup>
   </Target>
 </Project>

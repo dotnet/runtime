@@ -264,7 +264,7 @@
     <SubsetName Include="Tools.CdacTests" OnDemand="true" Description="Unit tests for the diagnostic data contract reader." />
     <SubsetName Include="Tools.CdacDumpTests" OnDemand="true" Description="Dump-based integration tests for the diagnostic data contract reader." />
     <SubsetName Include="Tools.CdacStressTests" OnDemand="true" Description="Stress integration tests for the diagnostic data contract reader." />
-    <SubsetName Include="Tools.ILAsm" OnDemand="true" Description="Build only the managed ilasm tool." />
+    <SubsetName Include="Tools.ILAsm" OnDemand="true" Description="Build and package the managed ilasm tool." />
 
     <!-- Host -->
     <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests. Equivalent to: $(DefaultHostSubsets)" />
@@ -594,6 +594,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.ilasm+'))">
+    <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.proj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ILAssembler\ILAssembler.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\tests\ILAssembler.Tests\ILAssembler.Tests.csproj" Category="tools" Test="true" />
   </ItemGroup>
