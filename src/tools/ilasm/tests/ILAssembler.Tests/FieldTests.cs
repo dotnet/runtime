@@ -56,7 +56,7 @@ namespace ILAssembler.Tests
                 var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
                     source, new Options { ErrorTolerant = errorTolerant });
                 Diagnostic diagnostic = Assert.Single(diagnostics);
-                Assert.Equal(DiagnosticIds.DuplicateField, diagnostic.Id);
+                Assert.Equal("ILA0034", diagnostic.Id);
                 Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
                 Assert.Equal("Duplicate field definition 'Value'", diagnostic.Message);
                 Assert.Equal("test.il", diagnostic.Location.Source.Path);

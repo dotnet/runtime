@@ -52,6 +52,7 @@ public static class DiagnosticIds
     public const string MissingExportedTypeImplementation = "ILA0031";
     public const string KeyFileError = "ILA0032";
     public const string TooManyGenericParameters = "ILA0033";
+    public const string DuplicateField = "ILA0034";
     public const string GenericParameterConstraintOwnerOutOfRange = "ILA0035";
     public const string InvalidExportOrdinal = "ILA0036";
     public const string ExportOrdinalRangeTooLarge = "ILA0037";
@@ -80,7 +81,6 @@ public static class DiagnosticIds
     public const string LocalSlotNamedTwiceInScope = "ILA0060";
     public const string DuplicateEntryPoint = "ILA0063";
     public const string InstanceEntryPoint = "ILA0064";
-    public const string DuplicateField = "ILA0065";
 }
 
 internal static class DiagnosticMessageTemplates
