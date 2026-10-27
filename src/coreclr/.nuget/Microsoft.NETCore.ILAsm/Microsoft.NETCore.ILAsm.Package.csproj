@@ -24,20 +24,20 @@
   <Import Project="..\package-rids.props" />
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
     <None Include="$(IntermediateOutputPath)runtime.json" Pack="true" PackagePath="/" />
   </ItemGroup>
 
+  <UsingTask TaskName="GenerateILAsmRuntimeGraph"
+             AssemblyFile="$(InstallerTasksAssemblyPath)"
+             Runtime="NET"
+             Architecture="*" />
+
   <Target Name="GenerateILAsmRuntimeDependencies">
-    <ItemGroup>
-      <_ILAsmBuildRID Include="@(BuildRID)" TargetRuntime="%(Identity)" />
-      <_ILAsmRuntimeDependency Include="@(_ILAsmBuildRID->'runtime.%(Identity).Microsoft.NETCore.ILAsm')"
-                               Version="$(PackageVersion)"
-                               TargetPackage="$(PackageId)" />
-    </ItemGroup>
-    <GenerateRuntimeDependencies Dependencies="@(_ILAsmRuntimeDependency)"
-                                 PackageId="$(PackageId)"
-                                 RuntimeJson="$(IntermediateOutputPath)runtime.json" />
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <GenerateILAsmRuntimeGraph RuntimeIdentifiers="@(BuildRID)"
+                              PackageId="$(PackageId)"
+                              PackageVersion="$(PackageVersion)"
+                              OutputPath="$(IntermediateOutputPath)runtime.json" />
   </Target>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" />
