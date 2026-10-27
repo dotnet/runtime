@@ -306,6 +306,8 @@
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.Unix.cs" />
+    <Compile Include="System\Threading\Thread.NativeAot.Unix.MultiThreading.cs" Condition="'$(FeatureMultithreading)' == 'true'" />
+    <Compile Include="System\Threading\Thread.NativeAot.Unix.SingleThreading.cs" Condition="'$(FeatureMultithreading)' != 'true'" />
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Abort.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Abort.cs</Link>
     </Compile>
