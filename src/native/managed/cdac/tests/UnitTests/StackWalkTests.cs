@@ -434,7 +434,7 @@ public unsafe class StackWalkTests
         byte[] signatureMap = [0xdd, 0x02];
         (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
             scenario, frameType: frameType, unreadableThis: true, signatureMap: signatureMap,
-            frameMapLookupDone: scenario == "interface");
+            cachedFrameMap: scenario == "interface" ? uint.MaxValue : 0);
         ContextHolder<X86Context> context = new() { Context = new X86Context { ContextFlags = (uint)X86Context.ContextFlagsValues.CONTEXT_FULL } };
 
         new X86FrameHandler(target, context).HandleTransitionFrame(
@@ -477,13 +477,13 @@ public unsafe class StackWalkTests
     public void TransitionFrame_CachedLookupDoesNotReadRelocatedReceiver(string frameType, bool hasMap)
     {
         byte[] signatureMap = [0xdd, 0x02];
-        ulong cachedMap = hasMap ? 0xa000UL : 0;
+        ulong cachedMap = hasMap ? 0xa000UL : uint.MaxValue;
         (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
             "interface", frameType: frameType, unreadableThis: true, signatureMap: signatureMap,
-            cachedFrameMap: cachedMap, frameMapLookupDone: true);
+            cachedFrameMap: cachedMap);
         FrameHelpers helpers = new(target);
 
-        Assert.Equal(cachedMap, helpers.GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+        Assert.Equal(hasMap ? cachedMap : 0, helpers.GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
 
         ContextHolder<X86Context> context = new() { Context = new X86Context { ContextFlags = (uint)X86Context.ContextFlagsValues.CONTEXT_FULL } };
         new X86FrameHandler(target, context).HandleTransitionFrame(
@@ -503,14 +503,64 @@ public unsafe class StackWalkTests
             Times.Exactly(hasMap ? 0 : 1));
     }
 
-    [Fact]
-    public void TransitionFrame_UninitializedCacheDoesNotHideLookup()
+    [Theory]
+    [InlineData(nameof(FrameType.PrestubMethodFrame))]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame))]
+    [InlineData(nameof(FrameType.StubDispatchFrame))]
+    public void TransitionFrame_UninitializedCacheDoesNotHideLookup(string frameType)
     {
         (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
-            "interface", cachedFrameMap: 0xdeadbeef, frameMapLookupDone: false);
+            "interface", frameType: frameType);
 
         Assert.Equal(0xa000UL,
             new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TransitionFrame_CachedLookupUsesTargetPointerSize(MockTarget.Architecture arch)
+    {
+        ulong hit = arch.Is64Bit ? 0x1_0000_a000UL : 0xa000UL;
+        ulong miss = arch.Is64Bit ? ulong.MaxValue : uint.MaxValue;
+        foreach (ulong cachedMap in new[] { hit, miss })
+        {
+            TestPlaceholderTarget.Builder builder = new(arch);
+            TargetTestHelpers helpers = builder.MemoryBuilder.TargetTestHelpers;
+            int pointerSize = arch.Is64Bit ? sizeof(ulong) : sizeof(uint);
+            byte[] frame = new byte[4 * pointerSize];
+            helpers.WritePointer(frame, 0x100);
+            helpers.WritePointer(frame.AsSpan(2 * pointerSize), 0x6000);
+            helpers.WritePointer(frame.AsSpan(3 * pointerSize), cachedMap);
+            builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x1000, Data = frame, Name = "Cached frame map" });
+            TestPlaceholderTarget target = builder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                {
+                    [DataType.Frame] = new()
+                    {
+                        Fields = new Dictionary<string, Target.FieldInfo>
+                        {
+                            [nameof(Data.Frame.Identifier)] = new() { Offset = 0 },
+                        },
+                    },
+                    [DataType.FramedMethodFrame] = new()
+                    {
+                        Fields = new Dictionary<string, Target.FieldInfo>
+                        {
+                            [nameof(Data.FramedMethodFrame.TransitionBlockPtr)] = new() { Offset = pointerSize },
+                            [nameof(Data.FramedMethodFrame.MethodDescPtr)] = new() { Offset = 2 * pointerSize },
+                            [nameof(Data.FramedMethodFrame.CachedGCRefMap)] = new() { Offset = 3 * pointerSize },
+                        },
+                    },
+                    [DataType.MethodDesc] = new(),
+                })
+                .AddGlobals((nameof(FrameType.PrestubMethodFrame) + "Identifier", 0x100))
+                .AddMockContract(Mock.Of<IGC>())
+                .AddMockContract(Mock.Of<IGCInfo>())
+                .AddMockContract(Mock.Of<IExecutionManager>())
+                .Build();
+
+            Assert.Equal(cachedMap == miss ? 0 : cachedMap,
+                new FrameHelpers(target).GetGCRefMapForFrame(new TargetPointer(0x1000)).Value);
+        }
     }
 
     [Theory]
@@ -619,7 +669,7 @@ public unsafe class StackWalkTests
         string scenario, byte[]? map = null, string frameType = nameof(FrameType.PrestubMethodFrame),
         MetadataReader? metadata = null, bool unreadableThis = false, bool metadataMissing = false, ushort methodFlags = 0,
         bool markedReceiver = false, bool ownMap = false, uint auxiliarySize = 4, byte[]? overrideMap = null,
-        byte[]? signatureMap = null, ulong cachedFrameMap = 0, bool frameMapLookupDone = false)
+        byte[]? signatureMap = null, ulong cachedFrameMap = 0)
     {
         TestPlaceholderTarget.Builder builder = new(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false });
         TargetTestHelpers helpers = builder.MemoryBuilder.TargetTestHelpers;
@@ -655,7 +705,7 @@ public unsafe class StackWalkTests
             [DataType.Frame] = TypeInfo((nameof(Data.Frame.Identifier), 0)),
             [DataType.FramedMethodFrame] = TypeInfo(
                 (nameof(Data.FramedMethodFrame.TransitionBlockPtr), 8), (nameof(Data.FramedMethodFrame.MethodDescPtr), 12),
-                (nameof(Data.FramedMethodFrame.CachedGCRefMap), 20), (nameof(Data.FramedMethodFrame.GCRefMapLookupDone), 24)),
+                (nameof(Data.FramedMethodFrame.CachedGCRefMap), 20)),
             [DataType.StubDispatchFrame] = TypeInfo(
                 (nameof(Data.StubDispatchFrame.MethodDescPtr), 12), (nameof(Data.StubDispatchFrame.Indirection), 16)),
             [DataType.TransitionBlock] = TypeInfo(
@@ -668,12 +718,11 @@ public unsafe class StackWalkTests
         AddMemory(0xa000, map ?? [0xdd, 0x02]);
         if (overrideMap is not null)
             AddMemory(0xb200, overrideMap);
-        byte[] frame = new byte[28];
+        byte[] frame = new byte[24];
         helpers.Write(frame, 0x100u);
         helpers.Write(frame.AsSpan(8), 0x2000u);
         helpers.Write(frame.AsSpan(12), 0x6000u);
         helpers.Write(frame.AsSpan(20), checked((uint)cachedFrameMap));
-        frame[24] = frameMapLookupDone ? (byte)1 : (byte)0;
         AddMemory(0x1000, frame);
         byte[] transition = new byte[X86TransitionBlockSize];
         uint[] saved = [0x1111_1111, 0x2222_2222, 0x3333_3333, 0x4444_4444, 0xb100, 0xb000, 0x1234_5678];

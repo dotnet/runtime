@@ -1491,11 +1491,12 @@ PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc(ScanContext* sc)
         FramedMethodFrame* pFrame = static_cast<FramedMethodFrame*>(this);
         // Relocation may update the receiver root before moving the object. Remember the
         // first safe lookup, including misses, so later walks never retry receiver lookup.
-        // A completed null result means signature fallback, not an uninitialized cache.
         // Diagnostic unwinding may perform a cold lookup: any relocation that needed
         // this lookup would already have completed it during marking.
-        if (pFrame->m_gcRefMapLookupDone)
-            return pFrame->m_pCachedGCRefMap;
+        const PTR_BYTE noMap = dac_cast<PTR_BYTE>(static_cast<TADDR>(-1));
+        PTR_BYTE cachedMap = VolatileLoad(&pFrame->m_pCachedGCRefMap);
+        if (cachedMap != nullptr)
+            return cachedMap == noMap ? nullptr : cachedMap;
 
         MethodDesc* pMD = GetFunction();
         if (pMD == nullptr)
@@ -1521,8 +1522,7 @@ PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc(ScanContext* sc)
             map = pMD->FindGCRefMap(pReceiverMT, dispatch);
         }
 #ifndef DACCESS_COMPILE
-        pFrame->m_pCachedGCRefMap = map;
-        pFrame->m_gcRefMapLookupDone = true;
+        VolatileStore(&pFrame->m_pCachedGCRefMap, map != nullptr ? map : noMap);
 #endif // DACCESS_COMPILE
         return map;
     }

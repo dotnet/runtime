@@ -208,8 +208,11 @@ internal sealed class FrameHelpers
         Data.FramedMethodFrame frame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
         // Marking saves hits and misses before relocating roots. A cold diagnostic walk
         // can still inspect the receiver; a completed miss must never retry that lookup.
-        if (supportsVirtualMaps && frame.GCRefMapLookupDone is true)
-            return frame.CachedGCRefMap;
+        if (supportsVirtualMaps && frame.CachedGCRefMap is TargetPointer cachedMap && cachedMap != TargetPointer.Null)
+        {
+            TargetPointer noMap = new(_target.PointerSize == 8 ? ulong.MaxValue : uint.MaxValue);
+            return cachedMap == noMap ? TargetPointer.Null : cachedMap;
+        }
         TargetPointer cached = GetGCRefMapFromMethodDesc(method);
         if (!supportsVirtualMaps || !_target.TryGetTypeInfo(nameof(DataType.MethodTable), out _))
             return cached;

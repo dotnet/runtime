@@ -1228,14 +1228,14 @@ protected:
     PTR_MethodDesc m_pMD;
 
 private:
+    // nullptr means unexamined; -1 means the lookup found no map.
     PTR_BYTE m_pCachedGCRefMap;
-    bool m_gcRefMapLookupDone;
 
 public:
 #ifndef DACCESS_COMPILE
     FramedMethodFrame(FrameIdentifier frameIdentifier, TransitionBlock * pTransitionBlock, MethodDesc * pMD)
         : TransitionFrame(frameIdentifier), m_pTransitionBlock(dac_cast<TADDR>(pTransitionBlock)), m_pMD(pMD),
-          m_pCachedGCRefMap(nullptr), m_gcRefMapLookupDone(false)
+          m_pCachedGCRefMap(nullptr)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -1275,7 +1275,6 @@ public:
         }
         CONTRACTL_END;
 
-        m_gcRefMapLookupDone = false;
         m_pCachedGCRefMap = nullptr;
         m_pMD = pMD;
     }
@@ -1311,7 +1310,6 @@ struct cdac_data<FramedMethodFrame>
     static constexpr size_t TransitionBlockPtr = offsetof(FramedMethodFrame, m_pTransitionBlock);
     static constexpr size_t MethodDescPtr = offsetof(FramedMethodFrame, m_pMD);
     static constexpr size_t CachedGCRefMap = offsetof(FramedMethodFrame, m_pCachedGCRefMap);
-    static constexpr size_t GCRefMapLookupDone = offsetof(FramedMethodFrame, m_gcRefMapLookupDone);
 };
 
 // Some context-related forwards.

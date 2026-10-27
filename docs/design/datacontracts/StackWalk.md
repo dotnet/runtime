@@ -161,8 +161,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `ExternalMethodFrame` | `Indirection` | `pointer` | Import slot pointer for GCRefMap resolution via FindReadyToRunModule |
 | `FaultingExceptionFrame` | `TargetContext` | `pointer` | Frame's Target Context |
 | `Frame` | `Next` | `pointer` | Pointer to next from on linked list |
-| `FramedMethodFrame` | `CachedGCRefMap` | `pointer` | Saved method-entry or declaration-map lookup result |
-| `FramedMethodFrame` | `GCRefMapLookupDone` | `uint8` | Whether the saved lookup is complete, including a null result |
+| `FramedMethodFrame` | `CachedGCRefMap` | `pointer` | Saved method-entry or declaration-map lookup result: null if unexamined, an all-ones pointer if no map was found |
 | `FramedMethodFrame` | `MethodDescPtr` | `pointer` | Pointer to Frame's method desc |
 | `FramedMethodFrame` | `TransitionBlockPtr` | `pointer` | Pointer to Frame's TransitionBlock |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | `pointer` | Pointer to the Frame's DebuggerEval object |
@@ -964,8 +963,11 @@ If lookup in the method's owning type fails during root enumeration, obtain the 
 type from the saved `this` object for reference types, boxed wrappers, and dispatch frames. Do not dereference
 `this` for constructors, static methods, excluded generic bodies, or unboxed value-type bodies.
 The live runtime saves successful lookups and completed misses on the frame before
-reporting argument roots. Changing the frame's method or representative dispatch slot
-invalidates the saved result.
+reporting argument roots. A single pointer field holds null for an uninitialized lookup,
+an all-ones target pointer for a completed miss, or the map address for a successful lookup.
+The runtime uses volatile loads and stores to publish the complete result in one operation
+to concurrent walkers. Changing the frame's method or representative dispatch slot
+invalidates the saved result by resetting the pointer to null.
 Both root scanning and native x86 unwinding complete the lookup on the first walk.
 The marking walk precedes relocation, so subsequent walks reuse the saved result even if
 the receiver root now contains its future address.
