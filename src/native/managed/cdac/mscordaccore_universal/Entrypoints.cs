@@ -181,6 +181,7 @@ internal static class Entrypoints
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_sos_interface")]
     private static unsafe int CreateSosInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
     {
+        ComObject? legacyComObject = null;
         try
         {
             if (obj == null)
@@ -194,12 +195,14 @@ internal static class Entrypoints
             Contracts.CoreCLRContracts.ValidateForDataAccess(cdacHandle.Target, cdacHandle.ApiLock);
 
             object? legacyImpl = legacyImplPtr != IntPtr.Zero
-                ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
+                ? UniqueComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
                 : null;
+            legacyComObject = legacyImpl as ComObject;
 
             Legacy.SOSDacImpl impl = new(cdacHandle.Target, legacyImpl, cdacHandle.ApiLock);
             nint ptr = (nint)ComInterfaceMarshaller<ISOSDacInterface>.ConvertToUnmanaged(impl);
             *obj = ptr;
+            legacyComObject = null;
             return 0;
         }
         catch (Exception ex)
@@ -208,6 +211,10 @@ internal static class Entrypoints
                 *obj = IntPtr.Zero;
             int hr = ex.HResult;
             return hr < 0 ? hr : HResults.E_FAIL;
+        }
+        finally
+        {
+            legacyComObject?.FinalRelease();
         }
     }
 
@@ -485,21 +492,29 @@ internal static class Entrypoints
         Contracts.CoreCLRContracts.ValidateForDataAccess(target, apiLock);
 
         object? legacyImpl = legacyImplPtr != IntPtr.Zero
-            ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
+            ? UniqueComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
             : null;
+        ComObject? legacyComObject = legacyImpl as ComObject;
+        try
+        {
+            Legacy.SOSDacImpl impl = new(target, legacyImpl, apiLock, (ComObject)legacyTarget);
+            void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
+            int hrQI = Marshal.QueryInterface((nint)ccw, *pIID, out nint ptrToIface);
 
-        Legacy.SOSDacImpl impl = new(target, legacyImpl, apiLock, (ComObject)legacyTarget);
-        void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
-        int hrQI = Marshal.QueryInterface((nint)ccw, *pIID, out nint ptrToIface);
+            // Decrement reference count on ccw because QI incremented it
+            ComInterfaceMarshaller<IXCLRDataProcess>.Free(ccw);
 
-        // Decrement reference count on ccw because QI incremented it
-        ComInterfaceMarshaller<IXCLRDataProcess>.Free(ccw);
+            if (hrQI < 0)
+                return hrQI;
 
-        if (hrQI < 0)
-            return hrQI;
-
-        *iface = (void*)ptrToIface;
-        return 0;
+            *iface = (void*)ptrToIface;
+            legacyComObject = null;
+            return 0;
+        }
+        finally
+        {
+            legacyComObject?.FinalRelease();
+        }
     }
 
     private static unsafe ContractDescriptorTarget CreateTargetFromCorDebugDataTarget(object targetObject, ulong contractAddress)

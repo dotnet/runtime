@@ -44,11 +44,8 @@ public sealed unsafe partial class SOSDacImpl
 
     private readonly ulong _rcwMask = 1UL;
 
-    // The native DAC owns the cDAC host and passes itself here. Keep the wrapper rooted for
-    // the lifetime of this object even when release builds do not use it for comparisons.
-#pragma warning disable CS0414 // Assigned to keep the legacy DAC wrapper rooted for lifetime management.
-    private readonly object? _legacyLifetime;
-#pragma warning restore CS0414
+    // The native DAC owns the cDAC host. Retain its wrapper even in release builds.
+    private ComObject? _legacyComObject;
 
     private readonly ISOSDacInterface? _legacyImpl;
     private readonly ISOSDacInterface13? _legacyImpl13;
@@ -77,7 +74,7 @@ public sealed unsafe partial class SOSDacImpl
         _apiLock = apiLock;
         _dataTargetComObject = dataTargetComObject;
         _target = target;
-        _legacyLifetime = legacyObj;
+        _legacyComObject = legacyObj as ComObject;
 
 #if DEBUG
         // Get all the interfaces used to compare cDAC behavior with the legacy DAC.

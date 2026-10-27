@@ -1330,6 +1330,8 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             if (inBufferSize != 0 || inBuffer is not null || outBufferSize != 0 || outBuffer is not null)
                 return HResults.E_INVALIDARG;
 
+            _legacyComObject?.FinalRelease();
+            _legacyComObject = null;
             _dataTargetComObject?.FinalRelease();
             _dataTargetComObject = null;
             return HResults.S_OK;
