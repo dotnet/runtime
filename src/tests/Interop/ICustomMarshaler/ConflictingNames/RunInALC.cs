@@ -13,14 +13,9 @@ using Xunit;
 [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
 public class RunInALC
 {
-    [Fact]
+    [ConditionalFact(typeof(Utilities), nameof(Utilities.HasAssemblyFiles))]
     public static int TestEntryPoint()
     {
-        if (Assembly.GetExecutingAssembly().Location.Length == 0)
-        {
-            return 100;
-        }
-
         try
         {
             ConflictingCustomMarshalerNamesInCollectibleLoadContexts_Succeeds();
