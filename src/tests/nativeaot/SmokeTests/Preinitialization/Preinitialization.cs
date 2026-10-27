@@ -65,12 +65,18 @@ internal class Program
         TestInitBlock.Run();
         TestDataflow.Run();
         TestConversions.Run();
-        TestVTables.Run();
-        TestVTableManipulation.Run();
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            TestVTables.Run();
+            TestVTableManipulation.Run();
+        }
         TestVTableNegativeScenarios.Run();
         TestByRefFieldAddressEquality.Run();
         TestComInterfaceEntry.Run();
-        TestPreinitializedBclTypes.Run();
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            TestPreinitializedBclTypes.Run();
+        }
         TestArrayLoadBounds.Run();
         TestFloatNaNComparison.Run();
         TestDivisionOverflow.Run();
