@@ -11,6 +11,8 @@
 #include <eventpipe/ep-session.h>
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-event-payload.h>
+#include <eventpipe/ep-buffer-manager.h>
+#include <eventpipe/ep-ipc-stream.h>
 #include <eventpipe/ep-sample-profiler.h>
 #include "test.h"
 
@@ -694,6 +696,477 @@ ep_on_error:
 	if (!result)
 		result = FAILED ("Failed at test location=%i", test_location);
 	ep_exit_error_handler ();
+}
+
+typedef struct {
+	EventPipeEvent *event;
+	EventPipeSessionID stopping_session;
+	EventPipeSessionID capture_session;
+	uint32_t captures;
+	uint32_t events_before_stop;
+	uint32_t notifications;
+	uint32_t notifications_at_capture;
+} StopCaptureStateData;
+
+static
+bool
+stop_capture_state_read_events (
+	EventPipeSessionID session_id,
+	EventPipeEvent *event,
+	uint32_t marker,
+	uint32_t expected_count)
+{
+	uint32_t count = 0;
+	bool valid = true;
+	EventPipeEventInstance *instance;
+	while ((instance = ep_get_next_event (session_id)) != NULL) {
+		if (ep_event_instance_get_ep_event (instance) == event) {
+			count++;
+			valid = valid && ep_event_instance_get_data_len (instance) == sizeof (marker) &&
+				memcmp (ep_event_instance_get_data (instance), &marker, sizeof (marker)) == 0;
+		}
+	}
+	return valid && count == expected_count;
+}
+
+static
+void
+EP_CALLBACK_CALLTYPE
+stop_capture_state_callback (
+	const uint8_t *source_id,
+	unsigned long control_code,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_context)
+{
+	StopCaptureStateData *data = (StopCaptureStateData *)callback_context;
+	if (control_code == 2 /* EVENT_CONTROL_CODE_CAPTURE_STATE */) {
+		data->captures++;
+		data->capture_session = 0;
+		if (source_id != NULL)
+			memcpy (&data->capture_session, source_id, sizeof (data->capture_session));
+		data->notifications_at_capture = data->notifications;
+		uint32_t marker = data->captures;
+		EventData event_data;
+		ep_event_data_init (&event_data, (uint64_t)(uintptr_t)&marker, sizeof (marker), 0);
+		ep_write_event_2 (data->event, &event_data, 1, NULL, NULL);
+		ep_event_data_fini (&event_data);
+
+		if (data->stopping_session != 0 && stop_capture_state_read_events (data->stopping_session, data->event, marker, 1))
+			data->events_before_stop++;
+	} else {
+		data->notifications++;
+	}
+}
+
+static RESULT
+test_stop_capture_provider_state (
+	const ep_char8_t *provider_name,
+	bool expect_capture)
+{
+	RESULT result = NULL;
+	uint32_t test_location = 0;
+	EventPipeProvider *provider = NULL;
+	EventPipeSessionID sessions [3] = {0, 0, 0};
+	EventPipeProviderConfiguration provider_config;
+	EventPipeProviderConfiguration unrelated_provider_config;
+	EventPipeProviderConfiguration *config = NULL;
+	EventPipeProviderConfiguration *unrelated_config = NULL;
+	StopCaptureStateData data = {0};
+
+	config = ep_provider_config_init (&provider_config, provider_name, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
+	ep_raise_error_if_nok (config != NULL);
+	unrelated_config = ep_provider_config_init (&unrelated_provider_config, "UnrelatedStopCaptureStateProvider", 1, EP_EVENT_LEVEL_LOGALWAYS, "");
+	ep_raise_error_if_nok (unrelated_config != NULL);
+	provider = ep_create_provider (provider_name, stop_capture_state_callback, &data);
+	ep_raise_error_if_nok (provider != NULL);
+	data.event = ep_provider_add_event (provider, 1, 1, 1, EP_EVENT_LEVEL_LOGALWAYS, false, NULL, 0);
+	ep_raise_error_if_nok (data.event != NULL);
+
+	test_location = 1;
+	for (uint32_t i = 0; i < ARRAY_SIZE (sessions); ++i) {
+		sessions [i] = ep_init_session (
+			NULL, 1, i == 2 ? unrelated_config : config, 1, EP_SESSION_TYPE_LISTENER, EP_SERIALIZATION_FORMAT_NETTRACE_V4,
+			false, NULL, NULL, NULL);
+		ep_raise_error_if_nok (sessions [i] != 0);
+		ep_start_session (sessions [i]);
+	}
+
+	test_location = 2;
+	ep_raise_error_if_nok (data.captures == 0 && data.notifications == 2);
+	ep_raise_error_if_nok (stop_capture_state_read_events (sessions [0], data.event, 0, 0));
+	ep_raise_error_if_nok (stop_capture_state_read_events (sessions [1], data.event, 0, 0));
+
+	data.stopping_session = sessions [2];
+	ep_disable (sessions [2]);
+	sessions [2] = 0;
+	data.stopping_session = 0;
+	ep_raise_error_if_nok (data.captures == 0 && data.notifications == 2);
+
+	test_location = 3;
+	data.stopping_session = sessions [0];
+	ep_disable (sessions [0]);
+	sessions [0] = 0;
+	if (data.captures != (expect_capture ? 1u : 0u)) {
+		result = FAILED ("Expected %u pre-stop capture callbacks, observed %u", expect_capture ? 1u : 0u, data.captures);
+		ep_raise_error ();
+	}
+	ep_raise_error_if_nok (data.capture_session == (expect_capture ? data.stopping_session : 0));
+	data.stopping_session = 0;
+	ep_raise_error_if_nok (data.events_before_stop == (expect_capture ? 1u : 0u));
+	ep_raise_error_if_nok (data.notifications_at_capture == (expect_capture ? 2u : 0u));
+	ep_raise_error_if_nok (data.notifications == 3);
+
+	test_location = 4;
+	ep_raise_error_if_nok (stop_capture_state_read_events (sessions [1], data.event, 1, expect_capture ? 1u : 0u));
+
+	test_location = 5;
+	data.stopping_session = sessions [1];
+	ep_disable (sessions [1]);
+	sessions [1] = 0;
+	ep_raise_error_if_nok (data.capture_session == (expect_capture ? data.stopping_session : 0));
+	data.stopping_session = 0;
+	ep_raise_error_if_nok (data.captures == (expect_capture ? 2u : 0u));
+	ep_raise_error_if_nok (data.events_before_stop == (expect_capture ? 2u : 0u));
+	ep_raise_error_if_nok (data.notifications_at_capture == (expect_capture ? 3u : 0u));
+	ep_raise_error_if_nok (data.notifications == 4);
+
+ep_on_exit:
+	data.stopping_session = 0;
+	for (uint32_t i = 0; i < ARRAY_SIZE (sessions); ++i)
+		ep_disable (sessions [i]);
+	ep_delete_provider (provider);
+	ep_provider_config_fini (config);
+	ep_provider_config_fini (unrelated_config);
+	return result;
+
+ep_on_error:
+	if (!result)
+		result = FAILED ("Failed at test location=%i", test_location);
+	ep_exit_error_handler ();
+}
+
+static RESULT
+test_stop_capture_known_provider_state (void)
+{
+	return test_stop_capture_provider_state ("System.Runtime.CompilerServices.AsyncProfilerEventSource", true);
+}
+
+static RESULT
+test_stop_does_not_capture_other_provider_state (void)
+{
+	return test_stop_capture_provider_state (TEST_PROVIDER_NAME, false);
+}
+
+#define STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS 30000
+#define STOP_CAPTURE_STATE_WRITE_COUNT 128
+
+typedef struct {
+	IpcStream stream;
+	minipal_mutex capture_lock;
+	EventPipeEvent *event;
+	EventPipeEvent *marker_event;
+	EventPipeThread *writer_thread;
+	EventPipeSessionID stopping_session;
+	ep_rt_wait_event_handle_t reader_paused;
+	ep_rt_wait_event_handle_t allow_reader;
+	ep_rt_wait_event_handle_t writer_started;
+	ep_rt_wait_event_handle_t writer_done;
+	ep_rt_wait_event_handle_t capture_entered;
+	ep_rt_wait_event_handle_t stop_done;
+	volatile uint32_t pause_reader;
+	uint32_t writes;
+	uint32_t captures;
+	bool event_before_stop;
+	bool wait_for_writer_lock;
+} StopCaptureStateBlockingData;
+
+static
+void
+stop_capture_state_stream_free (void *stream)
+{
+	ep_ipc_stream_fini ((IpcStream *)stream);
+}
+
+static
+bool
+stop_capture_state_stream_write (
+	void *stream,
+	const uint8_t *buffer,
+	uint32_t bytes_to_write,
+	uint32_t *bytes_written,
+	uint32_t timeout_ms)
+{
+	StopCaptureStateBlockingData *data = (StopCaptureStateBlockingData *)stream;
+	if (ep_rt_volatile_load_uint32_t (&data->pause_reader)) {
+		if (!ep_rt_wait_event_set (&data->reader_paused) ||
+			ep_rt_wait_event_wait (&data->allow_reader, EP_INFINITE_WAIT, false) != 0)
+			EP_UNREACHABLE ("Stop capture-state test reader gate wait failed");
+	}
+	*bytes_written = bytes_to_write;
+	return true;
+}
+
+static
+bool
+stop_capture_state_stream_flush_or_close (void *stream)
+{
+	return true;
+}
+
+static IpcStreamVtable stop_capture_state_stream_vtable = {
+	stop_capture_state_stream_free,
+	NULL,
+	stop_capture_state_stream_write,
+	stop_capture_state_stream_flush_or_close,
+	stop_capture_state_stream_flush_or_close,
+	NULL
+};
+
+static
+void
+EP_CALLBACK_CALLTYPE
+stop_capture_state_blocking_callback (
+	const uint8_t *source_id,
+	unsigned long control_code,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_context)
+{
+	StopCaptureStateBlockingData *data = (StopCaptureStateBlockingData *)callback_context;
+	if (control_code != 2 /* EVENT_CONTROL_CODE_CAPTURE_STATE */ || data->stopping_session == 0)
+		return;
+
+	if (!ep_rt_wait_event_set (&data->capture_entered))
+		EP_UNREACHABLE ("Failed to signal stop capture-state test callback");
+	if (data->wait_for_writer_lock)
+		minipal_mutex_enter (&data->capture_lock);
+	data->captures++;
+	uint32_t marker = data->captures;
+	EventData event_data;
+	ep_event_data_init (&event_data, (uint64_t)(uintptr_t)&marker, sizeof (marker), 0);
+	ep_write_event_2 (data->marker_event, &event_data, 1, NULL, NULL);
+	ep_event_data_fini (&event_data);
+	data->event_before_stop = stop_capture_state_read_events (data->stopping_session, data->marker_event, marker, 1);
+	if (data->wait_for_writer_lock)
+		minipal_mutex_leave (&data->capture_lock);
+}
+
+EP_RT_DEFINE_THREAD_FUNC (stop_capture_state_blocked_writer)
+{
+	ep_rt_thread_params_t *params = (ep_rt_thread_params_t *)data;
+	StopCaptureStateBlockingData *state = (StopCaptureStateBlockingData *)params->thread_params;
+	EventPipeThread *thread = ep_thread_get_or_create ();
+	if (thread == NULL)
+		EP_UNREACHABLE ("Failed to create stop capture-state test writer thread state");
+	ep_thread_addref (thread);
+	state->writer_thread = thread;
+
+	uint8_t payload [32 * 1024] = {0};
+	EventData event_data;
+	ep_event_data_init (&event_data, (uint64_t)(uintptr_t)payload, sizeof (payload), 0);
+	minipal_mutex_enter (&state->capture_lock);
+	if (!ep_rt_wait_event_set (&state->writer_started))
+		EP_UNREACHABLE ("Failed to signal stop capture-state test writer startup");
+	for (uint32_t i = 0; i < STOP_CAPTURE_STATE_WRITE_COUNT; ++i) {
+		ep_write_event_2 (state->event, &event_data, 1, NULL, NULL);
+		state->writes++;
+	}
+	minipal_mutex_leave (&state->capture_lock);
+	ep_event_data_fini (&event_data);
+	if (!ep_rt_wait_event_set (&state->writer_done))
+		EP_UNREACHABLE ("Failed to signal stop capture-state test writer completion");
+	return 0;
+}
+
+EP_RT_DEFINE_THREAD_FUNC (stop_capture_state_blocked_stop)
+{
+	ep_rt_thread_params_t *params = (ep_rt_thread_params_t *)data;
+	StopCaptureStateBlockingData *state = (StopCaptureStateBlockingData *)params->thread_params;
+	ep_disable (state->stopping_session);
+	if (!ep_rt_wait_event_set (&state->stop_done))
+		EP_UNREACHABLE ("Failed to signal stop capture-state test session stop");
+	return 0;
+}
+
+static
+bool
+stop_capture_state_wait_for_blocked_writer (
+	StopCaptureStateBlockingData *data,
+	EventPipeSessionID session_id)
+{
+	uint32_t session_index = ep_session_get_index ((EventPipeSession *)(uintptr_t)session_id);
+	ep_timestamp_t deadline = ep_perf_timestamp_get () + ep_perf_frequency_query () * (STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS / 1000);
+	uint32_t yields = 0;
+	while (ep_perf_timestamp_get () < deadline) {
+		// ep_write_event clears WRITE_BUFFER_IN_USE, retaining the session index, only when parking.
+		if (ep_thread_get_session_use_in_progress (data->writer_thread) == session_index)
+			return true;
+		if (ep_rt_wait_event_wait (&data->writer_done, 0, false) == 0)
+			return false;
+		minipal_switch_to_thread (++yields);
+	}
+	return false;
+}
+
+static
+bool
+stop_capture_state_wait_for_capture (StopCaptureStateBlockingData *data)
+{
+	ep_timestamp_t deadline = ep_perf_timestamp_get () + ep_perf_frequency_query () * (STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS / 1000);
+	uint32_t yields = 0;
+	while (ep_perf_timestamp_get () < deadline) {
+		if (ep_rt_wait_event_wait (&data->capture_entered, 0, false) == 0)
+			return true;
+		if (ep_rt_wait_event_wait (&data->stop_done, 0, false) == 0)
+			return ep_rt_wait_event_wait (&data->capture_entered, 0, false) == 0;
+		minipal_switch_to_thread (++yields);
+	}
+	return false;
+}
+
+static RESULT
+test_stop_capture_state_with_other_session_blocked (bool wait_for_writer_lock)
+{
+	RESULT result = NULL;
+	uint32_t test_location = 0;
+	StopCaptureStateBlockingData data = {0};
+	ep_rt_wait_event_handle_t *waits [] = {
+		&data.reader_paused, &data.allow_reader, &data.writer_started,
+		&data.writer_done, &data.capture_entered, &data.stop_done
+	};
+	bool lock_initialized = false;
+	bool writer_created = false;
+	bool stopper_created = false;
+	EventPipeProvider *provider = NULL;
+	EventPipeSessionID sessions [2] = {0, 0};
+	EventPipeProviderConfiguration provider_config;
+	EventPipeProviderConfiguration *config = NULL;
+	EventPipeSessionOptions options;
+	EventPipeBufferManager *buffer_manager = NULL;
+	uint64_t thread_id = 0;
+
+	data.wait_for_writer_lock = wait_for_writer_lock;
+	for (uint32_t i = 0; i < ARRAY_SIZE (waits); ++i) {
+		ep_rt_wait_event_alloc (waits [i], true, false);
+		ep_raise_error_if_nok (ep_rt_wait_event_is_valid (waits [i]));
+	}
+	lock_initialized = minipal_mutex_init (&data.capture_lock);
+	ep_raise_error_if_nok (lock_initialized);
+	ep_ipc_stream_init (&data.stream, &stop_capture_state_stream_vtable);
+	config = ep_provider_config_init (&provider_config, "System.Runtime.CompilerServices.AsyncProfilerEventSource", 1, EP_EVENT_LEVEL_LOGALWAYS, "");
+	ep_raise_error_if_nok (config != NULL);
+	provider = ep_create_provider ("System.Runtime.CompilerServices.AsyncProfilerEventSource", stop_capture_state_blocking_callback, &data);
+	ep_raise_error_if_nok (provider != NULL);
+	data.event = ep_provider_add_event (provider, 1, 1, 1, EP_EVENT_LEVEL_LOGALWAYS, false, NULL, 0);
+	data.marker_event = ep_provider_add_event (provider, 2, 1, 1, EP_EVENT_LEVEL_LOGALWAYS, false, NULL, 0);
+	ep_raise_error_if_nok (data.event != NULL && data.marker_event != NULL);
+
+	test_location = 1;
+	// Only B should exhaust its budget; A must retain room for the capture marker.
+	sessions [0] = ep_init_session (
+		NULL, 8, config, 1, EP_SESSION_TYPE_LISTENER, EP_SERIALIZATION_FORMAT_NETTRACE_V4,
+		false, NULL, NULL, NULL);
+	ep_raise_error_if_nok (sessions [0] != 0);
+	ep_start_session (sessions [0]);
+	ep_session_options_init (
+		&options, NULL, 1, config, 1, EP_SESSION_TYPE_IPCSTREAM, EP_SERIALIZATION_FORMAT_NETTRACE_V4,
+		0, false, &data.stream, NULL, NULL, -1, EP_BUFFERING_MODE_BLOCK);
+	sessions [1] = ep_init_session_3 (&options);
+	ep_session_options_fini (&options);
+	ep_raise_error_if_nok (sessions [1] != 0);
+	ep_start_session (sessions [1]);
+	buffer_manager = ep_session_get_buffer_manager ((EventPipeSession *)(uintptr_t)sessions [1]);
+	ep_raise_error_if_nok (buffer_manager != NULL && ep_buffer_manager_get_buffering_mode (buffer_manager) == EP_BUFFERING_MODE_BLOCK);
+
+	test_location = 2;
+	ep_rt_volatile_store_uint32_t (&data.pause_reader, 1);
+	writer_created = ep_rt_thread_create ((void *)stop_capture_state_blocked_writer, &data, EP_THREAD_TYPE_SESSION, &thread_id);
+	ep_raise_error_if_nok (writer_created);
+	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_started, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) == 0);
+	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.reader_paused, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) == 0);
+	ep_raise_error_if_nok (stop_capture_state_wait_for_blocked_writer (&data, sessions [1]));
+
+	test_location = 3;
+	data.stopping_session = sessions [0];
+	stopper_created = ep_rt_thread_create ((void *)stop_capture_state_blocked_stop, &data, EP_THREAD_TYPE_SESSION, &thread_id);
+	ep_raise_error_if_nok (stopper_created);
+	if (!stop_capture_state_wait_for_capture (&data)) {
+		result = FAILED ("Session stop did not enter the capture callback while the other session's writer was blocked");
+		ep_raise_error ();
+	}
+	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_done, 0, false) == 258 /* WAIT_TIMEOUT */);
+	if (wait_for_writer_lock) {
+		ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.stop_done, 0, false) == 258 /* WAIT_TIMEOUT */);
+	} else {
+		// Keep B's reader gated: capture must bypass its parked writer rather than join the wait queue.
+		if (ep_rt_wait_event_wait (&data.stop_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) != 0) {
+			result = FAILED ("Capture-state write did not finish while the other session's reader remained gated");
+			ep_raise_error ();
+		}
+		ep_raise_error_if_nok (data.captures == 1 && data.event_before_stop);
+		ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_done, 0, false) == 258 /* WAIT_TIMEOUT */);
+		ep_raise_error_if_nok (ep_thread_get_session_use_in_progress (data.writer_thread) ==
+			ep_session_get_index ((EventPipeSession *)(uintptr_t)sessions [1]));
+	}
+	ep_raise_error_if_nok (!ep_buffer_manager_is_aborting (buffer_manager));
+
+	test_location = 4;
+	ep_raise_error_if_nok (ep_rt_wait_event_set (&data.allow_reader));
+	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.writer_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) == 0);
+	ep_raise_error_if_nok (ep_rt_wait_event_wait (&data.stop_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) == 0);
+	if (data.writes != STOP_CAPTURE_STATE_WRITE_COUNT || data.captures != 1 || !data.event_before_stop) {
+		result = FAILED ("Expected %u writes, one capture and a pre-stop marker; observed %u writes, %u captures, marker=%u",
+			STOP_CAPTURE_STATE_WRITE_COUNT, data.writes, data.captures, (uint32_t)data.event_before_stop);
+		ep_raise_error ();
+	}
+	ep_raise_error_if_nok (!ep_buffer_manager_is_aborting (buffer_manager));
+
+ep_on_exit:
+	if (ep_rt_wait_event_is_valid (&data.allow_reader) && !ep_rt_wait_event_set (&data.allow_reader))
+		EP_UNREACHABLE ("Failed to release stop capture-state test reader");
+	// Do not return or free the fixture while a worker can still access it, even on a failed assertion.
+	if (writer_created && ep_rt_wait_event_wait (&data.writer_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) != 0)
+		EP_UNREACHABLE ("Stop capture-state test writer did not finish");
+	if (stopper_created) {
+		if (ep_rt_wait_event_wait (&data.stop_done, STOP_CAPTURE_STATE_WAIT_TIMEOUT_MS, false) != 0)
+			EP_UNREACHABLE ("Stop capture-state test session stop did not finish");
+		sessions [0] = 0;
+	}
+	data.stopping_session = 0;
+	for (uint32_t i = 0; i < ARRAY_SIZE (sessions); ++i)
+		ep_disable (sessions [i]);
+	ep_rt_test_threads_wait ();
+	if (data.writer_thread != NULL)
+		ep_thread_release (data.writer_thread);
+	ep_delete_provider (provider);
+	ep_provider_config_fini (config);
+	if (lock_initialized)
+		minipal_mutex_destroy (&data.capture_lock);
+	for (uint32_t i = 0; i < ARRAY_SIZE (waits); ++i)
+		ep_rt_wait_event_free (waits [i]);
+	return result;
+
+ep_on_error:
+	if (!result)
+		result = FAILED ("Failed at test location=%i", test_location);
+	ep_exit_error_handler ();
+}
+
+static RESULT
+test_stop_capture_state_waits_for_other_session_drain (void)
+{
+	return test_stop_capture_state_with_other_session_blocked (true);
+}
+
+static RESULT
+test_stop_capture_state_does_not_block_on_other_session (void)
+{
+	return test_stop_capture_state_with_other_session_blocked (false);
 }
 
 static RESULT
@@ -1430,6 +1903,10 @@ static Test ep_tests [] = {
 	{"test_enable_disable", test_enable_disable},
 	{"test_enable_disable_provider_config", test_enable_disable_provider_config},
 	{"test_create_delete_provider_with_callback", test_create_delete_provider_with_callback},
+	{"test_stop_capture_known_provider_state", test_stop_capture_known_provider_state},
+	{"test_stop_does_not_capture_other_provider_state", test_stop_does_not_capture_other_provider_state},
+	{"test_stop_capture_state_waits_for_other_session_drain", test_stop_capture_state_waits_for_other_session_drain},
+	{"test_stop_capture_state_does_not_block_on_other_session", test_stop_capture_state_does_not_block_on_other_session},
 	{"test_build_event_metadata", test_build_event_metadata},
 	{"test_session_start_streaming", test_session_start_streaming},
 	{"test_session_write_event", test_session_write_event},
