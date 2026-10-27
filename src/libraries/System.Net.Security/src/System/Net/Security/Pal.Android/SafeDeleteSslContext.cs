@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
@@ -13,7 +12,7 @@ using System.Threading;
 using PAL_KeyAlgorithm = Interop.AndroidCrypto.PAL_KeyAlgorithm;
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
 
-namespace System.Net
+namespace System.Net.Security
 {
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
