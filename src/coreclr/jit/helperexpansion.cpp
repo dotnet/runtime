@@ -897,15 +897,29 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     GenTreeLclVar* threadStaticBlockLcl = nullptr;
 
-    // Grab a temp to store result (it's assigned from either fastPathBb or fallbackBb)
-    unsigned threadStaticBlockLclNum         = lvaGrabTemp(true DEBUGARG("TLS field access"));
-    lvaTable[threadStaticBlockLclNum].lvType = callType;
-    threadStaticBlockLcl                     = gtNewLclvNode(threadStaticBlockLclNum, callType);
+    bool foldTlsOffset = false;
+#ifdef TARGET_ARM64
+    // On non-Apple Unix Arm64, this helper returns the TLS base plus the type index and a fixed offset.
+    // With a constant index, keeping that sum at the call use lets a consuming load encode the offset;
+    // storing the sum in a temp would hide it from lowering.
+    foldTlsOffset = TargetOS::IsUnix && !TargetOS::IsApplePlatform && (callType == TYP_I_IMPL) &&
+                    (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2) &&
+                    call->gtArgs.GetUserArgByIndex(0)->GetNode()->IsIntegralConst();
+#endif
 
-    *callUse = gtClone(threadStaticBlockLcl);
+    unsigned threadStaticBlockLclNum = BAD_VAR_NUM;
+    if (!foldTlsOffset)
+    {
+        // Grab a temp to store result (it's assigned from either fastPathBb or fallbackBb).
+        threadStaticBlockLclNum                  = lvaGrabTemp(true DEBUGARG("TLS field access"));
+        lvaTable[threadStaticBlockLclNum].lvType = callType;
+        threadStaticBlockLcl                     = gtNewLclvNode(threadStaticBlockLclNum, callType);
 
-    fgMorphStmtBlockOps(block, stmt);
-    gtUpdateStmtSideEffects(stmt);
+        *callUse = gtClone(threadStaticBlockLcl);
+
+        fgMorphStmtBlockOps(block, stmt);
+        gtUpdateStmtSideEffects(stmt);
+    }
 
     GenTree* tlsValue                   = nullptr;
     unsigned tlsLclNum                  = lvaGrabTemp(true DEBUGARG("TLS access"));
@@ -1052,11 +1066,24 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
                           gtNewIconNode(threadStaticBlocksInfo.offsetOfBaseOfThreadLocalData, TYP_I_IMPL));
         offset = gtFoldExpr(offset);
 
-        GenTree* threadStaticBase      = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offset);
-        GenTree* tlsStaticBaseStoreLcl = gtNewStoreLclVarNode(threadStaticBlockLclNum, threadStaticBase);
+        GenTree* threadStaticBase = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offset);
 
         BasicBlock* tlsBaseComputeBB = fgNewBBFromTreeAfter(BBJ_ALWAYS, prevBb, tlsValueDef, debugInfo, true);
-        fgInsertStmtAfter(tlsBaseComputeBB, tlsBaseComputeBB->firstStmt(), fgNewStmtFromTree(tlsStaticBaseStoreLcl));
+        if (foldTlsOffset)
+        {
+            // Keep the TLS read at its original position, but expose the constant
+            // offset at the use so lowering can fold it into an addressing mode.
+            // Morphing this statement was deferred to keep callUse valid.
+            *callUse = threadStaticBase;
+            fgMorphStmtBlockOps(block, stmt);
+            gtUpdateStmtSideEffects(stmt);
+        }
+        else
+        {
+            GenTree* tlsStaticBaseStoreLcl = gtNewStoreLclVarNode(threadStaticBlockLclNum, threadStaticBase);
+            fgInsertStmtAfter(tlsBaseComputeBB, tlsBaseComputeBB->firstStmt(),
+                              fgNewStmtFromTree(tlsStaticBaseStoreLcl));
+        }
 
         //
         // Update preds in all new blocks
