@@ -1489,6 +1489,43 @@ public class R2RTestSuites
         }
     }
 
+    /// <summary>
+    /// --strip-il-bodies only applies to composite component assemblies. A non-composite
+    /// compile with the option must succeed and keep all IL bodies in the output.
+    /// </summary>
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
+    public void NonCompositeStripILBodiesKeepsIL()
+    {
+        var stripILBodies = new CompiledAssembly
+        {
+            AssemblyName = nameof(NonCompositeStripILBodiesKeepsIL),
+            SourceResourceNames =
+            [
+                "RuntimeAsync/StripILBodies.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(NonCompositeStripILBodiesKeepsIL),
+            [
+                new(nameof(NonCompositeStripILBodiesKeepsIL), [new CrossgenAssembly(stripILBodies)])
+                {
+                    Options = [Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StripILBodies", "PlainStrippableMethod", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsPresent(reader.Filename, "StripILBodies", "PlainStrippableMethod", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsPresent(reader.Filename, "StripILBodies", "AsyncTaskMethod", out diag), diag);
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsIosArm64Target))]
     public void AppleMobileStripILBodiesUsesFixedInstructionSet()
     {
