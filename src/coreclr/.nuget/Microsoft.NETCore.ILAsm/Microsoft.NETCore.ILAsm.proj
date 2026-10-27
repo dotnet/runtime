@@ -1,20 +1,25 @@
-<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
+<Project DefaultTargets="Pack">
   <PropertyGroup>
     <UsePkgProjTargets>false</UsePkgProjTargets>
   </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.Build.Traversal" />
+
   <ItemGroup>
-    <Project Remove="@(Project)" />
     <ProjectReference Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" />
     <ProjectReference Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm_inbuild.csproj" Build="false" Pack="false" />
     <!-- The lineup package is only built on the identity-package leg. -->
-    <Project Include="$(MSBuildProjectName).pkgproj" />
+    <ProjectReference Include="$(MSBuildProjectName).Package.csproj" Build="false" Pack="false" />
   </ItemGroup>
 
+  <Import Project="Sdk.targets" Sdk="Microsoft.Build.Traversal" />
   <Import Project="$([MSBuild]::GetPathOfFileAbove(builds.targets))" />
 
-  <Target Name="IncludeHostILAsmPackage" BeforeTargets="Build;Pack" Condition="'$(BuildHostILTools)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'">
+  <Target Name="SelectILAsmPackages" BeforeTargets="Build;Pack">
     <ItemGroup>
-      <ProjectReference Update="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm_inbuild.csproj" Build="true" Pack="true" />
+      <ProjectReference Condition="'%(ProjectReference.Filename)' == '$(MSBuildProjectName).Package'"
+                        Build="$(BuildIdentityPackage)" Pack="$(BuildIdentityPackage)" />
+      <ProjectReference Condition="'%(ProjectReference.Filename)' == 'ilasm_inbuild' and '$(BuildHostILTools)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'"
+                        Build="true" Pack="true" />
     </ItemGroup>
   </Target>
 </Project>

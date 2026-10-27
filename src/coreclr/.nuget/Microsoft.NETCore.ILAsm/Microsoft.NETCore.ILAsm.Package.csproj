@@ -1,0 +1,44 @@
+<Project>
+  <PropertyGroup>
+    <UsePkgProjTargets>false</UsePkgProjTargets>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" />
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Microsoft.NETCore.ILAsm</PackageId>
+    <Title>$(PackageId)</Title>
+    <PackageDescription>The .NET IL Assembler.</PackageDescription>
+    <PackageProjectUrl>https://dot.net/</PackageProjectUrl>
+    <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</PackageIconUrl>
+    <MinClientVersion>2.12</MinClientVersion>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <IncludeDesignerMarker>false</IncludeDesignerMarker>
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <BeforePack>$(BeforePack);GenerateILAsmRuntimeDependencies</BeforePack>
+  </PropertyGroup>
+
+  <Import Project="..\package-rids.props" />
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
+    <None Include="$(IntermediateOutputPath)runtime.json" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <Target Name="GenerateILAsmRuntimeDependencies">
+    <ItemGroup>
+      <_ILAsmBuildRID Include="@(BuildRID)" TargetRuntime="%(Identity)" />
+      <_ILAsmRuntimeDependency Include="@(_ILAsmBuildRID->'runtime.%(Identity).Microsoft.NETCore.ILAsm')"
+                               Version="$(PackageVersion)"
+                               TargetPackage="$(PackageId)" />
+    </ItemGroup>
+    <GenerateRuntimeDependencies Dependencies="@(_ILAsmRuntimeDependency)"
+                                 PackageId="$(PackageId)"
+                                 RuntimeJson="$(IntermediateOutputPath)runtime.json" />
+  </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" />
+</Project>

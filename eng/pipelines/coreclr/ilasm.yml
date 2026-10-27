@@ -13,6 +13,7 @@ pr:
     - src/coreclr/ildasm/*
     - src/tools/ilasm/*
     - src/coreclr/.nuget/Microsoft.NETCore.ILAsm/*
+    - src/coreclr/.nuget/package-rids.props
 
 schedules:
 - cron: "0 19 * * 6"
