@@ -142,7 +142,6 @@ public interface TypeType_GenericMethod
     T Echo<T>(T messages);
 }
 
-// Demonstrates proxies can be made for methods with pointer parameters and returns.
 public unsafe interface TestType_IPointerService
 {
     int* Echo(int* p);
@@ -165,7 +164,6 @@ public unsafe class TestType_PointerService : TestType_IPointerService
     public void In(in int* p) { }
 }
 
-// Demonstrates proxies can be made for a pointer return with no pointer parameter.
 public unsafe interface TestType_IPointerReturnService
 {
     int* Get();

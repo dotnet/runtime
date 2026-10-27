@@ -52,25 +52,16 @@ namespace System.Reflection
         private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
         private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
 
-        // Generated proxies call BoxPointer and UnboxPointer through delegates held in static fields of
-        // their assembly (ProxyAssembly.DefinePointerHelpers). The delegates take and return pointers as IntPtr.
-        private static MethodInfo? s_boxPointerInvokeMethod;
-        private static MethodInfo? s_unboxPointerInvokeMethod;
-
         private static MethodInfo BoxPointerInvokeMethod =>
-            s_boxPointerInvokeMethod ??= typeof(Func<IntPtr, Type, object?>).GetMethod(nameof(Func<IntPtr, Type, object?>.Invoke))!;
+            field ??= typeof(Func<IntPtr, Type, object?>).GetMethod(nameof(Func<IntPtr, Type, object?>.Invoke))!;
 
         private static MethodInfo UnboxPointerInvokeMethod =>
-            s_unboxPointerInvokeMethod ??= typeof(Func<object?, IntPtr>).GetMethod(nameof(Func<object?, IntPtr>.Invoke))!;
+            field ??= typeof(Func<object?, IntPtr>).GetMethod(nameof(Func<object?, IntPtr>.Invoke))!;
 
-        // Passes a pointer argument to Invoke as a System.Reflection.Pointer of the parameter's type,
-        // and a null pointer as null.
         private static unsafe object? BoxPointer(IntPtr pointer, Type type) =>
             pointer == IntPtr.Zero ? null : Pointer.Box((void*)pointer, type);
 
-        // Takes a pointer returned or written back by Invoke as a System.Reflection.Pointer, an IntPtr,
-        // or null as a null pointer. The pointer type stored in a Pointer is not checked.
-        // Anything else is unboxed as an IntPtr.
+        // A Pointer's type is not checked against the target type: Pointer exposes it only internally.
         private static unsafe IntPtr UnboxPointer(object? value) =>
             value is Pointer pointer ? (IntPtr)Pointer.Unbox(pointer) :
             value is null ? IntPtr.Zero :
@@ -138,9 +129,6 @@ namespace System.Reflection
 
             private readonly HashSet<string> _ignoresAccessAssemblyNames = new HashSet<string>();
             private ConstructorInfo? _ignoresAccessChecksToAttributeConstructor;
-
-            private FieldInfo? _boxPointerField;
-            private FieldInfo? _unboxPointerField;
 
             [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
             public ProxyAssembly(AssemblyLoadContext alc)
@@ -286,44 +274,23 @@ namespace System.Reflection
                 }
             }
 
-            // The PointerHelpers fields holding the Func<IntPtr, Type, object?> and Func<object?, IntPtr>
-            // delegates that generated code calls.
-            internal FieldInfo BoxPointerField
+            internal FieldInfo BoxPointerField =>
+                field ??= DefinePointerHelper(nameof(BoxPointer), new Func<IntPtr, Type, object?>(BoxPointer));
+
+            internal FieldInfo UnboxPointerField =>
+                field ??= DefinePointerHelper(nameof(UnboxPointer), new Func<object?, IntPtr>(UnboxPointer));
+
+            // Proxies call BoxPointer and UnboxPointer through a delegate because they can't call them directly:
+            // the methods aren't accessible outside System.Reflection.DispatchProxy. IgnoresAccessChecksTo would
+            // allow the call on CoreCLR, but Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only
+            // once, so after a pointer call it would miss the one added later for a proxy's internal base type.
+            // Called under GetProxyType's lock, so each helper type is defined once per proxy assembly.
+            private FieldInfo DefinePointerHelper(string name, Delegate helper)
             {
-                get
-                {
-                    if (_boxPointerField is null)
-                        DefinePointerHelpers();
-                    return _boxPointerField!;
-                }
-            }
-
-            internal FieldInfo UnboxPointerField
-            {
-                get
-                {
-                    if (_unboxPointerField is null)
-                        DefinePointerHelpers();
-                    return _unboxPointerField!;
-                }
-            }
-
-            // Defines and creates the type holding the delegate fields and sets them, once per proxy assembly,
-            // when the first pointer conversion is emitted, so before any proxy type that uses them is created.
-            // Runs under the lock taken by GetProxyType.
-            private void DefinePointerHelpers()
-            {
-                TypeBuilder tb = _mb.DefineType("PointerHelpers", TypeAttributes.NotPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
-                FieldBuilder box = tb.DefineField(nameof(BoxPointer), typeof(Func<IntPtr, Type, object?>), FieldAttributes.Assembly | FieldAttributes.Static);
-                FieldBuilder unbox = tb.DefineField(nameof(UnboxPointer), typeof(Func<object?, IntPtr>), FieldAttributes.Assembly | FieldAttributes.Static);
-                Type helpers = tb.CreateType();
-
-                const BindingFlags Flags = BindingFlags.NonPublic | BindingFlags.Static;
-                helpers.GetField(nameof(BoxPointer), Flags)!.SetValue(null, new Func<IntPtr, Type, object?>(BoxPointer));
-                helpers.GetField(nameof(UnboxPointer), Flags)!.SetValue(null, new Func<object?, IntPtr>(UnboxPointer));
-
-                _boxPointerField = box;
-                _unboxPointerField = unbox;
+                TypeBuilder tb = _mb.DefineType(name + "Helper", TypeAttributes.NotPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
+                FieldBuilder fb = tb.DefineField(name, helper.GetType(), FieldAttributes.Assembly | FieldAttributes.Static);
+                tb.CreateType().GetField(name, BindingFlags.NonPublic | BindingFlags.Static)!.SetValue(null, helper);
+                return fb;
             }
         }
 
@@ -766,10 +733,8 @@ namespace System.Reflection
                 }
             }
 
-            // The delegate comes before the value on the stack, so the value is held in a local
-            // while the delegate is loaded under it.
-
-            // object? DispatchProxyGenerator.BoxPointer(IntPtr pointer, Type type)
+            // The delegate must be on the stack below the value, which is already there,
+            // so the value goes through a local while the delegate is loaded.
             private static void EmitBoxPointer(ProxyAssembly assembly, ILGenerator il, Type type)
             {
                 LocalBuilder pointer = il.DeclareLocal(typeof(IntPtr));
@@ -781,7 +746,6 @@ namespace System.Reflection
                 il.Emit(OpCodes.Callvirt, BoxPointerInvokeMethod);
             }
 
-            // IntPtr DispatchProxyGenerator.UnboxPointer(object? value)
             private static void EmitUnboxPointer(ProxyAssembly assembly, ILGenerator il)
             {
                 LocalBuilder value = il.DeclareLocal(typeof(object));

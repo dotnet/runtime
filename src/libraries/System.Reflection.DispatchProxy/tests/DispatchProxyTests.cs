@@ -1044,7 +1044,7 @@ namespace DispatchProxyTests
             result = null;
             Assert.Equal(0, (nint)proxy.Echo(null));
 
-            // The pointer type of a returned Pointer is not checked.
+            // Accepted: the proxy can't read a Pointer's type to check it.
             result = Pointer.Box((long*)p, typeof(long*));
             Assert.Equal((nint)p, (nint)proxy.Echo(null));
 
@@ -1090,7 +1090,7 @@ namespace DispatchProxyTests
             proxy.Ref(ref p);
             Assert.Null(received);
 
-            // The pointer type of a written-back Pointer is not checked.
+            // Accepted: the proxy can't read a Pointer's type to check it.
             written = Pointer.Box((long*)values, typeof(long*));
             proxy.Ref(ref p);
             Assert.Equal((nint)values, (nint)p);
@@ -1161,18 +1161,14 @@ namespace DispatchProxyTests
             Assert.Equal((nint)(&value), (nint)p);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [InlineData(false)]
         [InlineData(true)]
         public static void Invoke_Pointer_Parameter_In_Another_AssemblyLoadContext(bool useGenericCreate)
         {
-            if (typeof(DispatchProxyTests).Assembly.Location == "")
-                return;
-
             EchoPointerThroughProxy(useGenericCreate);
 
-            // Each new load context gets its own proxy assembly, whose first pointer conversion is a box in
-            // EchoPointerThroughProxy and an unbox in ReturnPointerThroughProxy.
+            // Each new load context gets a proxy assembly that must define its own helpers.
             InvokeInNewAssemblyLoadContext(nameof(EchoPointerThroughProxy), useGenericCreate);
             InvokeInNewAssemblyLoadContext(nameof(ReturnPointerThroughProxy), useGenericCreate);
         }
