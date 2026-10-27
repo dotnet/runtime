@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -125,6 +128,167 @@ namespace System.Diagnostics.Tests
             }
 
             Assert.True(exitStatus.Canceled);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public Task Run_WithTimeoutOrCancellation_KillsEntireProcessTree(bool useAsync, bool useFileName)
+            => RunWithTimeoutOrCancellation_KillsEntireProcessTree(useAsync, useFileName, capture: false, closeOutput: false);
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public Task RunAndCaptureText_WithTimeoutOrCancellation_KillsEntireProcessTree(bool useAsync, bool useFileName, bool closeOutput)
+            => RunWithTimeoutOrCancellation_KillsEntireProcessTree(useAsync, useFileName, capture: true, closeOutput);
+
+        private async Task RunWithTimeoutOrCancellation_KillsEntireProcessTree(bool useAsync, bool useFileName, bool capture, bool closeOutput)
+        {
+            string pipeName = Guid.NewGuid().ToString();
+            using NamedPipeServerStream pipe = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            using Process template = CreateProcess(RunProcessTree, pipeName, $"2;{closeOutput}");
+            template.StartInfo.RedirectStandardOutput = capture;
+            template.StartInfo.RedirectStandardError = capture;
+            List<string>? arguments = Helpers.MapToArgumentList(template.StartInfo);
+            using CancellationTokenSource cancellation = new();
+            using CancellationTokenSource watchdog = new(TimeSpan.FromMilliseconds(Helpers.PassingTestTimeoutMilliseconds));
+
+            Task run = Task.Run(async () =>
+            {
+                if (capture && !closeOutput)
+                {
+                    if (useAsync)
+                    {
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => useFileName
+                            ? Process.RunAndCaptureTextAsync(template.StartInfo.FileName, arguments, cancellation.Token)
+                            : Process.RunAndCaptureTextAsync(template.StartInfo, cancellation.Token));
+                    }
+                    else
+                    {
+                        Assert.Throws<TimeoutException>(() => useFileName
+                            ? Process.RunAndCaptureText(template.StartInfo.FileName, arguments, TimeSpan.FromMilliseconds(WaitInMS))
+                            : Process.RunAndCaptureText(template.StartInfo, TimeSpan.FromMilliseconds(WaitInMS)));
+                    }
+
+                    return;
+                }
+
+                ProcessExitStatus exitStatus;
+                if (capture)
+                {
+                    ProcessTextOutput output = useAsync
+                        ? await (useFileName
+                            ? Process.RunAndCaptureTextAsync(template.StartInfo.FileName, arguments, cancellation.Token)
+                            : Process.RunAndCaptureTextAsync(template.StartInfo, cancellation.Token))
+                        : useFileName
+                            ? Process.RunAndCaptureText(template.StartInfo.FileName, arguments, TimeSpan.FromMilliseconds(WaitInMS))
+                            : Process.RunAndCaptureText(template.StartInfo, TimeSpan.FromMilliseconds(WaitInMS));
+                    Assert.Empty(output.StandardOutput);
+                    Assert.Empty(output.StandardError);
+                    exitStatus = output.ExitStatus;
+                }
+                else
+                {
+                    exitStatus = useAsync
+                        ? await (useFileName
+                            ? Process.RunAsync(template.StartInfo.FileName, arguments, cancellationToken: cancellation.Token)
+                            : Process.RunAsync(template.StartInfo, cancellation.Token))
+                        : useFileName
+                            ? Process.Run(template.StartInfo.FileName, arguments, timeout: TimeSpan.FromMilliseconds(WaitInMS))
+                            : Process.Run(template.StartInfo, TimeSpan.FromMilliseconds(WaitInMS));
+                }
+
+                Assert.True(exitStatus.Canceled);
+            });
+
+            try
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    await pipe.WaitForConnectionAsync(watchdog.Token);
+                    using StreamReader reader = new(pipe, leaveOpen: true);
+                    string processId = await reader.ReadLineAsync(watchdog.Token);
+                    AddProcessForDispose(Process.GetProcessById(int.Parse(processId)));
+                    pipe.Disconnect();
+                }
+
+                cancellation.Cancel();
+                await run.WaitAsync(watchdog.Token);
+
+                await Helpers.RetryWithBackoff(() =>
+                {
+                    foreach (Process process in _processes)
+                    {
+                        if (process != template)
+                        {
+                            Assert.True(process.HasExited, $"Process {process.Id} is still running.");
+                        }
+                    }
+                });
+            }
+            finally
+            {
+                cancellation.Cancel();
+                foreach (Process process in _processes)
+                {
+                    if (process != template)
+                    {
+                        process.Kill();
+                    }
+                }
+
+                await run.WaitAsync(TimeSpan.FromMilliseconds(Helpers.PassingTestTimeoutMilliseconds));
+            }
+        }
+
+        private static int RunProcessTree(string pipeName, string options)
+        {
+            string[] values = options.Split(';');
+            int depth = int.Parse(values[0]);
+            bool closeOutput = bool.Parse(values[1]);
+            using SafeFileHandle nullHandle = File.OpenNullHandle();
+
+            if (depth > 0)
+            {
+                using RemoteInvokeHandle child = RemoteExecutor.Invoke(RunProcessTree, pipeName, $"{depth - 1};{closeOutput}",
+                    new RemoteInvokeOptions { Start = false, CheckExitCode = false });
+                child.Process.StartInfo.InheritedHandles = [];
+                if (closeOutput)
+                {
+                    child.Process.StartInfo.StandardOutputHandle = nullHandle;
+                    child.Process.StartInfo.StandardErrorHandle = nullHandle;
+                }
+
+                child.Process.Start();
+                child.Process = null;
+            }
+
+            if (closeOutput)
+            {
+                // Close the actual standard handles, not the non-owning Console wrappers, to signal EOF.
+                using SafeFileHandle output = Console.OpenStandardOutputHandle();
+                using SafeFileHandle error = Console.OpenStandardErrorHandle();
+                new SafeFileHandle(output.DangerousGetHandle(), ownsHandle: true).Dispose();
+                new SafeFileHandle(error.DangerousGetHandle(), ownsHandle: true).Dispose();
+            }
+
+            using NamedPipeClientStream pipe = new(".", pipeName, PipeDirection.Out);
+            pipe.Connect(WaitInMS);
+            using (StreamWriter writer = new(pipe, leaveOpen: true))
+            {
+                writer.WriteLine(Environment.ProcessId);
+            }
+
+            Thread.Sleep(Timeout.Infinite);
+            return RemoteExecutor.SuccessExitCode;
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

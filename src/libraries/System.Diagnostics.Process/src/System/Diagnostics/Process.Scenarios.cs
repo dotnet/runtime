@@ -90,7 +90,7 @@ namespace System.Diagnostics
         /// <param name="timeout">
         /// The maximum amount of time to wait for the process to exit.
         /// When <see langword="null"/>, waits indefinitely.
-        /// If the process does not exit within the specified timeout, it is killed.
+        /// If the process does not exit within the specified timeout, it and its descendants are killed.
         /// </param>
         /// <returns>The exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> is <see langword="null"/>.</exception>
@@ -109,7 +109,7 @@ namespace System.Diagnostics
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
 
             return timeout.HasValue
-                ? processHandle.WaitForExitOrKillOnTimeout(timeout.Value)
+                ? processHandle.WaitForExitOrKillOnTimeout(timeout.Value, entireProcessTree: true)
                 : processHandle.WaitForExit();
         }
 
@@ -129,7 +129,7 @@ namespace System.Diagnostics
         /// <param name="timeout">
         /// The maximum amount of time to wait for the process to exit.
         /// When <see langword="null"/>, waits indefinitely.
-        /// If the process does not exit within the specified timeout, it is killed.
+        /// If the process does not exit within the specified timeout, it and its descendants are killed.
         /// </param>
         /// <returns>The exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null"/>.</exception>
@@ -155,7 +155,7 @@ namespace System.Diagnostics
         /// <param name="startInfo">The <see cref="ProcessStartInfo"/> that contains the information used to start the process.</param>
         /// <param name="cancellationToken">
         /// A token to cancel the asynchronous operation.
-        /// If the token is canceled, the process is killed.
+        /// If the token is canceled, the process and its descendants are killed.
         /// </param>
         /// <returns>A task that represents the asynchronous operation. The value of the task contains the exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> is <see langword="null"/>.</exception>
@@ -173,7 +173,7 @@ namespace System.Diagnostics
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
 
-            return await processHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false);
+            return await processHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken, entireProcessTree: true).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -191,7 +191,7 @@ namespace System.Diagnostics
         /// </param>
         /// <param name="cancellationToken">
         /// A token to cancel the asynchronous operation.
-        /// If the token is canceled, the process is killed.
+        /// If the token is canceled, the process and its descendants are killed.
         /// </param>
         /// <returns>A task that represents the asynchronous operation. The value of the task contains the exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null"/>.</exception>
@@ -219,7 +219,7 @@ namespace System.Diagnostics
         /// <param name="timeout">
         /// The maximum amount of time to wait for the process to exit.
         /// When <see langword="null"/>, waits indefinitely.
-        /// If the process does not exit within the specified timeout, it is killed.
+        /// If the process does not exit within the specified timeout, it and its descendants are killed.
         /// </param>
         /// <returns>The captured text output and exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> is <see langword="null"/>.</exception>
@@ -249,7 +249,7 @@ namespace System.Diagnostics
             }
             catch
             {
-                try { process.Kill(); } catch { }
+                try { process.Kill(entireProcessTree: true); } catch { }
                 throw;
             }
 
@@ -259,7 +259,7 @@ namespace System.Diagnostics
                 TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
                 TimeSpan remaining = timeout.Value - elapsed;
                 remaining = remaining >= TimeSpan.Zero ? remaining : TimeSpan.Zero;
-                exitStatus = process.SafeHandle.WaitForExitOrKillOnTimeout(remaining);
+                exitStatus = process.SafeHandle.WaitForExitOrKillOnTimeout(remaining, entireProcessTree: true);
             }
             else
             {
@@ -281,7 +281,7 @@ namespace System.Diagnostics
         /// <param name="timeout">
         /// The maximum amount of time to wait for the process to exit.
         /// When <see langword="null"/>, waits indefinitely.
-        /// If the process does not exit within the specified timeout, it is killed.
+        /// If the process does not exit within the specified timeout, it and its descendants are killed.
         /// </param>
         /// <returns>The captured text output and exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null"/>.</exception>
@@ -299,7 +299,7 @@ namespace System.Diagnostics
         /// <param name="startInfo">The <see cref="ProcessStartInfo"/> that contains the information used to start the process.</param>
         /// <param name="cancellationToken">
         /// A token to cancel the asynchronous operation.
-        /// If the token is canceled, the process is killed.
+        /// If the token is canceled, the process and its descendants are killed.
         /// </param>
         /// <returns>A task that represents the asynchronous operation. The value of the task contains the captured text output and exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> is <see langword="null"/>.</exception>
@@ -327,11 +327,11 @@ namespace System.Diagnostics
             }
             catch
             {
-                try { process.Kill(); } catch { }
+                try { process.Kill(entireProcessTree: true); } catch { }
                 throw;
             }
 
-            ProcessExitStatus exitStatus = await process.SafeHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false);
+            ProcessExitStatus exitStatus = await process.SafeHandle.WaitForExitOrKillOnCancellationAsync(cancellationToken, entireProcessTree: true).ConfigureAwait(false);
 
             return new ProcessTextOutput(exitStatus, standardOutput, standardError, process.Id);
         }
@@ -347,7 +347,7 @@ namespace System.Diagnostics
         /// </param>
         /// <param name="cancellationToken">
         /// A token to cancel the asynchronous operation.
-        /// If the token is canceled, the process is killed.
+        /// If the token is canceled, the process and its descendants are killed.
         /// </param>
         /// <returns>A task that represents the asynchronous operation. The value of the task contains the captured text output and exit status of the process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null"/>.</exception>

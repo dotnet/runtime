@@ -157,14 +157,14 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
+        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds, bool entireProcessTree)
         {
             ProcessWaitState waitState = GetWaitState();
 
             if (!waitState.WaitForExit(milliseconds))
             {
                 waitState._canceled = true;
-                SignalCore(PosixSignal.SIGKILL);
+                Kill(entireProcessTree);
                 waitState.WaitForExit(Timeout.Infinite);
             }
 

@@ -246,6 +246,27 @@ namespace Microsoft.Win32.SafeHandles
             SignalCore(PosixSignal.SIGKILL);
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        internal void Kill(bool entireProcessTree)
+        {
+            if (!entireProcessTree)
+            {
+                Kill();
+                return;
+            }
+
+            if (!TryWaitForExit(TimeSpan.Zero, out _) &&
+                Process.TryGetProcessById(ProcessId, out Process? process))
+            {
+                using (process)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+            }
+        }
+
         /// <summary>
         /// Sends a signal to the process.
         /// </summary>
@@ -255,7 +276,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <see langword="false"/> if the process has already exited (or never existed) and the signal was not delivered.
         /// </returns>
         /// <remarks>
-        /// On Windows, only <see cref="PosixSignal.SIGKILL"/> is supported and is mapped to <see cref="Kill"/>.
+        /// On Windows, only <see cref="PosixSignal.SIGKILL"/> is supported and is mapped to <see cref="Kill()"/>.
         /// On Windows, the handle must have <c>PROCESS_TERMINATE</c> access.
         /// </remarks>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
@@ -324,6 +345,12 @@ namespace Microsoft.Win32.SafeHandles
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public ProcessExitStatus WaitForExitOrKillOnTimeout(TimeSpan timeout)
+            => WaitForExitOrKillOnTimeout(timeout, entireProcessTree: false);
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        internal ProcessExitStatus WaitForExitOrKillOnTimeout(TimeSpan timeout, bool entireProcessTree)
         {
             Validate();
 
@@ -332,7 +359,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw new PlatformNotSupportedException();
             }
 
-            return WaitForExitOrKillOnTimeoutCore(ProcessUtils.ToTimeoutMilliseconds(timeout));
+            return WaitForExitOrKillOnTimeoutCore(ProcessUtils.ToTimeoutMilliseconds(timeout), entireProcessTree);
         }
 
         /// <summary>
@@ -346,7 +373,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <para>
         /// When the cancellation token is canceled, this method stops waiting and throws <see cref="OperationCanceledException"/>.
         /// The process is NOT killed and continues running. If you want to kill the process on cancellation,
-        /// use <see cref="WaitForExitOrKillOnCancellationAsync"/> instead.
+        /// use <see cref="WaitForExitOrKillOnCancellationAsync(CancellationToken)"/> instead.
         /// </para>
         /// <para>On Unix, it's impossible to obtain the exit status of a non-child process.</para>
         /// </remarks>
@@ -419,7 +446,13 @@ namespace Microsoft.Win32.SafeHandles
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken)
+        public Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken)
+            => WaitForExitOrKillOnCancellationAsync(cancellationToken, entireProcessTree: false);
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        internal async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken, bool entireProcessTree)
         {
             Validate();
 
@@ -448,18 +481,18 @@ namespace Microsoft.Win32.SafeHandles
                     ctr = cancellationToken.UnsafeRegister(
                         static state =>
                         {
-                            var (handle, tcs) = ((SafeProcessHandle, TaskCompletionSource<bool>))state!;
+                            var (handle, tcs, entireProcessTree) = ((SafeProcessHandle, TaskCompletionSource<bool>, bool))state!;
                             try
                             {
                                 handle.Canceled = true;
-                                handle.SignalCore(PosixSignal.SIGKILL);
+                                handle.Kill(entireProcessTree);
                             }
                             catch (Exception ex)
                             {
                                 tcs.TrySetException(ex);
                             }
                         },
-                        (this, tcs));
+                        (this, tcs, entireProcessTree));
                 }
 
                 await tcs.Task.ConfigureAwait(false);
