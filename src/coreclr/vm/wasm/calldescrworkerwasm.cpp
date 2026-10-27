@@ -8,8 +8,9 @@
 void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp);
 
 // Mirrors the exception handling of PreStubWorker for a call from CallDescrWorkerInternal: exceptions are
-// rethrown to the native caller, and the method being prepared is added to the exception's stack trace.
-static void RunPrestub(MethodDesc* pMethod, UINT_PTR stackTraceSP)
+// rethrown to the native caller, and the called method is added to the exception's stack trace. pPrepareMethod is
+// the method to prepare, which differs from pMethod when pMethod's interpreter code belongs to another method.
+static void RunPrestub(MethodDesc* pMethod, MethodDesc* pPrepareMethod, UINT_PTR stackTraceSP)
 {
     EX_TRY
     {
@@ -18,7 +19,7 @@ static void RunPrestub(MethodDesc* pMethod, UINT_PTR stackTraceSP)
 
         {
             GCX_PREEMP();
-            (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+            (void)pPrepareMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
         }
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true /* nativeRethrow */);
@@ -42,14 +43,18 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
     _ASSERTE(pCallDescrData->pTarget != (PCODE)NULL);
 
     MethodDesc* pMethod = PortableEntryPoint::GetMethodDesc(pCallDescrData->pTarget);
+    // The method whose code runs. It differs from pMethod when the interpreter code cached on pMethod belongs to
+    // another method, such as the MethodImpl target of a declaration, which is also what activation applies to.
+    MethodDesc* pTargetMethod = pMethod;
     InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
     bool activateDelayedR2RCode = false;
-#ifdef FEATURE_AUXILIARY_R2R_MODULES
     if (targetIp != NULL)
     {
+        pTargetMethod = targetIp->Method->methodHnd;
+#ifdef FEATURE_AUXILIARY_R2R_MODULES
         activateDelayedR2RCode = targetIp->Method->auxiliaryMethodInfo.ShouldTryActivateMethod();
-    }
 #endif // FEATURE_AUXILIARY_R2R_MODULES
+    }
 
     if ((targetIp == NULL && pMethod->ShouldCallPrestub()) || activateDelayedR2RCode)
     {
@@ -65,14 +70,14 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
             Thread* pThread = GetThread();
             PrestubMethodFrame frame(pTransitionBlock, pMethod);
             frame.Push(pThread);
-            RunPrestub(pMethod, (UINT_PTR)pTransitionBlock);
+            RunPrestub(pMethod, pTargetMethod, (UINT_PTR)pTransitionBlock);
             frame.Pop(pThread);
         }
         else
         {
-            RunPrestub(pMethod, (UINT_PTR)pCallDescrData->pSrc);
+            RunPrestub(pMethod, pTargetMethod, (UINT_PTR)pCallDescrData->pSrc);
         }
-        targetIp = pMethod->GetInterpreterCode();
+        targetIp = pTargetMethod->GetInterpreterCode();
     }
 
     size_t argsSize = pCallDescrData->nArgsSize;
@@ -94,7 +99,7 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
         // fallback already present in ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex and
         // the CALL_INTERP_METHOD path in InterpExecMethod. Without this, the NULL bytecode pointer
         // would be handed to the interpreter and dispatched as INTOP_INVALID.
-        InvokeManagedMethod(pMethod, args, (int8_t*)retBuff, (PCODE)NULL, nullptr);
+        InvokeManagedMethod(pTargetMethod, args, (int8_t*)retBuff, (PCODE)NULL, nullptr);
         return;
     }
 
