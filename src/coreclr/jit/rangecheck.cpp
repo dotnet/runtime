@@ -2174,11 +2174,10 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
 bool RangeCheck::GetLimitMin(Limit& limit, int* pMin)
 {
     int& min1 = *pMin;
-    if (limit.IsConstantOrBinOp())
+    if (limit.IsConstant() || (limit.IsBinOpArray() && (limit.GetConstant() <= 0)))
     {
-        // If the limit is a constant, its value can be used directly as the min;
-        // if it is an array length plus constant,
-        // then arr.Length >= 0, so the minimum is still the constant itself
+        // Constants are exact minima. For a nonnegative length plus a nonpositive
+        // constant, the addition cannot wrap, so the constant is a safe minimum.
         min1 = limit.GetConstant();
         return true;
     }
