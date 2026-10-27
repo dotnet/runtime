@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Xml
                         }
                         else if (IsInNodeSet)
                         {
-                            attrListToRender.Add(attr, null);
+                            Utils.AddToRenderList(attrListToRender, attr);
                         }
                     }
                 }
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography.Xml
                         }
                         else if (IsInNodeSet)
                         {
-                            attrListToRender.Add(attr, null);
+                            Utils.AddToRenderList(attrListToRender, attr);
                         }
                     }
                 }

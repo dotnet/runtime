@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Xml
                 if (Utils.IsNonRedundantNamespaceDecl(local, rAncestral))
                 {
                     nsLocallyDeclared.Remove(nsPrefix);
-                    nsListToRender.Add(local, null);
+                    Utils.AddToRenderList(nsListToRender, local);
                 }
             }
             else
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Xml
                 XmlAttribute? uAncestral = GetNearestUnrenderedNamespaceWithMatchingPrefix(nsPrefix, out uDepth);
                 if (uAncestral != null && uDepth > rDepth && Utils.IsNonRedundantNamespaceDecl(uAncestral, rAncestral))
                 {
-                    nsListToRender.Add(uAncestral, null);
+                    Utils.AddToRenderList(nsListToRender, uAncestral);
                 }
             }
         }
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Xml
         internal override void TrackNamespaceNode(XmlAttribute attr, SortedList nsListToRender, Hashtable nsLocallyDeclared)
         {
             if (HasNonRedundantInclusivePrefix(attr))
-                nsListToRender.Add(attr, null);
+                Utils.AddToRenderList(nsListToRender, attr);
             else
                 nsLocallyDeclared.Add(Utils.GetNamespacePrefix(attr), attr);
         }
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Xml
         internal override void TrackXmlNamespaceNode(XmlAttribute attr, SortedList nsListToRender, SortedList attrListToRender, Hashtable nsLocallyDeclared)
         {
             // exclusive canonicalization treats Xml namespaces as simple attributes. They are not propagated.
-            attrListToRender.Add(attr, null);
+            Utils.AddToRenderList(attrListToRender, attr);
         }
     }
 }
