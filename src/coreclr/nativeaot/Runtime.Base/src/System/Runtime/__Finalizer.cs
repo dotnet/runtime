@@ -7,9 +7,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 //
-// Implements the single finalizer thread for a NativeAOT instance. Essentially waits for an event to fire
-// indicating finalization is necessary then drains the queue of pending finalizable objects, calling the
-// finalize method for each one.
+// Runs finalizers on a dedicated thread, or through a current-thread callback on WASM.
 //
 
 namespace System.Runtime
@@ -22,25 +20,38 @@ namespace System.Runtime
         {
             while (true)
             {
-                // Wait until there's some work to be done. If true is returned we should finalize objects,
-                // otherwise memory is low and we should initiate a collection.
-                if (InternalCalls.RhpWaitForFinalizerRequest() != 0)
-                {
-                    int observedFullGcCount = RuntimeImports.RhGetGcCollectionCount(RuntimeImports.RhGetMaxGcGeneration(), false);
-                    uint finalizerCount = DrainQueue();
+                ProcessFinalizersWorkerIteration();
+            }
+        }
 
-                    // Anyone waiting to drain the Q can now wake up.  Note that there is a
-                    // race in that another thread starting a drain, as we leave a drain, may
-                    // consider itself satisfied by the drain that just completed.
-                    // Thus we include the Full GC count that we have certaily observed.
-                    InternalCalls.RhpSignalFinalizationComplete(finalizerCount, observedFullGcCount);
-                }
-                else
-                {
-                    // RhpWaitForFinalizerRequest() returned false and indicated that memory is low. We help
-                    // out by initiating a garbage collection and then go back to waiting for another request.
-                    InternalCalls.RhCollect(0, InternalGCCollectionMode.Blocking, lowMemoryP: Interop.BOOL.TRUE);
-                }
+#if TARGET_WASM
+        [UnmanagedCallersOnly(EntryPoint = "ProcessFinalizersWorkerIteration")]
+        public static void RunFinalizerIteration()
+        {
+            ProcessFinalizersWorkerIteration();
+        }
+#endif
+
+        private static void ProcessFinalizersWorkerIteration()
+        {
+            // Wait until there's some work to be done. If true is returned we should finalize objects,
+            // otherwise memory is low and we should initiate a collection.
+            if (InternalCalls.RhpWaitForFinalizerRequest() != 0)
+            {
+                int observedFullGcCount = RuntimeImports.RhGetGcCollectionCount(RuntimeImports.RhGetMaxGcGeneration(), false);
+                uint finalizerCount = DrainQueue();
+
+                // Anyone waiting to drain the Q can now wake up.  Note that there is a
+                // race in that another thread starting a drain, as we leave a drain, may
+                // consider itself satisfied by the drain that just completed.
+                // Thus we include the Full GC count that we have certainly observed.
+                InternalCalls.RhpSignalFinalizationComplete(finalizerCount, observedFullGcCount);
+            }
+            else
+            {
+                // RhpWaitForFinalizerRequest() returned false and indicated that memory is low. We help
+                // out by initiating a garbage collection and then go back to waiting for another request.
+                InternalCalls.RhCollect(0, InternalGCCollectionMode.Blocking, lowMemoryP: Interop.BOOL.TRUE);
             }
         }
 
@@ -55,7 +66,7 @@ namespace System.Runtime
             while (true)
             {
                 object target = InternalCalls.RhpGetNextFinalizableObject();
-                if (target == null)
+                if (target is null)
                     return finalizerCount;
 
                 finalizerCount++;
