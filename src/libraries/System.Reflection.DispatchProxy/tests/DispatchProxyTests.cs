@@ -1044,7 +1044,7 @@ namespace DispatchProxyTests
             result = null;
             Assert.Equal(0, (nint)proxy.Echo(null));
 
-            // Accepted: the proxy can't read a Pointer's type to check it.
+            // A Pointer of another pointer type is accepted: the proxy can't read its type to check it.
             result = Pointer.Box((long*)p, typeof(long*));
             Assert.Equal((nint)p, (nint)proxy.Echo(null));
 
@@ -1090,7 +1090,7 @@ namespace DispatchProxyTests
             proxy.Ref(ref p);
             Assert.Null(received);
 
-            // Accepted: the proxy can't read a Pointer's type to check it.
+            // A Pointer of another pointer type is accepted: the proxy can't read its type to check it.
             written = Pointer.Box((long*)values, typeof(long*));
             proxy.Ref(ref p);
             Assert.Equal((nint)values, (nint)p);
