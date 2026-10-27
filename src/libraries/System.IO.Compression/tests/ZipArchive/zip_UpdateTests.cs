@@ -1653,15 +1653,7 @@ namespace System.IO.Compression.Tests
             const string password = "PLACEHOLDER";
             using MemoryStream ms = new MemoryStream();
 
-            ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
-            ZipArchiveEntry created = createArchive.CreateEntry("a.txt", password, ZipEncryptionMethod.ZipCrypto);
-            created.LastWriteTime = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
-            using (Stream writeStream = await OpenEntryStream(async, created))
-            using (StreamWriter writer = new StreamWriter(writeStream))
-            {
-                writer.Write("hello");
-            }
-            await DisposeZipArchive(async, createArchive);
+            await CreateZipCryptoArchive(async, ms, password);
 
             ms.Position = 0;
             ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
@@ -1693,19 +1685,11 @@ namespace System.IO.Compression.Tests
 
             ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
             ZipArchiveEntry firstEntry = createArchive.CreateEntry("first.txt", CompressionLevel.NoCompression);
-            using (Stream writeStream = await OpenEntryStream(async, firstEntry))
-            using (StreamWriter writer = new StreamWriter(writeStream))
-            {
-                writer.Write("first");
-            }
+            await WriteEntryContents(async, firstEntry, "first");
 
             ZipArchiveEntry encryptedEntry = createArchive.CreateEntry("encrypted.txt", password, ZipEncryptionMethod.ZipCrypto);
             encryptedEntry.LastWriteTime = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
-            using (Stream writeStream = await OpenEntryStream(async, encryptedEntry))
-            using (StreamWriter writer = new StreamWriter(writeStream))
-            {
-                writer.Write("secret");
-            }
+            await WriteEntryContents(async, encryptedEntry, "secret");
             await DisposeZipArchive(async, createArchive);
 
             byte[] originalArchive = ms.ToArray();
@@ -1733,19 +1717,11 @@ namespace System.IO.Compression.Tests
             ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
             ZipArchiveEntry firstEntryAfterFailure = readArchive.GetEntry("first.txt");
             Assert.NotNull(firstEntryAfterFailure);
-            using (Stream readStream = await OpenEntryStream(async, firstEntryAfterFailure))
-            using (StreamReader reader = new StreamReader(readStream))
-            {
-                Assert.Equal("first", reader.ReadToEnd());
-            }
+            Assert.Equal("first", await ReadEntryContents(async, firstEntryAfterFailure));
 
             ZipArchiveEntry encryptedEntryAfterFailure = readArchive.GetEntry("encrypted.txt");
             Assert.NotNull(encryptedEntryAfterFailure);
-            using (Stream readStream = await OpenEntryStream(async, encryptedEntryAfterFailure, password))
-            using (StreamReader reader = new StreamReader(readStream))
-            {
-                Assert.Equal("secret", reader.ReadToEnd());
-            }
+            Assert.Equal("secret", await ReadEntryContents(async, encryptedEntryAfterFailure, password));
             await DisposeZipArchive(async, readArchive);
         }
 
@@ -1764,15 +1740,7 @@ namespace System.IO.Compression.Tests
             const string password = "PLACEHOLDER";
             using MemoryStream ms = new MemoryStream();
 
-            ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
-            ZipArchiveEntry created = createArchive.CreateEntry("a.txt", password, ZipEncryptionMethod.ZipCrypto);
-            created.LastWriteTime = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
-            using (Stream writeStream = await OpenEntryStream(async, created))
-            using (StreamWriter writer = new StreamWriter(writeStream))
-            {
-                writer.Write("hello");
-            }
-            await DisposeZipArchive(async, createArchive);
+            await CreateZipCryptoArchive(async, ms, password);
 
             ms.Position = 0;
             ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
@@ -1794,11 +1762,7 @@ namespace System.IO.Compression.Tests
             Assert.NotNull(verify);
             DateTime expectedTimestamp = seconds == 1 ? originalTimestamp.DateTime : newTimestamp.DateTime;
             Assert.Equal(expectedTimestamp, verify.LastWriteTime.DateTime);
-            using (Stream readStream = await OpenEntryStream(async, verify, password))
-            using (StreamReader reader = new StreamReader(readStream))
-            {
-                Assert.Equal("hello", reader.ReadToEnd());
-            }
+            Assert.Equal("hello", await ReadEntryContents(async, verify, password));
             await DisposeZipArchive(async, readArchive);
         }
 
@@ -1814,15 +1778,7 @@ namespace System.IO.Compression.Tests
             const string password = "PLACEHOLDER";
             using MemoryStream ms = new MemoryStream();
 
-            ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
-            ZipArchiveEntry created = createArchive.CreateEntry("a.txt", password, ZipEncryptionMethod.ZipCrypto);
-            created.LastWriteTime = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
-            using (Stream writeStream = await OpenEntryStream(async, created))
-            using (StreamWriter writer = new StreamWriter(writeStream))
-            {
-                writer.Write("hello");
-            }
-            await DisposeZipArchive(async, createArchive);
+            await CreateZipCryptoArchive(async, ms, password);
 
             ms.Position = 0;
             ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
@@ -1831,11 +1787,7 @@ namespace System.IO.Compression.Tests
 
             DateTimeOffset newTimestamp = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero);
             entryToModify.LastWriteTime = newTimestamp;
-            using (Stream rewriteStream = await OpenEntryStream(async, entryToModify, password))
-            using (StreamWriter writer = new StreamWriter(rewriteStream))
-            {
-                writer.Write("hello");
-            }
+            await WriteEntryContents(async, entryToModify, "hello", password);
             await DisposeZipArchive(async, updateArchive);
 
             ms.Position = 0;
@@ -1844,12 +1796,36 @@ namespace System.IO.Compression.Tests
             Assert.NotNull(verify);
             Assert.Equal(newTimestamp.DateTime, verify.LastWriteTime.DateTime);
 
-            using (Stream readStream = await OpenEntryStream(async, verify, password))
-            using (StreamReader reader = new StreamReader(readStream))
-            {
-                Assert.Equal("hello", reader.ReadToEnd());
-            }
+            Assert.Equal("hello", await ReadEntryContents(async, verify, password));
             await DisposeZipArchive(async, readArchive);
+        }
+
+        private static async Task CreateZipCryptoArchive(bool async, Stream stream, string password)
+        {
+            ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry("a.txt", password, ZipEncryptionMethod.ZipCrypto);
+            entry.LastWriteTime = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+            await WriteEntryContents(async, entry, "hello");
+            await DisposeZipArchive(async, archive);
+        }
+
+        private static async Task WriteEntryContents(bool async, ZipArchiveEntry entry, string contents, string password = null)
+        {
+            using Stream stream = password is null
+                ? await OpenEntryStream(async, entry)
+                : await OpenEntryStream(async, entry, password);
+            using StreamWriter writer = new StreamWriter(stream);
+            writer.Write(contents);
+        }
+
+        private static async Task<string> ReadEntryContents(bool async, ZipArchiveEntry entry, string password = null)
+        {
+            using Stream stream = password is null
+                ? await OpenEntryStream(async, entry)
+                : await OpenEntryStream(async, entry, password);
+            using StreamReader reader = new StreamReader(stream);
+
+            return reader.ReadToEnd();
         }
     }
 }
