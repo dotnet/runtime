@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Reflection.Metadata;
 
 using Internal.Text;
@@ -57,12 +56,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     definedSymbols: new ISymbolDefinitionNode[] { this });
             }
 
-            // CompiledMethodDefs is only populated when rewriting composite component assemblies;
-            // when it is null (e.g. non-composite compilation), keep the IL.
             if (factory.OptimizationFlags.StripILBodies
-                && factory.OptimizationFlags.CompiledMethodDefs is HashSet<MethodDesc> compiledMethodDefs
-                && compiledMethodDefs.Contains(_method)
-                && !MayNeedILAtRuntime(compiledMethodDefs, _method))
+                && factory.OptimizationFlags.CompiledMethodDefs.Contains(_method)
+                && !MayNeedILAtRuntime(factory, _method))
             {
                 return new ObjectData(s_minimalILBody, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
             }
@@ -76,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return new ObjectData(bodyBytes, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
         }
 
-        private static bool MayNeedILAtRuntime(HashSet<MethodDesc> compiledMethodDefs, MethodDesc method)
+        private static bool MayNeedILAtRuntime(NodeFactory factory, MethodDesc method)
         {
             if (method.HasInstantiation || method.OwningType.HasInstantiation)
             {
@@ -87,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask())
             {
                 MethodDesc asyncVariant = method.GetAsyncVariant().GetTypicalMethodDefinition();
-                if (!compiledMethodDefs.Contains(asyncVariant))
+                if (!factory.OptimizationFlags.CompiledMethodDefs.Contains(asyncVariant))
                 {
                     // IL may be needed to compile the async variant at runtime
                     return true;

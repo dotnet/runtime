@@ -13,6 +13,7 @@ using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCases;
 
@@ -1490,15 +1491,15 @@ public class R2RTestSuites
     }
 
     /// <summary>
-    /// --strip-il-bodies only applies to composite component assemblies. A non-composite
-    /// compile with the option must succeed and keep all IL bodies in the output.
+    /// --strip-il-bodies only applies to composite component assemblies, so crossgen2 must
+    /// reject it for a non-composite compile instead of crashing.
     /// </summary>
-    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
-    public void NonCompositeStripILBodiesKeepsIL()
+    [Fact]
+    public void NonCompositeStripILBodiesIsRejected()
     {
         var stripILBodies = new CompiledAssembly
         {
-            AssemblyName = nameof(NonCompositeStripILBodiesKeepsIL),
+            AssemblyName = nameof(NonCompositeStripILBodiesIsRejected),
             SourceResourceNames =
             [
                 "RuntimeAsync/StripILBodies.cs",
@@ -1507,23 +1508,17 @@ public class R2RTestSuites
             Features = { RuntimeAsyncFeature },
         };
 
-        new R2RTestRunner(_output).Run(new R2RTestCase(
-            nameof(NonCompositeStripILBodiesKeepsIL),
+        var ex = Assert.ThrowsAny<XunitException>(() => new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(NonCompositeStripILBodiesIsRejected),
             [
-                new(nameof(NonCompositeStripILBodiesKeepsIL), [new CrossgenAssembly(stripILBodies)])
+                new(nameof(NonCompositeStripILBodiesIsRejected), [new CrossgenAssembly(stripILBodies)])
                 {
                     Options = [Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
-                    Validate = Validate,
                 },
-            ]));
+            ])));
 
-        static void Validate(ReadyToRunReader reader)
-        {
-            string diag;
-            Assert.True(R2RAssert.HasCompiledMethod(reader, "StripILBodies", "PlainStrippableMethod", out diag), diag);
-            Assert.True(R2RAssert.MethodILIsPresent(reader.Filename, "StripILBodies", "PlainStrippableMethod", out diag), diag);
-            Assert.True(R2RAssert.MethodILIsPresent(reader.Filename, "StripILBodies", "AsyncTaskMethod", out diag), diag);
-        }
+        Assert.Contains("--strip-il-bodies requires --composite", ex.Message);
+        Assert.DoesNotContain(nameof(NullReferenceException), ex.Message);
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsIosArm64Target))]
