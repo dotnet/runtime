@@ -31,77 +31,6 @@ public class R2RTestSuites
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void IntrinsicTypeHandlesAreModuleEager(bool composite, bool optimize)
-    {
-        CompiledAssembly input = new()
-        {
-            AssemblyName = nameof(IntrinsicTypeHandlesAreModuleEager),
-            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
-        };
-        List<Crossgen2Option> options = new();
-        if (composite)
-            options.Add(Crossgen2Option.Composite);
-        if (optimize)
-            options.Add(Crossgen2Option.Optimize);
-
-        new R2RTestRunner(_output).Run(new R2RTestCase(
-            nameof(IntrinsicTypeHandlesAreModuleEager),
-            [
-                new(nameof(IntrinsicTypeHandlesAreModuleEager), [new CrossgenAssembly(input)])
-                {
-                    Options = options,
-                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
-                    Validate = Validate,
-                },
-            ]));
-
-        static void Validate(ReadyToRunReader reader)
-        {
-            string[] types =
-            [
-                "void", "bool", "char", "sbyte", "byte", "short", "ushort", "int", "uint",
-                "long", "ulong", "float", "double", "IntPtr", "UIntPtr", "string", "object",
-                "typedbyref", "bool[]", "int[...,...]", "int[][]", "string[]", "object[...,...,...]",
-                "int[][...,...]", "UIntPtr[]",
-            ];
-            SignatureFormattingOptions formatting = new();
-            foreach (string type in types)
-            {
-                ReadyToRunImportSection section = Assert.Single(reader.ImportSections,
-                    section => section.Entries.Any(entry =>
-                        entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
-                        entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)"));
-                Assert.Equal(ReadyToRunImportSectionFlags.Eager, section.Flags & ReadyToRunImportSectionFlags.Eager);
-                Assert.Single(section.Entries, entry =>
-                    entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
-                    entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)");
-            }
-
-            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
-            ReadyToRunMethod intrinsic = Assert.Single(methods,
-                method => method.SignatureString.Contains(".ReadIntrinsicTypeToken(", StringComparison.Ordinal));
-            Assert.DoesNotContain(intrinsic.Fixups ?? Array.Empty<FixupCell>(),
-                fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
-
-            ReadyToRunMethod tokenDependent = Assert.Single(methods,
-                method => method.SignatureString.Contains(".ReadTokenDependentTypeToken(", StringComparison.Ordinal));
-            Assert.Equal(9, (tokenDependent.Fixups ?? Array.Empty<FixupCell>()).Count(
-                fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle));
-            foreach (FixupCell fixup in tokenDependent.Fixups ?? Array.Empty<FixupCell>())
-            {
-                if (fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle)
-                {
-                    Assert.Equal((ReadyToRunImportSectionFlags)0, reader.ImportSections[(int)fixup.TableIndex].Flags & ReadyToRunImportSectionFlags.Eager);
-                }
-            }
-        }
-    }
-
-    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void GenericTypeTokensUseStandaloneSharedImportCells(bool composite)
@@ -136,35 +65,15 @@ public class R2RTestSuites
                     method => method.SignatureString.Contains($".ReadGenericTypeToken<{type}>(", StringComparison.Ordinal));
                 ReadyToRunMethod direct = Assert.Single(methods,
                     method => method.SignatureString.Contains($".{directMethod}(", StringComparison.Ordinal));
-                ReadyToRunImportSection.ImportSectionEntry entry;
-                if (type == "int")
-                {
-                    Assert.DoesNotContain(generic.Fixups ?? Array.Empty<FixupCell>(),
-                        fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
-                    Assert.DoesNotContain(direct.Fixups ?? Array.Empty<FixupCell>(),
-                        fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
-                    SignatureFormattingOptions formatting = new();
-                    ReadyToRunImportSection section = Assert.Single(reader.ImportSections,
-                        section => section.Entries.Any(entry =>
-                            entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
-                            entry.Signature.ToString(formatting) == "int (TYPE_HANDLE)"));
-                    Assert.Equal(ReadyToRunImportSectionFlags.Eager, section.Flags & ReadyToRunImportSectionFlags.Eager);
-                    entry = Assert.Single(section.Entries, entry =>
-                        entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
-                        entry.Signature.ToString(formatting) == "int (TYPE_HANDLE)");
-                }
-                else
-                {
-                    FixupCell genericFixup = Assert.Single(generic.Fixups ?? Array.Empty<FixupCell>(),
-                        fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
-                    FixupCell directFixup = Assert.Single(direct.Fixups ?? Array.Empty<FixupCell>(),
-                        fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
-                    Assert.Equal(directFixup.TableIndex, genericFixup.TableIndex);
-                    Assert.Equal(directFixup.CellOffset, genericFixup.CellOffset);
+                FixupCell genericFixup = Assert.Single(generic.Fixups ?? Array.Empty<FixupCell>(),
+                    fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
+                FixupCell directFixup = Assert.Single(direct.Fixups ?? Array.Empty<FixupCell>(),
+                    fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
+                Assert.Equal(directFixup.TableIndex, genericFixup.TableIndex);
+                Assert.Equal(directFixup.CellOffset, genericFixup.CellOffset);
 
-                    ReadyToRunImportSection section = reader.ImportSections[(int)genericFixup.TableIndex];
-                    entry = section.Entries[(int)genericFixup.CellOffset];
-                }
+                ReadyToRunImportSection section = reader.ImportSections[(int)genericFixup.TableIndex];
+                ReadyToRunImportSection.ImportSectionEntry entry = section.Entries[(int)genericFixup.CellOffset];
                 int signatureOffset = reader.GetOffset((int)entry.SignatureRVA);
                 byte kind = reader.Image[signatureOffset++];
                 Assert.Equal((byte)ReadyToRunFixupKind.TypeHandle, kind & 0x7F);
@@ -349,28 +258,8 @@ public class R2RTestSuites
                     method => method.SignatureString.Contains($".Address{suffix}(", StringComparison.Ordinal));
                 if (TestPaths.IsWasmTarget)
                 {
-                    SignatureFormattingOptions formatting = new();
-                    if (suffix == "IsLittleEndian")
-                    {
-                        Assert.Contains(address.Fixups ?? Array.Empty<FixupCell>(),
-                            fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle &&
-                            fixup.Signature.ToString(formatting) == "System.BitConverter (TYPE_HANDLE)");
-                        continue;
-                    }
-
-                    Assert.DoesNotContain(address.Fixups ?? Array.Empty<FixupCell>(),
+                    Assert.Contains(address.Fixups ?? Array.Empty<FixupCell>(),
                         fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
-                    string type = suffix switch
-                    {
-                        "IntPtrZero" => "IntPtr",
-                        "UIntPtrZero" => "UIntPtr",
-                        _ => "string",
-                    };
-                    Assert.Contains(reader.ImportSections, section =>
-                        (section.Flags & ReadyToRunImportSectionFlags.Eager) != 0 &&
-                        section.Entries.Any(entry =>
-                            entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
-                            entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)"));
                 }
             }
         }
@@ -877,53 +766,6 @@ public class R2RTestSuites
                 return BinaryPrimitives.ReadUInt32LittleEndian(reader.Image.AsSpan(portableEntrypointOffset, sizeof(uint)));
             }
         }
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void VectorLayoutChecksRespectTargetAndVersionBubble(bool composite)
-    {
-        CompiledAssembly input = new()
-        {
-            AssemblyName = nameof(VectorLayoutChecksRespectTargetAndVersionBubble),
-            SourceResourceNames = ["Webcil/WasmSimdModule.cs"],
-        };
-
-        new R2RTestRunner(_output).Run(new R2RTestCase(
-            nameof(VectorLayoutChecksRespectTargetAndVersionBubble),
-            [
-                new(nameof(VectorLayoutChecksRespectTargetAndVersionBubble), [new CrossgenAssembly(input)])
-                {
-                    Options = composite ? [Crossgen2Option.Composite, Crossgen2Option.Optimize] : [Crossgen2Option.Optimize],
-                    AdditionalArgs = composite ? ["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath] : [],
-                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
-                    Validate = reader =>
-                    {
-                        List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
-                        foreach (string name in new[]
-                        {
-                            "EchoVectorT", "CallEchoVectorT", "EchoWrappedVectorT", "CallEchoWrappedVectorT",
-                            "EchoVectorPair", "EchoVectorTriple",
-                        })
-                        {
-                            ReadyToRunMethod method = Assert.Single(methods,
-                                method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
-                            IReadOnlyList<FixupCell> fixups = method.Fixups ?? Array.Empty<FixupCell>();
-                            bool needsCheck = !TestPaths.IsWasmTarget ||
-                                (!composite && name is "EchoVectorPair" or "EchoVectorTriple");
-                            if (needsCheck)
-                            {
-                                Assert.Contains(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.Check_TypeLayout);
-                            }
-                            else
-                            {
-                                Assert.DoesNotContain(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.Check_TypeLayout);
-                            }
-                        }
-                    },
-                },
-            ]));
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]

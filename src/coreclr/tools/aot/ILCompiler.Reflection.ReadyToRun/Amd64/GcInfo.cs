@@ -151,12 +151,9 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 GenericsInstContextStackSlot = _gcInfoTypes.DenormalizeStackSlot(imageReader.DecodeVarLengthSigned(_gcInfoTypes.GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE, ref bitOffset));
             }
 
-            if (_hasStackBaseRegister)
+            if (_hasStackBaseRegister && !_slimHeader)
             {
-                uint normalizedRegister = _slimHeader
-                    ? 0
-                    : imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.STACK_BASE_REGISTER_ENCBASE, ref bitOffset);
-                StackBaseRegister = _gcInfoTypes.DenormalizeStackBaseRegister(normalizedRegister);
+                StackBaseRegister = _gcInfoTypes.DenormalizeStackBaseRegister(imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.STACK_BASE_REGISTER_ENCBASE, ref bitOffset));
             }
 
             if (_hasSizeOfEditAndContinuePreservedArea)

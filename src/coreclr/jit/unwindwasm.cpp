@@ -61,8 +61,7 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     bool isFunclet  = func->IsFunclet();
     bool isColdCode = false;
     assert(func->endVirtualIP > func->startVirtualIP);
-    assert((func->funWasmFrameSize % STACK_ALIGN) == 0);
-    ULONG encodedSize = emitter::SizeOfULEB128(func->funWasmFrameSize / STACK_ALIGN) +
+    ULONG encodedSize = emitter::SizeOfULEB128(func->funWasmFrameSize) +
                         emitter::SizeOfULEB128(func->endVirtualIP - func->startVirtualIP);
 
     eeReserveUnwindInfo(isFunclet, isColdCode, encodedSize);
@@ -108,14 +107,13 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     //
     pColdCode = nullptr;
 
-    // Unwind info is the frame size in 16-byte units and the virtual IP length.
+    // Unwind info is the frame size and the virtual IP length.
     // All values encoded via ULEB128.
     //
     uint8_t buffer[10];
     size_t  index = 0;
     assert(func->endVirtualIP > func->startVirtualIP);
-    assert((func->funWasmFrameSize % STACK_ALIGN) == 0);
-    index += GetEmitter()->emitOutputULEB128(buffer + index, func->funWasmFrameSize / STACK_ALIGN);
+    index += GetEmitter()->emitOutputULEB128(buffer + index, func->funWasmFrameSize);
     index += GetEmitter()->emitOutputULEB128(buffer + index, func->endVirtualIP - func->startVirtualIP);
     assert(index <= sizeof(buffer));
 

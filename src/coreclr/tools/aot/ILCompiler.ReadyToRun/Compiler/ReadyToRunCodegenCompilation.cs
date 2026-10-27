@@ -946,8 +946,8 @@ namespace ILCompiler
 
             if (VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(defType))
             {
-                // Wasm fixes Vector<T> at 128 bits; other targets depend on the runtime SIMD width.
-                return NodeFactory.Target.Architecture == TargetArchitecture.Wasm32;
+                // Vector<T> always needs a layout check
+                return false;
             }
 
             if (!NodeFactory.CompilationModuleGroup.VersionsWithModule(defType.Module))

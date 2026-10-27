@@ -274,20 +274,8 @@ namespace System.Globalization.Tests
             // Ensure we can create all region info objects from the built-in list
             Dictionary<string, string> regionNames = (Dictionary<string, string>)Type.GetType("System.Globalization.CultureData, System.Private.CoreLib").GetProperty("RegionNames", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
 
-            Assert.Equal(255, regionNames.Count);
-            Assert.Same(StringComparer.OrdinalIgnoreCase, regionNames.Comparer);
-            Assert.Equal("en-001", regionNames["001"]);
-            Assert.Equal("es-419", regionNames["419"]);
-            Assert.Equal("az-Cyrl-AZ", regionNames["AZ"]);
-            Assert.Equal("sr-Cyrl-CS", regionNames["CS"]);
-            Assert.Equal("bs-Latn-BA", regionNames["BA"]);
-            Assert.Empty(regionNames["IV"]);
-            Assert.Equal("sq-XK", regionNames["XK"]);
-            Assert.Equal("en-ZW", regionNames["ZW"]);
-
             foreach (var kvp in regionNames)
             {
-                Assert.Equal(kvp.Value, regionNames[kvp.Key.ToLowerInvariant()]);
                 RegionInfo ri1 = new RegionInfo(kvp.Key);
                 RegionInfo ri2 = new RegionInfo(kvp.Value == "" ? kvp.Key : kvp.Value); // invariant culture
                 Assert.Equal(ri1.Name, ri2.Name);
