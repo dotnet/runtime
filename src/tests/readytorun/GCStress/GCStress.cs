@@ -7,6 +7,8 @@ using Xunit;
 
 public class GCStress
 {
+    private static int s_finallyValue;
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -26,6 +28,45 @@ public class GCStress
             string other = "shared generic code";
             Assert.Same(other, R2RGCStress<string>(other, out _));
         }
+    }
+
+    [Fact]
+    public static void TestFinally()
+    {
+        object value = new object();
+        Assert.Same(value, R2RGCStressFinally(value));
+        Assert.Equal(42, s_finallyValue);
+        Console.WriteLine("R2R GC stress finally: passed");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static object R2RGCStressFinally(object value)
+    {
+        try
+        {
+            Poll();
+            return value;
+        }
+        finally
+        {
+            // Nested handlers prevent finally cloning from eliminating the callfinally.
+            try
+            {
+                Poll();
+            }
+            finally
+            {
+                // Leave a non-reference in EAX, unlike the parent method's return value.
+                FinallyReturnNonGcValue();
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int FinallyReturnNonGcValue()
+    {
+        s_finallyValue = 42;
+        return 42;
     }
 
     public enum DispatchKind

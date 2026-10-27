@@ -387,6 +387,14 @@ static MethodDesc* getTargetMethodDesc(PCODE target, PCONTEXT regs)
     MethodDesc* targetMD = ExecutionManager::GetCodeMethodDesc(target);
     if (targetMD != nullptr)
     {
+        // Interior targets such as callfinally do not follow the parent's return convention
+        // and can return into a no-GC region.
+        EECodeInfo targetCodeInfo(target);
+        if (targetCodeInfo.IsValid() && targetCodeInfo.GetRelOffset() != 0)
+        {
+            return nullptr;
+        }
+
         // It is JIT/NGened call.
         return targetMD;
     }

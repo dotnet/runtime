@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="GCStress.cs" />
     <CLRTestEnvironmentVariable Include="DOTNET_GCStress" Value="8" />
+    <CLRTestEnvironmentVariable Include="DOTNET_GcStressOnDirectCalls" Value="1" />
     <CLRTestEnvironmentVariable Include="DOTNET_GcCoverage" Value="/R2RGCStress/" />
     <CLRTestEnvironmentVariable Include="DOTNET_gcConcurrent" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_ReadyToRun" Value="1" />
