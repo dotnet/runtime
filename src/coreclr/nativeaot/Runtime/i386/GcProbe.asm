@@ -172,15 +172,6 @@ RhpWaitForGC  proc
 
 RhpWaitForGC  endp
 
-RhpGcPoll  proc
-        cmp         [RhpTrapThreads], TrapThreadsFlags_None
-        jne         @F                  ; forward branch - predicted not taken
-        ret
-@@:
-        jmp         RhpGcPollRare
-
-RhpGcPoll  endp
-
 RhpGcPollRare  proc
         PUSH_COOP_PINVOKE_FRAME ecx
         call        RhpGcPoll2
@@ -260,42 +251,6 @@ _RhpGcStressHijack@0  proc public
 
 _RhpGcStressHijack@0  endp
 
-_RhpHijackForGcStress@0  proc public
-        push        ebp
-        mov         ebp, esp
-
-        ;;
-        ;; Setup a PAL_LIMITED_CONTEXT that looks like what you'd get if you had suspended this thread at the
-        ;; IP after the call to this helper.
-        ;;
-
-        push        edx
-        push        ecx
-        push        ebx
-        push        eax
-        push        esi
-        push        edi
-
-        mov         eax, [ebp]
-        push        eax             ;; (caller) Ebp
-        lea         eax, [ebp + 8]
-        push        eax             ;; Esp
-        mov         eax, [ebp + 4]
-        push        eax             ;; Eip
-
-        push        esp        ;; address of PAL_LIMITED_CONTEXT
-        call        THREAD__HIJACKFORGCSTRESS
-
-        ;; Note: we only restore the scratch registers here. No GC has occurred, so restoring
-        ;; the callee saved ones is unnecessary.
-        add         esp, 14h
-        pop         eax
-        pop         ebx
-        pop         ecx
-        pop         edx
-        pop         ebp
-        ret
-_RhpHijackForGcStress@0  endp
 endif ;; FEATURE_GC_STRESS
 
         end

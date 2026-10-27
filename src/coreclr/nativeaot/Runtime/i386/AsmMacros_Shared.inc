@@ -4,3 +4,5 @@
 ; This file is used to allow sharing of assembly code between NativeAOT and CoreCLR, which have different conventions about how to ensure that constants offsets are accessible
 
 include AsmMacros.inc
+
+G_TRAP_THREADS TEXTEQU <RhpTrapThreads>

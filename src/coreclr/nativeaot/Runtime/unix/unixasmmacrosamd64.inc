@@ -53,6 +53,19 @@ C_FUNC(\Name):
         .cfi_endproc
 .endm
 
+.macro LEAF_END_MARKED Name, Section
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name\()_End)
+        .private_extern C_FUNC(\Name\()_End)
+#else
+        .global C_FUNC(\Name\()_End)
+#endif
+C_FUNC(\Name\()_End):
+        LEAF_END \Name, \Section
+        // make sure this symbol gets its own address
+        nop
+.endm
+
 .macro push_nonvol_reg Register
         push \Register
         .cfi_adjust_cfa_offset 8

@@ -126,13 +126,6 @@ NESTED_END RhpWaitForGC
 
 .global C_FUNC(RhpGcPoll2)
 
-// GC Poll function
-LEAF_ENTRY RhpGcPoll
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, a0
-    bne   a0, zero, C_FUNC(RhpGcPollRare)
-    jr  ra
-LEAF_END RhpGcPoll
-
 // Rare GC Poll function
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
     PUSH_COOP_PINVOKE_FRAME a0

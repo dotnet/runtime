@@ -717,66 +717,6 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHij
         PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack));
 }
 
-#ifdef FEATURE_GC_STRESS
-// This is a helper called from RhpHijackForGcStress which will place a GC Stress
-// hijack on this thread's call stack. This is never called from another thread.
-// static
-void Thread::HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx)
-{
-    Thread * pCurrentThread = ThreadStore::GetCurrentThread();
-
-    // don't hijack for GC stress if we're in a "no GC stress" region
-    if (pCurrentThread->IsSuppressGcStressSet())
-        return;
-
-    RuntimeInstance * pInstance = GetRuntimeInstance();
-
-    uintptr_t ip = pSuspendCtx->GetIp();
-
-    bool bForceGC = g_pRhConfig->GetGcStressThrottleMode() == 0;
-    // we enable collecting statistics by callsite even for stochastic-only
-    // stress mode. this will force a stack walk, but it's worthwhile for
-    // collecting data (we only actually need the IP when
-    // (g_pRhConfig->GetGcStressThrottleMode() & 1) != 0)
-    if (!bForceGC)
-    {
-        StackFrameIterator sfi(pCurrentThread, pSuspendCtx);
-        if (sfi.IsValid())
-        {
-            pCurrentThread->Unhijack();
-            sfi.CalculateCurrentMethodState();
-            // unwind to method below the one whose epilog set up the hijack
-            sfi.Next();
-            if (sfi.IsValid())
-            {
-                ip = sfi.GetRegisterSet()->GetIP();
-            }
-        }
-    }
-    if (bForceGC || pInstance->ShouldHijackCallsiteForGcStress(ip))
-    {
-        pCurrentThread->HijackReturnAddress(pSuspendCtx, &RhpGcStressHijack);
-    }
-}
-#endif // FEATURE_GC_STRESS
-
-// This function is called from a thread to place a return hijack onto its own stack for GC stress cases
-// via Thread::HijackForGcStress above. The only constraint on the suspension is that the
-// stack be crawlable enough to yield the location of the return address.
-void Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction)
-{
-    if (IsDoNotTriggerGcSet())
-        return;
-
-    StackFrameIterator frameIterator(this, pSuspendCtx);
-    if (!frameIterator.IsValid())
-    {
-        return;
-    }
-
-    HijackReturnAddressWorker(&frameIterator, pfnHijackFunction);
-}
-
 // This function is called in one of two scenarios:
 // 1) from another thread to place a return hijack onto this thread's stack. In this case the target
 //    thread is OS suspended at pSuspendCtx in managed code.

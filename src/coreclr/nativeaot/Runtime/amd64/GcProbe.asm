@@ -136,14 +136,6 @@ NESTED_ENTRY RhpWaitForGC, _TEXT
 
 NESTED_END RhpWaitForGC, _TEXT
 
-LEAF_ENTRY RhpGcPoll, _TEXT
-        cmp         [RhpTrapThreads], TrapThreadsFlags_None
-        jne         @F                  ; forward branch - predicted not taken
-        ret
-@@:
-        jmp         RhpGcPollRare
-LEAF_END RhpGcPoll, _TEXT
-
 NESTED_ENTRY RhpGcPollRare, _TEXT
         PUSH_COOP_PINVOKE_FRAME rcx
         call        RhpGcPoll2
@@ -186,106 +178,6 @@ NESTED_ENTRY RhpGcStressProbe, _TEXT
         POP_PROBE_FRAME
         ret
 NESTED_END RhpGcStressProbe, _TEXT
-
-;; PAL_LIMITED_CONTEXT, 6 xmm regs to save, 2 scratch regs to save, plus 20h bytes for scratch space
-RhpHijackForGcStress_FrameSize equ SIZEOF__PAL_LIMITED_CONTEXT + 6*10h + 2*8h + 20h
-
-; -----------------------------------------------------------------------------------------------------------
-; RhpHijackForGcStress
-;
-; Called at the beginning of the epilog when a method is bound with /gcstress
-;
-; N.B. -- Leaf frames may not have aligned the stack or reserved any scratch space on the stack.  Also, in
-;         order to have a resonable stacktrace in the debugger, we must use the .pushframe unwind directive.
-;
-; N.B. #2 -- The "EH jump epilog" codegen depends on rcx/rdx being preserved across this call.  We currently
-;            will trash R8-R11, but we can do better, if necessary.
-;
-NESTED_ENTRY RhpHijackForGcStress, _TEXT
-
-        lea         r10, [rsp+8]        ;; save the original RSP (prior to call)
-        mov         r11, [rsp]          ;; get the return address
-
-        ;; Align the stack
-        and         rsp, -16
-
-        ;; Push the expected "machine frame" for the unwinder to see.  All that it looks at is the RSP and
-        ;; RIP, so we push zero for the others.
-        xor     r8, r8
-        push    r8              ;; just aligning the stack
-        push    r8              ;; SS
-        push    r10             ;; original RSP
-        push    r8              ;; EFLAGS
-        push    r8              ;; CS
-        push    r11             ;; return address
-
-        ; Tell the unwinder that the frame is there now
-        .pushframe
-
-        alloc_stack     RhpHijackForGcStress_FrameSize
-        END_PROLOGUE
-
-        ;; Save xmm scratch regs -- this is probably overkill, only the return value reg is
-        ;; likely to be interesting at this point, but it's a bit ambiguous.
-        movdqa      [rsp + 20h + 0*10h], xmm0
-        movdqa      [rsp + 20h + 1*10h], xmm1
-        movdqa      [rsp + 20h + 2*10h], xmm2
-        movdqa      [rsp + 20h + 3*10h], xmm3
-        movdqa      [rsp + 20h + 4*10h], xmm4
-        movdqa      [rsp + 20h + 5*10h], xmm5
-
-        mov         [rsp + 20h + 6*10h + 0*8h], rcx
-        mov         [rsp + 20h + 6*10h + 1*8h], rdx
-
-        ;;
-        ;; Setup a PAL_LIMITED_CONTEXT that looks like what you'd get if you had suspended this thread at the
-        ;; IP after the call to this helper.
-        ;;
-        ;; This is very likely overkill since the calculation of the return address should only need RSP and
-        ;; RBP, but this is test code, so I'm not too worried about efficiency.
-        ;;
-        mov         [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__IP],  r11     ; rip at callsite
-        mov         [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__Rsp], r10     ; rsp at callsite
-        mov         [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__Rbp], rbp
-        mov         [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__Rdi], rdi
-        mov         [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__Rsi], rsi
-        mov         [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__Rax], rax
-        mov         [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__Rbx], rbx
-
-        mov         [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__R12], r12
-        mov         [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__R13], r13
-        mov         [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__R14], r14
-        mov         [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__R15], r15
-
-        lea         rcx, [rsp + 20h + 6*10h + 2*8h]   ;; address of PAL_LIMITED_CONTEXT
-        call        THREAD__HIJACKFORGCSTRESS
-
-        ;; Note: we only restore the scratch registers here. No GC has occurred, so restoring
-        ;; the callee saved ones is unnecessary.
-        mov         rax, [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__Rax]
-        mov         rcx, [rsp + 20h + 6*10h + 0*8h]
-        mov         rdx, [rsp + 20h + 6*10h + 1*8h]
-
-        ;; Restore xmm scratch regs
-        movdqa      xmm0, [rsp + 20h + 0*10h]
-        movdqa      xmm1, [rsp + 20h + 1*10h]
-        movdqa      xmm2, [rsp + 20h + 2*10h]
-        movdqa      xmm3, [rsp + 20h + 3*10h]
-        movdqa      xmm4, [rsp + 20h + 4*10h]
-        movdqa      xmm5, [rsp + 20h + 5*10h]
-
-        ;; epilog
-        mov         r10, [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__Rsp]
-        lea         rsp, [r10 - 8]              ;; adjust RSP to point back at the return address
-        ret
-NESTED_END RhpHijackForGcStress, _TEXT
-
-g_pTheRuntimeInstance equ ?g_pTheRuntimeInstance@@3PEAVRuntimeInstance@@EA
-EXTERN g_pTheRuntimeInstance : QWORD
-RuntimeInstance__ShouldHijackLoopForGcStress equ ?ShouldHijackLoopForGcStress@RuntimeInstance@@QEAA_N_K@Z
-EXTERN RuntimeInstance__ShouldHijackLoopForGcStress : PROC
-
-EXTERN g_fGcStressStarted : DWORD
 
 ;;
 ;; INVARIANT: Don't trash the argument registers, the binder codegen depends on this.

@@ -230,7 +230,6 @@ private:
     bool IsStateSet(ThreadStateFlags flags);
 
 #ifdef FEATURE_HIJACK
-    void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction);
     void CrossThreadUnhijack();
@@ -292,10 +291,6 @@ public:
     bool                IsHijacked() { return false; }
     static bool         IsHijackTarget(void * address) { return false; }
 #endif // FEATURE_HIJACK
-
-#ifdef FEATURE_GC_STRESS
-    static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
-#endif // FEATURE_GC_STRESS
 
     bool                IsSuppressGcStressSet();
     void                SetSuppressGcStress();

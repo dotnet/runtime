@@ -102,13 +102,6 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
 
 NESTED_END RhpWaitForGC
 
-LEAF_ENTRY RhpGcPoll
-    PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r0
-    cmp         r0, #TrapThreadsFlags_None
-    bne         RhpGcPollRare
-    bx          lr
-LEAF_END RhpGcPoll
-
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
     PUSH_COOP_PINVOKE_FRAME r0
     bl RhpGcPoll2

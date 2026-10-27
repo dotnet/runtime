@@ -184,13 +184,6 @@ WaitForGC
         EPILOG_RETURN
     NESTED_END RhpWaitForGC
 
-    LEAF_ENTRY RhpGcPoll
-        ldr         x0, =RhpTrapThreads
-        ldr         w0, [x0]
-        cbnz        w0, RhpGcPollRare ;; TrapThreadsFlags_None = 0
-        ret
-    LEAF_END RhpGcPoll
-
     NESTED_ENTRY RhpGcPollRare
         PUSH_COOP_PINVOKE_FRAME x0
         bl          RhpGcPoll2
@@ -232,119 +225,6 @@ WaitForGC
         POP_PROBE_FRAME
         EPILOG_RETURN
     NESTED_END RhpGcStressProbe
-
-    NESTED_ENTRY RhpHijackForGcStress
-        ;; This function should be called from right before epilog
-
-        ;; Push FP and LR, and allocate stack to hold PAL_LIMITED_CONTEXT structure and VFP return value registers
-        PROLOG_SAVE_REG_PAIR    fp, lr, #-(SIZEOF__PAL_LIMITED_CONTEXT + 0x20)!
-
-        ;;
-        ;; Setup a PAL_LIMITED_CONTEXT that looks like what you'd get if you had suspended this thread at the
-        ;; IP after the call to this helper.
-        ;;
-        ;; This is very likely overkill since the calculation of the return address should only need SP and
-        ;; LR, but this is test code, so I'm not too worried about efficiency.
-        ;;
-        ;; Setup a PAL_LIMITED_CONTEXT on the stack
-        ;; {
-            ;; FP and LR already pushed.
-            PROLOG_NOP  stp         x0, x1, [sp, #0x10]
-            PROLOG_SAVE_REG_PAIR    x19, x20, #0x20
-            PROLOG_SAVE_REG_PAIR    x21, x22, #0x30
-            PROLOG_SAVE_REG_PAIR    x23, x24, #0x40
-            PROLOG_SAVE_REG_PAIR    x25, x26, #0x50
-            PROLOG_SAVE_REG_PAIR    x27, x28, #0x60
-            PROLOG_SAVE_REG         lr, #0x78
-
-        ;; } end PAL_LIMITED_CONTEXT
-
-        ;; Save VFP return value
-        stp         d0, d1, [sp, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x00)]
-        stp         d2, d3, [sp, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x10)]
-
-        ;; Compute and save SP at callsite.
-        add         x0, sp, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x20)   ;; +0x20 for the pushes right before the context struct
-        str         x0, [sp, #OFFSETOF__PAL_LIMITED_CONTEXT__SP]
-
-        mov         x0, sp      ; Address of PAL_LIMITED_CONTEXT
-        bl          $THREAD__HIJACKFORGCSTRESS
-
-        ;; Restore return value registers (saved in PAL_LIMITED_CONTEXT structure)
-        ldp         x0, x1, [sp, #0x10]
-
-        ;; Restore VFP return value
-        ldp         d0, d1, [sp, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x00)]
-        ldp         d2, d3, [sp, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x10)]
-
-        ;; Epilog
-        EPILOG_RESTORE_REG_PAIR     x19, x20, #0x20
-        EPILOG_RESTORE_REG_PAIR     x21, x22, #0x30
-        EPILOG_RESTORE_REG_PAIR     x23, x24, #0x40
-        EPILOG_RESTORE_REG_PAIR     x25, x26, #0x50
-        EPILOG_RESTORE_REG_PAIR     x27, x28, #0x60
-        EPILOG_RESTORE_REG_PAIR     fp, lr, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x20)!
-        EPILOG_RETURN
-
-    NESTED_END RhpHijackForGcStress
-
-    NESTED_ENTRY RhpHijackForGcStressLeaf
-        ;; This should be jumped to, right before epilog
-        ;; x9 has the return address (we don't care about trashing scratch regs at this point)
-
-        ;; Push FP and LR, and allocate stack to hold PAL_LIMITED_CONTEXT structure and VFP return value registers
-        PROLOG_SAVE_REG_PAIR    fp, lr, #-(SIZEOF__PAL_LIMITED_CONTEXT + 0x20)!
-
-        ;;
-        ;; Setup a PAL_LIMITED_CONTEXT that looks like what you'd get if you had suspended this thread at the
-        ;; IP after the call to this helper.
-        ;;
-        ;; This is very likely overkill since the calculation of the return address should only need SP and
-        ;; LR, but this is test code, so I'm not too worried about efficiency.
-        ;;
-        ;; Setup a PAL_LIMITED_CONTEXT on the stack
-        ;; {
-            ;; FP and LR already pushed.
-            PROLOG_NOP  stp         x0, x1, [sp, #0x10]
-            PROLOG_SAVE_REG_PAIR    x19, x20, #0x20
-            PROLOG_SAVE_REG_PAIR    x21, x22, #0x30
-            PROLOG_SAVE_REG_PAIR    x23, x24, #0x40
-            PROLOG_SAVE_REG_PAIR    x25, x26, #0x50
-            PROLOG_SAVE_REG_PAIR    x27, x28, #0x60
-            ; PROLOG_SAVE_REG macro doesn't let to use scratch reg:
-            PROLOG_NOP  str         x9, [sp, #0x78]           ; this is return address from RhpHijackForGcStress; lr is return address for it's caller
-
-        ;; } end PAL_LIMITED_CONTEXT
-
-        ;; Save VFP return value
-        stp         d0, d1, [sp, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x00)]
-        stp         d2, d3, [sp, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x10)]
-
-        ;; Compute and save SP at callsite.
-        add         x0, sp, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x20)   ;; +0x20 for the pushes right before the context struct
-        str         x0, [sp, #OFFSETOF__PAL_LIMITED_CONTEXT__SP]
-
-        mov         x0, sp      ; Address of PAL_LIMITED_CONTEXT
-        bl          $THREAD__HIJACKFORGCSTRESS
-
-        ;; Restore return value registers (saved in PAL_LIMITED_CONTEXT structure)
-        ldp         x0, x1, [sp, #0x10]
-
-        ;; Restore VFP return value
-        ldp         d0, d1, [sp, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x00)]
-        ldp         d2, d3, [sp, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x10)]
-
-        ;; Epilog
-        EPILOG_RESTORE_REG_PAIR     x19, x20, #0x20
-        EPILOG_RESTORE_REG_PAIR     x21, x22, #0x30
-        EPILOG_RESTORE_REG_PAIR     x23, x24, #0x40
-        EPILOG_RESTORE_REG_PAIR     x25, x26, #0x50
-        EPILOG_RESTORE_REG_PAIR     x27, x28, #0x60
-        EPILOG_NOP     ldr          x9, [sp, #0x78]
-        EPILOG_RESTORE_REG_PAIR     fp, lr, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x20)!
-        EPILOG_NOP     br           x9
-
-    NESTED_END RhpHijackForGcStressLeaf
 
 ;;
 ;; INVARIANT: Don't trash the argument registers, the binder codegen depends on this.

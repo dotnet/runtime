@@ -163,10 +163,6 @@ DivInt64Internal                            equ @DivInt64Internal_FCall@16
 RhpGcSafeZeroMemory                         equ @RhpGcSafeZeroMemory@8
 RhpGetNumThunkBlocksPerMapping              equ @RhpGetNumThunkBlocksPerMapping@0
 
-ifdef FEATURE_GC_STRESS
-THREAD__HIJACKFORGCSTRESS                   equ ?HijackForGcStress@Thread@@SGXPAUPAL_LIMITED_CONTEXT@@@Z
-endif ;; FEATURE_GC_STRESS
-
 ;;
 ;; IMPORTS
 ;;
@@ -191,7 +187,6 @@ EXTERN RhpGetNumThunkBlocksPerMapping           : PROC
 EXTERN DivInt64Internal                         : PROC
 
 ifdef FEATURE_GC_STRESS
-EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
 EXTERN RhpStressGc                              : PROC
 endif ;; FEATURE_GC_STRESS
 

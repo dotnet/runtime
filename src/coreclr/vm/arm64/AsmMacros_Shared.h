@@ -22,6 +22,9 @@
     IMPORT g_write_watch_table
 #endif
 
+    IMPORT g_TrapReturningThreads
+#define G_TRAP_THREADS g_TrapReturningThreads
+
     IMPORT RhpGcAlloc
     IMPORT RhExceptionHandling_FailedAllocation
 

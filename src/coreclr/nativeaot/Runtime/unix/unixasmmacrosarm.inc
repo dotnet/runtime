@@ -68,6 +68,15 @@ C_FUNC(\Name):
         .fnend
 .endm
 
+.macro LEAF_END_MARKED Name, Section
+        .thumb_func
+        .global C_FUNC(\Name\()_End)
+C_FUNC(\Name\()_End):
+        LEAF_END \Name, \Section
+        // make sure this symbol gets its own address
+        nop
+.endm
+
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
         movw \HelperReg, #:lower16:C_FUNC(\Name) - (. + 12)
         movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 8)

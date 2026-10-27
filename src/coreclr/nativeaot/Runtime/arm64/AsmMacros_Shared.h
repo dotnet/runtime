@@ -5,6 +5,8 @@
 
 #ifdef TARGET_WINDOWS
 #include "AsmMacros.h"
+
+#define G_TRAP_THREADS RhpTrapThreads
 #else
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"

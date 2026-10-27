@@ -1,7 +1,9 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
 
-include AsmMacros.inc
+include AsmMacros_Shared.inc
+
+EXTERN RhpGcPollRare : PROC
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; The following helper will access ("probe") a word on each page of the stack
@@ -35,6 +37,14 @@ ProbeLoop:
 
         ret
 
-LEAF_END RhpStackProbe, _TEXT
+LEAF_END_MARKED RhpStackProbe, _TEXT
+
+LEAF_ENTRY RhpGcPoll, _TEXT
+        cmp         [G_TRAP_THREADS], 0
+        jne         @F                  ; forward branch - predicted not taken
+        ret
+@@:
+        jmp         RhpGcPollRare
+LEAF_END RhpGcPoll, _TEXT
 
 end

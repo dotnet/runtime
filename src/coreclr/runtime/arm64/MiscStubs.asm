@@ -1,7 +1,9 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
 
-#include "AsmMacros.h"
+#include "AsmMacros_Shared.h"
+
+    EXTERN RhpGcPollRare
 
     TEXTAREA
 
@@ -37,5 +39,14 @@
         mov x0, x17
         ret
     LEAF_END PacAuthPtr
+
+    LEAF_ENTRY RhpGcPoll
+        ldr         x0, =G_TRAP_THREADS
+        ldr         w0, [x0]
+        cbnz        w0, RhpGcPoll_RarePath
+        ret
+RhpGcPoll_RarePath
+        b           RhpGcPollRare
+    LEAF_END RhpGcPoll
 
     end
