@@ -32,7 +32,7 @@
     <PropertyGroup>
       <_HasOutOfProcessTestsMarker>$(OutputPath)$(AssemblyName).HasOutOfProcessTests</_HasOutOfProcessTestsMarker>
       <_ShouldWriteHasOutOfProcessTestsMarker
-        Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '@(OutOfProcessTests)' != '' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</_ShouldWriteHasOutOfProcessTestsMarker>
+        Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '@(OutOfProcessTests)' != '' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</_ShouldWriteHasOutOfProcessTestsMarker>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(_HasOutOfProcessTestsMarker)"

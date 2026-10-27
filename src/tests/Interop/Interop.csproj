@@ -16,7 +16,7 @@
       TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets.
       Tracked by https://github.com/dotnet/runtime/issues/131811
     -->
-    <WasmBuildTestCorerun Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">false</WasmBuildTestCorerun>
+    <WasmBuildTestCorerun Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'wasm'">false</WasmBuildTestCorerun>
   </PropertyGroup>
   <ItemGroup>
     <SupportProject Include="$(TestLibraryProjectPath)" />

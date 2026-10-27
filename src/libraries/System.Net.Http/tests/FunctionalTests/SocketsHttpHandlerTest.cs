@@ -492,6 +492,77 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(allowTlsResume, GetUnderlyingSocketsHttpHandler(stringHandler).SslOptions.AllowTlsResume);
             Assert.NotNull(stringHandler.ServerCertificateCustomValidationCallback);
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
+        public async Task NoCallback_RevokedCertificate_RevocationChecking_MatchesExpected(bool checkRevocation)
+        {
+            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(
+                "localhost", forceRsaCertificate: true);
+            pkiHolder.Intermediates[^1].Revoke(pkiHolder.EndEntity, pkiHolder.EndEntity.NotBefore);
+
+            using HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false);
+            handler.CheckCertificateRevocationList = checkRevocation;
+            SocketsHttpHandler socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
+
+            var policy = new X509ChainPolicy
+            {
+                TrustMode = X509ChainTrustMode.CustomRootTrust,
+                RevocationMode = socketsHandler.SslOptions.CertificateRevocationCheckMode,
+                RevocationFlag = X509RevocationFlag.EndCertificateOnly,
+                DisableCertificateDownloads = true,
+                CustomTrustStore = { pkiHolder.IssuerChain[^1] },
+            };
+            policy.ExtraStore.AddRange(pkiHolder.IssuerChain);
+            socketsHandler.SslOptions.CertificateChainPolicy = policy;
+
+            using HttpClient client = CreateHttpClient(handler);
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                if (checkRevocation)
+                {
+                    HttpRequestException exception = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    Assert.Equal(HttpRequestError.SecureConnectionError, exception.HttpRequestError);
+                    Assert.IsType<AuthenticationException>(exception.InnerException);
+                }
+                else
+                {
+                    using HttpResponseMessage response = await client.GetAsync(uri);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            }, async server =>
+            {
+                try
+                {
+                    if (checkRevocation)
+                    {
+                        await server.AcceptConnectionAsync(_ => Task.CompletedTask);
+                    }
+                    else
+                    {
+                        await server.HandleRequestAsync();
+                    }
+                }
+                catch (Exception e) when (checkRevocation && (e is AuthenticationException or IOException))
+                {
+                    _output.WriteLine($"Expected certificate validation failure: {e}");
+                }
+            },
+            options: new GenericLoopbackOptions
+            {
+                UseSsl = true,
+                Certificate = pkiHolder.EndEntity,
+                SslProtocols = SslProtocols.None,
+            });
+
+            using X509Chain chain = new X509Chain();
+            chain.ChainPolicy = policy;
+            Assert.Equal(!checkRevocation, chain.Build(pkiHolder.EndEntity));
+            Assert.Equal(checkRevocation ? X509ChainStatusFlags.Revoked : X509ChainStatusFlags.NoError,
+                chain.ChainStatus.Aggregate(X509ChainStatusFlags.NoError, (flags, status) => flags | status.Status));
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "ResponseDrainTimeout is not supported on Browser")]
@@ -1519,6 +1590,32 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData("", HttpStatusCode.OK)]
+        [InlineData(" ", HttpStatusCode.OK)]
+        [InlineData("\t", HttpStatusCode.OK)]
+        [InlineData(",", HttpStatusCode.OK)]
+        [InlineData(" , , \t", HttpStatusCode.OK)]
+        [InlineData("invalid", HttpStatusCode.OK)]
+        [InlineData("", HttpStatusCode.Found)]
+        [InlineData(",", HttpStatusCode.Found)]
+        [SkipOnPlatform(TestPlatforms.Browser, "SocketsHttpHandler is not supported on Browser")]
+        public async Task SendAsync_EmptyOrInvalidAltSvcHeader_Success(string altSvc, HttpStatusCode statusCode)
+        {
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = false;
+            using HttpClient client = CreateHttpClient(handler);
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpResponseMessage response = await client.GetAsync(uri);
+                Assert.Equal(statusCode, response.StatusCode);
+                Assert.Equal(HttpVersion.Version11, response.Version);
+            },
+            server => server.AcceptConnectionSendResponseAndCloseAsync(statusCode, $"Alt-Svc: {altSvc}\r\n"),
+            new LoopbackServer.Options { UseSsl = true });
+        }
 
         [Fact]
         public async Task SendAsync_UriWithNonDnsNonAsciiHost_Throws()
@@ -4772,7 +4869,7 @@ namespace System.Net.Http.Functional.Tests
             await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
         }
 
-        [ConditionalTheory(typeof(SocketsHttpHandlerTest_ConnectCallback), nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsUnixDomainSocketBinding))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectCallback_UseUnixDomainSocket_Success(bool useSsl)
@@ -4780,7 +4877,13 @@ namespace System.Net.Http.Functional.Tests
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
             string guid = $"{Guid.NewGuid():N}";
-            string socketPath = Path.Combine(Path.GetTempPath(), guid);
+            string socketDirectory = PlatformDetection.UnixDomainSocketDirectory;
+            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
+            {
+                // Keep the name short for app container paths, and avoid an all-numeric URI host.
+                guid = "s" + guid.Substring(0, 7);
+            }
+            string socketPath = Path.Combine(socketDirectory, guid);
             UnixDomainSocketEndPoint serverEP = new UnixDomainSocketEndPoint(socketPath);
             using Socket listenSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
             listenSocket.Bind(serverEP);
@@ -4793,7 +4896,7 @@ namespace System.Net.Http.Functional.Tests
                 socketsHandler.ConnectCallback = async (context, token) =>
                 {
                     string hostname = context.DnsEndPoint.Host;
-                    UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(Path.GetTempPath(), hostname));
+                    UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(socketDirectory, hostname));
 
                     Socket clientSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
                     await clientSocket.ConnectAsync(clientEP);
@@ -5226,8 +5329,6 @@ namespace System.Net.Http.Functional.Tests
 
             await TestHelper.WhenAllCompletedOrAnyFailedWithTimeout(GenericLoopbackServer.LoopbackServerTimeoutMilliseconds, clientTask, serverTask);
         }
-
-        private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
 
         private sealed class ReadAheadStream : DelegatingStream
         {

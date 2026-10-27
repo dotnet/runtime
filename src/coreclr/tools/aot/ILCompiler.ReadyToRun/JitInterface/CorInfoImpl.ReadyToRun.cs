@@ -516,7 +516,6 @@ namespace Internal.JitInterface
 
         private void AddAdditionalDependency(ISymbolNode node, string reason)
         {
-            _additionalDependencies ??= new DependencyList();
             _additionalDependencies.Add(node, reason);
         }
 
@@ -1789,6 +1788,9 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
         }
 
+        private static bool IsThreadStaticForTarget(FieldDesc field)
+            => ((ReadyToRunCompilerContext)field.Context).IsThreadStaticForTarget(field);
+
         private bool IsClassPreInited(TypeDesc type)
         {
             if (type.IsGenericDefinition)
@@ -1837,7 +1839,7 @@ namespace Internal.JitInterface
                         return true; // Dynamic statics
 
                     if (!field.HasRva &&
-                        !field.IsThreadStatic &&
+                        !IsThreadStaticForTarget(field) &&
                         field.FieldType.IsValueType &&
                         !field.FieldType.UnderlyingType.IsPrimitive)
                     {
@@ -1900,6 +1902,7 @@ namespace Internal.JitInterface
             if (field.IsStatic)
             {
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
+                CORINFO_FIELD_ACCESSOR intrinsicAccessor;
 
                 if (field.FieldType.IsValueType && field.HasGCStaticBase && !field.HasRva)
                 {
@@ -1923,11 +1926,18 @@ namespace Internal.JitInterface
                         fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                     }
                 }
+                else if (field.IsIntrinsic &&
+                    (flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
+                    (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
+                {
+                    fieldAccessor = intrinsicAccessor;
+                    pResult->helper = CorInfoHelpFunc.CORINFO_HELP_UNDEF;
+                }
                 else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) || _compilation.NodeFactory.Target.IsWasm)
                 {
                     // The JIT wants to know how to access a static field on a generic type. We need a runtime lookup.
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
-                    if (field.IsThreadStatic)
+                    if (IsThreadStaticForTarget(field))
                     {
                         pResult->helper = (field.HasGCStaticBase ?
                             CorInfoHelpFunc.CORINFO_HELP_GET_GCTHREADSTATIC_BASE :
@@ -1952,14 +1962,7 @@ namespace Internal.JitInterface
                     pResult->helper = CorInfoHelpFunc.CORINFO_HELP_UNDEF;
 
                     ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
-                    CORINFO_FIELD_ACCESSOR intrinsicAccessor;
-                    if (field.IsIntrinsic &&
-                        (flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
-                        (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
-                    {
-                        fieldAccessor = intrinsicAccessor;
-                    }
-                    else if (field.IsThreadStatic)
+                    if (IsThreadStaticForTarget(field))
                     {
                         if (field.HasGCStaticBase)
                         {
@@ -3482,6 +3485,17 @@ namespace Internal.JitInterface
             if (!_compilation.NodeFactory.Target.IsWasm)
                 return;
 
+            if (fRelocType == CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB)
+            {
+                Debug.Assert(locationBlock == BlockType.Code);
+                MethodDesc targetMethod = HandleToObject((CORINFO_METHOD_STRUCT_*)target);
+                MethodWithGCInfo method = _compilation.NodeFactory.CompiledMethodNode(targetMethod);
+                relocTarget = _compilation.NodeFactory.WasmMethodFrameIdentity(method);
+                relocType = RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB;
+                handled = true;
+                return;
+            }
+
             if (fRelocType != CorInfoReloc.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32)
                 return;
 
@@ -3947,6 +3961,44 @@ namespace Internal.JitInterface
                 // rarely used feature, and we can fix that if we need to.
                 throw new RequiresRuntimeJitException($"Type equivalent valuetype '{type}' not directly referenced from member reference");
             }
+        }
+
+        /// <summary>
+        /// Returns true if a cast from an object of exact type <paramref name="fromType"/> to
+        /// <paramref name="toType"/> that fails now also fails in every later version of its dependencies.
+        /// </summary>
+        private bool IsNegativeCastResultVersionResilient(TypeDesc fromType, TypeDesc toType)
+        {
+            if (fromType.HasTypeEquivalence || toType.HasTypeEquivalence)
+                return false;
+
+            // A value type can gain interfaces (or become an enum), but its other cast targets are fixed.
+            if (fromType.IsValueType && !toType.IsInterface && !toType.IsWellKnownType(WellKnownType.Enum))
+                return true;
+
+            // Otherwise every type that decides the cast must version with this code. Array and variant casts
+            // also depend on element types and generic arguments, and COM objects can be cast to interfaces
+            // through QueryInterface.
+            if (fromType is not DefType || toType is not DefType || toType.HasVariance)
+                return false;
+
+            CompilationModuleGroup moduleGroup = _compilation.CompilationModuleGroup;
+            if (!moduleGroup.VersionsWithType(toType))
+                return false;
+
+            for (TypeDesc type = fromType; type is not null; type = type.BaseType)
+            {
+                if (type.IsComImport || !moduleGroup.VersionsWithType(type))
+                    return false;
+            }
+
+            foreach (DefType iface in fromType.RuntimeInterfaces)
+            {
+                if (!moduleGroup.VersionsWithType(iface))
+                    return false;
+            }
+
+            return true;
         }
 
         private bool notifyMethodInfoUsage(CORINFO_METHOD_STRUCT_* ftn)

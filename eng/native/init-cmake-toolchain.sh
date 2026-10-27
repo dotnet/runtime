@@ -44,6 +44,19 @@ if [ "$build_arch" = "wasm" ]; then
         CMAKE_CONFIGURE_COMMAND_WRAPPER=emcmake
         CMAKE_INITIAL_CACHE="$reporoot/eng/native/tryrun.browser.cmake"
     elif [ "$target_os" = "wasi" ]; then
+        # Match the SDK version selected by eng/AcquireWasiSdk.targets.
+        if [ -n "$WASI_SDK_PATH" ]; then
+            wasi_sdk_expected_version="$(tr -d '[:space:]' < "$reporoot/eng/wasm/wasi-sdk-version.txt")"
+            wasi_sdk_actual_version=
+            if [ -f "$WASI_SDK_PATH/VERSION" ]; then
+                read -r wasi_sdk_actual_version _ < "$WASI_SDK_PATH/VERSION"
+            fi
+            if [ "$wasi_sdk_actual_version" != "$wasi_sdk_expected_version" ] && \
+                wasi_sdk_cache_path="$(wasm_tool_cache_dir wasi-sdk "$reporoot/eng/wasm/wasi-sdk-version.txt" "$reporoot")"; then
+                echo "WASI_SDK_PATH is version '$wasi_sdk_actual_version', not '$wasi_sdk_expected_version'; using $wasi_sdk_cache_path"
+                export WASI_SDK_PATH="$wasi_sdk_cache_path"
+            fi
+        fi
         if [ -z "$WASI_SDK_PATH" ]; then
             if ! WASI_SDK_PATH="$(wasm_tool_cache_dir wasi-sdk "$reporoot/eng/wasm/wasi-sdk-version.txt" "$reporoot")"; then
                 echo "Error: You need to set the WASI_SDK_PATH environment variable pointing to the WASI SDK root."
