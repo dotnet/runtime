@@ -1,5 +1,7 @@
 # Managed IL Assembler - Fixed Issues
 
+This table includes deliberate behavior differences as well as fixes. Defects listed here are not compatibility requirements for the IL assembler.
+
 | Fixed issue | ilasm behavior | Managed ILASM behavior |
 | --- | --- | --- |
 | Pseudoattribute lowering is opt-in | Automatically lowers recognized pseudo custom attributes. | Preserves custom attributes unchanged by default; `--pseudoattributes` enables lowering and the pseudoattribute-specific fixes below. |
@@ -47,3 +49,7 @@
 | `IncludedFileWithoutAPointOfItsOwn_IsNotADocument` | Defines every `#include`d file as a PDB document when it is included, whether or not any sequence point is in it. | Defines an included file as a document when one of its instructions first gets a sequence point in it. |
 | `IncludedFile_IsADocumentWithTheLanguageInEffectAtItsFirstPoint` | Gives an included file's document the IL assembly language even when a `.language` directive comes right before the `#include`: it defines the document at the `#include`, before that `.language` has been applied. | Gives the document the language in effect when it is defined, at its first point. |
 | `InstructionsFromADefineMacro_AreOnTheLineWhereTheMacroIsUsed` | Reads the text of a `#define` macro as a new source starting at line 1, so an instruction it produces is mapped to line 1 of the document, and all such instructions share one point. | Maps an instruction produced by a macro to the line where the macro is used. |
+| `SyntaxErrorInMethod_WithErrorTolerance_PreservesValidInstructionsAndFollowingMethod` | In error-tolerant mode, a syntax error inside a method body can leave that method empty and omit the following method. | In error-tolerant mode, preserves valid instructions before and after the syntax error and preserves the following method. |
+| `LinePath_UnsupportedEscapes_AreLexerErrors`, `LinePath_EscapedBackslashes_PreserveDocumentName` | Silently strips unsupported backslash escapes in a `.line` path such as `'C:\p\win.cs'`, recording `C:pwin.cs`. | The lexer reports unsupported escape sequences instead of silently stripping their backslashes. Use `'C:\\p\\win.cs'` to preserve backslashes in the document name. The same escape rules apply to double-quoted paths. |
+| `LanguageDirective_SyntaxVariant_EmitsDocumentLanguage` | Ignores a `.language` GUID without braces. | Accepts both braced and unbraced GUID strings. |
+| `IncludeLookup_PrefersAsWrittenThenFirstInputDirectoryThenIncludePath`, `IncludeLookup_InLaterInput_UsesFirstInputDirectory`, `NestedIncludeLookup_DoesNotFallBackToIncludingFileDirectory` | Resolves `#include` paths as written (relative to the current directory for relative paths), or through `-INCLUDE`; has no input-directory fallback. Nested includes are not relative to the including file. | Tries the path as written, then relative to the **first input file's directory**, then relative to `-INCLUDE`, in that order. Nested includes use the same search, never the including file's directory. |
