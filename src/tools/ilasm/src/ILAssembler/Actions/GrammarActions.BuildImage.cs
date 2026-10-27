@@ -34,7 +34,7 @@ namespace ILAssembler
             // Apply DebuggableAttribute AFTER all source declarations have been processed,
             // so that GetCoreLibAssemblyReference() can find the correct corelib assembly ref
             // declared in the source (e.g., System.Runtime) instead of creating a fallback mscorlib.
-            if (_entityRegistry.Assembly is not null && (_options.Debug || _options.DebugMode is not null))
+            if (_options.Debug || _options.DebugMode is not null)
             {
                 ApplyDebuggableAttribute();
             }
@@ -972,11 +972,6 @@ namespace ILAssembler
         /// </summary>
         private void ApplyDebuggableAttribute()
         {
-            if (_entityRegistry.Assembly is null)
-            {
-                return;
-            }
-
             // DebuggingModes enum values from System.Diagnostics.DebuggableAttribute:
             // None = 0x00, Default = 0x01, IgnoreSymbolStoreSequencePoints = 0x02,
             // EnableEditAndContinue = 0x04, DisableOptimizations = 0x100
@@ -999,12 +994,10 @@ namespace ILAssembler
                 coreAsmRef,
                 new TypeName(null, "System.Diagnostics.DebuggableAttribute"));
 
-            // Create reference to nested type DebuggingModes
             var debuggingModesType = _entityRegistry.GetOrCreateTypeReference(
                 debuggableAttrType,
                 new TypeName(null, "DebuggingModes"));
 
-            // Create constructor signature: .ctor(DebuggingModes)
             BlobBuilder ctorSig = new();
             var sigEncoder = new BlobEncoder(ctorSig);
             sigEncoder.MethodSignature(SignatureCallingConvention.Default, 0, isInstanceMethod: true)
@@ -1014,15 +1007,18 @@ namespace ILAssembler
 
             var ctor = _entityRegistry.CreateLazilyRecordedMemberReference(debuggableAttrType, ".ctor", ctorSig);
 
-            // Create custom attribute blob: prolog (0x0001) + int32 value + named args count (0x0000)
             BlobBuilder attrValue = new();
             attrValue.WriteUInt16(0x0001); // Prolog
-            attrValue.WriteInt32(debuggingModes); // DebuggingModes value
+            attrValue.WriteInt32(debuggingModes);
             attrValue.WriteUInt16(0x0000); // No named arguments
 
             // Create and attach the custom attribute
             var customAttr = _entityRegistry.CreateCustomAttribute(ctor, attrValue);
-            customAttr.Owner = _entityRegistry.Assembly;
+            // Netmodules carry assembly attributes on this TypeRef for the assembly linker.
+            customAttr.Owner = (EntityRegistry.EntityBase?)_entityRegistry.Assembly
+                ?? _entityRegistry.GetOrCreateTypeReference(
+                    coreAsmRef,
+                    new TypeName(null, "System.Runtime.CompilerServices.AssemblyAttributesGoHere"));
         }
 
     }

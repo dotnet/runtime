@@ -703,6 +703,79 @@ namespace ILAssembler.Tests
             AssertDebuggableAttribute(attribute, expectedMode: 0x101);
         }
 
+        [Theory]
+        [InlineData(false, null, 0x101, "mscorlib")]
+        [InlineData(false, DebugMode.Opt, 0x03, "mscorlib")]
+        [InlineData(false, DebugMode.Impl, 0x103, "mscorlib")]
+        [InlineData(true, null, 0x101, "mscorlib")]
+        [InlineData(true, DebugMode.Opt, 0x03, "mscorlib")]
+        [InlineData(true, DebugMode.Impl, 0x103, "mscorlib")]
+        [InlineData(false, null, 0x101, "System.Runtime")]
+        [InlineData(false, DebugMode.Opt, 0x03, "System.Runtime")]
+        [InlineData(false, DebugMode.Impl, 0x103, "System.Runtime")]
+        [InlineData(true, null, 0x101, "System.Runtime")]
+        [InlineData(true, DebugMode.Opt, 0x03, "System.Runtime")]
+        [InlineData(true, DebugMode.Impl, 0x103, "System.Runtime")]
+        public void DebugOption_UsesModernConstructorAndAssemblyAttributeOwner(
+            bool netmodule, DebugMode? mode, int expectedMode, string coreLibName)
+        {
+            string source = $$"""
+                .assembly extern {{coreLibName}} { .ver 4:0:0:0 }
+                {{(netmodule ? "" : ".assembly test { }")}}
+                .module test.dll
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options
+            {
+                Debug = mode is null,
+                DebugMode = mode
+            });
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(!netmodule, reader.IsAssembly);
+            CustomAttribute attribute = reader.GetCustomAttribute(Assert.Single(reader.CustomAttributes));
+            if (netmodule)
+            {
+                TypeReference owner = reader.GetTypeReference((TypeReferenceHandle)attribute.Parent);
+                Assert.Equal("System.Runtime.CompilerServices", reader.GetString(owner.Namespace));
+                Assert.Equal("AssemblyAttributesGoHere", reader.GetString(owner.Name));
+                Assert.Equal(coreLibName, reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)owner.ResolutionScope).Name));
+            }
+            else
+            {
+                Assert.Equal(HandleKind.AssemblyDefinition, attribute.Parent.Kind);
+            }
+
+            MemberReference constructor = reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor);
+            TypeReference attributeType = reader.GetTypeReference((TypeReferenceHandle)constructor.Parent);
+            Assert.Equal(".ctor", reader.GetString(constructor.Name));
+            Assert.Equal("System.Diagnostics", reader.GetString(attributeType.Namespace));
+            Assert.Equal("DebuggableAttribute", reader.GetString(attributeType.Name));
+            Assert.Equal(coreLibName, reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)attributeType.ResolutionScope).Name));
+            AssertDebuggableAttribute(attribute, expectedMode);
+            BlobReader signature = reader.GetBlobReader(constructor.Signature);
+            Assert.Equal(0x20, signature.ReadByte());
+            Assert.Equal(1, signature.ReadCompressedInteger());
+            Assert.Equal(SignatureTypeCode.Void, signature.ReadSignatureTypeCode());
+            Assert.Equal(SignatureTypeCode.TypeHandle, signature.ReadSignatureTypeCode());
+            TypeReference modes = reader.GetTypeReference((TypeReferenceHandle)signature.ReadTypeHandle());
+            Assert.Equal("DebuggingModes", reader.GetString(modes.Name));
+            Assert.Equal(constructor.Parent, modes.ResolutionScope);
+            Assert.Equal(0, signature.RemainingBytes);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Netmodule_WithoutDebug_DoesNotAddAssemblyAttributeOwner(bool pdb)
+        {
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                ".module test.netmodule", new Options { Pdb = pdb });
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.False(reader.IsAssembly);
+            Assert.Empty(reader.CustomAttributes);
+            Assert.DoesNotContain(reader.TypeReferences, handle => reader.GetString(reader.GetTypeReference(handle).Name) == "AssemblyAttributesGoHere");
+        }
+
         [Fact]
         public void ValidKeyFile_EmbedsPublicKeyAndSetsAssemblyFlag()
         {
