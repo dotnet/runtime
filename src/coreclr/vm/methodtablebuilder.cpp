@@ -3852,6 +3852,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 ULONG taskTypePrefixReplacementSize;
 
                 DWORD asyncMemberAttrs = dwMemberAttrs;
+                DWORD asyncImplFlags = dwImplFlags;
                 AsyncMethodFlags asyncFlags = (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
                 if (returnsValueTask && !isCovariantTaskOverride)
                 {
@@ -3874,6 +3875,8 @@ MethodTableBuilder::EnumerateClassMethods()
                     asyncFlags |= AsyncMethodFlags::CovariantForwardingThunk;
                     // The forwarding thunk is concrete even when the ordinary variant is abstract.
                     asyncMemberAttrs &= ~mdAbstract;
+                    // Only the ordinary variant should acquire the receiver's monitor.
+                    asyncImplFlags &= ~miSynchronized;
                 }
 
                 // Here we construct the signature of async call variant given its task-returning counterpart.
@@ -3994,7 +3997,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     bmtInternal.pType,
                     tok,
                     asyncMemberAttrs,
-                    dwImplFlags,
+                    asyncImplFlags,
                     dwMethodRVA,
                     newMemberSig,
                     asyncFlags,
