@@ -106,7 +106,7 @@ public abstract class DumpTestBase : IDisposable
         }
 
         _host = ClrMdDumpHost.Open(dumpPath, GetSymbolPaths(debuggeeName, versionDir));
-        ulong contractDescriptor = _host.FindContractDescriptorAddress();
+        ulong contractDescriptor = _host.FindContractDescriptorAddress(out ulong runtimeImageBase);
 
         _target = ContractDescriptorTarget.Create(
             contractDescriptor,
@@ -115,7 +115,8 @@ public abstract class DumpTestBase : IDisposable
             _host.GetThreadContext,
             setThreadContext: static (_, _) => -1,
             allocVirtual: static (ulong _, out ulong _) => throw new NotImplementedException("Dump tests do not provide AllocVirtual"),
-            [Contracts.CoreCLRContracts.Register]);
+            [Contracts.CoreCLRContracts.Register],
+            runtimeImageBase);
     }
 
     /// <summary>
@@ -129,7 +130,7 @@ public abstract class DumpTestBase : IDisposable
             throw new SkipTestException($"Dump not found: {dumpPath}");
 
         _host = ClrMdDumpHost.Open(dumpPath, []);
-        ulong contractDescriptor = _host.FindContractDescriptorAddress();
+        ulong contractDescriptor = _host.FindContractDescriptorAddress(out ulong runtimeImageBase);
 
         _target = ContractDescriptorTarget.Create(
             contractDescriptor,
@@ -138,7 +139,8 @@ public abstract class DumpTestBase : IDisposable
             _host.GetThreadContext,
             setThreadContext: static (_, _) => -1,
             allocVirtual: static (ulong _, out ulong _) => throw new NotImplementedException("Dump tests do not provide AllocVirtual"),
-            [Contracts.CoreCLRContracts.Register]);
+            [Contracts.CoreCLRContracts.Register],
+            runtimeImageBase);
     }
 
     public void Dispose()

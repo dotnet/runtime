@@ -117,12 +117,13 @@ umap_do_rehash (
 	dn_umap_node_t **buckets = map->_internal._buckets;
 	uint32_t current_bucket_count = map->_internal._bucket_count;
 
-	map->_internal._buckets = (dn_umap_node_t **)dn_allocator_alloc (map->_internal._allocator, sizeof (dn_umap_node_t *) * new_bucket_count);
-	if (!map->_internal._buckets)
+	dn_umap_node_t **new_buckets = (dn_umap_node_t **)dn_allocator_alloc (map->_internal._allocator, sizeof (dn_umap_node_t *) * new_bucket_count);
+	if (!new_buckets)
 		return;
 
-	memset (map->_internal._buckets, 0, sizeof (dn_umap_node_t *) * new_bucket_count);
+	memset (new_buckets, 0, sizeof (dn_umap_node_t *) * new_bucket_count);
 
+	map->_internal._buckets = new_buckets;
 	map->_internal._last_rehash = map->_internal._bucket_count;
 	map->_internal._bucket_count = new_bucket_count;
 

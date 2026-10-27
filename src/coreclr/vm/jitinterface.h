@@ -96,6 +96,10 @@ EXTERN_C FCDECL1(PCODE, JIT_PatchpointForced, int ilOffset);
 
 EXTERN_C FCDECL0(void, JIT_PollGC);
 
+#ifdef FEATURE_IJW
+EXTERN_C FCDECL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField);
+#endif // FEATURE_IJW
+
 #ifndef JIT_GetGCStaticBaseNoCtor
 #define JIT_GetGCStaticBaseNoCtor JIT_GetGCStaticBaseNoCtor_Portable
 #endif

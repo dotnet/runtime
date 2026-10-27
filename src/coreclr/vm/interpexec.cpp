@@ -4636,6 +4636,14 @@ do                                                                      \
                     int32_t suspendDataOffset = opcode == INTOP_HANDLE_CONTINUATION_GENERIC ? 3 : 2;
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[suspendDataOffset]];
 
+                    if (pInterpreterFrame->GetContinuation() == NULL)
+                    {
+                        // No continuation to handle.
+                        LOCAL_VAR(ip[1], void*) = NULL; // We don't allocate a continuation here
+                        ip += ipAdjust; // (4 or 5 for this opcode)
+                        INTOP_NEXT;
+                    }
+
                     // Zero out locals that need zeroing
                     InterpIntervalMapEntry *pZeroLocalsEntry = pAsyncSuspendData->zeroedLocalsIntervals;
                     while (pZeroLocalsEntry->countBytes != 0)
@@ -4644,13 +4652,6 @@ do                                                                      \
                         pZeroLocalsEntry++;
                     }
 
-                    if (pInterpreterFrame->GetContinuation() == NULL)
-                    {
-                        // No continuation to handle.
-                        LOCAL_VAR(ip[1], void*) = NULL; // We don't allocate a continuation here
-                        ip += ipAdjust; // (4 or 5 for this opcode)
-                        INTOP_NEXT;
-                    }
                     MethodTable *pContinuationType = pAsyncSuspendData->continuationTypeHnd;
 
                     MethodDesc *pILTargetMethod = NULL;
