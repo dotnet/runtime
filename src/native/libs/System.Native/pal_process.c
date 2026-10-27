@@ -1366,7 +1366,7 @@ char* SystemNative_GetProcessPath(void)
     return minipal_getexepath();
 }
 
-#if defined(TARGET_BROWSER) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__HAIKU__) || defined(__GLIBC__)
+#if defined(TARGET_BROWSER) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__HAIKU__) || defined(__GLIBC__) || defined(TARGET_ANDROID)
 // Packs the arguments into a single NULL-terminated allocation that can be released with one free().
 static char** PackCommandLine(int32_t count, const char* const* args, int32_t* argc)
 {
@@ -1459,11 +1459,11 @@ extern int __libc_argc;
 extern char** __libc_argv;
 #endif
 
-#if defined(__GLIBC__)
+#if defined(__GLIBC__) || defined(TARGET_ANDROID)
 static int s_initArgc;
 static char** s_initArgv;
 
-// glibc passes argc, argv and envp to .init_array functions as a non-standard extension,
+// glibc and bionic pass argc, argv and envp to .init_array functions as a non-standard extension,
 // including for libraries loaded with dlopen. Other libcs, such as musl, pass no arguments.
 static void CaptureCommandLine(int argc, char** argv, char** envp)
 {
@@ -1484,7 +1484,7 @@ char** SystemNative_GetCommandLine(int32_t* argc)
     static const char* const browserArgs[] = { "/" }; // keep in sync with browserVirtualAppBase in minipal_getexepath
     return PackCommandLine(1, browserArgs, argc);
 #elif defined(__linux__) || defined(__sun)
-#if defined(__GLIBC__)
+#if defined(__GLIBC__) || defined(TARGET_ANDROID)
     if (s_initArgv != NULL)
     {
         // Some command line parsers (e.g. GLib and Qt) move consumed arguments to the end of argv
