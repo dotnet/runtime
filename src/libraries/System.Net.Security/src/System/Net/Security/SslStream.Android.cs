@@ -68,7 +68,7 @@ namespace System.Net.Security
         {
             private static bool s_initialized;
 
-            private readonly SslStream _sslStream;
+            private readonly Func<IntPtr, RemoteCertificateValidationResult> _validator;
             private GCHandle? _handle;
 
             public IntPtr Handle
@@ -80,12 +80,19 @@ namespace System.Net.Security
             public RemoteCertificateValidationResult? ValidationResult { get; private set; }
             internal IntPtr PlatformTrustAnchor { get; private set; }
 
-            public JavaProxy(SslStream sslStream)
+            public JavaProxy(Func<IntPtr, RemoteCertificateValidationResult> validator)
             {
+                ArgumentNullException.ThrowIfNull(validator);
+
                 RegisterRemoteCertificateValidationCallback();
 
-                _sslStream = sslStream;
+                _validator = validator;
                 _handle = GCHandle.Alloc(this);
+            }
+
+            public JavaProxy(SslStream sslStream)
+                : this(sslStream.VerifyRemoteCertificate)
+            {
             }
 
             public void Dispose()
@@ -113,7 +120,7 @@ namespace System.Net.Security
                 try
                 {
                     proxy.PlatformTrustAnchor = platformTrustAnchor;
-                    proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate(platformValidationError);
+                    proxy.ValidationResult = proxy._validator(platformValidationError);
                     return proxy.ValidationResult.IsValid;
                 }
                 catch (Exception exception)
