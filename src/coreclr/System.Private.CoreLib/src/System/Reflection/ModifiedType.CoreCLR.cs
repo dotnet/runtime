@@ -28,8 +28,8 @@ namespace System.Reflection
                 _offset = signature?.GetParameterOffset(parameterIndex) ?? 0
             });
 
-        // The kinds of this type's custom modifiers in signature order (true for a required one), or null when the
-        // type has no signature or no offset in it.
+        // _offset is -1 for an element type or type argument of a type substituted for a generic parameter: the
+        // signature holds only the parameter.
         internal bool[]? GetCustomModifierKinds() =>
             (_typeSignature._signature != null && _typeSignature._offset >= 0) ?
                 _typeSignature._signature.GetCustomModifierKindsAtOffset(_typeSignature._offset) : null;

@@ -2255,8 +2255,7 @@ namespace System
             return result!;
         }
 
-        // The kinds of the custom modifiers that start the type at offset, in signature order: true for a required
-        // modifier, false for an optional one.
+        // The GetCustomModifiersAtOffset QCall returns each kind separately, without their interleaving.
         internal bool[] GetCustomModifierKindsAtOffset(int offset)
         {
             Debug.Assert(offset >= 0 && offset <= _csig);

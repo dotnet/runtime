@@ -432,7 +432,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo method = type.CreateType().GetMethod("M");
             Type created = method.GetParameters()[0].GetModifiedParameterType();
 
-            // An array replaces the type's own modifiers of its kind and is read in the order reflection returns.
+            // An array is read in reflection order, so it comes back unchanged.
             Type[] expectedRequired = requiredModifiers ?? parameterType.GetRequiredCustomModifiers();
             Type[] expectedOptional = optionalModifiers ?? parameterType.GetOptionalCustomModifiers();
             Assert.Equal(expectedRequired, created.GetRequiredCustomModifiers());
@@ -451,6 +451,7 @@ namespace System.Reflection.Emit.Tests
             Type parameterType = Type.MakeModifiedSignatureType(typeof(int), [typeof(IsConst)], null);
 
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public | TypeAttributes.Abstract);
+            // The signature, with its modifier arrays, is built at CreateType at the latest.
             AssertExtensions.Throws<ArgumentNullException>("requiredCustomModifiers", () =>
             {
                 type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, CallingConventions.Standard,
@@ -540,7 +541,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo created = type.CreateType().GetMethod("M");
             Assert.Equal(typeof(List<int>), created.Invoke(null, null));
 
-            // The type signature starts with GENERICINST, not with the modifier.
+            // The runtime loads List<int> with or without the modifier in the type spec, so only the blob shows it.
             int typeSpecToken = BitConverter.ToInt32(created.GetMethodBody().GetILAsByteArray(), OpCodes.Ldtoken.Size);
             Assert.Equal((byte)SignatureTypeCode.GenericTypeInstance, created.Module.ResolveSignature(typeSpecToken)[0]);
         }
@@ -589,8 +590,9 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(42, created.GetMethod("CallSignature").Invoke(null, [42]));
             Assert.Null(created.GetMethod("CallArray").Invoke(null, null));
 
-            // An array element or type argument keeps its modifiers: SZARRAY, or GENERICINST CLASS List`1 1, then
-            // CMOD_REQD IsConst CMOD_OPT IsLong I4.
+            // The runtime loads int[] and List<int> with or without these modifiers, so only the blob shows that an
+            // array element or type argument keeps them: SZARRAY, or GENERICINST CLASS List`1 1, then CMOD_REQD IsConst
+            // CMOD_OPT IsLong I4.
             byte[] arraySpec = GetLdtokenTypeSpec("LdtokenArray");
             Assert.Equal(6, arraySpec.Length);
             Assert.Equal((byte)SignatureTypeCode.SZArray, arraySpec[0]);
@@ -660,11 +662,10 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(7, created.GetMethod("Get").Invoke(null, [new int[,] { { 7 } }]));
         }
 
-        // The type a one-byte TypeDefOrRefOrSpecEncoded token in a signature blob refers to.
+        // TypeDefOrRefOrSpecEncoded (ECMA-335 II.23.2.8): two tag bits pick the table, the rest is the row.
         private static Type ResolveSignatureToken(Module module, byte encoded) =>
             module.ResolveType((int)((encoded & 3) switch { 0 => TableIndex.TypeDef, 1 => TableIndex.TypeRef, _ => TableIndex.TypeSpec }) << 24 | (encoded >> 2));
 
-        // Asserts that blob holds CMOD_REQD IsConst CMOD_OPT IsLong I4 at offset.
         private static void AssertModifiedInt32(Module module, byte[] blob, int offset)
         {
             Assert.Equal((byte)SignatureTypeCode.RequiredModifier, blob[offset]);

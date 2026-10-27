@@ -331,7 +331,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    // A modifier array passed with a modified type replaces the type's own modifiers of that kind.
+                    // As in PersistedAssemblyBuilder, an array replaces the type's own modifiers of its kind.
                     if (requiredCustomModifiers != null)
                         AddReflectedCustomModifiers(requiredCustomModifiers, required: true, nameof(requiredCustomModifiers));
                     else
@@ -343,10 +343,13 @@ namespace System.Reflection.Emit
                         AddReflectedCustomModifiers(clsArgument.GetOptionalCustomModifiers(), required: false, paramName: null);
                 }
 
+                // Not AddOneArgTypeHelper: it would add the type's own modifiers to the ones written above.
                 AddOneArgTypeHelperWorker(clsArgument, false, null);
                 return;
             }
 
+            // Each array is in signature order, as this API takes them. Arrays passed with a modified type are read
+            // as reflection returns them, in reverse.
             if (optionalCustomModifiers != null)
             {
                 for (int i = 0; i < optionalCustomModifiers.Length; i++)
@@ -362,17 +365,19 @@ namespace System.Reflection.Emit
             AddOneArgTypeHelper(clsArgument);
         }
 
+        // Modifier tokens come from m_module, which a DynamicMethod's signature doesn't have.
         private bool IsEncodedModifiedType(Type type) =>
             m_module != null && type is ModifiedType or SignatureModifiedType;
 
-        // Writes the type's custom modifiers in the order of the signature it was read from, or the required ones first
-        // when that order is not known.
+        // Modifier order is part of the signature: an override copied with it changed doesn't match its declaration.
+        // Without a known order, required modifiers come first, as PersistedAssemblyBuilder writes them.
         private void AddModifiedTypeCustomModifiers(Type type)
         {
             Type[] requiredCustomModifiers = type.GetRequiredCustomModifiers();
             Type[] optionalCustomModifiers = type.GetOptionalCustomModifiers();
 
-            // Without a signature, or when its modifier count differs from reflection's, the order is not known.
+            // The counts differ when ELEMENT_TYPE_CMOD_INTERNAL or ELEMENT_TYPE_SENTINEL sits among the modifiers:
+            // the kinds stop there, while reflection counts the first and steps over the second.
             bool[]? kinds = (type as ModifiedType)?.GetCustomModifierKinds();
             if (kinds == null || kinds.Length != requiredCustomModifiers.Length + optionalCustomModifiers.Length)
             {
@@ -425,8 +430,9 @@ namespace System.Reflection.Emit
 
         private void AddOneArgTypeHelperWorker(Type clsArgument, bool lastWasGenericInst, DynamicScope? scope)
         {
-            // A modified type that is not an array, pointer, by-ref or constructed generic type is written as its
-            // unmodified type; the caller has written its modifiers.
+            // For a modified type in a module's signature, the caller has written its modifiers. UnderlyingSystemType
+            // would also drop the modifiers of an element or type argument, so arrays, pointers, by-refs and
+            // constructed generic types stay wrapped.
             if (IsEncodedModifiedType(clsArgument) && !clsArgument.HasElementType && !clsArgument.IsConstructedGenericType)
                 clsArgument = clsArgument.UnderlyingSystemType;
 

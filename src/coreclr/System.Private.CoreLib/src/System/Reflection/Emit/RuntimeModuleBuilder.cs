@@ -902,6 +902,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(type);
 
+            // A modified type has no token of its own.
             if (type is ModifiedType or SignatureModifiedType)
                 type = type.UnderlyingSystemType;
 
