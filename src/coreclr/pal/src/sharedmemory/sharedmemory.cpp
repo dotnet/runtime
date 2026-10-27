@@ -1139,14 +1139,17 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
     SharedMemorySharedDataHeader requiredSharedDataHeader,
     SIZE_T sharedDataByteCount,
     bool createIfNotExist,
-    bool *createdRef)
+    bool *createdRef,
+    int *runtimeDirectoryFileDescriptorRef)
 {
     _ASSERTE(name != nullptr);
     _ASSERTE(sharedDataByteCount != 0);
     _ASSERTE(!createIfNotExist || createdRef != nullptr);
+    _ASSERTE(runtimeDirectoryFileDescriptorRef != nullptr);
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
     _ASSERTE(!SharedMemoryManager::IsCreationDeletionFileLockAcquired());
 
+    *runtimeDirectoryFileDescriptorRef = -1;
     if (createdRef != nullptr)
     {
         *createdRef = false;
@@ -1246,6 +1249,7 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
 
     SharedMemoryManager::AcquireCreationDeletionFileLock(errors, &id);
     autoCleanup.m_acquiredCreationDeletionFileLockForId = &id;
+    *runtimeDirectoryFileDescriptorRef = SharedMemoryManager::GetRuntimeDirectoryFileDescriptor(&id);
     int sharedMemoryDirectoryFileDescriptor =
         SharedMemoryManager::GetCreationDeletionLockFileDescriptor(&id);
     autoCleanup.m_sharedMemoryDirectoryFileDescriptor = sharedMemoryDirectoryFileDescriptor;
@@ -1371,6 +1375,8 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
         }
     }
 
+    processDataHeader = SharedMemoryProcessDataHeader::New(&id, fileDescriptor, sharedDataHeader, sharedDataTotalByteCount);
+
     // When *createdRef is true, the creation/deletion file lock will remain locked upon returning for the caller to initialize
     // the shared data. The caller must release the file lock afterwards.
     if (!createdFile)
@@ -1378,8 +1384,6 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
         autoCleanup.m_acquiredCreationDeletionFileLockForId = nullptr;
         SharedMemoryManager::ReleaseCreationDeletionFileLock(&id);
     }
-
-    processDataHeader = SharedMemoryProcessDataHeader::New(&id, fileDescriptor, sharedDataHeader, sharedDataTotalByteCount);
 
     SharedMemoryHelpers::CloseFile(sessionDirectoryFileDescriptor);
     autoCleanup.m_sessionDirectoryFileDescriptor = -1;

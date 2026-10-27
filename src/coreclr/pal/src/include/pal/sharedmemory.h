@@ -229,7 +229,7 @@ private:
     SharedMemoryProcessDataHeader *m_nextInProcessDataHeaderList;
 
 public:
-    static SharedMemoryProcessDataHeader *CreateOrOpen(SharedMemorySystemCallErrors *errors, LPCSTR name, bool isUserScope, SharedMemorySharedDataHeader requiredSharedDataHeader, SIZE_T sharedDataByteCount, bool createIfNotExist, bool *createdRef);
+    static SharedMemoryProcessDataHeader *CreateOrOpen(SharedMemorySystemCallErrors *errors, LPCSTR name, bool isUserScope, SharedMemorySharedDataHeader requiredSharedDataHeader, SIZE_T sharedDataByteCount, bool createIfNotExist, bool *createdRef, int *runtimeDirectoryFileDescriptorRef);
 
 public:
     static SharedMemoryProcessDataHeader *PalObject_GetProcessDataHeader(CorUnix::IPalObject *object);
