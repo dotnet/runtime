@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "CLREventBase.h"
+#include <clrdata.h>
 #include <minipal/time.h>
 #include "primitives.h"
 #include "safewrap.h"
@@ -353,15 +354,14 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
 {
     INTERNAL_DAC_CALLBACK(this);
 
-    HASHFIND hashFindModule;
     IMDInternalImport * pMDII = NULL;
 
     if (m_pAppDomain != NULL)
     {
-        for (CordbModule * pModule = m_pAppDomain->m_modules.FindFirst(&hashFindModule);
-             pModule != NULL;
-             pModule = m_pAppDomain->m_modules.FindNext(&hashFindModule))
+        for (CordbHashTable::Iterator iterator = m_pAppDomain->m_modules.Begin(), end = m_pAppDomain->m_modules.End();
+             iterator != end; iterator++)
         {
+            CordbModule *pModule = static_cast<CordbModule *>(*iterator);
             if (pModule->GetPEFile() == vmPEAssembly)
             {
                 pMDII = NULL;
@@ -385,10 +385,10 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
     {
         m_pAppDomain->PrepopulateModules();
 
-        for (CordbModule * pModule = m_pAppDomain->m_modules.FindFirst(&hashFindModule);
-             pModule != NULL;
-             pModule = m_pAppDomain->m_modules.FindNext(&hashFindModule))
+        for (CordbHashTable::Iterator iterator = m_pAppDomain->m_modules.Begin(), end = m_pAppDomain->m_modules.End();
+             iterator != end; iterator++)
         {
+            CordbModule *pModule = static_cast<CordbModule *>(*iterator);
             if (pModule->GetPEFile() == vmPEAssembly)
             {
                 pMDII = NULL;
@@ -869,13 +869,13 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_synchronized(false),
     m_syncCompleteReceived(false),
     m_pShim(pShim),
-    m_userThreads(11),
+    m_userThreads(),
     m_oddSync(false),
 #ifdef FEATURE_INTEROP_DEBUGGING
-    m_unmanagedThreads(11),
+    m_unmanagedThreads(),
 #endif
     m_pAppDomain(NULL),
-    m_steppers(11),
+    m_steppers(),
     m_continueCounter(1),
     m_flushCounter(0),
     m_leftSideEventAvailable(NULL),
@@ -1969,11 +1969,9 @@ CordbThread * CordbProcess::TryLookupOrCreateThreadByVolatileOSId(DWORD dwThread
 //
 CordbThread * CordbProcess::TryLookupThreadByVolatileOSId(DWORD dwThreadId)
 {
-    HASHFIND find;
-    for (CordbThread * pThread = m_userThreads.FindFirst(&find);
-         pThread != NULL;
-         pThread =  m_userThreads.FindNext(&find))
+    for (CordbHashTable::Iterator iterator = m_userThreads.Begin(), end = m_userThreads.End(); iterator != end; iterator++)
     {
+        CordbThread *pThread = static_cast<CordbThread *>(*iterator);
         _ASSERTE(pThread != NULL);
 
         // Get the OS tid. This returns 0 if the thread is switched out.
@@ -3578,14 +3576,10 @@ void CordbProcess::MarkAllThreadsDirty()
     INTERNAL_API_ENTRY(this);
     _ASSERTE(ThreadHoldsProcessLock());
 
-    CordbThread * pThread;
-    HASHFIND find;
-
     // We don't need to prepopulate here (to collect LS state) because we're just updating RS state.
-    for (pThread =  m_userThreads.FindFirst(&find);
-         pThread != NULL;
-         pThread =  m_userThreads.FindNext(&find))
+    for (CordbHashTable::Iterator iterator = m_userThreads.Begin(), end = m_userThreads.End(); iterator != end; iterator++)
     {
+        CordbThread *pThread = static_cast<CordbThread *>(*iterator);
         _ASSERTE(pThread != NULL);
         pThread->MarkStackFramesDirty();
     }
@@ -5725,14 +5719,11 @@ HRESULT CordbProcess::SetAllThreadsDebugState(CorDebugThreadState state,
     if (SUCCEEDED(hr))
     {
         RSLockHolder lockHolder(GetProcessLock());
-        HASHFIND hashFind;
-        CordbThread * pThread;
-
         // We don't need to prepopulate here (to collect LS state) because we're just updating RS state.
-        for (pThread = m_userThreads.FindFirst(&hashFind);
-              pThread != NULL;
-              pThread = m_userThreads.FindNext(&hashFind))
+        for (CordbHashTable::Iterator iterator = m_userThreads.Begin(), end = m_userThreads.End();
+             iterator != end; iterator++)
         {
+            CordbThread *pThread = static_cast<CordbThread *>(*iterator);
             if (pThread != pCordbExceptThread)
             {
                 pThread->m_debugState = state;
@@ -7509,11 +7500,10 @@ HRESULT CordbProcess::SuspendUnmanagedThreads()
     _ASSERTE(ThreadHoldsProcessLock());
 
     // Iterate over all unmanaged threads...
-    CordbUnmanagedThread* ut;
-    HASHFIND find;
-
-    for (ut =  m_unmanagedThreads.FindFirst(&find); ut != NULL; ut =  m_unmanagedThreads.FindNext(&find))
+    for (CordbHashTable::Iterator iterator = m_unmanagedThreads.Begin(), end = m_unmanagedThreads.End();
+         iterator != end; iterator++)
     {
+        CordbUnmanagedThread *ut = static_cast<CordbUnmanagedThread *>(*iterator);
 
         // Don't suspend any thread in a can't stop region. This includes cooperative mode threads & preemptive
         // threads that haven't pushed a NativeTransitionFrame. The ultimate problem here is that a thread
@@ -7557,11 +7547,10 @@ HRESULT CordbProcess::ResumeUnmanagedThreads()
     FAIL_IF_NEUTERED(this);
 
     // Iterate over all unmanaged threads...
-    CordbUnmanagedThread* ut;
-    HASHFIND find;
-
-    for (ut =  m_unmanagedThreads.FindFirst(&find); ut != NULL; ut =  m_unmanagedThreads.FindNext(&find))
+    for (CordbHashTable::Iterator iterator = m_unmanagedThreads.Begin(), end = m_unmanagedThreads.End();
+         iterator != end; iterator++)
     {
+        CordbUnmanagedThread *ut = static_cast<CordbUnmanagedThread *>(*iterator);
         // Only resume those unmanaged threads that were suspended by us.
         if (ut->IsSuspended())
         {
@@ -8312,16 +8301,14 @@ HRESULT CordbProcess::GetThreadForTaskID(TASKID taskId, ICorDebugThread2 ** ppTh
             PrepopulateThreadsOrThrow();
 
             // now find the ICorDebugThread corresponding to it
-            CordbThread * pThread;
-            HASHFIND hashFind;
-
-
-            for (pThread  = m_userThreads.FindFirst(&hashFind);
-                 pThread != NULL;
-                 pThread  = m_userThreads.FindNext(&hashFind))
+            CordbThread *pThread = nullptr;
+            for (CordbHashTable::Iterator iterator = m_userThreads.Begin(), end = m_userThreads.End();
+                 iterator != end; iterator++)
             {
-                if (pThread->GetTaskID() == taskId)
+                CordbThread *pCandidate = static_cast<CordbThread *>(*iterator);
+                if (pCandidate->GetTaskID() == taskId)
                 {
+                    pThread = pCandidate;
                     break;
                 }
             }
@@ -8350,15 +8337,14 @@ CordbProcess::GetVersion(COR_VERSION* pVersion)
         return E_INVALIDARG;
     }
 
-    //
-    // Because we require a matching version of mscordbi.dll to debug a certain version of the runtime,
-    // we can just use constants found in this particular mscordbi.dll to determine the version of the left side.
-    pVersion->dwMajor = RuntimeProductMajorVersion;
-    pVersion->dwMinor = RuntimeProductMinorVersion;
-    pVersion->dwBuild = RuntimeProductPatchVersion;
-    pVersion->dwSubBuild = 0;
+    *pVersion = {};
 
-    return S_OK;
+    HRESULT hr = S_OK;
+    PUBLIC_API_BEGIN(this);
+    hr = IsDacInitialized() ? GetDAC()->GetRuntimeVersion(pVersion) : CORDBG_E_NOTREADY;
+    PUBLIC_API_END(hr);
+
+    return hr;
 }
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -9707,11 +9693,10 @@ void CordbRCEventThread::ThreadProc()
             waitCount = 1;
 
             CordbSafeHashTable<CordbProcess> * pHashTable = m_cordb->GetProcessList();
-            HASHFIND hashFind;
-            CordbProcess * pProcess;
-
-            for (pProcess =  pHashTable->FindFirst(&hashFind); pProcess != NULL; pProcess = pHashTable->FindNext(&hashFind))
+            for (CordbHashTable::Iterator iterator = pHashTable->Begin(), end = pHashTable->End();
+                 iterator != end; iterator++)
             {
+                CordbProcess *pProcess = static_cast<CordbProcess *>(*iterator);
                 _ASSERTE(waitCount < MAXIMUM_WAIT_OBJECTS);
 
                 if( waitCount >= MAXIMUM_WAIT_OBJECTS )
@@ -9747,7 +9732,7 @@ void CordbRCEventThread::ThreadProc()
 
             while(i < waitCount)
             {
-                pProcess = rgProcessSet[i];
+                CordbProcess *pProcess = rgProcessSet[i];
 
                 // Take the process lock so we can check the queue safely
                 pProcess->Lock();
@@ -14454,15 +14439,14 @@ HRESULT CordbProcess::IsReadyForDetach()
         }
 
         // Check for any outstanding EnC modules.
-        HASHFIND foundModule;
-        CordbModule * pModule = m_pAppDomain->m_modules.FindFirst(&foundModule);
-        while (pModule != NULL)
+        for (CordbHashTable::Iterator iterator = m_pAppDomain->m_modules.Begin(), end = m_pAppDomain->m_modules.End();
+             iterator != end; iterator++)
         {
+            CordbModule *pModule = static_cast<CordbModule *>(*iterator);
             if (pModule->m_EnCCount > 0)
             {
                 return CORDBG_E_DETACH_FAILED_ON_ENC;
             }
-            pModule = m_pAppDomain->m_modules.FindNext(&foundModule);
         }
     }
 

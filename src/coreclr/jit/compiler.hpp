@@ -3319,6 +3319,12 @@ inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
         }
     }
 
+    // A tree that may throw can call a throw helper, which is a gc safe point.
+    if ((tree->gtFlags & GTF_EXCEPT) != 0)
+    {
+        return true;
+    }
+
     // TYP_STRUCT-typed stores might be converted into calls (with gc safe points) in Lower.
     // This is quite a conservative fix as it's hard to prove Lower won't do it at this point.
     if (tree->OperIsLocalStore())

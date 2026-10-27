@@ -2003,4 +2003,66 @@ public unsafe class StackWalkTests
         // Chain exhausted with a null owning frame: context SP is left unchanged, no throw.
         Assert.Equal(frame0, context.StackPointer.Value);
     }
+
+    // GetRuntimeFramePointer on ARM64 is the caller SP. For an interpreted frame the caller must come from the
+    // interpreter virtual unwind (parent InterpMethodContextFrame), as native InterpreterCodeManager does;
+    // the OS unwinder has no unwind info for bytecode and would leave SP unchanged.
+    [Fact]
+    public void CallerStackPointer_InterpretedFrame_IsParentInterpMethodContextFrame()
+    {
+        MockTarget.Architecture arm64 = new() { IsLittleEndian = true, Is64Bit = true };
+        const ulong bytecodeIp = 0x0005_1020, parentIp = 0x0005_2040, parentStack = 0x0006_2000;
+
+        ulong frame = 0, parent = 0;
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeKind(new TargetCodePointer(bytecodeIp))).Returns(CodeKind.Interpreter);
+        TestPlaceholderTarget target = CreateTarget(
+            arm64,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                parent = frameBuilder.AddInterpMethodContextFrame(parentPtr: 0, ip: parentIp, stack: parentStack).Address;
+                frame = frameBuilder.AddInterpMethodContextFrame(parentPtr: parent, ip: bytecodeIp, stack: 0x0006_1000).Address;
+            },
+            executionManager: executionManager.Object);
+
+        ContextHolder<ARM64Context> context = new();
+        context.InstructionPointer = new TargetCodePointer(bytecodeIp);
+        context.StackPointer = new TargetPointer(frame);
+
+        StackWalk_1 stackWalk = new(target);
+        Assert.Equal(parent, stackWalk.CallerStackPointer(context).Value);
+        Assert.Equal(frame, context.StackPointer.Value);
+        Assert.Equal(bytecodeIp, context.InstructionPointer.Value);
+    }
+
+    // The first interpreted method of an interpreter activation has the zeroed root InterpMethodContextFrame
+    // (ip == NULL) as its parent. Native VirtualUnwindInterpreterCallFrame still sets the caller SP to that
+    // parent, so the debugger frame pointer is the root frame's address.
+    [Fact]
+    public void CallerStackPointer_InterpretedFrameWithRootParent_IsRootFrameAddress()
+    {
+        MockTarget.Architecture arm64 = new() { IsLittleEndian = true, Is64Bit = true };
+        const ulong bytecodeIp = 0x0005_1020;
+
+        ulong frame = 0, root = 0;
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeKind(new TargetCodePointer(bytecodeIp))).Returns(CodeKind.Interpreter);
+        TestPlaceholderTarget target = CreateTarget(
+            arm64,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                root = frameBuilder.AddInterpMethodContextFrame(parentPtr: 0, ip: 0, stack: 0).Address;
+                frame = frameBuilder.AddInterpMethodContextFrame(parentPtr: root, ip: bytecodeIp, stack: 0x0006_1000).Address;
+            },
+            executionManager: executionManager.Object);
+
+        ContextHolder<ARM64Context> context = new();
+        context.InstructionPointer = new TargetCodePointer(bytecodeIp);
+        context.StackPointer = new TargetPointer(frame);
+
+        StackWalk_1 stackWalk = new(target);
+        Assert.Equal(root, stackWalk.CallerStackPointer(context).Value);
+    }
 }

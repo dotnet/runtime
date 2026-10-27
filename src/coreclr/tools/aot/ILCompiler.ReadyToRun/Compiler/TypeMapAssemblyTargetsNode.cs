@@ -34,9 +34,8 @@ namespace ILCompiler.ReadyToRun
 
         public int Offset => 0;
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = [];
             foreach (var map in _assemblyTypeMaps.Maps)
             {
                 // Skip groups where assembly target attributes were present but all failed to resolve
@@ -48,13 +47,12 @@ namespace ILCompiler.ReadyToRun
                     continue;
 
                 var groupType = map.Key;
-                dependencies.Add(new DependencyListEntry(_importReferenceProvider.GetImportToType(groupType, _assemblyTypeMaps.AssociatedModule), "Type Map Assembly Target"));
+                sink.Add(new DependencyListEntry(_importReferenceProvider.GetImportToType(groupType, _assemblyTypeMaps.AssociatedModule), "Type Map Assembly Target"));
                 foreach (var targetModule in map.Value.TargetModules)
                 {
-                    dependencies.Add(new DependencyListEntry(_importReferenceProvider.GetImportToModule(targetModule), "Type Map Assembly Target"));
+                    sink.Add(new DependencyListEntry(_importReferenceProvider.GetImportToModule(targetModule), "Type Map Assembly Target"));
                 }
             }
-            return dependencies;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
