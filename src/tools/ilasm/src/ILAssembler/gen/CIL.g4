@@ -2038,7 +2038,7 @@ methodDecl:
 	| EMITBYTE value = int32 {Actions.EmitByte($value.start);}
 	| sehBlock
 	| MAXSTACK value = int32 {Actions.SetMaxStack($value.start);}
-	| ENTRYPOINT {Actions.SetEntryPoint();}
+	| directive = ENTRYPOINT {Actions.SetEntryPoint($directive);}
 	| ZEROINIT {Actions.SetZeroInit();}
 	| labelDecl
 	| scopeBlock
