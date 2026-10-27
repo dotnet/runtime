@@ -27,9 +27,44 @@ unsigned int test_getpid()
     return getpid();
 }
 
+unsigned int test_geteuid()
+{
+    return geteuid();
+}
+
 int test_kill(unsigned int pid)
 {
     return kill(pid, SIGKILL);
+}
+
+bool TestCreateDirectory(const char *path)
+{
+    return mkdir(path, S_IRUSR | S_IWUSR | S_IXUSR) == 0;
+}
+
+void TestRemoveDirectory(const char *path)
+{
+    rmdir(path);
+}
+
+bool TestPathStatus(const char *path, unsigned int expectedMode, unsigned int expectedUid)
+{
+    struct stat statInfo;
+    return
+        lstat(path, &statInfo) == 0 &&
+        (statInfo.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO)) == expectedMode &&
+        statInfo.st_uid == expectedUid;
+}
+
+bool TestPathExists(const char *path)
+{
+    struct stat statInfo;
+    return lstat(path, &statInfo) == 0;
+}
+
+bool TestChangeMode(const char *path, unsigned int mode)
+{
+    return chmod(path, mode) == 0;
 }
 
 bool TestFileExists(const char *path)
