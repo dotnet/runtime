@@ -274,17 +274,26 @@ void CrashInfo::VisitModule(MachOModule& module)
             {
                 TRACE("TryLookupSymbol(" DACCESS_TABLE_SYMBOL ") FAILED\n");
             }
+            if (module.TryLookupSymbol(CONTRACT_DESCRIPTOR_SYMBOL, &symbolAddress))
+            {
+                m_contractDescriptorAddress = symbolAddress;
+            }
         }
         else if (m_appModel == AppModelType::SingleFile)
         {
-            uint64_t symbolAddress;
-            if (module.TryLookupSymbol("DotNetRuntimeInfo", &symbolAddress))
+            uint64_t runtimeInfoAddress;
+            if (module.TryLookupSymbol("DotNetRuntimeInfo", &runtimeInfoAddress))
             {
                 m_coreclrPath = GetDirectory(module.Name());
                 m_processInfo.SetRuntimeBaseAddress(module.BaseAddress());
+                uint64_t contractDescriptorAddress;
+                if (module.TryLookupSymbol(CONTRACT_DESCRIPTOR_SYMBOL, &contractDescriptorAddress))
+                {
+                    m_contractDescriptorAddress = contractDescriptorAddress;
+                }
 
                 RuntimeInfo runtimeInfo { };
-                if (ReadMemory(symbolAddress, &runtimeInfo, sizeof(RuntimeInfo)))
+                if (ReadMemory(runtimeInfoAddress, &runtimeInfo, sizeof(RuntimeInfo)))
                 {
                     if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
                     {
@@ -296,10 +305,11 @@ void CrashInfo::VisitModule(MachOModule& module)
         else if (m_appModel == AppModelType::NativeAOT)
         {
             uint64_t symbolAddress;
-            if (module.TryLookupSymbol("DotNetRuntimeContractDescriptor", &symbolAddress))
+            if (module.TryLookupSymbol(CONTRACT_DESCRIPTOR_SYMBOL, &symbolAddress))
             {
                 m_coreclrPath = GetDirectory(module.Name());
                 m_processInfo.SetRuntimeBaseAddress(module.BaseAddress());
+                m_contractDescriptorAddress = symbolAddress;
                 TRACE("Found valid NativeAOT runtime module\n");
             }
         }

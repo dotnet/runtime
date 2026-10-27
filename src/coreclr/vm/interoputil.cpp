@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #include "common.h"
 #include "vars.hpp"
 #include "excep.h"
@@ -897,84 +896,6 @@ ReadBestFitCustomAttribute(Module* pModule, mdTypeDef cl, BOOL* BestFit, BOOL* T
     }
 }
 
-
-int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumWideChars, _Out_writes_bytes_opt_(cbAnsiBufferSize) LPSTR szAnsiString, int cbAnsiBufferSize, BOOL fBestFit, BOOL fThrowOnUnmappableChar)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-
-    if ((szWideString == 0) || (iNumWideChars == 0) || (szAnsiString == 0) || (cbAnsiBufferSize == 0))
-        return 0;
-
-    DWORD flags = 0;
-    int retval;
-
-    if (fBestFit == FALSE)
-        flags = WC_NO_BEST_FIT_CHARS;
-
-    if (fThrowOnUnmappableChar)
-    {
-        BOOL DefaultCharUsed = FALSE;
-        retval = WideCharToMultiByte(CP_ACP,
-                                    flags,
-                                    szWideString,
-                                    iNumWideChars,
-                                    szAnsiString,
-                                    cbAnsiBufferSize,
-                                    NULL,
-                                    &DefaultCharUsed);
-        DWORD lastError = GetLastError();
-
-        if (retval == 0)
-        {
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
-            COMPlusThrowHR(HRESULT_FROM_WIN32(lastError));
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
-        }
-
-        if (DefaultCharUsed)
-        {
-            struct HelperThrow
-            {
-                static void Throw()
-                {
-                    COMPlusThrow( kArgumentException, IDS_EE_MARSHAL_UNMAPPABLE_CHAR );
-                }
-            };
-
-            ENCLOSE_IN_EXCEPTION_HANDLER( HelperThrow::Throw );
-        }
-
-    }
-    else
-    {
-        retval = WideCharToMultiByte(CP_ACP,
-                                    flags,
-                                    szWideString,
-                                    iNumWideChars,
-                                    szAnsiString,
-                                    cbAnsiBufferSize,
-                                    NULL,
-                                    NULL);
-        DWORD lastError = GetLastError();
-
-        if (retval == 0)
-        {
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
-            COMPlusThrowHR(HRESULT_FROM_WIN32(lastError));
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
-        }
-    }
-
-    return retval;
-}
-
 namespace
 {
     HRESULT TryParseClassInterfaceAttribute(
@@ -1581,29 +1502,6 @@ HRESULT SafeVariantChangeType(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
 }
 
 //--------------------------------------------------------------------------------
-HRESULT SafeVariantChangeTypeEx(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
-                          LCID lcid, unsigned short wFlags, VARTYPE vt)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pVarRes));
-        PRECONDITION(CheckPointer(pVarSrc));
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
-    _ASSERTE(GetModuleHandleA("oleaut32.dll") != NULL);
-    CONTRACT_VIOLATION(ThrowsViolation);
-
-    HRESULT hr = VariantChangeTypeEx (pVarRes, pVarSrc,lcid,wFlags,vt);
-
-    return hr;
-}
-
-//--------------------------------------------------------------------------------
 void SafeVariantInit(VARIANT* pVar)
 {
     CONTRACTL
@@ -1952,9 +1850,9 @@ HRESULT TryGetDefaultInterfaceForClass(TypeHandle hndClass, TypeHandle *pHndDefC
     return hr;
 }
 
-// Returns the default interface for a class if it's an explicit interface or the AutoDual
-// class interface. Sets *pbDispatch otherwise. This is the logic used by array marshaling
-// in code:OleVariant::MarshalInterfaceArrayComToOleHelper.
+// Returns the default interface for a class if it's an explicit interface.
+// Sets *pbDispatch for a generated class interface; a class MethodTable cannot
+// be passed to the managed typed interface array marshaler.
 MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch)
 {
     CONTRACTL
@@ -1974,7 +1872,6 @@ MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch)
     switch (DefItfType)
     {
         case DefaultInterfaceType_Explicit:
-        case DefaultInterfaceType_AutoDual:
         {
             return hndDefItfClass.GetMethodTable();
         }
@@ -1986,6 +1883,7 @@ MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch)
             return NULL;
         }
 
+        case DefaultInterfaceType_AutoDual:
         case DefaultInterfaceType_AutoDispatch:
         {
             *pbDispatch = TRUE;
@@ -2265,7 +2163,7 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
 
 //--------------------------------------------------------------------------------
 // Helper to get the GUID of a class interface.
-void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
+GUID GenerateClassItfGuid(TypeHandle InterfaceType)
 {
     CONTRACTL
     {
@@ -2273,7 +2171,6 @@ void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(!InterfaceType.IsNull());
-        PRECONDITION(CheckPointer(pGuid));
     }
     CONTRACTL_END;
 
@@ -2299,8 +2196,8 @@ void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
     szName = reinterpret_cast<LPWSTR>(rName.Ptr());
 
     // Generate guid from name.
-    CorGuidFromNameW(pGuid, szName, cchName);
-} // void GenerateClassItfGuid()
+    return CorGuidFromNameW(szName, cchName);
+} // GUID GenerateClassItfGuid()
 
 HRESULT TryGenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
 {
@@ -2323,7 +2220,7 @@ HRESULT TryGenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
     {
         EX_TRY
         {
-            GenerateClassItfGuid(InterfaceType, pGuid);
+            *pGuid = GenerateClassItfGuid(InterfaceType);
         }
         EX_CATCH
         {
@@ -2374,7 +2271,7 @@ HRESULT GetTypeLibGuidForAssembly(Assembly *pAssembly, GUID *pGuid)
         }
 
         // Turn into guid
-        CorGuidFromNameW(pGuid, (LPWSTR)rName.Ptr(), cbData/sizeof(WCHAR));
+        *pGuid = CorGuidFromNameW((LPWSTR)rName.Ptr(), cbData/sizeof(WCHAR));
 }
 
 ErrExit:

@@ -13,7 +13,7 @@ class CrashInfo : public ICLRDataEnumMemoryRegionsCallback, public ICLRDataLoggi
 #ifdef __APPLE__
     public MachOReader
 #else
-    public ElfReader
+    public HostElfReader
 #endif
 {
 private:
@@ -25,6 +25,7 @@ private:
     AppModelType m_appModel;                        // Normal, single-file or native AOT app.
     bool m_gatherFrames;                            // if true, add the native and managed stack frames to the thread info
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
+    uint64_t m_contractDescriptorAddress;           // address of the runtime contract descriptor
 #ifdef __APPLE__
     std::set<MemoryRegion> m_allMemoryRegions;      // all memory regions on MacOS
 #endif
@@ -80,6 +81,7 @@ public:
     inline const char* Name() const { return m_processInfo.Name(); }
     inline const ModuleInfo* MainModule() const { return m_mainModule; }
     inline uint64_t RuntimeBaseAddress() const { return m_processInfo.RuntimeBaseAddress(); }
+    inline uint64_t ContractDescriptorAddress() const { return m_contractDescriptorAddress; }
 
     inline const std::vector<ThreadInfo*>& Threads() const { return m_threads; }
     inline const std::set<ModuleRegion>& ModuleMappings() const { return m_moduleMappings; }

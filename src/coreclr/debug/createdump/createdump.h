@@ -10,6 +10,7 @@
 
 // Keep in sync with the definitions in dbgutil.cpp and daccess.h
 #define DACCESS_TABLE_SYMBOL "g_dacTable"
+#define CONTRACT_DESCRIPTOR_SYMBOL "DotNetRuntimeContractDescriptor"
 
 #ifdef HOST_64BIT
 #define PRIA "016"

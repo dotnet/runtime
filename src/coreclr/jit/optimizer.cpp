@@ -2142,6 +2142,11 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     // block will be the new preheader.
     BasicBlock* const newPreheader = fgSplitBlockAtEnd(preheader);
 
+    // 'preheader' stays the entry of any EH region it begins, so the new block does not
+    // need the BBF_DONT_REMOVE it inherited; keeping it would leave an unremovable block
+    // behind if the loop later becomes unreachable.
+    newPreheader->RemoveFlags(BBF_DONT_REMOVE);
+
     // Make sure exit stays canonical
     BasicBlock* nonEnterBlock = fgSplitBlockAtBeginning(exit);
 
@@ -4032,6 +4037,12 @@ bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
         varInOutCount    = hoistCtxt->m_loopVarInOutFPCount;
 
         availRegCount = CNT_CALLEE_SAVED_FLOAT;
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        if (loopContainsCall && varTypeNeedsPartialCalleeSave(tree->TypeGet()))
+        {
+            availRegCount = 0;
+        }
+#endif
         if (!loopContainsCall)
         {
             availRegCount += CNT_CALLEE_TRASH_FLOAT - 1;
@@ -4653,7 +4664,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
 
                 // If it's a call, it must be a helper call, and be pure.
                 // Further, if it may run a cctor, it must be labeled as "Hoistable"
-                // (meaning it won't run a cctor because the class is not precise-init).
+                // (meaning the class is not precise-init, so the cctor may run earlier).
                 if (treeIsHoistable && tree->IsCall())
                 {
                     GenTreeCall* call = tree->AsCall();
@@ -4734,7 +4745,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 {
                     // If it's a call, it must be a helper call that does not mutate the heap.
                     // Further, if it may run a cctor, it must be labeled as "Hoistable"
-                    // (meaning it won't run a cctor because the class is not precise-init).
+                    // (meaning the class is not precise-init, so the cctor may run earlier).
                     GenTreeCall* call = tree->AsCall();
                     if (!call->IsHelperCall())
                     {
@@ -4771,10 +4782,14 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 else if (tree->OperRequiresAsgFlag())
                 {
                     // Assume all stores except "STORE_LCL_VAR<non-addr-exposed lcl>(...)" are globally visible.
+                    // A store to a local is also visible to a handler that catches an exception thrown later.
                     bool isGloballyVisibleStore;
                     if (tree->OperIsLocalStore())
                     {
-                        isGloballyVisibleStore = m_compiler->lvaGetDesc(tree->AsLclVarCommon())->IsAddressExposed();
+                        const LclVarDsc* dsc = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
+                        isGloballyVisibleStore =
+                            dsc->IsAddressExposed() || (m_currentBlock->HasPotentialEHSuccs(m_compiler) &&
+                                                        (!dsc->lvTracked || dsc->IsLiveInOutOfHandler()));
                     }
                     else
                     {
@@ -5438,20 +5453,11 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                     if (call->IsHelperCall())
                     {
                         CorInfoHelpFunc helpFunc = call->GetHelperNum();
-                        if (s_helperCallProperties.MutatesHeap(helpFunc))
+                        // A class constructor run by the helper may modify the heap.
+                        if (s_helperCallProperties.MutatesHeap(helpFunc) ||
+                            s_helperCallProperties.MayRunCctor(helpFunc))
                         {
                             memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
-                        }
-                        else if (s_helperCallProperties.MayRunCctor(helpFunc))
-                        {
-                            // If the call is labeled as "Hoistable", then we've checked the
-                            // class that would be constructed, and it is not precise-init, so
-                            // the cctor will not be run by this call.  Otherwise, it might be,
-                            // and might have arbitrary side effects.
-                            if ((tree->gtFlags & GTF_CALL_HOISTABLE) == 0)
-                            {
-                                memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
-                            }
                         }
                     }
                     else
@@ -5713,6 +5719,14 @@ void Compiler::optRemoveRedundantZeroInits()
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->GetUniqueSucc())
     {
+        // The scan assumes that all paths from the prolog to this block went through the blocks analyzed so far. Other
+        // predecessors (e.g. a catch handler that rejoins here) may have referenced or redefined the locals we track.
+        if ((block != fgFirstBB) && (BlockPredsWithEH(block)->getNextPredEdge() != nullptr))
+        {
+            JITDUMP(FMT_BB " has multiple predecessors, stopping the block scan\n", block->bbNum);
+            break;
+        }
+
         if (m_dfsTree->HasCycle())
         {
             // See if this block is a cycle entry

@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
 // threadsuspend.CPP
 //
 // This file contains the implementation of thread suspension. The implementation of thread suspension
 // used to be spread through multiple places. That is why, many methods still live in their own homes
 // (class Thread, class ThreadStore, etc.). They should be eventually refactored into class ThreadSuspend.
-//
 
 #include "common.h"
 #include "CLREventBase.h"
@@ -657,7 +655,13 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         // we can't use it to directly compare against the EH ranges because we
         // may be in an cloned finally which has a call as the last instruction.
 
-        offs--;
+#ifdef TARGET_WASM
+        // On Wasm, R2R code with virtual ips should not have its ip adjusted
+        if (!ExecutionManager::IsVirtualIP(GetControlPC(pCf->GetRegisterSet())))
+#endif
+        {
+            offs--;
+        }
     }
 
     if (pData->fWriteToStressLog)
@@ -813,51 +817,6 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
             UNREACHABLE();
     }
     return action;
-}
-
-// Is the current thread currently executing within a constrained execution region?
-BOOL Thread::IsExecutingWithinCer()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (!g_fEEStarted)
-        return FALSE;
-
-    Thread *pThread = GetThread();
-    StackCrawlContext sContext = { pThread,
-                                   StackCrawlContext::SCC_CheckWithinCer,
-        FALSE,
-        FALSE,
-        FALSE,
-        FALSE,
-        FALSE,
-        FALSE};
-
-    pThread->StackWalkFrames(TAStackCrawlCallBack, &sContext);
-
-#ifdef STRESS_LOG
-    if (sContext.fWithinCer && StressLog::StressLogOn(~0u, 0))
-    {
-        // If stress log is on, write info to stress log
-        StackCrawlContext sContext1 = { pThread,
-                                        StackCrawlContext::SCC_CheckWithinCer,
-            FALSE,
-            FALSE,
-            FALSE,
-            FALSE,
-            TRUE,
-            FALSE};
-
-        pThread->StackWalkFrames(TAStackCrawlCallBack, &sContext1);
-    }
-#endif
-
-    return sContext.fWithinCer;
 }
 
 #if defined(TARGET_AMD64) && defined(FEATURE_HIJACK)
@@ -1157,6 +1116,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     {
         THROWS;
         GC_TRIGGERS; // For GetXxxException
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -4667,6 +4627,13 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     }
 #endif // TARGET_X86
 
+    // On 32-bit targets and in IL stubs the InlinedCallFrame stays linked for the whole method, and
+    // it is reported before the method that contains it. Skip it when it has no active call.
+    if (!pCF->IsFrameless() && !InlinedCallFrame::FrameHasActiveCall(pCF->GetFrame()))
+    {
+        return SWA_CONTINUE;
+    }
+
     // This will help factor out some repeated code.
     bool notJittedCase = false;
 
@@ -4850,9 +4817,11 @@ HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args 
 
 void STDCALL OnHijackWorker(HijackArgs * pArgs)
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -5394,10 +5363,13 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
 
     //
     // SyncClean::CleanUp reclaims resources that are safe to free only
-    // when no threads are running managed code. Since the EE is
-    // suspended at this point, we know it's safe to clean up here.
+    // when no threads are running managed code, so it can only run after
+    // the EE was successfully suspended.
     //
-    SyncClean::CleanUp();
+    if (SuspendSucceeded)
+    {
+        SyncClean::CleanUp();
+    }
 
 #ifdef PROFILING_SUPPORTED
     // If a profiler is keeping track suspend events, notify it.  This notification
@@ -5468,6 +5440,7 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
     }
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_MULTITHREADING
     //
     // If we raised this thread's priority in SuspendRuntime, we restore it here.
     //
@@ -5479,6 +5452,7 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
             pCurThread->m_Priority = INVALID_THREAD_PRIORITY;
         }
     }
+#endif // FEATURE_MULTITHREADING
 
     FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 
@@ -5592,6 +5566,7 @@ retry_for_debugger:
     }
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_MULTITHREADING
     //
     // If this thread is running at low priority, boost its priority.  We remember the old
     // priority so that we can restore it in ResumeEE.
@@ -5606,6 +5581,7 @@ retry_for_debugger:
             pCurThread->SetThreadPriority(THREAD_PRIORITY_NORMAL);
         }
     }
+#endif // FEATURE_MULTITHREADING
 
     //
     // Now that we've instructed all threads to please stop,

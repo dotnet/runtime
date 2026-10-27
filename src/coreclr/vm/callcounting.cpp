@@ -739,13 +739,7 @@ COUNT_T CallCountingManager::GetCountOfCodeVersionsPendingCompletion()
 
 void CallCountingManager::CompleteCallCounting()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(GetThreadNULLOk() == TieredCompilationManager::GetBackgroundWorkerThread());
 
@@ -851,13 +845,7 @@ void CallCountingManager::CompleteCallCounting()
 
 void CallCountingManager::StopAndDeleteAllCallCountingStubs()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(GetThreadNULLOk() == TieredCompilationManager::GetBackgroundWorkerThread());
 
@@ -1030,11 +1018,11 @@ void CallCountingManager::DeleteAllCallCountingStubs()
             // Currently, tier 0 is the last code version that is counted, and the method is typically not counted anymore.
             // Remove the forwarder stub if one exists, a new one will be created if necessary, for example, if a profiler adds
             // an IL code version for the method.
-            Precode *const *forwarderStubPtr =
-                methodDescForwarderStubHash.LookupPtr(callCountingInfo->GetCodeVersion().GetMethodDesc());
-            if (forwarderStubPtr != nullptr)
+            MethodDesc *methodDesc = callCountingInfo->GetCodeVersion().GetMethodDesc();
+            MethodDescForwarderStubHash::KeyIterator forwarderStub = methodDescForwarderStubHash.Begin(methodDesc);
+            if (forwarderStub != methodDescForwarderStubHash.End(methodDesc))
             {
-                methodDescForwarderStubHash.RemovePtr(const_cast<Precode **>(forwarderStubPtr));
+                methodDescForwarderStubHash.Remove(forwarderStub);
             }
 
             callCountingInfoByCodeVersionHash.Remove(it);
