@@ -115,7 +115,7 @@ namespace System.Diagnostics
             using Process process = Start(startInfo)!;
 
             return timeout.HasValue
-                ? process.WaitForExitOrKillOnTimeout(timeout.Value)
+                ? process.WaitForExitOrKillEntireProcessTreeOnTimeout(timeout.Value)
                 : process.WaitForExitStatus();
         }
 
@@ -185,7 +185,7 @@ namespace System.Diagnostics
 
             using Process process = Start(startInfo)!;
 
-            return await process.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false);
+            return await process.WaitForExitOrKillEntireProcessTreeOnCancellationAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -271,7 +271,7 @@ namespace System.Diagnostics
                 TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
                 TimeSpan remaining = timeout.Value - elapsed;
                 remaining = remaining >= TimeSpan.Zero ? remaining : TimeSpan.Zero;
-                exitStatus = process.WaitForExitOrKillOnTimeout(remaining);
+                exitStatus = process.WaitForExitOrKillEntireProcessTreeOnTimeout(remaining);
             }
             else
             {
@@ -343,7 +343,7 @@ namespace System.Diagnostics
                 throw;
             }
 
-            ProcessExitStatus exitStatus = await process.WaitForExitOrKillOnCancellationAsync(cancellationToken).ConfigureAwait(false);
+            ProcessExitStatus exitStatus = await process.WaitForExitOrKillEntireProcessTreeOnCancellationAsync(cancellationToken).ConfigureAwait(false);
 
             return new ProcessTextOutput(exitStatus, standardOutput, standardError, process.Id);
         }
@@ -389,7 +389,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        private ProcessExitStatus WaitForExitOrKillOnTimeout(TimeSpan timeout)
+        private ProcessExitStatus WaitForExitOrKillEntireProcessTreeOnTimeout(TimeSpan timeout)
         {
             if (TryWaitForExitStatus(timeout, out ProcessExitStatus? exitStatus))
             {
@@ -404,7 +404,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        private async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken)
+        private async Task<ProcessExitStatus> WaitForExitOrKillEntireProcessTreeOnCancellationAsync(CancellationToken cancellationToken)
         {
             try
             {
