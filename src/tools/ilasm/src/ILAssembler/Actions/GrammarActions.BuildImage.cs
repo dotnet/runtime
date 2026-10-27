@@ -594,7 +594,7 @@ namespace ILAssembler
         /// the CodeView entry records that path as given (after <see cref="Options.PathMap"/>), so the same input
         /// and the same recorded PDB path give the same image bytes, and a PDB path that is a file name alone
         /// keeps the image independent of its directory. Without <see cref="Options.Deterministic"/>, the id's
-        /// GUID is random. The checksum is the
+        /// GUID is random and its stamp is the current Unix time in seconds. The checksum is the
         /// content hash in both cases.
         /// </para>
         /// </remarks>
@@ -618,12 +618,13 @@ namespace ILAssembler
             // PortablePdbBuilder hands the id provider the serialized PDB with its 20-byte id zeroed.
             // The SHA-256 of that content is the PdbChecksum value, and the deterministic id.
             byte[]? pdbContentHash = null;
+            Func<IEnumerable<Blob>, BlobContentId> timeBasedIdProvider = BlobContentId.GetTimeBasedProvider();
             BlobContentId PdbIdProvider(IEnumerable<Blob> content)
             {
                 pdbContentHash = ComputeSha256(content);
                 return _options.Deterministic
                     ? BlobContentId.FromHash(pdbContentHash)
-                    : new BlobContentId(Guid.NewGuid(), 0x04030201);
+                    : timeBasedIdProvider(content);
             }
 
             // Create the portable PDB

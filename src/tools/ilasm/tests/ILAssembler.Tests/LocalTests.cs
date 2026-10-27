@@ -678,28 +678,24 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
-        [InlineData("65536")]
-        [InlineData("-2")]
-        [InlineData("0x10000")]
-        [InlineData("2147483648")]
-        [InlineData("4294967296")]
-        [InlineData("0x100000000")]
-        [InlineData("-4294967296")]
-        [InlineData("4294967295")]
-        [InlineData("040000000000")]
-        [InlineData("0x10000000000000000")]
-        [InlineData("0xFFFFFFFFFFFFFFFF")]
-        [InlineData("18446744073709551615")]
-        [InlineData("01777777777777777777777")]
-        [InlineData("02000000000000000000000")]
-        [InlineData("-02000000000000000000000")]
-        public void ExplicitSlot_OutsideTheSixteenBitRange_IsReportedAndTakesTheNextSlot(string slot)
+        [InlineData("65536", false)]
+        [InlineData("-2", false)]
+        [InlineData("0x10000", false)]
+        [InlineData("2147483648", false)]
+        [InlineData("4294967296", true)]
+        [InlineData("0x100000000", true)]
+        [InlineData("-4294967296", true)]
+        [InlineData("4294967295", false)]
+        [InlineData("040000000000", true)]
+        [InlineData("0x10000000000000000", true)]
+        [InlineData("0xFFFFFFFFFFFFFFFF", true)]
+        [InlineData("18446744073709551615", true)]
+        [InlineData("01777777777777777777777", true)]
+        [InlineData("02000000000000000000000", true)]
+        [InlineData("-02000000000000000000000", true)]
+        public void ExplicitSlot_OutsideTheSixteenBitRange_IsReportedAndTakesTheNextSlot(string slot, bool literalOutOfRange)
         {
-            // The message names the slot as written: 2147483648 does not fit an int32, and is not reported as
-            // the negative value it wraps to. The literals past 32 bits would wrap to 0, and 4294967295 to -1
-            // ("no explicit slot"), as would 0xFFFFFFFFFFFFFFFF, 18446744073709551615 and 01777777777777777777777
-            // read as an int64, and the octal literals of 2^64 to 0; slot 0 is taken first, so x taking slot 1
-            // shows that none of them did.
+            // Slot 0 is taken first, so x taking slot 1 verifies recovery without aliasing slot 0.
             string source = OneMethod($$"""
                 .locals init ([0] int32 a, [{{slot}}] int32 x)
                 ldloc x
@@ -710,7 +706,15 @@ namespace ILAssembler.Tests
             (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
                 DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options { ErrorTolerant = true });
 
-            Diagnostic diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(literalOutOfRange ? 2 : 1, diagnostics.Length);
+            if (literalOutOfRange)
+            {
+                Assert.Equal(DiagnosticIds.LiteralOutOfRange, diagnostics[0].Id);
+                Assert.Equal(DiagnosticSeverity.Error, diagnostics[0].Severity);
+                Assert.Equal($"The value '{slot}' is out of range", diagnostics[0].Message);
+            }
+
+            Diagnostic diagnostic = diagnostics[^1];
             Assert.Equal(
                 (DiagnosticIds.LocalSlotOutOfRange, DiagnosticSeverity.Error, $"Local var slot {slot} is out of range; a slot index must be between 0 and 65535"),
                 (diagnostic.Id, diagnostic.Severity, diagnostic.Message));
