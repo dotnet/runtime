@@ -9,6 +9,26 @@ namespace Webcil;
 
 public static class WasmWebcilModule
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string FixupLeaf() => "transitive-precode-string";
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string FixupMiddle(bool useCallee)
+    {
+        string value = FixupLeaf();
+        return useCallee ? value : "transitive-precode-string";
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string FixupOuter(bool useCallee)
+    {
+        string value = FixupMiddle(useCallee);
+        return useCallee ? value : "transitive-precode-string";
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string UncoveredFixup() => "uncovered-precode-string";
+
     public sealed class LdtokenType
     {
     }

@@ -9,7 +9,11 @@ using System.IO;
 using System.Text;
 
 using crossgen2::ILCompiler;
+using crossgen2::ILCompiler.DependencyAnalysis;
+using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
+using crossgen2::Internal.ReadyToRunConstants;
 using crossgen2::Internal.JitInterface;
+using crossgen2::Internal.Text;
 
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
@@ -22,6 +26,68 @@ namespace ILCompiler.ReadyToRun.Tests;
 
 public class ReadyToRunLibraryRootProviderTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EagerPromotionPreservesDistinctImportSymbols(bool reverseOrder)
+    {
+        ImportSectionNode precodeTable = new("PrecodeImports", ReadyToRunImportSectionType.Unknown,
+            ReadyToRunImportSectionFlags.PCode, 8, emitPrecode: true, emitGCRefMap: false);
+        ImportSectionNode eagerTable = new("EagerImports", ReadyToRunImportSectionType.Unknown,
+            ReadyToRunImportSectionFlags.Eager, 8, emitPrecode: false, emitGCRefMap: false);
+        ReadyToRunHelperSignature signature = new(ReadyToRunHelper.Module);
+        Import promotedCell = new PrecodeHelperImport(precodeTable, signature);
+        Import eagerCell = new(eagerTable, signature, sortLast: true);
+        NativeAotNameMangler mangler = new() { CompilationUnitPrefix = new Utf8String("Test") };
+        Utf8StringBuilder originalName = new();
+        promotedCell.AppendMangledName(mangler, originalName);
+
+        promotedCell.PromoteToEager(eagerTable);
+
+        Utf8StringBuilder promotedName = new();
+        Utf8StringBuilder eagerName = new();
+        promotedCell.AppendMangledName(mangler, promotedName);
+        eagerCell.AppendMangledName(mangler, eagerName);
+        Assert.Same(eagerCell.Table, promotedCell.Table);
+        Assert.Equal(originalName.ToString(), promotedName.ToString());
+        Assert.NotEqual(eagerName.ToString(), promotedName.ToString());
+
+        Import[] imports = reverseOrder ? [eagerCell, promotedCell] : [promotedCell, eagerCell];
+        Array.Sort(imports, CompilerComparer.Instance);
+        Assert.Same(promotedCell, imports[0]);
+        Assert.Same(eagerCell, imports[1]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PrecodeCoverageRequiresTheSameImportCell(bool sharedCell)
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        MethodDesc method = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
+        MethodWithGCInfo callee = new(method);
+        MethodWithGCInfo caller = new(method);
+        ImportSectionNode table = new("TestImports", ReadyToRunImportSectionType.Unknown,
+            ReadyToRunImportSectionFlags.PCode, 8, emitPrecode: true, emitGCRefMap: false);
+        ReadyToRunHelperSignature signature = new(ReadyToRunHelper.Module);
+        Import calleeCell = new(table, signature);
+        Import callerCell = sharedCell ? calleeCell : new(table, signature);
+        callee.Fixups.Add(calleeCell);
+        callee.FinalizePrecodeFixups();
+        caller.AddDirectCallTarget(callee);
+        caller.Fixups.Add(callerCell);
+        caller.FinalizePrecodeFixups();
+
+        if (sharedCell)
+        {
+            Assert.Empty(caller.Fixups);
+        }
+        else
+        {
+            Assert.Same(callerCell, Assert.Single(caller.Fixups));
+        }
+    }
+
     [Theory]
     [InlineData("System.Numerics", "Vector`1", false)]
     [InlineData("System.Runtime.Intrinsics", "Vector64`1", false)]

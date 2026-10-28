@@ -496,6 +496,7 @@ namespace Internal.JitInterface
         private HashSet<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
+        private Dictionary<MethodWithGCInfo, ISymbolNode> _relocationDrivenPrecodeFixups;
         private List<MethodDesc> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
@@ -514,9 +515,42 @@ namespace Internal.JitInterface
             _precodeFixups.Add(node);
         }
 
+        private void AddRelocationDrivenPrecodeFixup(MethodWithGCInfo target, ISymbolNode fixup)
+        {
+            _relocationDrivenPrecodeFixups ??= new Dictionary<MethodWithGCInfo, ISymbolNode>();
+            _relocationDrivenPrecodeFixups.TryAdd(target, fixup);
+        }
+
+        partial void RecordRelocationDependencies(ISymbolNode relocTarget)
+        {
+            if (relocTarget is Import import)
+            {
+                if (import.Table.IsEager)
+                {
+                    _methodCodeNode.AddModuleEagerFixup(import);
+                }
+                else if (import.EmitPrecode)
+                {
+                    AddPrecodeFixup(import);
+                }
+            }
+
+            if (relocTarget is MethodWithGCInfo method &&
+                _relocationDrivenPrecodeFixups?.TryGetValue(method, out ISymbolNode fixup) == true)
+            {
+                AddPrecodeFixup(fixup);
+                _methodCodeNode.AddDirectCallTarget(method);
+            }
+        }
+
         private void AddAdditionalDependency(ISymbolNode node, string reason)
         {
             _additionalDependencies.Add(node, reason);
+
+            if (node is Import { Table.IsEager: true } eagerImport)
+            {
+                _methodCodeNode.AddModuleEagerFixup(eagerImport);
+            }
         }
 
         private void AddResumptionStubFixup(MethodWithGCInfo compiledStubNode)
@@ -1082,6 +1116,11 @@ namespace Internal.JitInterface
 
         private void AddManagedHelperDependency(MethodDesc helperMethod)
         {
+            if (!_isCompilationProbe)
+            {
+                _compilation.RecordCall(MethodBeingCompiled, helperMethod);
+            }
+
             // Cached helper targets outlive the current compilation's dependencies, including probes.
             MethodWithToken helperMethodWithToken = new MethodWithToken(
                 helperMethod,
@@ -2690,6 +2729,11 @@ namespace Internal.JitInterface
             // by virtual resolution during getCallInfo (virtual resolution could find a result using type equivalence)
             ValidateSafetyOfUsingTypeEquivalenceInSignature(targetMethod.GetTypicalMethodDefinition().Signature);
 
+            if (pResult->kind == CORINFO_CALL_KIND.CORINFO_CALL)
+            {
+                _compilation.RecordCall(MethodBeingCompiled, methodToCall);
+            }
+
             if (_compilation.NodeFactory.Target.IsWasm && targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke"u8)
             {
                 // The hidden-argument flags come from the resolved call signature: a shared generic
@@ -2747,6 +2791,7 @@ namespace Internal.JitInterface
                         {
                             nonUnboxingMethod = methodToCall.GetUnboxedMethod();
                         }
+                        bool isRawPInvoke = nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod;
                         if (nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
                         {
                             nonUnboxingMethod = rawPinvoke.Target;
@@ -2771,6 +2816,30 @@ namespace Internal.JitInterface
                             MethodDesc compilableTarget = nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                             MethodWithGCInfo targetCodeNode = _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(targetCodeNode);
+                        }
+                        else if (!isUnboxingStub &&
+                            !isRawPInvoke &&
+                            !useInstantiatingStub &&
+                            (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0 &&
+                            _compilation.CanUseDirectCall(
+                                nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)))
+                        {
+                            MethodDesc compilableTarget =
+                                nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                            Debug.Assert(methodToCall == compilableTarget);
+
+                            MethodWithToken targetMethodWithToken = ComputeMethodWithToken(
+                                nonUnboxingMethod,
+                                ref resolvedToken,
+                                constrainedType,
+                                unboxing: false);
+                            MethodWithGCInfo targetCodeNode =
+                                _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
+                            AddRelocationDrivenPrecodeFixup(
+                                targetCodeNode,
+                                _compilation.SymbolNodeFactory.PrecodeReadyToRunMethodEntry(targetMethodWithToken));
+                            pResult->codePointerOrStubLookup.constLookup =
+                                CreateConstLookupToSymbol(targetCodeNode);
                         }
                         else
                         {

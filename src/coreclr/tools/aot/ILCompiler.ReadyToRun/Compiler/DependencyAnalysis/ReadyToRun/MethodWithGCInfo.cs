@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Internal.JitInterface;
 using Internal.Pgo;
 using Internal.Text;
@@ -30,6 +29,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private byte[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
         private List<ISymbolNode> _fixups;
+        private HashSet<MethodWithGCInfo> _directCallTargets;
+        private HashSet<Import> _moduleEagerFixups;
+        private HashSet<Import> _guaranteedPrecodeFixups;
+        private bool _precodeFixupsFinalized;
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
         private DependencyList _nonRelocationDependencies;
@@ -98,6 +101,80 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public List<ISymbolNode> Fixups => _fixups;
 
+        internal void AddDirectCallTarget(MethodWithGCInfo target)
+        {
+            _directCallTargets ??= new HashSet<MethodWithGCInfo>();
+            _directCallTargets.Add(target);
+        }
+
+        internal void AddModuleEagerFixup(Import fixup)
+        {
+            _moduleEagerFixups ??= new HashSet<Import>();
+            _moduleEagerFixups.Add(fixup);
+        }
+
+        internal HashSet<MethodWithGCInfo> DirectCallTargets => _directCallTargets;
+
+        internal HashSet<Import> GuaranteedPrecodeFixups => _guaranteedPrecodeFixups;
+
+        internal void FinalizePrecodeFixups()
+        {
+            Debug.Assert(!_precodeFixupsFinalized);
+            _precodeFixupsFinalized = true;
+
+            HashSet<Import> coveredFixups = null;
+
+            if (_moduleEagerFixups is not null)
+            {
+                coveredFixups = new HashSet<Import>(_moduleEagerFixups);
+                _guaranteedPrecodeFixups = new HashSet<Import>(_moduleEagerFixups);
+            }
+
+            if (_directCallTargets is not null)
+            {
+                foreach (MethodWithGCInfo target in _directCallTargets)
+                {
+                    Debug.Assert(target._precodeFixupsFinalized);
+                    if (target._guaranteedPrecodeFixups is null)
+                        continue;
+
+                    coveredFixups ??= new HashSet<Import>();
+                    _guaranteedPrecodeFixups ??= new HashSet<Import>();
+                    coveredFixups.UnionWith(target._guaranteedPrecodeFixups);
+                    _guaranteedPrecodeFixups.UnionWith(target._guaranteedPrecodeFixups);
+                }
+            }
+
+            foreach (ISymbolNode fixup in _fixups)
+            {
+                if (fixup is Import import)
+                {
+                    _guaranteedPrecodeFixups ??= new HashSet<Import>();
+                    _guaranteedPrecodeFixups.Add(import);
+                }
+            }
+
+            // Making a direct callee ReadyToRun applies its transitive fixup requirements first.
+            // Module-eager fixups are likewise guaranteed before any method precode executes.
+            if (coveredFixups is not null)
+            {
+                _fixups.RemoveAll(fixup =>
+                    fixup is Import import &&
+                    coveredFixups.Contains(import));
+            }
+        }
+
+        internal void ApplyModuleEagerFixups(HashSet<Import> fixups)
+        {
+            Debug.Assert(_precodeFixupsFinalized);
+
+            _guaranteedPrecodeFixups ??= new HashSet<Import>();
+            _guaranteedPrecodeFixups.UnionWith(fixups);
+            _fixups.RemoveAll(fixup =>
+                fixup is Import import &&
+                fixups.Contains(import));
+        }
+
         public int Size => _methodCode.Data.Length;
 
         public bool IsEmpty => _methodCode.Data.Length == 0;
@@ -143,48 +220,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public byte[] GetFixupBlob(NodeFactory factory)
         {
-            Relocation[] relocations = GetData(factory, relocsOnly: true).Relocs;
-
-            if (ColdCodeNode != null)
-            {
-                Relocation[] coldRelocations = ColdCodeNode.GetData(factory, relocsOnly: true).Relocs;
-                if (relocations == null)
-                {
-                    relocations = coldRelocations;
-                }
-                else if (coldRelocations != null)
-                {
-                    relocations = Enumerable.Concat(relocations, coldRelocations).ToArray();
-                }
-            }
-
-            if (relocations == null)
-            {
-                return null;
-            }
-
             List<FixupCell> fixupCells = null;
-
-            foreach (Relocation reloc in relocations)
-            {
-                if (reloc.Target is Import fixupCell && fixupCell.EmitPrecode)
-                {
-                    if (fixupCells == null)
-                    {
-                        fixupCells = new List<FixupCell>();
-                    }
-                    fixupCells.Add(new FixupCell(fixupCell.Table.IndexFromBeginningOfArray, fixupCell.OffsetFromBeginningOfArray));
-                }
-            }
 
             foreach (ISymbolNode node in _fixups)
             {
+                Import fixupCell = (Import)node;
+                if (fixupCell.Table.IsEager)
+                {
+                    continue;
+                }
+
                 if (fixupCells == null)
                 {
                     fixupCells = new List<FixupCell>();
                 }
 
-                Import fixupCell = (Import)node;
                 fixupCells.Add(new FixupCell(fixupCell.Table.IndexFromBeginningOfArray, fixupCell.OffsetFromBeginningOfArray));
             }
 

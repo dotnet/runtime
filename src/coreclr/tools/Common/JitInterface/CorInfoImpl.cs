@@ -472,6 +472,7 @@ namespace Internal.JitInterface
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result);
         partial void PublishWasmMethodVirtualIPFixups();
         partial void ClearWasmMethodVirtualIPFixups();
+        partial void RecordRelocationDependencies(ISymbolNode relocTarget);
 
         private static FuncletKind[] GetWasmFuncletKinds(CORINFO_EH_CLAUSE[] clauses)
         {
@@ -602,6 +603,7 @@ namespace Internal.JitInterface
                     }
                 }
             }
+            _methodCodeNode.FinalizePrecodeFixups();
 
             if (_synthesizedPgoDependencies != null)
             {
@@ -777,6 +779,7 @@ namespace Internal.JitInterface
             _stashedInlinedMethods.Clear();
             _ilBodiesNeeded = null;
             _synthesizedPgoDependencies = null;
+            _relocationDrivenPrecodeFixups = null;
 #endif
 
             _instantiationToJitVisibleInstantiation = null;
@@ -4822,6 +4825,8 @@ namespace Internal.JitInterface
 
             // relocDelta is stored as the value
             Relocation.WriteValue(relocType, location, relocDelta);
+
+            RecordRelocationDependencies(relocTarget);
 
             if (sourceBlock.Count == 0)
                 sourceBlock.EnsureCapacity(length / 32 + 1);

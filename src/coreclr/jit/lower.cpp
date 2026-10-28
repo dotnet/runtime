@@ -2989,10 +2989,18 @@ GenTree* Lowering::LowerCall(GenTree* node)
     {
         if (call->gtDirectCallAddress != nullptr)
         {
-            // A direct call target has no portable entrypoint to dispatch through, so there is
-            // nothing meaningful to pass here. The argument still needs to be present to satisfy
-            // the calling convention shared with indirect PEP calls, so pass a constant zero.
-            AddWasmPortableEntryPointArg(call, m_compiler->gtNewIconNode(0, TYP_I_IMPL));
+            GenTree* portableEntryPoint;
+            if ((call->gtCallMethHnd != nullptr) && !call->IsHelperCall())
+            {
+                portableEntryPoint = m_compiler->gtNewIconHandleNode(reinterpret_cast<size_t>(call->gtCallMethHnd),
+                                                                     GTF_ICON_WASM_FRAME_IDENTITY);
+            }
+            else
+            {
+                // Direct same-image managed helpers establish their own frame identity.
+                portableEntryPoint = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
+            }
+            AddWasmPortableEntryPointArg(call, portableEntryPoint);
         }
         else
         {
