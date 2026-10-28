@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <DeltaScript>deltascript.json</DeltaScript>
+    <!-- ApplyUpdate needs Optimize=false and EmitDebugInformation=true in all configurations -->
+    <Optimize>false</Optimize>
+    <EmitDebugInformation>true</EmitDebugInformation>
+    <!-- CI builds turn this on, but it interferes with Roslyn's ability to generate EnC deltas -->
+    <DeterministicSourcePaths>false</DeterministicSourcePaths>
+    <!-- The delta generator is built in the libraries configuration, not the runtime test configuration -->
+    <_HotReloadDeltaGeneratorPath>$(ArtifactsBinDir)Microsoft.DotNet.HotReload.Utils.Generator.BuildTool/$(LibrariesConfiguration)/$(NetCoreAppToolCurrent)/Microsoft.DotNet.HotReload.Utils.Generator.BuildTool.dll</_HotReloadDeltaGeneratorPath>
+    <_HotReloadDeltaGeneratorTasksPath>$(ArtifactsBinDir)Microsoft.DotNet.HotReload.Utils.Generator.Tasks/$(LibrariesConfiguration)/$(NetCoreAppToolCurrent)/Microsoft.DotNet.HotReload.Utils.Generator.Tasks.dll</_HotReloadDeltaGeneratorTasksPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Edited.cs" />
+  </ItemGroup>
+  <Import Project="$(RepositoryEngineeringDir)testing\hotreload-delta-gen.targets" />
+</Project>
