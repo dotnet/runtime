@@ -123,8 +123,8 @@ static Object* NewArrayFastCore(MethodTable* pMT, intptr_t size TRANSITION_HELPE
     sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
 
     uint8_t* alloc_ptr = cxt->getAllocPtr();
-    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
-    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
+    _ASSERTE(alloc_ptr <= cxt->getCombinedLimit());
+    if ((size_t)(cxt->getCombinedLimit() - alloc_ptr) >= sizeInBytes)
     {
         cxt->setAllocPtr(alloc_ptr + sizeInBytes);
         PtrArray* pObject = (PtrArray *)alloc_ptr;
@@ -162,8 +162,8 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, intptr_t size TRANSITION
         paddedSize += MIN_OBJECT_SIZE;
     }
 
-    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
-    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= paddedSize)
+    _ASSERTE(alloc_ptr <= cxt->getCombinedLimit());
+    if ((size_t)(cxt->getCombinedLimit() - alloc_ptr) >= paddedSize)
     {
         cxt->setAllocPtr(alloc_ptr + paddedSize);
         if (requiresPadding)
@@ -254,8 +254,8 @@ FCIMPL1(Object*, RhpNewFast, MethodTable* pMT)
     size_t sizeInBytes = (size_t)pMT->GetBaseSize();
 
     uint8_t* alloc_ptr = cxt->getAllocPtr();
-    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
-    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
+    _ASSERTE(alloc_ptr <= cxt->getCombinedLimit());
+    if ((size_t)(cxt->getCombinedLimit() - alloc_ptr) >= sizeInBytes)
     {
         cxt->setAllocPtr(alloc_ptr + sizeInBytes);
         PtrArray* pObject = (PtrArray*)alloc_ptr;
@@ -310,8 +310,8 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
         paddedSize += MIN_OBJECT_SIZE;
     }
 
-    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
-    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= paddedSize)
+    _ASSERTE(alloc_ptr <= cxt->getCombinedLimit());
+    if ((size_t)(cxt->getCombinedLimit() - alloc_ptr) >= paddedSize)
     {
         cxt->setAllocPtr(alloc_ptr + paddedSize);
         if (requiresPadding)
@@ -351,8 +351,8 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
         paddedSize += MIN_OBJECT_SIZE;
     }
 
-    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
-    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= paddedSize)
+    _ASSERTE(alloc_ptr <= cxt->getCombinedLimit());
+    if ((size_t)(cxt->getCombinedLimit() - alloc_ptr) >= paddedSize)
     {
         cxt->setAllocPtr(alloc_ptr + paddedSize);
         if (requiresPadding)

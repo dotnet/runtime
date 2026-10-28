@@ -12,7 +12,7 @@ inline gc_alloc_context* ee_alloc_context::GetGCAllocContext()
     return (gc_alloc_context*)&m_rgbAllocContextBuffer;
 }
 
-inline uint8_t* ee_alloc_context::GetCombinedLimit()
+inline uint8_t* ee_alloc_context::getCombinedLimit()
 {
     return combined_limit;
 }
@@ -32,12 +32,6 @@ inline uint8_t* ee_alloc_context::getAllocPtr()
 inline void ee_alloc_context::setAllocPtr(uint8_t* ptr)
 {
     ((_thread_inl_gc_alloc_context*)GetGCAllocContext())->alloc_ptr = ptr;
-}
-
-inline uint8_t* ee_alloc_context::getAllocLimit()
-{
-    // Fast allocations must also respect the allocation-sampling limit.
-    return GetCombinedLimit();
 }
 
 inline bool ee_alloc_context::IsRandomizedSamplingEnabled()
