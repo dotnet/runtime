@@ -269,6 +269,14 @@ namespace ILCompiler.PortableCallHelpers
             if (IsUnsupportedOnPlatform(method))
                 return false;
 
+            // The runtime throws InvalidProgramException for a generic [UnmanagedCallersOnly] method
+            // before it would look up a thunk, and such a method has no single native signature anyway.
+            if (method.HasInstantiation || method.OwningType.HasInstantiation)
+            {
+                log.Warning("WASM0001", $"Skipping generic UnmanagedCallersOnly callback '{method}', which the runtime rejects");
+                return false;
+            }
+
             return true;
         }
 

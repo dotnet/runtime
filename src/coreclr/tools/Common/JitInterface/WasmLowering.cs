@@ -313,7 +313,10 @@ namespace Internal.JitInterface
         /// </summary>
         private static bool IsWasmV128Type(TypeDesc type)
         {
-            if (!type.IsIntrinsic ||
+            // Only a DefType can be a vector. A signature variable, in particular, cannot even be asked
+            // whether it is intrinsic.
+            if (type is not DefType ||
+                !type.IsIntrinsic ||
                 type.Instantiation.Length != 1 ||
                 !VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]))
             {

@@ -7,6 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -402,6 +405,21 @@ public class WasmArgumentLayoutTests
 
         Assert.NotEqual(16, instantiated.InstanceFieldSize.AsInt);
         Assert.NotEqual(WasmValueType.V128, WasmLowering.LowerType(instantiated));
+    }
+
+    /// <summary>
+    /// A signature variable cannot answer whether it is intrinsic, so the v128 check must not ask it.
+    /// Lowering leaves it untouched for the caller to reject.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SignatureVariablesAreNotLowered(bool method)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc variable = context.GetSignatureVariable(0, method);
+
+        Assert.Same(variable, WasmLowering.LowerToAbiType(variable));
     }
 
     /// <summary>
@@ -1263,6 +1281,95 @@ public class WasmArgumentLayoutTests
             {
             }
         }
+    }
+
+    /// <summary>
+    /// The runtime throws InvalidProgramException for a generic [UnmanagedCallersOnly] method before
+    /// it would look up a reverse thunk, so the generator has to skip one rather than fail lowering its
+    /// signature variables. The rest of the input still gets its thunks.
+    /// </summary>
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void PortableCallHelpersGeneratorSkipsGenericCallbacks(bool genericMethod, bool genericType)
+    {
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = EmitGenericCallbackAssembly(
+                Path.Combine(workingDirectory, "Callbacks.dll"), genericMethod, genericType);
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            Assert.True(exitCode == 0, log.ToString());
+            Assert.Contains("Skipping generic UnmanagedCallersOnly callback", log.ToString());
+
+            string reverse = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-reverse.cpp"));
+            Assert.DoesNotContain("GenericCallbackUnderTest", reverse);
+            Assert.Contains("ControlCallbackUnderTest", reverse);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
+    /// C# refuses to compile a generic [UnmanagedCallersOnly] method or one declared in a generic type,
+    /// so emit the input directly: <c>static int GenericCallbackUnderTest(T)</c>, generic over its
+    /// method or its declaring type, alongside a non-generic <c>ControlCallbackUnderTest(int)</c>.
+    /// </summary>
+    private static string EmitGenericCallbackAssembly(string outputPath, bool genericMethod, bool genericType)
+    {
+        var assembly = new PersistedAssemblyBuilder(
+            new AssemblyName(Path.GetFileNameWithoutExtension(outputPath)), typeof(object).Assembly);
+        ModuleBuilder module = assembly.DefineDynamicModule(Path.GetFileName(outputPath));
+        var unmanagedCallersOnly = new CustomAttributeBuilder(
+            typeof(UnmanagedCallersOnlyAttribute).GetConstructor(Type.EmptyTypes)!, Array.Empty<object>());
+
+        void DefineCallback(TypeBuilder type, string name, Func<MethodBuilder, Type> getParameterType)
+        {
+            MethodBuilder method = type.DefineMethod(name, MethodAttributes.Public | MethodAttributes.Static);
+            method.SetReturnType(typeof(int));
+            method.SetParameters(getParameterType(method));
+            method.SetCustomAttribute(unmanagedCallersOnly);
+            ILGenerator il = method.GetILGenerator();
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Ret);
+        }
+
+        const TypeAttributes StaticClass = TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed;
+
+        TypeBuilder control = module.DefineType("Exports", StaticClass);
+        DefineCallback(control, "ControlCallbackUnderTest", _ => typeof(int));
+        control.CreateType();
+
+        TypeBuilder generic = module.DefineType(genericType ? "GenericExports`1" : "GenericExports", StaticClass);
+        Type? typeParameter = genericType ? generic.DefineGenericParameters("T")[0] : null;
+        DefineCallback(generic, "GenericCallbackUnderTest",
+            method => genericMethod ? method.DefineGenericParameters("U")[0] : typeParameter!);
+        generic.CreateType();
+
+        assembly.Save(outputPath);
+        return outputPath;
     }
 
     /// <summary>
