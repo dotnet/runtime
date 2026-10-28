@@ -29,18 +29,6 @@ public static class WasmWebcilModule
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static string UncoveredFixup() => "uncovered-precode-string";
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Type ReadGenericIntToken() => ReadGenericTypeToken<int>();
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Type ReadIntToken() => typeof(int);
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Type ReadGenericValueToken() => ReadGenericTypeToken<GenericTokenValue>();
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Type ReadValueToken() => typeof(GenericTokenValue);
-
     public sealed class LdtokenType
     {
     }
