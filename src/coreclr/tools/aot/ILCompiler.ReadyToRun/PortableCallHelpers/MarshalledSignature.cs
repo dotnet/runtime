@@ -30,16 +30,14 @@ namespace ILCompiler.PortableCallHelpers
         // vm/fieldmarshaler.h DEFAULT_PACKING_SIZE
         private const int DefaultPackingSize = 64;
 
-        // NATIVE_TYPE_ERROR, an HRESULT, which NativeTypeKind does not name.
-        private const NativeTypeKind ErrorNativeType = (NativeTypeKind)0x2d;
 
         /// <param name="isApproximate">
         /// Set when a marshalled struct's native layout could not be modeled, so the managed token
         /// was kept for it and the runtime may ask for a thunk this signature does not describe.
         /// </param>
         /// <param name="marshalledDelegates">
-        /// Receives the delegate types the signature marshals, directly or through struct fields.
-        /// A delegate that comes back from native code is wrapped by an IL stub that needs its own thunk.
+        /// Receives the delegate types the signature marshals back from native code, directly or through
+        /// struct fields. Each is wrapped by an IL stub that needs its own thunk.
         /// </param>
         public static string GetPInvokeSignature(MethodDesc method, out bool isApproximate, ICollection<TypeDesc> marshalledDelegates = null)
         {
@@ -128,6 +126,11 @@ namespace ILCompiler.PortableCallHelpers
 
         private static string GetNativeToken(Marshaller marshaller, string managedToken, bool isReturn, ICollection<TypeDesc> marshalledDelegates, ref bool isApproximate)
         {
+            // Only a delegate that comes back from native code is wrapped over a native function
+            // pointer. One going the other way needs Marshal.GetFunctionPointerForDelegate instead.
+            if (!marshaller.Return && !marshaller.Out && !marshaller.IsManagedByRef)
+                marshalledDelegates = null;
+
             switch (marshaller.MarshallerKind)
             {
                 case MarshallerKind.FunctionPointer when marshaller.ManagedType.IsDelegate:
@@ -307,7 +310,7 @@ namespace ILCompiler.PortableCallHelpers
                     return true;
                 }
 
-                case MarshallerKind.Invalid when marshalAs?.Type == ErrorNativeType && fieldType.Category is TypeFlags.Int32 or TypeFlags.UInt32:
+                case MarshallerKind.Invalid when marshalAs?.Type == NativeTypeKind.Error && fieldType.Category is TypeFlags.Int32 or TypeFlags.UInt32:
                     // CoreCLR marshals an HRESULT field as the 4-byte integer it already is.
                     shape = GetTypeShape(fieldType);
                     return true;
@@ -356,13 +359,13 @@ namespace ILCompiler.PortableCallHelpers
 
         // Value types the runtime marshals by value as a pointer-sized handle.
         private static bool IsPassedAsPointer(TypeDesc type)
-            => type is MetadataType { IsValueType: true } metadataType &&
-               metadataType.Module == type.Context.SystemModule &&
-               ((metadataType.Namespace == "System.Runtime.InteropServices"u8 && metadataType.Name == "ArrayWithOffset"u8) ||
-                (metadataType.Namespace == "System"u8 &&
-                 (metadataType.Name == "RuntimeTypeHandle"u8 ||
-                  metadataType.Name == "RuntimeFieldHandle"u8 ||
-                  metadataType.Name == "RuntimeMethodHandle"u8)));
+        {
+            TypeSystemContext context = type.Context;
+            return InteropTypes.IsSystemArrayWithOffset(context, type) ||
+                   InteropTypes.IsSystemRuntimeTypeHandle(context, type) ||
+                   InteropTypes.IsSystemRuntimeFieldHandle(context, type) ||
+                   InteropTypes.IsSystemRuntimeMethodHandle(context, type);
+        }
 
         // The runtime reads CharSet.Auto as Ansi off Windows, so a default-marshalled char field
         // makes such a struct non-blittable there even where MarshalUtils.IsBlittableType, which

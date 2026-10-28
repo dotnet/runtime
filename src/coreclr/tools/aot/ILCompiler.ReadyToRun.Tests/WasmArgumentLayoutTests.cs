@@ -1222,7 +1222,9 @@ public class WasmArgumentLayoutTests
     [InlineData("[UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate bool D(ShortAndBool s, double d);", "MiS12d")]
     // A delegate a P/Invoke returns is called through its own IL stub.
     [InlineData("delegate void D(InnerArray s, float f); [DllImport(\"lib\")] static extern D F();", "MvS24f")]
-    public void PortableCallHelpersGeneratorEncodesTheMarshalledNativeSignature(string declaration, string expectedKey)
+    // A delegate passed to native code never wraps a native function pointer, so it gets no thunk.
+    [InlineData("delegate void D(InnerArray s, double d); [DllImport(\"lib\")] static extern void F(D d);", "MvS24d", false)]
+    public void PortableCallHelpersGeneratorEncodesTheMarshalledNativeSignature(string declaration, string expectedKey, bool expectThunk = true)
     {
         string source = $$"""
             using System;
@@ -1266,7 +1268,10 @@ public class WasmArgumentLayoutTests
 
             Assert.True(exitCode == 0, log.ToString());
             string thunks = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-interp-to-managed.cpp"));
-            Assert.Contains($"\"{expectedKey}\"", thunks);
+            if (expectThunk)
+                Assert.Contains($"\"{expectedKey}\"", thunks);
+            else
+                Assert.DoesNotContain($"\"{expectedKey}\"", thunks);
         }
         finally
         {

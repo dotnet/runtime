@@ -129,12 +129,13 @@ namespace ILCompiler.PortableCallHelpers
                 // The declaration only provides the symbol's address; calls go through the
                 // interpreter-to-native thunk for each P/Invoke's own signature. Imports that alias one
                 // entry point with different signatures would otherwise declare it with conflicting types.
-                string decl = GenPInvokeDecl(first);
+                PInvokeInfo declared = candidates.FirstOrDefault(c => !IsApproximate(c)) ?? first;
+                string decl = GenPInvokeDecl(declared);
                 w.WriteLine(decl);
                 foreach (PInvokeInfo candidate in candidates)
                 {
                     if (GenPInvokeDecl(candidate) != decl)
-                        log.Verbose($"'{candidate.Method}' imports '{first.EntryPoint}' with a different native signature than '{first.Method}'.");
+                        log.Verbose($"'{candidate.Method}' imports '{first.EntryPoint}' with a different native signature than '{declared.Method}'.");
                 }
             }
 
@@ -453,6 +454,12 @@ namespace ILCompiler.PortableCallHelpers
             }
 
             return FixupSymbolName(pinvoke.EntryPoint);
+        }
+
+        private static bool IsApproximate(PInvokeInfo pinvoke)
+        {
+            MarshalledSignature.GetPInvokeSignature(pinvoke.Method, out bool isApproximate);
+            return isApproximate;
         }
 
         private string GenPInvokeDecl(PInvokeInfo pinvoke)
