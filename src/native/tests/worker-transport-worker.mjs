@@ -72,12 +72,27 @@ async function runWorker() {
     let typeOffset;
     let int32Type;
     let stringType;
+    let primitiveTypes;
+    function readPrimitive(pointer, type) {
+        if (new Uint8Array(memory.buffer)[pointer + typeOffset] === 0) return null;
+        if (type === primitiveTypes[0]) return new Uint8Array(memory.buffer)[pointer] !== 0;
+        if (type === primitiveTypes[1]) return new Float64Array(memory.buffer)[pointer / 8];
+        if (type === primitiveTypes[2]) return new Float32Array(memory.buffer)[pointer / 4];
+        return new Int32Array(memory.buffer)[pointer / 4];
+    }
+    function writePrimitive(pointer, type, value) {
+        new Uint8Array(memory.buffer)[pointer + typeOffset] = value === null || value === undefined ? 0 : type;
+        if (value === null || value === undefined) return;
+        if (type === primitiveTypes[0]) new Uint8Array(memory.buffer)[pointer] = value ? 1 : 0;
+        else if (type === primitiveTypes[1]) new Float64Array(memory.buffer)[pointer / 8] = value;
+        else if (type === primitiveTypes[2]) new Float32Array(memory.buffer)[pointer / 4] = value;
+        else new Int32Array(memory.buffer)[pointer / 4] = value;
+    }
     function invokeImport(value, isAsync = false, argumentType = int32Type, returnType = int32Type) {
         const pointer = module._malloc(3 * argumentSize);
         try {
             new Uint8Array(memory.buffer).fill(0, pointer, pointer + 3 * argumentSize);
-            new Int32Array(memory.buffer)[(pointer + 2 * argumentSize) / 4] = value;
-            new Uint8Array(memory.buffer)[pointer + 2 * argumentSize + typeOffset] = int32Type;
+            writePrimitive(pointer + 2 * argumentSize, argumentType === stringType ? int32Type : argumentType, argumentType === stringType ? 0 : value);
             const frame = new Uint8Array(memory.buffer, pointer + argumentSize, argumentSize);
             if (isAsync) frame.fill(0x5a);
             const result = imports.get("main.js").get("update")(pointer, isAsync, value, argumentType, returnType);
@@ -113,8 +128,21 @@ async function runWorker() {
                 ].map(([name, handle, isAsync, argumentType, returnType]) => ({
                     path: ["Sample", "Test", name], handle, supported: true, isAsync, argumentType, returnType,
                 })),
+                ...["Boolean", "Double", "Single"].flatMap((name, index) => ["", "Import", "Async", "AsyncImport"].map((suffix, mode) => ({
+                    path: ["Sample", "Test", name + suffix], handle: 20 + index * 4 + mode,
+                    supported: true, isAsync: mode >= 2, argumentType: primitiveTypes[index], returnType: primitiveTypes[index],
+                }))),
             ],
             invokeWorkerJSExport: (handle, pointer, stringArgument) => {
+                if (handle >= 20 && handle <= 31) {
+                    const type = primitiveTypes[Math.floor((handle - 20) / 4)];
+                    const mode = (handle - 20) % 4;
+                    const value = readPrimitive(pointer + 2 * argumentSize, type) ?? (type === primitiveTypes[0] ? false : 0);
+                    const result = mode % 2 ? invokeImport(value, mode >= 2, type, type) : value;
+                    if (mode >= 2) return Promise.resolve(result);
+                    writePrimitive(pointer + argumentSize, type, result);
+                    return;
+                }
                 const value = new Int32Array(memory.buffer)[(pointer + 2 * argumentSize) / 4];
                 let result;
                 if (handle === 1) {
@@ -199,6 +227,7 @@ async function runWorker() {
     typeOffset = types.JSMarshalerArgumentOffsets.Type;
     int32Type = types.MarshalerType.Int32;
     stringType = types.MarshalerType.String;
+    primitiveTypes = [types.MarshalerType.Boolean, types.MarshalerType.Double, types.MarshalerType.Single];
     parentPort.once("message", message => {
         if (message.type !== "init") throw new Error("Expected worker initialization");
         void workerModule.namespace.bootstrapWorkerRuntime(message);

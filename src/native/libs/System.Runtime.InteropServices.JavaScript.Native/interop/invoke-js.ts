@@ -7,7 +7,7 @@ import { dotnetBrowserUtilsExports, dotnetApi, dotnetAssert, dotnetLogger, VoidP
 
 import type { BindingClosureJS, BoundMarshalerToJs, JSFnHandle, JSFunctionSignature, JSHandle, JSMarshalerArguments, VoidPtr, WrappedJSFunction } from "./types";
 
-import { MarshalerType, MeasuredBlock } from "./types";
+import { isWorkerValueType, MarshalerType, MeasuredBlock } from "./types";
 import { getSig, getSignatureArgumentCount, getSignatureFunctionName, getSignatureHandle, getSignatureModuleName, getSignatureType, getSignatureResType, getSignatureVersion, isReceiverShouldFree, jsInteropState } from "./marshal";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, fixupPointer, startMeasure } from "./utils";
 import { bindArgMarshalToJs } from "./marshal-to-js";
@@ -73,9 +73,8 @@ function bindJsImport(signature: JSFunctionSignature): Function {
     const workerAsync = workerResType === MarshalerType.Task || workerResType === MarshalerType.TaskPreCreated;
     const workerArgumentType = argsCount === 1 ? getSignatureType(getSig(signature, 2)) : MarshalerType.None;
     const workerReturnType = workerAsync ? getSignatureResType(workerResSig) : workerResType;
-    if (workerInvoke && (argsCount !== 1 || (workerArgumentType !== MarshalerType.Int32 && workerArgumentType !== MarshalerType.String)
-        || (workerReturnType !== MarshalerType.Int32 && workerReturnType !== MarshalerType.String))) {
-        throw new Error("withWorker(): UI imports support one Int32/String argument and an Int32/String or Task result");
+    if (workerInvoke && (argsCount !== 1 || !isWorkerValueType(workerArgumentType) || !isWorkerValueType(workerReturnType))) {
+        throw new Error("withWorker(): UI imports require one supported primitive/String argument and a supported result or Task");
     }
     const fn = workerInvoke
         ? (value: unknown) => {

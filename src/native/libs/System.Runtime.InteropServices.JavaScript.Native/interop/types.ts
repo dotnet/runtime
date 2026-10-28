@@ -114,6 +114,13 @@ export type BindingClosureCS = {
     workerReturnType: MarshalerType,
 }
 
+export type WorkerValueType = MarshalerType.Boolean | MarshalerType.Int32 | MarshalerType.Single | MarshalerType.Double | MarshalerType.String;
+
+export function isWorkerValueType(type: MarshalerType): type is WorkerValueType {
+    return type === MarshalerType.Boolean || type === MarshalerType.Int32 || type === MarshalerType.Single
+        || type === MarshalerType.Double || type === MarshalerType.String;
+}
+
 export const enum MeasuredBlock {
     bindJsFunction = "clr.bindJsFunction:",
     bindCsFunction = "clr.bindCsFunction:",

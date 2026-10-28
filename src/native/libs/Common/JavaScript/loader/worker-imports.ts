@@ -4,9 +4,9 @@
 import type { JSMarshalerArguments } from "./types";
 import type { WorkerPromiseMessage } from "./worker-promises";
 import { captureWorkerPromise, createWorkerPromises } from "./worker-promises";
-import type { WorkerValueType } from "./worker-values";
-import { allocateWorkerString, freeWorkerString, readWorkerString, validateWorkerValue, writeWorkerString } from "./worker-values";
-import { JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+import type { WorkerValue, WorkerValueType } from "./worker-values";
+import { allocateWorkerString, freeWorkerString, readWorkerPrimitive, readWorkerString, validateWorkerValue, writeWorkerPrimitive, writeWorkerString } from "./worker-values";
+import { isWorkerValueType, JavaScriptMarshalerArgSize, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 import {
     JSIMPORT_RING_CAPACITY, jsimportEntryOffset, jsimportErrorOffset,
     MemoryViewManager, readSharedError, writeSharedError, reserveCallSlot, OFFSET_JSIMPORT_RING, OFFSET_JSIMPORT_QUEUE,
@@ -25,7 +25,7 @@ export interface WorkerModuleImportsMessage {
     functions: { name: string, handle: number }[];
 }
 
-type UIImportFunction = (value: number | string | null) => unknown;
+type UIImportFunction = (value: WorkerValue) => unknown;
 
 export function createWorkerJSImportDispatcher(
     signal: Int32Array,
@@ -90,11 +90,11 @@ export function createWorkerJSImportDispatcher(
                 }
                 const argumentType = Atomics.load(signal, entry + RING_ENTRY_ARGUMENT_TYPE) || MarshalerType.Int32;
                 const returnType = Atomics.load(signal, entry + RING_ENTRY_RETURN_TYPE) || MarshalerType.Int32;
-                if (returnType !== MarshalerType.Int32 && returnType !== MarshalerType.String) throw new Error("withWorker(): invalid UI import result type");
+                if (!isWorkerValueType(returnType) || !isWorkerValueType(argumentType)) throw new Error("withWorker(): invalid UI import value type");
                 const value = argumentType === MarshalerType.String
                     ? readWorkerString(memory, Atomics.load(signal, entry + RING_ENTRY_STRING_ARGUMENT) >>> 0,
                         Atomics.load(signal, entry + RING_ENTRY_STRING_ARGUMENT_LENGTH))
-                    : views.i32[(pointer + 2 * JavaScriptMarshalerArgSize + JSMarshalerArgumentOffsets.Int32Value) / 4];
+                    : readWorkerPrimitive(memory, pointer + 2 * JavaScriptMarshalerArgSize, argumentType);
                 const result = invoke(value);
                 if (Atomics.load(signal, entry + RING_ENTRY_RESULT_KIND) === WorkerResultKind.Promise) {
                     const id = Atomics.load(signal, entry + RING_ENTRY_PROMISE_ID);
@@ -129,14 +129,8 @@ export function createWorkerJSImportDispatcher(
                     }
                     continue;
                 }
-                const isNull = result === null || result === undefined;
-                if (!isNull && (typeof result !== "number" || !Number.isInteger(result) || result < -0x8000_0000 || result > 0x7fff_ffff)) {
-                    throw new Error("withWorker(): UI import must return a synchronous Int32");
-                }
-                const output = memory.refreshIfNeeded();
                 const resultPointer = pointer + JavaScriptMarshalerArgSize;
-                output.u8[resultPointer + JSMarshalerArgumentOffsets.Type] = isNull ? MarshalerType.None : MarshalerType.Int32;
-                output.i32[(resultPointer + JSMarshalerArgumentOffsets.Int32Value) / 4] = isNull ? 0 : result;
+                writeWorkerPrimitive(memory, resultPointer, result, returnType);
             } catch (error) {
                 writeSharedError(signal, jsimportErrorOffset(slot), error, "UI import");
                 state = SignalState.ERROR;
@@ -259,12 +253,8 @@ export function createWorkerJSImportInvoker(
             if (returnType === MarshalerType.String) {
                 return readWorkerString(memory, resultBuffer, Atomics.load(signal, entry + RING_ENTRY_STRING_RESULT_LENGTH));
             }
-            const views = memory.refreshIfNeeded();
             const resultPointer = Number(args) + JavaScriptMarshalerArgSize;
-            const resultType = views.u8[resultPointer + JSMarshalerArgumentOffsets.Type];
-            if (resultType === MarshalerType.None) return null;
-            if (resultType !== MarshalerType.Int32) throw new Error("withWorker(): invalid UI import result type");
-            return views.i32[(resultPointer + JSMarshalerArgumentOffsets.Int32Value) / 4];
+            return readWorkerPrimitive(memory, resultPointer, returnType);
         } finally {
             freeWorkerString(argumentBuffer);
             freeWorkerString(resultBuffer);

@@ -43,6 +43,41 @@ export async function setup(runtime) {
             if (after <= before) throw new Error("Expected actual native memory growth during string export");
             return result;
         },
+        echoBoolean: value => value,
+        invokeBoolean: value => exports.EchoBoolean(value),
+        echoBooleanAsync: async value => value,
+        invokeBooleanAsync: value => exports.EchoBooleanAsync(value),
+        echoNumber: value => value,
+        echoNumberAsync: async value => value,
+        invokeDouble: value => exports.EchoDouble(value),
+        invokeDoubleAsync: value => exports.EchoDoubleAsync(value),
+        invokeSingle: value => exports.EchoSingle(value),
+        invokeSingleAsync: value => exports.EchoSingleAsync(value),
+        nullPrimitive: () => null,
+        nullPrimitiveAsync: async () => null,
+        invalidPrimitive: () => ({}),
+        primitiveContracts: value => {
+            for (const [name, defaultValue, message] of [
+                ["EchoBoolean", false, "Boolean"], ["EchoDouble", 0, "Number"], ["EchoSingle", 0, "Number"]
+            ]) {
+                if (!Object.is(exports[name](null), defaultValue) || !Object.is(exports[name](undefined), defaultValue)) {
+                    throw new Error("Primitive null/default conversion changed");
+                }
+                try {
+                    exports[name]("wrong");
+                    throw new Error("Expected primitive input type validation");
+                } catch (error) {
+                    if (!error.message.includes(message)) throw error;
+                    error.dispose?.();
+                }
+            }
+            const halfway = 1 + 2 ** -24;
+            if (!Object.is(exports.EchoSingle(halfway), Math.fround(halfway))
+                || !Object.is(exports.EchoSingle(-Number.MIN_VALUE), -0)) {
+                throw new Error("Single rounding or signed-zero conversion changed");
+            }
+            return value;
+        },
         mode: () => {
             if (typeof document !== "object" || document.defaultView !== globalThis) {
                 throw new Error("The registered import must execute on the UI thread");

@@ -6,8 +6,8 @@ import { createPromiseCompletionSource } from "./promise-completion-source";
 import type { WorkerPromiseMessage } from "./worker-promises";
 import { captureWorkerPromise, createWorkerPromises } from "./worker-promises";
 import type { WorkerValue, WorkerValueType } from "./worker-values";
-import { allocateWorkerString, freeWorkerString, readWorkerString, validateWorkerValue, writeWorkerString } from "./worker-values";
-import { JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+import { allocateWorkerString, freeWorkerString, readWorkerPrimitive, readWorkerString, validateWorkerValue, writeWorkerPrimitive, writeWorkerString } from "./worker-values";
+import { isWorkerValueType, JavaScriptMarshalerArgSize, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 import {
     allocatePromiseId, JSEXPORT_RING_CAPACITY, jsexportEntryOffset, jsexportErrorOffset, MemoryViewManager,
     OFFSET_FRAME_PTRS, OFFSET_WORKER_ERROR_LENGTH, OFFSET_JSEXPORT_HEAD, OFFSET_JSEXPORT_TAIL,
@@ -76,7 +76,6 @@ export function createWorkerJSExportClient(
     function invoke(handle: number, value: unknown, isAsync: boolean, argumentType: WorkerValueType, returnType: WorkerValueType): WorkerValue | Promise<WorkerValue> {
         ensureRunning();
         validateWorkerValue(value, argumentType);
-        const isNull = value === null || value === undefined;
         const head = Atomics.load(signal, OFFSET_JSEXPORT_HEAD) >>> 0;
         const tail = Atomics.load(signal, OFFSET_JSEXPORT_TAIL) >>> 0;
         if (((head - tail) >>> 0) >= JSEXPORT_RING_CAPACITY) {
@@ -125,8 +124,7 @@ export function createWorkerJSExportClient(
             }
             views.u8.fill(0, pointer, pointer + 3 * JavaScriptMarshalerArgSize);
             const argument = pointer + 2 * JavaScriptMarshalerArgSize;
-            views.u8[argument + JSMarshalerArgumentOffsets.Type] = isNull ? MarshalerType.None : MarshalerType.Int32;
-            views.i32[argument / 4] = typeof value === "number" ? value : 0;
+            if (argumentType !== MarshalerType.String) writeWorkerPrimitive(memory, argument, value, argumentType);
             callDepth++;
             active = true;
             Atomics.store(signal, entry + RING_ENTRY_HANDLE, handle);
@@ -157,12 +155,8 @@ export function createWorkerJSExportClient(
                 return readWorkerString(memory, Atomics.load(signal, entry + RING_ENTRY_STRING_RESULT) >>> 0,
                     Atomics.load(signal, entry + RING_ENTRY_STRING_RESULT_LENGTH));
             }
-            const result = memory.refreshIfNeeded();
             const resultPointer = pointer + JavaScriptMarshalerArgSize;
-            const type = result.u8[resultPointer + JSMarshalerArgumentOffsets.Type];
-            if (type === MarshalerType.None) return 0;
-            if (type !== MarshalerType.Int32) throw new Error("withWorker(): invalid export result type");
-            return result.i32[resultPointer / 4];
+            return readWorkerPrimitive(memory, resultPointer, returnType) ?? (returnType === MarshalerType.Boolean ? false : 0);
         } catch (error) {
             if (published && Atomics.load(signal, entry + RING_ENTRY_SIGNAL) === SignalState.PENDING) {
                 onFailure(error instanceof Error ? error : new Error(String(error)));
@@ -188,14 +182,12 @@ export function createWorkerJSExportClient(
             if (!fn) {
                 const argumentType = descriptor.argumentType ?? MarshalerType.Int32;
                 const returnType = descriptor.returnType ?? MarshalerType.Int32;
-                if (descriptor.supported && ((argumentType !== MarshalerType.Int32 && argumentType !== MarshalerType.String)
-                    || (returnType !== MarshalerType.Int32 && returnType !== MarshalerType.String))) {
+                if (descriptor.supported && (!isWorkerValueType(argumentType) || !isWorkerValueType(returnType))) {
                     throw new Error("withWorker(): invalid export value types");
                 }
-                fn = descriptor.supported && (argumentType === MarshalerType.Int32 || argumentType === MarshalerType.String)
-                    && (returnType === MarshalerType.Int32 || returnType === MarshalerType.String)
+                fn = descriptor.supported && isWorkerValueType(argumentType) && isWorkerValueType(returnType)
                     ? value => invoke(descriptor.handle, value, descriptor.isAsync === true, argumentType, returnType) : () => {
-                        throw new Error("withWorker(): only Int32/String argument and result or Task exports are supported");
+                        throw new Error("withWorker(): only supported primitive/String argument and result or Task exports are available");
                     };
                 functions.set(descriptor.handle, fn);
             }
@@ -308,7 +300,7 @@ export function createWorkerJSExportDispatcher(
                     }
                     const argumentType = Atomics.load(signal, entry + RING_ENTRY_ARGUMENT_TYPE);
                     const returnType = Atomics.load(signal, entry + RING_ENTRY_RETURN_TYPE) || MarshalerType.Int32;
-                    if (returnType !== MarshalerType.Int32 && returnType !== MarshalerType.String) throw new Error("withWorker(): invalid export result type");
+                    if (!isWorkerValueType(returnType)) throw new Error("withWorker(): invalid export result type");
                     const stringArgument = argumentType === MarshalerType.String
                         ? readWorkerString(memory, Atomics.load(signal, entry + RING_ENTRY_STRING_ARGUMENT) >>> 0,
                             Atomics.load(signal, entry + RING_ENTRY_STRING_ARGUMENT_LENGTH)) : undefined;

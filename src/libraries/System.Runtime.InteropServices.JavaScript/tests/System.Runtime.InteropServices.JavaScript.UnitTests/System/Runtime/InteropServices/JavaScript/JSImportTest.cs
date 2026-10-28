@@ -69,6 +69,90 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("growString", nameof(WorkerInteropTest))]
         private static partial string GrowStringOnUI(int length);
 
+        [JSImport("echoBoolean", nameof(WorkerInteropTest))]
+        private static partial bool EchoBooleanOnUI(bool value);
+
+        [JSImport("invokeBoolean", nameof(WorkerInteropTest))]
+        private static partial bool InvokeBooleanOnUI(bool value);
+
+        [JSImport("echoBooleanAsync", nameof(WorkerInteropTest))]
+        private static partial Task<bool> EchoBooleanAsyncOnUI(bool value);
+
+        [JSImport("invokeBooleanAsync", nameof(WorkerInteropTest))]
+        private static partial Task<bool> InvokeBooleanAsyncOnUI(bool value);
+
+        [JSImport("echoNumber", nameof(WorkerInteropTest))]
+        private static partial double EchoDoubleOnUI(double value);
+
+        [JSImport("invokeDouble", nameof(WorkerInteropTest))]
+        private static partial double InvokeDoubleOnUI(double value);
+
+        [JSImport("echoNumberAsync", nameof(WorkerInteropTest))]
+        private static partial Task<double> EchoDoubleAsyncOnUI(double value);
+
+        [JSImport("invokeDoubleAsync", nameof(WorkerInteropTest))]
+        private static partial Task<double> InvokeDoubleAsyncOnUI(double value);
+
+        [JSImport("echoNumber", nameof(WorkerInteropTest))]
+        private static partial float EchoSingleOnUI(float value);
+
+        [JSImport("invokeSingle", nameof(WorkerInteropTest))]
+        private static partial float InvokeSingleOnUI(float value);
+
+        [JSImport("echoNumberAsync", nameof(WorkerInteropTest))]
+        private static partial Task<float> EchoSingleAsyncOnUI(float value);
+
+        [JSImport("invokeSingleAsync", nameof(WorkerInteropTest))]
+        private static partial Task<float> InvokeSingleAsyncOnUI(float value);
+
+        [JSImport("primitiveContracts", nameof(WorkerInteropTest))]
+        private static partial int CheckPrimitiveContractsOnUI(int value);
+
+        [JSImport("nullPrimitive", nameof(WorkerInteropTest))]
+        private static partial bool NullBooleanOnUI(int value);
+
+        [JSImport("nullPrimitive", nameof(WorkerInteropTest))]
+        private static partial double NullDoubleOnUI(int value);
+
+        [JSImport("nullPrimitive", nameof(WorkerInteropTest))]
+        private static partial float NullSingleOnUI(int value);
+
+        [JSImport("nullPrimitiveAsync", nameof(WorkerInteropTest))]
+        private static partial Task<bool> NullBooleanAsyncOnUI(int value);
+
+        [JSImport("nullPrimitiveAsync", nameof(WorkerInteropTest))]
+        private static partial Task<double> NullDoubleAsyncOnUI(int value);
+
+        [JSImport("nullPrimitiveAsync", nameof(WorkerInteropTest))]
+        private static partial Task<float> NullSingleAsyncOnUI(int value);
+
+        [JSImport("invalidPrimitive", nameof(WorkerInteropTest))]
+        private static partial bool InvalidBooleanOnUI(int value);
+
+        [JSImport("invalidPrimitive", nameof(WorkerInteropTest))]
+        private static partial double InvalidDoubleOnUI(int value);
+
+        [JSImport("invalidPrimitive", nameof(WorkerInteropTest))]
+        private static partial float InvalidSingleOnUI(int value);
+
+        [JSExport]
+        internal static bool EchoBoolean(bool value) => value;
+
+        [JSExport]
+        internal static Task<bool> EchoBooleanAsync(bool value) => Task.FromResult(value);
+
+        [JSExport]
+        internal static double EchoDouble(double value) => value;
+
+        [JSExport]
+        internal static Task<double> EchoDoubleAsync(double value) => Task.FromResult(value);
+
+        [JSExport]
+        internal static float EchoSingle(float value) => value;
+
+        [JSExport]
+        internal static Task<float> EchoSingleAsync(float value) => Task.FromResult(value);
+
         [JSExport]
         internal static string EchoString(string value) => value;
 
@@ -252,6 +336,86 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal('z', value[0]);
             Assert.Equal('z', value[^1]);
             Assert.Equal("after growth", InvokeStringOnUI("after growth"));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task BooleanImportAndExport(bool value)
+        {
+            Assert.Equal(value, EchoBooleanOnUI(value));
+            Assert.Equal(value, InvokeBooleanOnUI(value));
+            Assert.Equal(value, await EchoBooleanAsyncOnUI(value));
+            Assert.Equal(value, await InvokeBooleanAsyncOnUI(value));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        public async Task FloatingPointImportAndExport(int scenario)
+        {
+            double value = scenario switch
+            {
+                0 => 0.0,
+                1 => -0.0,
+                2 => Math.PI,
+                3 => double.NaN,
+                4 => double.PositiveInfinity,
+                5 => double.NegativeInfinity,
+                6 => double.MaxValue,
+                7 => double.Epsilon,
+                8 => -double.Epsilon,
+                9 => 1.0 + Math.Pow(2, -24),
+                _ => throw new ArgumentOutOfRangeException(nameof(scenario))
+            };
+            double[] doubleResults = [EchoDoubleOnUI(value), InvokeDoubleOnUI(value),
+                await EchoDoubleAsyncOnUI(value), await InvokeDoubleAsyncOnUI(value)];
+            foreach (double actual in doubleResults)
+            {
+                Assert.Equal(value, actual);
+                if (value == 0.0)
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(actual));
+            }
+            float single = (float)value;
+            float[] singleResults = [EchoSingleOnUI(single), InvokeSingleOnUI(single),
+                await EchoSingleAsyncOnUI(single), await InvokeSingleAsyncOnUI(single)];
+            foreach (float actual in singleResults)
+            {
+                Assert.Equal(single, actual);
+                if (single == 0.0f)
+                    Assert.Equal(BitConverter.SingleToInt32Bits(single), BitConverter.SingleToInt32Bits(actual));
+            }
+        }
+
+        [Fact]
+        public async Task PrimitiveDefaultsAndValidation()
+        {
+            Assert.Equal(42, CheckPrimitiveContractsOnUI(42));
+            Assert.False(NullBooleanOnUI(0));
+            Assert.Equal(0.0, NullDoubleOnUI(0));
+            Assert.Equal(0.0f, NullSingleOnUI(0));
+            Assert.False(await NullBooleanAsyncOnUI(0));
+            Assert.Equal(0.0, await NullDoubleAsyncOnUI(0));
+            Assert.Equal(0.0f, await NullSingleAsyncOnUI(0));
+            JSException booleanError = Assert.Throws<JSException>(() => InvalidBooleanOnUI(0));
+            JSException doubleError = Assert.Throws<JSException>(() => InvalidDoubleOnUI(0));
+            JSException singleError = Assert.Throws<JSException>(() => InvalidSingleOnUI(0));
+            Assert.Contains("Boolean", booleanError.Message);
+            Assert.Contains("Number", doubleError.Message);
+            Assert.Contains("Number", singleError.Message);
+            Assert.NotEmpty(booleanError.StackTrace);
+            Assert.NotEmpty(doubleError.StackTrace);
+            Assert.NotEmpty(singleError.StackTrace);
+            Assert.True(InvokeBooleanOnUI(true));
+            Assert.Equal(42.5, InvokeDoubleOnUI(42.5));
         }
     }
 

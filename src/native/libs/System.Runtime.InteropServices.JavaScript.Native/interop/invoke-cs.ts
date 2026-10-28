@@ -9,11 +9,11 @@ import type { WorkerExportDescriptor } from "../../Common/JavaScript/loader/work
 import { dotnetAssert, dotnetLogger, Module } from "./cross-module";
 
 import { bindAssemblyExports, invokeJSExport } from "./managed-exports";
-import { allocStackFrame, getArg, getMarshalerToCsByType, getSig, getSignatureType, getSignatureResType, getSignatureArgumentCount, getSignatureVersion, jsInteropState } from "./marshal";
+import { allocStackFrame, getArg, getMarshalerToCsByType, getMarshalerToJsByType, getSig, getSignatureType, getSignatureResType, getSignatureArgumentCount, getSignatureVersion, jsInteropState } from "./marshal";
 import { bindArgMarshalToCs } from "./marshal-to-cs";
-import { bindArgMarshalToJs, endMarshalTaskToJs, marshalInt32ToJs, releaseEagerTaskHolder } from "./marshal-to-js";
+import { bindArgMarshalToJs, endMarshalTaskToJs, releaseEagerTaskHolder } from "./marshal-to-js";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, isRuntimeRunning, startMeasure } from "./utils";
-import { MarshalerType, MeasuredBlock } from "./types";
+import { isWorkerValueType, MarshalerType, MeasuredBlock } from "./types";
 import { boundCsFunctionSymbol, exportsByAssembly } from "./gc-handles";
 import { ManagedError } from "./marshaled-types";
 
@@ -62,15 +62,17 @@ export function invokeWorkerJSExport(handle: number, args: JSMarshalerArguments,
         const fn = workerExports.get(handle);
         if (!fn) throw new Error("withWorker(): unknown or unsupported scalar export");
         const closure: BindingClosureCS = Reflect.get(fn, boundCsFunctionSymbol);
-        const result = fn(closure.workerArgumentType === MarshalerType.String ? stringArgument : marshalInt32ToJs(getArg(args, 2)));
+        const argumentConverter = getMarshalerToJsByType(closure.workerArgumentType);
+        if (!argumentConverter) throw new Error("Worker argument marshaler is not initialized");
+        const result = fn(closure.workerArgumentType === MarshalerType.String ? stringArgument : argumentConverter(getArg(args, 2)));
         if (closure.isAsync) {
             return result === null ? null : result.catch((error: unknown) => {
                 throw snapshotWorkerExportError(error);
             });
         }
         if (closure.workerReturnType === MarshalerType.String) return result;
-        const converter = getMarshalerToCsByType(MarshalerType.Int32);
-        if (!converter) throw new Error("Int32 marshaler is not initialized");
+        const converter = getMarshalerToCsByType(closure.workerReturnType);
+        if (!converter) throw new Error("Worker result marshaler is not initialized");
         converter(getArg(args, 1), result);
         return undefined;
     } catch (error) {
@@ -131,8 +133,7 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
         isAsync,
         isDiscardNoWait,
         isDisposed: false,
-        isWorkerScalar: argsCount === 1 && (workerReturnType === MarshalerType.Int32 || workerReturnType === MarshalerType.String)
-            && (workerArgumentType === MarshalerType.Int32 || workerArgumentType === MarshalerType.String),
+        isWorkerScalar: argsCount === 1 && isWorkerValueType(workerReturnType) && isWorkerValueType(workerArgumentType),
         workerArgumentType,
         workerReturnType,
     };

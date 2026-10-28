@@ -382,7 +382,7 @@ test("worker exports return primitives synchronously and preserve aliases across
         assert.equal(scalar(-2147483648), -2147483647);
         assert.equal(scalar(2147483646), 2147483647);
         assert.throws(() => scalar(2147483648), /Int32/);
-        assert.throws(() => exports.Sample.Test.Async(1), /Int32.*String.*Task/);
+        assert.throws(() => exports.Sample.Test.Async(1), /primitive.*String.*Task/);
         assert.equal(fixture.allocations.size, allocations);
         assert.equal(fixture.calls.filter(call => call[0] === "exports").length, 1);
     } finally {
@@ -442,6 +442,7 @@ test("an import completed during the nested pump does not park afterward", { tim
     try {
         api.setModuleImports("main.js", { update: value => value + 1 });
         new Int32Array(fixture.memory.buffer)[(pointer + 64) / 4] = 41;
+        new Uint8Array(fixture.memory.buffer)[pointer + 64 + 12] = 7;
         const invoke = fixture.importTransport.createWorkerJSImportInvoker(
             fixture.workers[0].signal, api.INTERNAL.workerMemoryViews, 1, api.INTERNAL.workerImports.processPending);
         assert.equal(invoke(pointer), 42);
@@ -737,6 +738,48 @@ test("pending string Tasks release their buffers on exit and ignore late string 
     await new Promise(done => setTimeout(done, 10));
 });
 
+for (const name of ["Boolean", "Double", "Single"]) {
+    test(`${name} preserves synchronous and Task values across both realms`, { timeout: 30000 }, async () => {
+        const fixture = await createFixture({ threaded: true });
+        const api = await fixture.create();
+        let mode = "echo";
+        try {
+            api.setModuleImports("main.js", { update: value => {
+                if (mode === "null") return null;
+                if (mode === "invalid") return {};
+                if (mode === "asyncInvalid") return Promise.resolve({});
+                if (mode === "async") return Promise.resolve(value);
+                return value;
+            } });
+            const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+            const values = name === "Boolean" ? [false, true, null, undefined]
+                : [0, -0, 1, -1, Math.PI, NaN, Infinity, -Infinity, Number.MAX_VALUE, Number.MIN_VALUE, -Number.MIN_VALUE, 1 + 2 ** -24, null, undefined];
+            for (const value of values) {
+                const expected = value === null || value === undefined ? (name === "Boolean" ? false : 0)
+                    : name === "Single" ? Math.fround(value) : value;
+                mode = "echo";
+                assert.ok(Object.is(exports[name](value), expected));
+                assert.ok(Object.is(exports[name + "Import"](value), expected));
+                assert.ok(Object.is(await exports[name + "Async"](value), expected));
+                mode = "async";
+                assert.ok(Object.is(await exports[name + "AsyncImport"](value), expected));
+            }
+            const message = name === "Boolean" ? /Boolean/ : /Number/;
+            assert.throws(() => exports[name]("wrong"), message);
+            mode = "invalid";
+            assert.throws(() => exports[name + "Import"](name === "Boolean" ? false : 1), message);
+            mode = "asyncInvalid";
+            await assert.rejects(exports[name + "AsyncImport"](name === "Boolean" ? true : 1), message);
+            mode = "echo";
+            assert.ok(Object.is(exports[name + "Import"](name === "Boolean" ? true : -0), name === "Boolean" ? true : -0));
+            assert.equal(exports.ActiveAllocations(0), 16);
+        } finally {
+            api.exit(0);
+            await fixture.termination;
+        }
+    });
+}
+
 for (const [seed, expected] of [
     [2147483646, [2147483646, 2147483647, -2147483648, -2147483647]],
     [-2, [-2, -1, 0, 1]],
@@ -771,6 +814,7 @@ for (const seed of [2147483646, -2]) {
                 try {
                     for (let value = 0; value < 32; value++) {
                         new Int32Array(fixture.memory.buffer)[(pointer + 64) / 4] = value;
+                        new Uint8Array(fixture.memory.buffer)[pointer + 64 + 12] = 7;
                         assert.equal(imports.get("main.js").get("update")(pointer), value + 1);
                     }
                 } finally {
@@ -855,6 +899,7 @@ test("scalar UI imports reuse shared frames across ring wraparound", { timeout: 
                 for (let value = 0; value < 65; value++) {
                     const heap = new Int32Array(fixture.memory.buffer);
                     heap[(pointer + 2 * 32) / 4] = value;
+                    new Uint8Array(fixture.memory.buffer)[pointer + 64 + 12] = 7;
                     assert.equal(invoke(pointer), value + 1);
                     assert.equal(heap[(pointer + 32) / 4], value + 1);
                 }
@@ -895,7 +940,7 @@ for (const failure of ["exception", "long-exception", "async-result"]) {
                 try {
                     const expected = failure === "exception" ? /UI import failed \u03bb/
                         : failure === "long-exception" ? /error message exceeds/
-                        : /synchronous Int32/;
+                        : /Int32/;
                     assert.throws(() => invoke(pointer), expected);
                     shouldFail = false;
                     assert.equal(invoke(pointer), 42);
