@@ -293,6 +293,124 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """);
         }
 
+        [Theory]
+        [InlineData("_ = (System.Action)(() => { });")]
+        [InlineData("_ = (System.Action)delegate { };")]
+        [InlineData("static void Local() { } Local();")]
+        [InlineData("yield return 1;")]
+        [InlineData("unsafe { }")]
+        [InlineData("_ = /* SAFETY: Already audited. */ unsafe(0);")]
+        [InlineData("_ = /* SAFETY: To be audited */ unsafe(0);")]
+        public Task InactiveContextBoundary_IsNotEnclosed(string inactiveCode)
+        {
+            return VerifyAsync($$"""
+                class C
+                {
+                    static unsafe int Read() => 0;
+
+                    System.Collections.Generic.IEnumerable<int> M()
+                    {
+                        if ({|CS9362:Read()|} == 0)
+                        {
+                #if NEVER
+                            {{inactiveCode}}
+                #endif
+                            {|CS9362:Read()|};
+                        }
+                        yield return 0;
+                    }
+                }
+                """, $$"""
+                class C
+                {
+                    static unsafe int Read() => 0;
+
+                    System.Collections.Generic.IEnumerable<int> M()
+                    {
+                        if (/* SAFETY: To be audited */ unsafe(Read()) == 0)
+                        {
+                #if NEVER
+                            {{inactiveCode}}
+                #endif
+                            // SAFETY: To be audited
+                            unsafe
+                            {
+                                Read();
+                            }
+                        }
+                        yield return 0;
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public Task InactiveLambdaBetweenStatements_IsNotEnclosed()
+        {
+            return VerifyAsync("""
+                class C
+                {
+                    static unsafe void M() { }
+
+                    void Caller()
+                    {
+                        {|CS9362:M()|};
+                #if NEVER
+                        _ = (System.Action)(() => { });
+                #endif
+                        {|CS9362:M()|};
+                    }
+                }
+                """, """
+                class C
+                {
+                    static unsafe void M() { }
+
+                    void Caller()
+                    {
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            M();
+                        }
+                #if NEVER
+                        _ = (System.Action)(() => { });
+                #endif
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            M();
+                        }
+                    }
+                }
+                """);
+        }
+
+        [Theory]
+        [InlineData("Use(() => Read(1))")]
+        [InlineData("/* SAFETY: Already audited. */ unsafe(Read(1))")]
+        [InlineData("/* SAFETY: To be audited */ unsafe(Read(1))")]
+        public Task InactiveContextInExpression_NoFix(string inactiveExpression)
+        {
+            string source = $$"""
+                class C
+                {
+                    static unsafe int Read(int value) => value;
+                    static int Use(System.Func<int> callback) => callback();
+
+                    int M()
+                    {
+                        return {|CS9362:Read(
+                #if NEVER
+                            {{inactiveExpression}} +
+                #endif
+                            0)|};
+                    }
+                }
+                """;
+            return VerifyAsync(source, source);
+        }
+
         [Fact]
         public Task DeconstructionFollowedByYield_SplitsDeclarations()
         {

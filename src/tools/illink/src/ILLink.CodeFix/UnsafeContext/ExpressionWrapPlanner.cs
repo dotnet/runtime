@@ -73,8 +73,9 @@ namespace ILLink.CodeFix.UnsafeContext
             }
 
             // A lambda or local function inside would get an unsafe body; only placeholder wrappers may be nested.
-            if (expression.DescendantNodes().Any(static n => n is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)
-                || !PlaceholderContexts.ContainsOnlyPlaceholderWrappers(expression))
+            if (UnsafeContextFacts.HasContextBoundary(expression)
+                || !PlaceholderContexts.ContainsOnlyPlaceholderWrappers(expression)
+                || !DirectiveFacts.CanEncloseDisabledText(expression, expression.Span))
             {
                 return false;
             }

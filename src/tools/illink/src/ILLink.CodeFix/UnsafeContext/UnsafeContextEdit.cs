@@ -87,12 +87,18 @@ namespace ILLink.CodeFix.UnsafeContext
             // The token before the body (`)` of a parameter list, `=>` of a lambda, ...) now ends its line.
             SyntaxToken arrow = GetExpressionBody(current).GetFirstToken().GetPreviousToken();
             SyntaxToken previous = current is LambdaExpressionSyntax ? arrow : arrow.GetPreviousToken();
+            SyntaxTriviaList leading = previous.TrailingTrivia;
+            if (current is not LambdaExpressionSyntax)
+                leading = [.. leading, .. arrow.LeadingTrivia, .. arrow.TrailingTrivia];
+
             current = current.ReplaceToken(previous, previous.WithTrailingTrivia(formatting.EndOfLine));
 
             ExpressionSyntax expression = GetExpressionBody(current);
+            expression = expression.WithLeadingTrivia(leading.AddRange(expression.GetLeadingTrivia()));
+            SyntaxToken semicolon = current is LambdaExpressionSyntax ? SyntaxFactory.Token(SyntaxKind.SemicolonToken) : current.GetLastToken();
             bool isProperty = current is BasePropertyDeclarationSyntax;
             BlockSyntax CreateBody(SyntaxTriviaList closeBraceTrailingTrivia) =>
-                CreateUnsafeBody(formatting, isProperty ? indentation + formatting.IndentUnit : indentation, expression, closeBraceTrailingTrivia);
+                CreateUnsafeBody(formatting, isProperty ? indentation + formatting.IndentUnit : indentation, expression, semicolon, closeBraceTrailingTrivia);
 
             SyntaxTriviaList endOfLine = [formatting.EndOfLine];
             return current switch
@@ -110,14 +116,14 @@ namespace ILLink.CodeFix.UnsafeContext
         }
 
         // Builds `{ // SAFETY ... unsafe { return expr; } }`, keeping comments that preceded the expression.
-        private BlockSyntax CreateUnsafeBody(UnsafeContextFormatting formatting, string blockIndentation, ExpressionSyntax expression, SyntaxTriviaList closeBraceTrailingTrivia)
+        private BlockSyntax CreateUnsafeBody(UnsafeContextFormatting formatting, string blockIndentation, ExpressionSyntax expression, SyntaxToken semicolon, SyntaxTriviaList closeBraceTrailingTrivia)
         {
             string middle = blockIndentation + formatting.IndentUnit;
             string inner = middle + formatting.IndentUnit;
-            ExpressionSyntax value = expression.WithoutLeadingTrivia().WithoutTrailingTrivia();
+            ExpressionSyntax value = expression.WithoutLeadingTrivia();
             StatementSyntax statement = asStatement
-                ? SyntaxFactory.ExpressionStatement(value)
-                : SyntaxFactory.ReturnStatement(SyntaxFactory.Token(SyntaxKind.ReturnKeyword).WithTrailingTrivia(SyntaxFactory.Space), value, SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+                ? SyntaxFactory.ExpressionStatement(value).WithSemicolonToken(semicolon)
+                : SyntaxFactory.ReturnStatement(SyntaxFactory.Token(SyntaxKind.ReturnKeyword).WithTrailingTrivia(SyntaxFactory.Space), value, semicolon);
 
             // Comments between `=>` and the expression stay above it.
             SyntaxTriviaList comments = [];

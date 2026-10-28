@@ -52,6 +52,10 @@ namespace ILLink.CodeFix.UnsafeContext
         internal static bool IsUnsafeExpression(SyntaxNode node) =>
             s_unsafeExpressionKind != SyntaxKind.None && node.IsKind(s_unsafeExpressionKind);
 
+        internal static bool HasContextBoundary(SyntaxNode node) =>
+            node.DescendantNodesAndSelf().Any(static n =>
+                n is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax or YieldStatementSyntax or UnsafeStatementSyntax);
+
         /// <summary>Returns the expression inside <c>unsafe(...)</c>.</summary>
         internal static ExpressionSyntax GetUnsafeExpressionOperand(SyntaxNode unsafeExpression) =>
             unsafeExpression.ChildNodes().OfType<ExpressionSyntax>().Single();

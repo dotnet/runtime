@@ -72,8 +72,8 @@ namespace ILLink.CodeFix.UnsafeContext
 
         /// <summary>Returns the locals and labels declared in the inactive <c>#if</c> arms within <paramref name="span"/>.</summary>
         public static IEnumerable<string> GetDisabledDeclarations(SyntaxNode node, TextSpan span) =>
-            GetDisabledText(node, span)
-                .SelectMany(static text => SyntaxFactory.ParseStatement("{" + text + "\n}").DescendantNodes())
+            GetDisabledStatements(node, span)
+                .SelectMany(static statement => statement.DescendantNodes())
                 .Select(static declaration => declaration switch
                 {
                     VariableDeclaratorSyntax variable => variable.Identifier.ValueText,
@@ -82,6 +82,19 @@ namespace ILLink.CodeFix.UnsafeContext
                     _ => null,
                 })
                 .OfType<string>();
+
+        /// <summary>Whether inactive code can enter an unsafe context without hiding audit boundaries.</summary>
+        public static bool CanEncloseDisabledText(SyntaxNode node, TextSpan span) =>
+            GetDisabledStatements(node, span).All(static statement =>
+                !statement.ContainsDiagnostics
+                && !UnsafeContextFacts.HasContextBoundary(statement)
+                // Inactive wrappers cannot be unwrapped, even when they carry a placeholder marker.
+                && !statement.DescendantNodes().Any(UnsafeContextFacts.IsUnsafeExpression));
+
+        private static IEnumerable<StatementSyntax> GetDisabledStatements(SyntaxNode node, TextSpan span) =>
+            GetDisabledText(node, span)
+                // A fragment selected within an expression may not include its terminating semicolon.
+                .Select(text => SyntaxFactory.ParseStatement("{" + text + "\n;}", options: (CSharpParseOptions)node.SyntaxTree.Options));
 
         private static IEnumerable<string> GetDisabledText(SyntaxNode node, TextSpan span) =>
             node.DescendantTrivia(span)

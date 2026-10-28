@@ -197,6 +197,74 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """);
         }
 
+        [Theory]
+        [InlineData("/* After expression. */")]
+        [InlineData("// After expression.")]
+        public Task VoidExpressionBody_KeepsComments(string trailingComment)
+        {
+            return VerifyAsync($$"""
+                class C
+                {
+                    static unsafe void M() { }
+
+                    void Caller() /* Before arrow. */ => /* After arrow. */ {|CS9362:M()|} {{trailingComment}}
+                        /* Before semicolon. */; // After semicolon.
+                }
+                """, $$"""
+                class C
+                {
+                    static unsafe void M() { }
+
+                    void Caller()
+                    {
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            /* Before arrow. */
+                            /* After arrow. */
+                            M() {{trailingComment}}
+                            /* Before semicolon. */;
+                        }
+                    } // After semicolon.
+                }
+                """);
+        }
+
+        [Fact]
+        public Task VoidLambdaBody_KeepsTrailingComment()
+        {
+            return VerifyAsync("""
+                class C
+                {
+                    static unsafe void M() { }
+
+                    void Caller()
+                    {
+                        System.Action action = () => {|CS9362:M()|} /* After expression. */;
+                        action();
+                    }
+                }
+                """, """
+                class C
+                {
+                    static unsafe void M() { }
+
+                    void Caller()
+                    {
+                        System.Action action = () =>
+                        {
+                            // SAFETY: To be audited
+                            unsafe
+                            {
+                                M() /* After expression. */;
+                            }
+                        };
+                        action();
+                    }
+                }
+                """);
+        }
+
         [Fact]
         public Task FieldInitializer()
         {

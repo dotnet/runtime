@@ -69,9 +69,9 @@ namespace ILLink.CodeFix.UnsafeContext
         /// <c>yield</c> cannot appear in it, and existing contexts are never nested (placeholder wrappers are merged).
         /// </summary>
         public static bool CanEnclose(StatementSyntax statement) =>
-            !statement.DescendantNodesAndSelf().Any(static n =>
-                n is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax or YieldStatementSyntax or UnsafeStatementSyntax)
-            && PlaceholderContexts.ContainsOnlyPlaceholderWrappers(statement);
+            !UnsafeContextFacts.HasContextBoundary(statement)
+            && PlaceholderContexts.ContainsOnlyPlaceholderWrappers(statement)
+            && DirectiveFacts.CanEncloseDisabledText(statement, statement.Span);
 
         /// <summary>Counts the leaves a block range covers; an extended placeholder block only holds related leaves.</summary>
         public static Coverage CountRangeLeaves(StatementSyntax statement, TargetSet targets)
@@ -151,7 +151,8 @@ namespace ILLink.CodeFix.UnsafeContext
             splits = splitBuilder.ToImmutable();
             grew = false;
             int newFirst = first, newLast = last;
-            if (HidesInactiveDeclarations(list, first, last))
+            if (HidesInactiveDeclarations(list, first, last)
+                || !DirectiveFacts.CanEncloseDisabledText(list.ScopeNode, GetRangeSpan(list, first, last)))
                 return false;
 
             Dictionary<ISymbol, List<int>> references = FindReferencesOutside(list, first, last, context);
