@@ -239,7 +239,6 @@ namespace System.Diagnostics.PerformanceData
         public System.Diagnostics.PerformanceData.CounterData this[int counterId] { get { throw null; } }
         public System.Diagnostics.PerformanceData.CounterData this[string counterName] { get { throw null; } }
         public void Dispose() { }
-        ~CounterSetInstanceCounterDataSet() { }
     }
     public enum CounterSetInstanceType
     {

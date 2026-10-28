@@ -327,9 +327,6 @@
   <data name="Perflib_Argument_InstanceAlreadyExists" xml:space="preserve">
     <value>Instance '{0}' already exists in CounterSet '{1}'.</value>
   </data>
-  <data name="Perflib_InsufficientMemory_InstanceCounterBlock" xml:space="preserve">
-    <value>Cannot allocate raw counter data for CounterSet '{0}' Instance '{1}'.</value>
-  </data>
   <data name="Perflib_InvalidOperation_CounterRefValue" xml:space="preserve">
     <value>Cannot locate raw counter data location for CounterSet '{0}', Counter '{1}, in Instance '{2}'.</value>
   </data>

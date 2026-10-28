@@ -14,21 +14,18 @@ namespace System.Diagnostics.PerformanceData
     /// </summary>
     public sealed class CounterData
     {
-        private readonly unsafe long* _offset;
-
-        // Keeps the owner of the unmanaged block that _offset points into alive while this object is reachable.
-        private readonly CounterSetInstanceCounterDataSet _dataSet;
+        private readonly long[] _data;
+        private readonly int _index;
 
         /// <summary>
         /// CounterData constructor
         /// </summary>
-        /// <param name="pCounterData"> The memory location to store raw counter data </param>
-        /// <param name="dataSet"> The data set that owns the memory block <paramref name="pCounterData"/> points into </param>
-        internal unsafe CounterData(long* pCounterData, CounterSetInstanceCounterDataSet dataSet)
+        /// <param name="data"> The pinned array that stores raw counter data </param>
+        /// <param name="index"> The index of this counter in <paramref name="data"/> </param>
+        internal CounterData(long[] data, int index)
         {
-            _offset = pCounterData;
-            _dataSet = dataSet;
-            *_offset = 0;
+            _data = data;
+            _index = index;
         }
 
         /// <summary>
@@ -36,51 +33,15 @@ namespace System.Diagnostics.PerformanceData
         /// </summary>
         public long Value
         {
-            get
-            {
-                unsafe
-                {
-                    long result = Interlocked.Read(ref (*_offset));
-                    GC.KeepAlive(_dataSet);
-                    return result;
-                }
-            }
-            set
-            {
-                unsafe
-                {
-                    Interlocked.Exchange(ref (*_offset), value);
-                    GC.KeepAlive(_dataSet);
-                }
-            }
+            get => Interlocked.Read(ref _data[_index]);
+            set => Interlocked.Exchange(ref _data[_index], value);
         }
 
-        public void Increment()
-        {
-            unsafe
-            {
-                Interlocked.Increment(ref (*_offset));
-                GC.KeepAlive(_dataSet);
-            }
-        }
+        public void Increment() => Interlocked.Increment(ref _data[_index]);
 
-        public void Decrement()
-        {
-            unsafe
-            {
-                Interlocked.Decrement(ref (*_offset));
-                GC.KeepAlive(_dataSet);
-            }
-        }
+        public void Decrement() => Interlocked.Decrement(ref _data[_index]);
 
-        public void IncrementBy(long value)
-        {
-            unsafe
-            {
-                Interlocked.Add(ref (*_offset), value);
-                GC.KeepAlive(_dataSet);
-            }
-        }
+        public void IncrementBy(long value) => Interlocked.Add(ref _data[_index], value);
 
         /// <summary>
         /// RawValue property it used to query/update actual raw counter data.
@@ -89,23 +50,8 @@ namespace System.Diagnostics.PerformanceData
         /// </summary>
         public long RawValue
         {
-            get
-            {
-                unsafe
-                {
-                    long result = *_offset;
-                    GC.KeepAlive(_dataSet);
-                    return result;
-                }
-            }
-            set
-            {
-                unsafe
-                {
-                    *_offset = value;
-                    GC.KeepAlive(_dataSet);
-                }
-            }
+            get => _data[_index];
+            set => _data[_index] = value;
         }
     }
 
@@ -118,7 +64,9 @@ namespace System.Diagnostics.PerformanceData
         internal CounterSetInstance _instance;
         private readonly Dictionary<int, CounterData> _counters;
         private int _disposed;
-        internal unsafe byte* _dataBlock;
+
+        // Pinned so native perflib can hold a stable pointer to each counter.
+        private readonly long[] _data;
 
         internal CounterSetInstanceCounterDataSet(CounterSetInstance thisInst)
         {
@@ -136,17 +84,13 @@ namespace System.Diagnostics.PerformanceData
                     throw new InvalidOperationException(SR.Format(SR.Perflib_InvalidOperation_NoActiveProvider, _instance._counterSet._providerGuid));
                 }
 
-                _dataBlock = (byte*)Marshal.AllocHGlobal(_instance._counterSet._idToCounter.Count * sizeof(long));
-                if (_dataBlock == null)
-                {
-                    throw new InsufficientMemoryException(SR.Format(SR.Perflib_InsufficientMemory_InstanceCounterBlock, _instance._counterSet._counterSet, _instance._instName));
-                }
+                _data = GC.AllocateArray<long>(_instance._counterSet._idToCounter.Count, pinned: true);
 
                 int CounterOffset = 0;
 
                 foreach (KeyValuePair<int, CounterType> CounterDef in _instance._counterSet._idToCounter)
                 {
-                    CounterData thisCounterData = new CounterData((long*)(_dataBlock + CounterOffset * sizeof(long)), this);
+                    CounterData thisCounterData = new CounterData(_data, CounterOffset);
 
                     _counters.Add(CounterDef.Key, thisCounterData);
 
@@ -156,11 +100,9 @@ namespace System.Diagnostics.PerformanceData
                                     _instance._counterSet._provider._hProvider,
                                     _instance._nativeInst,
                                     (uint)CounterDef.Key,
-                                    (void*)(_dataBlock + CounterOffset * sizeof(long)));
+                                    (void*)Marshal.UnsafeAddrOfPinnedArrayElement(_data, CounterOffset));
                     if (Status != (uint)Interop.Errors.ERROR_SUCCESS)
                     {
-                        DisposeCore();
-
                         // ERROR_INVALID_PARAMETER or ERROR_NOT_FOUND
                         throw Status switch
                         {
@@ -176,29 +118,7 @@ namespace System.Diagnostics.PerformanceData
 
         public void Dispose()
         {
-            DisposeCore();
-            GC.SuppressFinalize(this);
-        }
-
-        ~CounterSetInstanceCounterDataSet()
-        {
-            DisposeCore();
-        }
-
-        private void DisposeCore()
-        {
-            if (Interlocked.Exchange(ref _disposed, 1) == 0)
-            {
-                unsafe
-                {
-                    if (_dataBlock != null)
-                    {
-                        // Need to free allocated heap memory that is used to store all raw counter data.
-                        Marshal.FreeHGlobal((IntPtr)_dataBlock);
-                        _dataBlock = null;
-                    }
-                }
-            }
+            _disposed = 1;
         }
 
         /// <summary>
