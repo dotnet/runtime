@@ -110,6 +110,55 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
+        [InlineData("-2147483648", int.MinValue)]
+        [InlineData("2147483647", int.MaxValue)]
+        [InlineData("2147483648", int.MinValue)]
+        [InlineData("4294967295", -1)]
+        [InlineData("0x7fffffff", int.MaxValue)]
+        [InlineData("0x80000000", int.MinValue)]
+        [InlineData("-0x80000000", int.MinValue)]
+        [InlineData("0xffffffff", -1)]
+        [InlineData("0x00000000000000000ffffffff", -1)]
+        [InlineData("-0x0000000000000000080000000", int.MinValue)]
+        [InlineData("017777777777", int.MaxValue)]
+        [InlineData("020000000000", int.MinValue)]
+        [InlineData("-020000000000", int.MinValue)]
+        [InlineData("037777777777", -1)]
+        [InlineData("0000000000000000000037777777777", -1)]
+        [InlineData("-0000000000000000000020000000000", int.MinValue)]
+        [InlineData("0", 0)]
+        [InlineData("-0", 0)]
+        [InlineData("-0x0", 0)]
+        public void Int32Literal_PreservesSignedValuesAndUnsignedBitPatterns(string literal, int value)
+        {
+            byte[] expected = new byte[6];
+            expected[0] = 0x20;
+            BinaryPrimitives.WriteInt32LittleEndian(expected.AsSpan(1), value);
+            expected[5] = 0x2A;
+
+            Assert.Equal(expected, DocumentCompilerTestHelpers.CompileMethodIL($"ldc.i4 {literal}\nret", new Options()));
+        }
+
+        [Theory]
+        [InlineData("4294967296", 4294967296L)]
+        [InlineData("-2147483649", -2147483649L)]
+        [InlineData("0x100000000", 4294967296L)]
+        [InlineData("040000000000", 4294967296L)]
+        [InlineData("18446744073709551615", -1L)]
+        [InlineData("-18446744073709551615", 1L)]
+        [InlineData("0x10000000000000001", 1L)]
+        [InlineData("02000000000000000000000", 0L)]
+        public void Int64Literal_PreservesExistingEncodings(string literal, long value)
+        {
+            byte[] expected = new byte[10];
+            expected[0] = 0x21;
+            BinaryPrimitives.WriteInt64LittleEndian(expected.AsSpan(1), value);
+            expected[9] = 0x2A;
+
+            Assert.Equal(expected, DocumentCompilerTestHelpers.CompileMethodIL($"ldc.i8 {literal}\nret", new Options()));
+        }
+
+        [Theory]
         [MemberData(nameof(VariableOpcodes))]
         public void VariableEncodings(string opcode, byte longOpcode, byte shortOpcode, int macroBase)
         {

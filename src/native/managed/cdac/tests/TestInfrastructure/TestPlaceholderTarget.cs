@@ -340,7 +340,7 @@ public class TestPlaceholderTarget : Target
 
     public override T Read<T>(ulong address) => DefaultRead<T>(address);
 
-    public override T ReadLittleEndian<T>(ulong address)
+    public override unsafe T ReadLittleEndian<T>(ulong address)
     {
         T value = default;
         Span<byte> buffer = stackalloc byte[sizeof(T)];
@@ -362,7 +362,7 @@ public class TestPlaceholderTarget : Target
         return true;
     }
 
-    public override void Write<T>(ulong address, T value)
+    public override unsafe void Write<T>(ulong address, T value)
     {
         if (_dataWriter is null)
             throw new NotImplementedException();
@@ -553,6 +553,7 @@ public class TestPlaceholderTarget : Target
     // No OS thread context is available (as on WASM); stack walks fall back to the Frame chain.
     public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => false;
     public override bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context) => throw new NotImplementedException();
+    public override bool TryGetRuntimeImageBase(out TargetPointer imageBase) => throw new NotImplementedException();
 
     public override Target.IDataCache ProcessedData => _dataCache;
     public override ContractRegistry Contracts => _contractRegistry;
