@@ -1322,7 +1322,8 @@ static class RuntimeTypeSystem_1_Helpers
         TargetPointer loaderModule = // see [link](https://github.com/dotnet/runtime/blob/e1979b72ccb5f916649f1d9949ef663254790c25/src/coreclr/vm/clsload.cpp#L78)
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
         ITypeHandle? potentialMatch = null;
-        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
+        uint hash = GetConstructedTypeHash(typeHandle, corElementType, typeArguments, callConv);
+        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle, hash))
         {
             potentialMatch = GetTypeHandle(ptr);
             if (corElementType == CorElementType.GenericInst)
@@ -1345,6 +1346,36 @@ static class RuntimeTypeSystem_1_Helpers
             }
         }
         return null;
+    }
+
+    // Matches HashTypeKey in the native type table. Arithmetic wraps to uint32.
+    // Module and array rank are not hashed, but are checked by full key comparison.
+    uint GetConstructedTypeHash(ITypeHandle? typeHandle, CorElementType kind,
+        ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv)
+    {
+        uint hash = 5381;
+        if (kind == CorElementType.GenericInst)
+        {
+            hash = Mix(hash, GetTypeDefToken(typeHandle));
+            foreach (ITypeHandle argument in typeArguments)
+                hash = Mix(hash, argument.Address.Value);
+        }
+        else if (kind == CorElementType.FnPtr)
+        {
+            hash = Mix(hash, (uint)CorElementType.FnPtr);
+            hash = Mix(hash, (uint)callConv);
+            hash = Mix(hash, unchecked((uint)(typeArguments.Length - 1)));
+            foreach (ITypeHandle argument in typeArguments)
+                hash = Mix(hash, argument.Address.Value);
+        }
+        else
+        {
+            hash = Mix(hash, (uint)kind);
+            hash = Mix(hash, typeHandle.Address.Value);
+        }
+        return hash;
+
+        static uint Mix(uint hash, ulong value) => unchecked((hash * 33) ^ (uint)value);
     }
 
     public ITypeHandle GetPrimitiveType(CorElementType typeCode)
