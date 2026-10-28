@@ -12,6 +12,11 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class ILScanNodeFactory : NodeFactory
     {
+        private NodeCache<MetadataType, ConditionalTypeReferenceNode> _conditionalTypeReferences = new(static type => new(type));
+
+        internal ConditionalTypeReferenceNode ConditionalTypeReference(MetadataType type)
+            => _conditionalTypeReferences.GetOrAdd(type);
+
         public ILScanNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager, InteropStubManager interopStubManager, NameMangler nameMangler, PreinitializationManager preinitManager, TypeMapManager typeMapManager)
             : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), new LazyVTableSliceProvider(), new LazyDictionaryLayoutProvider(), new InlinedThreadStatics(), new ExternSymbolsImportedNodeProvider(), preinitManager, new DevirtualizationManager(), ObjectDataInterner.Null, typeMapManager)
         {

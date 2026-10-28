@@ -421,6 +421,7 @@
     <Compile Include="Compiler\DependencyAnalysis\AnalyzedProxyTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AsyncContinuationEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ByRefTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ConditionalTypeReferenceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratableObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratedDataNode.cs" />
     <Compile Include="Compiler\CompilationBuilder.Aot.cs" />
