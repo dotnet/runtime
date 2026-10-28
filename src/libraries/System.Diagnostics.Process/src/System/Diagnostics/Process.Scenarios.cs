@@ -261,7 +261,8 @@ namespace System.Diagnostics
             }
             catch
             {
-                process.TryKillEntireTree();
+                // Cleanup must not replace the original capture exception.
+                try { process.TryKillEntireTree(); } catch { }
                 throw;
             }
 
@@ -339,7 +340,8 @@ namespace System.Diagnostics
             }
             catch
             {
-                process.TryKillEntireTree();
+                // Cleanup must not replace the original capture exception.
+                try { process.TryKillEntireTree(); } catch { }
                 throw;
             }
 
