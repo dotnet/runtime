@@ -11,7 +11,6 @@ internal static partial class Interop
         internal const string libobjc = "/usr/lib/libobjc.dylib";
         internal const string libproc = "/usr/lib/libproc.dylib";
         internal const string libSystem = "libSystem.dylib";
-        internal const string OpenLdap = "libldap.dylib";
         internal const string SystemConfigurationLibrary = "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration";
         internal const string AppleCryptoNative = "libSystem.Security.Cryptography.Native.Apple";
         internal const string NetworkFramework = "/System/Library/Frameworks/Network.framework/Network";

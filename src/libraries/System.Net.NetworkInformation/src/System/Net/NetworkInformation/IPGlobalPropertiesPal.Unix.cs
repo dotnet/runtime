@@ -12,6 +12,16 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("haiku")]
         public static IPGlobalProperties GetIPGlobalProperties()
         {
+            if (OperatingSystem.IsLinux())
+            {
+                return new LinuxIPGlobalProperties();
+            }
+
+            if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsOpenBSD())
+            {
+                return new BsdIPGlobalProperties();
+            }
+
             throw new PlatformNotSupportedException();
         }
     }
