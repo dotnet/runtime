@@ -1146,6 +1146,67 @@ namespace System.IO.Compression.Tests
             await DisposeZipArchive(async, readArchive);
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task AesStoredEntry_ReadToEnd_ValidatesAuthentication(bool async, bool corruptAuthenticationCode)
+        {
+            const string Password = "PLACEHOLDER";
+            byte[] plaintext = new byte[10_000];
+            new Random(42).NextBytes(plaintext);
+
+            using var archiveStream = new MemoryStream();
+            ZipArchive createArchive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry createEntry = createArchive.CreateEntry("stored.bin", CompressionLevel.NoCompression, Password, ZipEncryptionMethod.Aes256);
+            await using (Stream createStream = async ? await createEntry.OpenAsync() : createEntry.Open())
+            {
+                createStream.Write(plaintext);
+            }
+            await DisposeZipArchive(async, createArchive);
+
+            byte[] archiveBytes = archiveStream.ToArray();
+            if (corruptAuthenticationCode)
+            {
+                (int encryptedDataOffset, int compressedSize, _, _, _) = GetEncryptedEntryLayout(archiveBytes);
+                archiveBytes[encryptedDataOffset + compressedSize - 1] ^= 0xFF;
+            }
+
+            using var readArchiveStream = new MemoryStream(archiveBytes);
+            ZipArchive readArchive = await CreateZipArchive(async, readArchiveStream, ZipArchiveMode.Read);
+            await using Stream readStream = await OpenEntryStream(async, readArchive.Entries[0], Password);
+            using var output = new MemoryStream();
+
+            if (corruptAuthenticationCode)
+            {
+                if (async)
+                {
+                    await Assert.ThrowsAsync<InvalidDataException>(() => readStream.CopyToAsync(output));
+                }
+                else
+                {
+                    Assert.Throws<InvalidDataException>(() => readStream.CopyTo(output));
+                }
+            }
+            else
+            {
+                if (async)
+                {
+                    await readStream.CopyToAsync(output);
+                }
+                else
+                {
+                    readStream.CopyTo(output);
+                }
+
+                Assert.Equal(plaintext, output.ToArray());
+            }
+
+            await DisposeZipArchive(async, readArchive);
+        }
+
         private static byte[] AddTrailingEncryptedData(byte[] archive, int trailingDataLength)
         {
             const int AuthenticationCodeSize = 10;

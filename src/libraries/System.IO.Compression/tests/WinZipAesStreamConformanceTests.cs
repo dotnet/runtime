@@ -92,7 +92,7 @@ namespace System.IO.Compression.Tests
             s_createAuthenticatedStreamMethod = winZipAesStreamType.GetMethod("CreateAuthenticatedStream",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new[] { typeof(Stream), typeof(Stream), typeof(long) },
+                new[] { typeof(Stream), typeof(Stream) },
                 null)!;
 
             Type deflateManagedStreamType = Type.GetType("System.IO.Compression.DeflateManagedStream, System.IO.Compression")!;
@@ -142,6 +142,175 @@ namespace System.IO.Compression.Tests
             })!;
 
             return Task.FromResult<Stream?>(decryptStream);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task WinZipAesStream_AuthenticatesOnFinalPositiveCiphertextRead(bool async)
+        {
+            byte[] plaintext = "authenticated payload"u8.ToArray();
+            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData(plaintext);
+            byte[] hmacKey = (byte[])decryptKeyMaterial.GetType().GetProperty("HmacKey")!.GetValue(decryptKeyMaterial)!;
+            HMACSHA1.HashData(hmacKey, ReadOnlySpan<byte>.Empty)
+                .AsSpan(0, AuthenticationCodeSize)
+                .CopyTo(encryptedData.AsSpan(^AuthenticationCodeSize));
+
+            using var encryptedStream = new CountingReadStream(encryptedData, maxReadSize: 1);
+            using Stream decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
+            {
+                encryptedStream, decryptKeyMaterial, (long)encryptedData.Length, false, false
+            })!;
+
+            byte[] buffer = new byte[1];
+            for (int i = 0; i < plaintext.Length - 1; i++)
+            {
+                int bytesRead = async ? await decryptStream.ReadAsync(buffer) : decryptStream.Read(buffer);
+                Assert.Equal(1, bytesRead);
+                Assert.Equal(plaintext[i], buffer[0]);
+            }
+
+            InvalidDataException ex = async
+                ? await Assert.ThrowsAsync<InvalidDataException>(() => decryptStream.ReadAsync(buffer).AsTask())
+                : Assert.Throws<InvalidDataException>(() => decryptStream.Read(buffer));
+            Assert.Contains("authentication code", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task WinZipAesStream_ZeroLengthReadAndEarlyDisposeDoNotAuthenticate(bool async, bool wrapAuthenticated)
+        {
+            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData(new byte[64]);
+            byte[] hmacKey = (byte[])decryptKeyMaterial.GetType().GetProperty("HmacKey")!.GetValue(decryptKeyMaterial)!;
+            HMACSHA1.HashData(hmacKey, ReadOnlySpan<byte>.Empty)
+                .AsSpan(0, AuthenticationCodeSize)
+                .CopyTo(encryptedData.AsSpan(^AuthenticationCodeSize));
+
+            using var encryptedStream = new CountingReadStream(encryptedData);
+            using Stream decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
+            {
+                encryptedStream, decryptKeyMaterial, (long)encryptedData.Length, false, false
+            })!;
+            using Stream readStream = wrapAuthenticated
+                ? (Stream)s_createAuthenticatedStreamMethod.Invoke(null, new object[] { decryptStream, decryptStream })!
+                : decryptStream;
+
+            int readsAfterInitialization = encryptedStream.ReadCount;
+            int bytesRead = async ? await readStream.ReadAsync(Memory<byte>.Empty) : readStream.Read(Span<byte>.Empty);
+            Assert.Equal(0, bytesRead);
+            if (async)
+            {
+                await readStream.DisposeAsync();
+            }
+            else
+            {
+                readStream.Dispose();
+            }
+
+            Assert.Equal(readsAfterInitialization, encryptedStream.ReadCount);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task AuthenticatedReadStream_PayloadFailureDoesNotDrain(bool async, bool failAtEnd)
+        {
+            byte[] ciphertextPlaintext = new byte[64];
+            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData(ciphertextPlaintext);
+            byte[] hmacKey = (byte[])decryptKeyMaterial.GetType().GetProperty("HmacKey")!.GetValue(decryptKeyMaterial)!;
+            HMACSHA1.HashData(hmacKey, ReadOnlySpan<byte>.Empty)
+                .AsSpan(0, AuthenticationCodeSize)
+                .CopyTo(encryptedData.AsSpan(^AuthenticationCodeSize));
+
+            using var encryptedStream = new CountingReadStream(encryptedData);
+            using Stream decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
+            {
+                encryptedStream, decryptKeyMaterial, (long)encryptedData.Length, false, true
+            })!;
+            int readsAfterInitialization = encryptedStream.ReadCount;
+
+            byte[] payload = failAtEnd ? new byte[16] : Array.Empty<byte>();
+            using var payloadStream = new FailingReadStream(payload, failAtEnd);
+            using Stream authenticatedStream = (Stream)s_createAuthenticatedStreamMethod.Invoke(null, new object[]
+            {
+                payloadStream, decryptStream
+            })!;
+
+            byte[] buffer = new byte[payload.Length + 1];
+            async Task ReadPayload()
+            {
+                while ((async ? await authenticatedStream.ReadAsync(buffer) : authenticatedStream.Read(buffer)) != 0)
+                {
+                }
+            }
+
+            IOException failure = await Assert.ThrowsAsync<IOException>(ReadPayload);
+
+            Assert.Same(payloadStream.Failure, failure);
+            Assert.Equal(readsAfterInitialization, encryptedStream.ReadCount);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task AuthenticatedReadStream_CrcFailureDoesNotDrain(bool async)
+        {
+            byte[] plaintext = new byte[64];
+            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData(plaintext);
+            using var encryptedStream = new CountingReadStream(encryptedData);
+            using Stream decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
+            {
+                encryptedStream, decryptKeyMaterial, (long)encryptedData.Length, false, true
+            })!;
+            int readsAfterInitialization = encryptedStream.ReadCount;
+            using var payloadStream = new MemoryStream(plaintext);
+            using Stream crcStream = (Stream)s_crcValidatingReadStreamConstructor.Invoke(new object[]
+            {
+                payloadStream, ComputeCrc32(plaintext) ^ 1u, (long)plaintext.Length
+            });
+            using Stream authenticatedStream = (Stream)s_createAuthenticatedStreamMethod.Invoke(null, new object[]
+            {
+                crcStream, decryptStream
+            })!;
+
+            byte[] buffer = new byte[plaintext.Length];
+            InvalidDataException failure = async
+                ? await Assert.ThrowsAsync<InvalidDataException>(() => authenticatedStream.ReadAsync(buffer).AsTask())
+                : Assert.Throws<InvalidDataException>(() => authenticatedStream.Read(buffer));
+
+            Assert.Contains("CRC", failure.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(readsAfterInitialization, encryptedStream.ReadCount);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task WinZipAesStream_PreCanceledReadDoesNotPoisonStream(bool wrapAuthenticated)
+        {
+            byte[] plaintext = "retry after a pre-canceled read"u8.ToArray();
+            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData(plaintext);
+            using var encryptedStream = new CountingReadStream(encryptedData);
+            using Stream decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
+            {
+                encryptedStream, decryptKeyMaterial, (long)encryptedData.Length, false, false
+            })!;
+            using Stream readStream = wrapAuthenticated
+                ? (Stream)s_createAuthenticatedStreamMethod.Invoke(null, new object[] { decryptStream, decryptStream })!
+                : decryptStream;
+
+            using var cancellationSource = new CancellationTokenSource();
+            cancellationSource.Cancel();
+            byte[] buffer = new byte[plaintext.Length];
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => readStream.ReadAsync(buffer, cancellationSource.Token).AsTask());
+
+            int bytesRead = await readStream.ReadAsync(buffer);
+            Assert.Equal(plaintext.Length, bytesRead);
+            Assert.Equal(plaintext, buffer);
         }
 
         public static IEnumerable<object[]> DecompressorFinishesBeforeEncryptedDataCases()
@@ -205,7 +374,7 @@ namespace System.IO.Compression.Tests
 
             using var authenticatedStream = (Stream)s_createAuthenticatedStreamMethod.Invoke(null, new object[]
             {
-                decompressedStream, decryptStream, (long)plaintext.Length
+                decompressedStream, decryptStream
             })!;
 
             using var output = new MemoryStream();
@@ -220,15 +389,6 @@ namespace System.IO.Compression.Tests
                     Assert.Throws<InvalidDataException>(() => authenticatedStream.CopyTo(output));
                 }
 
-                byte[] buffer = new byte[1];
-                if (async)
-                {
-                    await Assert.ThrowsAsync<InvalidDataException>(async () => await authenticatedStream.ReadAsync(buffer));
-                }
-                else
-                {
-                    Assert.Throws<InvalidDataException>(() => authenticatedStream.Read(buffer));
-                }
             }
             else
             {
@@ -245,178 +405,13 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        public static IEnumerable<object[]> PayloadLongerThanDeclaredLengthCases()
-        {
-            // bulkOvershoot: a single large read delivers more than the declared length at once, vs. byte-at-a-time
-            // reads that land exactly on the declared length first, so the 1-byte boundary probe finds the excess.
-            // simulateAe1WithCrcValidation: AE-1 entries validate CRC (CrcValidatingReadStream) below the
-            // authentication guard and can throw their own length-mismatch error before AuthenticatedReadStream's
-            // own bookkeeping gets a turn - authentication must still run first.
-            foreach (bool async in new[] { false, true })
-            {
-                foreach (bool corruptAuthenticationCode in new[] { false, true })
-                {
-                    foreach (bool bulkOvershoot in new[] { false, true })
-                    {
-                        foreach (bool simulateAe1WithCrcValidation in new[] { false, true })
-                        {
-                            yield return new object[] { async, corruptAuthenticationCode, bulkOvershoot, simulateAe1WithCrcValidation };
-                        }
-                    }
-                }
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(PayloadLongerThanDeclaredLengthCases))]
-        public async Task PayloadStreamProducesMoreThanDeclaredLength_AuthenticationIsCompleted(
-            bool async, bool corruptAuthenticationCode, bool bulkOvershoot, bool simulateAe1WithCrcValidation)
-        {
-            byte[] plaintext = new byte[4096];
-            new Random(42).NextBytes(plaintext);
-
-            // Declare a length shorter than the actual plaintext so the payload stream legitimately produces more
-            // data than AuthenticatedReadStream expects, exercising the overshoot-detection paths rather than the
-            // truncation path covered above.
-            long declaredLength = plaintext.Length - 16;
-
-            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData(plaintext);
-            if (corruptAuthenticationCode)
-            {
-                byte[] hmacKey = (byte[])decryptKeyMaterial.GetType().GetProperty("HmacKey")!.GetValue(decryptKeyMaterial)!;
-                HMACSHA1.HashData(hmacKey, ReadOnlySpan<byte>.Empty)
-                    .AsSpan(0, AuthenticationCodeSize)
-                    .CopyTo(encryptedData.AsSpan(^AuthenticationCodeSize));
-            }
-
-            using var encryptedStream = new MemoryStream(encryptedData);
-            using var decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
-            {
-                encryptedStream, decryptKeyMaterial, (long)encryptedData.Length, false, true
-            })!;
-
-            // Force single-byte reads so the exact-length boundary probe - rather than a single bulk read - is the
-            // one that discovers the excess byte, when bulkOvershoot is false.
-            Stream decryptedPayloadStream = bulkOvershoot ? decryptStream : new ClampedReadStream(decryptStream, readSizeLimit: 1);
-
-            // CRC computed over just the declared-length prefix, so CrcValidatingReadStream validates cleanly at
-            // the boundary and only raises its own UnexpectedStreamLength once the excess byte arrives - exactly
-            // like a real AE-1 entry whose declared length disagrees with its actual (tampered) content.
-            Stream payloadStream = simulateAe1WithCrcValidation
-                ? (Stream)s_crcValidatingReadStreamConstructor.Invoke(new object[]
-                    { decryptedPayloadStream, ComputeCrc32(plaintext.AsSpan(0, (int)declaredLength)), declaredLength })
-                : decryptedPayloadStream;
-
-            using var authenticatedStream = (Stream)s_createAuthenticatedStreamMethod.Invoke(null, new object[]
-            {
-                payloadStream, decryptStream, declaredLength
-            })!;
-
-            using var output = new MemoryStream();
-            InvalidDataException ex = async
-                ? await Assert.ThrowsAsync<InvalidDataException>(() => authenticatedStream.CopyToAsync(output, CancellationToken.None))
-                : Assert.Throws<InvalidDataException>(() => authenticatedStream.CopyTo(output));
-
-            if (corruptAuthenticationCode)
-            {
-                // A bad HMAC must still be detected and surface even though the entry is also the wrong length -
-                // authentication cannot be silently skipped just because the overshoot error (whether raised by
-                // AuthenticatedReadStream itself or by a CRC-validating payload stream below it) fires first.
-                Assert.Contains("authentication code", ex.Message, StringComparison.OrdinalIgnoreCase);
-            }
-            else
-            {
-                Assert.Contains("decompressed data length", ex.Message, StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
-        public static IEnumerable<object[]> DecompressorEndsBeforeDeclaredLengthCases()
-        {
-            foreach (bool async in new[] { false, true })
-            {
-                foreach (bool corruptAuthenticationCode in new[] { false, true })
-                {
-                    yield return new object[] { async, corruptAuthenticationCode };
-                }
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(DecompressorEndsBeforeDeclaredLengthCases))]
-        public async Task DecompressorProducesLessThanDeclaredLength_AuthenticationIsCompleted(
-            bool async, bool corruptAuthenticationCode)
-        {
-            byte[] plaintext = new byte[4096];
-            new Random(42).NextBytes(plaintext);
-
-            byte[] compressedData;
-            using (var compressedStream = new MemoryStream())
-            {
-                using (var compressionStream = new DeflateStream(compressedStream, CompressionLevel.SmallestSize, leaveOpen: true))
-                {
-                    compressionStream.Write(plaintext);
-                }
-
-                compressedData = compressedStream.ToArray();
-            }
-
-            // Pad with trailing ciphertext the decompressor never needs to reach, so authentication still has
-            // unread encrypted data to drain through CompleteAuthenticationCoreAsync's drain loop.
-            byte[] compressedDataWithTrailingBytes = new byte[compressedData.Length + 16 * 1024];
-            compressedData.CopyTo(compressedDataWithTrailingBytes, 0);
-
-            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData(compressedDataWithTrailingBytes);
-            if (corruptAuthenticationCode)
-            {
-                byte[] hmacKey = (byte[])decryptKeyMaterial.GetType().GetProperty("HmacKey")!.GetValue(decryptKeyMaterial)!;
-                HMACSHA1.HashData(hmacKey, ReadOnlySpan<byte>.Empty)
-                    .AsSpan(0, AuthenticationCodeSize)
-                    .CopyTo(encryptedData.AsSpan(^AuthenticationCodeSize));
-            }
-
-            using var encryptedStream = new MemoryStream(encryptedData);
-            using var decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
-            {
-                encryptedStream, decryptKeyMaterial, (long)encryptedData.Length, false, true
-            })!;
-
-            using Stream decompressedStream = new DeflateStream(decryptStream, CompressionMode.Decompress, leaveOpen: true);
-
-            // Declare more plaintext than the decompressor will actually produce, so the decompressor reports its
-            // own EOF (bytesRead == 0) before AuthenticatedReadStream reaches the declared length - the truncation
-            // branch, as opposed to the overshoot branch covered above.
-            long declaredLength = plaintext.Length + 16;
-
-            using var authenticatedStream = (Stream)s_createAuthenticatedStreamMethod.Invoke(null, new object[]
-            {
-                decompressedStream, decryptStream, declaredLength
-            })!;
-
-            using var output = new MemoryStream();
-            InvalidDataException ex = async
-                ? await Assert.ThrowsAsync<InvalidDataException>(() => authenticatedStream.CopyToAsync(output, CancellationToken.None))
-                : Assert.Throws<InvalidDataException>(() => authenticatedStream.CopyTo(output));
-
-            if (corruptAuthenticationCode)
-            {
-                // A bad HMAC must still be detected and surface even though the entry is also truncated -
-                // authentication cannot be silently skipped just because the decompressor hit EOF first.
-                Assert.Contains("authentication code", ex.Message, StringComparison.OrdinalIgnoreCase);
-            }
-            else
-            {
-                Assert.Contains("decompressed data length", ex.Message, StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
         [Fact]
-        public async Task CompleteAuthenticationCoreAsync_ResumesAfterCancellationMidTrailerRead()
+        public async Task WinZipAesStream_CancellationMidTrailerReadPropagates()
         {
             byte[] plaintext = "Hello, authenticated world!"u8.ToArray();
             (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData(plaintext);
 
-            // Delivers at most one byte per read, so the resumable 10-byte trailer read in
-            // CompleteAuthenticationCoreAsync requires multiple underlying reads and can be cancelled mid-way.
+            // Delivers at most one byte per read, so reading the 10-byte trailer requires multiple underlying reads.
             using var cancelableStream = new CancelAfterReadsStream(encryptedData);
             using Stream decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
             {
@@ -425,22 +420,18 @@ namespace System.IO.Compression.Tests
 
             byte[] buffer = new byte[plaintext.Length];
             int totalRead = 0;
-            while (totalRead < plaintext.Length)
+            while (totalRead < plaintext.Length - 1)
             {
-                totalRead += await decryptStream.ReadAsync(buffer.AsMemory(totalRead));
+                totalRead += await decryptStream.ReadAsync(buffer.AsMemory(totalRead, 1));
             }
-            Assert.Equal(plaintext, buffer);
+            Assert.Equal(plaintext.AsSpan(0, plaintext.Length - 1).ToArray(), buffer.AsSpan(0, plaintext.Length - 1).ToArray());
 
-            // Cancel partway (after 3 of the 10 trailer bytes) through the resumable authentication-code read.
+            // The final ciphertext byte starts eager authentication, so arm cancellation immediately before it.
             using var cts = new CancellationTokenSource();
             cancelableStream.CancelAfter(cts, readCount: 3);
-            byte[] probe = new byte[1];
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => decryptStream.ReadAsync(probe, cts.Token).AsTask());
-
-            // A retry with a fresh token must resume from the 4th trailer byte - not lose or re-read the first
-            // 3 - and still successfully complete authentication.
-            int bytesRead = await decryptStream.ReadAsync(probe);
-            Assert.Equal(0, bytesRead);
+            Memory<byte> lastByte = buffer.AsMemory(totalRead, 1);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => decryptStream.ReadAsync(lastByte, cts.Token).AsTask());
         }
 
         [Theory]
@@ -474,7 +465,7 @@ namespace System.IO.Compression.Tests
                 : new DeflateStream(decryptStream, CompressionMode.Decompress, leaveOpen: true);
             using Stream authenticatedStream = (Stream)s_createAuthenticatedStreamMethod.Invoke(null, new object[]
             {
-                payloadStream, decryptStream, (long)plaintext.Length
+                payloadStream, decryptStream
             })!;
 
             if (async)
@@ -525,6 +516,82 @@ namespace System.IO.Compression.Tests
                 }
 
                 return bytesRead;
+            }
+        }
+
+        private sealed class CountingReadStream(byte[] data, int maxReadSize = int.MaxValue) : MemoryStream(data)
+        {
+            public int ReadCount { get; private set; }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                ReadCount++;
+                return base.Read(buffer, offset, Math.Min(maxReadSize, count));
+            }
+
+            public override int Read(Span<byte> buffer)
+            {
+                ReadCount++;
+                return base.Read(buffer[..Math.Min(maxReadSize, buffer.Length)]);
+            }
+
+            public override int ReadByte()
+            {
+                ReadCount++;
+                return base.ReadByte();
+            }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                ReadCount++;
+                return base.ReadAsync(buffer[..Math.Min(maxReadSize, buffer.Length)], cancellationToken);
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                ReadCount++;
+                return base.ReadAsync(buffer, offset, Math.Min(maxReadSize, count), cancellationToken);
+            }
+        }
+
+        private sealed class FailingReadStream(byte[] data, bool failAtEnd) : MemoryStream(data)
+        {
+            public IOException Failure { get; } = new("Injected payload read failure.");
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                if (!failAtEnd || Position == Length)
+                {
+                    throw Failure;
+                }
+
+                return base.Read(buffer, offset, count);
+            }
+
+            public override int Read(Span<byte> buffer)
+            {
+                if (!failAtEnd || Position == Length)
+                {
+                    throw Failure;
+                }
+
+                return base.Read(buffer);
+            }
+
+            public override int ReadByte()
+            {
+                if (!failAtEnd || Position == Length)
+                {
+                    throw Failure;
+                }
+
+                return base.ReadByte();
+            }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return ValueTask.FromResult(Read(buffer.Span));
             }
         }
 

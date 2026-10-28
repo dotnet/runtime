@@ -1184,7 +1184,7 @@ namespace System.IO.Compression
 
             if (IsAesEncrypted)
             {
-                payloadStream = WinZipAesStream.CreateAuthenticatedStream(payloadStream, streamToDecompress, _uncompressedSize);
+                payloadStream = WinZipAesStream.CreateAuthenticatedStream(payloadStream, streamToDecompress);
             }
 
             return payloadStream;

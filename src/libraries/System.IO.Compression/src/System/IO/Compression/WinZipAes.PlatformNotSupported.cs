@@ -18,7 +18,7 @@ namespace System.IO.Compression
 
         internal static Task<Stream> CreateAsync(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen = false, CancellationToken cancellationToken = default) => throw CreateException();
 
-        internal static Stream CreateAuthenticatedStream(Stream payloadStream, Stream aesStream, long expectedLength) => throw CreateException();
+        internal static Stream CreateAuthenticatedStream(Stream payloadStream, Stream aesStream) => throw CreateException();
 
         private static PlatformNotSupportedException CreateException() => new(SR.WinZipEncryptionNotSupportedOnPlatform);
     }
