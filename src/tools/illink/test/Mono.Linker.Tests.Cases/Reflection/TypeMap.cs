@@ -32,6 +32,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnusedArrayType", typeof(ArrayTypeTrimTargetUnusedTarget), typeof(ArrayTypeTrimTargetUnusedClass[]))]
 [assembly: TypeMap<UsedTypeMap>("CastClass", typeof(CastClassTarget), typeof(CastClassTrimTarget))]
 [assembly: TypeMap<UsedTypeMap>("ArrayCastClass", typeof(ArrayCastClassTarget), typeof(ArrayCastClassTrimTarget[]))]
+[assembly: TypeMap<UsedTypeMap>("GenericCastClass", typeof(GenericCastClassTarget), typeof(GenericCastClassTrimTarget<int>))]
 [assembly: TypeMap<UsedTypeMap>("InterfaceTypeCheck", typeof(InterfaceTypeCheckTarget), typeof(IInterfaceTypeCheckTrimTarget))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TrimTargetIsTarget", typeof(TargetAndTrimTarget), typeof(TargetAndTrimTarget))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TrimTargetIsUnrelated", typeof(TargetType), typeof(TrimTarget))]
@@ -49,6 +50,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "TrimTargetIsUsedArrayType", typeof(ArrayTypeTrimTargetTarget), typeof(ArrayTypeTrimTargetClass[]))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "CastClass", typeof(CastClassTarget), typeof(CastClassTrimTarget))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "ArrayCastClass", typeof(ArrayCastClassTarget), typeof(ArrayCastClassTrimTarget[]))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "GenericCastClass", typeof(GenericCastClassTarget), typeof(GenericCastClassTrimTarget<int>))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "InterfaceTypeCheck", typeof(InterfaceTypeCheckTarget), typeof(IInterfaceTypeCheckTrimTarget))]
 
 // The TypeMap Universes are kept separate such that Proxy attributes shouldn't be kept if only the External type map is needed.
@@ -175,6 +177,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
             CheckInterfaceTypeCheck(t);
             Console.WriteLine(CastClass(t));
             Console.WriteLine(CastClassArray(t));
+            Console.WriteLine(CastClassGeneric(t));
             Unbox(t);
             if (t is IInterfaceWithDynamicImpl d)
             {
@@ -359,6 +362,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
         private static ArrayCastClassTrimTarget[] CastClassArray(object o)
         {
             return (ArrayCastClassTrimTarget[])o;
+        }
+
+        [Kept]
+        private static GenericCastClassTrimTarget<int> CastClassGeneric(object o)
+        {
+            return (GenericCastClassTrimTarget<int>)o;
         }
 
         [Kept]
@@ -619,6 +628,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
     [Kept]
     class ArrayCastClassTrimTarget;
+
+    [Kept]
+    class GenericCastClassTarget;
+
+    [Kept]
+    class GenericCastClassTrimTarget<T>;
 
     [Kept]
     class InterfaceTypeCheckTarget;
