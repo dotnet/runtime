@@ -41,6 +41,13 @@ class StackFrameIterator
     friend class AsmOffsets;
 
 public:
+#ifdef FEATURE_PORTABLE_HELPERS
+    // Reserved virtual IPs used to identify portable EH helpers.
+    static constexpr uintptr_t ThrowSiteThunkIP = UINT32_MAX;
+    static constexpr uintptr_t FuncletInvokeThunkIP = UINT32_MAX - 1;
+    static constexpr uintptr_t FilterFuncletInvokeThunkIP = UINT32_MAX - 2;
+#endif
+
     StackFrameIterator() {}
     StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame);
     StackFrameIterator(Thread* pThreadToWalk, NATIVE_CONTEXT* pCtx);

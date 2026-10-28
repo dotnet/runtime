@@ -2375,14 +2375,13 @@ void StackFrameIterator::GetStackRangeToReportConservatively(PTR_OBJECTREF * ppL
 
 PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 {
-#ifdef TARGET_ARM
+#ifdef FEATURE_PORTABLE_HELPERS
+    // Virtual IPs identify the call-site region, not a native return address.
+    return controlPC;
+#elif defined(TARGET_ARM)
     return (PTR_VOID)(((PTR_uint8_t)controlPC) - 2);
 #elif defined(TARGET_ARM64)
     return (PTR_VOID)(((PTR_uint8_t)controlPC) - 4);
-#elif defined(TARGET_WASM)
-    // The virtual IP stored in the shadow frame already identifies the call site's
-    // region, not a return address. Like CoreCLR, leave WASM virtual IPs unadjusted.
-    return controlPC;
 #else
     return (PTR_VOID)(((PTR_uint8_t)controlPC) - 1);
 #endif
@@ -2395,19 +2394,15 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 // static
 StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjustedReturnAddress(PTR_VOID returnAddress)
 {
-#if defined(TARGET_WASM)
+#if defined(FEATURE_PORTABLE_HELPERS)
     uintptr_t address = reinterpret_cast<uintptr_t>(returnAddress);
-    if (address == WasmEHFrame::ThrowIP)
+    if (address == ThrowSiteThunkIP)
         return InThrowSiteThunk;
-    if (address == WasmEHFrame::FuncletIP)
+    if (address == FuncletInvokeThunkIP)
         return InFuncletInvokeThunk;
-    if (address == WasmEHFrame::FilterIP)
+    if (address == FilterFuncletInvokeThunkIP)
         return InFilterFuncletInvokeThunk;
     return InManagedCode;
-#elif defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable thunks are defined
-
-    return InManagedCode;
-
 #else // defined(FEATURE_PORTABLE_HELPERS)
 
     if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionTailCall)

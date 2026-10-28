@@ -88,7 +88,7 @@ static __attribute__((naked, noreturn)) void CallThrowHelper(
         "unreachable\n" // no return
         :: [frameSize] "i"(sizeof(WasmEHFrame)),
            [identity] "i"(WasmEHFrame::Identity),
-           [throwIP] "i"(WasmEHFrame::ThrowIP),
+           [throwIP] "i"(StackFrameIterator::ThrowSiteThunkIP),
            [identityOffset] "i"(offsetof(WasmEHFrame, m_identity)),
            [returnIPOffset] "i"(offsetof(WasmEHFrame, m_returnIP)),
            [callerSPOffset] "i"(offsetof(WasmEHFrame, m_callerSP)),
@@ -124,14 +124,14 @@ static void ThrowException(uintptr_t callerSP, Object* exception, bool rethrow, 
 // These CallFunclet functions are used to call funclets from the VM.
 // They set up a new stack frame for calling a function which provides a NativeAOT EH bridge so that unwinds from the funclet reach the exception dispatcher.
 // then invoke the new funclet with SP pointing to the top of the new frame.
-// There are two versions of the function, one for funclets that need to pass a Throwable (catch/filter), and 1 for those do not (finally/fault)
+// There are two versions of the function, one for funclets that need to pass a Throwable (catch/filter), and one for those that do not (finally/fault)
 // Unlike CoreCLR's terminator-only frame, the bridge records the invocation kind and managed caller SP so stack walks can continue through the dispatcher.
 __attribute__((naked)) uintptr_t CallFuncletWithThrowable(
     uintptr_t pFuncletToInvoke, uintptr_t fp, Object* pThrowable, uintptr_t callerSP, uintptr_t returnIP)
 {
     asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
-         "global.get      __stack_pointer\n" // Setup the frame chain, by allocating a new frame and adjusting the stack pointer to point to it. The frame size adjusts in units of 16 bytes.
-         "i32.const       16\n"
+         "global.get      __stack_pointer\n" // Allocate the EH bridge below the native stack pointer.
+         "i32.const       %[frameSize]\n"
          "i32.sub \n"
          "global.set      __stack_pointer\n" // Update the global stack pointer
          "global.get      __stack_pointer\n"
@@ -156,7 +156,8 @@ __attribute__((naked)) uintptr_t CallFuncletWithThrowable(
          "global.set      __stack_pointer\n" // Restore the original stack pointer before returning to the caller of the funclet
          "local.get       0\n"               // Return the value from the funclet call
          "return"
-          :: [identity] "i"(WasmEHFrame::Identity),
+          :: [frameSize] "i"(sizeof(WasmEHFrame)),
+             [identity] "i"(WasmEHFrame::Identity),
              [identityOffset] "i"(offsetof(WasmEHFrame, m_identity)),
              [returnIPOffset] "i"(offsetof(WasmEHFrame, m_returnIP)),
              [callerSPOffset] "i"(offsetof(WasmEHFrame, m_callerSP)),
@@ -168,8 +169,8 @@ __attribute__((naked)) uintptr_t CallFuncletWithoutThrowable(
     uintptr_t pFuncletToInvoke, uintptr_t fp, uintptr_t callerSP)
 {
     asm ("global.get      __stack_pointer\n" // Capture original value of stack pointer
-         "global.get      __stack_pointer\n" // Setup the frame chain, by allocating a new frame and adjusting the stack pointer to point to it. The frame size adjusts in units of 16 bytes.
-         "i32.const       16\n"
+         "global.get      __stack_pointer\n" // Allocate the EH bridge below the native stack pointer.
+         "i32.const       %[frameSize]\n"
          "i32.sub \n"
          "global.set      __stack_pointer\n" // Update the global stack pointer
          "global.get      __stack_pointer\n"
@@ -192,8 +193,9 @@ __attribute__((naked)) uintptr_t CallFuncletWithoutThrowable(
          "global.set      __stack_pointer\n" // Restore the original stack pointer before returning to the caller of the funclet
          "i32.const       0\n"
          "return\n"
-          :: [identity] "i"(WasmEHFrame::Identity),
-             [funcletIP] "i"(WasmEHFrame::FuncletIP),
+          :: [frameSize] "i"(sizeof(WasmEHFrame)),
+             [identity] "i"(WasmEHFrame::Identity),
+             [funcletIP] "i"(StackFrameIterator::FuncletInvokeThunkIP),
              [identityOffset] "i"(offsetof(WasmEHFrame, m_identity)),
              [returnIPOffset] "i"(offsetof(WasmEHFrame, m_returnIP)),
              [callerSPOffset] "i"(offsetof(WasmEHFrame, m_callerSP)),
@@ -242,7 +244,7 @@ FCIMPL3(FC_BOOL_RET, RhpCallFilterFunclet, Object* exception, void* filterIP, RE
     uintptr_t filter = GetFuncletAddress(filterIP);
     // Pass the parent FP and exception object; return the result of the filter execution.
     FC_RETURN_BOOL(CallFuncletWithThrowable(
-        filter, pRegisterSet->GetFP(), exception, callersStackPointer, WasmEHFrame::FilterIP) != 0);
+        filter, pRegisterSet->GetFP(), exception, callersStackPointer, StackFrameIterator::FilterFuncletInvokeThunkIP) != 0);
 }
 FCIMPLEND
 
@@ -253,7 +255,7 @@ FCIMPL4(void*, RhpCallCatchFunclet, Object* exception, void* handlerIP, REGDISPL
     pThread->ClearDoNotTriggerGc();
     uintptr_t handler = GetFuncletAddress(handlerIP);
     // Ignore the funclet's return value; the JIT-managed resumeIP local carries the continuation.
-    CallFuncletWithThrowable(handler, pRegisterSet->GetFP(), exception, callersStackPointer, WasmEHFrame::FuncletIP);
+    CallFuncletWithThrowable(handler, pRegisterSet->GetFP(), exception, callersStackPointer, StackFrameIterator::FuncletInvokeThunkIP);
     // Pop the current ExInfo and any superseded records below the resume SP.
     pThread->PopExInfo(pExInfo, pRegisterSet->GetSP());
     // Resuming managed code at a catch continuation is done by throwing a native exception tag.
