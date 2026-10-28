@@ -671,6 +671,7 @@ uint32_t foreach_count = 0;
 uint32_t foreach_fail = 0;
 
 static void
+DN_CALLBACK_CALLTYPE
 umap_for_each_str_str_func (void *key, void *value, void *user_data)
 {
 	foreach_count++;
