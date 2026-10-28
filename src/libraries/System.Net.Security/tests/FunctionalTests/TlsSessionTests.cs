@@ -1018,16 +1018,20 @@ namespace System.Net.Security.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
         [InlineData(SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls13)]
-        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not surface a deferred client-credential prompt; SslStream supplies the certificate up-front.")]
         public async Task ClientSession_WantCredentials_SetClientCertificateContext_ResumesHandshake(SslProtocols protocol)
         {
+            if (protocol == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
+            {
+                return;
+            }
+
             // Server (SslStream) demands a client certificate. The client TlsContext is
             // created without one, so ProcessHandshake must surface WantCredentials when
             // the CertificateRequest arrives. Supplying an SslStreamCertificateContext via
             // SetClientCertificateContext and re-entering ProcessHandshake with empty input
             // must resume the handshake to completion and deliver the cert to the server.
             // SChannel resolves client credentials up-front via AcquireCredentialsHandle
-            // and never surfaces CredentialsNeeded; this flow is OpenSSL-only.
+            // and never surfaces CredentialsNeeded; this flow is OpenSSL and SecureTransport only.
             //
             // AllowTlsResume is disabled on both peers so a session cached by a sibling
             // parallel test cannot let this client resume and skip the CertificateRequest.
@@ -1145,6 +1149,60 @@ namespace System.Net.Security.Tests
 
                 Assert.True(session.IsHandshakeComplete);
                 Assert.Equal(1, wantCredentialsCount);
+                Assert.NotNull(observedClientCert);
+                Assert.Equal(clientCert.Thumbprint, observedClientCert!.Thumbprint);
+            }
+        }
+
+        [Theory]
+        [InlineData(SslProtocols.Tls12)]
+        [InlineData(SslProtocols.Tls13)]
+        public async Task ClientSession_ConfiguredClientCertificate_SentWhenServerRequestsIt(SslProtocols protocol)
+        {
+            if (protocol == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
+            {
+                return;
+            }
+
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            X509Certificate2? observedClientCert = null;
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
+            {
+                Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = protocol,
+                    AllowTlsResume = false,
+                    ClientCertificateRequired = true,
+                    RemoteCertificateValidationCallback = (s, c, ch, e) =>
+                    {
+                        observedClientCert = c as X509Certificate2;
+                        return true;
+                    },
+                });
+
+                using TlsContext ctx = TlsContext.CreateClient(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    ClientCertificateContext = SslStreamCertificateContext.Create(clientCert, additionalCertificates: null),
+                    EnabledSslProtocols = protocol,
+                    AllowTlsResume = false,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+                using TlsBufferSession session = NewBufferSession(ctx);
+
+                Task clientHandshake = DriveHandshakeWithExternalValidationAsync(
+                    session, clientStream, onSuspend: () => session.AcceptWithDefaultValidation());
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(clientHandshake, serverHandshake);
+
+                Assert.True(session.IsHandshakeComplete);
                 Assert.NotNull(observedClientCert);
                 Assert.Equal(clientCert.Thumbprint, observedClientCert!.Thumbprint);
             }
@@ -2192,6 +2250,9 @@ namespace System.Net.Security.Tests
 
                         case TlsOperationStatus.Closed:
                             throw new IOException("Peer closed connection during handshake.");
+
+                        default:
+                            throw new InvalidOperationException($"Unexpected handshake status {status}.");
                     }
                 }
 
@@ -4566,7 +4627,6 @@ namespace System.Net.Security.Tests
         // TlsContext, each supplying a distinct cert via SetClientCertificateContext,
         // and verify every server sees the correct client cert.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
-        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not surface deferred client-credential prompts.")]
         public async Task SetClientCertificateContext_ConcurrentSessionsOnSharedContext_DoNotRace()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();

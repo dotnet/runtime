@@ -1,6 +1,7 @@
 # Using Codespaces
 
 * [Create a Codespace](#create-a-codespace)
+* [Using a local devcontainer](#using-a-local-devcontainer)
 * [Updating dotnet/runtime's Codespaces Configuration](#updating-dotnetruntimes-codespaces-configuration)
 * [Testing out your Changes](#testing-out-your-changes)
 
@@ -28,6 +29,14 @@ The _dotnet/runtime_ repo runs a nightly GitHub Action to build the latest code 
 ![Codespace machine size](codespace-machine-size.png)
 
 _If these instructions are out of date, see <https://docs.github.com/codespaces/developing-in-codespaces/creating-a-codespace#creating-a-codespace> for instructions on how to create a new Codespace._
+
+## Using a local devcontainer
+
+The standard (`.devcontainer/devcontainer.json`) and libraries (`.devcontainer/libraries/devcontainer.json`) configurations can also run locally with Docker and the VS Code Dev Containers extension. Both use the shared `.devcontainer/Dockerfile` and support Linux ARM64 and AMD64. On an ARM64 Docker host, use the native ARM64 image rather than forcing `linux/amd64` emulation.
+
+The libraries configuration automatically builds `libs+clr -rc Release` and restores libraries tests on creation.
+
+Android and both Wasm configurations use separate images and have separate architecture-specific requirements; they are not covered by these local ARM64 instructions.
 
 ## Updating dotnet/runtime's Codespaces Configuration
 

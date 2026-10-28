@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Project="$(RepositoryEngineeringDir)restore\browserWasmMibcProfile.props" />
   <Import Condition="'$(TargetOS)' == 'browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
   <PropertyGroup>
@@ -24,6 +25,10 @@
     <!-- Remove when PublishReadyToRun becomes default https://github.com/dotnet/runtime/issues/132466 -->
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">true</PublishReadyToRun>
   </PropertyGroup>
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <!-- Exercise mixed R2R/interpreter execution across JS interop boundaries for extra coverage. -->
+    <PublishReadyToRunPgoFiles Include="$(BrowserWasmMibcProfile)" />
+  </ItemGroup>
 
   <!-- Make debugging easier -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
