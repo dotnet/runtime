@@ -1307,6 +1307,11 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
 
         const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(assertionIndex);
 
+        if (curAssertion.GetOp2().KindIs(Compiler::O2K_CONST_INT) && (curAssertion.GetOp1().GetVN() != normalLclVN))
+        {
+            continue;
+        }
+
         Limit      limit(Limit::keUndef);
         genTreeOps cmpOper    = GT_NONE;
         bool       isUnsigned = false;
@@ -2171,90 +2176,40 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
     return true;
 }
 
-bool RangeCheck::GetLimitMin(Limit& limit, int* pMin)
-{
-    int& min1 = *pMin;
-    if (limit.IsConstant() || (limit.IsBinOpArray() && (limit.GetConstant() <= 0)))
-    {
-        // Constants are exact minima. For a nonnegative length plus a nonpositive
-        // constant, the addition cannot wrap, so the constant is a safe minimum.
-        min1 = limit.GetConstant();
-        return true;
-    }
-    // unknown minimum
-    return false;
-}
-
 // Check if the arithmetic overflows.
-bool RangeCheck::AddOverflows(Range* range1, Range* range2)
+bool RangeCheck::AddOverflows(Limit& limit1, Limit& limit2)
 {
     int max1;
-    if (!GetLimitMax(range1->UpperLimit(), &max1))
+    if (!GetLimitMax(limit1, &max1))
     {
         return true;
     }
 
     int max2;
-    if (!GetLimitMax(range2->UpperLimit(), &max2))
-    {
-        return true;
-    }
-    if (CheckedOps::AddOverflows(max1, max2, CheckedOps::Signed))
+    if (!GetLimitMax(limit2, &max2))
     {
         return true;
     }
 
-    int  min1;
-    bool hasMin1 = GetLimitMin(range1->LowerLimit(), &min1);
-
-    int  min2;
-    bool hasMin2 = GetLimitMin(range2->LowerLimit(), &min2);
-
-    // If we have a lower bound for either range that is non-negative, then sum cannot underflow.
-    if ((hasMin1 && min1 >= 0) || (hasMin2 && min2 >= 0))
-    {
-        return false;
-    }
-
-    if (!hasMin1 || !hasMin2)
-    {
-        return true;
-    }
-
-    return CheckedOps::AddOverflows(min1, min2, CheckedOps::Signed);
+    return IntAddOverflows(max1, max2);
 }
 
 // Check if the arithmetic overflows.
-bool RangeCheck::MultiplyOverflows(Range* range1, Range* range2)
+bool RangeCheck::MultiplyOverflows(Limit& limit1, Limit& limit2)
 {
     int max1;
-    if (!GetLimitMax(range1->UpperLimit(), &max1))
+    if (!GetLimitMax(limit1, &max1))
     {
         return true;
     }
 
     int max2;
-    if (!GetLimitMax(range2->UpperLimit(), &max2))
+    if (!GetLimitMax(limit2, &max2))
     {
         return true;
     }
 
-    int min1;
-    if (!GetLimitMin(range1->LowerLimit(), &min1))
-    {
-        return true;
-    }
-
-    int min2;
-    if (!GetLimitMin(range2->LowerLimit(), &min2))
-    {
-        return true;
-    }
-
-    return CheckedOps::MulOverflows(min1, min2, CheckedOps::Signed) ||
-           CheckedOps::MulOverflows(max1, max2, CheckedOps::Signed) ||
-           CheckedOps::MulOverflows(min1, max2, CheckedOps::Signed) ||
-           CheckedOps::MulOverflows(max1, min2, CheckedOps::Signed);
+    return CheckedOps::MulOverflows(max1, max2, CheckedOps::Signed);
 }
 
 // Does the bin operation overflow.
@@ -2291,18 +2246,18 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Ra
 
     if (binop->OperIs(GT_ADD))
     {
-        return AddOverflows(op1Range, op2Range);
+        return AddOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
     }
     if (binop->OperIs(GT_MUL))
     {
-        return MultiplyOverflows(op1Range, op2Range);
+        return MultiplyOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
     }
     if (binop->OperIs(GT_LSH))
     {
         // Convert LSH(X, CNS) to MUL(X, CNS) if possible and check that,
         // otherwise, report as "may overflow".
         Range convertedOp2Range = RangeOps::ConvertShiftToMultiply(*op2Range);
-        return MultiplyOverflows(op1Range, &convertedOp2Range);
+        return MultiplyOverflows(op1Range->UpperLimit(), convertedOp2Range.UpperLimit());
     }
     if (binop->OperIs(GT_OR))
     {
