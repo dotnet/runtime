@@ -23,7 +23,7 @@
 #endif
 #include <fcntl.h>
 
-#if defined(__linux__) && !defined(TARGET_OPENHARMONY)
+#if defined(__linux__) || defined(TARGET_OPENHARMONY)
 #if !HAVE_CLOSE_RANGE
 #include <sys/syscall.h>
 #if !defined(__NR_close_range)
@@ -303,10 +303,7 @@ static int32_t RestrictHandleInheritance(int32_t* inheritedFds, int32_t inherite
     // Using closefrom() or close_range() with flag 0 (direct close) would destroy this pipe.
 
     int result;
-#if defined(TARGET_OPENHARMONY)
-    // OpenHarmony's app seccomp policy does not allow close_range and traps it with SIGSYS.
-    result = SetCloexecForOpenFds();
-#elif HAVE_CLOSE_RANGE
+#if HAVE_CLOSE_RANGE
     // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).
     result = close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC);
 #elif defined(__NR_close_range)
@@ -318,6 +315,15 @@ static int32_t RestrictHandleInheritance(int32_t* inheritedFds, int32_t inherite
     result = fdwalk(SetCloexecForFd, NULL);
 #else
     result = -1;
+#endif
+
+#if defined(TARGET_OPENHARMONY)
+    // OpenHarmony's app seccomp policy may trap close_range with SIGSYS. Prefer
+    // close_range when it works, and only use the /proc/self/fd walker as a fallback.
+    if (result != 0 && errno == SIGSYS)
+    {
+        result = SetCloexecForOpenFds();
+    }
 #endif
 
     if (result != 0)
