@@ -710,8 +710,10 @@ namespace System.Net
 
                 if (responseLength > buffer.Length)
                 {
+                    // Rent before returning, so buffer stays owned (and is returned once by the catch) if Rent throws.
+                    byte[] largerBuffer = ArrayPool<byte>.Shared.Rent(responseLength);
                     ArrayPool<byte>.Shared.Return(buffer);
-                    buffer = ArrayPool<byte>.Shared.Rent(responseLength);
+                    buffer = largerBuffer;
                 }
 
                 await ReceiveExactAsync(socket, buffer.AsMemory(0, responseLength), timeoutCts.Token).ConfigureAwait(false);
@@ -747,8 +749,9 @@ namespace System.Net
 
                 if (responseLength > buffer.Length)
                 {
+                    byte[] largerBuffer = ArrayPool<byte>.Shared.Rent(responseLength);
                     ArrayPool<byte>.Shared.Return(buffer);
-                    buffer = ArrayPool<byte>.Shared.Rent(responseLength);
+                    buffer = largerBuffer;
                 }
 
                 ReceiveExactSync(socket, buffer.AsSpan(0, responseLength));
