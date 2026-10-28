@@ -185,7 +185,6 @@ namespace System.Diagnostics
             }
 
             using Process process = Start(startInfo)!;
-
             return await process.WaitForExitOrKillEntireProcessTreeOnCancellationAsync(cancellationToken).ConfigureAwait(false);
         }
 
@@ -262,7 +261,7 @@ namespace System.Diagnostics
             }
             catch
             {
-                try { process.Kill(entireProcessTree: true); } catch { }
+                process.TryKillEntireTree();
                 throw;
             }
 
@@ -340,7 +339,7 @@ namespace System.Diagnostics
             }
             catch
             {
-                try { process.Kill(entireProcessTree: true); } catch { }
+                process.TryKillEntireTree();
                 throw;
             }
 
@@ -399,7 +398,7 @@ namespace System.Diagnostics
             }
 
             safeProcessHandle.Canceled = true;
-            try { Kill(entireProcessTree: true); } catch { }
+            TryKillEntireTree();
 
             return safeProcessHandle.WaitForExit();
         }
@@ -407,23 +406,22 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        private async Task<ProcessExitStatus> WaitForExitOrKillEntireProcessTreeOnCancellationAsync(CancellationToken cancellationToken)
+        private Task<ProcessExitStatus> WaitForExitOrKillEntireProcessTreeOnCancellationAsync(CancellationToken cancellationToken)
+            => _processHandle!.WaitForExitOrKillOnCancellationAsync(cancellationToken, cancellationToken.CanBeCanceled ? TryKillEntireTree : null);
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private void TryKillEntireTree()
         {
-            SafeProcessHandle safeProcessHandle = _processHandle!;
-
-            // If the token can be canceled, the registration will ensure that the process is killed if cancellation is requested.
-            // In such case, the WaitForExitAsync will complete when the process exits.
-
-            CancellationTokenRegistration registration = !cancellationToken.CanBeCanceled ? default : cancellationToken.UnsafeRegister(sph =>
+            try
             {
-                ((SafeProcessHandle)sph!).Canceled = true;
-
-                try { Kill(entireProcessTree: true); } catch { }
-            }, safeProcessHandle);
-
-            await using (registration.ConfigureAwait(false))
+                Kill(entireProcessTree: true);
+            }
+            catch
             {
-                return await safeProcessHandle.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+                // In case killing the process tree fails, attempt to Kill the root.
+                Kill();
             }
         }
 
