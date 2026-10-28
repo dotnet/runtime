@@ -92,13 +92,13 @@ namespace System.DirectoryServices.Protocols
         {
             LDAP_TIMEVAL searchTimeout = new LDAP_TIMEVAL
             {
-                tv_sec = timelimit
+                tv_sec = new CLong(timelimit)
             };
 
             //zero must not be passed otherwise libldap runtime returns LDAP_PARAM_ERROR
-            if (searchTimeout.tv_sec < 1)
+            if (searchTimeout.tv_sec.Value < 1)
                 //-1 means no time limit
-                searchTimeout.tv_sec = -1;
+                searchTimeout.tv_sec = new CLong(-1);
 
             return Interop.Ldap.ldap_search(ldapHandle, dn, scope, filter, attributes, attributeOnly, servercontrol, clientcontrol, searchTimeout, sizelimit, ref messageNumber);
         }
