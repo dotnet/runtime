@@ -615,7 +615,7 @@ void MethodDesc::RecordDelayedR2RCode(PrepareCodeConfig* pConfig, PCODE pCode)
     }
 
     // The InterpMethod info is not cleared when R2R code is published, so calls through a stale override alias
-    // still reach the prestub and are redirected to the published native code.
+    // still check it and are redirected to the published native code.
     if (pConfig->HasKnownAuxiliaryModuleDependency())
     {
         m_codeData->AuxiliaryModuleActivationFlag = pConfig->GetAuxiliaryModuleActivationFlag();

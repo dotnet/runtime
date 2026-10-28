@@ -1487,7 +1487,9 @@ static InterpByteCodeStart* ResolveInterpreterCode(MethodDesc*& targetMethod, In
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
     // This info is not cleared when R2R code is published, so calls through a stale override alias still
-    // reach this check and are redirected to the published native code.
+    // reach this check and are redirected to the published native code. Each such call pays for the check and
+    // the activation call, which returns early. An explicit "activated" state could skip that, but only
+    // hand-written IL with a MethodImpl in the declaring type creates aliases, so it is not worth the extra state.
     if (targetIp != nullptr
         && targetIp->Method->auxiliaryMethodInfo.ShouldTryActivateMethod())
     {
@@ -1499,7 +1501,7 @@ static InterpByteCodeStart* ResolveInterpreterCode(MethodDesc*& targetMethod, In
             CallWithSEHWrapper(
                 [pActualMethod]() {
                     pActualMethod->TryActivateDelayedR2RCode(CallerGCMode::Coop);
-                    return true;
+                    return 0;
                 });
             GCX_PREEMP_REGION_END();
         }

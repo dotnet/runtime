@@ -340,7 +340,7 @@ A module's `RuntimeFunctions` table may be only partially filled. VirtualIP look
 
 ### Interpreter changes
 
-The interpreter must implement the tracking and activation flow defined above. Call sites check the cached state on the interpreter method data, which is shared by every alias of the same bytecode, such as the declaration of a `MethodImpl` that remaps a vtable slot within its own type. The state is not cleared when R2R code is published, so calls through such an alias still reach the prestub and are redirected to the published native code.
+The interpreter must implement the tracking and activation flow defined above. Call sites check the cached state on the interpreter method data, which is shared by every alias of the same bytecode, such as the declaration of a `MethodImpl` that remaps a vtable slot within its own type. The state is not cleared when R2R code is published, so calls through such an alias still reach the activation check and are redirected to the published native code. Those calls keep paying for the check and an early-returning activation call. Recording an explicit activated state would avoid that, but aliases only come from hand-written IL, so the prototype does not.
 
 ## JavaScript Hosting Changes
 
