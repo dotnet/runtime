@@ -2,6 +2,8 @@
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CrossGen2TestExtraArguments Condition="'$(TargetArchitecture)' == 'wasm'">$(CrossGen2TestExtraArguments) --strip-il-bodies --directpinvoke:libSystem.Native</CrossGen2TestExtraArguments>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/136545 -->
+    <R2RIncompatible Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="UnresolvedPInvokeTests.cs" />

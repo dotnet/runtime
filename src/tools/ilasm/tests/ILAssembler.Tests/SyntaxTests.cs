@@ -76,9 +76,55 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
+        [InlineData("4294967296")]
+        [InlineData("4294967297")]
+        [InlineData("-2147483649")]
+        [InlineData("-4294967295")]
+        [InlineData("0x100000000")]
+        [InlineData("-0x80000001")]
+        [InlineData("-0xffffffff")]
+        [InlineData("040000000000")]
+        [InlineData("037777777777777777777777777777777777777777777777777")]
+        [InlineData("-037777777777777777777777777777777777777777777777777")]
+        [InlineData("-020000000001")]
+        [InlineData("18446744073709551615")]
+        [InlineData("-18446744073709551615")]
+        [InlineData("0xffffffffffffffff")]
+        [InlineData("-0xffffffffffffffff")]
+        [InlineData("0x10000000000000000")]
+        [InlineData("0x10000000000000001")]
+        [InlineData("02000000000000000000000")]
+        [InlineData("-02000000000000000000000")]
+        public void Int32Literal_OutOfRange_ReportsDiagnostic(string literal)
+        {
+            string[] sources =
+            [
+                DocumentCompilerTestHelpers.MethodSource($"ldc.i4 {literal}\nret"),
+                DocumentCompilerTestHelpers.MethodSource($".maxstack {literal}\nret"),
+                $".class public Test {{ .pack {literal} }}",
+                $".corflags {literal}",
+            ];
+
+            foreach (string source in sources)
+            {
+                var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options());
+                Diagnostic error = Assert.Single(diagnostics);
+                Assert.Equal(DiagnosticIds.LiteralOutOfRange, error.Id);
+                Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+                Assert.Equal($"The value '{literal}' is out of range", error.Message);
+                Assert.NotNull(error.Location);
+                Assert.Equal(new SourceSpan(source.IndexOf(literal, StringComparison.Ordinal), literal.Length), error.Location.Span);
+                Assert.Null(result);
+            }
+        }
+
+        [Theory]
         [InlineData("018")]
         [InlineData("09")]
         [InlineData("-018")]
+        [InlineData("02000000000000000000008")]
+        [InlineData("037777777777777777777777777777777777777777777777778")]
+        [InlineData("-037777777777777777777777777777777777777777777777779")]
         public void InvalidOctalIntegerLiteral_ReportsDiagnostic(string literal)
         {
             string source = $$"""
