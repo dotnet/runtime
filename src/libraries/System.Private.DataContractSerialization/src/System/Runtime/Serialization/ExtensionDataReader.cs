@@ -459,13 +459,13 @@ namespace System.Runtime.Serialization
                     return;
                 default:
                     Type? dataNodeType = dataNode?.DataType;
-                    if (dataNodeType == Globals.TypeOfClassDataNode)
+                    if (dataNodeType == typeof(ClassDataNode))
                         MoveNextInClass((ClassDataNode)dataNode!);
-                    else if (dataNodeType == Globals.TypeOfCollectionDataNode)
+                    else if (dataNodeType == typeof(CollectionDataNode))
                         MoveNextInCollection((CollectionDataNode)dataNode!);
-                    else if (dataNodeType == Globals.TypeOfISerializableDataNode)
+                    else if (dataNodeType == typeof(ISerializableDataNode))
                         MoveNextInISerializable((ISerializableDataNode)dataNode!);
-                    else if (dataNodeType == Globals.TypeOfXmlDataNode)
+                    else if (dataNodeType == typeof(XmlDataNode))
                         MoveNextInXml((XmlDataNode)dataNode!);
                     else if (dataNode?.Value != null)
                         MoveToDeserializedObject(dataNode!);
@@ -630,10 +630,10 @@ namespace System.Runtime.Serialization
         {
             Type type = dataNode.DataType;
             bool isTypedNode = true;
-            if (type == Globals.TypeOfObject && dataNode.Value != null)
+            if (type == typeof(object) && dataNode.Value != null)
             {
                 type = dataNode.Value.GetType();
-                if (type == Globals.TypeOfObject)
+                if (type == typeof(object))
                 {
                     _internalNodeType = ExtensionDataNodeType.EndElement;
                     return;
@@ -709,19 +709,19 @@ namespace System.Runtime.Serialization
                     break;
                 case TypeCode.Object:
                 default:
-                    if (type == Globals.TypeOfByteArray)
+                    if (type == typeof(byte[]))
                     {
                         byte[]? bytes = isTypedNode ? ((DataNode<byte[]>)dataNode).GetValue() : (byte[])dataNode.Value;
                         _value = (bytes == null) ? string.Empty : Convert.ToBase64String(bytes);
                     }
-                    else if (type == Globals.TypeOfTimeSpan)
+                    else if (type == typeof(TimeSpan))
                         _value = XmlConvert.ToString(isTypedNode ? ((DataNode<TimeSpan>)dataNode).GetValue() : (TimeSpan)dataNode.Value);
-                    else if (type == Globals.TypeOfGuid)
+                    else if (type == typeof(Guid))
                     {
                         Guid guid = isTypedNode ? ((DataNode<Guid>)dataNode).GetValue() : (Guid)dataNode.Value;
                         _value = guid.ToString();
                     }
-                    else if (type == Globals.TypeOfUri)
+                    else if (type == typeof(Uri))
                     {
                         Uri uri = isTypedNode ? ((DataNode<Uri>)dataNode).GetValue() : (Uri)dataNode.Value;
                         _value = uri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped);

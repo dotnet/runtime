@@ -439,6 +439,17 @@
         ret
     }
 
+    .method static public hidebysig void NewObj.DelegateFromNativeIntArgument_Invalid_StackMethod.DelegatePattern(native int fn) cil managed
+    {
+        // The function pointer is an argument, not the result of ldftn/ldvirtftn.
+
+        ldnull
+        ldarg.0
+        newobj      instance void [System.Runtime]System.Action::.ctor(object, native int)
+        pop
+        ret
+    }
+
     .method static public hidebysig void LdFtn.NopInDelegatePattern_Invalid_DelegatePattern() cil managed
     {
         // var a = new System.Action(TestClass.StaticMethod);

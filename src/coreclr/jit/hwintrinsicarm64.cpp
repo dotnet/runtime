@@ -48,6 +48,8 @@ static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_SveSha3_Arm64;
         case InstructionSet_SveSm4:
             return InstructionSet_SveSm4_Arm64;
+        case InstructionSet_SvePmull128:
+            return InstructionSet_SvePmull128_Arm64;
         default:
             return InstructionSet_NONE;
     }
@@ -130,6 +132,10 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
         if (strcmp(className, "SveAes") == 0)
         {
             return InstructionSet_SveAes;
+        }
+        if (strcmp(className, "SvePmull128") == 0)
+        {
+            return InstructionSet_SvePmull128;
         }
         if (strcmp(className, "SveSha3") == 0)
         {
@@ -695,8 +701,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     if (isa == InstructionSet_Vector)
     {
-        return impXplatIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseType, retType, simdSize,
-                                 mustExpand);
+        return impXplatIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseType, retType, simdSize);
     }
 
     const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);

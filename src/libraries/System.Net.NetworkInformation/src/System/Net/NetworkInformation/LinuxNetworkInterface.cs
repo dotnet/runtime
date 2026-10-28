@@ -52,13 +52,13 @@ namespace System.Net.NetworkInformation
                     }
                 }
 
-                try
+                string? resolverConfig = StringParsingHelpers.ReadResolvConfFile(NetworkFiles.EtcResolvConfFile);
+                if (resolverConfig is not null)
                 {
-                    string resolverConfig = File.ReadAllText(NetworkFiles.EtcResolvConfFile);
                     DnsSuffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(resolverConfig);
                     DnsAddresses = new InternalIPAddressCollection(StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(resolverConfig));
                 }
-                catch (Exception e) when (e is FileNotFoundException || e is UnauthorizedAccessException)
+                else
                 {
                     DnsAddresses = new InternalIPAddressCollection();
                 }

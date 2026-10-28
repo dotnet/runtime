@@ -134,6 +134,8 @@ typedef struct { void *pList; int nEntries; } DacDbiArrayList_CORDB_ADDRESS;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_GUID;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_COR_SEGMENT;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_COR_MEMORY_RANGE;
+typedef struct { int arch; int os; ULONG32 pointerSize; } TargetInfo;
+typedef struct { DWORD dwMajor; DWORD dwMinor; DWORD dwBuild; DWORD dwSubBuild; } COR_VERSION;
 
 cpp_quote("#endif")
 
@@ -461,7 +463,7 @@ interface IDacDbiInterface : IUnknown
         [out, size_is(regCount)] BYTE pAvailable[]);
 
     // Translates a JIT ICorDebugInfo::RegNum to a CorDebugRegister value
-    HRESULT ConvertJitRegNumToCorDebugRegister([in] ULONG32 jitRegNum, [out] int * pReg);
+    HRESULT ConvertJitRegNumToCorDebugRegister([in] ULONG32 jitRegNum, [out] int * pReg, [out] BOOL * pIsAmbientSP);
 
     // Writes a single floating-point / SIMD register into a DBI-side context
     // buffer. SIMD register files receive a raw byte copy into the low bytes of
@@ -485,4 +487,9 @@ interface IDacDbiInterface : IUnknown
         [in] ContextBuffer sourceContext,
         [in] ContextCopyMode copyMode,
         [in] ULONG32 flags);
+    // Returns the target's processor architecture, OS family, and pointer size.
+    HRESULT GetTargetInfo([out] TargetInfo * pTargetInfo);
+
+    // Returns the target's product major, minor, and patch versions, with dwSubBuild set to zero.
+    HRESULT GetRuntimeVersion([out] COR_VERSION * pVersion);
 };

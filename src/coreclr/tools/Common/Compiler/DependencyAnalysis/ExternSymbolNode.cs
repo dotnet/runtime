@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -27,6 +28,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => $"ExternSymbol {_name}{(_isIndirection ? " (indirected)" : "")}";
 
+        public Utf8String Name => _name;
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(_name);
@@ -40,9 +43,9 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
 
 #if !SUPPORT_JIT
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
@@ -60,14 +63,27 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a function symbol that is defined externally and statically linked to the output obj file.
     /// </summary>
-    public class ExternFunctionSymbolNode(Utf8String name, bool isIndirection = false) : ExternSymbolNode(name, isIndirection)
+    public class ExternFunctionSymbolNode : ExternSymbolNode, INodeWithTypeSignature
     {
-        public override int ClassCode => 1452455506;
-    }
+        private readonly MethodSignature _signature;
+        private readonly bool _isUnmanagedCallersOnly;
+        private readonly bool _isAsyncCall;
+        private readonly bool _hasGenericContextArg;
 
-    public class AddressTakenExternFunctionSymbolNode(Utf8String name) : ExternFunctionSymbolNode(name)
-    {
-        public override int ClassCode => -45645737;
+        public ExternFunctionSymbolNode(Utf8String name, MethodDesc method, bool isIndirection = false)
+            : this(name, method.Signature, method.IsUnmanagedCallersOnly, method.IsAsyncCall(), method.RequiresInstArg() || method.IsArrayAddressMethod(), isIndirection)
+        { }
+
+        public ExternFunctionSymbolNode(Utf8String name, MethodSignature signature, bool isUnmanagedCallersOnly, bool isAsyncCall, bool hasGenericContextArg, bool isIndirection = false)
+            : base(name, isIndirection)
+            => (_signature, _isUnmanagedCallersOnly, _isAsyncCall, _hasGenericContextArg) = (signature, isUnmanagedCallersOnly, isAsyncCall, hasGenericContextArg);
+
+        public override int ClassCode => 1452455506;
+
+        MethodSignature INodeWithTypeSignature.Signature => _signature;
+        bool INodeWithTypeSignature.IsUnmanagedCallersOnly => _isUnmanagedCallersOnly;
+        bool INodeWithTypeSignature.IsAsyncCall => _isAsyncCall;
+        bool INodeWithTypeSignature.HasGenericContextArg => _hasGenericContextArg;
     }
 
     /// <summary>

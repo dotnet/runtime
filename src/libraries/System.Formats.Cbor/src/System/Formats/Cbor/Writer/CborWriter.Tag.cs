@@ -143,7 +143,7 @@ namespace System.Formats.Cbor
             public static void Deconstruct(decimal value, out decimal mantissa, out byte scale)
             {
                 Span<int> buf = [0, 0, 0, 0];
-                CborHelpers.GetBitsFromDecimal(value, buf);
+                decimal.GetBits(value, buf);
 
                 int flags = buf[3];
                 bool isNegative = (flags & SignMask) == SignMask;
@@ -155,7 +155,7 @@ namespace System.Formats.Cbor
             private static decimal ReconstructFromNegativeScale(decimal mantissa, byte scale)
             {
                 Span<int> buf = [0, 0, 0, 0];
-                CborHelpers.GetBitsFromDecimal(mantissa, buf);
+                decimal.GetBits(mantissa, buf);
 
                 int flags = buf[3];
                 bool isNegative = (flags & SignMask) == SignMask;

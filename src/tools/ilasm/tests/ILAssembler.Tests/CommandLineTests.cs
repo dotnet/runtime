@@ -2,12 +2,177 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.CommandLine;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace ILAssembler.Tests;
 
 public class CommandLineTests
 {
+    [Theory]
+    [InlineData("", 0, "input.il(1,1)")]
+    [InlineData("abc", 0, "input.il(1,1)")]
+    [InlineData("abc", 3, "input.il(1,4)")]
+    [InlineData("abc\n  def", 6, "input.il(2,3)")]
+    [InlineData("abc\r\n  def", 7, "input.il(2,3)")]
+    [InlineData("abc\rdef", 4, "input.il(1,5)")]
+    [InlineData("abc\r\n", 4, "input.il(1,5)")]
+    [InlineData("abc\r\n", 5, "input.il(2,1)")]
+    [InlineData("abc\n\n", 5, "input.il(3,1)")]
+    [InlineData("\tdef", 1, "input.il(1,2)")]
+    [InlineData("a\u0085b\u2028c\u2029d", 6, "input.il(1,7)")]
+    [InlineData("\ud83d\ude00x", 2, "input.il(1,3)")]
+    [InlineData("abc", -1, "input.il(1,1)")]
+    [InlineData("abc", int.MaxValue, "input.il(1,4)")]
+    public void DiagnosticLocation_UsesOneBasedLineAndColumn(string text, int start, string expected)
+    {
+        var location = new Location(new SourceSpan(start, 0), new SourceText(text, "input.il"));
+
+        Assert.Equal(expected, location.ToString());
+    }
+
+    [Fact]
+    public void DiagnosticLocations_SharedSourceSupportsOutOfOrderLookups()
+    {
+        string text = string.Concat(Enumerable.Repeat("abc\r\n\n\tdef\n", 1000));
+        var source = new SourceText(text, "input.il");
+        int[] offsets = [text.Length, 0, 25, text.Length - 1, 5, 1000, 5];
+        foreach (int offset in offsets)
+        {
+            int line = 1;
+            int column = 1;
+            for (int i = 0; i < offset; i++)
+            {
+                if (text[i] == '\n')
+                {
+                    line++;
+                    column = 1;
+                }
+                else
+                {
+                    column++;
+                }
+            }
+
+            Assert.Equal($"input.il({line},{column})", new Location(new SourceSpan(offset, 0), source).ToString());
+        }
+    }
+
+    [Fact]
+    public void DiagnosticLocations_DifferentSourcesHaveIndependentLineStarts()
+    {
+        var source = new SourceText("first\nsecond", "input.il");
+        Assert.Equal("input.il(2,1)", new Location(new SourceSpan(6, 0), source).ToString());
+
+        var differentText = new SourceText("replacement", source.Path);
+        Assert.Equal("input.il(1,7)", new Location(new SourceSpan(6, 0), differentText).ToString());
+        var differentPath = new SourceText(source.Text, "included.il");
+        Assert.Equal("included.il(2,1)", new Location(new SourceSpan(6, 0), differentPath).ToString());
+    }
+
+    [Fact]
+    public void DiagnosticLocations_SharedSourceSupportsRepeatedLookups()
+    {
+        var source = new SourceText(string.Concat(Enumerable.Repeat("abc\n", 1000)), "input.il");
+        for (int line = 0; line <= 1000; line++)
+        {
+            Assert.Equal($"input.il({line + 1},1)", new Location(new SourceSpan(line * 4, 0), source).ToString());
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task Diagnostics_UseSourceCoordinatesAndPreserveErrorTolerance(bool warning, bool errorTolerant)
+    {
+        string directory = Directory.CreateTempSubdirectory("ilasm-diagnostics-").FullName;
+        try
+        {
+            string input = Path.Combine(directory, "input.il");
+            string output = Path.Combine(directory, "output.dll");
+            string source = warning
+                ? """
+                    .assembly Test {}
+                    .method static void M() {
+                      .locals ([0] int32 a)
+                      {
+                        .locals ([0] int32 b)
+                        nop
+                      }
+                      ret
+                    }
+                    """
+                : """
+                    .assembly extern System.Runtime {}
+                    .assembly Test {}
+                      .class public Value extends [System.Runtime]System.ValueType {}
+                    """;
+            File.WriteAllText(input, source);
+            var startInfo = new ProcessStartInfo(Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") ?? "dotnet")
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            };
+            startInfo.ArgumentList.Add(typeof(Program).Assembly.Location);
+            startInfo.ArgumentList.Add("-nologo");
+            startInfo.ArgumentList.Add("-quiet");
+            startInfo.ArgumentList.Add("-dll");
+            startInfo.ArgumentList.Add($"-output={output}");
+            if (errorTolerant)
+            {
+                startInfo.ArgumentList.Add("-ERR");
+            }
+            startInfo.ArgumentList.Add(input);
+
+            using Process process = Process.Start(startInfo)!;
+            Task<string> stdout = process.StandardOutput.ReadToEndAsync();
+            Task<string> stderr = process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+            string diagnosticOutput = await stdout;
+            string errorOutput = await stderr;
+
+            Assert.Equal(warning || errorTolerant ? 0 : 1, process.ExitCode);
+            Assert.Equal(warning || errorTolerant, File.Exists(output));
+            string expected = warning
+                ? $"{input}(5,5) : warning ILA0054 : Local var slot 0 is in use"
+                : $"{input}(3,17) : error ILA0002 : The value type 'Value' is unsealed; implicitly sealed.";
+            Assert.Equal(errorTolerant ? "" : expected + Environment.NewLine, diagnosticOutput);
+            Assert.Equal(warning || errorTolerant ? "" : "***** FAILURE *****" + Environment.NewLine, errorOutput);
+            Assert.DoesNotContain(".assembly", diagnosticOutput);
+            Assert.DoesNotContain("SourceText", diagnosticOutput);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Pseudoattributes_ModernOptionIsOptIn()
+    {
+        IlasmRootCommand command = new();
+        Assert.False(command.Parse(["input.il"]).GetValue(command.PseudoAttributes));
+        Assert.True(command.Parse(NativeCommandLine.Normalize(["--pseudoattributes", "input.il"]))
+            .GetValue(command.PseudoAttributes));
+        Assert.Empty(command.PseudoAttributes.Aliases);
+    }
+
+    [Theory]
+    [InlineData("-pseudoattributes", false)]
+    [InlineData("-PSE", false)]
+    [InlineData("/pseudoattributes", true)]
+    [InlineData("/PSE", true)]
+    public void Pseudoattributes_LegacyOptionIsRejected(string argument, bool allowSlashOptions)
+    {
+        Assert.Throws<ArgumentException>(() => NativeCommandLine.Normalize([argument], allowSlashOptions));
+    }
+
     public static TheoryData<string, string> NativeBooleanOptions { get; } = new()
     {
         { "32B", "--32bitpreferred" },
@@ -59,24 +224,35 @@ public class CommandLineTests
         "SUB",
     };
 
-    public static TheoryData<string> ModernValueOptions { get; } = new()
+    public static TheoryData<string> ModernValueOptions
     {
-        "--alignment",
-        "--aname",
-        "--base",
-        "--debug-mode",
-        "--flags",
-        "--include",
-        "--key",
-        "--mdv",
-        "--output",
-        "--ssver",
-        "--stack",
-        "--subsystem",
-        "-I",
-        "-k",
-        "-o",
-    };
+        get
+        {
+            TheoryData<string> options = new();
+            foreach (Option option in new IlasmRootCommand().Options)
+            {
+                if (option.Arity.MinimumNumberOfValues == 0)
+                {
+                    continue;
+                }
+
+                if (option.Name.StartsWith("-", StringComparison.Ordinal))
+                {
+                    options.Add(option.Name);
+                }
+
+                foreach (string alias in option.Aliases)
+                {
+                    if (alias.StartsWith("-", StringComparison.Ordinal))
+                    {
+                        options.Add(alias);
+                    }
+                }
+            }
+
+            return options;
+        }
+    }
 
     [Theory]
     [MemberData(nameof(NativeValueOptions))]
@@ -247,11 +423,9 @@ public class CommandLineTests
     }
 
     [Theory]
-    [InlineData("-ARM", "--arm")]
     [InlineData("-arm64", "--arm64")]
     [InlineData("-ARM64Anything", "--arm64")]
     [InlineData("-ARM64=value", "--arm64")]
-    [InlineData("/arm", "--arm")]
     [InlineData("/ARM64Anything:value", "--arm64")]
     public void ArmOptions_UseNativeDisambiguation(string argument, string expectedOption)
     {
@@ -261,13 +435,15 @@ public class CommandLineTests
     }
 
     [Theory]
+    [InlineData("-ARM")]
+    [InlineData("/arm")]
     [InlineData("-ARMAnything")]
     [InlineData("-ARM:value")]
     [InlineData("-ARM6")]
-    public void InvalidArmOption_Throws(string argument)
+    public void UnsupportedOrInvalidArmOption_Throws(string argument)
     {
         Assert.Throws<ArgumentException>(
-            () => NativeCommandLine.Normalize([argument], allowSlashOptions: false));
+            () => NativeCommandLine.Normalize([argument], allowSlashOptions: argument[0] == '/'));
     }
 
     [Theory]
@@ -308,6 +484,14 @@ public class CommandLineTests
             NativeCommandLine.Normalize([option, "-DLL", "input.il"], allowSlashOptions: false));
     }
 
+    [Fact]
+    public void BareOptionName_DoesNotPreserveNextArgument()
+    {
+        Assert.Equal(
+            ["output", "--dll", "input.il"],
+            NativeCommandLine.Normalize(["output", "-DLL", "input.il"], allowSlashOptions: false));
+    }
+
     [Theory]
     [InlineData("-I:include")]
     [InlineData("-k:key.snk")]
@@ -328,6 +512,15 @@ public class CommandLineTests
         Assert.Equal(
             [argument],
             NativeCommandLine.Normalize([argument], allowSlashOptions: false));
+    }
+
+    [Fact]
+    public void ModernShortBooleanOption_WithZeroArityAndBooleanValueIsPreserved()
+    {
+        IlasmRootCommand command = new();
+        command.Optimize.Arity = new ArgumentArity(0, 0);
+
+        Assert.Equal(["-O:false"], NativeCommandLine.Normalize(["-O:false"], command));
     }
 
     [Theory]
@@ -355,6 +548,7 @@ public class CommandLineTests
     [InlineData("-unknown", false)]
     [InlineData("-x", false)]
     [InlineData("-i", false)]
+    [InlineData("-PATHMAP=/src=/_", false)]
     [InlineData("/unknown", true)]
     public void UnrecognizedNativeOption_Throws(string argument, bool allowSlashOptions)
     {

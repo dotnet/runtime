@@ -27,7 +27,6 @@ set(CORDBDI_SOURCES
   rsthread.cpp
   rstype.cpp
   shared.cpp
-  symbolinfo.cpp
   valuehome.cpp
 )
 
@@ -41,8 +40,7 @@ set(CORDBDI_HEADERS
     nativepipeline.h
     rsenumerator.hpp
     rspriv.h
-    rspriv.inl
-    symbolinfo.h)
+    rspriv.inl)
 
 
 if(CLR_CMAKE_HOST_WIN32)
@@ -58,12 +56,10 @@ endif (CLR_CMAKE_TARGET_WIN32)
 add_library_clr(cordbdi STATIC ${CORDBDI_SOURCES})
 set_target_properties(cordbdi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(cordbdi PRIVATE stdafx.h)
-add_dependencies(cordbdi eventing_headers)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_library_clr(cordbdi_universal STATIC ${CORDBDI_SOURCES})
     set_target_properties(cordbdi_universal PROPERTIES DBI_COMPONENT TRUE)
     target_compile_definitions(cordbdi_universal PRIVATE MSCORDBI_LINKS_PRIVATE_PAL)
     target_precompile_headers(cordbdi_universal PRIVATE stdafx.h)
-    add_dependencies(cordbdi_universal eventing_headers)
 endif(CLR_CMAKE_HOST_UNIX)

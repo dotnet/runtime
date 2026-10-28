@@ -18,13 +18,6 @@
 #include "dbgtransportmanager.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 
-#if defined(TARGET_UNIX) || defined(__ANDROID__)
-// Local (in-process) debugging is not supported for UNIX and Android.
-#define SUPPORT_LOCAL_DEBUGGING 0
-#else
-#define SUPPORT_LOCAL_DEBUGGING 1
-#endif
-
 //-----------------------------------------------------------------------------
 // SxS Versioning story for Mscordbi (ICorDebug + friends)
 //-----------------------------------------------------------------------------
@@ -469,7 +462,7 @@ DbiGetThreadContext(HANDLE hThread,
     T_CONTEXT *lpContext)
 {
     // if we aren't local debugging this isn't going to work
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
     return FALSE;
 #else
@@ -508,7 +501,7 @@ BOOL
 DbiSetThreadContext(HANDLE hThread,
     const T_CONTEXT *lpContext)
 {
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
     return FALSE;
 #else

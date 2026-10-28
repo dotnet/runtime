@@ -34,24 +34,22 @@ namespace System.Buffers
         internal static bool IsVectorizationSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void SetBitmapBit(byte* bitmap, int value)
+        private static void SetBitmapBit(ref InlineArray16<byte> bitmap, int value)
         {
             Debug.Assert((uint)value <= 127);
 
             int highNibble = value >> 4;
             int lowNibble = value & 0xF;
-            bitmap[(uint)lowNibble] |= (byte)(1 << highNibble);
+            bitmap[lowNibble] |= (byte)(1 << highNibble);
         }
 
-        internal static unsafe void ComputeAnyByteState(ReadOnlySpan<byte> values, out AnyByteState state)
+        internal static void ComputeAnyByteState(ReadOnlySpan<byte> values, out AnyByteState state)
         {
             // The exact format of these bitmaps differs from the other ComputeBitmap overloads as it's meant for the full [0, 255] range algorithm.
             // See http://0x80.pl/articles/simd-byte-lookup.html#universal-algorithm
 
-            Vector128<byte> bitmapSpace0 = default;
-            Vector128<byte> bitmapSpace1 = default;
-            byte* bitmapLocal0 = (byte*)&bitmapSpace0;
-            byte* bitmapLocal1 = (byte*)&bitmapSpace1;
+            InlineArray16<byte> bitmapSpace0 = default;
+            InlineArray16<byte> bitmapSpace1 = default;
             BitVector256 lookupLocal = default;
 
             foreach (byte b in values)
@@ -60,24 +58,23 @@ namespace System.Buffers
 
                 if (b < 128)
                 {
-                    SetBitmapBit(bitmapLocal0, b);
+                    SetBitmapBit(ref bitmapSpace0, b);
                 }
                 else
                 {
-                    SetBitmapBit(bitmapLocal1, b - 128);
+                    SetBitmapBit(ref bitmapSpace1, b - 128);
                 }
             }
 
-            state = new AnyByteState(bitmapSpace0, bitmapSpace1, lookupLocal);
+            state = new AnyByteState(Vector128.Create<byte>(bitmapSpace0), Vector128.Create<byte>(bitmapSpace1), lookupLocal);
         }
 
-        internal static unsafe void ComputeAsciiState<T>(ReadOnlySpan<T> values, out AsciiState state)
+        internal static void ComputeAsciiState<T>(ReadOnlySpan<T> values, out AsciiState state)
             where T : struct, IUnsignedNumber<T>
         {
             Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(char));
 
-            Vector128<byte> bitmapSpace = default;
-            byte* bitmapLocal = (byte*)&bitmapSpace;
+            InlineArray16<byte> bitmapSpace = default;
             BitVector256 lookupLocal = default;
 
             foreach (T tValue in values)
@@ -90,10 +87,10 @@ namespace System.Buffers
                 }
 
                 lookupLocal.Set(value);
-                SetBitmapBit(bitmapLocal, value);
+                SetBitmapBit(ref bitmapSpace, value);
             }
 
-            state = new AsciiState(bitmapSpace, lookupLocal);
+            state = new AsciiState(Vector128.Create<byte>(bitmapSpace), lookupLocal);
         }
 
         public static bool CanUseUniqueLowNibbleSearch<T>(ReadOnlySpan<T> values, int maxInclusive)
@@ -143,14 +140,14 @@ namespace System.Buffers
         {
             Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(char));
 
-            Vector128<byte> valuesByLowNibble = default;
+            InlineArray16<byte> valuesByLowNibble = default;
             BitVector256 lookup = default;
 
             foreach (T tValue in values)
             {
                 byte value = byte.CreateTruncating(tValue);
                 lookup.Set(value);
-                valuesByLowNibble.SetElementUnsafe(value & 0xF, value);
+                valuesByLowNibble[value & 0xF] = value;
             }
 
             // Elements of 'valuesByLowNibble' where no value had that low nibble will be left uninitialized at 0.
@@ -161,12 +158,12 @@ namespace System.Buffers
             // To avoid that, we can replace the 0th element with any other byte that has a non-zero low nibble.
             // The zero character will no longer match, and the new value we pick won't match either as
             // it will be mapped to a different element in 'valuesByLowNibble' given its non-zero low nibble.
-            if (valuesByLowNibble.GetElement(0) == 0 && !lookup.Contains(0))
+            if (valuesByLowNibble[0] == 0 && !lookup.Contains(0))
             {
-                valuesByLowNibble.SetElementUnsafe(0, (byte)1);
+                valuesByLowNibble[0] = 1;
             }
 
-            state = new AsciiState(valuesByLowNibble, lookup);
+            state = new AsciiState(Vector128.Create<byte>(valuesByLowNibble), lookup);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -182,7 +179,7 @@ namespace System.Buffers
                     return false;
                 }
 
-                SetBitmapBit(bitmapLocal, c);
+                bitmapLocal[c & 0xF] |= (byte)(1 << (c >> 4));
             }
 
             needleContainsZero = (bitmap[0] & 1) != 0;

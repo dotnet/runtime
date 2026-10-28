@@ -120,6 +120,15 @@ namespace System.Reflection.Context.Projection
             return base.CreateDelegate(Projector.Unproject(delegateType), target);
         }
 
+        public override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            ArgumentNullException.ThrowIfNull(other);
+
+            return other is ProjectingMethodInfo otherMethod &&
+                   Projector == otherMethod.Projector &&
+                   UnderlyingMethod.HasSameMetadataDefinitionAs(otherMethod.UnderlyingMethod);
+        }
+
         public override bool Equals([NotNullWhen(true)] object? o)
         {
             return o is ProjectingMethodInfo other &&

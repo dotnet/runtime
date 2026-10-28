@@ -779,6 +779,7 @@ DEFINE_VMPTR(class FieldDesc,       PTR_FieldDesc,      VMPTR_FieldDesc);
 // ObjectHandle is a safe way to represent an object into the GC heap. It gets updated
 // when a GC occurs.
 DEFINE_VMPTR(struct OBJECTHANDLE__, TADDR,              VMPTR_OBJECTHANDLE);
+DEFINE_VMPTR(class DebuggerExternalMemoryOwner, TADDR, VMPTR_DebuggerExternalMemoryOwner);
 
 DEFINE_VMPTR(class TypeHandle,      PTR_TypeHandle,     VMPTR_TypeHandle);
 
@@ -1280,11 +1281,6 @@ struct MSLAYOUT Ls_Rs_BaseBuffer
 {
 #ifdef RIGHT_SIDE_COMPILE
 protected:
-    // copy data can happen on both LS and RS. In LS case,
-    // ReadProcessMemory is really reading from its own process memory.
-    //
-    void CopyLSDataToRSWorker(ICorDebugDataTarget * pTargethProcess);
-
     // retrieve the RS data and own it
     BYTE *TransferRSDataWorker()
     {
@@ -1344,7 +1340,6 @@ struct MSLAYOUT Ls_Rs_ByteBuffer : public Ls_Rs_BaseBuffer
         return m_pbRS;
     }
 
-    void CopyLSDataToRS(ICorDebugDataTarget * pTarget);
     BYTE *TransferRSData()
     {
         return TransferRSDataWorker();
@@ -1363,9 +1358,6 @@ struct MSLAYOUT Ls_Rs_StringBuffer : public Ls_Rs_BaseBuffer
     {
         return reinterpret_cast<const WCHAR*> (m_pbRS);
     }
-
-    // Copy over the string.
-    void CopyLSDataToRS(ICorDebugDataTarget * pTarget);
 
     // Caller will pick up ownership.
     // Since caller will delete this data, we can't give back a constant pointer.
@@ -1696,6 +1688,7 @@ struct MSLAYOUT DebuggerIPCEvent
             Portable<VMPTR_AppDomain> vmAppDomain;
 
             Portable<VMPTR_OBJECTHANDLE> vmObjectHandle;
+            Portable<VMPTR_DebuggerExternalMemoryOwner> vmExternalMemoryOwner;
             DebuggerIPCE_ExpandedTypeData resultType;
         } FuncEvalComplete;
 
@@ -1794,6 +1787,11 @@ struct MSLAYOUT DebuggerIPCEvent
             Portable<VMPTR_OBJECTHANDLE> vmObjectHandle;
             Portable<CorDebugHandleType> handleType;
         } DisposeHandle;
+
+        struct MSLAYOUT
+        {
+            Portable<VMPTR_DebuggerExternalMemoryOwner> vmExternalMemoryOwner;
+        } DisposeExternalMemoryOwner;
 
         struct MSLAYOUT
         {
