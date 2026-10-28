@@ -44,6 +44,7 @@ internal partial class StackWalk_1 : IStackWalk
     private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData)
     {
         public IPlatformAgnosticContext Context { get; set; } = context;
+        public IPlatformAgnosticContext? CallerContext { get; set; }
         public StackWalkState State { get; set; } = state;
         public FrameIterator FrameIter { get; set; } = frameIter;
         public ThreadData ThreadData { get; set; } = threadData;
@@ -849,7 +850,10 @@ internal partial class StackWalk_1 : IStackWalk
                 {
                     try
                     {
-                        handle.Context.Unwind(_target);
+                        if (handle.CallerContext is IPlatformAgnosticContext callerContext)
+                            handle.Context = callerContext;
+                        else
+                            handle.Context.Unwind(_target);
                     }
                     catch
                     {
@@ -857,6 +861,7 @@ internal partial class StackWalk_1 : IStackWalk
                         throw;
                     }
                 }
+                handle.CallerContext = null;
                 break;
             case StackWalkState.SkippedFrame:
                 // Advance past the skipped frame, then let UpdateState detect
@@ -866,6 +871,7 @@ internal partial class StackWalk_1 : IStackWalk
             case StackWalkState.InitialNativeContext:
             case StackWalkState.NativeMarker:
             {
+                handle.CallerContext = null;
                 TargetCodePointer ip = handle.Context.InstructionPointer;
                 HijackKind hijackKind = _target.Contracts.Debugger.GetHijackKind(ip);
                 if (hijackKind != HijackKind.None)
@@ -887,6 +893,7 @@ internal partial class StackWalk_1 : IStackWalk
                 break;
             }
             case StackWalkState.Frame:
+                handle.CallerContext = null;
                 // Native SFITER_FRAME_FUNCTION gates ProcessIp + UpdateRegDisplay on
                 // GetReturnAddress() != 0, and gates GotoNextFrame on !pInlinedFrame.
                 // pInlinedFrame is set only for active InlinedCallFrames.
@@ -1026,10 +1033,21 @@ internal partial class StackWalk_1 : IStackWalk
         }
 
         // get the caller context
-        IPlatformAgnosticContext parentContext = handle.Context.Clone();
-        parentContext.Unwind(_target);
+        IPlatformAgnosticContext parentContext = GetCallerContext(handle);
 
         return handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
+    }
+
+    private IPlatformAgnosticContext GetCallerContext(StackWalkData handle)
+    {
+        if (handle.CallerContext is null)
+        {
+            IPlatformAgnosticContext context = handle.Context.Clone();
+            context.Unwind(_target);
+            handle.CallerContext = context;
+        }
+
+        return handle.CallerContext;
     }
 
     byte[] IStackWalk.GetRawContext(IStackDataFrameHandle stackDataFrameHandle)
