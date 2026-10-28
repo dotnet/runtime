@@ -563,15 +563,17 @@ ElfReader<Types>::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr, uint64_t dynamic
     // Search dynamic entries for DT_DEBUG (r_debug entry)
     struct r_debug* rdebugAddr = nullptr;
     bool terminated = false;
-    for (; dynamicSize >= sizeof(Elf_Dyn); dynamicAddr++, dynamicSize -= sizeof(Elf_Dyn))
+    const uint64_t dynamicCount = dynamicSize / sizeof(Elf_Dyn);
+    for (uint64_t i = 0; i < dynamicCount; i++)
     {
+        Elf_Dyn* address = dynamicAddr + i;
         Elf_Dyn dyn;
-        if (!ReadMemory(dynamicAddr, &dyn, sizeof(dyn))) {
-            Trace("ERROR: ReadMemory(%p, %zx) dyn FAILED\n", dynamicAddr, sizeof(dyn));
+        if (!ReadMemory(address, &dyn, sizeof(dyn))) {
+            Trace("ERROR: ReadMemory(%p, %zx) dyn FAILED\n", address, sizeof(dyn));
             return false;
         }
         Trace("DSO: dyn %p tag %" PRId64 " (%" PRIx64 ") d_ptr %016" PRIx64 "\n",
-            dynamicAddr, (int64_t)dyn.d_tag, (uint64_t)dyn.d_tag, (uint64_t)dyn.d_un.d_ptr);
+            address, (int64_t)dyn.d_tag, (uint64_t)dyn.d_tag, (uint64_t)dyn.d_un.d_ptr);
         if (dyn.d_tag == DT_NULL) {
             terminated = true;
             break;
