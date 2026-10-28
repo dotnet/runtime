@@ -400,7 +400,6 @@ extern "C" {
     void QCall_Enum_GetValuesAndNames (void *, void *, void *, int32_t, void *) __asm__("Enum_GetValuesAndNames");
     void QCall_Environment_Exit (int32_t, void *) __asm__("Environment_Exit");
     void QCall_Environment_FailFast (void *, void *, void *, void *, void *) __asm__("Environment_FailFast");
-    int32_t QCall_Environment_GetProcessorCount (void *) __asm__("Environment_GetProcessorCount");
     void * QCall_EventPipeInternal_CreateProvider (void *, void *, void *, void *) __asm__("EventPipeInternal_CreateProvider");
     void * QCall_EventPipeInternal_DefineEvent (void *, uint32_t, int64_t, uint32_t, uint32_t, void *, uint32_t, void *) __asm__("EventPipeInternal_DefineEvent");
     void QCall_EventPipeInternal_DeleteProvider (void *, void *) __asm__("EventPipeInternal_DeleteProvider");
@@ -698,7 +697,6 @@ static const Entry s_QCall[] = {
     { "Enum_GetValuesAndNames", (void*)&QCall_Enum_GetValuesAndNames },
     { "Environment_Exit", (void*)&QCall_Environment_Exit },
     { "Environment_FailFast", (void*)&QCall_Environment_FailFast },
-    { "Environment_GetProcessorCount", (void*)&QCall_Environment_GetProcessorCount },
     { "EventPipeInternal_CreateProvider", (void*)&QCall_EventPipeInternal_CreateProvider },
     { "EventPipeInternal_DefineEvent", (void*)&QCall_EventPipeInternal_DefineEvent },
     { "EventPipeInternal_DeleteProvider", (void*)&QCall_EventPipeInternal_DeleteProvider },
