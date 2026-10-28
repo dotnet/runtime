@@ -283,7 +283,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugInfoTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GCRefMapBuilder.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GCRefMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GenericLookupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelegateCtorSignature.cs" />

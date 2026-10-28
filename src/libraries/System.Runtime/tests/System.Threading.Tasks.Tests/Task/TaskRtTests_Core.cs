@@ -2441,9 +2441,12 @@ namespace System.Threading.Tasks.Tests
             Assert.False(Task.WaitAll([incompleteTask], 0));
             Assert.Equal(-1, Task.WaitAny([incompleteTask], 0));
 
-            Assert.Throws<PlatformNotSupportedException>(() => incompleteTask.Wait(1));
-            Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAll([incompleteTask], 1));
-            Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAny([incompleteTask], 1));
+            Assert.False(incompleteTask.Wait(1));
+            Assert.False(Task.WaitAll([incompleteTask], 1));
+            Assert.Equal(-1, Task.WaitAny([incompleteTask], 1));
+            Assert.Throws<PlatformNotSupportedException>(() => incompleteTask.Wait());
+            Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAll([incompleteTask]));
+            Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAny([incompleteTask]));
         }
 
         // Just runs a task and waits on it.

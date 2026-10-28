@@ -760,10 +760,10 @@ namespace
                ((pVector512MT != nullptr) && pMT->HasSameTypeDefAs(pVector512MT));
     }
 
-    // Walks a known multi-slot CoreLib type's first fields down to the wasm value type its slots use,
-    // and reports that slot's width. This is safe only after IsWasmMultiSlotTypeHandle succeeds: the
-    // known integer and decimal types have homogeneous uint64 fields, and the known vectors have
-    // homogeneous vector fields. It is not valid for an arbitrary aggregate.
+    // Only IsWasmMultiSlotTypeHandle's homogeneous CoreLib types reach this function:
+    // Int128/UInt128/Decimal128 use i64 slots, and Vector256<T>/Vector512<T> use v128 slots.
+    // Recursing through their first field identifies the slot width; arbitrary aggregates
+    // must not be classified this way.
     static bool GetWasmSlotSize(TypeHandle th, uint32_t* pSlotSize)
     {
         _ASSERTE(IsWasmMultiSlotTypeHandle(th));
@@ -809,10 +809,51 @@ namespace
                 return false;
             }
 
-            th = pMT->GetApproxFieldDescListRaw()->GetApproxFieldTypeHandleThrowing();
+            // GetSignatureKey is NOTHROW/GC_NOTRIGGER. Signature preparation supplies value-type
+            // layouts, but need not load MethodTables for their primitive fields. Read primitive
+            // kinds directly and use existing handles for nested value types to avoid type loading.
+            FieldDesc* pField = pMT->GetApproxFieldDescListRaw();
+            CorElementType fieldType = pField->GetFieldType();
+            if (fieldType == ELEMENT_TYPE_I8 || fieldType == ELEMENT_TYPE_U8)
+            {
+                *pSlotSize = 8;
+                return true;
+            }
+            if (fieldType != ELEMENT_TYPE_VALUETYPE)
+            {
+                return false;
+            }
+
+            th = pField->LookupApproxFieldTypeHandle();
+            _ASSERTE(!th.IsNull());
         }
 
         return false;
+    }
+
+    static ConvertResult LowerPrimitiveType(CorElementType elemType)
+    {
+        switch (elemType)
+        {
+            case ELEMENT_TYPE_I4: case ELEMENT_TYPE_U4:
+            case ELEMENT_TYPE_I2: case ELEMENT_TYPE_U2:
+            case ELEMENT_TYPE_I1: case ELEMENT_TYPE_U1:
+            case ELEMENT_TYPE_BOOLEAN: case ELEMENT_TYPE_CHAR:
+            case ELEMENT_TYPE_I: case ELEMENT_TYPE_U:
+            case ELEMENT_TYPE_PTR: case ELEMENT_TYPE_BYREF:
+            case ELEMENT_TYPE_FNPTR:
+            case ELEMENT_TYPE_CLASS: case ELEMENT_TYPE_STRING:
+            case ELEMENT_TYPE_ARRAY: case ELEMENT_TYPE_SZARRAY:
+                return { ConvertType::ToI32, 0 };
+            case ELEMENT_TYPE_I8: case ELEMENT_TYPE_U8:
+                return { ConvertType::ToI64, 0 };
+            case ELEMENT_TYPE_R4:
+                return { ConvertType::ToF32, 0 };
+            case ELEMENT_TYPE_R8:
+                return { ConvertType::ToF64, 0 };
+            default:
+                return { ConvertType::NotConvertible, 0 };
+        }
     }
 
     static ConvertResult LowerTypeHandle(TypeHandle th)
@@ -822,27 +863,7 @@ namespace
 
         if ((elemType != ELEMENT_TYPE_VALUETYPE) && (elemType != ELEMENT_TYPE_TYPEDBYREF))
         {
-            switch (elemType)
-            {
-                case ELEMENT_TYPE_I4: case ELEMENT_TYPE_U4:
-                case ELEMENT_TYPE_I2: case ELEMENT_TYPE_U2:
-                case ELEMENT_TYPE_I1: case ELEMENT_TYPE_U1:
-                case ELEMENT_TYPE_BOOLEAN: case ELEMENT_TYPE_CHAR:
-                case ELEMENT_TYPE_I: case ELEMENT_TYPE_U:
-                case ELEMENT_TYPE_PTR: case ELEMENT_TYPE_BYREF:
-                case ELEMENT_TYPE_FNPTR:
-                case ELEMENT_TYPE_CLASS: case ELEMENT_TYPE_STRING:
-                case ELEMENT_TYPE_ARRAY: case ELEMENT_TYPE_SZARRAY:
-                    return { ConvertType::ToI32, 0 };
-                case ELEMENT_TYPE_I8: case ELEMENT_TYPE_U8:
-                    return { ConvertType::ToI64, 0 };
-                case ELEMENT_TYPE_R4:
-                    return { ConvertType::ToF32, 0 };
-                case ELEMENT_TYPE_R8:
-                    return { ConvertType::ToF64, 0 };
-                default:
-                    return { ConvertType::NotConvertible, 0 };
-            }
+            return LowerPrimitiveType(elemType);
         }
 
         MethodTable* pMT = th.AsMethodTable();
@@ -873,11 +894,18 @@ namespace
         if (numInstanceFields == 1)
         {
             FieldDesc* pField = pMT->GetApproxFieldDescListRaw();
-            TypeHandle fieldType = pField->GetApproxFieldTypeHandleThrowing();
-            if (fieldType.GetSize() == size)
+            CorElementType fieldElementType = pField->GetFieldType();
+            if (fieldElementType != ELEMENT_TYPE_VALUETYPE && fieldElementType != ELEMENT_TYPE_TYPEDBYREF)
             {
-                // Single field, no padding — unwrap recursively
-                return LowerTypeHandle(fieldType);
+                if (pField->GetSize() == size)
+                    return LowerPrimitiveType(fieldElementType);
+            }
+            else
+            {
+                TypeHandle fieldType = pField->LookupApproxFieldTypeHandle();
+                _ASSERTE(!fieldType.IsNull());
+                if (fieldType.GetSize() == size)
+                    return LowerTypeHandle(fieldType);
             }
             // One field with padding — treat as multi-field struct
         }
@@ -1450,7 +1478,7 @@ InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD)
 
     MetaSig metaSig(pMD);
 
-    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
+    if (pMD->IsStringCtor())
     {
         const char *thunkKey = nullptr;
 
@@ -1560,7 +1588,7 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     MetaSig sig(pMD);
     void* thunk;
 
-    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
+    if (pMD->IsStringCtor())
     {
         const char *thunkKey = nullptr;
 

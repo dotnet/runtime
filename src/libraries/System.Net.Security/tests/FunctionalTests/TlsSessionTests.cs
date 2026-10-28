@@ -3333,10 +3333,12 @@ namespace System.Net.Security.Tests
         // Read/Write are rejected with InvalidOperationException while the second handshake is in
         // progress (the socket analog of the buffered ReadWriteDuringSecondHandshake_Throws case).
         [Theory]
-        [InlineData(SslProtocols.Tls12)]
-        [InlineData(SslProtocols.Tls13)]
+        [InlineData(SslProtocols.Tls12, true)]
+        [InlineData(SslProtocols.Tls12, false)]
+        [InlineData(SslProtocols.Tls13, true)]
+        [InlineData(SslProtocols.Tls13, false)]
         [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not support post-handshake client authentication.")]
-        public async Task SocketBoundSession_RequestClientCertificate_DrivesSecondHandshakeToCompletion(SslProtocols protocol)
+        public async Task SocketBoundSession_RequestClientCertificate_DrivesSecondHandshakeToCompletion(SslProtocols protocol, bool startClientReadBeforeRequest)
         {
             if (protocol == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
             {
@@ -3401,7 +3403,7 @@ namespace System.Net.Security.Tests
 
             // The peer must be reading for the post-handshake exchange to progress.
             byte[] appBuf = new byte[TestHelper.s_ping.Length];
-            Task<int> clientRead = clientSsl.ReadAsync(appBuf).AsTask();
+            Task<int>? clientRead = startClientReadBeforeRequest ? clientSsl.ReadAsync(appBuf).AsTask() : null;
 
             await Task.Run(async () =>
             {
@@ -3411,6 +3413,12 @@ namespace System.Net.Security.Tests
                 Assert.False(session.IsHandshakeComplete);
                 Assert.Throws<InvalidOperationException>(() => session.Write(TestHelper.s_ping, out _));
                 Assert.Throws<InvalidOperationException>(() => session.Read(new byte[TestHelper.s_ping.Length], out _));
+
+                if (!startClientReadBeforeRequest)
+                {
+                    Assert.Equal(TlsOperationStatus.NeedMoreData, session.Handshake());
+                    clientRead = clientSsl.ReadAsync(appBuf).AsTask();
+                }
 
                 await DriveSocketHandshakeToCompletionAsync(session, onSuspend: () =>
                 {
@@ -3440,6 +3448,7 @@ namespace System.Net.Security.Tests
 
             // Prove the session is still usable: unblock the client's parked read.
             await WriteAllOverSocketAsync(session, TestHelper.s_ping).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.NotNull(clientRead);
             Assert.Equal(TestHelper.s_ping.Length, await clientRead.WaitAsync(TimeSpan.FromSeconds(30)));
             Assert.Equal(TestHelper.s_ping, appBuf);
         }

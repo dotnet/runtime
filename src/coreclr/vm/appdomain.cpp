@@ -1663,12 +1663,12 @@ void AppDomain::AddAssembly(Assembly * assem)
         CrstHolder ch(GetAssemblyListLock());
 
         // Attempt to find empty space in assemblies list
-        DWORD asmCount = m_Assemblies.GetCount_Unlocked();
-        for (DWORD i = 0; i < asmCount; ++i)
+        ArrayList::Iterator i = m_Assemblies.GetArrayListIterator();
+        while (i.Next())
         {
-            if (m_Assemblies.Get_UnlockedNoReference(i) == NULL)
+            if (i.GetElement() == nullptr)
             {
-                m_Assemblies.Set_Unlocked(i, assem);
+                m_Assemblies.Set_Unlocked(i.GetIndex(), assem);
                 return;
             }
         }
@@ -1688,12 +1688,12 @@ void AppDomain::RemoveAssembly(Assembly * pAsm)
     CONTRACTL_END;
 
     CrstHolder ch(GetAssemblyListLock());
-    DWORD asmCount = m_Assemblies.GetCount_Unlocked();
-    for (DWORD i = 0; i < asmCount; ++i)
+    ArrayList::Iterator i = m_Assemblies.GetArrayListIterator();
+    while (i.Next())
     {
-        if (m_Assemblies.Get_UnlockedNoReference(i) == pAsm)
+        if (i.GetElement() == pAsm)
         {
-            m_Assemblies.Set_Unlocked(i, NULL);
+            m_Assemblies.Set_Unlocked(i.GetIndex(), nullptr);
             return;
         }
     }
