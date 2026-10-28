@@ -126,12 +126,15 @@ namespace ILCompiler.PortableCallHelpers
                     continue;
                 }
 
-                var decls = new HashSet<string>();
+                // The declaration only provides the symbol's address; calls go through the
+                // interpreter-to-native thunk for each P/Invoke's own signature. Imports that alias one
+                // entry point with different signatures would otherwise declare it with conflicting types.
+                string decl = GenPInvokeDecl(first);
+                w.WriteLine(decl);
                 foreach (PInvokeInfo candidate in candidates)
                 {
-                    string decl = GenPInvokeDecl(candidate);
-                    if (decls.Add(decl))
-                        w.WriteLine(decl);
+                    if (GenPInvokeDecl(candidate) != decl)
+                        log.Verbose($"'{candidate.Method}' imports '{first.EntryPoint}' with a different native signature than '{first.Method}'.");
                 }
             }
 
@@ -454,16 +457,41 @@ namespace ILCompiler.PortableCallHelpers
 
         private string GenPInvokeDecl(PInvokeInfo pinvoke)
         {
-            MethodSignature signature = pinvoke.Method.Signature;
-            TypeDesc returnType = signature.ReturnType;
+            string returnCType;
             List<string> parameterTypes = [];
-            foreach (TypeDesc parameter in ParameterTypes(signature))
-                parameterTypes.Add(MapType(parameter));
 
-            if (IsPassedByReference(returnType))
+            string nativeSignature = MarshalledSignature.GetPInvokeSignature(pinvoke.Method, out _);
+            if (nativeSignature == InteropSignature.GetMethodSignature(pinvoke.Method, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
             {
-                returnType = pinvoke.Method.Context.GetWellKnownType(WellKnownType.Void);
-                parameterTypes.Insert(0, "void *");
+                MethodSignature signature = pinvoke.Method.Signature;
+                TypeDesc returnType = signature.ReturnType;
+                foreach (TypeDesc parameter in ParameterTypes(signature))
+                    parameterTypes.Add(MapType(parameter));
+
+                if (IsPassedByReference(returnType))
+                {
+                    returnType = pinvoke.Method.Context.GetWellKnownType(WellKnownType.Void);
+                    parameterTypes.Insert(0, "void *");
+                }
+
+                returnCType = MapType(returnType);
+            }
+            else
+            {
+                // Marshalling changes what crosses to native, so declare the native signature.
+                List<string> tokens = InteropSignature.ParseSignatureTokens(nativeSignature);
+                foreach (string token in tokens.Skip(1))
+                    parameterTypes.Add(token[0] is 'S' or 'A' ? "void *" : InteropSignature.TokenToNativeType(token));
+
+                if (tokens[0][0] == 'S')
+                {
+                    returnCType = "void";
+                    parameterTypes.Insert(0, "void *");
+                }
+                else
+                {
+                    returnCType = InteropSignature.TokenToNativeType(tokens[0]);
+                }
             }
 
             string importAttributes = pinvoke.WasmLinkage
@@ -471,7 +499,7 @@ namespace ILCompiler.PortableCallHelpers
                 : "";
             string externKeyword = pinvoke.WasmLinkage ? "extern " : "";
 
-            return $"    {importAttributes}{externKeyword}{MapType(returnType)} {CEntryPoint(pinvoke)} ({string.Join(", ", parameterTypes)});";
+            return $"    {importAttributes}{externKeyword}{returnCType} {CEntryPoint(pinvoke)} ({string.Join(", ", parameterTypes)});";
         }
 
         private string FixedSymbolName(PInvokeCallback cb)

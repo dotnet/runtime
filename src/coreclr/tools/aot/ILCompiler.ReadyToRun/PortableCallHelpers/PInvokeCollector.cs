@@ -127,6 +127,7 @@ namespace ILCompiler.PortableCallHelpers
     internal sealed class PInvokeCollector(InteropLogger log, string targetOS)
     {
         private readonly Dictionary<TypeDesc, bool> _typeUnsupportedOnPlatform = [];
+        private readonly HashSet<TypeDesc> _marshalledDelegates = [];
         private readonly Dictionary<EcmaAssembly, bool> _assemblyUnsupportedOnPlatform = [];
 
         public void CollectPInvokes(List<PInvokeInfo> pinvokes, List<PInvokeCallback> callbacks, Dictionary<string, MethodDesc> signatures, EcmaType type)
@@ -158,9 +159,7 @@ namespace ILCompiler.PortableCallHelpers
                     return;
                 }
 
-                MethodDesc invokeMethod = type.GetMethod("Invoke"u8, null);
-                if (invokeMethod is not null)
-                    AddSignature(signatures, invokeMethod, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly, "pinvoke");
+                AddDelegateSignatures(signatures, [type]);
             }
 
             void CollectPInvokesForMethod(EcmaMethod method)
@@ -176,7 +175,12 @@ namespace ILCompiler.PortableCallHelpers
 
                 pinvokes.Add(new PInvokeInfo(metadata.Name, metadata.Module, method, wasmLinkage));
 
-                AddSignature(signatures, method, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly, "pinvoke");
+                List<TypeDesc> delegates = [];
+                AddSignature(signatures, method, MarshalledSignature.GetPInvokeSignature(method, out bool isApproximate, delegates), "pinvoke");
+                if (isApproximate)
+                    ReportApproximateSignature(method);
+
+                AddDelegateSignatures(signatures, delegates);
             }
         }
 
@@ -223,7 +227,9 @@ namespace ILCompiler.PortableCallHelpers
                 string signature;
                 try
                 {
-                    signature = WasmLowering.GetSignature(calliSignature, WasmLowering.LoweringFlags.None).SignatureString;
+                    signature = MarshalledSignature.GetCalliSignature(calliSignature, method.Module, out bool isApproximate);
+                    if (isApproximate)
+                        ReportApproximateSignature(method);
                     foreach (string token in InteropSignature.ParseSignatureTokens(signature))
                         InteropSignature.TokenToNativeType(token);
                 }
@@ -254,9 +260,36 @@ namespace ILCompiler.PortableCallHelpers
             }
         }
 
-        private void AddSignature(Dictionary<string, MethodDesc> signatures, MethodDesc method, WasmLowering.LoweringFlags flags, string kind)
+        /// <summary>
+        /// Adds the native signature of each delegate type, and of the delegates their signatures
+        /// marshal in turn. A delegate created over a native function pointer, explicitly or when one
+        /// comes back from native code, is called through an IL stub that needs this thunk.
+        /// </summary>
+        private void AddDelegateSignatures(Dictionary<string, MethodDesc> signatures, List<TypeDesc> delegates)
         {
-            string signature = InteropSignature.GetMethodSignature(method, flags);
+            // The list grows as signatures marshal further delegates.
+            for (int i = 0; i < delegates.Count; i++)
+            {
+                // Marshal.GetDelegateForFunctionPointer rejects generic delegates.
+                if (delegates[i] is not EcmaType delegateType || delegateType.HasInstantiation || !_marshalledDelegates.Add(delegateType))
+                    continue;
+
+                MethodDesc invokeMethod = delegateType.GetMethod("Invoke"u8, null);
+                if (invokeMethod is null)
+                    continue;
+
+                AddSignature(signatures, invokeMethod, MarshalledSignature.GetDelegateSignature(invokeMethod, out bool isApproximate, delegates), "delegate");
+                if (isApproximate)
+                    ReportApproximateSignature(invokeMethod);
+            }
+        }
+
+        private void ReportApproximateSignature(MethodDesc method)
+            => log.InfoHigh("WASM0065",
+                $"'{method.OwningType}::{method.Name.ToString()}' marshals a struct whose native layout the generated call helpers cannot model; calling it may fail at run time.");
+
+        private void AddSignature(Dictionary<string, MethodDesc> signatures, MethodDesc method, string signature, string kind)
+        {
             if (signatures.TryAdd(signature, method))
                 log.Verbose($"Adding {kind} signature {signature} for method '{method.OwningType}.{method.Name.ToString()}'");
         }
