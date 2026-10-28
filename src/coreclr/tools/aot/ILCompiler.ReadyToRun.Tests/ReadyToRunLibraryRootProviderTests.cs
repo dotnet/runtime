@@ -6,6 +6,8 @@ extern alias crossgen2;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 using crossgen2::ILCompiler;
@@ -26,6 +28,100 @@ namespace ILCompiler.ReadyToRun.Tests;
 
 public class ReadyToRunLibraryRootProviderTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ResolverReleasesCompilationMetadata(bool mutableModule)
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        EcmaModule coreLib = (EcmaModule)context.SystemModule;
+        ReadyToRunSingleAssemblyCompilationModuleGroup group = new(new ReadyToRunCompilationModuleGroupConfig
+        {
+            Context = context,
+            CompilationModuleSet = [coreLib],
+            VersionBubbleModuleSet = [coreLib],
+            CrossModuleInlineable = [],
+        });
+        WeakReference metadata = AttachResolverMetadata(group, context, mutableModule);
+
+        group.Resolver.ClearCompilationState();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.False(metadata.IsAlive);
+        GC.KeepAlive(group);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PrecodeGuaranteesShareUnchangedCalleeCoverage(bool moduleEager)
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        MethodDesc method = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
+        MethodWithGCInfo callee = new(method);
+        MethodWithGCInfo caller = new(method);
+        ImportSectionNode table = new("TestImports", ReadyToRunImportSectionType.Unknown,
+            ReadyToRunImportSectionFlags.PCode, 8, emitPrecode: true, emitGCRefMap: false);
+        Import cell = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
+        callee.Fixups.Add(cell);
+        callee.FinalizePrecodeFixups();
+        caller.AddDirectCallTarget(callee);
+        caller.Fixups.Add(cell);
+        caller.FinalizePrecodeFixups();
+
+        if (moduleEager)
+        {
+            Import eagerCell = new(table, new ReadyToRunHelperSignature(ReadyToRunHelper.Module));
+            HashSet<Import> eagerFixups = [eagerCell];
+            callee.ApplyModuleEagerFixups(eagerFixups);
+            caller.ApplyModuleEagerFixups(eagerFixups);
+            Assert.DoesNotContain(eagerCell, callee.GuaranteedPrecodeFixups);
+            Assert.DoesNotContain(eagerCell, caller.GuaranteedPrecodeFixups);
+        }
+
+        Assert.Empty(caller.Fixups);
+        Assert.Same(callee.GuaranteedPrecodeFixups, caller.GuaranteedPrecodeFixups);
+        Assert.Same(cell, Assert.Single(caller.GuaranteedPrecodeFixups));
+    }
+
+    [Fact]
+    public void TransitivePrecodeGuaranteesDoNotMutateSharedCallees()
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        MethodDesc method = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
+        ImportSectionNode table = new("TestImports", ReadyToRunImportSectionType.Unknown,
+            ReadyToRunImportSectionFlags.PCode, 8, emitPrecode: true, emitGCRefMap: false);
+        ReadyToRunHelperSignature signature = new(ReadyToRunHelper.Module);
+        Import leafCell = new(table, signature);
+        Import leftCell = new(table, signature);
+        Import rightCell = new(table, signature);
+        Import outerCell = new(table, signature);
+        MethodWithGCInfo leaf = new(method);
+        leaf.Fixups.Add(leafCell);
+        leaf.FinalizePrecodeFixups();
+        MethodWithGCInfo left = new(method);
+        left.AddDirectCallTarget(leaf);
+        left.Fixups.Add(leftCell);
+        left.FinalizePrecodeFixups();
+        MethodWithGCInfo right = new(method);
+        right.AddDirectCallTarget(leaf);
+        right.Fixups.Add(rightCell);
+        right.FinalizePrecodeFixups();
+        MethodWithGCInfo outer = new(method);
+        outer.AddDirectCallTarget(left);
+        outer.AddDirectCallTarget(right);
+        outer.Fixups.AddRange([leafCell, leftCell, rightCell, outerCell]);
+        outer.FinalizePrecodeFixups();
+
+        Assert.Same(leafCell, Assert.Single(leaf.GuaranteedPrecodeFixups));
+        Assert.True(left.GuaranteedPrecodeFixups.SetEquals([leafCell, leftCell]));
+        Assert.True(right.GuaranteedPrecodeFixups.SetEquals([leafCell, rightCell]));
+        Assert.True(outer.GuaranteedPrecodeFixups.SetEquals([leafCell, leftCell, rightCell, outerCell]));
+        Assert.Same(outerCell, Assert.Single(outer.Fixups));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -406,6 +502,27 @@ public class ReadyToRunLibraryRootProviderTests
         {
             Methods.Add(method.GetTypicalMethodDefinition());
         }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference AttachResolverMetadata(
+        ReadyToRunCompilationModuleGroupBase group, ReadyToRunCompilerContext context, bool mutableModule)
+    {
+        if (mutableModule)
+        {
+            crossgen2::Internal.TypeSystem.Ecma.MutableModule module = new(context, "TestMetadata",
+                default(AssemblyFlags), null, new Version(0, 0), AssemblyHashAlgorithm.None, static _ => 0, group);
+            group.Resolver.InitManifestMutableModule(module);
+            return new WeakReference(module);
+        }
+
+        object metadata = new();
+        group.Resolver.SetModuleIndexLookup(_ =>
+        {
+            GC.KeepAlive(metadata);
+            return 0;
+        });
+        return new WeakReference(metadata);
     }
 
     private static ReadyToRunCompilerContext CreateContext(string? assemblyPath = null)

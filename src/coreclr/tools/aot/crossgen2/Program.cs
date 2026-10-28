@@ -749,11 +749,7 @@ namespace ILCompiler
 
                     if (useTwoPhaseCompilation)
                     {
-                        using ReadyToRunCodegenCompilation discoveryCompilation = (ReadyToRunCodegenCompilation)builder.ToCompilation();
-                        ReadyToRunCompilationPlan compilationPlan = discoveryCompilation.CreateCompilationPlan();
-                        builder
-                            .UseCompilationPlan(compilationPlan)
-                            .UseILProvider(new ReadyToRunILProvider(compilationGroup));
+                        builder.UseCompilationPlan(builder.CreateCompilationPlan());
                     }
 
                     compilation = (ReadyToRunCodegenCompilation)builder.ToCompilation();

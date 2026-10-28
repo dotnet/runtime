@@ -53,6 +53,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _manifestMutableModule = mutableModule;
         }
 
+        internal void ClearCompilationState()
+        {
+            _moduleIndexLookup = null;
+            _manifestMutableModule = null;
+            _typeToRefTokens.Clear();
+        }
+
         public ModuleToken GetModuleTokenForType(TypeDesc type, bool allowDynamicallyCreatedReference, bool throwIfNotFound = true)
         {
             ModuleToken token;

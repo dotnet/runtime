@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
@@ -264,6 +265,23 @@ namespace ILCompiler
         {
             _compilationPlan = compilationPlan;
             return this;
+        }
+
+        // Keep discovery's graph and IL provider out of the final compilation's stack frame.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public ReadyToRunCompilationPlan CreateCompilationPlan()
+        {
+            ILProvider finalILProvider = _ilProvider;
+            _ilProvider = new ReadyToRunILProvider(_compilationGroup);
+            try
+            {
+                using ReadyToRunCodegenCompilation discoveryCompilation = (ReadyToRunCodegenCompilation)ToCompilation();
+                return discoveryCompilation.CreateCompilationPlan();
+            }
+            finally
+            {
+                _ilProvider = finalILProvider;
+            }
         }
 
         public override ICompilation ToCompilation()

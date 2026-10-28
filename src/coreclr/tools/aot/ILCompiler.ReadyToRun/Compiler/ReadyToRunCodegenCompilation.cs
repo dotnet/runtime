@@ -1608,6 +1608,7 @@ namespace ILCompiler
         public override void Dispose()
         {
             _singleThreadedWorkerState = default;
+            _nodeFactory.Resolver.ClearCompilationState();
 
             // Workaround for https://github.com/dotnet/runtime/issues/23103.
             // ManifestMetadataTable.Dispose() allows to break circular reference

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using Internal.JitInterface;
 using Internal.Pgo;
@@ -31,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<ISymbolNode> _fixups;
         private HashSet<MethodWithGCInfo> _directCallTargets;
         private HashSet<Import> _moduleEagerFixups;
-        private HashSet<Import> _guaranteedPrecodeFixups;
+        private ImmutableHashSet<Import> _guaranteedPrecodeFixups = ImmutableHashSet<Import>.Empty;
         private bool _precodeFixupsFinalized;
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
@@ -115,19 +116,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         internal HashSet<MethodWithGCInfo> DirectCallTargets => _directCallTargets;
 
-        internal HashSet<Import> GuaranteedPrecodeFixups => _guaranteedPrecodeFixups;
+        internal ImmutableHashSet<Import> GuaranteedPrecodeFixups => _guaranteedPrecodeFixups;
 
         internal void FinalizePrecodeFixups()
         {
             Debug.Assert(!_precodeFixupsFinalized);
             _precodeFixupsFinalized = true;
 
-            HashSet<Import> coveredFixups = null;
+            ImmutableHashSet<Import> coveredFixups = ImmutableHashSet<Import>.Empty;
 
             if (_moduleEagerFixups is not null)
             {
-                coveredFixups = new HashSet<Import>(_moduleEagerFixups);
-                _guaranteedPrecodeFixups = new HashSet<Import>(_moduleEagerFixups);
+                coveredFixups = coveredFixups.Union(_moduleEagerFixups);
             }
 
             if (_directCallTargets is not null)
@@ -135,28 +135,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 foreach (MethodWithGCInfo target in _directCallTargets)
                 {
                     Debug.Assert(target._precodeFixupsFinalized);
-                    if (target._guaranteedPrecodeFixups is null)
-                        continue;
-
-                    coveredFixups ??= new HashSet<Import>();
-                    _guaranteedPrecodeFixups ??= new HashSet<Import>();
-                    coveredFixups.UnionWith(target._guaranteedPrecodeFixups);
-                    _guaranteedPrecodeFixups.UnionWith(target._guaranteedPrecodeFixups);
+                    coveredFixups = coveredFixups.Union(target._guaranteedPrecodeFixups);
                 }
             }
 
+            _guaranteedPrecodeFixups = coveredFixups;
             foreach (ISymbolNode fixup in _fixups)
             {
                 if (fixup is Import import)
                 {
-                    _guaranteedPrecodeFixups ??= new HashSet<Import>();
-                    _guaranteedPrecodeFixups.Add(import);
+                    _guaranteedPrecodeFixups = _guaranteedPrecodeFixups.Add(import);
                 }
             }
 
             // Making a direct callee ReadyToRun applies its transitive fixup requirements first.
             // Module-eager fixups are likewise guaranteed before any method precode executes.
-            if (coveredFixups is not null)
+            if (!coveredFixups.IsEmpty)
             {
                 _fixups.RemoveAll(fixup =>
                     fixup is Import import &&
@@ -168,8 +162,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Debug.Assert(_precodeFixupsFinalized);
 
-            _guaranteedPrecodeFixups ??= new HashSet<Import>();
-            _guaranteedPrecodeFixups.UnionWith(fixups);
             _fixups.RemoveAll(fixup =>
                 fixup is Import import &&
                 fixups.Contains(import));
