@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using TestLibrary;
@@ -13,18 +14,23 @@ public static class TlsFieldTest
     [PlatformSpecific(TestPlatforms.Windows)]
     public static unsafe void ReadWriteAcrossMultipleThreads()
     {
-        Thread[] threads = new Thread[4];
+        const int ThreadCount = 4;
+        Thread[] threads = new Thread[ThreadCount * 2];
         ExceptionDispatchInfo[] exceptions = new ExceptionDispatchInfo[threads.Length];
-        using Barrier barrier = new Barrier(threads.Length);
+        using Barrier loadBarrier = new Barrier(ThreadCount + 1);
+        using Barrier firstWaveAccessBarrier = new Barrier(ThreadCount);
+        using Barrier secondWaveAccessBarrier = new Barrier(ThreadCount);
 
-        for (int i = 0; i < threads.Length; i++)
+        for (int i = 0; i < ThreadCount; i++)
         {
             int threadIndex = i;
             threads[i] = new Thread(() =>
             {
                 try
                 {
-                    RunTest(123 + threadIndex, 456 + threadIndex, 789 + threadIndex);
+                    loadBarrier.SignalAndWait();
+                    loadBarrier.SignalAndWait();
+                    RunTest(threadIndex, 0);
                 }
                 catch (Exception ex)
                 {
@@ -32,39 +38,93 @@ public static class TlsFieldTest
                 }
                 finally
                 {
-                    barrier.RemoveParticipant();
+                    loadBarrier.RemoveParticipant();
+                    firstWaveAccessBarrier.RemoveParticipant();
                 }
             });
             threads[i].Start();
         }
 
+        loadBarrier.SignalAndWait();
+
+        ExceptionDispatchInfo loadException = null;
+        try
+        {
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Assert.NotEqual("TlsFieldLibrary", assembly.GetName().Name);
+            }
+
+            Assert.Equal("TlsFieldLibrary", Assembly.Load("TlsFieldLibrary").GetName().Name);
+        }
+        catch (Exception ex)
+        {
+            loadException = ExceptionDispatchInfo.Capture(ex);
+        }
+        finally
+        {
+            loadBarrier.SignalAndWait();
+        }
+
+        if (loadException is null)
+        {
+            for (int i = 0; i < ThreadCount; i++)
+            {
+                int threadIndex = i;
+                int exceptionIndex = ThreadCount + i;
+                threads[exceptionIndex] = new Thread(() =>
+                {
+                    try
+                    {
+                        RunTest(threadIndex, 1);
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions[exceptionIndex] = ExceptionDispatchInfo.Capture(ex);
+                    }
+                    finally
+                    {
+                        secondWaveAccessBarrier.RemoveParticipant();
+                    }
+                });
+                threads[exceptionIndex].Start();
+            }
+        }
+
         foreach (Thread thread in threads)
         {
-            thread.Join();
+            thread?.Join();
         }
+
+        loadException?.Throw();
 
         foreach (ExceptionDispatchInfo exception in exceptions)
         {
             exception?.Throw();
         }
 
-        void RunTest(int firstValue, int secondValue, int thirdValue)
+        void RunTest(int threadIndex, int wave)
         {
+            Barrier accessBarrier = wave == 0 ? firstWaveAccessBarrier : secondWaveAccessBarrier;
             Assert.Equal(42, TlsField.Read());
 
+            int firstValue = 123 + (wave * ThreadCount) + threadIndex;
+            int secondValue = 456 + (wave * ThreadCount) + threadIndex;
+            int thirdValue = 789 + (wave * ThreadCount) + threadIndex;
+
             TlsField.Write(firstValue);
-            barrier.SignalAndWait();
+            accessBarrier.SignalAndWait();
             Assert.Equal(firstValue, TlsField.Read());
 
             int* address = TlsField.GetAddress();
             Assert.Equal(firstValue, *address);
 
             *address = secondValue;
-            barrier.SignalAndWait();
+            accessBarrier.SignalAndWait();
             Assert.Equal(secondValue, TlsField.Read());
 
             TlsField.Write(thirdValue);
-            barrier.SignalAndWait();
+            accessBarrier.SignalAndWait();
             Assert.Equal(thirdValue, *address);
         }
     }
