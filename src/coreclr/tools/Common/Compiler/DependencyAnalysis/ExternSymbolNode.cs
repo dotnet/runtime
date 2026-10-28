@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.IL;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -63,20 +64,22 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a function symbol that is defined externally and statically linked to the output obj file.
     /// </summary>
-    public class ExternFunctionSymbolNode : ExternSymbolNode, INodeWithTypeSignature
+    public class ExternFunctionSymbolNode : ExternSymbolNode, INodeWithTypeSignature, INodeWithLinkageMetadata
     {
         private readonly MethodSignature _signature;
         private readonly bool _isUnmanagedCallersOnly;
         private readonly bool _isAsyncCall;
         private readonly bool _hasGenericContextArg;
+        private readonly LinkageMetadata _linkageMetadata;
 
-        public ExternFunctionSymbolNode(Utf8String name, MethodDesc method, bool isIndirection = false)
-            : this(name, method.Signature, method.IsUnmanagedCallersOnly, method.IsAsyncCall(), method.RequiresInstArg() || method.IsArrayAddressMethod(), isIndirection)
+        public ExternFunctionSymbolNode(Utf8String name, MethodDesc method, LinkageMetadata linkageMetadata)
+            : this(name, method.Signature, method.IsUnmanagedCallersOnly, method.IsAsyncCall(), method.RequiresInstArg() || method.IsArrayAddressMethod(), linkageMetadata)
         { }
 
-        public ExternFunctionSymbolNode(Utf8String name, MethodSignature signature, bool isUnmanagedCallersOnly, bool isAsyncCall, bool hasGenericContextArg, bool isIndirection = false)
-            : base(name, isIndirection)
-            => (_signature, _isUnmanagedCallersOnly, _isAsyncCall, _hasGenericContextArg) = (signature, isUnmanagedCallersOnly, isAsyncCall, hasGenericContextArg);
+        public ExternFunctionSymbolNode(Utf8String name, MethodSignature signature, bool isUnmanagedCallersOnly, bool isAsyncCall, bool hasGenericContextArg, LinkageMetadata linkageMetadata)
+            : base(name, linkageMetadata.IsIndirection)
+            => (_signature, _isUnmanagedCallersOnly, _isAsyncCall, _hasGenericContextArg, _linkageMetadata) =
+                (signature, isUnmanagedCallersOnly, isAsyncCall, hasGenericContextArg, linkageMetadata);
 
         public override int ClassCode => 1452455506;
 
@@ -84,6 +87,7 @@ namespace ILCompiler.DependencyAnalysis
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => _isUnmanagedCallersOnly;
         bool INodeWithTypeSignature.IsAsyncCall => _isAsyncCall;
         bool INodeWithTypeSignature.HasGenericContextArg => _hasGenericContextArg;
+        LinkageMetadata INodeWithLinkageMetadata.LinkageMetadata => _linkageMetadata;
     }
 
     /// <summary>

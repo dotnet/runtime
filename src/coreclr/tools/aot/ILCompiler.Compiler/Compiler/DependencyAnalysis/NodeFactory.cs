@@ -274,15 +274,19 @@ namespace ILCompiler.DependencyAnalysis
 
             _directPInvokes = new NodeCache<MethodDesc, ExternFunctionSymbolNode>((MethodDesc key) =>
             {
-                Utf8String externName = new Utf8String(InteropStubManager.GetDirectCallExternName(key));
+                LinkageMetadata linkage = InteropStubManager.GetLinkageMetadata(key);
+                Utf8String externName = linkage.Symbol.IsNull
+                    ? NameMangler.GetMangledMethodName(key)
+                    : linkage.Symbol;
                 externName = NameMangler.NodeMangler.ExternMethod(externName, key);
 
-                return new ExternFunctionSymbolNode(externName, key.Signature, isUnmanagedCallersOnly: true, isAsyncCall: false, hasGenericContextArg: false);
+                return new ExternFunctionSymbolNode(externName, key.Signature, isUnmanagedCallersOnly: true, isAsyncCall: false, hasGenericContextArg: false,
+                    linkageMetadata: linkage);
             });
 
             _externIndirectFunctionSymbols = new NodeCache<Utf8String, ExternFunctionSymbolNode>((Utf8String name) =>
             {
-                return new ExternFunctionSymbolNode(name, signature: null, false, false, false, isIndirection: true);
+                return new ExternFunctionSymbolNode(name, signature: null, false, false, false, new LinkageMetadata(name, isIndirection: true));
             });
             _externDataSymbols = new NodeCache<Utf8String, ExternDataSymbolNode>((Utf8String name) =>
             {
@@ -438,10 +442,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _r2rHelpers = new NodeCache<ReadyToRunHelper, ISymbolNode>((ReadyToRunHelper id) =>
             {
+                Utf8String name = KnownExternFunctions.GetName(id, TypeSystemContext.Target);
                 return new ExternFunctionSymbolNode(
-                    KnownExternFunctions.GetName(id, TypeSystemContext.Target),
+                    name,
                     KnownExternFunctions.GetSignature(id, TypeSystemContext),
-                    isUnmanagedCallersOnly: false, isAsyncCall: false, hasGenericContextArg: false);
+                    isUnmanagedCallersOnly: false, isAsyncCall: false, hasGenericContextArg: false,
+                    linkageMetadata: new LinkageMetadata(name));
             });
 
             _readyToRunHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelperNode);
