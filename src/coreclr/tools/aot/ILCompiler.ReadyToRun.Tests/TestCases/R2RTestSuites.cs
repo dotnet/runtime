@@ -21,6 +21,7 @@ using Internal.TypeSystem.Ecma;
 using TypeSystemMetadataEmitter = crossgen2::Internal.TypeSystem.TypeSystemMetadataEmitter;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCases;
 
@@ -1643,6 +1644,37 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasAsyncVariant(reader, "SyncTaskWithCompiledAsyncVariant", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "SyncTaskWithCompiledAsyncVariant", out diag), diag);
         }
+    }
+
+    /// <summary>
+    /// --strip-il-bodies only applies to composite component assemblies, so crossgen2 must
+    /// reject it for a non-composite compile instead of crashing.
+    /// </summary>
+    [Fact]
+    public void NonCompositeStripILBodiesIsRejected()
+    {
+        var stripILBodies = new CompiledAssembly
+        {
+            AssemblyName = nameof(NonCompositeStripILBodiesIsRejected),
+            SourceResourceNames =
+            [
+                "RuntimeAsync/StripILBodies.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        var ex = Assert.ThrowsAny<XunitException>(() => new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(NonCompositeStripILBodiesIsRejected),
+            [
+                new(nameof(NonCompositeStripILBodiesIsRejected), [new CrossgenAssembly(stripILBodies)])
+                {
+                    Options = [Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
+                },
+            ])));
+
+        Assert.Contains("--strip-il-bodies requires --composite", ex.Message);
+        Assert.DoesNotContain(nameof(NullReferenceException), ex.Message);
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsIosArm64Target))]

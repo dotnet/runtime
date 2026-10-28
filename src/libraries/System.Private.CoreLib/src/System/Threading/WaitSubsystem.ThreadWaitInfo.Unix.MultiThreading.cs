@@ -250,20 +250,20 @@ namespace System.Threading
                         return WaitHandle.WaitTimeout;
 
                     case WaitSignalState.NotWaiting_SignaledToSatisfyWait:
-                        {
-                            Debug.Assert(_waitedObjectIndexThatSatisfiedWait >= 0);
-                            int waitedObjectIndexThatSatisfiedWait = _waitedObjectIndexThatSatisfiedWait;
-                            _waitedObjectIndexThatSatisfiedWait = -1;
-                            return waitedObjectIndexThatSatisfiedWait;
-                        }
+                    {
+                        Debug.Assert(_waitedObjectIndexThatSatisfiedWait >= 0);
+                        int waitedObjectIndexThatSatisfiedWait = _waitedObjectIndexThatSatisfiedWait;
+                        _waitedObjectIndexThatSatisfiedWait = -1;
+                        return waitedObjectIndexThatSatisfiedWait;
+                    }
 
                     case WaitSignalState.NotWaiting_SignaledToSatisfyWaitWithAbandonedMutex:
-                        {
-                            Debug.Assert(_waitedObjectIndexThatSatisfiedWait >= 0);
-                            int waitedObjectIndexThatSatisfiedWait = _waitedObjectIndexThatSatisfiedWait;
-                            _waitedObjectIndexThatSatisfiedWait = -1;
-                            return WaitHandle.WaitAbandoned + waitedObjectIndexThatSatisfiedWait;
-                        }
+                    {
+                        Debug.Assert(_waitedObjectIndexThatSatisfiedWait >= 0);
+                        int waitedObjectIndexThatSatisfiedWait = _waitedObjectIndexThatSatisfiedWait;
+                        _waitedObjectIndexThatSatisfiedWait = -1;
+                        return WaitHandle.WaitAbandoned + waitedObjectIndexThatSatisfiedWait;
+                    }
 
                     case WaitSignalState.NotWaiting_SignaledToAbortWaitDueToMaximumMutexReacquireCount:
                         Debug.Assert(_waitedObjectIndexThatSatisfiedWait < 0);

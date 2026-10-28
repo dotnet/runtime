@@ -150,10 +150,12 @@ struct READYTORUN_SECTION
     IMAGE_DATA_DIRECTORY    Section;
 };
 
-struct IMAGE_DATA_DIRECTORY {
-    uint32_t   VirtualAddress;
-    uint32_t   Size;
-}
+// This structure is defined by the PE/COFF specification, reproduced here for reference.
+struct IMAGE_DATA_DIRECTORY
+{
+    DWORD      VirtualAddress;
+    DWORD      Size;
+};
 ```
 
 The `READYTORUN_CORE_HEADER` structure is immediately followed by an array of `READYTORUN_SECTION` records
@@ -501,10 +503,9 @@ field to the start of the earlier fixup list:
 fixupListOffset = distanceFieldOffset - decodedDistance
 ```
 
-This allows multiple entrypoint records to share the same fixup list. The backward reference is part
-of the entrypoint record, not part of the fixup list's section and slot index encoding.
+This allows multiple entrypoint records to share the same fixup list.
 
-The fixup list itself is encoded as follows (same encoding as used by NGen):
+The fixup list itself is encoded as follows:
 
 ```
 READYTORUN_IMPORT_SECTIONS absolute index
