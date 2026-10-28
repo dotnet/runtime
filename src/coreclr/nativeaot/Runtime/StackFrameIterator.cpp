@@ -178,14 +178,13 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     // properly walk it in parallel.
     ResetNextExInfoForSP((uintptr_t)dac_cast<TADDR>(pFrame));
 
-#if !defined(FEATURE_PORTABLE_HELPERS) || defined(TARGET_WASM)
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
-#ifndef TARGET_WASM
+#ifndef FEATURE_PORTABLE_HELPERS
     m_RegDisplay.SetIP(ReturnAddressToCanonicalPC(dac_cast<TADDR>(pFrame->m_RIP)));
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
     PTR_uintptr_t pPreservedRegsCursor = (PTR_uintptr_t)PTR_HOST_MEMBER_TADDR(PInvokeTransitionFrame, pFrame, m_PreservedRegs);
-#endif // !TARGET_WASM
+#endif // !FEATURE_PORTABLE_HELPERS
 
 #ifdef TARGET_ARM
     m_RegDisplay.pLR = (PTR_uintptr_t)PTR_HOST_MEMBER_TADDR(PInvokeTransitionFrame, pFrame, m_RIP);
@@ -379,7 +378,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
     // adjust for thunks, if needed
     EnsureInitializedToManagedFrame();
-#endif // !defined(FEATURE_PORTABLE_HELPERS) || defined(TARGET_WASM)
 
     STRESS_LOG1(LF_STACKWALK, LL_INFO10000, "   %p\n", m_ControlPC);
 }
@@ -874,7 +872,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
 
 void StackFrameIterator::EnsureInitializedToManagedFrame()
 {
-#ifndef TARGET_WASM
+#ifndef FEATURE_PORTABLE_HELPERS
     // This function guarantees that the final initialized context will refer to a managed
     // frame.  In the rare case where the PC does not refer to managed code (and refers to an
     // assembly thunk instead), unwind through the thunk sequence to find the nearest managed
@@ -897,7 +895,7 @@ void StackFrameIterator::EnsureInitializedToManagedFrame()
     {
         FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY("Unadjusted initial PC points to an unexpected assembly thunk kind.");
     }
-#endif // !TARGET_WASM
+#endif // !FEATURE_PORTABLE_HELPERS
 }
 
 PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
