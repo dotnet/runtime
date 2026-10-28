@@ -471,6 +471,176 @@ namespace ILAssembler.Tests
                     pe.GetSectionData(field.GetRelativeVirtualAddress()).GetContent().AsSpan(0, sizeof(int))));
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void Diagnostic_DuplicateEntryPoint(bool sameMethod, bool errorTolerant)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public Program
+                {
+                    .method public static void Main() cil managed
+                    {
+                        .entrypoint
+                        {{(sameMethod ? ".entrypoint" : string.Empty)}}
+                        ret
+                    }
+                    .method public static void Other() cil managed
+                    {
+                        {{(sameMethod ? string.Empty : ".entrypoint")}}
+                        ret
+                    }
+                }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = errorTolerant, Debug = true });
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.DuplicateEntryPoint, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Equal("Multiple entry points declared", error.Message);
+            Assert.Equal("test.il", error.Location.Source.Path);
+            Assert.Equal(new SourceSpan(source.LastIndexOf(".entrypoint", StringComparison.Ordinal), ".entrypoint".Length), error.Location.Span);
+            if (errorTolerant)
+            {
+                Assert.NotNull(result);
+                using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+                MetadataReader reader = pe.GetMetadataReader();
+                MethodDefinitionHandle mainHandle = reader.MethodDefinitions
+                    .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "Main");
+                Assert.Equal(MetadataTokens.GetToken(mainHandle), pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
+                using MetadataReaderProvider pdb = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
+                Assert.Equal(mainHandle, pdb.GetMetadataReader().DebugMetadataHeader!.EntryPoint);
+            }
+            else
+            {
+                Assert.Null(result);
+            }
+        }
+
+        [Theory]
+        [InlineData("", false)]
+        [InlineData("", true)]
+        [InlineData("instance", false)]
+        [InlineData("instance", true)]
+        public void Diagnostic_InstanceEntryPoint(string callingConvention, bool errorTolerant)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public Program
+                {
+                    .method public {{callingConvention}} void Main() cil managed
+                    {
+                        .entrypoint
+                        ret
+                    }
+                }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = errorTolerant, Debug = true });
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.InstanceEntryPoint, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Equal("Entry point method must be static", error.Message);
+            Assert.Equal("test.il", error.Location.Source.Path);
+            Assert.Equal(new SourceSpan(source.IndexOf(".entrypoint", StringComparison.Ordinal), ".entrypoint".Length), error.Location.Span);
+            if (errorTolerant)
+            {
+                Assert.NotNull(result);
+                using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+                MetadataReader reader = pe.GetMetadataReader();
+                MethodDefinitionHandle mainHandle = reader.MethodDefinitions
+                    .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "Main");
+                Assert.Equal(MetadataTokens.GetToken(mainHandle), pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
+                using MetadataReaderProvider pdb = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
+                Assert.Equal(mainHandle, pdb.GetMetadataReader().DebugMetadataHeader!.EntryPoint);
+            }
+            else
+            {
+                Assert.Null(result);
+            }
+        }
+
+        [Fact]
+        public void EntryPointAcrossDocuments_ReportsDuplicateAndRetainsFirst()
+        {
+            var first = new SourceText("""
+                .assembly test { }
+                .method public static void Main() cil managed { .entrypoint ret }
+                """, "first.il");
+            var second = new SourceText("""
+                .method public static void Other() cil managed { .entrypoint ret }
+                """, "second.il");
+
+            var (diagnostics, result) = new DocumentCompiler().Compile(
+                [first, second],
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true });
+
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.DuplicateEntryPoint, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Equal("second.il", error.Location.Source.Path);
+            Assert.Equal(new SourceSpan(second.Text.IndexOf(".entrypoint", StringComparison.Ordinal), ".entrypoint".Length), error.Location.Span);
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinitionHandle mainHandle = reader.MethodDefinitions
+                .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "Main");
+            Assert.Equal(MetadataTokens.GetToken(mainHandle), pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void InstanceEntryPoint_WithSubsequentEntryPoint_ReportsDuplicateAndRetainsFirst(bool errorTolerant)
+        {
+            string source = """
+                .assembly test { }
+                .class public Program
+                {
+                    .method public instance void Invalid() cil managed { .entrypoint ret }
+                    .method public static void Main() cil managed { .entrypoint ret }
+                }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = errorTolerant, Debug = true });
+            Assert.Collection(diagnostics,
+                error =>
+                {
+                    Assert.Equal(DiagnosticIds.InstanceEntryPoint, error.Id);
+                    Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+                    Assert.Equal(new SourceSpan(source.IndexOf(".entrypoint", StringComparison.Ordinal), ".entrypoint".Length), error.Location.Span);
+                },
+                error =>
+                {
+                    Assert.Equal(DiagnosticIds.DuplicateEntryPoint, error.Id);
+                    Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+                    Assert.Equal(new SourceSpan(source.LastIndexOf(".entrypoint", StringComparison.Ordinal), ".entrypoint".Length), error.Location.Span);
+                });
+            if (errorTolerant)
+            {
+                Assert.NotNull(result);
+                using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+                MetadataReader reader = pe.GetMetadataReader();
+                MethodDefinitionHandle invalidHandle = reader.MethodDefinitions
+                    .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "Invalid");
+                Assert.Equal(MetadataTokens.GetToken(invalidHandle), pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
+                using MetadataReaderProvider pdb = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
+                Assert.Equal(invalidHandle, pdb.GetMetadataReader().DebugMetadataHeader!.EntryPoint);
+            }
+            else
+            {
+                Assert.Null(result);
+            }
+        }
+
         [Fact]
         public void EntryPointMethod_SetsCorHeaderEntryPointToken()
         {
