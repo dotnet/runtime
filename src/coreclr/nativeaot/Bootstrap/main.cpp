@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <minipal/descriptorlimit.h>
 
 #if defined(DEBUG) && defined(_WIN32)
@@ -109,7 +110,7 @@ static char& __unbox_z = __stop___unbox;
 
 #endif // TARGET_WASM
 
-extern "C" bool RhInitialize(bool isDll);
+extern "C" bool RhInitialize(bool isLibrary);
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 extern "C" bool RhRegisterOSModule(void * pModule,
@@ -206,9 +207,9 @@ static int InitializeRuntime()
 {
     if (!RhInitialize(
 #ifdef NATIVEAOT_DLL
-        /* isDll */ true
+        /* isLibrary */ true
 #else
-        /* isDll */ false
+        /* isLibrary */ false
 #endif
         ))
         return -1;
@@ -260,6 +261,9 @@ int main(int argc, char* argv[])
     int exitCode = __managed__Main(argc, argv);
     _cexit();
     ExitProcess(exitCode);
+#elif defined(TARGET_WASI)
+    // Returning from WASI Preview 2 main reduces the exit code to a boolean result.
+    exit(__managed__Main(argc, argv));
 #else
     return __managed__Main(argc, argv);
 #endif

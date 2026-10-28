@@ -768,6 +768,37 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(Enumerable.Range(1, 3), populatedList.Reverse());
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(1000)]
+        public void ReverseEntireList(int count)
+        {
+            ImmutableList<int> list = ImmutableList.CreateRange(Enumerable.Range(0, count));
+            ImmutableList<int> reversed = list.Reverse();
+            Assert.Equal(Enumerable.Range(0, count).Reverse(), reversed);
+            Assert.Equal(reversed, list.Reverse(0, count));
+            Assert.Equal(list, reversed.Reverse());
+            Assert.Equal(Enumerable.Range(0, count), list);
+            Assert.Equal(count, reversed.Count);
+            VerifyBalanced(reversed);
+
+            for (int i = 0; i < count; i++)
+            {
+                Assert.Equal(count - i - 1, reversed[i]);
+            }
+
+            if (count <= 1)
+            {
+                Assert.Same(list, reversed);
+            }
+        }
+
         [Fact]
         public void SetItem()
         {
