@@ -62,20 +62,41 @@ internal static class WasmR2RAssert
                 Assert.DoesNotContain(localIndex, installedFunctions);
             }
         }
+    }
 
-        static Dictionary<uint, string> ReadFunctionNames(ReadOnlySpan<byte> image)
+    public static void AssertAuxiliaryProfileSelection(ReadyToRunReader reader, bool hasHotMethods, bool hasHotValueTypes)
+    {
+        Dictionary<uint, string> primary = ReadFunctionNames(reader.CompositeReader.GetEntireImage().AsSpan());
+        Dictionary<uint, string> body = ReadFunctionNames(File.ReadAllBytes(Path.ChangeExtension(reader.Filename, ".1.wasm")));
+        Check("WasmWebcilModule__AddIntegers", hot: false);
+        Check("WasmWebcilModule__ProfiledUnmanaged", hot: true);
+        Check("WasmWebcilModule__AuxiliaryMethod", hot: hasHotMethods);
+        Check("__ProfiledGeneric<System___Canon>", hot: hasHotMethods);
+        Check("ProfiledHolder_1<System___Canon>__Hot", hot: hasHotMethods);
+        Check("__ProfiledGeneric<Int32>", hot: hasHotValueTypes);
+        Check("ProfiledHolder_1<Int32>__Hot", hot: hasHotValueTypes);
+
+        void Check(string name, bool hot)
         {
-            Assert.True(TryGetWasmFunctionNameSubsection(image, out int offset, out int end));
-            uint count = ReadWasmUleb32(image, ref offset, end);
-            Dictionary<uint, string> names = new();
-            for (uint index = 0; index < count; index++)
-            {
-                uint functionIndex = ReadWasmUleb32(image, ref offset, end);
-                names.Add(functionIndex, ReadWasmName(image, ref offset, end));
-            }
-            Assert.Equal(end, offset);
-            return names;
+            Dictionary<uint, string> owner = hot ? primary : body;
+            Dictionary<uint, string> other = hot ? body : primary;
+            Assert.Contains(owner.Values, value => value.Contains(name, StringComparison.Ordinal));
+            Assert.DoesNotContain(other.Values, value => value.Contains(name, StringComparison.Ordinal));
         }
+    }
+
+    private static Dictionary<uint, string> ReadFunctionNames(ReadOnlySpan<byte> image)
+    {
+        Assert.True(TryGetWasmFunctionNameSubsection(image, out int offset, out int end));
+        uint count = ReadWasmUleb32(image, ref offset, end);
+        Dictionary<uint, string> names = new();
+        for (uint index = 0; index < count; index++)
+        {
+            uint functionIndex = ReadWasmUleb32(image, ref offset, end);
+            names.Add(functionIndex, ReadWasmName(image, ref offset, end));
+        }
+        Assert.Equal(end, offset);
+        return names;
     }
 
     public static void AssertAuxiliaryModuleLayout(ReadyToRunReader reader)

@@ -20,6 +20,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public virtual int Offset => 0;
 
+        // The definition already accounts for any leading fixup blobs.
+        int ISymbolNode.Offset => 0;
+
         public override bool IsShareable => false;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

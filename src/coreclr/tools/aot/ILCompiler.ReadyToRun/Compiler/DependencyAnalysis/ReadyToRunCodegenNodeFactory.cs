@@ -82,6 +82,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed partial class NodeFactory
     {
         private bool _markingComplete;
+        private readonly HashSet<MethodDesc> _mibcHotMethods;
 
         public CompilerTypeSystemContext TypeSystemContext { get; }
 
@@ -109,7 +110,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public bool MarkingComplete => _markingComplete;
         public bool UsesWasmAuxiliaryModules => OptimizationFlags.WasmAuxiliaryModules && !OptimizationFlags.IsComponentModule;
-
         public bool IsAuxiliaryMethod(MethodWithGCInfo method)
         {
             if (!UsesWasmAuxiliaryModules || method.IsJitHelper)
@@ -121,6 +121,9 @@ namespace ILCompiler.DependencyAnalysis
                 target.IsAsyncCall() || target.IsUnmanagedCallersOnly ||
                 target.IsPInvoke || ecmaMethod.MetadataReader.GetMethodDefinition(ecmaMethod.Handle).RelativeVirtualAddress == 0)
                 return false;
+
+            if (_mibcHotMethods is not null)
+                return !_mibcHotMethods.Contains(target);
 
             return (ecmaMethod.Attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public ||
                 target.HasInstantiation || target.OwningType.HasInstantiation;
@@ -370,6 +373,15 @@ namespace ILCompiler.DependencyAnalysis
             TypeSystemContext = context;
             CompilationModuleGroup = compilationModuleGroup;
             ProfileDataManager = profileDataManager;
+            if (UsesWasmAuxiliaryModules && profileDataManager.HasMibcProfile)
+            {
+                _mibcHotMethods = new HashSet<MethodDesc>();
+                foreach (MethodDesc method in profileDataManager.GetMibcProfileMethods())
+                {
+                    // Concrete reference instantiations share the emitted canonical body.
+                    _mibcHotMethods.Add(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+                }
+            }
             Target = context.Target;
             NameMangler = nameMangler;
             MetadataManager = new ReadyToRunTableManager(context);

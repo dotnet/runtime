@@ -24,7 +24,7 @@ dotnet publish -p:PublishReadyToRun=true -p:PublishReadyToRunComposite=true -p:W
 
 Publishing requires matching locally built runtime and WebAssembly SDK packs. Crossgen2 exposes the corresponding `--wasm-auxiliary-modules` option. Non-browser, non-composite, multithreaded, and stripped-IL configurations are rejected.
 
-The compiler emits a primary module, an `.entrypoints.wasm` mapping module, and a `.1.wasm` cold-code module, plus an `.auxiliary.json` publication manifest. Helpers and public non-generic methods are hot; methods that cannot use interpreter fallback are also kept primary. Ordinary managed calls remain indirect. Eligible managed compiler helpers retain direct calls through local copies of their bodies and funclets, sharing the primary's logical slots and metadata. Shared fallback thunks and eagerly accessed data remain primary.
+The compiler emits a primary module, an `.entrypoints.wasm` mapping module, and a `.1.wasm` cold-code module, plus an `.auxiliary.json` publication manifest. Without MIBC input, helpers and public non-generic methods on non-generic types are hot; methods that cannot use interpreter fallback are also kept primary. With explicit `--mibc` inputs, the union of profiled methods replaces the visibility/genericity heuristic, while mandatory primary methods and helpers stay resident. Concrete reference instantiations select their shared canonical body; value-type instantiations stay distinct. An empty or unmatched explicit profile moves every eligible method cold rather than restoring the heuristic. This selects by membership, not CPU weight, and consumes existing profiles without collecting a browser trace. Ordinary managed calls remain indirect. Eligible managed compiler helpers retain direct calls through local copies of their bodies and funclets, sharing the primary's logical slots and metadata. Shared fallback thunks and eagerly accessed data remain primary.
 
 The cold-code module owns its methods and funclets, runtime-function records, GC/unwind and exception-handling data, fixup lists, and exclusively cold import cells and signatures. The mapping module owns auxiliary entrypoint tables and their method-identification signatures. Shared imports, async-resume data rebased during image registration, and the final runtime-function/unwind record needed to reserve the virtual-IP range remain primary. Activation never overwrites those resident data.
 
@@ -38,7 +38,7 @@ See the [compiler usage and restrictions](../../../src/coreclr/tools/aot/crossge
 
 ### Measured V1 results
 
-The final Release comparison used feature commit `f0984cc980d4d6201d1daebc15305c1c2c240d87` against the unchanged phase-1 control at `1d0ddf7b2e680164058928e14b615de37a46504e`. This measures the complete feature change, not just toggling the publishing property on the new compiler. All nine applications came from the same macro-benchmark checkout at `84f9ac6e9c293f1ce50f64dcb36d747daf8f5509`, including its preserved pre-existing local changes. Publishing used SDK `11.0.100-rc.2.26504.105`, locally built `12.0.0-dev` packs, and the frozen final compiler.
+The final Release comparison used feature commit `f0984cc980d4d6201d1daebc15305c1c2c240d87` against the unchanged phase-1 control at `1d0ddf7b2e680164058928e14b615de37a46504e`. These results use the no-MIBC heuristic, not profile-guided partitioning. This measures the complete feature change, not just toggling the publishing property on the new compiler. All nine applications came from the same macro-benchmark checkout at `84f9ac6e9c293f1ce50f64dcb36d747daf8f5509`, including its preserved pre-existing local changes. Publishing used SDK `11.0.100-rc.2.26504.105`, locally built `12.0.0-dev` packs, and the frozen final compiler.
 
 All 36 normal desktop/mobile result rows were measured again, separately from 12 activation-gated steady-state pages. External cold/warm startup counts were 10/5; the internal microbenchmark exports only its single cold page and standard seven-window sampling. UI walkthrough counts remained unchanged: five for the standalone Blazor applications, three per Avalonia scenario, and one per hosted Blazor scenario. These are descriptive local measurements on a monitored shared Linux desktop, not exclusive-machine or statistical-significance claims. Attempts overlapping observed external runtime builds/tests were excluded and repeated; a failed hosted-server readiness attempt was also repeated without assuming its cause.
 
@@ -110,6 +110,37 @@ Final publishing inputs are identified by SHA256:
 | Frozen crossgen2 executable | `6683be0a5645d5c2db67c53081d2a1837f3ceb20f8f5686d0a211e4f697db7ef` |
 | Browser runtime pack | `b3b63fc2e104c9c6b5f33cdf4bb2c612f7ffcf7f6f785ca499527fd177c41e8b` |
 | WebAssembly SDK pack | `e7498abf56efe8675ac566ccbf59f365938332a82e9843e9b2907c678c7623fe` |
+
+### MIBC-selected Havit comparison
+
+The follow-up comparison uses the same updated compiler on both sides, SHA256 `f8b896e39df267bc89b5accb57c3763625b997e295b0c07ea2acb462d26f70b9`. It compares the no-profile heuristic against a four-method MIBC generated with `dotnet-pgo create-mibc-from-method-list` from matching trimmed Havit assemblies. This is a synthetic selection profile, not a captured startup profile or evidence of improved startup performance. Its SHA256 is `2fb912f8174663eed44a57fa6bd5f1960db7e200e82a3e63f4c1675229b1c319`.
+
+With matching updated compiler and SDK build targets, add the existing profile item to the application project and use the auxiliary publish command above:
+
+```xml
+<ItemGroup>
+  <PublishReadyToRunPgoFiles Include="startup.mibc" />
+</ItemGroup>
+```
+
+The SDK forwards this as `--mibc`/`-m` without implicitly requesting `--partial` in auxiliary mode. The profile therefore selects placement rather than reducing the compiled coverage. All six measured variants retain 113,991 managed function/funclet slots.
+
+The following sizes are KiB of Brotli-compressed R2R module files, not whole-application transfer sizes:
+
+| Module | No MIBC | Four-method MIBC |
+|---|---:|---:|
+| Primary | 1111.5 | 378.3 |
+| Entrypoint map | 699.5 | 750.4 |
+| Cold body | 3286.9 | 3822.6 |
+| Combined | 5097.8 | 4951.4 |
+
+Primary size falls 66.0%; primary plus mapping falls 37.7%. Combined Brotli size falls 2.9%, while combined raw size grows 0.4%. This moves most code to the body module; it does not demonstrate that the four selected methods cover startup. No startup timing or completed network-transfer measurement was repeated for this cohort.
+
+The [MIBC size inventory](partitioned-wasm-r2r-modules-mibc-sizes.csv) records exact raw, gzip and Brotli bytes for the heuristic, four-method profile (`sparse`), empty profile, two-profile union, repeated profile, and premerged union. Repeated and premerged profiles preserve the corresponding slot counts and raw role sizes; whole-image byte identity is not claimed.
+
+All six real publishes and browser smokes passed, with five rendered UI navigations each, both activation cells active, and a real native mapping-activation notification. Publishing used an isolated SDK package copy with only the changed source target overlaid; the archived SDK/runtime packages, old compiler, and prior nine-app modules were preserved. The compiler suite passed 232 tests with 39 skips. Six direct MSBuild profile-flow cases passed after the SDK repair, including the auxiliary/profile case that failed before it; the extended Wasm.Build.Tests xUnit fixture was not run because its test assets were not prepared. A CoreLib-inclusive native run with an explicit unmatched MIBC also passed activation, 200 exceptions, 400 finally executions, and 400 forced collections with live roots.
+
+Local size/publish/browser evidence and exact commands are in `~/src/macro-benchmarks/artifacts/mibc-hotcold-full-f8b896-20261028/report.json`; compiler/native validation is indexed by `artifacts/mibc-selection-validation.json` in the feature worktree.
 
 ## Flow
 

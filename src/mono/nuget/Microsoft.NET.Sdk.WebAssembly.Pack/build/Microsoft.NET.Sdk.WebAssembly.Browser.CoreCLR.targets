@@ -284,7 +284,8 @@ Copyright (c) .NET Foundation. All rights reserved.
           Condition="'$(PublishReadyToRun)' == 'true'">
     <PropertyGroup>
       <!-- Item-dependent configuration must run at target execution time. -->
-      <PublishReadyToRunCrossgen2ExtraArgs Condition="'@(PublishReadyToRunPgoFiles)' != ''">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
+      <!-- Auxiliary profiles select method placement without limiting the compiled method set. -->
+      <PublishReadyToRunCrossgen2ExtraArgs Condition="'@(PublishReadyToRunPgoFiles)' != '' and '$(WasmEnableAuxiliaryR2RModules)' != 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
   </Target>
 

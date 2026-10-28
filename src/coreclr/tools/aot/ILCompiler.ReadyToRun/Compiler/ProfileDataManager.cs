@@ -22,6 +22,7 @@ namespace ILCompiler
         // cannot be modified after loading and is accessed concurrently
         // without locks.
         private readonly ProfileDataMap _inputProfileData;
+        private readonly int _mibcFileCount;
         // When synthesis is enabled, this represents the map of methods with
         // synthesized PGO data. This is accessed and modified concurrently.
         private readonly ProfileDataMap _synthesizedProfileData;
@@ -50,6 +51,7 @@ namespace ILCompiler
             _compilationGroup = compilationGroup;
             _callChainProfile = callChainProfile;
             HashSet<ModuleDesc> versionBubble = new HashSet<ModuleDesc>(versionBubbleModules);
+            _mibcFileCount = mibcFiles.Count;
 
             {
                 // Parse MIbc Data
@@ -107,6 +109,18 @@ namespace ILCompiler
         public bool IsMethodInInputProfileData(MethodDesc method)
         {
             return _inputProfileData.Contains(method);
+        }
+
+        public bool HasMibcProfile => _mibcFileCount > 0;
+
+        public IEnumerable<MethodDesc> GetMibcProfileMethods()
+        {
+            // MIBC inputs precede embedded IBC data; only explicit MIBC files select the partition.
+            for (int index = 0; index < _mibcFileCount; index++)
+            {
+                foreach (MethodProfileData method in _inputData[index].GetAllMethodProfileData())
+                    yield return method.Method;
+            }
         }
 
         public MethodProfileData this[MethodDesc method]

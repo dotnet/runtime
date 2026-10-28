@@ -151,6 +151,23 @@ dotnet publish -p:PublishReadyToRun=true -p:PublishReadyToRunComposite=true -p:W
 crossgen2 and requires retained IL; `--strip-il` and threaded builds are not supported.
 In-tree browser samples also forward this property through `BuildSampleInTree`.
 
+To use MIBC profile data for the hot/cold split, add the existing ReadyToRun profile item to
+the app project:
+
+```xml
+<ItemGroup>
+  <PublishReadyToRunPgoFiles Include="startup.mibc" />
+</ItemGroup>
+```
+
+The publish pipeline passes each item to crossgen2 as `--mibc` (or its `-m` alias).
+Multiple items combine the methods from their profiles. With an explicit profile, methods
+present in the profile stay in the primary image and the remaining eligible methods go to
+auxiliary bodies. Without an explicit profile, the compiler uses its default hot/cold heuristic.
+Auxiliary publishing still compiles the full eligible method set; supplying a profile does not
+implicitly enable crossgen2's `--partial` compilation mode.
+Use a profile collected from the intended application scenario when choosing production hot methods.
+
 The compiler emits an `.auxiliary.json` manifest beside the primary image. Its explicit
 EntryPoints and body filenames are collected as sibling `_framework` assets, fingerprinted
 and compressed by the normal static-web-assets pipeline, and recorded in the boot config's
