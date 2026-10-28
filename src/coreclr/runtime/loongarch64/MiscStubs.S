@@ -8,5 +8,5 @@ LEAF_ENTRY RhpGcPoll, _TEXT
     bnez  $a0, LOCAL_LABEL(RhpGcPoll_RarePath)
     jirl  $r0, $ra, 0
 LOCAL_LABEL(RhpGcPoll_RarePath):
-    b     C_FUNC(RhpGcPollRare)
+    TAILCALL_GC_POLL_RARE
 LEAF_END RhpGcPoll, _TEXT

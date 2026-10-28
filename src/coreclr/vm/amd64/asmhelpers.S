@@ -327,12 +327,6 @@ LEAF_END GetTlsIndexObjectDescOffset, _TEXT
 #endif // !FEATURE_EMULATED_TLS
 #endif // !TARGET_OSX
 
-LEAF_ENTRY  RhpGcPollRare, _TEXT
-        PREPARE_EXTERNAL_VAR g_pPollGC, rax
-        mov     rax, [rax]
-        jmp     rax
-LEAF_END  RhpGcPollRare, _TEXT
-
 //rdi -This pointer
 //rsi -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT

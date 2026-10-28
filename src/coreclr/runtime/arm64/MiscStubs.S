@@ -44,5 +44,5 @@ LEAF_ENTRY RhpGcPoll, _TEXT
     cbnz    w0, LOCAL_LABEL(RhpGcPoll_RarePath)
     ret
 LOCAL_LABEL(RhpGcPoll_RarePath):
-    b       C_FUNC(RhpGcPollRare)
+    TAILCALL_GC_POLL_RARE
 LEAF_END RhpGcPoll, _TEXT

@@ -23,5 +23,12 @@ endif
 EXTERN g_TrapReturningThreads : DWORD
 G_TRAP_THREADS TEXTEQU <g_TrapReturningThreads>
 
+EXTERN g_pPollGC : QWORD
+
+TAILCALL_GC_POLL_RARE macro
+        mov     rax, g_pPollGC
+        TAILJMP_RAX
+        endm
+
 EXTERN RhpGcAlloc : PROC
 EXTERN RhExceptionHandling_FailedAllocation : PROC

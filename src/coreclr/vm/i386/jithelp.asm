@@ -44,8 +44,6 @@ JIT_TailCallVSDLeave            TEXTEQU <_JIT_TailCallVSDLeave@0>
 JIT_TailCallHelper              TEXTEQU <_JIT_TailCallHelper@4>
 JIT_TailCallReturnFromVSD       TEXTEQU <_JIT_TailCallReturnFromVSD@0>
 
-g_pPollGC                       TEXTEQU <_g_pPollGC>
-
 EXTERN  g_ephemeral_low:DWORD
 EXTERN  g_ephemeral_high:DWORD
 EXTERN  g_lowest_address:DWORD
@@ -58,8 +56,6 @@ ifdef FEATURE_HIJACK
 EXTERN  JIT_TailCallHelper:PROC
 endif
 EXTERN @JIT_FailFast@0:PROC
-
-EXTERN g_pPollGC:DWORD
 
 
 ifdef WRITE_BARRIER_CHECK
@@ -917,10 +913,5 @@ _JIT_PatchedWriteBarrierGroup_End@0 ENDP
 _JIT_PatchedCodeLast@0 proc public
 ret
 _JIT_PatchedCodeLast@0 endp
-
-RhpGcPollRare PROC public
-    mov eax, g_pPollGC
-    jmp eax
-RhpGcPollRare ENDP
 
     end

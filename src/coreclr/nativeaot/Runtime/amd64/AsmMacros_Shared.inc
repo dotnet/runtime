@@ -6,3 +6,9 @@
 include AsmMacros.inc
 
 G_TRAP_THREADS TEXTEQU <RhpTrapThreads>
+
+EXTERN RhpGcPollRare : PROC
+
+TAILCALL_GC_POLL_RARE macro
+        jmp     RhpGcPollRare
+        endm

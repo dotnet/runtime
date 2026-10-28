@@ -47,7 +47,6 @@
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT  g_dispatch_cache_chain_success_counter
 #endif
-    IMPORT g_pPollGC
 #ifdef WRITE_BARRIER_CHECK
     SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
     SETALIAS g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
@@ -743,12 +742,6 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     NESTED_END
 
 #endif ; FEATURE_SPECIAL_USER_MODE_APC
-
-    LEAF_ENTRY  RhpGcPollRare
-        ldr     x9, =g_pPollGC
-        ldr     x9, [x9]
-        br x9
-    LEAF_END
 
 ;x0 -This pointer
 ;x1 -ReturnBuffer

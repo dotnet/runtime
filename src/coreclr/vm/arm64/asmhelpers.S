@@ -610,12 +610,6 @@ LEAF_END GetTLSResolverAddress, _TEXT
 #endif // TARGET_ANDROID
 #endif // !TARGET_APPLE
 
-LEAF_ENTRY  RhpGcPollRare, _TEXT
-        PREPARE_EXTERNAL_VAR g_pPollGC, x9
-        ldr     x9, [x9]
-        br x9
-LEAF_END  RhpGcPollRare, _TEXT
-
 //x0 -This pointer
 //x1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT

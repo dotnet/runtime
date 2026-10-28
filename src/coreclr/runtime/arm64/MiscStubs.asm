@@ -3,8 +3,6 @@
 
 #include "AsmMacros_Shared.h"
 
-    EXTERN RhpGcPollRare
-
     TEXTAREA
 
 ; void* PacStripPtr(void *);
@@ -46,7 +44,7 @@
         cbnz        w0, RhpGcPoll_RarePath
         ret
 RhpGcPoll_RarePath
-        b           RhpGcPollRare
+        TAILCALL_GC_POLL_RARE
     LEAF_END RhpGcPoll
 
     end

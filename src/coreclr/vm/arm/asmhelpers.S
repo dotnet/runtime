@@ -790,19 +790,6 @@ DelayLoad_Helper\suffix:
 
 #endif // FEATURE_TIERED_COMPILATION
 
-    LEAF_ENTRY RhpGcPollRare, _TEXT
-#if defined(__clang__)
-        ldr     r2, =g_pPollGC-(1f+4)
-1:
-        add     r2, pc
-#else
-        ldr     r2, =g_pPollGC
-#endif
-        ldr     r2, [r2]
-        EPILOG_BRANCH_REG r2
-    LEAF_END RhpGcPollRare, _TEXT
-
-
 //x0 -This pointer
 //x1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT

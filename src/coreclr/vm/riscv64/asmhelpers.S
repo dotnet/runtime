@@ -768,12 +768,6 @@ LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
 LEAF_END GetThreadStaticsVariableOffset, _TEXT
 #endif // !TARGET_LINUX_MUSL
 
-LEAF_ENTRY RhpGcPollRare, _TEXT
-        PREPARE_EXTERNAL_VAR g_pPollGC, t0
-        ld      t0, 0(t0)
-        jr      t0
-LEAF_END RhpGcPollRare, _TEXT
-
 //a0 -This pointer
 //a1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT

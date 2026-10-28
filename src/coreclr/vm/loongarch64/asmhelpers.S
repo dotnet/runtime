@@ -829,12 +829,6 @@ LEAF_ENTRY GetTLSResolverAddress, _TEXT
 LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------
 
-LEAF_ENTRY RhpGcPollRare, _TEXT
-        PREPARE_EXTERNAL_VAR g_pPollGC, $t0
-        ld.d    $t0, $t0, 0
-        EPILOG_BRANCH_REG $t0
-LEAF_END RhpGcPollRare, _TEXT
-
 //a0 -This pointer
 //a1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT

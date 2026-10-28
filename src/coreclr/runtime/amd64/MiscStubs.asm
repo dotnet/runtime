@@ -3,8 +3,6 @@
 
 include AsmMacros_Shared.inc
 
-EXTERN RhpGcPollRare : PROC
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; The following helper will access ("probe") a word on each page of the stack
 ; starting with the page right beneath rsp down to the one pointed to by r11.
@@ -44,7 +42,7 @@ LEAF_ENTRY RhpGcPoll, _TEXT
         jne         @F                  ; forward branch - predicted not taken
         ret
 @@:
-        jmp         RhpGcPollRare
+        TAILCALL_GC_POLL_RARE
 LEAF_END RhpGcPoll, _TEXT
 
 end
