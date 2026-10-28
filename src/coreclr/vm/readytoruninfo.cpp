@@ -860,7 +860,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         _ASSERT(pLayout != NULL);
         m_pCompositeInfo = this;
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-        // TODO: These should point to the location of the flag in the R2R image
+        // TODO: Use image-owned activation flags for the auxiliary code and EntryPoints modules.
         m_pAuxiliaryModuleActivationFlag = (PTR_DWORD)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DWORD))));
         if (pNativeImage != nullptr)
         {
@@ -1351,10 +1351,8 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (ReadyToRunCodeDisabled())
         goto done;
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    // TODO: Temporary workaround for a bug on main. A composite image's components register the composite's own
-    // ReadyToRunInfo, which has no module, on the unrelated R2R modules list. Looking it up decodes signatures
-    // against a NULL module and crashes. Skip it until the registration is fixed. Only gated to the browser-wasm
-    // prototype builds, since other targets use that lookup for unrelated generics in composite images.
+    // TODO: Resolve module-less composite registrations in the unrelated R2R list. Signature decoding
+    // needs a module, so skip these entries.
     if (m_pModule == NULL)
         goto done;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
@@ -1370,8 +1368,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    // There are conditions where we cannot delay the use of R2R code. In the future, the compiler
-    // should ensure these conditions for us.
+    // Delay only when interpreter fallback is available and the caller can wait for R2R code.
     mayDelayR2RCode = pConfig != NULL
         && pConfig->MayDelayAuxiliaryModule()
         && !HasStrippedILBodies()
@@ -1427,8 +1424,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (mayDelayR2RCode
         && !IsAuxiliaryModuleActivated(m_pCompositeInfo->GetAuxiliaryModuleActivationFlag(pMD)))
     {
-        // The method exists in this logical R2R image, but is considered an aux method and its aux module is not yet activated.
-        // Mark it as such, telling callers to return when the flag is set.
+        // Stop searching once the method's code module is known; retry when its countdown reaches zero.
         pConfig->SetAuxiliaryModuleActivationFlag(m_pCompositeInfo->GetAuxiliaryModuleActivationFlag(pMD));
         goto done;
     }

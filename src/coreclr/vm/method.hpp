@@ -282,8 +282,8 @@ struct MethodDescCodeData final
     InterpreterCalliCookie CalliCookie;
 #endif // FEATURE_INTERPRETER
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    // Activation status of the auxiliary module holding this method's R2R code. Zero means activated.
-    // TODO: This points at a shared countdown standing in for the auxiliary module's activation flag.
+    // A null pointer means no known code module; a zero countdown means the module is ready.
+    // TODO: Use the auxiliary module's activation flag instead of the simulated shared countdown.
     PTR_DWORD AuxiliaryModuleActivationFlag;
     AuxiliaryEntryPointsEra AuxiliaryEntryPointsEra;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
@@ -2446,8 +2446,7 @@ public:
     void SetCallerGCMode(CallerGCMode mode);
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    // Activation status of the auxiliary module holding the method's R2R code, set when lookup delays it.
-    // TODO: This points at a shared countdown standing in for the auxiliary module's activation flag.
+    // TODO: Use the auxiliary module's activation flag instead of the simulated shared countdown.
     PTR_DWORD GetAuxiliaryModuleActivationFlag() const
     {
         LIMITED_METHOD_CONTRACT;

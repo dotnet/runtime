@@ -510,7 +510,7 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
     }
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    // The method's code was found in an image whose auxiliary module is not yet activated, so the search is over.
+    // A known code module owns this method, so do not search other images while it is unavailable.
     if (pConfig->HasKnownAuxiliaryModuleDependency())
         return (PCODE)NULL;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
@@ -555,8 +555,7 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
     if (pCode == (PCODE)NULL && !pConfig->ReadyToRunRejectedPrecompiledCode())
     {
-        // Even when every searched image has its EntryPoints module activated, an image registered later may have
-        // the code, which also advances the era.
+        // A later EntryPoints activation may make a lookup succeed next time.
         pConfig->SetIsAwaitingAuxiliaryModuleEntryPoints(searchedEra);
     }
 #endif
@@ -589,9 +588,7 @@ bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-// Records why an interpreted method may get R2R code later, so callers check before interpreting it.
-// A method found in a pending auxiliary module waits for that module; a method not found while
-// auxiliary EntryPoints modules were pending waits for the EntryPoints era to advance.
+// Record either the unavailable code module or, for an unresolved lookup, the era to retry from.
 void MethodDesc::RecordDelayedR2RCode(PrepareCodeConfig* pConfig, PCODE pCode)
 {
     STANDARD_VM_CONTRACT;
@@ -614,8 +611,8 @@ void MethodDesc::RecordDelayedR2RCode(PrepareCodeConfig* pConfig, PCODE pCode)
         return;
     }
 
-    // The InterpMethod info is not cleared when R2R code is published, so calls through a stale override alias
-    // still check it and are redirected to the published native code.
+    // Keep the cached state after publication: a declaration may still cache this method's interpreter code
+    // and must redirect calls to its published R2R code.
     if (pConfig->HasKnownAuxiliaryModuleDependency())
     {
         m_codeData->AuxiliaryModuleActivationFlag = pConfig->GetAuxiliaryModuleActivationFlag();
@@ -638,12 +635,9 @@ void MethodDesc::RecordDelayedR2RCode(PrepareCodeConfig* pConfig, PCODE pCode)
             pInterpMethod->auxiliaryMethodInfo.discriminator = AuxiliaryMethodInfoDiscriminator::CheckAuxiliaryEntryPointsEra;
         }
     }
-    // Otherwise no R2R lookup was done, so there is nothing to wait for and the default InterpretOnly info stays.
 }
 
-// Called by the call sites that check a waiting method's activation state. A method waiting on its auxiliary
-// module already has interpreter code, so they only call this once the module is activated. Switch it to its
-// R2R code if it has any.
+// Retry R2R lookup when the known code module is available or the lookup era has changed.
 void MethodDesc::TryActivateDelayedR2RCode(CallerGCMode callerGCMode)
 {
     CONTRACTL
@@ -689,8 +683,7 @@ void MethodDesc::TryActivateDelayedR2RCode(CallerGCMode callerGCMode)
     }
     EX_CATCH
     {
-        // The method already runs in the interpreter, so failing to load its R2R code (for example,
-        // a fixup that throws) must not fail the call. It stays interpreted and is not retried.
+        // Nonterminal lookup or fixup failures leave the method interpreted without retry.
         RethrowTerminalExceptions();
         if (PortableEntryPoint::HasInterpreterData(temporaryEntryPoint))
         {
@@ -2374,8 +2367,8 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
         // PrepareInterpreterCode may have stored the MethodImpl target's code on the declaration; run as that method.
         pTargetMethod = targetIp->Method->methodHnd;
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-        // This is not only reached on the first call: a method waiting for its R2R code comes back here once the wait
-        // is over. A call through a stale alias of a method that already switched to R2R code only needs the dispatch.
+        // A declaration may still cache its implementation's interpreter code after R2R publication;
+        // check the implementation's state so the call reaches its published code.
         enterPrestubPortion = targetIp->Method->auxiliaryMethodInfo.ShouldTryActivateMethod();
 #endif // FEATURE_AUXILIARY_R2R_MODULES
     }

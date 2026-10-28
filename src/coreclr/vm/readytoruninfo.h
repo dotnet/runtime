@@ -265,19 +265,16 @@ public:
     PTR_DWORD GetAuxiliaryModuleActivationFlag(MethodDesc* pMD) const
     {
         LIMITED_METHOD_CONTRACT;
-        // If/When we use multiple auxiliary modules, this will need to search the AuxiliaryEntryPointsModule to find which flag to use
+        // The simulation has one code module per composite image, so every method shares this flag.
         return m_pAuxiliaryModuleActivationFlag;
     }
 
-    // The era advances each time an auxiliary EntryPoints module is activated in any R2R image, or a new R2R image
-    // with code for unrelated generics is registered.
     static AuxiliaryEntryPointsEra GetCurrentAuxiliaryEntryPointsEra()
     {
         LIMITED_METHOD_CONTRACT;
         return AuxiliaryEntryPointsEra(VolatileLoad(&s_auxiliaryEntryPointsEra));
     }
 
-    // Returns true if auxiliary EntryPoints modules have been activated since the given era was observed.
     static bool IsAuxiliaryEntryPointsEraStale(AuxiliaryEntryPointsEra era)
     {
         LIMITED_METHOD_CONTRACT;
@@ -285,7 +282,6 @@ public:
         return era.m_value != VolatileLoad(&s_auxiliaryEntryPointsEra);
     }
 
-    // Indicates that one or more new auxiliary EntryPoints modules have been activated.
     static void IncrementAuxiliaryEntryPointsEra()
     {
         LIMITED_METHOD_CONTRACT;
@@ -311,7 +307,7 @@ public:
         return IsAuxiliaryEntryPointsModuleActivated(m_pAuxiliaryEntryPointsModuleStatus);
     }
 
-    // The encoding of the activation flag is owned by the R2R image; every reader goes through this.
+    // Centralize the readiness test so callers do not depend on the simulated countdown encoding.
     static bool IsAuxiliaryModuleActivated(PTR_DWORD pActivationFlag)
     {
         LIMITED_METHOD_CONTRACT;
@@ -319,8 +315,7 @@ public:
         return VolatileLoad(pActivationFlag) == 0;
     }
 
-    // TODO: Remove once auxiliary modules are downloaded. Stands in for the download by counting down the
-    // flag once per call, and returns whether the module is now activated.
+    // TODO: Remove once auxiliary modules are downloaded. Each check counts down until the module is ready.
     static void AdvanceSimulatedAuxiliaryModuleDownload(PTR_DWORD pActivationFlag)
     {
         LIMITED_METHOD_CONTRACT;
@@ -329,9 +324,7 @@ public:
             VolatileStore(pActivationFlag, VolatileLoad(pActivationFlag) - 1);
     }
 
-    // TODO: Remove the simulation below once auxiliary EntryPoints modules are downloaded. It stands in for
-    // the download by counting calls to methods awaiting EntryPoints, and activates the EntryPoints modules
-    // (advancing the era) once the count reaches zero.
+    // TODO: Remove the simulation once auxiliary EntryPoints modules are downloaded.
     static void EnsureAuxiliaryEntryPointsModuleStatus()
     {
         LIMITED_METHOD_CONTRACT;
@@ -344,6 +337,7 @@ public:
         }
     }
 
+    // Completion of the shared countdown can make earlier lookup misses succeed.
     static void AdvanceSimulatedAuxiliaryEntryPointsDownload()
     {
         LIMITED_METHOD_CONTRACT;

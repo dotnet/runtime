@@ -41,8 +41,7 @@ enum class AuxiliaryMethodInfoDiscriminator : uint8_t
     CheckAuxiliaryEntryPointsEra
 };
 
-// Cached on InterpMethod so the interpreter can decide with few memory loads whether a call should try to
-// switch the method to R2R code. Set by the VM; the interpreter compiler only default-constructs it.
+// Caches information to determine whether to reattempt method activation.
 struct AuxiliaryMethodInfo
 {
     union
@@ -56,10 +55,8 @@ struct AuxiliaryMethodInfo
 
     bool MayActivateMethod() const { return discriminator != AuxiliaryMethodInfoDiscriminator::InterpretOnly; }
 
-#ifndef INTERPRETER_COMPILER_INTERNAL
     // Defined in the VM's interpexec.h, since it needs ReadyToRunInfo.
     inline bool ShouldTryActivateMethod() const;
-#endif // !INTERPRETER_COMPILER_INTERNAL
 };
 #endif // FEATURE_AUXILIARY_R2R_MODULES
 
@@ -78,7 +75,6 @@ struct InterpMethod
     bool unmanagedCallersOnly;
     bool publishSecretStubParam;
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    // Set by the VM when the method is interpreted only until an auxiliary module or EntryPoints module is activated
     AuxiliaryMethodInfo auxiliaryMethodInfo;
 #endif // FEATURE_AUXILIARY_R2R_MODULES
     int32_t codeSize; // size in int32_t slots

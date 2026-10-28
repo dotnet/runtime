@@ -10,7 +10,6 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
 // Mirrors the exception handling of PreStubWorker for a call from CallDescrWorkerInternal: exceptions are
 // rethrown to the native caller, and the called method is added to the exception's stack trace. pPrepareMethod is
 // the method to prepare, which differs from pMethod when pMethod's interpreter code belongs to another method.
-// A method waiting for its R2R code to become available only needs to be activated.
 static void RunPrestub(MethodDesc* pMethod, MethodDesc* pPrepareMethod, bool activateDelayedR2RCode, UINT_PTR stackTraceSP)
 {
     EX_TRY

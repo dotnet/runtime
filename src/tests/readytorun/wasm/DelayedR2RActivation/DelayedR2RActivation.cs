@@ -29,9 +29,8 @@ public class DelayedR2RActivation
     private const int PendingAuxiliaryModule = 0x10;
     private const int AwaitingAuxiliaryEntryPoints = 0x20;
 
-    // A delayed method waits twice: first for the auxiliary EntryPoints module that says where its code is
-    // (awaiting EntryPoints), then for the auxiliary module that holds the code (pending auxiliary module).
-    // Each wait is simulated by counting calls to the waiting methods.
+    // A method may wait for simulated EntryPoints availability, then for its code module.
+    // Each countdown is consumed by calls to methods waiting on it.
     private static readonly int s_activationCallCount = ReadCallCount("DOTNET_R2RDelayedActivationCallCount", 0);
     private static readonly int s_entryPointsCallCount =
         ReadCallCount("DOTNET_R2RDelayedEntryPointsActivationCallCount", s_activationCallCount);
@@ -76,7 +75,7 @@ public class DelayedR2RActivation
 
         if (s_checkStates)
         {
-            // Methods wait for their EntryPoints first. With EntryPoints available, they wait for their module.
+            // An unavailable EntryPoints module hides the code module until lookup is retried.
             bool expectAwaiting = s_entryPointsDelayed;
             bool expectPending = !s_entryPointsDelayed && s_moduleDelayed;
             for (int index = 0; index < entryPoints.Length; index++)
@@ -110,7 +109,7 @@ public class DelayedR2RActivation
         Task<object> suspended = RepeatedlySuspendedTargetAsync(pending, value, counts);
         if (s_checkStates && (s_entryPointsDelayed || s_moduleDelayed))
         {
-            // Both continuations must still be interpreted so they resume after their methods are published.
+            // The entry points remain delayed while these invocations are suspended.
             Assert.True(IsDelayed(suspendedEntryPoint));
             Assert.True(IsDelayed(repeatedlySuspendedEntryPoint));
         }

@@ -1486,10 +1486,8 @@ static InterpByteCodeStart* ResolveInterpreterCode(MethodDesc*& targetMethod, In
     }
 
 #ifdef FEATURE_AUXILIARY_R2R_MODULES
-    // This info is not cleared when R2R code is published, so calls through a stale override alias still
-    // reach this check and are redirected to the published native code. Each such call pays for the check and
-    // the activation call, which returns early. An explicit "activated" state could skip that, but only
-    // hand-written IL with a MethodImpl in the declaring type creates aliases, so it is not worth the extra state.
+    // A declaration can still cache its implementation's interpreter code after the implementation's R2R
+    // code is published. Keep this check so calls through that alias reach the published code.
     if (targetIp != nullptr
         && targetIp->Method->auxiliaryMethodInfo.ShouldTryActivateMethod())
     {

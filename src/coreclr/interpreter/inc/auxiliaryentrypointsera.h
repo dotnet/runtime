@@ -11,13 +11,14 @@
 
 class ReadyToRunInfo;
 
-// The auxiliary EntryPoints era observed by a method whose R2R lookup may have missed because
-// auxiliary EntryPoints modules were not yet activated. Only ReadyToRunInfo creates or compares eras.
+// An era is the global lookup generation, advanced when an auxiliary EntryPoints module is activated
+// or an image with unrelated generic code is registered. A lookup miss records it to decide when to retry.
+// ReadyToRunInfo creates and compares eras; other consumers treat them as opaque.
 class AuxiliaryEntryPointsEra
 {
     friend class ReadyToRunInfo;
 
-    // 0 means not awaiting EntryPoints; the global era starts at 1.
+    // 0 means no lookup-era retry is recorded; the global era starts at 1.
     uint32_t m_value;
 
     explicit AuxiliaryEntryPointsEra(uint32_t value) : m_value(value) {}
