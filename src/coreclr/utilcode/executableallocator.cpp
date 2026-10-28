@@ -121,7 +121,7 @@ void ExecutableAllocator::DumpHolderUsage()
 #endif // LOG_EXECUTABLE_ALLOCATOR_STATISTICS
 
 #if defined(_DEBUG) && defined(HOST_WINDOWS)
-static DWORD GetExecutableAllocatorTestThreadId(const char* variableName)
+static DWORD GetExecutableAllocatorTestSetting(const char* variableName)
 {
     char value[32];
     DWORD length = GetEnvironmentVariableA(variableName, value, ARRAY_SIZE(value));
@@ -163,9 +163,10 @@ static bool WaitForExecutableAllocatorTestEvent(const char* variableName)
         return false;
     }
 
-    WaitForSingleObject(event, INFINITE);
+    DWORD result = WaitForSingleObject(event, INFINITE);
     CloseHandle(event);
-    return true;
+    _ASSERTE(result == WAIT_OBJECT_0);
+    return result == WAIT_OBJECT_0;
 }
 #endif // defined(_DEBUG) && defined(HOST_WINDOWS)
 
@@ -444,7 +445,15 @@ bool ExecutableAllocator::AddRWBlock(void* baseRW, void* baseRX, size_t size, Ca
 {
     LIMITED_METHOD_CONTRACT;
 
-    BlockRW* pBlockRW = new (nothrow) BlockRW();
+    BlockRW* pBlockRW = nullptr;
+#if defined(_DEBUG) && defined(HOST_WINDOWS)
+    if (GetCurrentThreadId() != GetExecutableAllocatorTestSetting("DOTNET_ExecutableAllocatorFatalErrorThreadId") ||
+        GetExecutableAllocatorTestSetting("DOTNET_ExecutableAllocatorFailMetadataAllocation") == 0)
+#endif // defined(_DEBUG) && defined(HOST_WINDOWS)
+    {
+        pBlockRW = new (nothrow) BlockRW();
+    }
+
     if (pBlockRW == NULL)
     {
         return false;
@@ -923,28 +932,14 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
 
 #if defined(_DEBUG) && defined(HOST_WINDOWS)
     DWORD currentThreadId = GetCurrentThreadId();
-    if (currentThreadId == GetExecutableAllocatorTestThreadId("DOTNET_ExecutableAllocatorGCThreadId"))
+    if (currentThreadId == GetExecutableAllocatorTestSetting("DOTNET_ExecutableAllocatorGCThreadId"))
     {
         SignalExecutableAllocatorTestEvent("DOTNET_ExecutableAllocatorMapRWAttemptEvent");
     }
+    bool injectAllocationFailure = currentThreadId == GetExecutableAllocatorTestSetting("DOTNET_ExecutableAllocatorFatalErrorThreadId");
 #endif // defined(_DEBUG) && defined(HOST_WINDOWS)
 
     CRITSEC_Holder csh(m_CriticalSection);
-
-#if defined(_DEBUG) && defined(HOST_WINDOWS)
-    if (currentThreadId == GetExecutableAllocatorTestThreadId("DOTNET_ExecutableAllocatorFatalErrorThreadId"))
-    {
-        // Establish both sides of the deadlock cycle before injecting the fatal error.
-        SignalExecutableAllocatorTestEvent("DOTNET_ExecutableAllocatorStartGCEvent");
-        if (!WaitForExecutableAllocatorTestEvent("DOTNET_ExecutableAllocatorMapRWAttemptEvent"))
-        {
-            return nullptr;
-        }
-        csh.Release();
-        g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Injected executable allocator fatal error"));
-        return nullptr;
-    }
-#endif // defined(_DEBUG) && defined(HOST_WINDOWS)
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
     ExecutableAllocator::g_MapRW_Calls++;
@@ -954,7 +949,14 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
     StopWatch sw(&g_mapTimeSum);
 #endif
 
-    void* result = FindRWBlock(pRX, size, cacheMapping);
+    void* result = nullptr;
+#if defined(_DEBUG) && defined(HOST_WINDOWS)
+    // An injected allocation failure must take the allocation path, not reuse a cached mapping.
+    if (!injectAllocationFailure)
+#endif // defined(_DEBUG) && defined(HOST_WINDOWS)
+    {
+        result = FindRWBlock(pRX, size, cacheMapping);
+    }
     if (result != NULL)
     {
         return result;
@@ -989,7 +991,26 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
             StopWatch sw2(&g_mapCreateTimeSum);
 #endif
-            void* pRW = VMToOSInterface::GetRWMapping(m_doubleMemoryMapperHandle, (BYTE*)pBlock->baseRX + mapOffset, pBlock->offset + mapOffset, mapSize);
+#if defined(_DEBUG) && defined(HOST_WINDOWS)
+            if (injectAllocationFailure)
+            {
+                // Establish both sides of the deadlock before failing the real allocation.
+                SignalExecutableAllocatorTestEvent("DOTNET_ExecutableAllocatorStartGCEvent");
+                if (!WaitForExecutableAllocatorTestEvent("DOTNET_ExecutableAllocatorMapRWAttemptEvent"))
+                {
+                    return nullptr;
+                }
+            }
+#endif // defined(_DEBUG) && defined(HOST_WINDOWS)
+
+            void* pRW = nullptr;
+#if defined(_DEBUG) && defined(HOST_WINDOWS)
+            if (!injectAllocationFailure ||
+                GetExecutableAllocatorTestSetting("DOTNET_ExecutableAllocatorFailMetadataAllocation") != 0)
+#endif // defined(_DEBUG) && defined(HOST_WINDOWS)
+            {
+                pRW = VMToOSInterface::GetRWMapping(m_doubleMemoryMapperHandle, (BYTE*)pBlock->baseRX + mapOffset, pBlock->offset + mapOffset, mapSize);
+            }
 
             if (pRW == NULL)
             {
@@ -1009,22 +1030,17 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
         }
         else if (pRX >= pBlock->baseRX && pRX < (void*)((size_t)pBlock->baseRX + pBlock->size))
         {
-            csh.Release();
             g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Attempting to RW map a block that crosses the end of the allocated RX range"));
-            return nullptr;
         }
         else if (pRX < pBlock->baseRX && (void*)((size_t)pRX + size) > pBlock->baseRX)
         {
-            csh.Release();
             g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Attempting to map a block that crosses the beginning of the allocated range"));
-            return nullptr;
         }
     }
 
     // The executable memory block was not found, so we cannot provide the writeable mapping.
-    csh.Release();
     g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RX block to map as RW was not found"));
-    return nullptr;
+    return NULL;
 }
 
 // Unmap writeable mapping at the specified address. The address must be an address

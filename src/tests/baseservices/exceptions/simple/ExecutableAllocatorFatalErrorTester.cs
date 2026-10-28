@@ -12,9 +12,14 @@ public class ExecutableAllocatorFatalErrorTester
     private const int ExecutionEngineExceptionHResult = unchecked((int)0x80131506);
     private const int ProcessTimeoutMilliseconds = 30_000;
 
-    [Fact]
-    public static void FatalErrorWhileGCWaitsForExecutableAllocatorTerminates()
+    [SkipOnCoreClr("The synchronized fault-injection test requires a Checked runtime.", RuntimeConfiguration.Debug | RuntimeConfiguration.Release)]
+    [SkipOnCoreClr("Requires JIT compilation and an explicitly synchronized collection.", RuntimeTestModes.AnyGCStress | RuntimeTestModes.InterpreterActive)]
+    [Theory]
+    [InlineData(false, "Failed to create RW mapping for RX memory.")]
+    [InlineData(true, "The RW block metadata cannot be allocated")]
+    public static void AllocationFailureWhileGCWaitsForExecutableAllocatorTerminates(bool failMetadataAllocation, string expectedMessage)
     {
+        Console.WriteLine($"Testing executable allocator {(failMetadataAllocation ? "metadata" : "mapping")} allocation failure.");
         string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
         var startInfo = new ProcessStartInfo
         {
@@ -25,6 +30,7 @@ public class ExecutableAllocatorFatalErrorTester
             UseShellExecute = false,
         };
         startInfo.Environment["DOTNET_EnableWriteXorExecute"] = "1";
+        startInfo.Environment["DOTNET_ExecutableAllocatorFailMetadataAllocation"] = failMetadataAllocation ? "1" : "0";
         // Checked builds also diagnose the pre-existing JIT-lock-to-lazy-debugger-attach ordering.
         // Continue past that diagnostic so this test can distinguish process termination from the GC deadlock.
         startInfo.Environment["DOTNET_ContinueOnAssert"] = "1";
@@ -52,5 +58,6 @@ public class ExecutableAllocatorFatalErrorTester
         Assert.True(
             process.ExitCode == ExecutionEngineExceptionHResult,
             $"Exit code = {process.ExitCode}, expected {ExecutionEngineExceptionHResult}.{Environment.NewLine}{standardOutput}{standardError}");
+        Assert.Contains(expectedMessage, standardError);
     }
 }

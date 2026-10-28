@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -15,7 +17,7 @@ public static class ExecutableAllocatorFatalError
 
     private static readonly string s_mapRWAttemptEventName = $"ExecutableAllocatorMapRWAttempt-{Environment.ProcessId}";
     private static readonly string s_startGCEventName = $"ExecutableAllocatorStartGC-{Environment.ProcessId}";
-    private static readonly ManualResetEventSlim s_gcThreadReady = new();
+    private static readonly EventWaitHandle s_gcThreadReady = new(false, EventResetMode.ManualReset);
     private static readonly EventWaitHandle s_mapRWAttempt = new(false, EventResetMode.ManualReset, s_mapRWAttemptEventName);
     private static readonly EventWaitHandle s_startGC = new(false, EventResetMode.ManualReset, s_startGCEventName);
     private static uint s_gcThreadId;
@@ -29,12 +31,12 @@ public static class ExecutableAllocatorFatalError
             IsBackground = true
         };
         gcThread.Start();
-        s_gcThreadReady.Wait();
+        s_gcThreadReady.WaitOne();
 
-        Environment.SetEnvironmentVariable(FatalErrorThreadIdVariable, GetCurrentThreadId().ToString());
         Environment.SetEnvironmentVariable(GCThreadIdVariable, Volatile.Read(ref s_gcThreadId).ToString());
         Environment.SetEnvironmentVariable(MapRWAttemptEventVariable, s_mapRWAttemptEventName);
         Environment.SetEnvironmentVariable(StartGCEventVariable, s_startGCEventName);
+        Environment.SetEnvironmentVariable(FatalErrorThreadIdVariable, GetCurrentThreadId().ToString());
 
         RunDynamicMethod();
         return 1;
@@ -43,10 +45,31 @@ public static class ExecutableAllocatorFatalError
     private static void RunGC()
     {
         Volatile.Write(ref s_gcThreadId, GetCurrentThreadId());
-        s_gcThreadReady.Set();
-        s_startGC.WaitOne();
+        IntPtr startGCHandle = s_startGC.SafeWaitHandle.DangerousGetHandle();
+        IntPtr readyHandle = s_gcThreadReady.SafeWaitHandle.DangerousGetHandle();
+        int maxGeneration = GC.MaxGeneration;
 
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+        // Avoid JITting managed wait helpers while the other thread holds the code-allocation lock.
+        if (!SetEvent(startGCHandle) || WaitForSingleObject(startGCHandle, 0) != 0)
+        {
+            throw new InvalidOperationException("Failed to warm the native event operations.");
+        }
+        s_startGC.Reset();
+        // Prepare the collection wrappers without performing the full GC needed by the test.
+        foreach (MethodInfo method in typeof(GC).GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            if (method.Name is nameof(GC.Collect) or "_Collect")
+            {
+                RuntimeHelpers.PrepareMethod(method.MethodHandle);
+            }
+        }
+
+        if (!SetEvent(readyHandle) || WaitForSingleObject(startGCHandle, uint.MaxValue) != 0)
+        {
+            throw new InvalidOperationException("Failed to synchronize the GC thread.");
+        }
+
+        GC.Collect(maxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
     }
 
     private static void RunDynamicMethod()
@@ -60,4 +83,11 @@ public static class ExecutableAllocatorFatalError
 
     [DllImport("kernel32.dll")]
     private static extern uint GetCurrentThreadId();
+
+    [DllImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetEvent(IntPtr handle);
+
+    [DllImport("kernel32.dll")]
+    private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
 }
