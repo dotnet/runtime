@@ -9,6 +9,50 @@ namespace Webcil;
 
 public static class WasmWebcilModule
 {
+    public interface IReceiverMap
+    {
+        object RoundTrip(object a, object b, object c, object d, object e, object f, object g, object h, ref object reference);
+    }
+
+    public struct ReceiverMapValue : IReceiverMap
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public object RoundTrip(object a, object b, object c, object d, object e, object f, object g, object h, ref object reference)
+        {
+            reference = h;
+            return a;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static object CallBoxedReceiver(IReceiverMap target, object value)
+    {
+        return target.RoundTrip(value, value, value, value, value, value, value, value, ref value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static object CallUnboxedReceiver(ref ReceiverMapValue target, object value)
+    {
+        return target.RoundTrip(value, value, value, value, value, value, value, value, ref value);
+    }
+
+    public struct SignatureOnlyValue
+    {
+        public object Reference;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static SignatureOnlyValue SignatureOnlyCallee(SignatureOnlyValue value)
+    {
+        return value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool CallSignatureOnlyValue()
+    {
+        return SignatureOnlyCallee(default).Reference is null;
+    }
+
     public sealed class LdtokenType
     {
     }
