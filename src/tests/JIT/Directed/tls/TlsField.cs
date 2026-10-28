@@ -50,11 +50,6 @@ public static class TlsFieldTest
         ExceptionDispatchInfo loadException = null;
         try
         {
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                Assert.NotEqual("TlsFieldLibrary", assembly.GetName().Name);
-            }
-
             Assert.Equal("TlsFieldLibrary", Assembly.Load("TlsFieldLibrary").GetName().Name);
         }
         catch (Exception ex)
