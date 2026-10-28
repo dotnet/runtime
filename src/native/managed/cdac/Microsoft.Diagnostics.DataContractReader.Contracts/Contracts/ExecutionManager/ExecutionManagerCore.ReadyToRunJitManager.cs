@@ -71,7 +71,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 }
             }
 
-            info = new CodeBlock(startAddress, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
+            info = new CodeBlock(startAddress, methodDesc, relativeOffset, rangeSection);
             return true;
         }
 
