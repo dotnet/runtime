@@ -1070,7 +1070,7 @@ namespace System.Net.Security
             return status;
         }
 
-        public override string? ToString()
+        public override unsafe string? ToString()
         {
             if (IsInvalid)
             {
@@ -1080,12 +1080,24 @@ namespace System.Net.Security
             bool refAdded = false;
             try
             {
-                // Keeps the buffer from being freed by Dispose or finalization while it's being copied.
+                // Keeps the buffer from being freed by Dispose or finalization while it's being read.
                 DangerousAddRef(ref refAdded);
 
-                var bytes = new byte[_size];
-                Marshal.Copy(handle, bytes, 0, bytes.Length);
-                return BitConverter.ToString(bytes).Replace('-', ' ');
+                var bytes = new ReadOnlySpan<byte>((void*)handle, _size);
+                if (bytes.IsEmpty)
+                {
+                    return string.Empty;
+                }
+
+                // Space-separated uppercase hex bytes, e.g. "0A 1B 2C".
+                return string.Create(bytes.Length * 3 - 1, bytes, static (chars, bytes) =>
+                {
+                    chars.Fill(' ');
+                    for (int i = 0; i < bytes.Length; i++)
+                    {
+                        HexConverter.ToCharsBuffer(bytes[i], chars, i * 3);
+                    }
+                });
             }
             catch (ObjectDisposedException)
             {
