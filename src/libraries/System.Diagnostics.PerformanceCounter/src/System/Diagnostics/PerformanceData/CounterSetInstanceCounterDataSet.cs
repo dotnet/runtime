@@ -16,13 +16,18 @@ namespace System.Diagnostics.PerformanceData
     {
         private readonly unsafe long* _offset;
 
+        // Keeps the owner of the unmanaged block that _offset points into alive while this object is reachable.
+        private readonly CounterSetInstanceCounterDataSet _dataSet;
+
         /// <summary>
         /// CounterData constructor
         /// </summary>
         /// <param name="pCounterData"> The memory location to store raw counter data </param>
-        internal unsafe CounterData(long* pCounterData)
+        /// <param name="dataSet"> The data set that owns the memory block <paramref name="pCounterData"/> points into </param>
+        internal unsafe CounterData(long* pCounterData, CounterSetInstanceCounterDataSet dataSet)
         {
             _offset = pCounterData;
+            _dataSet = dataSet;
             *_offset = 0;
         }
 
@@ -35,7 +40,9 @@ namespace System.Diagnostics.PerformanceData
             {
                 unsafe
                 {
-                    return Interlocked.Read(ref (*_offset));
+                    long result = Interlocked.Read(ref (*_offset));
+                    GC.KeepAlive(_dataSet);
+                    return result;
                 }
             }
             set
@@ -43,6 +50,7 @@ namespace System.Diagnostics.PerformanceData
                 unsafe
                 {
                     Interlocked.Exchange(ref (*_offset), value);
+                    GC.KeepAlive(_dataSet);
                 }
             }
         }
@@ -52,6 +60,7 @@ namespace System.Diagnostics.PerformanceData
             unsafe
             {
                 Interlocked.Increment(ref (*_offset));
+                GC.KeepAlive(_dataSet);
             }
         }
 
@@ -60,6 +69,7 @@ namespace System.Diagnostics.PerformanceData
             unsafe
             {
                 Interlocked.Decrement(ref (*_offset));
+                GC.KeepAlive(_dataSet);
             }
         }
 
@@ -68,6 +78,7 @@ namespace System.Diagnostics.PerformanceData
             unsafe
             {
                 Interlocked.Add(ref (*_offset), value);
+                GC.KeepAlive(_dataSet);
             }
         }
 
@@ -82,7 +93,9 @@ namespace System.Diagnostics.PerformanceData
             {
                 unsafe
                 {
-                    return (*_offset);
+                    long result = *_offset;
+                    GC.KeepAlive(_dataSet);
+                    return result;
                 }
             }
             set
@@ -90,6 +103,7 @@ namespace System.Diagnostics.PerformanceData
                 unsafe
                 {
                     *_offset = value;
+                    GC.KeepAlive(_dataSet);
                 }
             }
         }
@@ -132,7 +146,7 @@ namespace System.Diagnostics.PerformanceData
 
                 foreach (KeyValuePair<int, CounterType> CounterDef in _instance._counterSet._idToCounter)
                 {
-                    CounterData thisCounterData = new CounterData((long*)(_dataBlock + CounterOffset * sizeof(long)));
+                    CounterData thisCounterData = new CounterData((long*)(_dataBlock + CounterOffset * sizeof(long)), this);
 
                     _counters.Add(CounterDef.Key, thisCounterData);
 
