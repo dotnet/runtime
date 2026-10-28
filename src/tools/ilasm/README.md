@@ -22,6 +22,17 @@ This will update the generated files before building the main project.
 
 ---
 
+## Win32 resources
+
+Use `--resource <file>`, `/RESOURCE=<file>` on Windows, or `-resource:<file>` to embed
+Win32 resources from a compiled `.res` file or a COFF resource `.obj` file. The input
+format is detected from its contents, not its extension. Resource objects produced
+by `cvtres` for x86, x64, and ARM64 are supported without requiring `cvtres` at assembly
+time. The input resources are not merged with any default icon, manifest, or version
+resource. Managed `.mresource` declarations remain independent of Win32 resources.
+
+---
+
 ## Source line mapping
 
 With debug information enabled, `.line` fixes the source span of subsequent instructions until another
