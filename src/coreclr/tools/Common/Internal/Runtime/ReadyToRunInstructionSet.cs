@@ -106,6 +106,7 @@ namespace Internal.ReadyToRunConstants
         Cssc = 93,
         Zicond = 94,
         Fp16 = 95,
-        RelaxedSimd = 96,
+        SvePmull128 = 96,
+        RelaxedSimd = 97,
     }
 }
