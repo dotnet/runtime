@@ -287,7 +287,7 @@ namespace ILCompiler.ObjectWriter
                         TargetOS.tvOSSimulator => PLATFORM_TVOSSIMULATOR,
                         _ => 0,
                     };
-                    buildVersion.MinimumPlatformVersion = 0x0D_00_00; // 13.0.0
+                    buildVersion.MinimumPlatformVersion = 0x0F_00_00; // 15.0.0
                     break;
             }
             buildVersion.Write(outputFileStream);
