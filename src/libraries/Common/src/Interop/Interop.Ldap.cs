@@ -178,12 +178,6 @@ namespace System.DirectoryServices.Protocols
     {
         public CLong tv_sec;
         public CLong tv_usec;
-
-        // On 32-bit Unix, libldap may be built with a 64-bit time_t (16-byte timeval); zero padding makes
-        // values with tv_sec >= 0 and tv_usec == 0 read the same under both layouts.
-#pragma warning disable CA1823 // unused padding field
-        private long _time64Padding;
-#pragma warning restore CA1823
     }
 
 #if NET

@@ -86,12 +86,6 @@ namespace System.DirectoryServices.Protocols
                     tv_usec = new CLong((int)((_connectionTimeOut.Ticks % TimeSpan.TicksPerSecond) / TimeSpan.TicksPerMicrosecond)) // Convert 100ns ticks to microseconds
                 };
 
-                if (!Environment.Is64BitProcess && timeout.tv_usec.Value != 0)
-                {
-                    // tv_usec must stay 0 on 32-bit (see LDAP_TIMEVAL), so round up to whole seconds.
-                    timeout = new LDAP_TIMEVAL { tv_sec = new CLong(timeout.tv_sec.Value + 1) };
-                }
-
                 int timeoutResult = LdapPal.SetTimevalOption(_ldapHandle, LdapOption.LDAP_OPT_NETWORK_TIMEOUT, ref timeout);
                 ErrorChecking.CheckAndSetLdapError(timeoutResult);
             }
