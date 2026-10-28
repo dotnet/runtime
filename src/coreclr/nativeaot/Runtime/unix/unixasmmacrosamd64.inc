@@ -244,7 +244,6 @@ C_FUNC(\Name\()_End):
 // CONSTANTS -- INTEGER
 //
 #define TSF_Attached                    0x01
-#define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags

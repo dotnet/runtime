@@ -6,7 +6,6 @@
     TEXTAREA
 
     EXTERN      RhpGcPoll2
-    EXTERN      g_fGcStressStarted
 
     ;; Build a map of symbols representing offsets into the transition frame (see PInvokeTransitionFrame in
     ;; rhbinder.h) and keep these two in sync.
@@ -192,57 +191,4 @@ WaitForGC
     NESTED_END RhpGcPollRare
 
 
-#ifdef FEATURE_GC_STRESS
-;;
-;;
-;; GC Stress Hijack target
-;;
-;;
-    LEAF_ENTRY RhpGcStressHijack
-        FixupHijackedCallstack
-        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2 + PTFF_SAVE_X3 + PTFF_SAVE_X4 + PTFF_SAVE_X5 + PTFF_SAVE_X6 + PTFF_SAVE_X7)
-        b           RhpGcStressProbe
-    LEAF_END RhpGcStressHijack
-;;
-;; Worker for our GC stress probes.  Do not call directly!!
-;; Instead, go through RhpGcStressHijack.
-;; This worker performs the GC Stress work and returns to the original return address.
-;;
-;; Register state on entry:
-;;  x0-x7: hijacked function return/argument values
-;;  x9: thread pointer
-;;  w12: register bitmask
-;;
-;; Register state on exit:
-;;  Scratch registers, except for x0-x7, have been trashed
-;;  All other registers restored as they were when the hijack was first reached.
-;;
-    NESTED_ENTRY RhpGcStressProbe
-        PUSH_PROBE_FRAME x9, x10, x12
-
-        bl          RhpStressGc
-
-        POP_PROBE_FRAME
-        EPILOG_RETURN
-    NESTED_END RhpGcStressProbe
-
-;;
-;; INVARIANT: Don't trash the argument registers, the binder codegen depends on this.
-;;
-    LEAF_ENTRY RhpSuppressGcStress
-        INLINE_GETTHREAD x9, x10
-        add         x9, x9, #OFFSETOF__Thread__m_ThreadStateFlags
-Retry
-        ldxr        w10, [x9]
-        orr         w10, w10, #TSF_SuppressGcStress
-        stxr        w11, w10, [x9]
-        cbz         w11, Success
-        b           Retry
-
-Success
-        ret
-    LEAF_END RhpSuppressGcStress
-#endif ;; FEATURE_GC_STRESS
-
     end
-

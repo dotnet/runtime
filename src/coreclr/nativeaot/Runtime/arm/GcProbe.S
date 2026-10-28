@@ -121,10 +121,3 @@ LOCAL_LABEL(WaitForGC):
     orr         r12, r12, #PTFF_THREAD_HIJACK
     b           RhpWaitForGC
 NESTED_END RhpGcProbeHijack
-
-#ifdef FEATURE_GC_STRESS
-LEAF_ENTRY RhpGcStressHijack
-    // Not implemented
-    EMIT_BREAKPOINT
-LEAF_END RhpGcStressHijack
-#endif

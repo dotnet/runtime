@@ -6,7 +6,6 @@
 //
 
 #define TSF_Attached                    0x01
-#define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
 // These must match the PInvokeTransitionFrameFlags enum

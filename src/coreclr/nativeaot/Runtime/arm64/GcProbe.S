@@ -204,16 +204,3 @@ NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
     POP_COOP_PINVOKE_FRAME
     ret
 NESTED_END RhpGcPollRare
-
-
-#ifdef FEATURE_GC_STRESS
-
-//
-// GC Stress Hijack targets
-//
-LEAF_ENTRY RhpGcStressHijack, _TEXT
-    // NYI
-    EMIT_BREAKPOINT
-LEAF_END RhpGcStressHijack, _TEXT
-
-#endif  // FEATURE_GC_STRESS

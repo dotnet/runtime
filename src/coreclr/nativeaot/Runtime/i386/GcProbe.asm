@@ -145,7 +145,7 @@ endm
 
 ;;
 ;; Main worker for our GC probes.  Do not call directly!! This assumes that HijackFixupProlog has been done.
-;; Instead, go through RhpGcProbeHijack* or RhpGcStressHijack*. This waits for the
+;; Instead, go through RhpGcProbeHijack. This waits for the
 ;; GC to complete then returns to the original return address.
 ;;
 ;; Register state on entry:
@@ -179,57 +179,6 @@ RhpGcPollRare  proc
         ret
 RhpGcPollRare  endp
 
-ifdef FEATURE_GC_STRESS
-;;
-;; Set the Thread state and invoke RhpStressGC().
-;;
-;; Assumes EBX is the Thread pointer.
-;;
-;; Register state on entry:
-;;  EBX: thread pointer
-;;  EBP: EBP frame
-;;  ESP: pointer to a PInvokeTransitionFrame on the stack
-;;
-;; Register state on exit:
-;;  ESP: pointer to a PInvokeTransitionFrame on the stack
-;;  EBP: EBP frame
-;;  All other registers trashed
-;;
-StressGC macro
-        mov         [ebx + OFFSETOF__Thread__m_pDeferredTransitionFrame], esp
-        call        RhpStressGc
-endm
-
-;;
-;; Worker for our GC stress probes.  Do not call directly!!
-;; Instead, go through RhpGcStressHijack. This performs the GC Stress
-;; work and returns to the original return address.
-;;
-;; Register state on entry:
-;;  EDX: thread pointer
-;;  ECX: register bitmask
-;;  EBP: EBP frame
-;;  ESP: scratch registers pushed (ECX, EDX, EAX)
-;;
-;; Register state on exit:
-;;  All registers restored as they were when the hijack was first reached.
-;;
-RhpGcStressProbe  proc
-        PushProbeFrame ecx      ; bitmask in ECX
-
-        StressGC
-
-        ;;
-        ;; Restore preserved registers -- they may have been updated by GC
-        ;;
-        PopProbeFrame
-
-        HijackFixupEpilog
-
-RhpGcStressProbe  endp
-
-endif ;; FEATURE_GC_STRESS
-
 _RhpGcProbeHijack@0  proc public
         HijackFixupProlog
         test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
@@ -241,16 +190,5 @@ WaitForGC:
         jmp         RhpWaitForGC
 
 _RhpGcProbeHijack@0  endp
-
-ifdef FEATURE_GC_STRESS
-_RhpGcStressHijack@0  proc public
-
-        HijackFixupProlog
-        or          ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_SAVE_RCX
-        jmp         RhpGcStressProbe
-
-_RhpGcStressHijack@0  endp
-
-endif ;; FEATURE_GC_STRESS
 
         end

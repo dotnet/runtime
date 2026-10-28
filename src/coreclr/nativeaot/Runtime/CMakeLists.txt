@@ -39,7 +39,6 @@ set(COMMON_RUNTIME_SOURCES
     gcheaputilities.cpp
     GCMemoryHelpers.cpp
     gcenv.ee.cpp
-    GcStressControl.cpp
     HandleTableHelpers.cpp
     interoplibinterface_java.cpp
     MathHelpers.cpp
@@ -338,7 +337,6 @@ if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_WASM)
   add_definitions(-DFEATURE_64BIT_ALIGNMENT)
 endif()
 
-add_compile_definitions($<$<CONFIG:Debug,Checked>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DNATIVEAOT)
