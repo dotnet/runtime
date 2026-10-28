@@ -962,9 +962,7 @@ namespace
                 if (pNestedMT->IsValueType() && (!pNestedMT->HasLayout() || pNestedMT->IsBlittable()))
                 {
                     ConvertResult nested = LowerTypeHandle(TypeHandle(pNestedMT));
-                    if ((nested.type == ConvertType::NotConvertible) ||
-                        (nested.type == ConvertType::ToStruct) ||
-                        (nested.type == ConvertType::ToEmpty))
+                    if (nested.type == ConvertType::ToStruct)
                     {
                         return false;
                     }

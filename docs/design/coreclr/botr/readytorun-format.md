@@ -1225,6 +1225,10 @@ it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
 | `e` | empty struct parameter — elided from Wasm args but present in the string |
 | `<slot><E>` | multi-slot parameter passed by value, see below |
 
+In an unmanaged signature, a struct the runtime marshals (a non-blittable value type) is
+encoded from its native layout: `N` is its native size, and a native layout that holds a
+single scalar is encoded as that scalar.
+
 **Multi-slot parameters**: some types are passed by value across several Wasm parameters
 because no single Wasm value type can hold them, matching the Wasm C ABI. The slot
 character is followed by the factor by which the type's alignment is elevated above that
