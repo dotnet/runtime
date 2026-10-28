@@ -67,6 +67,517 @@ namespace ILAssembler.Tests
         private static PortablePdbTestReader CompileWithIncludes(string source, params (string Name, string Text)[] includes)
             => Compile(new Options { Debug = true }, [new SourceText(source, "test.il")], includes);
 
+        [Theory]
+        [InlineData(0, 0x10000000, false, false)]
+        [InlineData(0, 0x10000000, false, true)]
+        [InlineData(0, 0x10000000, true, true)]
+        [InlineData(0x10000001, 0, false, false)]
+        [InlineData(0x10000001, 0, false, true)]
+        [InlineData(0x10000001, 0, true, true)]
+        public void UnencodableStartLineDelta_IsDiagnosed(int firstLine, int secondLine, bool hiddenBetween, bool errorTolerant)
+        {
+            string hidden = hiddenBetween ? ".line 0xFEEFEE,0xFEEFEE : 0,0\nnop\n" : "";
+            string invalidDirective = $".line {secondLine},{secondLine} : 1,2 'second.cs'";
+            string source = Program(Method("M", $"""
+                .line {firstLine},{firstLine} : 1,2 'first.cs'
+                nop
+                {hidden}
+                {invalidDirective}
+                nop
+                nop
+                .line {firstLine},{firstLine} : 1,2 'first.cs'
+                ret
+                """));
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { Debug = true, ErrorTolerant = errorTolerant });
+
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal("ILA0061", error.Id);
+            Assert.Equal(source.IndexOf(invalidDirective, StringComparison.Ordinal), error.Location.Span.Start);
+            if (!errorTolerant)
+            {
+                Assert.Null(result);
+                return;
+            }
+
+            using var pdb = new PortablePdbTestReader(Assert.IsType<CompilationResult>(result));
+            BlobReader blob = pdb.Pdb.GetBlobReader(pdb.GetDebugInformation("M").SequencePointsBlob);
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(firstLine, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            if (hiddenBetween)
+            {
+                Assert.Equal(1, blob.ReadCompressedInteger());
+                Assert.Equal(0, blob.ReadCompressedInteger());
+                Assert.Equal(0, blob.ReadCompressedInteger());
+            }
+            Assert.Equal(3, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedSignedInteger());
+            Assert.Equal(0, blob.ReadCompressedSignedInteger());
+            Assert.Equal(0, blob.RemainingBytes);
+        }
+
+        [Theory]
+        [InlineData(0, 0x0fffffff)]
+        [InlineData(0x10000000, 0)]
+        public void EncodableStartLineDeltaBoundary_IsPreserved(int firstLine, int secondLine)
+        {
+            string source = Program(Method("M", $"""
+                .line {firstLine},{firstLine} : 1,2 'a.cs'
+                nop
+                .line {secondLine},{secondLine} : 1,2 'a.cs'
+                ret
+                """));
+            using var pdb = PortablePdbTestReader.Compile(source);
+            BlobReader blob = pdb.Pdb.GetBlobReader(pdb.GetDebugInformation("M").SequencePointsBlob);
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(firstLine, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(secondLine - firstLine, blob.ReadCompressedSignedInteger());
+            Assert.Equal(0, blob.ReadCompressedSignedInteger());
+            Assert.Equal(0, blob.RemainingBytes);
+        }
+
+        [Theory]
+        [InlineData(0, 0x10000000, false)]
+        [InlineData(0, 0x10000000, true)]
+        [InlineData(0x10000001, 0, false)]
+        [InlineData(0x10000001, 0, true)]
+        public void RejectedStartLineDelta_DoesNotSuppressTheNextMethodsFirstPoint(int firstLine, int secondLine, bool repeatDirective)
+        {
+            string directive = $".line {secondLine},{secondLine} : 1,2 'a.cs'";
+            string source = Program(
+                Method("A", $"""
+                    .line {firstLine},{firstLine} : 1,2 'a.cs'
+                    nop
+                    {directive}
+                    nop
+                    {(repeatDirective ? directive : "")}
+                    ret
+                    """) +
+                Method("B", "nop\nret") +
+                Method("C", "ret"));
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { Debug = true, ErrorTolerant = true });
+
+            Assert.Equal(repeatDirective ? 2 : 1, diagnostics.Length);
+            Assert.All(diagnostics, diagnostic => Assert.Equal(DiagnosticIds.InvalidSequencePoint, diagnostic.Id));
+            using var pdb = new PortablePdbTestReader(Assert.IsType<CompilationResult>(result));
+            AssertSinglePoint("A", firstLine);
+            AssertSinglePoint("B", secondLine);
+            Assert.True(pdb.GetDebugInformation("C").SequencePointsBlob.IsNil);
+
+            void AssertSinglePoint(string method, int line)
+            {
+                MethodDebugInformation info = pdb.GetDebugInformation(method);
+                Assert.False(info.SequencePointsBlob.IsNil);
+                Assert.Equal("a.cs", pdb.GetDocumentName(info.Document));
+                BlobReader blob = pdb.Pdb.GetBlobReader(info.SequencePointsBlob);
+                Assert.Equal(0, blob.ReadCompressedInteger());
+                Assert.Equal(0, blob.ReadCompressedInteger());
+                Assert.Equal(0, blob.ReadCompressedInteger());
+                Assert.Equal(1, blob.ReadCompressedInteger());
+                Assert.Equal(line, blob.ReadCompressedInteger());
+                Assert.Equal(1, blob.ReadCompressedInteger());
+                Assert.Equal(0, blob.RemainingBytes);
+            }
+        }
+
+        [Fact]
+        public void StartLineDelta_DoesNotCrossMethodBoundaries()
+        {
+            string source = Program(
+                Method("A", ".line 0,0 : 1,2 'a.cs'\nret") +
+                Method("B", ".line 0x10000000,0x10000000 : 1,2 'b.cs'\nret"));
+            using var pdb = PortablePdbTestReader.Compile(source);
+
+            BlobReader blob = pdb.Pdb.GetBlobReader(pdb.GetDebugInformation("B").SequencePointsBlob);
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(0x10000000, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.RemainingBytes);
+        }
+
+        [Theory]
+        [InlineData("10,9 : 1,2")]
+        [InlineData("10,10 : 2,1")]
+        [InlineData("10,10 : 2,2")]
+        [InlineData("10,10 : 0,0")]
+        [InlineData("10,10 : -1,2")]
+        [InlineData("10,10 : 1,-1")]
+        [InlineData("10,10 : 65536,65537")]
+        [InlineData("10,10 : 1,65536")]
+        [InlineData("10,11 : 70000,1")]
+        [InlineData("-1,10 : 1,2")]
+        [InlineData("10,-1 : 1,2")]
+        [InlineData("536870912,536870912 : 1,2")]
+        [InlineData("10,536870912 : 1,2")]
+        [InlineData("0xFEEFEE,0xFEEFEE : 1,2")]
+        [InlineData("0xFEEFEE,0xFEEFEE : 0,1")]
+        [InlineData("0xFEEFEE,0xFEEFEE : 1,0")]
+        [InlineData("0xFEEFEE,0xFEEFEF : 0,0")]
+        [InlineData("10,0xFEEFEE : 0,0")]
+        [InlineData("10 : 65535")]
+        [InlineData("10 : 65534")]
+        [InlineData("0xFEEFEE : 1")]
+        public void InvalidLineDirective_ReportsErrorAtTheDirective(string coordinates)
+        {
+            string source = Program(Method("M", $".line {coordinates} 'a.cs'\nnop\nret"));
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
+                DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options { Debug = true });
+
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal("ILA0061", error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Contains("sequence point", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal("test.il", error.Location.Source.Path);
+            Assert.Equal(source.IndexOf(".line", StringComparison.Ordinal), error.Location.Span.Start);
+            Assert.Equal(5, error.Location.Span.Length);
+            Assert.Null(result);
+        }
+
+        [Theory]
+        [InlineData("10", 10, 0, 10)]
+        [InlineData("10 : 5", 10, 5, 10)]
+        [InlineData("10,11 : 5", 10, 5, 11)]
+        [InlineData("10 : 65533", 10, 65533, 10)]
+        public void OmittedEndColumn_UsesReaderCompatibleMaximumColumn(string coordinates, int startLine, int startColumn, int endLine)
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", $".line {coordinates} 'a.cs'\nret")));
+            Assert.Equal(new[] { (0, startLine, startColumn, endLine, ushort.MaxValue - 1, "a.cs") }, Points(pdb, "M"));
+        }
+
+        [Theory]
+        [InlineData("10,10 : 0,1", 10, 0, 10, 1)]
+        [InlineData("10,11 : 9,1", 10, 9, 11, 1)]
+        [InlineData("10,11 : 5,5", 10, 5, 11, 5)]
+        [InlineData("10,10 : 1,65534", 10, 1, 10, 65534)]
+        [InlineData("0xFEEFEE,0xFEEFEE : 0,0", 0xFEEFEE, 0, 0xFEEFEE, 0)]
+        [InlineData("0xFEEFEE", 0xFEEFEE, 0, 0xFEEFEE, 0)]
+        [InlineData("0xFEEFEE : 0", 0xFEEFEE, 0, 0xFEEFEE, 0)]
+        [InlineData("0xFEEFEE,0xFEEFEE : 0", 0xFEEFEE, 0, 0xFEEFEE, 0)]
+        public void ValidLineDirective_PreservesCoordinates(string coordinates, int startLine, int startColumn, int endLine, int endColumn)
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", $".line {coordinates} 'a.cs'\nret")));
+
+            Assert.Equal(new[] { (0, startLine, startColumn, endLine, endColumn, "a.cs") }, Points(pdb, "M"));
+        }
+
+        [Theory]
+        [InlineData("10,10 : 1,65535", 1, 0, 65534)]
+        [InlineData("10,11 : 65535,65535", 65535, 1, 0)]
+        public void MaximumColumn_IsEncodedWithoutClamping(string coordinates, int startColumn, int deltaLines, int deltaColumns)
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", $".line {coordinates} 'a.cs'\nret")));
+            MethodDebugInformation info = pdb.GetDebugInformation("M");
+            Assert.Equal("a.cs", pdb.GetDocumentName(info.Document));
+
+            // Read the encoding directly because the SDK sequence-point reader rejects legal maximum columns.
+            BlobReader blob = pdb.Pdb.GetBlobReader(info.SequencePointsBlob);
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(deltaLines, blob.ReadCompressedInteger());
+            Assert.Equal(deltaColumns, deltaLines == 0
+                ? blob.ReadCompressedInteger()
+                : blob.ReadCompressedSignedInteger());
+            Assert.Equal(10, blob.ReadCompressedInteger());
+            Assert.Equal(startColumn, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.RemainingBytes);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void InvalidLineDirective_WithErrorTolerance_OmitsOnlyItsSequencePoints(bool errorTolerant)
+        {
+            string source = Program(Method("M", """
+                .line 10,10 : 1,2 'a.cs'
+                nop
+                .line 20,19 : 1,2 'a.cs'
+                nop
+                nop
+                .line 30,30 : 3,4 'a.cs'
+                ret
+                """));
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { Debug = true, ErrorTolerant = errorTolerant });
+            Assert.Equal("ILA0061", Assert.Single(diagnostics).Id);
+            if (errorTolerant)
+            {
+                using var pdb = new PortablePdbTestReader(Assert.IsType<CompilationResult>(result));
+                Assert.Equal(new[] { (0, 10, 1, 10, 2, "a.cs"), (3, 30, 3, 30, 4, "a.cs") }, Points(pdb, "M"));
+            }
+            else
+            {
+                Assert.Null(result);
+            }
+        }
+
+        [Fact]
+        public void InvalidLineDirective_WithoutAPdb_DoesNotAffectAssembly()
+        {
+            string source = Program(Method("M", ".line 10,9 : 70000,0 'a.cs'\nret"));
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
+
+            Assert.Null(result.PortablePdb);
+        }
+
+        [Theory]
+        [InlineData(true, null, false)]
+        [InlineData(false, DebugMode.Impl, false)]
+        [InlineData(false, DebugMode.Opt, false)]
+        [InlineData(false, null, true)]
+        public void InvalidLineDirective_IsValidatedForEveryPdbSwitch(bool debug, DebugMode? debugMode, bool pdbSwitch)
+        {
+            string source = Program(".line 10,9 : 1,2 'a.cs'\n" + Method("M", "ret"));
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { Debug = debug, DebugMode = debugMode, Pdb = pdbSwitch });
+
+            Assert.Equal("ILA0061", Assert.Single(diagnostics).Id);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void InvalidHashLineDirective_IsValidated()
+        {
+            string source = Program(Method("M", "#line 10,9 : 1,2 'a.cs'\nret"));
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
+                DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options { Debug = true });
+
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal("ILA0061", error.Id);
+            Assert.Equal(source.IndexOf("#line", StringComparison.Ordinal), error.Location.Span.Start);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void InvalidLineDirectiveInAnInclude_ReportsTheIncludedSource()
+        {
+            const string IncludedSource = ".line 10,9 : 1,2 'a.cs'\nnop";
+            string source = Program(Method("M", "#include \"inc.il\"\nret"));
+            var (diagnostics, result) = new DocumentCompiler().Compile(
+                new SourceText(source, "test.il"),
+                path =>
+                {
+                    Assert.Equal("inc.il", path);
+                    return new SourceText(IncludedSource, path);
+                },
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { Debug = true });
+
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal("ILA0061", error.Id);
+            Assert.Equal("inc.il", error.Location.Source.Path);
+            Assert.Equal(IncludedSource, error.Location.Source.Text);
+            Assert.Equal(0, error.Location.Span.Start);
+            Assert.Equal(5, error.Location.Span.Length);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_DoubleQuotedLineOnlyFormAnchorsTheNextLine()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
+                    #line 0 "a.cs"
+                    nop nop
+
+                    ret
+            """)));
+
+            Assert.Equal(new[] { (0, 0, 0, 0, 65534, "a.cs"), (2, 2, 0, 2, 65534, "a.cs") }, Points(pdb, "M"));
+        }
+
+        [Theory]
+        [InlineData("#line 10 'a.cs'", 0, 65534)]
+        [InlineData("#line 10", 0, 65534)]
+        [InlineData("#line 10 : 2 'a.cs'", 2, 65534)]
+        [InlineData("#line 10,10 : 2,4 'a.cs'", 2, 4)]
+        public void AutoIncrementDirective_OtherFormsAnchorTheDirectiveLine(string directive, int startColumn, int endColumn)
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", $"{directive}\nnop\nret")));
+            string document = directive.Contains("a.cs", StringComparison.Ordinal) ? "a.cs" : "test.il";
+
+            Assert.Equal(
+                new[] { (0, 11, startColumn, 11, endColumn, document), (1, 12, startColumn, 12, endColumn, document) },
+                Points(pdb, "M"));
+        }
+
+        [Theory]
+        [InlineData("\n")]
+        [InlineData("\r\n")]
+        public void AutoIncrementDirective_ShiftsBothLinesByPhysicalSourceLines(string lineEnding)
+        {
+            string source = Program(Method("M", """
+                    #line 100,102 : 7,3 'a.cs' nop nop
+                    nop
+
+                    // a comment
+                    /* two
+                       lines */
+                    ret
+            """)).ReplaceLineEndings(lineEnding);
+            using var pdb = PortablePdbTestReader.Compile(source);
+
+            Assert.Equal(
+                new[] { (0, 100, 7, 102, 3, "a.cs"), (2, 101, 7, 103, 3, "a.cs"), (3, 106, 7, 108, 3, "a.cs") },
+                Points(pdb, "M"));
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_ResetsAtDirectivesAndKeepsTheCurrentDocument()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
+                    #line 10,10 : 1,3 'a.cs'
+                    nop
+                    .line 20,20 : 2,4 ''
+                    nop
+                    nop
+                    #line 30,31 : 3,5
+                    nop
+                    #line 40,40 : 4,6 'b.cs'
+                    ret
+            """)));
+
+            Assert.Equal(
+                new[] { (0, 11, 1, 11, 3, "a.cs"), (1, 20, 2, 20, 4, "a.cs"), (3, 31, 3, 32, 5, "a.cs"), (4, 41, 4, 41, 6, "b.cs") },
+                Points(pdb, "M"));
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_ContinuesAcrossMethods()
+        {
+            string methods =
+                "    #line 50,52 : 1,3 'a.cs'\n" +
+                Method("A", "        nop\n        ret\n") + "\n" +
+                Method("B", "        nop\n        ret\n");
+            string source = Program(methods);
+            int directiveLine = LineOf(source, "#line");
+            using var pdb = PortablePdbTestReader.Compile(source);
+
+            foreach (string name in new[] { "A", "B" })
+            {
+                int firstLine = LineOf(source, $"void {name}") + 2 - directiveLine;
+                Assert.Equal(
+                    new[] { (0, 50 + firstLine, 1, 52 + firstLine, 3, "a.cs"), (1, 51 + firstLine, 1, 53 + firstLine, 3, "a.cs") },
+                    Points(pdb, name));
+            }
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_IncludeStatesAreIndependent()
+        {
+            using var pdb = CompileWithIncludes(
+                Program(Method("M", """
+                    #line 10,11 : 1,3 'outer.cs'
+                    nop
+            #include "inc.il"
+                    ret
+            """)),
+                ("inc.il", "#line 30,32 : 2,4 'inner.cs'\nnop\nnop\n"));
+
+            Assert.Equal(
+                new[] { (0, 11, 1, 12, 3, "outer.cs"), (1, 31, 2, 33, 4, "inner.cs"), (2, 32, 2, 34, 4, "inner.cs"), (3, 13, 1, 14, 3, "outer.cs") },
+                Points(pdb, "M"));
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_MacroInstructionsUseTheInvocationLine()
+        {
+            string source = "#define TWO \"nop nop\"\n" + Program(Method("M", """
+                    #line 10,10 : 1,3 'a.cs'
+                    TWO
+
+                    ret
+            """));
+            using var pdb = PortablePdbTestReader.Compile(source);
+
+            Assert.Equal(new[] { (0, 11, 1, 11, 3, "a.cs"), (2, 13, 1, 13, 3, "a.cs") }, Points(pdb, "M"));
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_HiddenMarkerRemainsHiddenUntilTheNextDirective()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
+                    #line 0xFEEFEE,0xFEEFEE : 0,0 'a.cs'
+                    nop
+                    nop
+                    #line 10,10 : 1,3 ''
+                    ret
+            """)));
+
+            Assert.Equal(
+                new[] { (0, SequencePoint.HiddenLine, 0, SequencePoint.HiddenLine, 0, "a.cs"), (2, 11, 1, 11, 3, "a.cs") },
+                Points(pdb, "M"));
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_WithoutAPdbDoesNotValidateEffectiveCoordinates()
+        {
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(
+                Program(Method("M", "#line 0x1fffffff,0x1fffffff : 1,3 'a.cs'\nret")), new Options());
+
+            Assert.Null(result.PortablePdb);
+        }
+
+        [Fact]
+        public void AutoIncrementDirective_LastRepresentableLineIsEmitted()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
+                    #line 0x1ffffffd,0x1ffffffe : 1,3 'a.cs'
+                    ret
+            """)));
+
+            MethodDebugInformation info = pdb.GetDebugInformation("M");
+            Assert.Equal("a.cs", pdb.GetDocumentName(info.Document));
+
+            // Read the encoding directly because the SDK sequence-point reader rejects this legal line range.
+            BlobReader blob = pdb.Pdb.GetBlobReader(info.SequencePointsBlob);
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(2, blob.ReadCompressedSignedInteger());
+            Assert.Equal(0x1ffffffe, blob.ReadCompressedInteger());
+            Assert.Equal(1, blob.ReadCompressedInteger());
+            Assert.Equal(0, blob.RemainingBytes);
+        }
+
+        [Theory]
+        [InlineData("0x1ffffffe,0x1fffffff : 1,3")]
+        [InlineData("0x7fffffff,0x7fffffff : 1,3")]
+        [InlineData("16707565,16707565 : 1,3")]
+        public void AutoIncrementDirective_InvalidEffectiveRangeIsReportedAtItsDirective(string coordinates)
+        {
+            string source = Program(Method("M", $$"""
+                    #line {{coordinates}} 'a.cs'
+                    nop
+                    .line 10,10 : 1,3 'b.cs'
+                    ret
+            """));
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { Debug = true, ErrorTolerant = true });
+            Diagnostic diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.InvalidSequencePoint, diagnostic.Id);
+            Assert.Equal(source.IndexOf("#line", StringComparison.Ordinal), diagnostic.Location.Span.Start);
+            Assert.NotNull(result);
+            using var pdb = new PortablePdbTestReader(result!);
+
+            Assert.Equal(new[] { (1, 10, 1, 10, 3, "b.cs") }, Points(pdb, "M"));
+        }
+
         [Fact]
         public void MethodWithoutLineDirectives_HasAPointOnTheSourceLineOfEachInstruction()
         {
