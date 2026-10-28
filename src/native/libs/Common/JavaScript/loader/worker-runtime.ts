@@ -179,8 +179,8 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
     let closing = false;
     let commandRunning = false;
     const promises = createWorkerPromises();
-    const processExports = createWorkerJSExportDispatcher(signalView, memoryViews, (handle, pointer) => {
-        return runtime.INTERNAL.invokeWorkerJSExport(handle, pointer);
+    const processExports = createWorkerJSExportDispatcher(signalView, memoryViews, (handle, pointer, stringArgument) => {
+        return runtime.INTERNAL.invokeWorkerJSExport(handle, pointer, stringArgument);
     }, message => {
         if (!closing) self.postMessage(message);
     }, reportFailure);

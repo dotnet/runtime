@@ -110,6 +110,8 @@ export type BindingClosureCS = {
     isDiscardNoWait: boolean,
     isDisposed: boolean,
     isWorkerScalar: boolean,
+    workerArgumentType: MarshalerType,
+    workerReturnType: MarshalerType,
 }
 
 export const enum MeasuredBlock {

@@ -62,7 +62,11 @@ application assets; do not patch files in the NuGet cache or published output.
 Browser ReadyToRun images must be produced by a compiler that includes a maximum
 in their memory imports. Older unbounded images fail shared staging explicitly.
 
-The current bridge supports one Int32 argument with an Int32 or Task<Int32> result.
+The current bridge supports one Int32 or String argument with an Int32, String,
+Task<Int32>, or Task<String> result. Null and empty strings remain distinct.
+The worker owns temporary UTF-16 transport allocations and native marshaling;
+UI code only copies code units. Shared slots and string buffers are released
+after initial invocation, before asynchronous completion messages.
 Synchronous calls block the UI and service interop requests, not arbitrary Promise
 continuations. Each direction has 16 active synchronous call slots; asynchronous
 calls release their slots after initial invocation. Async UI imports require native
@@ -82,8 +86,10 @@ Run the currently supported scalar subset in Chrome:
 ```
 
 Use `WasmTestWithWorker=false` for the same subset on the ordinary runtime.
-This filter is not the full JS interop suite: strings, object identity, arrays,
-callbacks and other marshaled signatures still need worker-bridge support.
+The subset includes scalar strings, Unicode and large payloads, native memory
+growth, nested calls, concurrent Tasks, errors and cleanup. It is not the full
+JS interop suite: object identity, arrays, callbacks, multiple arguments and
+other marshaled signatures still need worker-bridge support.
 When using the shared browser cache, set `CHROME_PATH_FOR_TESTS` and put its
 matching ChromeDriver on `PATH`; a cached driver cannot drive an unrelated
 system Chrome major version.

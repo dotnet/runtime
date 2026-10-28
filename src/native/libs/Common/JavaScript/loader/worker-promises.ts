@@ -4,23 +4,18 @@
 import type { PromiseCompletionSource } from "./types";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { allocatePromiseId, WorkerResultKind } from "./shared-signaling";
+import type { WorkerValue, WorkerValueType } from "./worker-values";
+import { validateWorkerValue } from "./worker-values";
+import { MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 
 export type WorkerPromiseMessage = {
     type: "async-import" | "async-export";
     requestId: number;
-} & ({ result: number | null } | { error: string });
-
-export function validateWorkerScalar(value: unknown): number | null {
-    if (value === null || value === undefined) return null;
-    if (typeof value !== "number" || !Number.isInteger(value) || value < -0x8000_0000 || value > 0x7fff_ffff) {
-        throw new Error("withWorker(): asynchronous result must be an Int32");
-    }
-    return value;
-}
+} & ({ result: WorkerValue } | { error: string });
 
 export function createWorkerPromises() {
     const reserved = new Set<number>();
-    const pending = new Map<number, PromiseCompletionSource<number | null>>();
+    const pending = new Map<number, { completion: PromiseCompletionSource<WorkerValue>, type: WorkerValueType }>();
     let stopped: Error | undefined;
     return {
         reserve(): number {
@@ -32,29 +27,30 @@ export function createWorkerPromises() {
             reserved.add(id);
             return id;
         },
-        promise(id: number): Promise<number | null> {
+        promise(id: number, type: WorkerValueType = MarshalerType.Int32): Promise<WorkerValue> {
             if (stopped) throw stopped;
             if (!reserved.has(id) || pending.has(id)) throw new Error("withWorker(): invalid asynchronous request");
             const release = (): void => {
                 pending.delete(id);
                 reserved.delete(id);
             };
-            const completion = createPromiseCompletionSource<number | null>(release, release);
-            pending.set(id, completion);
+            const completion = createPromiseCompletionSource<WorkerValue>(release, release);
+            pending.set(id, { completion, type });
             return completion.promise;
         },
         release(id: number): void {
             reserved.delete(id);
         },
         complete(message: WorkerPromiseMessage): void {
-            const completion = pending.get(message.requestId);
-            if (!completion) return; // Late completion after shutdown.
+            const request = pending.get(message.requestId);
+            if (!request) return; // Late completion after shutdown.
+            const { completion, type } = request;
             pending.delete(message.requestId);
             reserved.delete(message.requestId);
             if ("error" in message) completion.reject(new Error(message.error));
             else {
                 try {
-                    completion.resolve(validateWorkerScalar(message.result));
+                    completion.resolve(validateWorkerValue(message.result, type));
                 } catch (error) {
                     completion.reject(error);
                 }
@@ -62,7 +58,7 @@ export function createWorkerPromises() {
         },
         stop(error: Error): void {
             stopped = error;
-            for (const completion of pending.values()) completion.reject(error);
+            for (const { completion } of pending.values()) completion.reject(error);
             pending.clear();
             reserved.clear();
         },
@@ -73,6 +69,7 @@ export function captureWorkerPromise(
     value: unknown, requestId: number, type: WorkerPromiseMessage["type"],
     active: Set<number>, post: (message: WorkerPromiseMessage) => void,
     onFailure: (error: Error) => void,
+    returnType: WorkerValueType = MarshalerType.Int32,
 ): WorkerResultKind {
     if (value === null || value === undefined) return WorkerResultKind.Null;
     if ((typeof value !== "object" && typeof value !== "function") || !("then" in value) || typeof value.then !== "function") {
@@ -92,7 +89,7 @@ export function captureWorkerPromise(
         // Arbitrary thenables may complete inline, before the native Task holder is safe.
         Reflect.apply(Promise.prototype.then, value, [(result: unknown) => {
             try {
-                complete({ type, requestId, result: validateWorkerScalar(result) });
+                complete({ type, requestId, result: validateWorkerValue(result, returnType) });
             } catch (error) {
                 complete({ type, requestId, error: error instanceof Error ? error.message : String(error) });
             }

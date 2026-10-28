@@ -13,6 +13,8 @@ export const enum SignalState {
     PENDING = 1,
     DONE = 2,
     ERROR = 3,
+    ALLOCATE = 4,
+    ALLOCATED = 5,
 }
 
 // Command identifiers for the command signaling slot
@@ -24,14 +26,14 @@ export const enum CommandId {
 }
 
 // Layout version — bump when the signaling buffer layout changes
-export const SIGNALING_VERSION = 5;
+export const SIGNALING_VERSION = 6;
 
 // Number of entries in the JSImport ring buffer (worker → main)
 export const JSIMPORT_RING_CAPACITY = 16;
 // Number of entries in the JSExport ring buffer (main → worker)
 export const JSEXPORT_RING_CAPACITY = 16;
 // Fields per ring entry
-const RING_ENTRY_SIZE = 5; // signal, promise_id, handle, args_ptr, result_kind
+const RING_ENTRY_SIZE = 12;
 
 // Number of pre-allocated arg frame pointers for main→worker calls
 export const FRAME_RING_CAPACITY = 16;
@@ -92,6 +94,19 @@ export const RING_ENTRY_PROMISE_ID = 1;
 export const RING_ENTRY_HANDLE = 2;
 export const RING_ENTRY_ARGS_PTR = 3;
 export const RING_ENTRY_RESULT_KIND = 4;
+export const RING_ENTRY_ARGUMENT_TYPE = 5;
+export const RING_ENTRY_RETURN_TYPE = 6;
+export const RING_ENTRY_STRING_ARGUMENT = 7;
+export const RING_ENTRY_STRING_ARGUMENT_LENGTH = 8;
+export const RING_ENTRY_STRING_RESULT = 9;
+export const RING_ENTRY_STRING_RESULT_LENGTH = 10;
+export const RING_ENTRY_OPERATION = 11;
+
+export const enum WorkerCallOperation {
+    Invoke = 0,
+    Allocate = 1,
+    Release = 2,
+}
 
 export const enum WorkerResultKind {
     Scalar = 0,
@@ -247,7 +262,7 @@ export class MemoryViewManager {
 
     refreshIfNeeded(): WasmMemoryViews {
         const current = Atomics.load(this.signalView, OFFSET_MEMORY_GENERATION);
-        if (current !== this.knownGeneration) {
+        if (current !== this.knownGeneration || this.views.u8.buffer.byteLength !== this.wasmMemory.buffer.byteLength) {
             this.knownGeneration = current;
             this.views = createMemoryViews(this.wasmMemory.buffer);
         }

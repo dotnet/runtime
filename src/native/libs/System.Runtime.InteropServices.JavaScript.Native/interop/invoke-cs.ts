@@ -41,7 +41,8 @@ export async function getWorkerAssemblyExports(assemblyName: string): Promise<Wo
                 const closure: BindingClosureCS | undefined = Reflect.get(value, boundCsFunctionSymbol);
                 const supported = closure?.isWorkerScalar === true;
                 if (supported) workerExports.set(handle, value);
-                descriptors.push({ path, handle, supported, isAsync: closure?.isAsync === true });
+                descriptors.push({ path, handle, supported, isAsync: closure?.isAsync === true,
+                    argumentType: closure?.workerArgumentType, returnType: closure?.workerReturnType });
             } else if (value && typeof value === "object") {
                 walk(value, path);
             }
@@ -56,17 +57,18 @@ export async function getWorkerAssemblyExports(assemblyName: string): Promise<Wo
     }
 }
 
-export function invokeWorkerJSExport(handle: number, args: JSMarshalerArguments): Promise<number> | null | undefined {
+export function invokeWorkerJSExport(handle: number, args: JSMarshalerArguments, stringArgument?: string | null): unknown {
     try {
         const fn = workerExports.get(handle);
         if (!fn) throw new Error("withWorker(): unknown or unsupported scalar export");
-        const result = fn(marshalInt32ToJs(getArg(args, 2)));
         const closure: BindingClosureCS = Reflect.get(fn, boundCsFunctionSymbol);
+        const result = fn(closure.workerArgumentType === MarshalerType.String ? stringArgument : marshalInt32ToJs(getArg(args, 2)));
         if (closure.isAsync) {
             return result === null ? null : result.catch((error: unknown) => {
                 throw snapshotWorkerExportError(error);
             });
         }
+        if (closure.workerReturnType === MarshalerType.String) return result;
         const converter = getMarshalerToCsByType(MarshalerType.Int32);
         if (!converter) throw new Error("Int32 marshaler is not initialized");
         converter(getArg(args, 1), result);
@@ -118,6 +120,8 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
     }
     const resConverter = bindArgMarshalToJs(resSig, resMarshalerType, 1);
 
+    const workerArgumentType = argsCount === 1 ? getSignatureType(getSig(signature, 2)) : MarshalerType.None;
+    const workerReturnType = isAsync ? getSignatureResType(resSig) : resMarshalerType;
     const closure: BindingClosureCS = {
         methodHandle,
         fullyQualifiedName,
@@ -127,9 +131,10 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
         isAsync,
         isDiscardNoWait,
         isDisposed: false,
-        isWorkerScalar: argsCount === 1 && ((!isAsync && resMarshalerType === MarshalerType.Int32)
-            || (isAsync && getSignatureResType(resSig) === MarshalerType.Int32))
-            && getSignatureType(getSig(signature, 2)) === MarshalerType.Int32,
+        isWorkerScalar: argsCount === 1 && (workerReturnType === MarshalerType.Int32 || workerReturnType === MarshalerType.String)
+            && (workerArgumentType === MarshalerType.Int32 || workerArgumentType === MarshalerType.String),
+        workerArgumentType,
+        workerReturnType,
     };
     let boundFn: Function;
 

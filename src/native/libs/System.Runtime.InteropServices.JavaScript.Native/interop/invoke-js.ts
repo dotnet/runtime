@@ -17,7 +17,7 @@ import { wrapAsCancelablePromise } from "./cancelable-promise";
 
 export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
-type WorkerImportInvoker = (args: JSMarshalerArguments, isAsync: boolean) => unknown;
+type WorkerImportInvoker = (args: JSMarshalerArguments, isAsync: boolean, value: unknown, argumentType: MarshalerType, returnType: MarshalerType) => unknown;
 const workerImports = new Map<string, Map<string, WorkerImportInvoker>>();
 
 export function registerWorkerJSImport(moduleName: string, functionName: string, invoke: WorkerImportInvoker): void {
@@ -71,14 +71,16 @@ function bindJsImport(signature: JSFunctionSignature): Function {
     const workerResSig = getSig(signature, 1);
     const workerResType = getSignatureType(workerResSig);
     const workerAsync = workerResType === MarshalerType.Task || workerResType === MarshalerType.TaskPreCreated;
-    if (workerInvoke && (argsCount !== 1 || getSignatureType(getSig(signature, 2)) !== MarshalerType.Int32
-        || (workerAsync ? getSignatureResType(workerResSig) !== MarshalerType.Int32 : workerResType !== MarshalerType.Int32))) {
-        throw new Error("withWorker(): UI imports support only Int32 -> Int32 or Task<Int32>");
+    const workerArgumentType = argsCount === 1 ? getSignatureType(getSig(signature, 2)) : MarshalerType.None;
+    const workerReturnType = workerAsync ? getSignatureResType(workerResSig) : workerResType;
+    if (workerInvoke && (argsCount !== 1 || (workerArgumentType !== MarshalerType.Int32 && workerArgumentType !== MarshalerType.String)
+        || (workerReturnType !== MarshalerType.Int32 && workerReturnType !== MarshalerType.String))) {
+        throw new Error("withWorker(): UI imports support one Int32/String argument and an Int32/String or Task result");
     }
     const fn = workerInvoke
-        ? () => {
+        ? (value: unknown) => {
             if (currentWorkerArgs === undefined) throw new Error("withWorker(): UI import argument frame is missing");
-            return workerInvoke(currentWorkerArgs, workerAsync);
+            return workerInvoke(currentWorkerArgs, workerAsync, value, workerArgumentType, workerReturnType);
         }
         : lookupJsImport(jsFunctionName, jsModuleName);
 

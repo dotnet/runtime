@@ -39,6 +39,58 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("mode", nameof(WorkerInteropTest))]
         private static partial int GetModeOnUI(int value);
 
+        [JSImport("echoString", nameof(WorkerInteropTest))]
+        private static partial string EchoStringOnUI(string value);
+
+        [JSImport("invokeString", nameof(WorkerInteropTest))]
+        private static partial string InvokeStringOnUI(string value);
+
+        [JSImport("echoStringAsync", nameof(WorkerInteropTest))]
+        private static partial Task<string> EchoStringAsyncOnUI(string value);
+
+        [JSImport("invokeStringAsync", nameof(WorkerInteropTest))]
+        private static partial Task<string> InvokeStringAsyncOnUI(string value);
+
+        [JSImport("nestedString", nameof(WorkerInteropTest))]
+        private static partial string NestedStringOnUI(string value);
+
+        [JSImport("failString", nameof(WorkerInteropTest))]
+        private static partial string FailStringOnUI(string value);
+
+        [JSImport("failStringAsync", nameof(WorkerInteropTest))]
+        private static partial Task<string> FailStringAsyncOnUI(string value);
+
+        [JSImport("stringLength", nameof(WorkerInteropTest))]
+        private static partial int StringLengthOnUI(string value);
+
+        [JSImport("largeString", nameof(WorkerInteropTest))]
+        private static partial string LargeStringOnUI(int length);
+
+        [JSImport("growString", nameof(WorkerInteropTest))]
+        private static partial string GrowStringOnUI(int length);
+
+        [JSExport]
+        internal static string EchoString(string value) => value;
+
+        [JSExport]
+        internal static async Task<string> EchoStringAsync(string value)
+        {
+            await Task.Delay(1);
+            return await EchoStringAsyncOnUI(value);
+        }
+
+        [JSExport]
+        internal static string NestedString(string value) => value.Length == 0 ? "" : NestedStringOnUI(value.Substring(1)) + value[0];
+
+        [JSExport]
+        internal static string ThrowString(string value) => throw new InvalidOperationException("Managed string failure");
+
+        [JSExport]
+        internal static int StringLength(string value) => value is null ? -1 : value.Length;
+
+        [JSExport]
+        internal static string LargeString(int length) => new string('z', length);
+
         [JSExport]
         internal static int Echo(int value) => value;
 
@@ -105,6 +157,101 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("Worker UI import failure", error.Message);
             Assert.Contains(nameof(ImportFailureAndRecovery), error.StackTrace);
             Assert.Equal(42, FailOnUI(42));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        public async Task StringImportAndExport(int scenario)
+        {
+            string value = scenario switch
+            {
+                0 => null,
+                1 => "",
+                2 => "hello",
+                3 => "I\u0131\u0130i",
+                4 => "a\0b",
+                5 => "\ud800",
+                6 => "\udfff",
+                7 => "a\ud83d\ude00z",
+                8 => new string('x', 400000),
+                _ => throw new ArgumentOutOfRangeException(nameof(scenario))
+            };
+            string expected = scenario is 5 or 6 ? "\ufffd" : value;
+            Assert.Equal(expected, EchoStringOnUI(value));
+            Assert.Equal(expected, InvokeStringOnUI(value));
+            Assert.Equal(expected, await EchoStringAsyncOnUI(value));
+            Assert.Equal(expected, await InvokeStringAsyncOnUI(value));
+            Assert.Equal(value is null ? -1 : value.Length, StringLengthOnUI(value));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(4)]
+        [InlineData(15)]
+        public void NestedStringCalls(int depth)
+        {
+            string value = new string('x', depth);
+            Assert.Equal(value, NestedStringOnUI(value));
+        }
+
+        [Fact]
+        public async Task StringFailureAndRecovery()
+        {
+            Exception error = Assert.ThrowsAny<Exception>(() => FailStringOnUI("value"));
+            if (Environment.GetEnvironmentVariable("DOTNET_TEST_WITH_WORKER") == "1")
+                Assert.IsType<JSException>(error);
+            else
+                Assert.IsType<InvalidOperationException>(error);
+            Assert.Contains("Managed string failure", error.Message);
+            Assert.Contains(nameof(StringFailureAndRecovery), error.StackTrace);
+            JSException asyncError = await Assert.ThrowsAsync<JSException>(() => FailStringAsyncOnUI("value"));
+            Assert.Contains("UI async string failure", asyncError.Message);
+            Assert.NotEmpty(asyncError.StackTrace);
+            Assert.Equal("recovered", InvokeStringOnUI("recovered"));
+        }
+
+        [Fact]
+        public async Task ConcurrentStringCalls()
+        {
+            Task<string>[] tasks = new Task<string>[70];
+            for (int i = 0; i < tasks.Length; i++)
+                tasks[i] = InvokeStringAsyncOnUI(i.ToString(Globalization.CultureInfo.InvariantCulture));
+            string[] results = await Task.WhenAll(tasks);
+            for (int i = 0; i < results.Length; i++)
+                Assert.Equal(i.ToString(Globalization.CultureInfo.InvariantCulture), results[i]);
+        }
+
+        [Fact]
+        public void LargeStringResultsAndRepeatedCleanup()
+        {
+            Assert.Equal(new string('z', 400000), LargeStringOnUI(400000));
+            for (int i = 0; i < 32; i++)
+            {
+                string value = new string('x', 16384);
+                Assert.Equal(value, InvokeStringOnUI(value));
+            }
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            Assert.Equal("after GC", InvokeStringOnUI("after GC"));
+        }
+
+        [Fact]
+        public void StringTransportAcrossMemoryGrowth()
+        {
+            const int Length = 40_000_000;
+            string value = GrowStringOnUI(Length);
+            Assert.Equal(Length, value.Length);
+            Assert.Equal('z', value[0]);
+            Assert.Equal('z', value[^1]);
+            Assert.Equal("after growth", InvokeStringOnUI("after growth"));
         }
     }
 

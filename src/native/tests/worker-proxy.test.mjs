@@ -354,6 +354,7 @@ async function createFixture(options = {}) {
         importTransport: (await load("./worker-imports")).namespace,
         promiseHelpers: (await load("./promise-completion-source")).namespace,
         promiseTransport: (await load("./worker-promises")).namespace,
+        valueTransport: (await load("./worker-values")).namespace,
         failWorker: error => workerErrorListeners.forEach(listener => listener({ error, message: error.message })),
         create: async (config = { workerOptions: { timeoutMs: options.threaded ? 10000 : 1000 } }) => {
             uiApi = await proxyModule.namespace.createWorkerProxy(config);
@@ -381,7 +382,7 @@ test("worker exports return primitives synchronously and preserve aliases across
         assert.equal(scalar(-2147483648), -2147483647);
         assert.equal(scalar(2147483646), 2147483647);
         assert.throws(() => scalar(2147483648), /Int32/);
-        assert.throws(() => exports.Sample.Test.Async(1), /Int32.*Task<Int32>/);
+        assert.throws(() => exports.Sample.Test.Async(1), /Int32.*String.*Task/);
         assert.equal(fixture.allocations.size, allocations);
         assert.equal(fixture.calls.filter(call => call[0] === "exports").length, 1);
     } finally {
@@ -607,6 +608,133 @@ test("runMainAndExit permits nested exports until Main completes", { timeout: 30
         api.exit(0);
         await fixture.termination;
     }
+});
+
+test("string transport preserves UTF16, nulls and mixed signatures without retaining native allocations", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    try {
+        const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        const values = [null, undefined, "", "hello", "I\u0131\u0130i", "a\0b", "\ud800", "\udfff", "a\ud83d\ude00z", "x".repeat(400000)];
+        for (const value of values) {
+            assert.equal(exports.String(value), value ?? null);
+            assert.equal(exports.StringLength(value), value?.length ?? -1);
+            assert.equal(await exports.AsyncString(value), value ?? null);
+            assert.equal(exports.ActiveAllocations(0), 16);
+        }
+        assert.equal(exports.StringRepeat(400000), "x".repeat(400000));
+        assert.throws(() => exports.String({}), /String/);
+        assert.throws(() => exports.StringFail("failure"), /String managed failure/);
+        assert.equal(exports.String("recovered"), "recovered");
+        assert.equal(exports.ActiveAllocations(0), 16);
+        assert.ok(fixture.workers[0].signal[fixture.layout.OFFSET_MEMORY_GENERATION] > 0);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("UI string results allocate on the worker, support nesting and release frames before asynchronous completion", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    let exports;
+    let mode = "echo";
+    const deferred = [];
+    try {
+        api.setModuleImports("main.js", { update: value => {
+            if (mode === "async") return new Promise((resolve, reject) => deferred.push({ resolve, reject, value }));
+            if (mode === "invalid") return 42;
+            if (mode === "throw") throw new Error("UI string failure");
+            if (mode === "nested" && value?.length) return exports.StringImport(value.slice(1)) + value[0];
+            if (mode === "large") return "z".repeat(400000);
+            if (mode === "undefined") return undefined;
+            if (mode === "allocationFailure") {
+                exports.FailAllocation(0);
+                return "worker must allocate this";
+            }
+            return exports.String(value);
+        } });
+        exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        for (const value of [null, "", "a\0\ud800b", "c".repeat(400000)]) {
+            assert.equal(exports.StringImport(value), value);
+            assert.equal(exports.ActiveAllocations(0), 16);
+        }
+        mode = "nested";
+        assert.equal(exports.StringImport("abcd"), "dcba");
+        mode = "large";
+        assert.equal(exports.StringImport("small"), "z".repeat(400000));
+        mode = "undefined";
+        assert.equal(exports.StringImport("value"), null);
+        mode = "invalid";
+        assert.throws(() => exports.StringImport("value"), /String/);
+        mode = "throw";
+        assert.throws(() => exports.StringImport("value"), /UI string failure/);
+        mode = "allocationFailure";
+        assert.throws(() => exports.StringImport("value"), /unable to allocate/);
+        exports.FailAllocation(0);
+        assert.throws(() => exports.String("value"), /unable to allocate/);
+        assert.equal(exports.ActiveAllocations(0), 16);
+        mode = "async";
+        const tasks = Array.from({ length: 70 }, (_, index) => exports.AsyncStringImport("task:" + index));
+        assert.equal(exports.ActiveAllocations(0), 16);
+        const all = Promise.all(tasks.map(promise => promise.then(value => value, error => error.message)));
+        for (const item of deferred.reverse()) {
+            if (item.value === "task:33") item.reject(new Error("Async string failure"));
+            else item.resolve(item.value + "\0\udfff");
+        }
+        assert.deepEqual(await all, Array.from({ length: 70 }, (_, index) => index === 33 ? "Async string failure" : "task:" + index + "\0\udfff"));
+        mode = "echo";
+        assert.equal(exports.StringImport("recovered"), "recovered");
+        assert.equal(exports.ActiveAllocations(0), 16);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("string transport rejects invalid ranges and allocation failures without leaking ownership", async () => {
+    const fixture = await createFixture();
+    const api = await fixture.create();
+    const transport = fixture.valueTransport;
+    try {
+        const initial = fixture.allocations.size;
+        const memory = api.INTERNAL.workerMemoryViews;
+        const pointer = transport.allocateWorkerString(3);
+        transport.writeWorkerString(memory, pointer, "\ud800\0a");
+        assert.equal(transport.readWorkerString(memory, pointer, 3), "\ud800\0a");
+        transport.freeWorkerString(pointer);
+        assert.equal(fixture.allocations.size, initial);
+        assert.throws(() => transport.freeWorkerString(pointer), /not owned/);
+        for (const [pointer, length] of [[1, 1], [0, 1], [4, -2], [65536, 1], [4, 0x80000000]]) {
+            assert.throws(() => transport.readWorkerString(memory, pointer, length), /range/);
+        }
+        for (const length of [-1, 0.5, 0x80000000]) {
+            assert.throws(() => transport.allocateWorkerString(length), /length/);
+        }
+        const malloc = fixture.module._malloc;
+        fixture.module._malloc = () => 0;
+        assert.throws(() => transport.allocateWorkerString(4), /unable to allocate/);
+        fixture.module._malloc = malloc;
+        assert.equal(fixture.allocations.size, initial);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("pending string Tasks release their buffers on exit and ignore late string completion", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    let resolve;
+    api.setModuleImports("main.js", { update: () => new Promise(done => resolve = done) });
+    const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+    const pending = exports.AsyncStringImport("pending\0\ud800");
+    assert.equal(exports.ActiveAllocations(0), 16);
+    const rejected = assert.rejects(pending, /exit/i);
+    api.exit(0);
+    await Promise.all([rejected, fixture.termination]);
+    resolve("late");
+    await new Promise(done => setTimeout(done, 10));
 });
 
 for (const [seed, expected] of [

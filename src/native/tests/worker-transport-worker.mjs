@@ -41,8 +41,13 @@ async function runWorker() {
     const allocations = new Map();
     const free = new Map();
     let nextPointer = 1024;
+    let failNextAllocation = false;
     const module = {
         _malloc: size => {
+            if (failNextAllocation) {
+                failNextAllocation = false;
+                return 0;
+            }
             const bytes = Math.ceil(size / 8) * 8;
             let pointer = free.get(bytes)?.pop();
             if (pointer === undefined) {
@@ -66,7 +71,8 @@ async function runWorker() {
     let argumentSize;
     let typeOffset;
     let int32Type;
-    function invokeImport(value, isAsync = false) {
+    let stringType;
+    function invokeImport(value, isAsync = false, argumentType = int32Type, returnType = int32Type) {
         const pointer = module._malloc(3 * argumentSize);
         try {
             new Uint8Array(memory.buffer).fill(0, pointer, pointer + 3 * argumentSize);
@@ -74,7 +80,7 @@ async function runWorker() {
             new Uint8Array(memory.buffer)[pointer + 2 * argumentSize + typeOffset] = int32Type;
             const frame = new Uint8Array(memory.buffer, pointer + argumentSize, argumentSize);
             if (isAsync) frame.fill(0x5a);
-            const result = imports.get("main.js").get("update")(pointer, isAsync);
+            const result = imports.get("main.js").get("update")(pointer, isAsync, value, argumentType, returnType);
             if (isAsync && !frame.every(value => value === 0x5a)) throw new Error("Async import overwrote the native Task frame");
             return result;
         } finally {
@@ -95,8 +101,20 @@ async function runWorker() {
                 { path: ["Sample", "Test", "Async"], handle: 4, supported: true, isAsync: true },
                 { path: ["Sample", "Test", "AsyncImport"], handle: 5, supported: true, isAsync: true },
                 { path: ["Sample", "Test", "AsyncPrefix"], handle: 6, supported: true, isAsync: true },
+                { path: ["Sample", "Test", "FailAllocation"], handle: 14, supported: true },
+                ...[
+                    ["String", 7, false, stringType, stringType],
+                    ["StringImport", 8, false, stringType, stringType],
+                    ["AsyncString", 9, true, stringType, stringType],
+                    ["AsyncStringImport", 10, true, stringType, stringType],
+                    ["StringLength", 11, false, stringType, int32Type],
+                    ["StringRepeat", 12, false, int32Type, stringType],
+                    ["StringFail", 13, false, stringType, stringType],
+                ].map(([name, handle, isAsync, argumentType, returnType]) => ({
+                    path: ["Sample", "Test", name], handle, supported: true, isAsync, argumentType, returnType,
+                })),
             ],
-            invokeWorkerJSExport: (handle, pointer) => {
+            invokeWorkerJSExport: (handle, pointer, stringArgument) => {
                 const value = new Int32Array(memory.buffer)[(pointer + 2 * argumentSize) / 4];
                 let result;
                 if (handle === 1) {
@@ -117,6 +135,23 @@ async function runWorker() {
                     return promise === null ? null : Promise.resolve(promise);
                 } else if (handle === 6) {
                     return Promise.resolve(invokeImport(value));
+                } else if (handle === 7) {
+                    return stringArgument;
+                } else if (handle === 8) {
+                    return invokeImport(stringArgument, false, stringType, stringType);
+                } else if (handle === 9) {
+                    return Promise.resolve(stringArgument);
+                } else if (handle === 10) {
+                    return invokeImport(stringArgument, true, stringType, stringType);
+                } else if (handle === 11) {
+                    result = stringArgument?.length ?? -1;
+                } else if (handle === 12) {
+                    return "x".repeat(value);
+                } else if (handle === 13) {
+                    throw new Error("String managed failure");
+                } else if (handle === 14) {
+                    failNextAllocation = true;
+                    result = 0;
                 } else {
                     throw new Error("Unknown test export");
                 }
@@ -163,6 +198,7 @@ async function runWorker() {
     argumentSize = types.JavaScriptMarshalerArgSize;
     typeOffset = types.JSMarshalerArgumentOffsets.Type;
     int32Type = types.MarshalerType.Int32;
+    stringType = types.MarshalerType.String;
     parentPort.once("message", message => {
         if (message.type !== "init") throw new Error("Expected worker initialization");
         void workerModule.namespace.bootstrapWorkerRuntime(message);
