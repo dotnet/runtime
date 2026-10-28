@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // Copyright (c) .NET Foundation and Contributors.
 // Adapted from Roslyn's CvtRes.cs and PEWriter/NativeResourceWriter.cs:
-// https://github.com/dotnet/roslyn/tree/640c85e5fcace39fe46a4e288170a36fc0a12522/src/Compilers/Core/Portable
 
 using System;
 using System.Buffers.Binary;
