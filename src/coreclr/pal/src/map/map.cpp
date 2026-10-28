@@ -21,7 +21,6 @@ Abstract:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/init.h"
-#include "common.h"
 #include "pal/map.hpp"
 #include "pal/thread.hpp"
 #include "pal/file.hpp"

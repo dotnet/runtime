@@ -833,56 +833,6 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
     return true;
 }
 
-LPVOID
-CLRMapViewOfFile(
-    IN HANDLE hFileMappingObject,
-    IN DWORD dwDesiredAccess,
-    IN DWORD dwFileOffsetHigh,
-    IN DWORD dwFileOffsetLow,
-    IN SIZE_T dwNumberOfBytesToMap,
-    IN LPVOID lpBaseAddress
-    )
-{
-#ifdef _DEBUG
-#ifdef TARGET_X86
-
-    char *tmp = new (nothrow) char;
-    if (!tmp)
-    {
-        SetLastError(ERROR_OUTOFMEMORY);
-        return NULL;
-    }
-    delete tmp;
-
-#endif // TARGET_X86
-#endif // _DEBUG
-
-    LPVOID pv = MapViewOfFileEx(hFileMappingObject,dwDesiredAccess,dwFileOffsetHigh,dwFileOffsetLow,dwNumberOfBytesToMap,lpBaseAddress);
-
-
-    if (!pv)
-    {
-        if(GetLastError()==ERROR_SUCCESS)
-            SetLastError(ERROR_OUTOFMEMORY);
-        return NULL;
-    }
-
-    if (!pv && GetLastError()==ERROR_SUCCESS)
-        SetLastError(ERROR_OUTOFMEMORY);
-
-    return pv;
-}
-
-BOOL
-CLRUnmapViewOfFile(
-    IN LPVOID lpBaseAddress
-    ) noexcept
-{
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    return UnmapViewOfFile(lpBaseAddress);
-}
-
 static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
 {
     // Don't use dynamic contract: will override GetLastError value

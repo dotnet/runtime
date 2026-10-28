@@ -160,7 +160,6 @@ set(SOURCES
   init/sxs.cpp
   loader/module.cpp
   locale/unicode.cpp
-  map/common.cpp
   map/map.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp
