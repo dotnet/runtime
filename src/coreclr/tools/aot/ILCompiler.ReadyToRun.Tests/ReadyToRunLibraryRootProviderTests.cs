@@ -9,6 +9,7 @@ using System.IO;
 using System.Text;
 
 using crossgen2::ILCompiler;
+using crossgen2::ILCompiler.DependencyAnalysis;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::Internal.ReadyToRunConstants;
 using crossgen2::Internal.JitInterface;
@@ -25,15 +26,17 @@ namespace ILCompiler.ReadyToRun.Tests;
 
 public class ReadyToRunLibraryRootProviderTests
 {
-    [Fact]
-    public void EagerPromotionPreservesDistinctImportSymbols()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EagerPromotionPreservesDistinctImportSymbols(bool reverseOrder)
     {
         ImportSectionNode precodeTable = new("PrecodeImports", ReadyToRunImportSectionType.Unknown,
             ReadyToRunImportSectionFlags.PCode, 8, emitPrecode: true, emitGCRefMap: false);
         ImportSectionNode eagerTable = new("EagerImports", ReadyToRunImportSectionType.Unknown,
             ReadyToRunImportSectionFlags.Eager, 8, emitPrecode: false, emitGCRefMap: false);
         ReadyToRunHelperSignature signature = new(ReadyToRunHelper.Module);
-        Import promotedCell = new(precodeTable, signature);
+        Import promotedCell = new PrecodeHelperImport(precodeTable, signature);
         Import eagerCell = new(eagerTable, signature, sortLast: true);
         NativeAotNameMangler mangler = new() { CompilationUnitPrefix = new Utf8String("Test") };
         Utf8StringBuilder originalName = new();
@@ -48,6 +51,11 @@ public class ReadyToRunLibraryRootProviderTests
         Assert.Same(eagerCell.Table, promotedCell.Table);
         Assert.Equal(originalName.ToString(), promotedName.ToString());
         Assert.NotEqual(eagerName.ToString(), promotedName.ToString());
+
+        Import[] imports = reverseOrder ? [eagerCell, promotedCell] : [promotedCell, eagerCell];
+        Array.Sort(imports, CompilerComparer.Instance);
+        Assert.Same(promotedCell, imports[0]);
+        Assert.Same(eagerCell, imports[1]);
     }
 
     [Theory]
