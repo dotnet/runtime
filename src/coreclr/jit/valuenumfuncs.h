@@ -149,6 +149,8 @@ ValueNumFuncDef(GetdynamicNongcthreadstaticBaseNoctor, 1, false, true)
 ValueNumFuncDef(GetdynamicNongcthreadstaticBaseNoctorOptimized, 1, false, true)
 ValueNumFuncDef(GetdynamicNongcthreadstaticBaseNoctorOptimized2, 1, false, true)
 ValueNumFuncDef(GetdynamicNongcthreadstaticBaseNoctorOptimized2NoJitOpt, 1, false, true)
+ValueNumFuncDef(GetdynamicGcthreadstaticBaseOptimized, 1, false, true)
+ValueNumFuncDef(GetdynamicNongcthreadstaticBaseOptimized, 1, false, true)
 
 ValueNumFuncDef(RuntimeHandleMethod, 2, false, true)
 ValueNumFuncDef(RuntimeHandleClass, 2, false, true)

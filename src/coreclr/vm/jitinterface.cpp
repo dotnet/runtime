@@ -1434,8 +1434,8 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     // For windows x64/x86/arm64, linux x64/arm64/loongarch64/riscv64:
                     // We convert the TLS access to the optimized helper where we will store
                     // the static blocks in TLS directly and access them via inline code.
-                    // Only when the cctor has already run: the optimized helpers' slow path can run it,
-                    // which the JIT does not model for them.
+                    // The _OPTIMIZED helpers share their implementation with the _NOCTOR_OPTIMIZED ones;
+                    // only the JIT's model differs, since they may run the class constructor.
                     if ((pResult->helper == CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR) ||
                         (pResult->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR))
                     {
@@ -1449,11 +1449,23 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             pResult->helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2;
                         }
                     }
+                    else if ((pResult->helper == CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE) ||
+                             (pResult->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE))
+                    {
+                        fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                        pResult->helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED;
+                    }
                     else if ((pResult->helper == CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR) ||
-                            (pResult->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR))
+                             (pResult->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR))
                     {
                         fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
                         pResult->helper = CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                    }
+                    else if ((pResult->helper == CORINFO_HELP_GET_GCTHREADSTATIC_BASE) ||
+                             (pResult->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE))
+                    {
+                        fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                        pResult->helper = CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED;
                     }
                     else if (pResult->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT)
                     {
