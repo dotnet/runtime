@@ -28,11 +28,14 @@ namespace Internal.IL
             public LifetimeScope[] References;
             public LifetimeScope[] Contents;
             public bool[] Outputs;
-            public bool Valid = true;
+            public bool Valid;
         }
 
         StackValue[] _lifetimeMemory;
         bool _lifetimeMemoryIsShared;
+        bool _unknownLifetimeCacheIsValid;
+        LifetimeScope _unknownLocalLifetime;
+        LifetimeScope _unknownLifetime;
         StackValue[] _initialLifetimeMemory;
         StackValue[] _exceptionLifetimeMemory;
         TypeDesc[] _lifetimeCellTypes;
@@ -95,6 +98,7 @@ namespace Internal.IL
                 return contract;
 
             MethodSignature signature = method.Signature;
+            EcmaMethod ecma = method.GetTypicalMethodDefinition() as EcmaMethod;
             int firstParameter = signature.IsStatic ? 0 : 1;
             int count = signature.Length + firstParameter;
             contract = new LifetimeContract
@@ -102,10 +106,11 @@ namespace Internal.IL
                 References = new LifetimeScope[count],
                 Contents = new LifetimeScope[count],
                 Outputs = new bool[count],
+                // Array methods have runtime-defined contracts, not method metadata.
+                Valid = ecma is not null || method is ArrayMethod,
             };
             _lifetimeContracts.Add(method, contract);
 
-            EcmaMethod ecma = method.GetTypicalMethodDefinition() as EcmaMethod;
             bool modern = false;
             if (ecma is not null)
             {
@@ -215,6 +220,20 @@ namespace Internal.IL
             return found;
         }
 
+        static StackValue CreateInitialReferentLifetime(TypeDesc type, LifetimeScope contents, bool output)
+        {
+            StackValue value = StackValue.CreateFromType(type).WithLifetime(contents);
+            if (output && HasLifetimeContents(type))
+            {
+                bool initialized = GetLifetimeFieldMask(type, null, out _) == 0;
+                value.ContentsScope = LifetimeScope.Global;
+                value.InitializedLifetimeFields = initialized ? ulong.MaxValue : 0;
+                if (initialized)
+                    value.EscapeScope = LifetimeScope.Global;
+            }
+            return value;
+        }
+
         void InitializeLifetimes()
         {
             _argumentCount = _methodSignature.Length + (_thisType is null ? 0 : 1);
@@ -250,17 +269,7 @@ namespace Internal.IL
                         LifetimeScope.Unknown : _lifetimeContract.Contents[i];
                     if (IsRestrictedLifetimeType(referent))
                         contents = LifetimeScope.Unknown;
-                    _initialLifetimeMemory[target] = StackValue.CreateFromType(referent).WithLifetime(contents);
-                    if (_lifetimeContract.Outputs[i] && HasLifetimeContents(referent))
-                    {
-                        _initialLifetimeMemory[target].ContentsScope = LifetimeScope.Global;
-                        _initialLifetimeMemory[target].InitializedLifetimeFields = 0;
-                        if (GetLifetimeFieldMask(referent, null, out _) == 0)
-                        {
-                            _initialLifetimeMemory[target].EscapeScope = LifetimeScope.Global;
-                            _initialLifetimeMemory[target].InitializedLifetimeFields = ulong.MaxValue;
-                        }
-                    }
+                    _initialLifetimeMemory[target] = CreateInitialReferentLifetime(referent, contents, _lifetimeContract.Outputs[i]);
                     value = value.WithLifetime(_lifetimeContract.References[i], contents, target + 1, true,
                         _lifetimeContract.Contents[i]);
                 }
@@ -283,6 +292,7 @@ namespace Internal.IL
             _lifetimeSelfChanged = false;
             _lifetimeMemory = _exceptionLifetimeMemory ?? block.EntryLifetimeMemory ?? _initialLifetimeMemory;
             _lifetimeMemoryIsShared = true;
+            _unknownLifetimeCacheIsValid = false;
         }
 
         void EndLifetimeBlock(BasicBlock block)
@@ -361,13 +371,22 @@ namespace Internal.IL
                 return address.ContentsScope;
 
             LifetimeScope scope = address.ContentsScope;
-            for (int i = 0; i < _lifetimeMemory.Length; i++)
+            if (!_unknownLifetimeCacheIsValid)
             {
-                if (HasLifetimeContents(_lifetimeCellTypes[i]) &&
-                    (i < _variableCount || address.LifetimeCapacity > LifetimeScope.Function))
-                    scope = Narrower(scope, _lifetimeMemory[i].EscapeScope);
+                _unknownLocalLifetime = LifetimeScope.Global;
+                _unknownLifetime = LifetimeScope.Global;
+                for (int i = 0; i < _lifetimeMemory.Length; i++)
+                {
+                    if (HasLifetimeContents(_lifetimeCellTypes[i]))
+                    {
+                        _unknownLifetime = Narrower(_unknownLifetime, _lifetimeMemory[i].EscapeScope);
+                        if (i < _variableCount)
+                            _unknownLocalLifetime = Narrower(_unknownLocalLifetime, _lifetimeMemory[i].EscapeScope);
+                    }
+                }
+                _unknownLifetimeCacheIsValid = true;
             }
-            return scope;
+            return Narrower(scope, address.LifetimeCapacity > LifetimeScope.Function ? _unknownLifetime : _unknownLocalLifetime);
         }
 
         void StoreLifetimeCell(int index, StackValue value, bool replace)
@@ -382,6 +401,7 @@ namespace Internal.IL
                 _lifetimeMemoryIsShared = false;
             }
             _lifetimeMemory[index] = replace ? value : _lifetimeMemory[index].MergeLifetime(value);
+            _unknownLifetimeCacheIsValid = false;
             if (_exceptionLifetimeMemory is not null)
             {
                 StackValue joined = _exceptionLifetimeMemory[index].MergeLifetime(_lifetimeMemory[index]);

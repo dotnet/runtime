@@ -754,6 +754,98 @@
         ret
     }
 
+    .method public hidebysig static valuetype RefCarrier& Return.SelectCarrierReference_Valid(valuetype RefCarrier& first, valuetype RefCarrier& second, bool choose) cil managed
+    {
+        ldarg.2
+        brtrue.s take_first
+        ldarg.1
+        ret
+    take_first:
+        ldarg.0
+        ret
+    }
+
+    .method public hidebysig static valuetype RefCarrier Return.UnknownReadAfterStoreEscape_Invalid_ReturnPtrToStack(bool choose) cil managed
+    {
+        .locals init ([0] int32, [1] valuetype RefCarrier, [2] valuetype RefCarrier, [3] valuetype RefCarrier&)
+        ldloca.s 1
+        ldloca.s 2
+        ldarg.0
+        call valuetype RefCarrier& ReturnTestsType::Return.SelectCarrierReference_Valid(valuetype RefCarrier&, valuetype RefCarrier&, bool)
+        stloc.3
+        ldloc.3
+        ldobj RefCarrier
+        pop
+        ldloca.s 1
+        ldloca.s 0
+        stfld int32& RefCarrier::Item
+        ldloc.3
+        ldobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static valuetype RefCarrier Return.UnknownReadAfterReset_Valid(bool choose) cil managed
+    {
+        .locals init ([0] int32, [1] valuetype RefCarrier, [2] valuetype RefCarrier, [3] valuetype RefCarrier&)
+        ldloca.s 1
+        ldloca.s 2
+        ldarg.0
+        call valuetype RefCarrier& ReturnTestsType::Return.SelectCarrierReference_Valid(valuetype RefCarrier&, valuetype RefCarrier&, bool)
+        stloc.3
+        ldloca.s 1
+        ldloca.s 0
+        stfld int32& RefCarrier::Item
+        ldloc.3
+        ldobj RefCarrier
+        pop
+        ldloca.s 1
+        initobj RefCarrier
+        ldloca.s 2
+        initobj RefCarrier
+        ldloc.3
+        ldobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static valuetype RefCarrier Return.UnknownReadAcrossBlocksEscape_Invalid_ReturnPtrToStack(bool choose, bool keep) cil managed
+    {
+        .locals init ([0] int32, [1] valuetype RefCarrier, [2] valuetype RefCarrier, [3] valuetype RefCarrier&)
+        ldloca.s 1
+        ldloca.s 2
+        ldarg.0
+        call valuetype RefCarrier& ReturnTestsType::Return.SelectCarrierReference_Valid(valuetype RefCarrier&, valuetype RefCarrier&, bool)
+        stloc.3
+        ldloca.s 1
+        ldloca.s 0
+        stfld int32& RefCarrier::Item
+        ldarg.1
+        brtrue.s tainted
+        ldloca.s 1
+        initobj RefCarrier
+        ldloca.s 2
+        initobj RefCarrier
+        ldloc.3
+        ldobj RefCarrier
+        ret
+    tainted:
+        ldloc.3
+        ldobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static valuetype RefCarrier Return.UnknownLocalAliasWithOutput_Valid(bool choose, [out] valuetype RefCarrier& output) cil managed
+    {
+        .locals init ([0] valuetype RefCarrier, [1] valuetype RefCarrier)
+        ldloca.s 0
+        ldloca.s 1
+        ldarg.0
+        call valuetype RefCarrier& ReturnTestsType::Return.SelectCarrierReference_Valid(valuetype RefCarrier&, valuetype RefCarrier&, bool)
+        ldobj RefCarrier
+        ldarg.1
+        initobj RefCarrier
+        ret
+    }
+
     .method public hidebysig static valuetype RefCarrier Return.SelfLoopEscape_Invalid_ReturnPtrToStack(bool repeat, valuetype RefCarrier input) cil managed
     {
         .locals init ([0] int32, [1] valuetype RefCarrier, [2] valuetype RefCarrier)
