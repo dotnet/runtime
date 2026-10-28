@@ -1285,8 +1285,9 @@ public class WasmArgumentLayoutTests
 
     /// <summary>
     /// The runtime throws InvalidProgramException for a generic [UnmanagedCallersOnly] method before
-    /// it would look up a reverse thunk, so the generator has to skip one rather than fail lowering its
-    /// signature variables. The rest of the input still gets its thunks.
+    /// it would look up a reverse thunk, so the generator skips one quietly, as it does any other
+    /// failure the runtime reports, rather than fail lowering its signature variables. The rest of the
+    /// input still gets its thunks.
     /// </summary>
     [Theory]
     [InlineData(true, false)]
@@ -1314,7 +1315,7 @@ public class WasmArgumentLayoutTests
                 CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
 
             Assert.True(exitCode == 0, log.ToString());
-            Assert.Contains("Skipping generic UnmanagedCallersOnly callback", log.ToString());
+            Assert.DoesNotContain("GenericCallbackUnderTest", log.ToString());
 
             string reverse = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-reverse.cpp"));
             Assert.DoesNotContain("GenericCallbackUnderTest", reverse);
