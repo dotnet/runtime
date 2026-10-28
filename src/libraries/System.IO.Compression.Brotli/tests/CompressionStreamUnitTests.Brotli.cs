@@ -482,6 +482,223 @@ namespace System.IO.Compression
             BrotliDecoder.TryDecompress(input, output, out int bytesWritten);
         }
 
+        [Fact]
+        public void InvalidBrotliDecompressionMaxWindowLog2()
+        {
+            BrotliDecompressionOptions options = new();
+
+            Assert.Equal(24, options.MaxWindowLog2); // default value
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.MaxWindowLog2 = -1);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.MaxWindowLog2 = 9);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.MaxWindowLog2 = 31);
+        }
+
+        [Fact]
+        public void BrotliDecompressionOptions_NullArgument_Throws()
+        {
+            Assert.Throws<ArgumentNullException>("decompressionOptions", () => new BrotliDecoder(null));
+            Assert.Throws<ArgumentNullException>("decompressionOptions", () => new BrotliStream(new MemoryStream(), (BrotliDecompressionOptions)null));
+            Assert.Throws<ArgumentNullException>("stream", () => new BrotliStream(null, new BrotliDecompressionOptions()));
+        }
+
+        [Theory]
+        [InlineData(10)]
+        [InlineData(16)]
+        [InlineData(17)]
+        [InlineData(22)]
+        [InlineData(24)]
+        public void BrotliDecompressionOptions_StandardWindow_RoundTrips(int windowLog2)
+        {
+            byte[] testData = CreateWindowTestData();
+            byte[] compressed = CompressWithWindowLog2(testData, windowLog2);
+
+            Assert.Equal<byte>(testData, DecompressWithOptions(compressed, new BrotliDecompressionOptions { MaxWindowLog2 = windowLog2 }));
+        }
+
+        [Theory]
+        [InlineData(25)]
+        [InlineData(30)]
+        public void BrotliLargeWindow_RequiresOptIn(int windowLog2)
+        {
+            byte[] testData = s_largeWindowPayload;
+            byte[] compressed = CreateLargeWindowCompressed(windowLog2);
+
+            // Large Window Brotli is not part of RFC 7932, so a decoder that did not opt in rejects the stream.
+            Assert.Throws<InvalidOperationException>(() => DecompressWithOptions(compressed, decompressionOptions: null));
+
+            Assert.Equal<byte>(testData, DecompressWithOptions(compressed, new BrotliDecompressionOptions { MaxWindowLog2 = windowLog2 }));
+
+            // A window larger than the configured maximum is reported the same way as any other invalid stream.
+            Assert.Throws<InvalidOperationException>(() => DecompressWithOptions(compressed, new BrotliDecompressionOptions { MaxWindowLog2 = windowLog2 - 1 }));
+        }
+
+        [Fact]
+        public void BrotliDecompressionOptions_RejectsWindowLargerThanMaxWindowLog2()
+        {
+            byte[] testData = CreateWindowTestData();
+            byte[] compressed = CompressWithWindowLog2(testData, 22);
+
+            // A window larger than the configured maximum is reported the same way as any other invalid stream.
+            Assert.Throws<InvalidOperationException>(() => DecompressWithOptions(compressed, new BrotliDecompressionOptions { MaxWindowLog2 = 10 }));
+
+            Assert.Equal<byte>(testData, DecompressWithOptions(compressed, new BrotliDecompressionOptions { MaxWindowLog2 = 22 }));
+        }
+
+        [Fact]
+        public void BrotliDecoder_LargeWindow_RoundTrips()
+        {
+            byte[] testData = s_largeWindowPayload;
+            byte[] compressed = CreateLargeWindowCompressed(30);
+            byte[] decompressed = new byte[testData.Length];
+
+            using (BrotliDecoder decoder = new(new BrotliDecompressionOptions { MaxWindowLog2 = 30 }))
+            {
+                Assert.Equal(OperationStatus.Done, decoder.Decompress(compressed, decompressed, out int bytesConsumed, out int bytesWritten));
+                Assert.Equal(compressed.Length, bytesConsumed);
+                Assert.Equal(testData.Length, bytesWritten);
+            }
+
+            Assert.Equal<byte>(testData, decompressed);
+
+            BrotliDecompressionOptions limitedOptions = new() { MaxWindowLog2 = 29 };
+            using BrotliDecoder limitedDecoder = new(limitedOptions);
+            Assert.Equal(OperationStatus.InvalidData, limitedDecoder.Decompress(compressed, new byte[testData.Length], out int limitedBytesConsumed, out int limitedBytesWritten));
+            Assert.Equal(0, limitedBytesConsumed);
+            Assert.Equal(0, limitedBytesWritten);
+        }
+
+        [Fact]
+        public void BrotliDecoder_LargeWindowHeaderSplitAcrossCalls_ReportsNeedMoreData()
+        {
+            byte[] testData = s_largeWindowPayload;
+            byte[] compressed = CreateLargeWindowCompressed(30);
+
+            using BrotliDecoder decoder = new(new BrotliDecompressionOptions { MaxWindowLog2 = 30 });
+
+            // The Large Window Brotli header spans two bytes, so one byte is not enough to determine the window size.
+            Assert.Equal(OperationStatus.NeedMoreData, decoder.Decompress(compressed.AsSpan(0, 1), new byte[64], out int bytesConsumed, out int bytesWritten));
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+
+            // Resubmitting the unconsumed header alongside the rest of the stream, through a small nonempty destination
+            // that forces repeated DestinationTooSmall calls, must still complete and retain the validated window.
+            byte[] decompressed = new byte[testData.Length];
+            int totalConsumed = 0, totalWritten = 0;
+            ReadOnlySpan<byte> remaining = compressed;
+            OperationStatus status;
+
+            do
+            {
+                int chunkSize = Math.Min(4, decompressed.Length - totalWritten);
+                status = decoder.Decompress(remaining, decompressed.AsSpan(totalWritten, chunkSize), out bytesConsumed, out bytesWritten);
+                remaining = remaining.Slice(bytesConsumed);
+                totalConsumed += bytesConsumed;
+                totalWritten += bytesWritten;
+            } while (status == OperationStatus.DestinationTooSmall);
+
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(compressed.Length, totalConsumed);
+            Assert.Equal(testData.Length, totalWritten);
+            Assert.Equal<byte>(testData, decompressed);
+        }
+
+        [Fact]
+        public void BrotliDecoder_EmptyDestination_DoesNotBypassWindowValidation()
+        {
+            byte[] testData = s_largeWindowPayload;
+            byte[] largeWindowCompressed = CreateLargeWindowCompressed(30);
+
+            using BrotliDecoder decoder = new(new BrotliDecompressionOptions { MaxWindowLog2 = 25 });
+
+            // An empty destination makes no decompression progress, so the source below is never actually consumed.
+            byte[] unconsumedSource = { 0x00 };
+            Assert.Equal(OperationStatus.DestinationTooSmall, decoder.Decompress(unconsumedSource, Array.Empty<byte>(), out int bytesConsumed, out int bytesWritten));
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+
+            // Swapping in a stream whose window (30) exceeds the configured maximum (25) must still be rejected, even
+            // though the previous call saw a header that would have been within range.
+            Assert.Equal(OperationStatus.InvalidData, decoder.Decompress(largeWindowCompressed, new byte[testData.Length], out bytesConsumed, out bytesWritten));
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Fact]
+        public void BrotliStream_SingleByteLargeWindowEscape_ThrowsForBothConstructors()
+        {
+            // 0x11 starts the "Large Window Brotli" escape sequence. Without opting in, the native decoder rejects it
+            // immediately rather than waiting for the second header byte.
+            byte[] truncatedLargeWindowEscape = { 0x11 };
+
+            Assert.Throws<InvalidOperationException>(() => Decompress_Stream(truncatedLargeWindowEscape));
+            Assert.Throws<InvalidOperationException>(() => DecompressWithOptions(truncatedLargeWindowEscape, new BrotliDecompressionOptions()));
+        }
+
+        private static byte[] CreateWindowTestData()
+        {
+            // Deliberately smaller than the encoder input block size, so that declaring a large window does not make either
+            // side allocate a buffer proportional to that window.
+            return CreatePattern(8 * 1024);
+        }
+
+        private static byte[] CompressWithWindowLog2(byte[] input, int windowLog2)
+        {
+            using MemoryStream output = new();
+            using (BrotliStream compressor = new(output, new BrotliCompressionOptions { WindowLog2 = windowLog2 }, leaveOpen: true))
+            {
+                compressor.Write(input);
+            }
+
+            return output.ToArray();
+        }
+
+        // BrotliEncoder only ever produces streams up to the standard 24-bit window (RFC 7932); it has no "Large Window
+        // Brotli" support, and this test suite intentionally keeps it that way (see PR discussion on #135846). This
+        // fixture was generated once, offline, by driving the native encoder directly (BrotliEncoderCompressStream with
+        // BROTLI_PARAM_LARGE_WINDOW=1) to produce a genuine "Large Window Brotli" stream for s_largeWindowPayload.
+        // Only byte[1] (the declared window value, 10-30, encoded in the low 6 bits) varies between window sizes; the
+        // metablock payload for this tiny input is identical regardless of the configured window.
+        private static readonly byte[] s_largeWindowPayload = CreatePattern(64);
+
+        private static readonly byte[] s_largeWindowFixtureTemplate =
+        {
+            0x11, 0x1E, 0x7E, 0x00, 0x02, 0x00, 0x1F, 0x3E, 0x5D, 0x7C, 0x9B, 0xBA, 0xD9, 0xF8, 0x17, 0x36,
+            0x55, 0x74, 0x93, 0xB2, 0xD1, 0xF0, 0x0F, 0x2E, 0x4D, 0x6C, 0x8B, 0xAA, 0xC9, 0xE8, 0x07, 0x26,
+            0x45, 0x64, 0x83, 0xA2, 0xC1, 0xE0, 0xFF, 0x1E, 0x3D, 0x5C, 0x7B, 0x9A, 0xB9, 0xD8, 0xF7, 0x16,
+            0x35, 0x54, 0x73, 0x92, 0xB1, 0xD0, 0xEF, 0x0E, 0x2D, 0x4C, 0x6B, 0x8A, 0xA9, 0xC8, 0xE7, 0x06,
+            0x25, 0x44, 0x63, 0x82, 0xA1, 0x03
+        };
+
+        private static byte[] CreatePattern(int length)
+        {
+            byte[] data = new byte[length];
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] = (byte)(i * 31);
+            }
+
+            return data;
+        }
+
+        private static byte[] CreateLargeWindowCompressed(int windowLog2)
+        {
+            byte[] compressed = (byte[])s_largeWindowFixtureTemplate.Clone();
+            compressed[1] = (byte)windowLog2;
+            return compressed;
+        }
+
+        private static byte[] DecompressWithOptions(byte[] compressed, BrotliDecompressionOptions decompressionOptions)
+        {
+            using MemoryStream input = new(compressed);
+            using BrotliStream decompressor = decompressionOptions is null
+                ? new BrotliStream(input, CompressionMode.Decompress)
+                : new BrotliStream(input, decompressionOptions);
+            using MemoryStream output = new();
+
+            decompressor.CopyTo(output);
+            return output.ToArray();
+        }
+
         private static MemoryStream Compress_Stream(ReadOnlySpan<byte> input, CompressionLevel compressionLevel)
         {
             using (var inputStream = new MemoryStream(input.ToArray()))

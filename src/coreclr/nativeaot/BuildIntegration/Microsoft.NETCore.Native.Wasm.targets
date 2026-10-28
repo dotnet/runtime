@@ -43,6 +43,7 @@
       <NativeLibrary Include="$(IlcFrameworkNativePath)libSystem.Native.TimeZoneData.Invariant.a" Condition="'$(InvariantTimezone)' == 'true'" />
       <NativeLibrary Include="$(IlcFrameworkNativePath)libicui18n.a;$(IlcFrameworkNativePath)libicuuc.a;$(IlcFrameworkNativePath)libicudata.a" Condition="'$(InvariantGlobalization)' != 'true'" />
       <NativeLibrary Include="$(IlcFrameworkNativePath)libz.a;$(IlcFrameworkNativePath)libzstd.a" />
+      <NativeLibrary Include="$(IlcFrameworkNativePath)libbrotlienc.a;$(IlcFrameworkNativePath)libbrotlidec.a;$(IlcFrameworkNativePath)libbrotlicommon.a" />
     </ItemGroup>
 
     <ItemGroup>

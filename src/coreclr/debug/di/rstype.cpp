@@ -78,7 +78,7 @@ HRESULT CordbType::GetStaticFieldValue(mdFieldDef fieldDef,
             IfFailThrow(hr);
 
             // Lookup the field given its metadata token.
-            FieldData * pFieldData;
+            const FieldData * pFieldData;
 
             hr = GetFieldInfo(fieldDef, &pFieldData);
 
@@ -123,7 +123,7 @@ CordbType::CordbType(CordbAppDomain *appdomain, CorElementType et, unsigned int 
   m_appdomain(appdomain),
   m_pClass(NULL),
   m_rank(rank),
-  m_spinetypes(2),
+  m_spinetypes(),
   m_objectSize(0),
   m_fieldInfoNeedsInit(TRUE)
 {
@@ -152,7 +152,7 @@ CordbType::CordbType(CordbAppDomain *appdomain, CorElementType et, CordbClass *c
   m_appdomain(appdomain),
   m_pClass(cls),
   m_rank(0),
-  m_spinetypes(2),
+  m_spinetypes(),
   m_objectSize(0),
   m_fieldInfoNeedsInit(TRUE)
 {
@@ -180,7 +180,7 @@ CordbType::CordbType(CordbType *tycon, CordbType *tyarg)
   m_appdomain(tycon->m_appdomain),
   m_pClass(tycon->m_pClass),
   m_rank(tycon->m_rank),
-  m_spinetypes(2),
+  m_spinetypes(),
   m_objectSize(0),
   m_fieldInfoNeedsInit(TRUE)
     // tyarg is added as part of instantiation -see below...
@@ -2488,7 +2488,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
 //   S_OK on success. CORDBG_E_ENC_HANGING_FIELD for EnC fields (common case)
 //   Other errors on failure case.
 //-----------------------------------------------------------------------------
-HRESULT CordbType::GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData)
+HRESULT CordbType::GetFieldInfo(mdFieldDef fldToken, const FieldData ** ppFieldData)
 {
     INTERNAL_SYNC_API_ENTRY(GetProcess()); //
     HRESULT hr = S_OK;
