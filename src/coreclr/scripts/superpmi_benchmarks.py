@@ -196,7 +196,7 @@ def build_and_run(coreclr_args, output_mch_name):
                 "install",
                 "--architecture",
                     arch,
-                "--versions",
+                "--dotnet-versions",
                 sdk_version,
                 "--verbose"], _exit_on_fail=True)
 

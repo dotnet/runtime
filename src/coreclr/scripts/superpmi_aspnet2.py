@@ -275,6 +275,11 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
             "--application.options.outputFiles", str(core_root_path / spcorelib),
             "--application.options.outputFiles", str(core_root_path / systemNative),
         ])
+        if framework == "net11.0":
+            # Socket interop must match the overlaid CoreLib and System.Native.
+            cmd.extend([
+                "--application.options.outputFiles", str(core_root_path / "System.Net.Sockets.dll"),
+            ])
     
     # Add custom environment variables for this run
     for var_name, var_value in env_vars.items():
