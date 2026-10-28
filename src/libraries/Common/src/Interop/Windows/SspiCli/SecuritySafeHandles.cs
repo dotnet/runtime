@@ -1077,23 +1077,11 @@ namespace System.Net.Security
                 return null;
             }
 
-            bool refAdded = false;
-            try
-            {
-                // The raw handle is used below, so the SafeHandle must not be finalized or disposed meanwhile.
-                DangerousAddRef(ref refAdded);
-
-                var bytes = new byte[_size];
-                Marshal.Copy(handle, bytes, 0, bytes.Length);
-                return BitConverter.ToString(bytes).Replace('-', ' ');
-            }
-            finally
-            {
-                if (refAdded)
-                {
-                    DangerousRelease();
-                }
-            }
+            var bytes = new byte[_size];
+            Marshal.Copy(handle, bytes, 0, bytes.Length);
+            // Prevent finalization from freeing the buffer while it's being copied.
+            GC.KeepAlive(this);
+            return BitConverter.ToString(bytes).Replace('-', ' ');
         }
     }
 
