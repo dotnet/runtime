@@ -83,5 +83,9 @@ The loader bytes are compared with the locally built package. Native Wasm
 recovery also runs with one download slot to exercise bootstrap dependencies.
 Cache-reuse assertions use the small client assembly; browser cache retention
 of large runtime binaries is discretionary.
+Assembly selection follows `UseWebcil`: run the cache tests with
+`-p:WasmEnableWebcil=false` to cover DLL resources as well as Webcil, and run
+the healthy-cache control with `-p:WasmFingerprintAssets=false` to cover
+conditional revalidation.
 
 If you want to test templating mechanism, use `CreateWasmTemplateProject`. Otherwise, use `CopyTestAsset` with either `WasmBasicTestApp` or `BlazorBasicTestApp`, adding your custom `TestScenario` or using a generic `DotnetRun` scenario in case of WASM app and adding a page with test in case of Blazor app. Bigger snippets of code should be saved in `src/mono/wasm/testassets` and placed in the application using methods: `ReplaceFile` or `File.Move`. Replacing existing small parts of code with custom lines is done with `UpdateFile`.

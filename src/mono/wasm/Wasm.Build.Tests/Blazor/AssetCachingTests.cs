@@ -18,6 +18,7 @@ namespace Wasm.Build.Tests.Blazor;
 public class AssetCachingTests : BlazorWasmTestBase
 {
     private const string CacheTestPublishArgs = "-p:PublishReadyToRun=false -p:WasmBuildNative=false";
+    private static string ClientAssemblyExtension => UseWebcil ? ".wasm" : ".dll";
 
     public AssetCachingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -75,7 +76,7 @@ public class AssetCachingTests : BlazorWasmTestBase
         string publishedAppPath = Path.Combine(buildPaths.BinDir, "publish");
         (string assetPrefix, string assetPattern) = assetKind switch
         {
-            "assembly" => ("BlazorWebWasm.Client", "BlazorWebWasm.Client*.wasm"),
+            "assembly" => ("BlazorWebWasm.Client", $"BlazorWebWasm.Client*{ClientAssemblyExtension}"),
             "native" or "native-default" => ("dotnet.native", "dotnet.native*.wasm"),
             "icu" => ("icudt", "icudt_EFIGS*.dat"),
             _ => throw new ArgumentException("Unknown boot resource kind.", nameof(assetKind))
@@ -233,7 +234,7 @@ public class AssetCachingTests : BlazorWasmTestBase
 
                 using var requestLogClient = new BlazorWebWasmLogClient(baseUrl);
                 var firstLoadRequestLogs = await requestLogClient.GetRequestLogsAsync();
-                var firstLoadWasmRequests = firstLoadRequestLogs.Where(log => log.Path.Contains("BlazorWebWasm.Client", StringComparison.Ordinal) && log.Path.EndsWith(".wasm"));
+                var firstLoadWasmRequests = firstLoadRequestLogs.Where(log => log.Path.Contains("BlazorWebWasm.Client", StringComparison.Ordinal) && log.Path.EndsWith(ClientAssemblyExtension, StringComparison.Ordinal));
 
                 // Check server request logs after the first load.
                 Assert.NotEmpty(firstLoadWasmRequests);
@@ -247,7 +248,7 @@ public class AssetCachingTests : BlazorWasmTestBase
                 await counterLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30));
 
                 var secondLoadRequestLogs = await requestLogClient.GetRequestLogsAsync();
-                var secondLoadWasmRequests = secondLoadRequestLogs.Where(log => log.Path.Contains("BlazorWebWasm.Client", StringComparison.Ordinal) && log.Path.EndsWith(".wasm"));
+                var secondLoadWasmRequests = secondLoadRequestLogs.Where(log => log.Path.Contains("BlazorWebWasm.Client", StringComparison.Ordinal) && log.Path.EndsWith(ClientAssemblyExtension, StringComparison.Ordinal));
 
                 // Check server logs after the second load.
                 if (EnvironmentVariables.UseFingerprinting)
