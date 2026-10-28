@@ -493,24 +493,12 @@ public class ExecutionManagerTests
         Assert.Equal(new TargetPointer(CapturedVirtualIP), em.GetStartAddress(handle.Value));
         Assert.Equal(new TargetPointer(LoadedImageBase), em.GetUnwindInfoBaseAddress(handle.Value));
         Assert.Equal(new TargetPointer(runtimeFunctionsAddress + (ulong)runtimeFunctionSize), em.GetUnwindInfo(handle.Value));
-        Assert.True(em.TryGetUnwindInfo(
-            virtualIP,
-            out TargetPointer runtimeFunction,
-            out TargetPointer unwindInfoBaseAddress));
-        Assert.Equal(new TargetPointer(runtimeFunctionsAddress + (ulong)runtimeFunctionSize), runtimeFunction);
-        Assert.Equal(new TargetPointer(LoadedImageBase), unwindInfoBaseAddress);
-        Assert.False(em.TryGetUnwindInfo(
-            new TargetCodePointer(0x7000_0000),
-            out runtimeFunction,
-            out unwindInfoBaseAddress));
-        Assert.Equal(TargetPointer.Null, runtimeFunction);
-        Assert.Equal(TargetPointer.Null, unwindInfoBaseAddress);
         Assert.Equal(new TargetPointer(moduleAddress), em.FindReadyToRunModule(new TargetPointer(CapturedVirtualIP)));
         Assert.Equal(CodeKind.ReadyToRun, em.GetCodeKind(virtualIP));
     }
 
     [Fact]
-    public void ReadyToRunInfo_WasmMissingOptionalFields_EnsureAllFieldsRead()
+    public void ReadyToRunInfo_WasmMissingOptionalFields_TryReadAllFields()
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
         MockExecutionManagerBuilder emBuilder = new(
@@ -528,7 +516,7 @@ public class ExecutionManagerTests
 
         Data.ReadyToRunInfo data =
             target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(r2rInfo.Address);
-        ((Data.IReadableData)data).EnsureAllFieldsRead();
+        Assert.True(data.TryReadAllFields());
 
         Assert.Null(data.NumHotColdMap);
         Assert.Null(data.DelayLoadMethodCallThunks);

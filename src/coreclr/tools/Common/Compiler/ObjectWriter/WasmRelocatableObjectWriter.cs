@@ -389,6 +389,7 @@ namespace ILCompiler.ObjectWriter
                         RelocType.WASM_TABLE_INDEX_I32 => WasmRelocationType.TableIndexI32,
                         RelocType.WASM_TABLE_INDEX_I64 => WasmRelocationType.TableIndexI64,
                         RelocType.WASM_MEMORY_ADDR_LEB => WasmRelocationType.MemoryAddrLeb,
+                        RelocType.WASM_MEMORY_ADDR_SLEB when isFunction => WasmRelocationType.TableIndexSleb,
                         RelocType.WASM_MEMORY_ADDR_SLEB => WasmRelocationType.MemoryAddrSleb,
                         RelocType.WASM_MEMORY_ADDR_REL_SLEB when isFunction => WasmRelocationType.TableIndexSleb,
                         RelocType.WASM_MEMORY_ADDR_REL_SLEB => WasmRelocationType.MemoryAddrRelSleb,
@@ -475,6 +476,7 @@ namespace ILCompiler.ObjectWriter
         private protected override void WriteImports()
         {
             WriteImport(new WasmImport("env", WasmWellKnownGlobalSymbolNode.StackPointerName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut)));
+            WriteImport(new WasmImport("env", WasmWellKnownGlobalSymbolNode.AsyncContinuationName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut)));
             WriteImport(new WasmImport("env", "__indirect_function_table", new WasmTableImportType()));
             WriteImport(new WasmImport("env", "memory", new WasmMemoryImportType(WasmLimitType.HasMin, 0)));
         }

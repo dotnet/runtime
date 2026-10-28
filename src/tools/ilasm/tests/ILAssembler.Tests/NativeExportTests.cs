@@ -133,9 +133,118 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
-        [InlineData(Machine.I386, "FF25", 2, sizeof(uint), 16, 6, 3)]
-        [InlineData(Machine.Amd64, "48A1", 2, sizeof(ulong), 4, 12, 10)]
-        [InlineData(Machine.Arm64, "90000058100240F900021FD6", 16, sizeof(ulong), 8, 24, 10)]
+        [InlineData(Machine.I386, false, false)]
+        [InlineData(Machine.I386, false, true)]
+        [InlineData(Machine.I386, true, false)]
+        [InlineData(Machine.I386, true, true)]
+        [InlineData(Machine.Amd64, false, false)]
+        [InlineData(Machine.Amd64, false, true)]
+        [InlineData(Machine.Amd64, true, false)]
+        [InlineData(Machine.Amd64, true, true)]
+        [InlineData(Machine.Arm64, false, false)]
+        [InlineData(Machine.Arm64, false, true)]
+        [InlineData(Machine.Arm64, true, false)]
+        [InlineData(Machine.Arm64, true, true)]
+        public void MixedDataSections_PreserveFieldsReferencesAndExports(Machine machine, bool tls, bool vtable)
+        {
+            string pointerType = machine == Machine.I386 ? "int32" : "int64";
+            string tlsDeclarations = tls
+                ? """
+                  .data tls TlsValue = int32(0x11223344)
+                  .data tls TlsPointer = &(CilValue)
+                  .field public static int32 TlsField at TlsValue
+                  .field public static native int TlsReference at TlsPointer
+                  """
+                : string.Empty;
+            string vtableDeclaration = vtable ? $".vtfixup [1] {pointerType} fromunmanaged at VT" : string.Empty;
+            string vtableEntry = vtable ? ".vtentry 1 : 1" : string.Empty;
+            string target = tls ? "TlsValue" : "RegularValue";
+            string source = $$"""
+                .assembly test { }
+                .data cil CilValue = int32(0x12345678)
+                .data VT = {{pointerType}}(0)
+                {{tlsDeclarations}}
+                .data cil CilPointer = &({{target}})
+                .data RegularValue = int32(0x55667788)
+                .data RegularPointer = &(CilValue)
+                {{vtableDeclaration}}
+                .field public static int32 CilField at CilValue
+                .field public static int32 RegularField at RegularValue
+                .field public static native int CilReference at CilPointer
+                .field public static native int RegularReference at RegularPointer
+                .field public static {{pointerType}} VTableField at VT
+                .method public static void Exported() cil managed
+                {
+                    {{vtableEntry}}
+                    .export [1] as Exported
+                    ret
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                source, new Options { Machine = machine });
+            MetadataReader reader = pe.GetMetadataReader();
+            Dictionary<string, int> fields = reader.FieldDefinitions
+                .Select(reader.GetFieldDefinition)
+                .ToDictionary(field => reader.GetString(field.Name), field => field.GetRelativeVirtualAddress());
+            Assert.Equal(".text", GetContainingSection(pe, fields["CilField"]).Name);
+            Assert.Equal(".text", GetContainingSection(pe, fields["CilReference"]).Name);
+            Assert.Equal(".sdata", GetContainingSection(pe, fields["RegularField"]).Name);
+            Assert.Equal(".sdata", GetContainingSection(pe, fields["RegularReference"]).Name);
+            Assert.Equal(".sdata", GetContainingSection(pe, fields["VTableField"]).Name);
+            Assert.Equal(0x12345678, ReadInt32(pe, fields["CilField"]));
+            Assert.Equal(0x55667788, ReadInt32(pe, fields["RegularField"]));
+            Assert.Equal(vtable ? 0x06000001 : 0, ReadInt32(pe, fields["VTableField"]));
+            DirectoryEntry exports = pe.PEHeaders.PEHeader!.ExportTableDirectory;
+            if (vtable)
+            {
+                Assert.Equal(fields["VTableField"], ReadInt32(
+                    pe, pe.PEHeaders.CorHeader!.VtableFixupsDirectory.RelativeVirtualAddress));
+                int stubRva = ReadInt32(pe, ReadInt32(pe, exports.RelativeVirtualAddress + 28));
+                Assert.Equal(".text", GetContainingSection(pe, stubRva).Name);
+            }
+            else
+            {
+                Assert.Equal(default, pe.PEHeaders.CorHeader!.VtableFixupsDirectory);
+                Assert.Equal(default, exports);
+            }
+
+            int relocationType = machine == Machine.I386 ? 3 : 10;
+            ulong imageBase = pe.PEHeaders.PEHeader.ImageBase;
+            Assert.Equal(imageBase + (uint)fields["CilField"], ReadPointer(fields["RegularReference"]));
+            Assert.True(HasBaseRelocation(pe, fields["RegularReference"], relocationType));
+            Assert.Equal(imageBase + (uint)fields[tls ? "TlsField" : "RegularField"], ReadPointer(fields["CilReference"]));
+            Assert.True(HasBaseRelocation(pe, fields["CilReference"], relocationType));
+            if (tls)
+            {
+                Assert.Equal(".tls", GetContainingSection(pe, fields["TlsField"]).Name);
+                Assert.Equal(".tls", GetContainingSection(pe, fields["TlsReference"]).Name);
+                Assert.Equal(0x11223344, ReadInt32(pe, fields["TlsField"]));
+                Assert.Equal(imageBase + (uint)fields["CilField"], ReadPointer(fields["TlsReference"]));
+                Assert.True(HasBaseRelocation(pe, fields["TlsReference"], relocationType));
+                int tlsDirectoryRva = pe.PEHeaders.PEHeader.ThreadLocalStorageTableDirectory.RelativeVirtualAddress;
+                int pointerSize = machine == Machine.I386 ? sizeof(uint) : sizeof(ulong);
+                for (int i = 0; i < 4; i++)
+                {
+                    Assert.True(HasBaseRelocation(pe, tlsDirectoryRva + (i * pointerSize), relocationType));
+                }
+            }
+            else
+            {
+                Assert.DoesNotContain(pe.PEHeaders.SectionHeaders, section => section.Name == ".tls");
+                Assert.Equal(default, pe.PEHeaders.PEHeader.ThreadLocalStorageTableDirectory);
+            }
+
+            ulong ReadPointer(int rva) => machine == Machine.I386 ? ReadUInt32(pe, rva) : ReadUInt64(pe, rva);
+        }
+
+        [Theory]
+        [InlineData(Machine.I386, "FF25", 2, sizeof(uint), 16, 6, 3, "")]
+        [InlineData(Machine.Amd64, "48A1", 2, sizeof(ulong), 4, 12, 10, "")]
+        [InlineData(Machine.Arm64, "90000058100240F900021FD6", 16, sizeof(ulong), 8, 24, 10, "")]
+        [InlineData(Machine.I386, "FF25", 2, sizeof(uint), 16, 6, 3, "cil")]
+        [InlineData(Machine.Amd64, "48A1", 2, sizeof(ulong), 4, 12, 10, "cil")]
+        [InlineData(Machine.Arm64, "90000058100240F900021FD6", 16, sizeof(ulong), 8, 24, 10, "cil")]
         public void ExportStub_TargetMachine_IsExecutableAndRelocatable(
             Machine machine,
             string expectedPrefix,
@@ -143,13 +252,14 @@ namespace ILAssembler.Tests
             int addressSize,
             int addressAlignment,
             int stubSize,
-            int relocationType)
+            int relocationType,
+            string section)
         {
             string slotType = addressSize == sizeof(ulong) ? "int64" : "int32";
             string source = $$"""
                 .assembly test { }
                 .assembly extern mscorlib { }
-                .data VT = {{slotType}}(0)
+                .data {{section}} VT = {{slotType}}(0)
                 .vtfixup [1] {{slotType}} fromunmanaged at VT
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
@@ -173,6 +283,8 @@ namespace ILAssembler.Tests
             var stubSection = GetContainingSection(pe, stubRva);
 
             Assert.Equal(machine, pe.PEHeaders.CoffHeader.Machine);
+            Assert.Equal(section == "cil" ? ".text" : ".sdata", GetContainingSection(pe, slotRva).Name);
+            Assert.Equal(0x06000001, ReadInt32(pe, slotRva));
             Assert.NotEqual(0, exports.RelativeVirtualAddress);
             Assert.Equal(".text", stubSection.Name);
             Assert.True(stubSection.SectionCharacteristics.HasFlag(SectionCharacteristics.MemExecute));
@@ -197,18 +309,23 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
-        [InlineData(Machine.I386, "int32", sizeof(uint), 3)]
-        [InlineData(Machine.Amd64, "int64", sizeof(ulong), 10)]
+        [InlineData(Machine.I386, "int32", sizeof(uint), 3, "")]
+        [InlineData(Machine.Amd64, "int64", sizeof(ulong), 10, "")]
+        [InlineData(Machine.I386, "int32", sizeof(uint), 3, "cil")]
+        [InlineData(Machine.Amd64, "int64", sizeof(ulong), 10, "cil")]
+        [InlineData(Machine.I386, "int32", sizeof(uint), 3, "tls")]
+        [InlineData(Machine.Amd64, "int64", sizeof(ulong), 10, "tls")]
         public void DataLabelReference_UsesPointerWidthAbsoluteAddressAndRelocation(
             Machine machine,
             string pointerType,
             int pointerSize,
-            int relocationType)
+            int relocationType,
+            string section)
         {
             string source = $$"""
                 .assembly test { }
-                .data Target = int32(0x12345678)
-                .data Pointer = &(Target)
+                .data {{section}} Target = int32(0x12345678)
+                .data {{section}} Pointer = &(Target)
                 .class public explicit ansi sealed DataHolder
                 {
                     .field [0] public static int32 TargetField at Target
@@ -234,12 +351,50 @@ namespace ILAssembler.Tests
             Assert.False(pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
         }
 
-        [Fact]
-        public void DataLabelReference_MissingTarget_ReportsDiagnosticAndOmitsRelocation()
+        [Theory]
+        [InlineData(Machine.I386, sizeof(uint), 3)]
+        [InlineData(Machine.Amd64, sizeof(ulong), 10)]
+        [InlineData(Machine.Arm64, sizeof(ulong), 10)]
+        public void TlsDirectory_WithoutOtherFixups_EmitsBaseRelocations(
+            Machine machine, int pointerSize, int relocationType)
         {
-            string source = """
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                ".assembly test {} .data tls int32(42)", new Options { Machine = machine });
+            DirectoryEntry directory = pe.PEHeaders.PEHeader!.ThreadLocalStorageTableDirectory;
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.True(HasBaseRelocation(pe, directory.RelativeVirtualAddress + (i * pointerSize), relocationType));
+            }
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("cil")]
+        [InlineData("tls")]
+        public void ZeroSlotVTableFixup_EmptyData_DoesNotRequireBackingBytes(string section)
+        {
+            string source = $$"""
+                .assembly test {}
+                .data {{section}} Empty = int8[0]
+                .vtfixup [0] int32 at Empty
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            DirectoryEntry directory = pe.PEHeaders.CorHeader!.VtableFixupsDirectory;
+            Assert.Equal(8, directory.Size);
+            Assert.Equal(0, ReadUInt16(pe, directory.RelativeVirtualAddress + sizeof(int)));
+            Assert.DoesNotContain(pe.PEHeaders.SectionHeaders, header => header.Name == ".tls");
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("cil")]
+        [InlineData("tls")]
+        public void DataLabelReference_MissingTarget_ReportsDiagnosticAndOmitsRelocation(string section)
+        {
+            string source = $$"""
                 .assembly test { }
-                .data Pointer = &(Missing)
+                .data {{section}} Pointer = &(Missing)
                 .class public explicit ansi sealed DataHolder
                 {
                     .field [0] public static int32 PointerField at Pointer
@@ -259,7 +414,7 @@ namespace ILAssembler.Tests
                 int pointerRva = field.GetRelativeVirtualAddress();
                 Assert.Equal(0U, ReadUInt32(pe, pointerRva));
                 Assert.False(HasBaseRelocation(pe, pointerRva, 3));
-                Assert.True(pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
+                Assert.Equal(section != "tls", pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
             }
         }
 
@@ -626,13 +781,16 @@ namespace ILAssembler.Tests
             }
         }
 
-        [Fact]
-        public void VTableFixup_InsufficientDataLabelStorage_ReportsDiagnosticAndOmitsFixup()
+        [Theory]
+        [InlineData("")]
+        [InlineData("cil")]
+        [InlineData("tls")]
+        public void VTableFixup_InsufficientDataLabelStorage_ReportsDiagnosticAndOmitsFixup(string section)
         {
-            string source = """
+            string source = $$"""
                 .assembly test { }
-                .data VT = int32(0)
-                .data FollowingData = int32(0)
+                .data {{section}} VT = int32(0)
+                .data {{section}} FollowingData = int32(0)
                 .vtfixup [2] int32 fromunmanaged at VT
                 """;
 
@@ -642,7 +800,7 @@ namespace ILAssembler.Tests
                 Diagnostic error = Assert.Single(
                     diagnostics,
                     diagnostic => diagnostic.Id == DiagnosticIds.InsufficientVTableData);
-                Assert.Contains("VT", error.Message);
+                Assert.Contains("'VT' has 4 bytes available", error.Message);
                 Assert.Equal(0, pe.PEHeaders.CorHeader!.VtableFixupsDirectory.RelativeVirtualAddress);
             }
         }
