@@ -14,17 +14,28 @@ extern int __managed__Main(int argc, char* argv[]);
 @end
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
+@end
+
+@interface SceneDelegate : UIResponder <UIWindowSceneDelegate>
 @property (strong, nonatomic) UIWindow *window;
 @property (strong, nonatomic) ViewController *controller;
 @end
 
 @implementation AppDelegate
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+- (UISceneConfiguration *)application:(UIApplication *)application configurationForConnectingSceneSession:(UISceneSession *)connectingSceneSession options:(UISceneConnectionOptions *)options {
+    UISceneConfiguration *configuration = [UISceneConfiguration configurationWithName:nil sessionRole:connectingSceneSession.role];
+    configuration.sceneClass = [UIWindowScene class];
+    configuration.delegateClass = [SceneDelegate class];
+    return configuration;
+}
+@end
+
+@implementation SceneDelegate
+- (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)connectionOptions {
+    self.window = [[UIWindow alloc] initWithWindowScene:(UIWindowScene *)scene];
     self.controller = [[ViewController alloc] initWithNibName:nil bundle:nil];
     self.window.rootViewController = self.controller;
     [self.window makeKeyAndVisible];
-    return YES;
 }
 @end
 
@@ -50,20 +61,24 @@ void (*clickHandlerPtr)(void);
     [button setTitle:@"Click me (wire me up)" forState:UIControlStateNormal];
     [self.view addSubview:button];
 
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    // A scene can reconnect without restarting the process.
+    static dispatch_once_t runtimeInitOnce;
+    dispatch_once(&runtimeInitOnce, ^{
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 #if !USE_NATIVE_AOT
-        mono_ios_runtime_init ();
+            mono_ios_runtime_init ();
 #else
 #if INVARIANT_GLOBALIZATION
-        setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
+            setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
 #endif
-        char **managed_argv;
-        int managed_argc = get_managed_args (&managed_argv);
-        int ret_val = __managed__Main (managed_argc, managed_argv);
-        free_managed_args (&managed_argv, managed_argc);
-        os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", ret_val);
-        exit (ret_val);
+            char **managed_argv;
+            int managed_argc = get_managed_args (&managed_argv);
+            int ret_val = __managed__Main (managed_argc, managed_argv);
+            free_managed_args (&managed_argv, managed_argc);
+            os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", ret_val);
+            exit (ret_val);
 #endif
+        });
     });
 }
 -(void) buttonClicked:(UIButton*)sender
