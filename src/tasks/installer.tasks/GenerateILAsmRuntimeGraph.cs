@@ -8,7 +8,7 @@ using NuGet.Versioning;
 
 namespace Microsoft.DotNet.Build.Tasks;
 
-public sealed class GenerateILAsmRuntimeGraph : BuildTask
+public sealed class GenerateRuntimeDependencies : BuildTask
 {
     [Required]
     public ITaskItem[] RuntimeIdentifiers { get; set; }
@@ -26,7 +26,7 @@ public sealed class GenerateILAsmRuntimeGraph : BuildTask
     {
         if (RuntimeIdentifiers.Length == 0)
         {
-            Log.LogError("At least one runtime identifier is required for the ILAsm lineup package.");
+            Log.LogError("At least one runtime identifier is required.");
             return false;
         }
 

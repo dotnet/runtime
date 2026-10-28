@@ -28,14 +28,14 @@
     <None Include="$(IntermediateOutputPath)runtime.json" Pack="true" PackagePath="/" />
   </ItemGroup>
 
-  <UsingTask TaskName="GenerateILAsmRuntimeGraph"
+  <UsingTask TaskName="GenerateRuntimeDependencies"
              AssemblyFile="$(InstallerTasksAssemblyPath)"
              Runtime="NET"
              Architecture="*" />
 
   <Target Name="GenerateILAsmRuntimeDependencies">
     <MakeDir Directories="$(IntermediateOutputPath)" />
-    <GenerateILAsmRuntimeGraph RuntimeIdentifiers="@(BuildRID)"
+    <GenerateRuntimeDependencies RuntimeIdentifiers="@(BuildRID)"
                               PackageId="$(PackageId)"
                               PackageVersion="$(PackageVersion)"
                               OutputPath="$(IntermediateOutputPath)runtime.json" />
