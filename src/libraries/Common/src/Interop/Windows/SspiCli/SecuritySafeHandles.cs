@@ -1070,7 +1070,7 @@ namespace System.Net.Security
             return status;
         }
 
-        public override unsafe string? ToString()
+        public override string? ToString()
         {
             if (IsInvalid)
             {
@@ -1083,8 +1083,11 @@ namespace System.Net.Security
                 // Keeps the buffer from being freed by Dispose or finalization while it's being read.
                 DangerousAddRef(ref refAdded);
 
-                var bytes = new ReadOnlySpan<byte>((void*)handle, _size);
-                return BitConverter.ToString(bytes.ToArray()).Replace('-', ' ');
+                unsafe
+                {
+                    var bytes = new ReadOnlySpan<byte>((void*)handle, _size);
+                    return BitConverter.ToString(bytes.ToArray()).Replace('-', ' ');
+                }
             }
             catch (ObjectDisposedException)
             {
