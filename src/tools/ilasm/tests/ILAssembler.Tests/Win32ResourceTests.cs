@@ -53,6 +53,20 @@ public sealed class Win32ResourceTests : IDisposable
     }
 
     [Theory]
+    [InlineData(0)]
+    [InlineData(4)]
+    public void CoffFile_PayloadCanEndAtSectionBoundary(int size)
+    {
+        byte[] bytes = CreateCoffFile(Machine.I386);
+        WriteUInt32(bytes, 172, size == 0 ? 8u : 4u);
+        WriteUInt32(bytes, 176, (uint)size);
+
+        using PEReader pe = Assemble(bytes);
+        var resource = Assert.Single(ReadResources(pe));
+        Assert.Equal(size == 0 ? Array.Empty<byte>() : new byte[] { 1, 2, 3, 0 }, resource.Value.Data);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void ResourceFile_DeterministicAcrossCompilations(bool coff)
@@ -89,6 +103,17 @@ public sealed class Win32ResourceTests : IDisposable
     [InlineData("coff-symbol-index")]
     [InlineData("coff-symbol-section")]
     [InlineData("coff-symbol-value")]
+    [InlineData("coff-directory-offset")]
+    [InlineData("coff-directory-header")]
+    [InlineData("coff-directory-entries")]
+    [InlineData("coff-directory-cycle")]
+    [InlineData("coff-directory-depth")]
+    [InlineData("coff-name-offset")]
+    [InlineData("coff-name-length")]
+    [InlineData("coff-data-entry")]
+    [InlineData("coff-payload-size")]
+    [InlineData("coff-payload-end")]
+    [InlineData("coff-missing-relocation")]
     public void InvalidResource_DoesNotReplaceOutputOrPdb(string failure)
     {
         byte[] bytes = failure.StartsWith("coff-", StringComparison.Ordinal) ? CreateCoffFile(Machine.I386) : CreateResFile();
@@ -107,6 +132,26 @@ public sealed class Win32ResourceTests : IDisposable
             case "coff-symbol-index": WriteUInt32(bytes, 204, 1); break;
             case "coff-symbol-section": bytes[210 + 12] = 1; break;
             case "coff-symbol-value": WriteUInt32(bytes, 210 + 8, uint.MaxValue); break;
+            case "coff-directory-offset": WriteUInt32(bytes, 120, 0xfffffff0); break;
+            case "coff-directory-header": WriteUInt32(bytes, 120, 0x80000050); break;
+            case "coff-directory-entries": bytes[114] = 10; break;
+            case "coff-directory-cycle": WriteUInt32(bytes, 120, 0x80000000); break;
+            case "coff-directory-depth": WriteUInt32(bytes, 168, 0x80000048); break;
+            case "coff-name-offset":
+                bytes[112] = 1;
+                bytes[114] = 0;
+                WriteUInt32(bytes, 116, 0xfffffff0);
+                break;
+            case "coff-name-length":
+                bytes[112] = 1;
+                bytes[114] = 0;
+                WriteUInt32(bytes, 116, 0x80000054);
+                bytes[184] = 4;
+                break;
+            case "coff-data-entry": WriteUInt32(bytes, 168, 80); break;
+            case "coff-payload-size": WriteUInt32(bytes, 176, uint.MaxValue); break;
+            case "coff-payload-end": WriteUInt32(bytes, 176, 5); break;
+            case "coff-missing-relocation": bytes[52] = 0; break;
         }
 
         string resourcePath = Path.Combine(_directory, "native.res");

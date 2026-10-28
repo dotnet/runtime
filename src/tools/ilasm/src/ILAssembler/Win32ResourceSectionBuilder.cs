@@ -294,7 +294,71 @@ internal sealed class Win32ResourceSectionBuilder(byte[] sectionBytes, int[] rel
             relocations[i] = offset;
         }
 
+        ValidateCoffDirectory(sectionBytes, directory.SizeOfRawData, seenOffsets);
         return new Win32ResourceSectionBuilder(sectionBytes, relocations);
+    }
+
+    private static void ValidateCoffDirectory(byte[] bytes, int directorySize, HashSet<int> relocations)
+    {
+        var directories = new HashSet<int>();
+        var dataEntries = new HashSet<int>();
+        ValidateDirectory(0, 0);
+        if (!dataEntries.SetEquals(relocations))
+        {
+            throw new InvalidDataException("COFF resource relocations must identify every resource data address and no other fields.");
+        }
+
+        void ValidateDirectory(int offset, int level)
+        {
+            CheckRange(offset, DirectoryHeaderSize, directorySize);
+            if (!directories.Add(offset))
+            {
+                throw new InvalidDataException("The COFF resource directory contains a cycle or a shared subdirectory.");
+            }
+
+            int namedCount = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(offset + 12));
+            int idCount = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(offset + 14));
+            int count = namedCount + idCount;
+            int entriesStart = checked(offset + DirectoryHeaderSize);
+            CheckRange(entriesStart, checked(count * DirectoryEntrySize), directorySize);
+            for (int i = 0; i < count; i++)
+            {
+                int entry = entriesStart + i * DirectoryEntrySize;
+                uint name = ReadUInt32(bytes, entry);
+                bool isNamed = (name & SubdirectoryOrNameFlag) != 0;
+                if (isNamed != (i < namedCount) || (level == 2 && isNamed))
+                {
+                    throw new InvalidDataException("Invalid COFF resource directory identifier.");
+                }
+                if (isNamed)
+                {
+                    int nameOffset = (int)(name & ~SubdirectoryOrNameFlag);
+                    CheckRange(nameOffset, sizeof(ushort), directorySize);
+                    int length = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(nameOffset));
+                    CheckRange(nameOffset + sizeof(ushort), length * sizeof(char), directorySize);
+                }
+
+                uint child = ReadUInt32(bytes, entry + sizeof(uint));
+                bool isDirectory = (child & SubdirectoryOrNameFlag) != 0;
+                if (isDirectory != (level < 2))
+                {
+                    throw new InvalidDataException("The COFF resource directory must have type, name, and language levels.");
+                }
+                int childOffset = (int)(child & ~SubdirectoryOrNameFlag);
+                if (isDirectory)
+                {
+                    ValidateDirectory(childOffset, level + 1);
+                }
+                else
+                {
+                    CheckRange(childOffset, DataEntrySize, directorySize);
+                    int dataOffset = checked((int)ReadUInt32(bytes, childOffset));
+                    int dataSize = checked((int)ReadUInt32(bytes, childOffset + sizeof(uint)));
+                    CheckRange(dataOffset - directorySize, dataSize, bytes.Length - directorySize);
+                    dataEntries.Add(childOffset);
+                }
+            }
+        }
     }
 
     private static uint ReadUInt32(byte[] bytes, int offset) =>
