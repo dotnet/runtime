@@ -121,13 +121,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [KeptMemberInAssembly("library.dll", typeof(ProxySource1), ".ctor()")]
     [KeptTypeInAssembly("library.dll", typeof(ProxyTarget1))]
 
-    // For correctness, NativeAOT only preserves type map entries in a given assembly when the type map is referenced
-    // and the given assembly is referenced with TypeMapAssemblyTargetAttribute with the given type map group.
-    // This is required for the correct runtime behavior.
-    // For simplicity, we do not do the same for ILLinker as the runtime behavior will be correct in CoreCLR regardless
-    // and in the vast majority of user scenarios, assemblies will be correctly referenced with TypeMapAssemblyTargetAttribute.
-    // Nearly every case where this behavior would kick in is a bug in user code.
-    [KeptTypeInAssembly("library.dll", typeof(TargetTypeUnconditional3), Tool = Tool.Trimmer)]
+    // The defining assembly contributes this group's entries without an assembly-target attribute for the group.
+    [KeptTypeInAssembly("library.dll", typeof(TargetTypeUnconditional3))]
     [KeptAttributeInAssembly("library.dll", typeof(TypeMapAttribute<UsedWithoutAssemblyTargetUniverse>))]
 
     [KeptAttributeInAssembly("library.dll", typeof(TypeMapAttribute<UsedTypeMapUniverse>))]

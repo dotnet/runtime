@@ -14,7 +14,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMapAssociation<UnusedTypeMapUniverse>(typeof(ProxySource2), typeof(ProxyTarget2))]
 [assembly: TypeMapAssemblyTarget<UsedTypeMapUniverse>("library2")]
 
-[assembly: TypeMap<UsedWithoutAssemblyTargetUniverse>("UnimportantString", typeof(TargetTypeUnconditional3))]
+[assembly: TypeMap<UsedWithoutAssemblyTargetUniverse>("DefiningAssemblyOnly", typeof(TargetTypeUnconditional3))]
 
 namespace Mono.Linker.Tests.Cases.Reflection.Dependencies
 {

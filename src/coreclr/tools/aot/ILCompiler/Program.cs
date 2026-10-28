@@ -169,7 +169,7 @@ namespace ILCompiler
 
             CompilationModuleGroup compilationGroup;
             List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
-            TypeMapManager typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.Empty);
+            TypeMapManager typeMapManager = new UsageBasedTypeMapManager();
             bool multiFile = Get(_command.MultiFile);
             if (singleMethod != null)
             {
@@ -178,7 +178,7 @@ namespace ILCompiler
                 compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                 if (singleMethod.OwningType is MetadataType { Module.Assembly: EcmaAssembly assembly })
                 {
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(assembly, typeSystemContext.GeneratedAssembly, TypeMapAssemblyTargetsMode.Traverse));
+                    typeMapManager = new UsageBasedTypeMapManager(assembly);
                 }
             }
             else
@@ -314,12 +314,12 @@ namespace ILCompiler
                 if (typeMappingEntryAssembly is not null)
                 {
                     var typeMapEntryAssembly = (EcmaAssembly)typeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(typeMappingEntryAssembly), throwIfNotFound: true);
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(typeMapEntryAssembly, typeSystemContext.GeneratedAssembly, TypeMapAssemblyTargetsMode.Traverse));
+                    typeMapManager = new UsageBasedTypeMapManager(typeMapEntryAssembly);
                 }
                 else if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
                 {
                     // Fall back to entryassembly if not specified
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext.GeneratedAssembly, TypeMapAssemblyTargetsMode.Traverse));
+                    typeMapManager = new UsageBasedTypeMapManager(entryAssembly);
                 }
             }
 
