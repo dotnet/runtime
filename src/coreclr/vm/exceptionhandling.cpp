@@ -3966,8 +3966,18 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
         if (!doingFuncletUnwind)
         {
 #ifdef USE_GC_INFO_DECODER
-            GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
-            isPropagatingToNativeCode = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
+#ifdef FEATURE_INTERPRETER
+            if (codeInfo.GetCodeManager() == ExecutionManager::GetInterpreterCodeManager())
+            {
+                InterpreterGcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+                isPropagatingToNativeCode = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
+            }
+            else
+#endif // FEATURE_INTERPRETER
+            {
+                GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+                isPropagatingToNativeCode = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
+            }
 #else // USE_GC_INFO_DECODER
             hdrInfo *hdrInfoBody;
             codeInfo.DecodeGCHdrInfo(&hdrInfoBody);

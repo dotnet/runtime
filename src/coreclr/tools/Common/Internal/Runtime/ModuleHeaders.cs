@@ -15,8 +15,9 @@ namespace Internal.Runtime
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 32;
+        public const ushort CurrentMajorVersion = 33;
         public const ushort CurrentMinorVersion = 0;
+        public const ushort MinimumWasmMajorVersion = 33;
     }
 #if READYTORUN
 #pragma warning disable 0169

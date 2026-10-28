@@ -1303,8 +1303,7 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
 #elif defined(TARGET_WASM)
     PTR_BYTE pUnwindInfo(dac_cast<PTR_BYTE>(moduleBase + pRuntimeFunction->UnwindData));
     PTR_BYTE pUnwindData = pUnwindInfo;
-    DecodeULEB128AsU32(&pUnwindData); // Skip the count of bytes to unwind
-    DecodeULEB128AsU32(&pUnwindData); // Read the function length in virtual IP units
+    DecodeULEB128AsU64(&pUnwindData);
     *pSize = static_cast<SIZE_T>(pUnwindData - pUnwindInfo);
     return pUnwindInfo;
 #else
@@ -6820,19 +6819,6 @@ PTR_ReadyToRunInfo ReadyToRunJitManager::JitTokenToReadyToRunInfo(const METHODTO
     return MethodToken.m_pRangeSection->_pR2RModule->GetReadyToRunInfo();
 }
 
-UINT32 ReadyToRunJitManager::JitTokenToGCInfoVersion(const METHODTOKEN& MethodToken)
-{
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetReadyToRunHeader();
-
-    return GCInfoToken::ReadyToRunVersionToGcInfoVersion(header->MajorVersion, header->MinorVersion);
-}
-
 PTR_RUNTIME_FUNCTION ReadyToRunJitManager::JitTokenToRuntimeFunction(const METHODTOKEN& MethodToken)
 {
     CONTRACTL {
@@ -6872,9 +6858,7 @@ GCInfoToken ReadyToRunJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
 
     // GCInfo immediately follows unwind data
     PTR_BYTE gcInfo = dac_cast<PTR_BYTE>(pUnwindData) + nUnwindDataSize;
-    UINT32 gcInfoVersion = JitTokenToGCInfoVersion(MethodToken);
-
-    return{ gcInfo, gcInfoVersion };
+    return{ gcInfo, GCINFO_VERSION };
 }
 
 unsigned ReadyToRunJitManager::InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState)

@@ -18,16 +18,16 @@ public unsafe class StackWalkTests
     private const uint X86TransitionBlockSize = 7 * sizeof(uint);
 
     [Theory]
-    [InlineData(false, new byte[] { 0x04, 0x05, 0x21, 0x02 }, uint.MaxValue)]
-    [InlineData(false, new byte[] { 0x81, 0x08, 0x0a, 0x30, 0x42, 0x04 }, 8u)]
-    [InlineData(true, new byte[] { 0x04, 0x4a, 0x04 }, uint.MaxValue)]
-    [InlineData(true, new byte[] { 0x81, 0x08, 0x84, 0x11, 0x22, 0x00 }, 8u)]
+    [InlineData(false, new byte[] { 0x42, 0x02 }, 2u, -1)]
+    [InlineData(false, new byte[] { 0x01, 0x84, 0x44, 0x44, 0x00 }, 2u, 17)]
+    [InlineData(true, new byte[] { 0x04, 0x4a, 0x04 }, uint.MaxValue, 17)]
+    [InlineData(true, new byte[] { 0x81, 0x08, 0x84, 0x11, 0x22, 0x00 }, 8u, 17)]
     public void GCInfo_Wasm_DecodesPlatformAndInterpreterFormats(
-        bool interpreter, byte[] encoded, uint stackBaseRegister)
+        bool interpreter, byte[] encoded, uint stackBaseRegister, int safePointOffset)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
         TestPlaceholderTarget.Builder builder = new(arch);
-        // Length 129 and safe point 17 distinguish the platform's six-bit encoding
+        // Length 129 and safe point 17, when present, distinguish the platform's five-bit encoding
         // from the interpreter's eight-bit encoding and exercise header alignment.
         byte[] gcInfo = new byte[32];
         encoded.CopyTo(gcInfo, 0);
@@ -44,15 +44,16 @@ public unsafe class StackWalkTests
             .AddContract<IGCInfo>(version: "c1")
             .Build().Contracts.GCInfo;
         IGCInfoHandle handle = interpreter
-            ? contract.DecodeInterpreterGCInfo(new TargetPointer(0x1000), 4)
-            : contract.DecodePlatformSpecificGCInfo(new TargetPointer(0x1000), 4);
+            ? contract.DecodeInterpreterGCInfo(new TargetPointer(0x1000), 6)
+            : contract.DecodePlatformSpecificGCInfo(new TargetPointer(0x1000), 6);
 
         GCInfoHeader header = contract.GetHeader(handle);
         Assert.Equal(129u, contract.GetCodeLength(handle));
         Assert.Equal(129u, header.CodeSize);
         Assert.Equal(stackBaseRegister, header.StackBaseRegister);
         Assert.Equal(0u, header.SizeOfStackParameterArea);
-        Assert.Equal(new uint[] { 17 }, contract.GetSafePoints(handle));
+        uint[] expectedSafePoints = safePointOffset < 0 ? [] : [(uint)safePointOffset];
+        Assert.Equal(expectedSafePoints, contract.GetSafePoints(handle));
         Assert.Empty(contract.GetInterruptibleRanges(handle));
         Assert.Equal(interpreter, contract.TryGetGenericContextStorage(
             handle, GenericContextLoc.ThisPtr, 0, out GenericContextStorage storage));
@@ -1773,10 +1774,9 @@ public unsafe class StackWalkTests
             helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functions[i].BeginAddress);
             if (functions[i].FrameSize != 0)
             {
-                // Unwind data is the ULEB128 frame size, addressed as LoadedImageBase (0 here) + UnwindData.
-                Assert.True(functions[i].FrameSize < 0x80);
+                Assert.Equal(0, functions[i].FrameSize % 16);
                 MockMemorySpace.HeapFragment unwindData = allocator.Allocate(1, "UnwindData");
-                unwindData.Data[0] = functions[i].FrameSize;
+                unwindData.Data[0] = (byte)(functions[i].FrameSize / 16);
                 helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindData.Address);
             }
         }

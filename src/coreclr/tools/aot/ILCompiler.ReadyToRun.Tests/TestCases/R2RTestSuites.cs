@@ -32,6 +32,49 @@ public class R2RTestSuites
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WasmGcEncodingRejectsOlderReadyToRunHeaders(bool composite)
+    {
+        const ushort CompactWasmGcFormatVersion = 33;
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(WasmGcEncodingRejectsOlderReadyToRunHeaders),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmGcEncodingRejectsOlderReadyToRunHeaders),
+            [
+                new(nameof(WasmGcEncodingRejectsOlderReadyToRunHeaders), [new CrossgenAssembly(input)])
+                {
+                    Options = composite ? [Crossgen2Option.Composite] : [],
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = reader =>
+                    {
+                        Assert.Equal(CompactWasmGcFormatVersion, reader.ReadyToRunHeader.MajorVersion);
+                        int headerOffset = reader.GetOffset(reader.ReadyToRunHeader.RelativeVirtualAddress);
+                        foreach (ushort majorVersion in new ushort[] { 31, 32, CompactWasmGcFormatVersion })
+                        {
+                            byte[] image = (byte[])reader.Image.Clone();
+                            BinaryPrimitives.WriteUInt16LittleEndian(image.AsSpan(headerOffset + sizeof(uint)), majorVersion);
+                            ReadyToRunReader patchedReader = new(null, reader.Filename, image);
+                            if (TestPaths.IsWasmTarget && majorVersion < CompactWasmGcFormatVersion)
+                            {
+                                Assert.Throws<BadImageFormatException>(() => _ = patchedReader.ReadyToRunHeader);
+                                Assert.Throws<BadImageFormatException>(() => _ = patchedReader.ReadyToRunHeader);
+                            }
+                            else
+                            {
+                                Assert.Equal(majorVersion, patchedReader.ReadyToRunHeader.MajorVersion);
+                            }
+                        }
+                    },
+                },
+            ]));
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, false)]

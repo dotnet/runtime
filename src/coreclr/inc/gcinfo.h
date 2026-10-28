@@ -37,7 +37,7 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 // The current GCInfo Version
 //-----------------------------------------------------------------------------
 
-#define GCINFO_VERSION 5
+#define GCINFO_VERSION 6
 
 #ifdef SOS_INCLUDE
 extern bool IsRuntimeVersionAtLeast(DWORD major);
@@ -47,7 +47,7 @@ inline int GCInfoVersion()
     // Since v2 and v3 had the same file format and v1 is no longer supported,
     // we can assume that everything before net10.0 uses GCInfo v3.
     if (IsRuntimeVersionAtLeast(11))
-        return 5;
+        return 6;
     if (IsRuntimeVersionAtLeast(10))
         return 4;
     return 3;
@@ -61,11 +61,8 @@ inline int GCInfoVersion()
 // wasteful to store the version once for every method.
 // Instead, the version# istracked per range-section of generated/loaded methods.
 //
-// The GCInfo version is computed as :
-// 1) The current GCINFO_VERSION for JITted and Ngened images
-// 2) A function of the Ready - to - run major version stored in READYTORUN_HEADER
-//   for ready - to - run images.ReadyToRunJitManager::JitTokenToGCInfoVersion()
-//   provides the GcInfo version for any Method.
+// The runtime uses the current GCINFO_VERSION for both JITted and ReadyToRun code.
+// Diagnostic tools can supply an earlier version when inspecting older runtimes.
 //-----------------------------------------------------------------------------
 
 struct GCInfoToken
@@ -80,20 +77,6 @@ struct GCInfoToken
         Version = GCINFO_VERSION;
     }
 #endif
-
-    // Keep this in sync with GetR2RGCInfoVersion in cDac (ExecutionManagerCore.ReadyToRunJitManager.cs)
-    static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion)
-    {
-        if (readyToRunMajorVersion >= 21)
-            return 5;
-
-        if (readyToRunMajorVersion >= 11)
-            return 4;
-
-        // Since v2 and v3 had the same file format and v1 is no longer supported,
-        // we can assume GCInfo v3.
-        return 3;
-    }
 };
 
 /*****************************************************************************/

@@ -112,6 +112,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         internal int NUM_UNTRACKED_SLOTS_ENCBASE { get; } = 1;
         internal int REGISTER_ENCBASE { get; } = 3;
         internal int REGISTER_DELTA_ENCBASE { get; } = 2;
+        internal int REGISTER_BITS { get; } = 5;
         internal int STACK_SLOT_ENCBASE { get; } = 6;
         internal int STACK_SLOT_DELTA_ENCBASE { get; } = 4;
         internal int POINTER_SIZE_ENCBASE { get; } = 3;
@@ -134,6 +135,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     NUM_SAFE_POINTS_ENCBASE = 2;
                     break;
                 case Machine.ArmThumb2:
+                    REGISTER_BITS = 4;
                     CODE_LENGTH_ENCBASE = 7;
                     SECURITY_OBJECT_STACK_SLOT_ENCBASE = 5;
                     GS_COOKIE_STACK_SLOT_ENCBASE = 5;
@@ -159,23 +161,23 @@ namespace ILCompiler.Reflection.ReadyToRun
                     GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
                     SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
                     GS_COOKIE_STACK_SLOT_ENCBASE = 6;
-                    CODE_LENGTH_ENCBASE = 6;
+                    CODE_LENGTH_ENCBASE = 5;
                     STACK_BASE_REGISTER_ENCBASE = 3;
                     SIZE_OF_STACK_AREA_ENCBASE = 6;
                     SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
-                    REVERSE_PINVOKE_FRAME_ENCBASE = 6;
+                    REVERSE_PINVOKE_FRAME_ENCBASE = 4;
                     NUM_REGISTERS_ENCBASE = 3;
                     NUM_STACK_SLOTS_ENCBASE = 5;
-                    NUM_UNTRACKED_SLOTS_ENCBASE = 5;
+                    NUM_UNTRACKED_SLOTS_ENCBASE = 7;
                     NORM_PROLOG_SIZE_ENCBASE = 4;
                     NORM_EPILOG_SIZE_ENCBASE = 3;
                     INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 5;
                     INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 5;
                     REGISTER_ENCBASE = 3;
                     REGISTER_DELTA_ENCBASE = REGISTER_ENCBASE;
-                    STACK_SLOT_ENCBASE = 6;
-                    STACK_SLOT_DELTA_ENCBASE = 4;
-                    NUM_SAFE_POINTS_ENCBASE = 4;
+                    STACK_SLOT_ENCBASE = 3;
+                    STACK_SLOT_DELTA_ENCBASE = 3;
+                    NUM_SAFE_POINTS_ENCBASE = 3;
                     NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
                     POINTER_SIZE_ENCBASE = 3;
                     LIVESTATE_RLE_RUN_ENCBASE = 2;
@@ -185,6 +187,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 case Machine.I386:
+                    REGISTER_BITS = 3;
                     CODE_LENGTH_ENCBASE = 6;
                     NORM_PROLOG_SIZE_ENCBASE = 4;
                     SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
@@ -259,6 +262,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.Amd64:
                     return (x << 3);
                 case Machine.ArmThumb2:
+                case WasmMachine.Wasm32:
                     return (x << 2);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
@@ -282,6 +286,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return ((x ^ 22) & 0x3);
                 case Machine.RiscV64:
                     return (x ^ 8);
+                case WasmMachine.Wasm32:
+                    return (x ^ 2);
             }
             return x;
         }
