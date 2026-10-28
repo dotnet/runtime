@@ -1084,20 +1084,7 @@ namespace System.Net.Security
                 DangerousAddRef(ref refAdded);
 
                 var bytes = new ReadOnlySpan<byte>((void*)handle, _size);
-                if (bytes.IsEmpty)
-                {
-                    return string.Empty;
-                }
-
-                // Space-separated uppercase hex bytes, e.g. "0A 1B 2C".
-                return string.Create(bytes.Length * 3 - 1, bytes, static (chars, bytes) =>
-                {
-                    chars.Fill(' ');
-                    for (int i = 0; i < bytes.Length; i++)
-                    {
-                        HexConverter.ToCharsBuffer(bytes[i], chars, i * 3);
-                    }
-                });
+                return BitConverter.ToString(bytes.ToArray()).Replace('-', ' ');
             }
             catch (ObjectDisposedException)
             {
