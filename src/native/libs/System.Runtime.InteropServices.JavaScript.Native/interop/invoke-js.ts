@@ -227,6 +227,7 @@ function bindFn(closure: BindingClosureJS) {
     const fqn = closure.fqn;
     (<any>closure) = null;
     return function boundFn(args: JSMarshalerArguments) {
+        // TODO-MT: always false until threads are enabled, nothing sets ReceiverShouldFree yet
         const receiverShouldFree = isReceiverShouldFree(args);
         const mark = startMeasure();
         try {
@@ -253,6 +254,9 @@ function bindFn(closure: BindingClosureJS) {
                 }
             }
         } catch (ex) {
+            // TODO-MT: once threads are enabled, an async import posted to another thread leaves the
+            // caller awaiting the pre-created Task and it never reads this slot, so the failure has
+            // to be delivered through the Task instead. See bind_fn in src/mono/browser/runtime.
             marshalExceptionToCs(<any>args, ex);
         } finally {
             if (receiverShouldFree) {

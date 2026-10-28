@@ -66,24 +66,16 @@ public class Async2OsrInlinedContexts
     }
 
     [Fact]
-    public static void InlinedCalleeDoesNotClobberContextsInOsrMethod()
+    public static async Task InlinedCalleeDoesNotClobberContextsInOsrMethod()
     {
-        SynchronizationContext original = SynchronizationContext.Current;
         MarkerContext marker = new MarkerContext();
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(marker);
+        SynchronizationContext.SetSynchronizationContext(marker);
 
-            LoopWithInlinedCallee().GetAwaiter().GetResult();
+        await LoopWithInlinedCallee();
 
-            // The inlined callee has its own context save and restore, which must not
-            // disturb the caller's.
-            Assert.Same(marker, SynchronizationContext.Current);
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(original);
-        }
+        // The inlined callee has its own context save and restore, which must not
+        // disturb the caller's.
+        Assert.Same(marker, SynchronizationContext.Current);
     }
 
     private static readonly AsyncLocal<int> s_local = new AsyncLocal<int>();
@@ -114,16 +106,35 @@ public class Async2OsrInlinedContexts
     }
 
     [Fact]
-    public static void ResumingInsideInlinedFrameOfOsrMethodKeepsContexts()
+    public static async Task ResumingInsideInlinedFrameOfOsrMethodKeepsContexts() => await LoopWithSuspendingInlinedCallee();
+
+    [Fact]
+    public static Task TailAwaitOnlyMethodCanResumeInOsrCode()
     {
-        SynchronizationContext original = SynchronizationContext.Current;
-        try
+        return Run();
+
+        static async Task Run()
         {
-            LoopWithSuspendingInlinedCallee().GetAwaiter().GetResult();
+            Assert.Equal(42, await LoopBeforeTailAwait(new[] { 42 }));
         }
-        finally
+    }
+
+    // NoInlining would prevent the Tier0 tail await and hide the missing dispatcher.
+    private static Task<int> LoopBeforeTailAwait(int[] value)
+    {
+        Assert.Equal(42, value[0]);
+        for (int i = 0; i < Iterations; i++)
         {
-            SynchronizationContext.SetSynchronizationContext(original);
+            Volatile.Write(ref s_sideEffect, i);
         }
+
+        return ReadAfterYield(value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async Task<int> ReadAfterYield(int[] value)
+    {
+        await Task.Yield();
+        return value[0];
     }
 }

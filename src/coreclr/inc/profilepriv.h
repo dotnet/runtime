@@ -192,10 +192,8 @@ private:
         // This is the dirty read
         if (pProfilerInfo->pProfInterface.Load() != NULL)
         {
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
             // Now indicate we are accessing the profiler
             EvacuationCounterHolder evacuationCounter(pProfilerInfo);
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
 
             if ((callbackType == ProfilerCallbackType::Active && IsProfilerPresent(pProfilerInfo))
                 || (callbackType == ProfilerCallbackType::ActiveOrInitializing && IsProfilerPresentOrInitializing(pProfilerInfo)))

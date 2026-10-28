@@ -128,7 +128,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
         IXCLRDataValue? legacyValue = null;
 
-        if (_legacyImpl is not null && LegacyFallbackHelper.CanFallback())
+        if (_legacyImpl is not null)
         {
             DacComNullableByRef<IXCLRDataValue> legacyValueOut = new(value.IsNullRef);
             hrLocal = _legacyImpl.GetManagedObject(legacyValueOut);

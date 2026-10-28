@@ -30,7 +30,7 @@ inline CHECK PEAssembly::Invariant()
     {
         // dynamic module case
         CHECK(m_PEImage == NULL);
-        CHECK(CheckPointer(m_pEmitter));
+        CHECK(CheckPointer(m_pMDInternalEmit));
     }
     else
     {
@@ -253,7 +253,15 @@ inline IMDInternalImport* PEAssembly::GetMDImport()
 #endif
 };
 
-#ifndef DACCESS_COMPILE
+inline IMDInternalEmit* PEAssembly::GetMDInternalEmit()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(m_pMDInternalEmit != NULL);
+    return m_pMDInternalEmit;
+}
+
+#if !defined(DACCESS_COMPILE) && (defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER))
 
 inline IMetaDataImport2 *PEAssembly::GetRWImporter()
 {
@@ -290,7 +298,7 @@ inline IMetaDataEmit *PEAssembly::GetEmitter()
 }
 
 
-#endif // DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && (PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER)
 
 // Same as the managed Module.ScopeName property, this unconditionally looks in the
 // metadata Module table to get the name.  Useful for profilers and others who don't

@@ -100,6 +100,7 @@ internal sealed class IPAddressFuzzer : IFuzzer
 ```
 
 - `TargetAssemblies` is a list of assemblies where the tested code lives and that must be instrumented.
+- `TargetAssemblyPrefixes` optionally limits instrumentation to type/namespace prefixes within those assemblies.
 - `TargetCoreLibPrefixes` is the same, but for types/namespaces in `System.Private.CoreLib`.
 - `FuzzTarget` is the logic that the fuzzer will run for every test input. It should exercise code from the target assemblies.
 

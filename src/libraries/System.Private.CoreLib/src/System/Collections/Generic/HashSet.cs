@@ -1105,9 +1105,33 @@ namespace System.Collections.Generic
                 return true;
             }
 
+            // Fast path for Overlaps when other is HashSet with same equality comparer
+            if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
+            {
+                return otherAsSet.Count > Count ? OverlapsHashSetImpl(this, otherAsSet) : OverlapsHashSetImpl(otherAsSet, this);
+            }
+
+            return OverlapsEnumerableImpl(other);
+        }
+
+        private bool OverlapsEnumerableImpl(IEnumerable<T> other)
+        {
             foreach (T element in other)
             {
                 if (Contains(element))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool OverlapsHashSetImpl(HashSet<T> smaller, HashSet<T> larger)
+        {
+            foreach (T element in smaller)
+            {
+                if (larger.Contains(element))
                 {
                     return true;
                 }

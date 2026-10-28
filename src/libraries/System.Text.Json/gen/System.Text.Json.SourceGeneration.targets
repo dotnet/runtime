@@ -22,6 +22,11 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynApiVersion)" PrivateAssets="all" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\StringPolyfills.cs" Link="Common\Polyfills\StringPolyfills.cs" />
+    <Compile Include="$(CommonPath)System\Buffers\SpanAction.cs" Link="Common\System\Buffers\SpanAction.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="Common\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
@@ -31,6 +36,8 @@
     <Compile Include="$(CommonPath)\Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\CSharpSyntaxUtilities.cs" Link="Common\SourceGenerators\CSharpSyntaxUtilities.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\ContainingTypeUtilities.cs" Link="Common\SourceGenerators\ContainingTypeUtilities.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\DeclarationHeader.cs" Link="Common\SourceGenerators\DeclarationHeader.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\ImmutableEquatableArray.cs" Link="Common\SourceGenerators\ImmutableEquatableArray.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\SourceWriter.cs" Link="Common\SourceGenerators\SourceWriter.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\TypeModelHelper.cs" Link="Common\SourceGenerators\TypeModelHelper.cs" />
@@ -61,7 +68,6 @@
     <Compile Include="..\Common\JsonUnmappedMemberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnmappedMemberHandling.cs" />
     <Compile Include="..\src\System\Text\Json\JsonTokenType.cs" Link="Common\System\Text\Json\JsonTokenType.cs" />
     <Compile Include="..\src\System\Text\Json\Serialization\JsonValueType.cs" Link="Common\System\Text\Json\Serialization\JsonValueType.cs" />
-    <Compile Include="..\Common\ThrowHelper.cs" Link="Common\System\Text\Json\ThrowHelper.cs" />
     <Compile Include="Helpers\SourceGeneratorHelpers.cs" />
     <Compile Include="Helpers\KnownTypeSymbols.cs" />
     <Compile Include="Helpers\RoslynExtensions.cs" />

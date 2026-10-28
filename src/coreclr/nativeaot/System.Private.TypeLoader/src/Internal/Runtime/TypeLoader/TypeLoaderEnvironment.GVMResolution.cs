@@ -181,14 +181,6 @@ namespace Internal.Runtime.TypeLoader
             return new MethodNameAndSignature(ModuleList.Instance.GetMetadataReaderForModule(moduleHandle), token.AsHandle().ToMethodHandle(null));
         }
 
-        private static RuntimeTypeHandle GetTypeDefinition(RuntimeTypeHandle typeHandle)
-        {
-            if (RuntimeAugments.IsGenericType(typeHandle))
-                return RuntimeAugments.GetGenericDefinition(typeHandle);
-
-            return typeHandle;
-        }
-
         private static InstantiatedMethod FindMatchingInterfaceSlot(NativeFormatModuleInfo module, NativeReader nativeLayoutReader, ref NativeParser entryParser, ref ExternalReferencesTable extRefs, InstantiatedMethod slotMethod, DefType targetType, bool variantDispatch, bool defaultMethods)
         {
             uint numTargetImplementations = entryParser.GetUnsigned();
@@ -250,7 +242,7 @@ namespace Internal.Runtime.TypeLoader
                         NativeParser ifaceSigParser = new NativeParser(nativeLayoutReader, entryParser.GetUnsigned());
 
                         NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
-                        nativeLayoutContext._module = ModuleList.Instance.GetModuleInfoByHandle(module.Handle);
+                        nativeLayoutContext._module = module;
                         nativeLayoutContext._typeSystemContext = context;
                         nativeLayoutContext._typeArgumentHandles = targetType.Instantiation;
 
@@ -484,10 +476,10 @@ namespace Internal.Runtime.TypeLoader
         private static InstantiatedMethod ResolveGenericVirtualMethodTarget(DefType targetType, InstantiatedMethod slotMethod)
         {
             // Get the open type definition of the containing type of the generic virtual method being resolved
-            RuntimeTypeHandle openCallingTypeHandle = GetTypeDefinition(slotMethod.OwningType.GetTypeDefinition().RuntimeTypeHandle);
+            RuntimeTypeHandle openCallingTypeHandle = slotMethod.OwningType.GetTypeDefinition().RuntimeTypeHandle;
 
             // Get the open type definition of the current type of the object instance on which the GVM is being resolved
-            RuntimeTypeHandle openTargetTypeHandle = GetTypeDefinition(targetType.GetTypeDefinition().RuntimeTypeHandle);
+            RuntimeTypeHandle openTargetTypeHandle = targetType.GetTypeDefinition().RuntimeTypeHandle;
 
             int hashCode = openCallingTypeHandle.GetHashCode();
             hashCode = ((hashCode << 13) ^ hashCode) ^ openTargetTypeHandle.GetHashCode();
@@ -500,10 +492,6 @@ namespace Internal.Runtime.TypeLoader
             {
                 NativeReader gvmTableReader;
                 if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.GenericVirtualMethodTable, out gvmTableReader))
-                    continue;
-
-                NativeReader nativeLayoutReader;
-                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.NativeLayoutInfo, out nativeLayoutReader))
                     continue;
 
                 NativeParser gvmTableParser = new NativeParser(gvmTableReader, 0);

@@ -70,6 +70,10 @@ jobs:
         value: osx
     - name: crossgen2location
       value: $(binDirectory)$(dir)crossgen2_inbuild$(dir)$(archType)$(dir)$(buildConfigUpper)$(dir)crossgen2.dll
+    - name: crossgenComparisonBuildHostRid
+      value: ${{ format('{0}-x64', replace(parameters.osGroup, 'windows', 'win')) }}
+    - name: crossgenComparisonRunnerDirectory
+      value: $(artifactsDirectory)$(dir)crossgen2_comparison_runner
     - name: librariesProductDllDir
       value: $(Build.SourcesDirectory)$(dir)artifacts$(dir)bin$(dir)runtime$(dir)net11.0-$(osGroup)$(osSubgroup)-$(buildConfig)-$(archType)
 
@@ -119,33 +123,47 @@ jobs:
         displayName: Create directories
         failOnStderr: true
 
+    # Publish the runner used to create the baseline on this x64 build machine.
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: |
+          mkdir -p "$(crossgenComparisonRunnerDirectory)"
+          "$(Build.SourcesDirectory)/dotnet.sh" publish "$(Build.SourcesDirectory)/src/tests/Common/scripts/crossgen2_comparison.cs" \
+            -c Release \
+            -r "$(crossgenComparisonBuildHostRid)" \
+            -o "$(crossgenComparisonRunnerDirectory)"
+        displayName: Publish crossgen comparison runner
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - script: |
+          md "$(crossgenComparisonRunnerDirectory)"
+          "$(Build.SourcesDirectory)\eng\common\dotnet.cmd" publish "$(Build.SourcesDirectory)\src\tests\Common\scripts\crossgen2_comparison.cs" ^
+            -c Release ^
+            -r "$(crossgenComparisonBuildHostRid)" ^
+            -o "$(crossgenComparisonRunnerDirectory)"
+        displayName: Publish crossgen comparison runner
+
     # Create baseline output on the host (x64) machine
-    - task: PythonScript@0
-      displayName: Create cross-platform crossgen baseline
-      inputs:
-        scriptSource: 'filePath'
-        scriptPath: $(Build.SourcesDirectory)/src/tests/Common/scripts/crossgen2_comparison.py
-        ${{ if ne(parameters.osGroup, 'windows') }}:
-          pythonInterpreter: /usr/bin/python3
-          arguments:
-            crossgen_framework
-            --crossgen    $(crossgen2location)
-            --dotnet      $(Build.SourcesDirectory)/dotnet.sh
-            --core_root   $(workItemDirectory)/dlls
-            --result_dir  $(workItemDirectory)/log
-            --target_os   $(target_crossgen2_os)
-            --target_arch $(archType)
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: |
+          "$(crossgenComparisonRunnerDirectory)/crossgen2_comparison" crossgen_framework \
+            --crossgen    "$(crossgen2location)" \
+            --dotnet      "$(Build.SourcesDirectory)/.dotnet/dotnet" \
+            --core_root   "$(workItemDirectory)/dlls" \
+            --result_dir  "$(workItemDirectory)/log" \
+            --target_os   $(target_crossgen2_os) \
+            --target_arch $(archType) \
             --compiler_arch_os $(target_crossgen2_os)_x64
-        ${{ if eq(parameters.osGroup, 'windows') }}:
-          arguments:
-            crossgen_framework
-            --crossgen    $(crossgen2location)
-            --dotnet      $(Build.SourcesDirectory)\eng\common\dotnet.cmd
-            --core_root   $(workItemDirectory)\dlls
-            --result_dir  $(workItemDirectory)\log
-            --target_os   $(target_crossgen2_os)
-            --target_arch $(archType)
+        displayName: Create cross-platform crossgen baseline
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - script: |
+          "$(crossgenComparisonRunnerDirectory)\crossgen2_comparison.exe" crossgen_framework ^
+            --crossgen    "$(crossgen2location)" ^
+            --dotnet      "$(Build.SourcesDirectory)\.dotnet\dotnet.exe" ^
+            --core_root   "$(workItemDirectory)\dlls" ^
+            --result_dir  "$(workItemDirectory)\log" ^
+            --target_os   $(target_crossgen2_os) ^
+            --target_arch $(archType) ^
             --compiler_arch_os $(target_crossgen2_os)_x64
+        displayName: Create cross-platform crossgen baseline
 
     - task: PublishPipelineArtifact@1
       displayName: Publish cross compiled component

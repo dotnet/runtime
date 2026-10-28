@@ -171,6 +171,20 @@ public unsafe class TypeHandleTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void ClrDataTypeInstance_StartEnumMethodInstances_ClearsHandle(MockTarget.Architecture architecture)
+    {
+        TargetTypeHandle typeHandle = new(0x2002);
+        TestRuntimeTypeSystem runtimeTypeSystem = new();
+        TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
+        IXCLRDataTypeInstance typeInstance = new ClrDataTypeInstance(target, typeHandle, null, new());
+
+        ulong handle = ulong.MaxValue;
+        Assert.Equal(HResults.E_NOTIMPL, typeInstance.StartEnumMethodInstances(&handle));
+        Assert.Equal(0ul, handle);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void ClrDataTypeDefinition_GetNameFollowsBufferProtocol(MockTarget.Architecture architecture)
     {
         TargetTypeHandle typeHandle = new(0x2002);
