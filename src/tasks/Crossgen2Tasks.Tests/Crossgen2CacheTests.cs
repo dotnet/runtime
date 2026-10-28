@@ -632,6 +632,86 @@ public class Crossgen2CacheTests
         Assert.False(Directory.Exists(fixture.Cache));
     }, configuration, input).Dispose();
 
+    public static IEnumerable<object[]> WildcardInputOverlapCases =>
+        from configuration in new[] { "enabled", "disabled", "bypassed" }
+        from source in new[] { "reference", "composite-reference", "composite", "unrooted" }
+        from pattern in new[] { "Dep*.dll", "Dependen?y.dll" }
+        from symbols in new[] { false, true }
+        select new object[] { configuration, source, pattern, symbols };
+
+    [CachePlatformTheory]
+    [MemberData(nameof(WildcardInputOverlapCases))]
+    public void WildcardInputOverlapsFailBeforeCleanup(string configuration, string source, string pattern, bool symbols) =>
+        RemoteExecutor.Invoke((mode, input, search, pdb) =>
+    {
+        using var fixture = new Fixture();
+        string directory = Path.Combine(fixture.Root, "reference directory");
+        Directory.CreateDirectory(directory);
+        string assembly = Path.Combine(directory, "Dependency.dll");
+        File.Copy(fixture.Input, assembly);
+        string protectedPath = assembly;
+        MockCompiler task = fixture.Create();
+        task.CompilationEntry.SetMetadata("EmitSymbols", "false");
+        if (bool.Parse(pdb))
+        {
+            protectedPath = Path.Combine(directory, Path.GetFileName(fixture.Map));
+            File.Copy(Path.ChangeExtension(fixture.Input, ".pdb"), protectedPath);
+            task.CompilationEntry.SetMetadata("OutputPDBImage", protectedPath);
+            using FileStream stream = File.Open(assembly, FileMode.Open, FileAccess.ReadWrite);
+            using var pe = new PEReader(stream, PEStreamOptions.LeaveOpen);
+            DebugDirectoryEntry entry = pe.ReadDebugDirectory().Single(e => e.Type == DebugDirectoryEntryType.CodeView);
+            stream.Position = entry.DataPointer + 24;
+            stream.Write(System.Text.Encoding.UTF8.GetBytes(Path.GetFileName(protectedPath) + "\0"));
+        }
+        else
+        {
+            task.CompilationEntry.SetMetadata("OutputR2RImage", protectedPath);
+        }
+        var wildcard = new TaskItem(Path.Combine(directory, search));
+        task.ImplementationAssemblyReferences = Array.Empty<ITaskItem>();
+        if (input == "reference")
+        {
+            task.ImplementationAssemblyReferences = new[] { wildcard };
+        }
+        else
+        {
+            task.CompilationEntry.SetMetadata("CreateCompositeImage", "true");
+            task.ReadyToRunCompositeBuildReferences = input == "composite-reference" ? new[] { wildcard } : Array.Empty<ITaskItem>();
+            task.ReadyToRunCompositeBuildInput = new[] { input == "composite" ? wildcard : new TaskItem(fixture.Input) };
+            task.ReadyToRunCompositeUnrootedBuildInput = input == "unrooted" ? new[] { wildcard } : Array.Empty<ITaskItem>();
+        }
+        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
+        task.ShowCompilerWarnings = mode == "bypassed";
+        byte[] before = File.ReadAllBytes(protectedPath);
+        byte[] assemblyBefore = File.ReadAllBytes(assembly);
+
+        Assert.False(task.Execute());
+        Assert.Equal(0, task.Executions);
+        Assert.Equal(before, File.ReadAllBytes(protectedPath));
+        Assert.Equal(assemblyBefore, File.ReadAllBytes(assembly));
+        Assert.Contains(task.Engine.Errors, message => message.Contains("overlaps compiler input", StringComparison.Ordinal));
+        Assert.False(Directory.Exists(fixture.Cache));
+    }, configuration, source, pattern, symbols.ToString()).Dispose();
+
+    [CachePlatformTheory]
+    [InlineData("*.dll")]
+    [InlineData("missing*.dll")]
+    [InlineData("missing-directory/*.dll")]
+    public void NonOverlappingWildcardReferencesStillExecuteWithoutCaching(string pattern) => RemoteExecutor.Invoke(search =>
+    {
+        using var fixture = new Fixture();
+        string directory = Path.Combine(fixture.Root, "references");
+        Directory.CreateDirectory(directory);
+        File.Copy(fixture.Reference, Path.Combine(directory, "Dependency.dll"));
+        MockCompiler task = fixture.Create();
+        task.ImplementationAssemblyReferences = new[] { new TaskItem(Path.Combine(directory, search)) };
+
+        Assert.True(task.Execute());
+        Assert.Equal(1, task.Executions);
+        Assert.Contains(task.Engine.Messages, message => message.Contains("cache bypass:", StringComparison.Ordinal));
+        Assert.False(Directory.Exists(fixture.Cache));
+    }, pattern).Dispose();
+
     public static IEnumerable<object[]> InputPdbOverlapCases =>
         from configuration in new[] { "enabled", "disabled", "bypassed" }
         from source in new[] { "assembly", "reference", "composite", "unrooted", "legacy", "pdb-only" }

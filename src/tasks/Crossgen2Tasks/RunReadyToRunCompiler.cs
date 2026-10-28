@@ -279,14 +279,42 @@ namespace Microsoft.NET.Build.Tasks
                         inputs = inputs.Append(Path.Combine(directory, "Microsoft.DiaSymReader.Native.dll"));
                     }
                 }
-                foreach (string input in inputs.Concat(assemblies))
+                var assemblyPaths = new HashSet<string>(Crossgen2Cache.PathComparer);
+                foreach (string assembly in assemblies)
+                {
+                    if (string.IsNullOrEmpty(assembly))
+                    {
+                        continue;
+                    }
+                    if (ActuallyUseCrossgen2 && assembly.AsSpan().IndexOfAny('*', '?') >= 0)
+                    {
+                        // Match crossgen2's non-recursive command-line wildcard expansion.
+                        string directory = Path.GetDirectoryName(assembly);
+                        if (string.IsNullOrEmpty(directory))
+                        {
+                            directory = ".";
+                        }
+                        if (Directory.Exists(directory))
+                        {
+                            foreach (string match in Directory.EnumerateFiles(directory, Path.GetFileName(assembly)))
+                            {
+                                assemblyPaths.Add(Path.GetFullPath(match));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        assemblyPaths.Add(Path.GetFullPath(assembly));
+                    }
+                }
+                foreach (string input in inputs.Concat(assemblyPaths))
                 {
                     if (!ValidateInput(input))
                     {
                         return false;
                     }
                 }
-                foreach (string assembly in assemblies.Where(path => !string.IsNullOrEmpty(path)).Select(Path.GetFullPath).Distinct(Crossgen2Cache.PathComparer))
+                foreach (string assembly in assemblyPaths)
                 {
                     try
                     {
