@@ -36,6 +36,81 @@ The existing five `DelayedR2RActivation` test variants retain the phase-1 simula
 
 See the [compiler usage and restrictions](../../../src/coreclr/tools/aot/crossgen2/README.md) and [browser build integration](../../../src/mono/browser/build/README.md) for the emitted-file contract and supported diagnostic options.
 
+### Measured V1 results
+
+The final Release comparison used feature commit `f0984cc980d4d6201d1daebc15305c1c2c240d87` against the unchanged phase-1 control at `1d0ddf7b2e680164058928e14b615de37a46504e`. This measures the complete feature change, not just toggling the publishing property on the new compiler. All nine applications came from the same macro-benchmark checkout at `84f9ac6e9c293f1ce50f64dcb36d747daf8f5509`, including its preserved pre-existing local changes. Publishing used SDK `11.0.100-rc.2.26504.105`, locally built `12.0.0-dev` packs, and the frozen final compiler.
+
+All 36 normal desktop/mobile result rows were measured again, separately from 12 activation-gated steady-state pages. External cold/warm startup counts were 10/5; the internal microbenchmark exports only its single cold page and standard seven-window sampling. UI walkthrough counts remained unchanged: five for the standalone Blazor applications, three per Avalonia scenario, and one per hosted Blazor scenario. These are descriptive local measurements on a monitored shared Linux desktop, not exclusive-machine or statistical-significance claims. Attempts overlapping observed external runtime builds/tests were excluded and repeated; a failed hosted-server readiness attempt was also repeated without assuming its cause.
+
+#### Physical modules and transferred size
+
+The following sizes are KiB of Brotli-compressed R2R modules. The control has one module; the feature has a primary, an entrypoint map, and one cold-body module. The [size inventory](partitioned-wasm-r2r-modules-sizes.csv) records exact raw, gzip, and Brotli bytes for every role and application.
+
+| Application | Control | Primary | Entrypoint map | Cold body | Combined change |
+|---|---:|---:|---:|---:|---:|
+| empty-browser | 705.4 | 265.5 | 47.3 | 466.2 | +10.4% |
+| empty-blazor | 2138.8 | 626.4 | 222.4 | 1472.8 | +8.5% |
+| blazing-pizza | 3027.6 | 810.8 | 435.3 | 2076.5 | +9.7% |
+| micro-benchmarks | 757.8 | 276.9 | 51.4 | 509.0 | +10.5% |
+| havit-bootstrap | 4620.4 | 1111.5 | 699.5 | 3287.3 | +10.3% |
+| mud-blazor | 11737.6 | 1866.2 | 2280.8 | 8770.1 | +10.0% |
+| igniteui-light | 3346.3 | 872.9 | 506.5 | 2320.1 | +10.6% |
+| blazor-perf | 2213.6 | 636.7 | 233.5 | 1528.5 | +8.4% |
+| avalonia-bench | 2322.1 | 827.6 | 232.2 | 1488.8 | +9.8% |
+
+#### Startup and initial interactions
+
+Times below are control / partitioned milliseconds, with smaller being better. Startup is the unchanged harness's cold managed-readiness metric except for micro-benchmarks, which reports .NET creation, and hosted blazor-perf, which reports its server-rendered landing page rather than WASM startup.
+
+| Application | Desktop cold | Mobile cold | Framework Brotli change | Completed encoded download change |
+|---|---:|---:|---:|---:|
+| empty-browser | 140 / 153 | 1492 / 1317 | +2.4% | +2.9% |
+| empty-blazor | 396 / 446 | 2835 / 2778 | +3.4% | +3.8% |
+| blazing-pizza | 419 / 471 | 3523 / 3113 | +4.4% | +4.4% |
+| micro-benchmarks | 151 / 139 | 1518 / 1354 | +2.5% | +3.0% |
+| havit-bootstrap | 526 / 517 | 4874 / 4052 | +5.5% | +5.0% |
+| mud-blazor | 1276 / 929 | 10438 / 6507 | +6.4% | +6.4% |
+| igniteui-light | 529 / 560 | 4144 / 3531 | +5.0% | +5.2% |
+| blazor-perf | 29 / 30 | 212 / 206 | +3.1% | +3.6% |
+| avalonia-bench | 384 / 608 | 3538 / 3731 | +3.2% | +3.5% |
+
+Framework sizes are on-disk totals, not necessarily fetched bytes. Completed download audits include finished asynchronous sidecar transfers; the harness's earlier startup download snapshot can omit those transfers. Hosted blazor-perf's download row uses its actual `/counter-heavy-wasm` client route, not the small landing page. Its full 22-scenario desktop walkthrough, including nine WASM client scenarios, was retained.
+
+Earlier managed readiness is not the same as faster initial interactions. Desktop walkthrough times regressed from 126 to 334 ms for Pizza (+165%), 2674 to 4718 ms for Havit (+76%), 5059 to 15882 ms for Mud (+214%), and 731 to 1035 ms for Ignite (+42%). Activation state was not recorded on those normal walkthrough pages, so these regressions are not all attributed to one mechanism.
+
+The ungated synchronous JSON benchmark measured 368948 / 5978 operations per second on desktop and 116166 / 1987 on mobile. Separate diagnostics verified that its long initial managed call prevents JavaScript activation until it returns, leaving the measured loop interpreted. These startup/fallback costs are retained, not replaced by the following steady-state numbers.
+
+#### Verified post-activation throughput
+
+Separate fresh pages waited for actual mapping/body status `1/1` before timing. Each repetition used the original seven two-second windows, discarded the first, and applied the existing interquartile-range filtering. Values below are medians of three repetitions per side/profile. All 252 feature window-boundary checks observed active status, and each feature page forwarded exactly one real native mapping-activation notification.
+
+| Profile | Operations per second | Control | Partitioned | Change |
+|---|---|---:|---:|---:|
+| Desktop | JSON parse | 375077 | 341759 | -8.88% |
+| Mobile | JSON parse | 116459 | 107613 | -7.60% |
+| Desktop | JavaScript interop | 782032 | 789858 | +1.00% |
+| Mobile | JavaScript interop | 263550 | 261608 | -0.74% |
+| Desktop | Exceptions | 176 | 165 | -6.25% |
+| Mobile | Exceptions | 59 | 55 | -6.78% |
+
+Avalonia required an artifact-only SDK11 eligibility override and native SkiaSharp relinking using matching local workload targets/tasks. Both sides rendered successfully; this is not out-of-box SDK11/harness support. No tracked benchmark source changes or package/workload installations were needed for the workaround.
+
+The V1 heuristic therefore reduces the primary download and can improve managed readiness, but increases total transfer size and does not eliminate initial-interaction or steady-throughput regressions. It remains an opt-in experimental tradeoff, not a general performance improvement.
+
+#### Validation and retained evidence
+
+Browser Release and Linux x64 Release builds passed. The compiler suite passed 226 tests with 39 skips; 17 loader tests, five simulation variants, five physical variants, and eight engine activation/boundary cases passed. A CoreLib-inclusive native helper fixture also verified 200 exceptions, 400 finally executions, 400 forced collections, and live GC roots.
+
+The local evidence root is `~/.copilot/session-state/0797c2c0-9a42-4488-8454-7761c25a6e19/files/aux-benchmarks/final-f0984cc980d4/`. Its `comparison-summary.json`, `performance-comparison.csv`, `module-role-sizes.csv`, `steady-performance-comparison.csv`, raw results, completed download audits, monitoring/retry logs, and 342 checksummed evidence files retain the full comparison. `reproduce-commands.json` records exact commands, environments, inputs, and exit results; the older parent-directory cohort is provisional and is not pooled with these results. Compiler/native validation commands and logs are separately indexed by `artifacts/aux-helper-validation.json` in the feature worktree.
+
+Final publishing inputs are identified by SHA256:
+
+| Input | SHA256 |
+|---|---|
+| Frozen crossgen2 executable | `6683be0a5645d5c2db67c53081d2a1837f3ceb20f8f5686d0a211e4f697db7ef` |
+| Browser runtime pack | `b3b63fc2e104c9c6b5f33cdf4bb2c612f7ffcf7f6f785ca499527fd177c41e8b` |
+| WebAssembly SDK pack | `e7498abf56efe8675ac566ccbf59f365938332a82e9843e9b2907c678c7623fe` |
+
 ## Flow
 
 When a new method is discovered to be executed, the runtime will attempt to resolve R2R code for the method, first in the primary module, then in the auxiliary modules, if the Auxiliary EntryPoints Module information is available. If the method is determined to be in an auxiliary module, the runtime will check if the module has been activated, and activate the method if it is. Otherwise, flags on the PEP will track what is holding activation of the method: the Auxiliary EntryPoints Module, or the auxiliary module containing the code. Subsequent calls to the interpreted method will check activation status and attempt activation of the R2R code. Checking for activation of the EntryPoints module and the auxiliary module should be as cheap as possible. In this design, it is a simple flag check in the WASM memory.
@@ -425,7 +500,7 @@ Move the `RuntimeFunctions` table entries and fixups to the auxiliary module, an
 
 ### Direct-call dependency sets
 
-Direct calls within an auxiliary module will not be implemented in V1, and this section is irrelevant until they are implemented. It is left for completeness.
+Ordinary managed direct calls within an auxiliary module will not be implemented in V1, and this section is irrelevant until they are implemented. The eligible managed compiler-helper copies described above are a separate validated exception; they do not enable these general dependency sets. This section is left for completeness.
 
 Activating method A must also complete the required fixups for any method B that A calls directly, even if B was not independently requested. All the methods that are direct-called by A or direct called by any of those methods, recursively, are considered the direct-call dependency set for root method A. Activation of all methods in a dependency set must succeed for the root method to be successfully activated. Subsets of the dependency set of A may succeed even if other subsets fail - they are not necessary all-or-none.
 
@@ -433,7 +508,7 @@ An aux method may be **unvisited** (it has no interpreter bytecode or R2R code),
 
 `READYTORUN_FIXUP_MethodEntry_ReadyToRun` already requests target-method fixup processing. These are implemented as Eager imports which run at module load. This does not work for aux methods whose data and fixups are not present in the primary module. These fixups for aux modules must run either during auxiliary module activation, or be modified to be run as pre-code fixups for methods that have direct calls (which requires handling cycles of these fixups - e.g. M1 direct calls M2 which direct calls M1).
 
-Direct calls within an auxiliary module are not supported in V1. They can be implemented later, subject to this activation requirement.
+Ordinary managed direct calls within an auxiliary module are not supported in V1. They can be implemented later, subject to this activation requirement.
 
 Direct calls from the primary module to an auxiliary module are not supported.
 
