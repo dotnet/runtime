@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">windows;osx;android;linux;freebsd;netbsd;illumos;solaris;haiku</SupportedPackageOSGroups>
+    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">windows;osx;android;linux;freebsd;netbsd;openbsd;openharmony;illumos;solaris;haiku</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
     <_isSupportedOSGroup>true</_isSupportedOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(TargetOS)' != ''">$(TargetOS)</_derivedPackageTargetOSGroup>
