@@ -967,6 +967,20 @@ public class R2RTestSuites
                             IReadOnlyList<FixupCell> fixups = method.Fixups ?? Array.Empty<FixupCell>();
                             bool needsCheck = targetAllowsRuntimeCodeGeneration ||
                                 (!composite && name is "EchoVectorPair" or "EchoVectorTriple");
+                            if (needsCheck && TestPaths.IsWasmTarget && composite &&
+                                name is "CallEchoVectorT" or "CallEchoWrappedVectorT")
+                            {
+                                // The direct callee guarantees the caller's identical layout check.
+                                ReadyToRunMethod callee = Assert.Single(methods,
+                                    candidate => candidate.SignatureString.Contains($".{name[4..]}(", StringComparison.Ordinal));
+                                Assert.DoesNotContain(fixups,
+                                    fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.Check_TypeLayout);
+                                Assert.Contains(fixups, fixup =>
+                                    fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun &&
+                                    fixup.Signature.ToString(new SignatureFormattingOptions())
+                                        .Contains(callee.SignatureString, StringComparison.Ordinal));
+                                fixups = callee.Fixups ?? Array.Empty<FixupCell>();
+                            }
                             if (needsCheck)
                             {
                                 Assert.Contains(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.Check_TypeLayout);
