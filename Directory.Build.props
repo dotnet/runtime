@@ -41,7 +41,7 @@
         - src/tasks/MobileBuildTasks/Android/AndroidProject.cs
         - src/tasks/AndroidAppBuilder/ApkBuilder.cs
         - src/tasks/Crossgen2Tasks/Microsoft.NET.CrossGen.targets
-        - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
+        - https://github.com/dotnet/sdk repo > src/Layout/redist/targets/GeneratePKG.targets
      -->
     <AndroidApiLevelMin>24</AndroidApiLevelMin>
     <iOSVersionMin>15.0</iOSVersionMin>
