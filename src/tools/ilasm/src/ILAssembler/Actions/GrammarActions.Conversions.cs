@@ -34,7 +34,9 @@ namespace ILAssembler
 
         // Record the mapped field data directly into the blob to ensure we preserve ordering
         private readonly BlobBuilder _mappedFieldData = new();
-        private readonly Dictionary<string, int> _mappedFieldDataNames = new();
+        private readonly BlobBuilder _tlsData = new();
+        private readonly BlobBuilder _cilData = new();
+        private readonly Dictionary<string, DataLocation> _mappedFieldDataNames = new();
         private readonly List<CILParser.DataLabelReferenceValue> _mappedFieldDataReferenceFixups = new();
         private readonly BlobBuilder _manifestResources = new();
         private int _syntaxErrorCount;
@@ -71,7 +73,7 @@ namespace ILAssembler
         private readonly record struct ValidatedVTableFixup(
             int OriginalIndex,
             VTableFixupSupport.VTableFixupEntry Entry,
-            int DataOffset);
+            DataLocation DataLocation);
 
         private readonly record struct ValidatedVTableAssociation(
             EntityRegistry.MethodDefinitionEntity Method,
