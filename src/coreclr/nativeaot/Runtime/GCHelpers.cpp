@@ -36,8 +36,8 @@
 
 #define RH_LARGE_OBJECT_SIZE 85000
 
-MethodTable g_FreeObjectEEType;
-GPTR_DECL(MethodTable, g_pFreeObjectEEType);
+MethodTable g_FreeObjectMethodTable;
+GPTR_DECL(MethodTable, g_pFreeObjectMethodTable);
 
 GPTR_IMPL(Thread, g_pFinalizerThread);
 
@@ -55,8 +55,8 @@ bool InitializeGC()
         return false;
 
     // Initialize the special MethodTable used to mark free list entries in the GC heap.
-    g_FreeObjectEEType.InitializeAsGcFreeType();
-    g_pFreeObjectEEType = &g_FreeObjectEEType;
+    g_FreeObjectMethodTable.InitializeAsGcFreeType();
+    g_pFreeObjectMethodTable = &g_FreeObjectMethodTable;
 
 #ifdef FEATURE_SVR_GC
     g_heap_type = (g_pRhConfig->GetgcServer() && PalGetProcessCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;

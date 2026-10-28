@@ -581,7 +581,7 @@ namespace ILAssembler
             portablePdb = null;
 
             // Only /DEBUG (any mode) or /PDB produces a PDB. Without them, .line
-            // directives are still parsed and validated, and no sequence points are recorded.
+            // directives are still parsed, but their PDB coordinates are not validated or recorded.
             if (!GeneratesPdb)
             {
                 return null;
