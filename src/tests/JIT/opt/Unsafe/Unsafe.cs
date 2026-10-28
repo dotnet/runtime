@@ -59,6 +59,12 @@ namespace CodeGenTests
             return Unsafe.Add(ref Unsafe.As<Vector128<double>, double>(ref value), 1);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object UnsafeAsObject_Vector128(Vector128<long> value)
+        {
+            return Unsafe.As<Vector128<long>, object>(ref value);
+        }
+
         [Fact]
         public static int TestEntryPoint()
         {
@@ -86,6 +92,9 @@ namespace CodeGenTests
 
             Vector128<double> doubleVector = Vector128.Create(5.0, 6.0);
             if (UnsafeAsSecondDouble_Vector128(doubleVector) != 6.0)
+                return 0;
+
+            if (UnsafeAsObject_Vector128(Vector128<long>.Zero) is not null)
                 return 0;
 
             return 100;

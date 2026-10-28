@@ -2736,6 +2736,12 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
             continue;
         }
 
+        // GC references cannot be extracted from floating-point or SIMD registers.
+        if (genIsValidFloatReg(segment.GetRegister()) && varTypeIsGC(fld))
+        {
+            continue;
+        }
+
 #ifdef FEATURE_SIMD
         if (varTypeIsSIMD(segment.GetRegisterType()) &&
             (varTypeIsSIMD(fld) ? (fld->GetLclOffs() != segment.Offset)

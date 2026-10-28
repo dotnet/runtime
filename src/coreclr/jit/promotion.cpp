@@ -3413,6 +3413,11 @@ bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigne
             continue;
         }
 
+        if (genIsValidFloatReg(seg.GetRegister()) && varTypeIsGC(accessType))
+        {
+            continue;
+        }
+
 #ifdef FEATURE_SIMD
         if (varTypeIsSIMD(seg.GetRegisterType()) &&
             (varTypeIsSIMD(accessType) ? (offset != seg.Offset)
