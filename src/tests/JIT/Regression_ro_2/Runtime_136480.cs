@@ -88,6 +88,7 @@ public static class Runtime_136480
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/136592", TestRuntimes.Mono)]
     public static void TestEntryPoint()
     {
         // Each case runs its own class constructor exactly once, so the counter advances by one per case.
