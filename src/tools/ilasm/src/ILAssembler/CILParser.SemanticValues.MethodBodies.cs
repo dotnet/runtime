@@ -195,13 +195,18 @@ public partial class CILParser
         internal List<DataLabelReferenceValue>? ReferenceFixups { get; set; }
 
         internal string? Name { get; set; }
+
+        internal DataSection Section { get; set; }
     }
 
     internal sealed record DataLabelReferenceValue(
         string TargetLabel,
         int DataOffset,
         int PointerSize,
-        IToken Location);
+        IToken Location)
+    {
+        internal DataSection Section { get; init; }
+    }
 
     public sealed class SwitchInstructionBuilder
     {

@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -15,6 +16,7 @@ namespace System.Numerics
     /// A generic complex number z = x + yi, where x and y are of type <typeparamref name="T"/>.
     /// </summary>
     /// <typeparam name="T">The floating-point type used for the real and imaginary components.</typeparam>
+    [SuppressReadyToRunCanonicalRooting]
     public readonly struct Complex<T>
         : IEquatable<Complex<T>>,
           IFormattable,

@@ -2,7 +2,22 @@
 # Primarily, it is meant to cover local (non-cross) build scenarios and
 # source-build scenarios that commonly cause build breaks.
 
-trigger: none
+# Seed the caches used by PRs from batched main builds.
+trigger:
+  batch: true
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - '*'
+    exclude:
+    - '**.md'
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
 
 pr:
   branches:
@@ -55,10 +70,11 @@ extends:
             buildArgs: -c Release -msbuild
             timeoutInMinutes: 120
             condition:
-              or(
+              and(or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+                eq(variables['isRollingBuild'], true)),
+                notIn(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))
 
       #
       # Build with RuntimeFlavor only. This exercise code paths where only RuntimeFlavor is
@@ -76,9 +92,10 @@ extends:
             buildArgs: /p:RuntimeFlavor=Mono
             timeoutInMinutes: 120
             condition:
-              or(
+              and(or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+                eq(variables['isRollingBuild'], true)),
+                notIn(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))
 
       #
       # Build CoreLib and Libraries with all configurations including analyzers and linker
@@ -121,11 +138,12 @@ extends:
             buildArgs: -subset tools -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
             timeoutInMinutes: 120
             condition:
-              or(
+              and(or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdac.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+                eq(variables['isRollingBuild'], true)),
+                notIn(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))
 
       #
       # Build native assets on Alpine. This exercises more modern musl libc changes that have a tendendy to break source-build.
@@ -146,9 +164,10 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition:
-              or(
+              and(or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+                eq(variables['isRollingBuild'], true)),
+                notIn(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))
 
       #
       # Build Repo SourceBuild
@@ -159,3 +178,5 @@ extends:
           - name: Linux_x64
             targetRID: linux-x64
             container: SourceBuild_linux_x64
+            jobProperties:
+              condition: and(succeeded(), notIn(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))

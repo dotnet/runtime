@@ -626,11 +626,13 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
             // If justAfterILThrow is true, it means nativeOffset points to the return address of IL_Throw
             // (or another JIT exception helper) after an exception has been thrown.
             // In such cases we want to adjust nativeOffset, so it will point an actual exception callsite.
-            // By subtracting STACKWALK_CONTROLPC_ADJUST_OFFSET from nativeOffset you can get
+            // By subtracting the result of GetStackwalkControlPCAdjustOffset() from nativeOffset you can get
             // an address somewhere inside CALL instruction.
             // This ensures more consistent placement of exception line highlighting in Visual Studio
+            ULONG32 offset = 0;
+            IfFailThrow(GetProcess()->GetStackwalkControlPCAdjustOffset(&offset));
             DWORD nativeOffsetToMap = pJITFuncData->justAfterILThrow ?
-                               (DWORD)pJITFuncData->nativeOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET :
+                               (DWORD)pJITFuncData->nativeOffset - offset :
                                (DWORD)pJITFuncData->nativeOffset;
             CorDebugMappingResult mappingType;
             ULONG uILOffset = pNativeCode->GetSequencePoints()->MapNativeOffsetToIL(

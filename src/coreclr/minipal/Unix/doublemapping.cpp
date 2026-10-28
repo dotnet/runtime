@@ -140,6 +140,31 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         return false;
     }
 
+    // Verify that the backing file can actually be mapped both writable and executable.
+    // Some sandboxes allow creating the file, but deny making its mappings executable
+    // later, which would otherwise surface as a failure in the middle of the runtime
+    // startup. Detect that here so that the allocator can fall back to the non-W^X path.
+    {
+        size_t pageSize = (size_t)sysconf(_SC_PAGE_SIZE);
+        void* pRW = mmap(NULL, pageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        void* pRX = mmap(NULL, pageSize, PROT_NONE, MAP_SHARED, fd, 0);
+        bool canDoubleMap = (pRW != MAP_FAILED) && (pRX != MAP_FAILED) &&
+            (mprotect(pRX, pageSize, PROT_READ | PROT_EXEC) == 0);
+        if (pRX != MAP_FAILED)
+        {
+            munmap(pRX, pageSize);
+        }
+        if (pRW != MAP_FAILED)
+        {
+            munmap(pRW, pageSize);
+        }
+        if (!canDoubleMap)
+        {
+            close(fd);
+            return false;
+        }
+    }
+
     *pMaxExecutableCodeSize = maxDoubleMappedMemorySize;
     *pHandle = (void*)(size_t)fd;
 #else // !TARGET_APPLE
