@@ -285,7 +285,7 @@ namespace System.Reflection
             // allow the call on CoreCLR, but Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only
             // once, so after a pointer call it would miss the one added later for a proxy's internal base type.
             // Called under GetProxyType's lock, so each helper type is defined once per proxy assembly.
-            private FieldInfo DefinePointerHelper(string name, Delegate helper)
+            private FieldBuilder DefinePointerHelper(string name, Delegate helper)
             {
                 TypeBuilder tb = _mb.DefineType(name + "Helper", TypeAttributes.NotPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
                 FieldBuilder fb = tb.DefineField(name, helper.GetType(), FieldAttributes.Assembly | FieldAttributes.Static);
