@@ -15,6 +15,46 @@ namespace ILAssembler.Tests
     public class DocumentCompilerTests
     {
         [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void DuplicateFieldInLaterSource_ReportsItsLocation(bool include, bool errorTolerant)
+        {
+            const string first = """
+                .assembly test { }
+                .class public Test { .field public static int32 Value }
+                """;
+            const string second = ".class public Test { .field public static int32 Value }";
+            ImmutableArray<SourceText> documents = include
+                ? [new SourceText(first + "\n#include \"second.il\"", "first.il")]
+                : [new SourceText(first, "first.il"), new SourceText(second, "second.il")];
+
+            var compiler = new DocumentCompiler();
+            var (diagnostics, result) = compiler.Compile(
+                documents,
+                path => path == "second.il" ? new SourceText(second, path) : throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = errorTolerant });
+
+            Diagnostic diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.DuplicateField, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            Assert.Equal("second.il", diagnostic.Location.Source.Path);
+            Assert.Equal(second.IndexOf(".field", StringComparison.Ordinal), diagnostic.Location.Span.Start);
+            if (errorTolerant)
+            {
+                Assert.NotNull(result);
+                using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+                Assert.Equal(2, pe.GetMetadataReader().FieldDefinitions.Count);
+            }
+            else
+            {
+                Assert.Null(result);
+            }
+        }
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void SyntaxErrorInMethod_WithErrorTolerance_PreservesValidInstructionsAndFollowingMethod(bool errorTolerant)
