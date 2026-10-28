@@ -1072,16 +1072,32 @@ namespace System.Net.Security
 
         public override string? ToString()
         {
-            if (IsInvalid || IsClosed)
+            if (IsInvalid)
             {
                 return null;
             }
 
-            var bytes = new byte[_size];
-            Marshal.Copy(handle, bytes, 0, bytes.Length);
-            // Prevent finalization from freeing the buffer while it's being copied.
-            GC.KeepAlive(this);
-            return BitConverter.ToString(bytes).Replace('-', ' ');
+            bool refAdded = false;
+            try
+            {
+                // Keeps the buffer from being freed by Dispose or finalization while it's being copied.
+                DangerousAddRef(ref refAdded);
+
+                var bytes = new byte[_size];
+                Marshal.Copy(handle, bytes, 0, bytes.Length);
+                return BitConverter.ToString(bytes).Replace('-', ' ');
+            }
+            catch (ObjectDisposedException)
+            {
+                return null;
+            }
+            finally
+            {
+                if (refAdded)
+                {
+                    DangerousRelease();
+                }
+            }
         }
     }
 
