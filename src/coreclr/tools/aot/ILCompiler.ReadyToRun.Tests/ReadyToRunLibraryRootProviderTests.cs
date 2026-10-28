@@ -12,6 +12,7 @@ using crossgen2::ILCompiler;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::Internal.ReadyToRunConstants;
 using crossgen2::Internal.JitInterface;
+using crossgen2::Internal.Text;
 
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
@@ -24,6 +25,31 @@ namespace ILCompiler.ReadyToRun.Tests;
 
 public class ReadyToRunLibraryRootProviderTests
 {
+    [Fact]
+    public void EagerPromotionPreservesDistinctImportSymbols()
+    {
+        ImportSectionNode precodeTable = new("PrecodeImports", ReadyToRunImportSectionType.Unknown,
+            ReadyToRunImportSectionFlags.PCode, 8, emitPrecode: true, emitGCRefMap: false);
+        ImportSectionNode eagerTable = new("EagerImports", ReadyToRunImportSectionType.Unknown,
+            ReadyToRunImportSectionFlags.Eager, 8, emitPrecode: false, emitGCRefMap: false);
+        ReadyToRunHelperSignature signature = new(ReadyToRunHelper.Module);
+        Import promotedCell = new(precodeTable, signature);
+        Import eagerCell = new(eagerTable, signature, sortLast: true);
+        NativeAotNameMangler mangler = new() { CompilationUnitPrefix = new Utf8String("Test") };
+        Utf8StringBuilder originalName = new();
+        promotedCell.AppendMangledName(mangler, originalName);
+
+        promotedCell.PromoteToEager(eagerTable);
+
+        Utf8StringBuilder promotedName = new();
+        Utf8StringBuilder eagerName = new();
+        promotedCell.AppendMangledName(mangler, promotedName);
+        eagerCell.AppendMangledName(mangler, eagerName);
+        Assert.Same(eagerCell.Table, promotedCell.Table);
+        Assert.Equal(originalName.ToString(), promotedName.ToString());
+        Assert.NotEqual(eagerName.ToString(), promotedName.ToString());
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

@@ -22,12 +22,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         internal readonly MethodDesc CallingMethod;
 
         private readonly bool _sortLast;
+        private readonly ImportSectionNode _originalTable;
 
         public Signature Signature => ImportSignature.Target;
 
         public Import(ImportSectionNode tableNode, Signature importSignature, MethodDesc callingMethod = null, bool sortLast = false)
         {
             Table = tableNode;
+            _originalTable = tableNode;
             CallingMethod = callingMethod;
             _sortLast = sortLast;
             ImportSignature = new SignatureEmbeddedPointerIndirectionNode(this, importSignature);
@@ -72,7 +74,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(Table.Name);
+            // Promotion changes placement, not identity; an eager cell may share this signature.
+            sb.Append(_originalTable.Name);
             sb.Append("->"u8);
             ImportSignature.AppendMangledName(nameMangler, sb);
         }
@@ -99,7 +102,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            return Table.CompareToImpl(otherNode.Table, comparer);
+            result = Table.CompareToImpl(otherNode.Table, comparer);
+            if (result != 0)
+                return result;
+
+            return _originalTable.CompareToImpl(otherNode._originalTable, comparer);
         }
 
         public override bool RepresentsIndirectionCell => true;
