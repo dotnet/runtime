@@ -2441,7 +2441,11 @@ public class Managed
         if (!TestLibrary.Utilities.IsNativeAot)
         {
             MarshalStructAsParam_AsSeqByVal(StructID.S8Id);
-            MarshalStructAsParam_AsSeqByVal(StructID.S9Id);
+            // Marshalling S9's delegate field to native needs Marshal.GetFunctionPointerForDelegate.
+            if (TestLibrary.PlatformDetection.IsDynamicEntrypointSupported)
+            {
+                MarshalStructAsParam_AsSeqByVal(StructID.S9Id);
+            }
         }
         MarshalStructAsParam_AsSeqByVal(StructID.IncludeOuterIntegerStructSequentialId);
         MarshalStructAsParam_AsSeqByVal(StructID.S11Id);
@@ -2478,7 +2482,11 @@ public class Managed
         if (!TestLibrary.Utilities.IsNativeAot)
         {
             MarshalStructAsParam_AsSeqByRef(StructID.S8Id);
-            MarshalStructAsParam_AsSeqByRef(StructID.S9Id);
+            // Marshalling S9's delegate field to native needs Marshal.GetFunctionPointerForDelegate.
+            if (TestLibrary.PlatformDetection.IsDynamicEntrypointSupported)
+            {
+                MarshalStructAsParam_AsSeqByRef(StructID.S9Id);
+            }
         }
         MarshalStructAsParam_AsSeqByRef(StructID.IncludeOuterIntegerStructSequentialId);
         MarshalStructAsParam_AsSeqByRef(StructID.S11Id);
@@ -2505,7 +2513,11 @@ public class Managed
         if (!TestLibrary.Utilities.IsNativeAot)
         {
             MarshalStructAsParam_AsSeqByValIn(StructID.S8Id);
-            MarshalStructAsParam_AsSeqByValIn(StructID.S9Id);
+            // Marshalling S9's delegate field to native needs Marshal.GetFunctionPointerForDelegate.
+            if (TestLibrary.PlatformDetection.IsDynamicEntrypointSupported)
+            {
+                MarshalStructAsParam_AsSeqByValIn(StructID.S9Id);
+            }
         }
         MarshalStructAsParam_AsSeqByValIn(StructID.IncludeOuterIntegerStructSequentialId);
         MarshalStructAsParam_AsSeqByValIn(StructID.S11Id);
@@ -2532,7 +2544,11 @@ public class Managed
         if (!TestLibrary.Utilities.IsNativeAot)
         {
             MarshalStructAsParam_AsSeqByRefIn(StructID.S8Id);
-            MarshalStructAsParam_AsSeqByRefIn(StructID.S9Id);
+            // Marshalling S9's delegate field to native needs Marshal.GetFunctionPointerForDelegate.
+            if (TestLibrary.PlatformDetection.IsDynamicEntrypointSupported)
+            {
+                MarshalStructAsParam_AsSeqByRefIn(StructID.S9Id);
+            }
         }
         MarshalStructAsParam_AsSeqByRefIn(StructID.IncludeOuterIntegerStructSequentialId);
         MarshalStructAsParam_AsSeqByRefIn(StructID.S11Id);
@@ -2559,7 +2575,11 @@ public class Managed
         if (!TestLibrary.Utilities.IsNativeAot)
         {
             MarshalStructAsParam_AsSeqByValOut(StructID.S8Id);
-            MarshalStructAsParam_AsSeqByValOut(StructID.S9Id);
+            // Marshalling S9's delegate field to native needs Marshal.GetFunctionPointerForDelegate.
+            if (TestLibrary.PlatformDetection.IsDynamicEntrypointSupported)
+            {
+                MarshalStructAsParam_AsSeqByValOut(StructID.S9Id);
+            }
         }
         MarshalStructAsParam_AsSeqByValOut(StructID.IncludeOuterIntegerStructSequentialId);
         MarshalStructAsParam_AsSeqByValOut(StructID.S11Id);
@@ -2613,7 +2633,11 @@ public class Managed
         if (!TestLibrary.Utilities.IsNativeAot)
         {
             MarshalStructAsParam_AsSeqByValInOut(StructID.S8Id);
-            MarshalStructAsParam_AsSeqByValInOut(StructID.S9Id);
+            // Marshalling S9's delegate field to native needs Marshal.GetFunctionPointerForDelegate.
+            if (TestLibrary.PlatformDetection.IsDynamicEntrypointSupported)
+            {
+                MarshalStructAsParam_AsSeqByValInOut(StructID.S9Id);
+            }
         }
         MarshalStructAsParam_AsSeqByValInOut(StructID.IncludeOuterIntegerStructSequentialId);
         MarshalStructAsParam_AsSeqByValInOut(StructID.S11Id);
@@ -2640,7 +2664,11 @@ public class Managed
         if (!TestLibrary.Utilities.IsNativeAot)
         {
             MarshalStructAsParam_AsSeqByRefInOut(StructID.S8Id);
-            MarshalStructAsParam_AsSeqByRefInOut(StructID.S9Id);
+            // Marshalling S9's delegate field to native needs Marshal.GetFunctionPointerForDelegate.
+            if (TestLibrary.PlatformDetection.IsDynamicEntrypointSupported)
+            {
+                MarshalStructAsParam_AsSeqByRefInOut(StructID.S9Id);
+            }
         }
         MarshalStructAsParam_AsSeqByRefInOut(StructID.IncludeOuterIntegerStructSequentialId);
         MarshalStructAsParam_AsSeqByRefInOut(StructID.S11Id);
@@ -2700,15 +2728,19 @@ public class Managed
             failures++;
         }
 
-        dfm.IntIntFunction = new IntIntDelegate(IntIntImpl);
-        try
+        // Marshalling a managed delegate to native needs Marshal.GetFunctionPointerForDelegate.
+        if (TestLibrary.PlatformDetection.IsDynamicEntrypointSupported)
         {
-            MarshalStructAsParam_DelegateFieldMarshaling(ref dfm);
-        }
-        catch
-        {
-            Console.WriteLine($"Marshaling function pointer as ${nameof(Delegate)} field should succeed");
-            failures++;
+            dfm.IntIntFunction = new IntIntDelegate(IntIntImpl);
+            try
+            {
+                MarshalStructAsParam_DelegateFieldMarshaling(ref dfm);
+            }
+            catch
+            {
+                Console.WriteLine($"Marshaling function pointer as ${nameof(Delegate)} field should succeed");
+                failures++;
+            }
         }
 
         dfm.IntIntFunction = Marshal.GetDelegateForFunctionPointer<IntIntDelegate>(GetNativeIntIntFunction());
