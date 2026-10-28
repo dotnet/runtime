@@ -604,6 +604,15 @@
                     Category="tools" />
   </ItemGroup>
 
+  <ItemGroup Condition="$(_subset.Contains('+clr.packages+')) and !$(_subset.Contains('+tools.ilasm+')) and ('$(RuntimeFlavor)' != 'CoreCLR' or '$(SdkToolsSupported)' != 'true')">
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.Package.csproj"
+                    Category="clr" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm_inbuild.csproj"
+                    Condition="'$(BuildHostILTools)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'"
+                    Category="clr" />
+  </ItemGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
   </ItemGroup>
