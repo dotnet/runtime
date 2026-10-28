@@ -1072,14 +1072,28 @@ namespace System.Net.Security
 
         public override string? ToString()
         {
-            if (IsInvalid)
+            if (IsInvalid || IsClosed)
             {
                 return null;
             }
 
-            var bytes = new byte[_size];
-            Marshal.Copy(handle, bytes, 0, bytes.Length);
-            return BitConverter.ToString(bytes).Replace('-', ' ');
+            bool refAdded = false;
+            try
+            {
+                // The raw handle is used below, so the SafeHandle must not be finalized or disposed meanwhile.
+                DangerousAddRef(ref refAdded);
+
+                var bytes = new byte[_size];
+                Marshal.Copy(handle, bytes, 0, bytes.Length);
+                return BitConverter.ToString(bytes).Replace('-', ' ');
+            }
+            finally
+            {
+                if (refAdded)
+                {
+                    DangerousRelease();
+                }
+            }
         }
     }
 
