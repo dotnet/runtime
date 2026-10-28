@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.JitInterface;
 using Internal.NativeFormat;
 using Internal.ReadyToRunConstants;
@@ -275,9 +276,17 @@ namespace ILCompiler.DependencyAnalysis
             _directPInvokes = new NodeCache<MethodDesc, ExternFunctionSymbolNode>((MethodDesc key) =>
             {
                 LinkageMetadata linkage = InteropStubManager.GetLinkageMetadata(key);
-                Utf8String externName = linkage.Symbol.IsNull
-                    ? NameMangler.GetMangledMethodName(key)
-                    : linkage.Symbol;
+                Utf8String externName = linkage.Symbol;
+                if (externName.IsNull)
+                {
+                    // If metadata doesn't provide symbol name, mangle as a normal method.
+                    // We need to however mangle differently from the potential marshalling thunk;
+                    // this method is the raw P/invoke method so mangle as that.
+                    MethodDesc nativeTarget = key is PInvokeTargetNativeMethod
+                        ? key
+                        : new PInvokeTargetNativeMethod(key, key.Signature);
+                    externName = NameMangler.GetMangledMethodName(nativeTarget);
+                }
                 externName = NameMangler.NodeMangler.ExternMethod(externName, key);
 
                 return new ExternFunctionSymbolNode(externName, key.Signature, isUnmanagedCallersOnly: true, isAsyncCall: false, hasGenericContextArg: false,
