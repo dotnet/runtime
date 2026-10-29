@@ -233,6 +233,17 @@ struct CalleeSavedRegistersPointers {
     #undef CALLEE_SAVED_REGISTER
 };
 
+// Preserved registers loaded by CallEHFunclet before it calls the funclet. The layout is described
+// by the OFFSETOF__EHFuncletRegs__* constants, which NativeAOT maps onto its REGDISPLAY.
+struct EHFuncletRegs {
+    #define CALLEE_SAVED_REGISTER(regname) DWORD64* p##regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+    #undef CALLEE_SAVED_REGISTER
+#ifndef UNIX_AMD64_ABI
+    M128A Xmm[10]; // Xmm6-Xmm15
+#endif
+};
+
 #define SCRATCH_REGISTER_X86REG kRAX
 
 #ifdef UNIX_AMD64_ABI

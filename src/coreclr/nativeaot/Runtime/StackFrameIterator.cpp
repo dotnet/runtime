@@ -37,11 +37,12 @@ EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionTailCall;
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionGuardedTailCall;
 #endif
 
-EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
-EXTERN_C CODE_LOCATION RhpCallFinallyFunclet2;
 #if defined(TARGET_AMD64)
+EXTERN_C CODE_LOCATION CallEHFunclet2;
 EXTERN_C CODE_LOCATION CallEHFilterFunclet2;
 #else
+EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
+EXTERN_C CODE_LOCATION RhpCallFinallyFunclet2;
 EXTERN_C CODE_LOCATION RhpCallFilterFunclet2;
 #endif
 EXTERN_C CODE_LOCATION RhpThrowImpl2;
@@ -1092,14 +1093,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pR14 = m_RegDisplay.pR14;
         m_funcletPtrs.pR15 = m_RegDisplay.pR15;
 
-        if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
-        {
-            SP += 6 + 1; // 6 locals and stack alignment
-        }
-        else
-        {
-            SP += 3; // 3 locals
-        }
+        SP += 2 + 1; // 2 locals and stack alignment
     }
 
     m_RegDisplay.pRbp = SP++;
@@ -1136,14 +1130,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pR14 = m_RegDisplay.pR14;
         m_funcletPtrs.pR15 = m_RegDisplay.pR15;
 
-        if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
-        {
-            SP += 2 + 1; // 2 locals and stack alignment
-        }
-        else
-        {
-            SP++; // 1 local
-        }
+        SP += 2 + 1; // 2 locals and stack alignment
     }
 
     m_RegDisplay.pRbp = SP++;
@@ -2369,20 +2356,28 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
         return InThrowSiteThunk;
     }
 
+#if defined(TARGET_AMD64)
+    if (EQUALS_RETURN_ADDRESS(returnAddress, CallEHFunclet2))
+    {
+        return InFuncletInvokeThunk;
+    }
+
+    if (EQUALS_RETURN_ADDRESS(returnAddress, CallEHFilterFunclet2))
+    {
+        return InFilterFuncletInvokeThunk;
+    }
+#else
     if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallCatchFunclet2) ||
         EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFinallyFunclet2))
     {
         return InFuncletInvokeThunk;
     }
 
-#if defined(TARGET_AMD64)
-    if (EQUALS_RETURN_ADDRESS(returnAddress, CallEHFilterFunclet2))
-#else
     if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFilterFunclet2))
-#endif
     {
         return InFilterFuncletInvokeThunk;
     }
+#endif
     return InManagedCode;
 #endif // defined(FEATURE_PORTABLE_HELPERS)
 }

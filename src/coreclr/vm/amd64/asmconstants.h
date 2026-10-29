@@ -397,6 +397,34 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Xmm15
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__VectorRegister
                     == offsetof(CONTEXT, VectorRegister[0]));
 
+#ifdef UNIX_AMD64_ABI
+#define               OFFSETOF__EHFuncletRegs__pR12   0x00
+#define               OFFSETOF__EHFuncletRegs__pR13   0x08
+#define               OFFSETOF__EHFuncletRegs__pR14   0x10
+#define               OFFSETOF__EHFuncletRegs__pR15   0x18
+#define               OFFSETOF__EHFuncletRegs__pRbx   0x20
+#define               OFFSETOF__EHFuncletRegs__pRbp   0x28
+#else // UNIX_AMD64_ABI
+#define               OFFSETOF__EHFuncletRegs__pRdi   0x00
+#define               OFFSETOF__EHFuncletRegs__pRsi   0x08
+#define               OFFSETOF__EHFuncletRegs__pRbx   0x10
+#define               OFFSETOF__EHFuncletRegs__pRbp   0x18
+#define               OFFSETOF__EHFuncletRegs__pR12   0x20
+#define               OFFSETOF__EHFuncletRegs__pR13   0x28
+#define               OFFSETOF__EHFuncletRegs__pR14   0x30
+#define               OFFSETOF__EHFuncletRegs__pR15   0x38
+#define               OFFSETOF__EHFuncletRegs__Xmm    0x40
+ASMCONSTANTS_C_ASSERT(OFFSETOF__EHFuncletRegs__pRdi == offsetof(EHFuncletRegs, pRdi));
+ASMCONSTANTS_C_ASSERT(OFFSETOF__EHFuncletRegs__pRsi == offsetof(EHFuncletRegs, pRsi));
+ASMCONSTANTS_C_ASSERT(OFFSETOF__EHFuncletRegs__Xmm  == offsetof(EHFuncletRegs, Xmm));
+#endif // UNIX_AMD64_ABI
+ASMCONSTANTS_C_ASSERT(OFFSETOF__EHFuncletRegs__pRbx == offsetof(EHFuncletRegs, pRbx));
+ASMCONSTANTS_C_ASSERT(OFFSETOF__EHFuncletRegs__pRbp == offsetof(EHFuncletRegs, pRbp));
+ASMCONSTANTS_C_ASSERT(OFFSETOF__EHFuncletRegs__pR12 == offsetof(EHFuncletRegs, pR12));
+ASMCONSTANTS_C_ASSERT(OFFSETOF__EHFuncletRegs__pR13 == offsetof(EHFuncletRegs, pR13));
+ASMCONSTANTS_C_ASSERT(OFFSETOF__EHFuncletRegs__pR14 == offsetof(EHFuncletRegs, pR14));
+ASMCONSTANTS_C_ASSERT(OFFSETOF__EHFuncletRegs__pR15 == offsetof(EHFuncletRegs, pR15));
+
 #define               SIZEOF__FaultingExceptionFrame  (0x20 + SIZEOF__CONTEXT + 16)
 ASMCONSTANTS_C_ASSERT(SIZEOF__FaultingExceptionFrame
                     == sizeof(FaultingExceptionFrame));

@@ -396,50 +396,6 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     jmp METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
-; This helper enables us to call into a funclet after restoring Fp register
-NESTED_ENTRY CallEHFunclet, _TEXT
-        ; On entry:
-        ;
-        ; RCX = throwable
-        ; RDX = PC to invoke
-        ; R8 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
-        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-        ;
-
-        FUNCLET_CALL_PROLOGUE 0, 1
-
-        ;  Restore RBX, RBP, RSI, RDI, R12, R13, R14, R15 from CONTEXT
-        mov     rbx, [r8 + OFFSETOF__CONTEXT__Rbx]
-        mov     rbp, [r8 + OFFSETOF__CONTEXT__Rbp]
-        mov     rsi, [r8 + OFFSETOF__CONTEXT__Rsi]
-        mov     rdi, [r8 + OFFSETOF__CONTEXT__Rdi]
-        mov     r12, [r8 + OFFSETOF__CONTEXT__R12]
-        mov     r13, [r8 + OFFSETOF__CONTEXT__R13]
-        mov     r14, [r8 + OFFSETOF__CONTEXT__R14]
-        mov     r15, [r8 + OFFSETOF__CONTEXT__R15]
-
-        ; Restore XMM registers from CONTEXT
-        movdqa  xmm6, [r8 + OFFSETOF__CONTEXT__Xmm6]
-        movdqa  xmm7, [r8 + OFFSETOF__CONTEXT__Xmm7]
-        movdqa  xmm8, [r8 + OFFSETOF__CONTEXT__Xmm8]
-        movdqa  xmm9, [r8 + OFFSETOF__CONTEXT__Xmm9]
-        movdqa  xmm10, [r8 + OFFSETOF__CONTEXT__Xmm10]
-        movdqa  xmm11, [r8 + OFFSETOF__CONTEXT__Xmm11]
-        movdqa  xmm12, [r8 + OFFSETOF__CONTEXT__Xmm12]
-        movdqa  xmm13, [r8 + OFFSETOF__CONTEXT__Xmm13]
-        movdqa  xmm14, [r8 + OFFSETOF__CONTEXT__Xmm14]
-        movdqa  xmm15, [r8 + OFFSETOF__CONTEXT__Xmm15]
-
-        ; Save the SP of this function.
-        mov     [r9], rsp
-
-        ; Invoke the funclet
-        call    rdx
-
-        FUNCLET_CALL_EPILOGUE
-        ret
-NESTED_END CallEHFunclet, _TEXT
-
 ifdef FEATURE_INTERPRETER
 
 NESTED_ENTRY InterpreterStub, _TEXT

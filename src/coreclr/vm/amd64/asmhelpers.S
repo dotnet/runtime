@@ -337,37 +337,6 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     jmp METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
-#include <amd64/FuncletCall.inc>
-
-// This helper enables us to call into a funclet after restoring Fp register
-NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
-        // On entry:
-        //
-        // RDI = throwable
-        // RSI = PC to invoke
-        // RDX = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
-        // RCX = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-        //
-
-        FUNCLET_CALL_PROLOGUE 0, 1
-
-        //  Restore RBX, RBP, R12, R13, R14, R15 from CONTEXT
-        mov     rbx, [rdx + OFFSETOF__CONTEXT__Rbx]
-        mov     rbp, [rdx + OFFSETOF__CONTEXT__Rbp]
-        mov     r12, [rdx + OFFSETOF__CONTEXT__R12]
-        mov     r13, [rdx + OFFSETOF__CONTEXT__R13]
-        mov     r14, [rdx + OFFSETOF__CONTEXT__R14]
-        mov     r15, [rdx + OFFSETOF__CONTEXT__R15]
-
-        // Save the SP of this function.
-        mov     [rcx], rsp
-        // Invoke the funclet
-        call    rsi
-
-        FUNCLET_CALL_EPILOGUE
-        ret
-NESTED_END CallEHFunclet, _TEXT
-
 #ifdef FEATURE_INTERPRETER
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
