@@ -169,6 +169,23 @@ namespace System.Diagnostics
             }
         }
 
+        partial void EnsureThreadsPopulated(ProcessInfo processInfo)
+        {
+            lock (processInfo)
+            {
+                if (!processInfo.ThreadsPopulated)
+                {
+                    // Don't get information for a PID that exited and has possibly been recycled.
+                    if (_haveProcessId && !GetHasExited(refresh: false))
+                    {
+                        ProcessManager.PopulateThreads(processInfo.ProcPid, processInfo);
+                    }
+
+                    processInfo.ThreadsPopulated = true;
+                }
+            }
+        }
+
         /// <summary>
         /// Gets or sets which processors the threads in this process can be scheduled to run on.
         /// </summary>

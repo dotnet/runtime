@@ -1291,5 +1291,30 @@ namespace System.Diagnostics.Tests
                 }
             }).Dispose();
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Threads_AreAvailableAfterOtherProcessInformationWasRead()
+        {
+            using Process p = Process.GetCurrentProcess();
+
+            // Reading the memory properties must not require (or prevent) the thread list being read afterwards.
+            Assert.True(p.WorkingSet64 > 0);
+            Assert.NotEmpty(p.Threads.Cast<ProcessThread>());
+
+            p.Refresh();
+            Assert.NotEmpty(p.Threads.Cast<ProcessThread>());
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Threads_OtherProcess_AreAvailableAfterOtherProcessInformationWasRead()
+        {
+            Process p = CreateDefaultProcess();
+
+            // Reading the memory properties must not require (or prevent) the thread list being read afterwards.
+            Assert.True(p.WorkingSet64 > 0);
+            Assert.NotEmpty(p.Threads.Cast<ProcessThread>());
+        }
     }
 }
