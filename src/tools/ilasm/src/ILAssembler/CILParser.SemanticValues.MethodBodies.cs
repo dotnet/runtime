@@ -25,7 +25,10 @@ public partial class CILParser
         int StartColumn,
         int EndLine,
         int EndColumn,
-        string? DocumentPath);
+        string? DocumentPath)
+    {
+        public bool AppliesToNextLine { get; init; }
+    }
 
     public sealed record LanguageDirectiveValue(
         string Language,
@@ -195,13 +198,18 @@ public partial class CILParser
         internal List<DataLabelReferenceValue>? ReferenceFixups { get; set; }
 
         internal string? Name { get; set; }
+
+        internal DataSection Section { get; set; }
     }
 
     internal sealed record DataLabelReferenceValue(
         string TargetLabel,
         int DataOffset,
         int PointerSize,
-        IToken Location);
+        IToken Location)
+    {
+        internal DataSection Section { get; init; }
+    }
 
     public sealed class SwitchInstructionBuilder
     {

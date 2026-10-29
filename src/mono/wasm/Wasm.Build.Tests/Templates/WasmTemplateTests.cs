@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -20,6 +21,38 @@ namespace Wasm.Build.Tests
         public WasmTemplateTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
+        }
+
+        [ConditionalFact(nameof(IsCoreClrRuntime)), TestCategory("coreclr")]
+        public void CoreClrProjectProperties_UseCurrentPacksForBootstrapFramework()
+        {
+            string properties = string.Empty;
+            string items = string.Empty;
+            string targets = string.Empty;
+            AddCoreClrProjectProperties(ref properties, ref items, ref targets);
+
+            XElement project = XElement.Parse($"<Project><ItemGroup>{items}</ItemGroup>{targets}</Project>");
+            XElement references = Assert.Single(project.Elements("ItemGroup"));
+            string[] frameworks = new[] { DefaultTargetFramework, DefaultTargetFrameworkForBlazorTemplate }.Distinct().ToArray();
+            string version = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
+            Assert.Equal(frameworks.Length, project.Elements("Target").Count());
+            Assert.Equal(frameworks.Length, project.Elements("Target").Select(target => target.Attribute("Name")?.Value).Distinct().Count());
+
+            foreach (string framework in frameworks)
+            {
+                string frameworkCondition = $"'{framework}'";
+                XElement reference = Assert.Single(references.Elements("KnownFrameworkReference"),
+                    item => item.Element("TargetingPackVersion")?.Attribute("Condition")?.Value.Contains(frameworkCondition, StringComparison.Ordinal) is true);
+                Assert.Equal(version, Assert.Single(reference.Elements("TargetingPackVersion")).Value);
+                Assert.Equal(version, Assert.Single(reference.Elements("LatestRuntimeFrameworkVersion")).Value);
+
+                foreach (string metadataName in new[] { "WebAssemblySdkPackVersion", "Crossgen2PackVersion" })
+                {
+                    XElement metadata = Assert.Single(project.Descendants(metadataName),
+                        item => item.Attribute("Condition")?.Value.Contains(frameworkCondition, StringComparison.Ordinal) is true);
+                    Assert.Equal(version, metadata.Value);
+                }
+            }
         }
 
         [Theory, TestCategory("no-fingerprinting"), TestCategory("workload")]

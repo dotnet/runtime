@@ -66,7 +66,6 @@ internal sealed partial class GrammarActions
         CILParser.FieldDeclContext context,
         FieldDeclarationValue value)
     {
-        _ = context;
         if (IsDeclarationSuppressed || !value.IsValid)
         {
             return;
@@ -78,19 +77,30 @@ internal sealed partial class GrammarActions
         _ = new BlobEncoder(signature).Field();
         MaterializeType(declaration.FieldType).WriteContentTo(signature);
 
-        EntityRegistry.FieldDefinitionEntity? field =
+        EntityRegistry.FieldDefinitionEntity field =
             EntityRegistry.CreateUnrecordedFieldDefinition(
                 declaration.Attributes,
                 _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType,
                 declaration.Name,
                 signature);
+        if (!EntityRegistry.TryAddFieldDefinitionToContainingType(field))
+        {
+            ReportError(
+                DiagnosticIds.DuplicateField,
+                string.Format(DiagnosticMessageTemplates.DuplicateField, declaration.Name),
+                context);
+            if (!_options.ErrorTolerant)
+            {
+                _lastFieldDefinition = null;
+                _pendingClassCustomAttributeOwner = null;
+                return;
+            }
+
+            field.ContainingType.Fields.Add(field);
+        }
+
         _lastFieldDefinition = field;
         _pendingClassCustomAttributeOwner = field;
-
-        if (field is null)
-        {
-            return;
-        }
 
         field.MarshallingDescriptor = MaterializeMarshallingDescriptor(declaration.Marshalling);
         field.DataDeclarationName = declaration.DataDeclarationName;

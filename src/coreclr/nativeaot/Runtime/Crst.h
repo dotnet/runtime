@@ -17,7 +17,6 @@ enum CrstType
     CrstAllocHeap,
     CrstStressLog,
     CrstRestrictedCallouts,
-    CrstGcStressControl,
     CrstThreadStore,
     CrstEventPipe,
     CrstEventPipeConfig,

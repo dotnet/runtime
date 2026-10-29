@@ -198,30 +198,9 @@ NESTED_END RhpWaitForGC
 
 .global C_FUNC(RhpGcPoll2)
 
-LEAF_ENTRY RhpGcPoll
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 0
-    cbnz    w0, LOCAL_LABEL(RhpGcPoll_Rare) // TrapThreadsFlags_None = 0
-    ret
-LOCAL_LABEL(RhpGcPoll_Rare):
-    b C_FUNC(RhpGcPollRare)
-LEAF_END RhpGcPoll
-
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
     PUSH_COOP_PINVOKE_FRAME x0
     bl C_FUNC(RhpGcPoll2)
     POP_COOP_PINVOKE_FRAME
     ret
 NESTED_END RhpGcPollRare
-
-
-#ifdef FEATURE_GC_STRESS
-
-//
-// GC Stress Hijack targets
-//
-LEAF_ENTRY RhpGcStressHijack, _TEXT
-    // NYI
-    EMIT_BREAKPOINT
-LEAF_END RhpGcStressHijack, _TEXT
-
-#endif  // FEATURE_GC_STRESS

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
@@ -252,12 +253,31 @@ internal sealed partial class GrammarActions
         }
     }
 
-    internal void SetEntryPoint()
+    internal void SetEntryPoint(IToken directiveToken)
     {
-        if (_currentMethod is not null)
+        if (_currentMethod is null)
         {
-            _entityRegistry.EntryPoint = _currentMethod.Definition;
+            return;
         }
+
+        if (_entityRegistry.EntryPoint is not null)
+        {
+            ReportError(
+                DiagnosticIds.DuplicateEntryPoint,
+                DiagnosticMessageTemplates.DuplicateEntryPoint,
+                directiveToken);
+            return;
+        }
+
+        if (!_currentMethod.Definition.MethodAttributes.HasFlag(MethodAttributes.Static))
+        {
+            ReportError(
+                DiagnosticIds.InstanceEntryPoint,
+                DiagnosticMessageTemplates.InstanceEntryPoint,
+                directiveToken);
+        }
+
+        _entityRegistry.EntryPoint = _currentMethod.Definition;
     }
 
     internal void SetZeroInit()

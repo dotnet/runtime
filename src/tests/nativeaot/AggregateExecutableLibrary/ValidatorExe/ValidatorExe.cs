@@ -12,7 +12,7 @@ ProcessTextOutput result = Process.RunAndCaptureText(new ProcessStartInfo(helloE
 {
     RedirectStandardError = true,
     RedirectStandardOutput = true,
-    UseShellExecute = false,
+    InheritedHandles = [],
 });
 
 string output = result.StandardOutput.Trim();
