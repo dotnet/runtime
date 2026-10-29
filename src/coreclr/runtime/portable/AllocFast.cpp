@@ -15,7 +15,6 @@
 #define FCALL_CONTRACT
 #define ALLOC_FCDECL1 FCDECL1
 #define ALLOC_FCDECL2 FCDECL2
-using ArrayBase = Array;
 GPTR_DECL(MethodTable, g_pFreeObjectMethodTable);
 
 #define TRANSITION_ARG_TYPE PInvokeTransitionFrame*
