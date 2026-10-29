@@ -45,7 +45,9 @@ FORCEINLINE T Interlocked::Increment64(T volatile* addend)
 #ifdef _MSC_VER
     return _interlockedincrement64((int64_t*)addend);
 #else
-    T result = __sync_add_and_fetch(addend, 1);
+    // On x86, T's natural alignment is smaller than the required operand alignment.
+    typedef T AlignedT __attribute__((aligned(8)));
+    T result = __sync_add_and_fetch(reinterpret_cast<AlignedT volatile*>(addend), 1);
     InterlockedOperationBarrier();
     return result;
 #endif
@@ -116,7 +118,8 @@ FORCEINLINE T Interlocked::CompareExchange64(T volatile* destination, T exchange
 #ifdef _MSC_VER
     return _InterlockedCompareExchange64((int64_t*)destination, exchange, comparand);
 #else
-    T result = __sync_val_compare_and_swap(destination, comparand, exchange);
+    typedef T AlignedT __attribute__((aligned(8)));
+    T result = __sync_val_compare_and_swap(reinterpret_cast<AlignedT volatile*>(destination), comparand, exchange);
     InterlockedOperationBarrier();
     return result;
 #endif

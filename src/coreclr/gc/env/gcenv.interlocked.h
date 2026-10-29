@@ -25,7 +25,7 @@ public:
     template<typename T>
     static T Increment(T volatile *addend);
 
-    // Atomically increment a 64-bit variable and return the resulting value.
+    // Atomically increment an 8-byte-aligned 64-bit variable and return the resulting value.
     template<typename T>
     static T Increment64(T volatile* addend);
 
@@ -98,7 +98,7 @@ public:
     template<typename T>
     static T CompareExchange(T volatile *destination, T exchange, T comparand);
 
-    // Atomically compare and exchange a 64-bit variable and return its original value.
+    // Atomically compare and exchange an 8-byte-aligned 64-bit variable and return its original value.
     template<typename T>
     static T CompareExchange64(T volatile* destination, T exchange, T comparand);
 
