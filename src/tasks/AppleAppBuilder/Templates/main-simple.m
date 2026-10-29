@@ -47,7 +47,8 @@ void (*clickHandlerPtr)(void);
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    label = [[UILabel alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    label = [[UILabel alloc] initWithFrame:self.view.bounds];
+    label.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     label.textColor = [UIColor greenColor];
     label.font = [UIFont boldSystemFontOfSize: 30];
     label.numberOfLines = 2;

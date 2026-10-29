@@ -57,9 +57,10 @@ UITextView* logLabel;
 #else
     CGFloat summaryLabelHeight = 50.0;
 #endif
-    CGRect applicationFrame = [[UIScreen mainScreen] bounds];
+    CGRect applicationFrame = self.view.bounds;
     logLabel = [[UITextView alloc] initWithFrame:
         CGRectMake(10.0, summaryLabelHeight, applicationFrame.size.width - 10.0, applicationFrame.size.height - summaryLabelHeight)];
+    logLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     logLabel.font = [UIFont systemFontOfSize: 9.0];
     logLabel.backgroundColor = [UIColor blackColor];
     logLabel.textColor = [UIColor greenColor];
@@ -71,6 +72,7 @@ UITextView* logLabel;
     logLabel.clipsToBounds = YES;
 
     summaryLabel = [[UILabel alloc] initWithFrame: CGRectMake(10.0, 0, applicationFrame.size.width - 10.0, summaryLabelHeight)];
+    summaryLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     summaryLabel.font = [UIFont boldSystemFontOfSize: 12.0];
     summaryLabel.backgroundColor = [UIColor blackColor];
     summaryLabel.textColor = [UIColor whiteColor];
