@@ -19,9 +19,9 @@ shared layer hashes declared files with SHA-256; it does not interpret arguments
 dependencies. Inputs must remain stable through discovery, hashing, and execution. Inherited
 environment settings and installed runtime trees are not automatically fingerprinted.
 
-Consumers with task-specific identity can instead use `ExecutePrepared` with an
-`InvocationCacheRequest` containing a prepared key and output declaration. Such consumers own input
-discovery, full-content hashing, and execution-context identity; the shared layer still owns
+Consumers with task-specific identity can instead use the `ExecuteCached` overload whose preparation
+callback returns an `InvocationCacheRequest` containing a prepared key and output declaration. Such
+consumers own input discovery, full-content hashing, and execution-context identity; the shared layer still owns
 validation, restoration, publication, and concurrency. ILLink uses this entry point for its
 conservative root-aware identity and execution model.
 

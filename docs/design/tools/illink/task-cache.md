@@ -19,8 +19,8 @@ platform cache location; a path alone never enables caching. See
 [task usage](../../../tools/illink/illink-tasks.md#experimental-task-cache) for configuration and
 maintenance commands.
 
-`ExecuteTool` computes a root-aware key through `TryComputeCacheKey` and supplies it to
-`InvocationCache.ExecutePrepared` with one `InvocationOutputs.FromDirectory` declaration and a
+`ExecuteTool` calls `InvocationCache.ExecuteCached` with a preparation callback that computes a
+root-aware key through `TryComputeCacheKey`, one `InvocationOutputs.FromDirectory` declaration, and a
 normal-execution callback. Eligibility, metadata inspection, and full input-content hashing stay in
 ILLink; publication, restoration, and writer coordination use the shared layer.
 
@@ -36,7 +36,7 @@ relative to it. Resolve original relative inputs against the caller's cwd first.
 process-wide cwd or task inputs. Disjoint-root invocations retain their original execution with
 logical key mapping only. Disabled or bypassed caching leaves execution unchanged.
 
-Use SHA-256 over a versioned, length-delimited description in the ILLink `v3` key domain. Include
+Use SHA-256 over a length-delimited description in the ILLink key domain. Include
 execution mode, effective working directory, exact generated arguments, logical output identity,
 platform, architecture, culture, and full file hashes sorted by logical input identity. Do not
 replace substrings in raw arguments. Preserve filenames, relative layout, reference precedence,
@@ -55,9 +55,9 @@ normalize upstream assemblies or enable symbol preservation or compiler path map
 Hash all supplied assemblies, reference assemblies, and root descriptors. Include adjacent PDBs,
 configuration files, and satellite assemblies even when symbols are disabled. Adding or removing a
 sidecar changes identity. Bypass additional modules and linked resources rather than approximate
-their resolution. Reject file-shaped root names, mismatched assembly filenames, path-shaped
-metadata assembly references, and path-shaped assembly names in external XML. Parse XML with DTDs
-and external entities disabled.
+their resolution. Reject mismatched assembly filenames and path-shaped metadata assembly references.
+Leave root and XML assembly-name validation to ILLink, which treats path-shaped names as unresolved
+rather than probing outside the inventory.
 
 Inspect CodeView paths, portable-PDB document paths, embedded portable PDBs, and custom-debug blobs.
 Accept relative non-escaping paths and conventional synthetic `/_N/` paths; reject physical symbol

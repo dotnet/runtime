@@ -95,8 +95,9 @@ fall back to normal linking.
 Cache-enabled invocations that cannot meet the supported path-independence contract run
 uncached and store nothing, rather than create path-specific entries. Missing/invalid root
 mappings, physical symbol paths, unsupported symbol formats, additional modules, and linked
-resources bypass caching. Path-shaped assembly references and external XML assembly names
-also bypass caching because they can escape the declared search-directory inventory.
+resources bypass caching. Path-shaped metadata assembly references also bypass caching because they
+can escape the declared search-directory inventory. Root and XML assembly-name strings are left to
+ILLink's existing unresolved-name handling.
 Portable PDB emission requires already-normalized input paths and
 explicit `PreserveSymbolPaths=true`. Neither symbol preservation nor deterministic compiler
 paths are enabled automatically. Copy actions also require shareable input paths.

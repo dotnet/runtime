@@ -1324,12 +1324,15 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData("descriptor", "nested/Dependency")]
-        [InlineData("descriptor", "nested/Dependency, Version=1.0.0.0")]
-        [InlineData("attributes", "../Dependency")]
-        [InlineData("substitutions", "C:\\Dependency")]
-        [InlineData("reference", "nested/Dependency")]
-        public void CacheKeyBypassesPathShapedAssemblyResolution(string source, string name)
+        [InlineData("root", "nested/Dependency", true)]
+        [InlineData("root", "Input.dll", true)]
+        [InlineData("root", "Input.exe", true)]
+        [InlineData("descriptor", "nested/Dependency", true)]
+        [InlineData("descriptor", "nested/Dependency, Version=1.0.0.0", true)]
+        [InlineData("attributes", "../Dependency", true)]
+        [InlineData("substitutions", "C:\\Dependency", true)]
+        [InlineData("reference", "nested/Dependency", false)]
+        public void CacheKeyOnlyBypassesPathShapedMetadataReferences(string source, string name, bool eligible)
         {
             using var test = new OutputDirectoryTest();
             string host = PrepareCacheKeyTest(test);
@@ -1344,6 +1347,10 @@ namespace ILLink.Tasks.Tests
                 }
                 File.WriteAllBytes(input, output.ToArray());
             }
+            else if (source == "root")
+            {
+                test.Task.RootAssemblyNames = new ITaskItem[] { new TaskItem(name) };
+            }
             else
             {
                 string xml = Path.Combine(test.Root, "path-shaped.xml");
@@ -1354,9 +1361,10 @@ namespace ILLink.Tasks.Tests
                     test.Task.ExtraArgs = $"--ignore-link-attributes true --{(source == "attributes" ? "link-attributes" : "substitutions")} \"{xml}\"";
             }
 
-            Assert.False(test.Task.TryGetCacheKey(host, out string key));
-            Assert.Empty(key);
-            Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("Path-shaped assembly"));
+            Assert.Equal(eligible, test.Task.TryGetCacheKey(host, out string key));
+            Assert.Equal(eligible ? 64 : 0, key.Length);
+            if (!eligible)
+                Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("Path-shaped assembly"));
         }
 
         [Theory]
@@ -1618,7 +1626,6 @@ namespace ILLink.Tasks.Tests
         [InlineData("metadata-less-assembly")]
         [InlineData("metadata-less-reference")]
         [InlineData("missing-linker")]
-        [InlineData("root-path")]
         [InlineData("renamed-input")]
         [InlineData("renamed-reference")]
         public void CacheKeyBypassesUnsupportedInputs(string reason)
@@ -1662,9 +1669,6 @@ namespace ILLink.Tasks.Tests
                     break;
                 case "missing-linker":
                     File.Delete(test.Task.ILLinkPath);
-                    break;
-                case "root-path":
-                    test.Task.RootAssemblyNames = new ITaskItem[] { new TaskItem(test.Task.AssemblyPaths[0].ItemSpec) };
                     break;
                 case "renamed-input":
                 case "renamed-reference":

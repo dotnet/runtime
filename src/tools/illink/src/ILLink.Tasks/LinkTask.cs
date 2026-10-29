@@ -13,7 +13,6 @@ using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Xml;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.NET.Build.Tasks;
@@ -287,17 +286,11 @@ namespace ILLink.Tasks
 
         protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
-            DateTime outputTimestampUtc = DateTime.UtcNow;
-            InvocationCache cache = InvocationCache.TryCreateFromEnvironment(Log, s_cacheConfiguration);
-            string inputHash = null;
             (string WorkingDirectory, string CommandLine, string ResponseFile)? invocation = null;
-            if (cache is not null && !TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out inputHash, out invocation))
-                cache = null;
-
-            InvocationCacheRequest? request = cache is null ? null :
-                new InvocationCacheRequest(inputHash, InvocationOutputs.FromDirectory(OutputDirectory.ItemSpec));
-            return InvocationCache.ExecutePrepared(cache, outputTimestampUtc, request,
-                () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands, invocation));
+            return InvocationCache.ExecuteCached(Log, s_cacheConfiguration,
+                prepareInvocation: () => TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out string key, out invocation)
+                    ? new InvocationCacheRequest(key, InvocationOutputs.FromDirectory(OutputDirectory.ItemSpec)) : null,
+                executeNormally: () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands, invocation));
         }
 
         private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands,
@@ -348,14 +341,6 @@ namespace ILLink.Tasks
                 Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: custom steps/data, dependency dumps, and task environment overrides are not supported.");
                 return false;
             }
-            if (RootAssemblyNames.Any(root => HasPathSyntax(root.ItemSpec) ||
-                root.ItemSpec.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
-                root.ItemSpec.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)))
-            {
-                Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: roots must be assembly names, not file paths.");
-                return false;
-            }
-
             try
             {
                 var files = new SortedSet<string>(StringComparer.Ordinal);
@@ -406,7 +391,6 @@ namespace ILLink.Tasks
                 }
 
                 var assemblies = new HashSet<string>(StringComparer.Ordinal);
-                var xmlFiles = new HashSet<string>(StringComparer.Ordinal);
                 foreach (ITaskItem assembly in AssemblyPaths)
                 {
                     if (!AddAssembly(assembly.ItemSpec))
@@ -418,14 +402,11 @@ namespace ILLink.Tasks
                         return false;
                 }
                 foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
-                {
-                    if (!AddXmlFile(descriptor.ItemSpec))
-                        return false;
-                }
+                    AddFile(descriptor.ItemSpec);
                 foreach (var argument in extraPaths)
                 {
-                    if (argument.Option != "-d" && !AddXmlFile(argument.Path))
-                        return false;
+                    if (argument.Option != "-d")
+                        AddFile(argument.Path);
                 }
 
                 // Keep search-directory ordering in the arguments; hash even shadowed candidates.
@@ -470,7 +451,7 @@ namespace ILLink.Tasks
                 using var sha256 = SHA256.Create();
                 using var description = new MemoryStream();
                 using var writer = new BinaryWriter(description, Encoding.UTF8, leaveOpen: true);
-                writer.Write("ILLink task cache key v3: relative execution paths");
+                writer.Write("ILLink task cache key");
                 writer.Write(paths.ExecutionRoot is not null);
                 writer.Write(paths.Map(ILLinkPath));
                 writer.Write(modeledCommandLine);
@@ -508,27 +489,6 @@ namespace ILLink.Tasks
                 return true;
 
                 void AddFile(string path) => files.Add(Path.GetFullPath(path));
-
-                bool AddXmlFile(string path)
-                {
-                    path = Path.GetFullPath(path);
-                    AddFile(path);
-                    if (!xmlFiles.Add(path))
-                        return true;
-                    using var reader = XmlReader.Create(path, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null });
-                    while (reader.Read())
-                    {
-                        if (reader.NodeType != XmlNodeType.Element || reader.LocalName != "assembly")
-                            continue;
-                        string fullName = reader.GetAttribute("fullname");
-                        if (fullName is not null && HasPathSyntax(fullName.Split(',')[0].Trim()))
-                        {
-                            Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: Path-shaped assembly names in XML can resolve outside the input inventory.");
-                            return false;
-                        }
-                    }
-                    return true;
-                }
 
                 void AddOptionalFile(string path)
                 {
@@ -584,7 +544,7 @@ namespace ILLink.Tasks
                     return true;
                 }
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or BadImageFormatException or InvalidDataException or XmlException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or BadImageFormatException or InvalidDataException)
             {
                 Log.LogMessage(MessageImportance.Low, $"ILLink cache bypassed: input identity could not be computed: {ex.Message}");
                 return false;
