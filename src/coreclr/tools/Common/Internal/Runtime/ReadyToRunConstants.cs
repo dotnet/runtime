@@ -24,6 +24,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_StrippedInliningInfo = 0x00000400,     // Inlining info has been stripped from the image
         READYTORUN_FLAG_StrippedDebugInfo = 0x00000800,        // Debug info has been stripped from the image
         READYTORUN_FLAG_VerifyGCModeTransitions = 0x00001000,  // Code in this image verifies that GC mode transitions are legal. Catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
+        READYTORUN_FLAG_SingleThreaded = 0x00002000,           // The image targets a single-threaded runtime and lays out [ThreadStatic] fields as regular statics.
     }
 
     public enum ReadyToRunImportSectionType : byte
@@ -40,6 +41,7 @@ namespace Internal.ReadyToRunConstants
         None  = 0x0000,
         Eager = 0x0001, // Section before module activation.
         PCode = 0x0004, // Section contains pointers to code
+        GCRefMap = 0x0008, // Each signature is prefixed by its argument GC reference map.
     }
 
     /// <summary>

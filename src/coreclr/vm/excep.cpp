@@ -2353,8 +2353,9 @@ void StackTraceInfo::EnsureStackTraceArray(StackTraceArrayProtect *pStackTracePr
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStackTraceProtected));
     }
     CONTRACTL_END;
@@ -2392,8 +2393,9 @@ void StackTraceInfo::EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t 
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(ppKeepAliveArray));
     }
     CONTRACTL_END;
@@ -5102,7 +5104,7 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 #endif // TARGET_UNIX
 
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-EXTERN_C void JIT_StackProbe_End();
+EXTERN_C void RhpStackProbe_End();
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 #ifndef TARGET_X86
@@ -5223,7 +5225,7 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    CHECK_RANGE(JIT_StackProbe)
+    CHECK_RANGE(RhpStackProbe)
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #else
     CHECK_RANGE(JIT_WriteBarrierGroup)
@@ -5313,7 +5315,7 @@ AdjustContextForJITHelpers(
         SetSP(pContext, PCODE((BYTE*)GetSP(pContext) + sizeof(void*)));
     }
 
-    if ((f_IP >= (PCODE) JIT_StackProbe) && (f_IP <= (PCODE) JIT_StackProbe_End))
+    if ((f_IP >= (PCODE) RhpStackProbe) && (f_IP <= (PCODE) RhpStackProbe_End))
     {
         TADDR ebp = GetFP(pContext);
         void* callsite = (void *)*dac_cast<PTR_PCODE>(ebp + 4);
@@ -9344,6 +9346,21 @@ UINT GetResourceIDForFileLoadExceptionHR(HRESULT hr)
 }
 
 #ifndef DACCESS_COMPILE
+
+Exception *GetExceptionFromCxxSystemError(DWORD errorCode)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Match RealCOMPlusThrowWin32's ApplicationException compatibility behavior.
+    return new EEMessageException(kApplicationException, HRESULT_FROM_WIN32(errorCode), 0 /* resid */,
+                                  NULL, NULL, NULL, NULL, NULL, NULL);
+}
 
 //==========================================================================
 // Throw a runtime exception based on the last Win32 error (GetLastError())

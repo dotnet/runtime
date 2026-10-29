@@ -18,7 +18,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// pointer) into the three synthetic <see cref="WasmContext"/> slots, which is the common
 /// P/Invoke-boundary seeding path; an inlined P/Invoke from R2R code instead stores a marker and is
 /// resolved from its R2R shadow frame. The software/faulting exception frame handlers likewise read a
-/// serialized <see cref="WasmContext"/> blob from the frame's <c>TargetContext</c>.
+/// serialized <see cref="WasmContext"/> blob from the frame's <c>TargetContext</c>, restoring
+/// IP, SP and the frame pointer.
 ///
 /// Hijack frames are a debugger / GC-suspension concept that is not yet supported on WASM.
 /// </remarks>
@@ -33,6 +34,11 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
 
     public override void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
     {
+        // Native InlinedCallFrame::UpdateRegDisplay_Impl returns before any update, including the
+        // interpreter-frame stash below, when the frame has no active call.
+        if (inlinedCallFrame.CallerReturnAddress == TargetCodePointer.Null)
+            return;
+
         if (inlinedCallFrame.CallerReturnAddress.Value == InlinedPInvokeFromR2R)
         {
             // Mirrors InlinedCallFrame::UpdateRegDisplay_Impl in src/coreclr/vm/wasm/helpers.cpp.
@@ -41,8 +47,8 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
             Wasm.WasmUnwinder unwinder = new(_target, new Wasm.WasmR2RInfo(_target));
             _holder.Context.StackPointer = inlinedCallFrame.CallSiteSP;
             _holder.Context.InstructionPointer = unwinder.GetVirtualIP(inlinedCallFrame.CallSiteSP);
-            // Root-function frame base; the funclet-aware logical frame pointer is not modeled yet.
-            _holder.Context.FramePointer = unwinder.TryGetFramePointer(inlinedCallFrame.CallSiteSP, out TargetPointer framePointer)
+            // Native GetWasmFramePointerFromStackPointer: a funclet reports its establishing method's frame.
+            _holder.Context.FramePointer = unwinder.TryGetLogicalFramePointer(inlinedCallFrame.CallSiteSP, out TargetPointer framePointer)
                 ? framePointer
                 : TargetPointer.Null;
         }
@@ -61,6 +67,44 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
         {
             if (!_holder.Context.TrySetRegister(WasmContext.InterpreterWalkFramePointerRegister, new TargetNUInt(next.Address.Value)))
                 throw new InvalidOperationException($"Failed to set WASM interpreter frame-pointer register '{WasmContext.InterpreterWalkFramePointerRegister}'.");
+        }
+    }
+
+    // Native restores FP with IP and SP, but the CalleeSavedRegisters descriptor is empty on WASM,
+    // so the base handler would leave FP stale.
+    public override void HandleSoftwareExceptionFrame(SoftwareExceptionFrame softwareExceptionFrame)
+    {
+        ContextHolder<WasmContext> saved = new();
+        saved.ReadFromAddress(_target, softwareExceptionFrame.TargetContext);
+
+        _holder.Context.InstructionPointer = saved.Context.InstructionPointer;
+        _holder.Context.StackPointer = saved.Context.StackPointer;
+        _holder.Context.FramePointer = saved.Context.FramePointer;
+    }
+
+    // Mirrors TransitionFrame::UpdateRegDisplay_Impl in src/coreclr/vm/wasm/helpers.cpp. With a recorded
+    // R2R stack pointer and a known return address, the caller is the R2R frame at that stack pointer
+    // (TransitionFrame::GetSP); otherwise the caller's stack pointer is the end of the TransitionBlock.
+    public override void HandleTransitionFrame(FramedMethodFrame framedMethodFrame)
+    {
+        Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(framedMethodFrame.TransitionBlockPtr);
+        TargetCodePointer instructionPointer = _frameHelpers.GetTransitionBlockReturnAddress(transitionBlock);
+        TargetPointer stackPointer = transitionBlock.StackPointer ?? TargetPointer.Null;
+
+        _holder.Context.InstructionPointer = instructionPointer;
+        if (stackPointer != TargetPointer.Null && instructionPointer != TargetCodePointer.Null)
+        {
+            _holder.Context.StackPointer = stackPointer;
+            // Native GetWasmFramePointerFromStackPointer: a funclet reports its establishing method's frame.
+            Wasm.WasmUnwinder unwinder = new(_target, new Wasm.WasmR2RInfo(_target));
+            _holder.Context.FramePointer = unwinder.TryGetLogicalFramePointer(stackPointer, out TargetPointer framePointer)
+                ? framePointer
+                : TargetPointer.Null;
+        }
+        else
+        {
+            _holder.Context.StackPointer = framedMethodFrame.TransitionBlockPtr + Data.TransitionBlock.GetSize(_target);
+            _holder.Context.FramePointer = TargetPointer.Null;
         }
     }
 

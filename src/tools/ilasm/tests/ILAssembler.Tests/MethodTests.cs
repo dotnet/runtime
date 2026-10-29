@@ -21,6 +21,29 @@ namespace ILAssembler.Tests
 {
     public class MethodTests
     {
+        [Theory]
+        [InlineData("()")]
+        [InlineData("( )")]
+        [InlineData("(\t)")]
+        [InlineData("(\r\n)")]
+        [InlineData("(/* no arguments */)")]
+        public void EmptyParameterLists_AllowWhitespace(string arguments)
+        {
+            string source = $$"""
+                .assembly test {}
+                .method public static void M{{arguments}} cil managed
+                {
+                    call void M{{arguments}}
+                    ret
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinition method = reader.GetMethodDefinition(Assert.Single(reader.MethodDefinitions));
+            Assert.Equal(new byte[] { 0, 0, 1 }, reader.GetBlobBytes(method.Signature));
+            Assert.Equal(new byte[] { 0x28, 1, 0, 0, 6, 0x2A }, pe.GetMethodBody(method.RelativeVirtualAddress).GetILBytes());
+        }
 
         [Fact]
         public void Diagnostic_AbstractMethodNotInAbstractType()
@@ -160,6 +183,247 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void PseudoCustomAttribute_SpecialNameOnMethod_LowersToFlagAndDropsAttribute()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.SpecialNameAttribute::.ctor() = ( 01 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+
+            Assert.Equal(MethodAttributes.SpecialName, method.Attributes & MethodAttributes.SpecialName);
+            Assert.Empty(method.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData("08 00", MethodImplAttributes.NoInlining)]
+        [InlineData("00 20", MethodImplAttributes.Async)]
+        [InlineData("00 04", (MethodImplAttributes)0x0400)]
+        [InlineData("00 40", (MethodImplAttributes)0x4000)]
+        [InlineData("00 80", (MethodImplAttributes)0x8000)]
+        public void PseudoCustomAttribute_MethodImpl_LowersToImplAttributeAndDropsAttribute(
+            string valueBytes,
+            MethodImplAttributes expected)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.MethodImplAttribute::.ctor(int16) = ( 01 00 {{valueBytes}} 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+
+            Assert.Equal(expected, method.ImplAttributes);
+            Assert.Empty(method.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData("00 04 00 00", (MethodImplAttributes)0x0400)]
+        [InlineData("00 40 00 00", (MethodImplAttributes)0x4000)]
+        [InlineData("00 80 00 00", (MethodImplAttributes)0x8000)]
+        [InlineData("FC FF 00 00", (MethodImplAttributes)0xFFFC)]
+        public void PseudoCustomAttribute_MethodImplOptions_PreservesUnusedBits(string valueBytes, MethodImplAttributes expected)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.MethodImplAttribute::.ctor(valuetype [mscorlib]System.Runtime.CompilerServices.MethodImplOptions) = ( 01 00 {{valueBytes}} 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+
+            Assert.Equal(expected, method.ImplAttributes);
+            Assert.Empty(method.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData("01 00 00 00")]
+        [InlineData("02 00 00 00")]
+        [InlineData("03 00 00 00")]
+        [InlineData("00 00 01 00")]
+        [InlineData("08 00 01 00")]
+        [InlineData("00 00 00 80")]
+        [InlineData("FC FF FF FF")]
+        public void PseudoCustomAttribute_MethodImplOptions_ConflictsAndOverflowReportDiagnostic(string valueBytes)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.MethodImplAttribute::.ctor(valuetype [mscorlib]System.Runtime.CompilerServices.MethodImplOptions) = ( 01 00 {{valueBytes}} 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        }
+
+        [Theory]
+        [InlineData("00 00 00 00", MethodImplAttributes.IL)]
+        [InlineData("01 00 00 00", MethodImplAttributes.Native)]
+        [InlineData("02 00 00 00", MethodImplAttributes.OPTIL)]
+        [InlineData("03 00 00 00", MethodImplAttributes.Runtime)]
+        public void PseudoCustomAttribute_MethodImplWithMethodCodeTypeNamedArgument_LowersToImplAttributeAndDropsAttribute(
+            string codeTypeBytes,
+            MethodImplAttributes expected)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.MethodImplAttribute::.ctor() = ( 01 00 01 00 53 55 2E 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 43 6F 6D 70 69 6C 65 72 53 65 72 76 69 63 65 73 2E 4D 65 74 68 6F 64 43 6F 64 65 54 79 70 65 0E 4D 65 74 68 6F 64 43 6F 64 65 54 79 70 65 {{codeTypeBytes}} )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+
+            Assert.Equal(expected, method.ImplAttributes & MethodImplAttributes.CodeTypeMask);
+            Assert.Empty(method.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_MethodImplInvalidValue_ReportsDiagnostic()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.MethodImplAttribute::.ctor(int16) = ( 01 00 02 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        }
+
+        [Theory]
+        [InlineData("04 00 00 00")]
+        [InlineData("00 00 01 00")]
+        [InlineData("01 00 01 00")]
+        [InlineData("FF FF FF FF")]
+        public void PseudoCustomAttribute_InvalidMethodCodeTypeDoesNotApplyFixedFlags(string codeTypeBytes)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.MethodImplAttribute::.ctor(int16) = ( 01 00 08 00 01 00 53 55 2E 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 43 6F 6D 70 69 6C 65 72 53 65 72 76 69 63 65 73 2E 4D 65 74 68 6F 64 43 6F 64 65 54 79 70 65 0E 4D 65 74 68 6F 64 43 6F 64 65 54 79 70 65 {{codeTypeBytes}} )
+                        ret
+                    }
+                }
+                """;
+
+            var compiler = new DocumentCompiler();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ => { Assert.Fail("Expected no includes"); return default; },
+                _ => { Assert.Fail("Expected no resources"); return default; },
+                new Options { PseudoAttributes = true, ErrorTolerant = true });
+
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
+            Assert.NotNull(result);
+
+            var image = new BlobBuilder();
+            result!.Serialize(image);
+            using var pe = new PEReader(image.ToImmutableArray());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+
+            Assert.Equal(default, method.ImplAttributes & MethodImplAttributes.NoInlining);
+        }
+
+        [Theory]
+        [InlineData(".ctor()", "( 01 00 00 00 )")]
+        [InlineData(".ctor(int16)", "( 01 00 08 00 00 00 )")]
+        [InlineData(".ctor(valuetype [mscorlib]System.Runtime.CompilerServices.MethodImplOptions)", "( 01 00 08 00 00 00 00 00 )")]
+        public void PseudoCustomAttribute_MethodImplDefaultsToILCodeType(string constructor, string value)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() native unmanaged
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.MethodImplAttribute::{{constructor}} = {{value}}
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+
+            Assert.Equal(default, method.ImplAttributes & MethodImplAttributes.CodeTypeMask);
+        }
+
+        [Fact]
         public void MethodBodyDirectives_EmitRawInstructionLocalsInitializationAndMappedData()
         {
             string source = """
@@ -207,6 +471,176 @@ namespace ILAssembler.Tests
                     pe.GetSectionData(field.GetRelativeVirtualAddress()).GetContent().AsSpan(0, sizeof(int))));
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void Diagnostic_DuplicateEntryPoint(bool sameMethod, bool errorTolerant)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public Program
+                {
+                    .method public static void Main() cil managed
+                    {
+                        .entrypoint
+                        {{(sameMethod ? ".entrypoint" : string.Empty)}}
+                        ret
+                    }
+                    .method public static void Other() cil managed
+                    {
+                        {{(sameMethod ? string.Empty : ".entrypoint")}}
+                        ret
+                    }
+                }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = errorTolerant, Debug = true });
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.DuplicateEntryPoint, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Equal("Multiple entry points declared", error.Message);
+            Assert.Equal("test.il", error.Location.Source.Path);
+            Assert.Equal(new SourceSpan(source.LastIndexOf(".entrypoint", StringComparison.Ordinal), ".entrypoint".Length), error.Location.Span);
+            if (errorTolerant)
+            {
+                Assert.NotNull(result);
+                using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+                MetadataReader reader = pe.GetMetadataReader();
+                MethodDefinitionHandle mainHandle = reader.MethodDefinitions
+                    .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "Main");
+                Assert.Equal(MetadataTokens.GetToken(mainHandle), pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
+                using MetadataReaderProvider pdb = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
+                Assert.Equal(mainHandle, pdb.GetMetadataReader().DebugMetadataHeader!.EntryPoint);
+            }
+            else
+            {
+                Assert.Null(result);
+            }
+        }
+
+        [Theory]
+        [InlineData("", false)]
+        [InlineData("", true)]
+        [InlineData("instance", false)]
+        [InlineData("instance", true)]
+        public void Diagnostic_InstanceEntryPoint(string callingConvention, bool errorTolerant)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public Program
+                {
+                    .method public {{callingConvention}} void Main() cil managed
+                    {
+                        .entrypoint
+                        ret
+                    }
+                }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = errorTolerant, Debug = true });
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.InstanceEntryPoint, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Equal("Entry point method must be static", error.Message);
+            Assert.Equal("test.il", error.Location.Source.Path);
+            Assert.Equal(new SourceSpan(source.IndexOf(".entrypoint", StringComparison.Ordinal), ".entrypoint".Length), error.Location.Span);
+            if (errorTolerant)
+            {
+                Assert.NotNull(result);
+                using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+                MetadataReader reader = pe.GetMetadataReader();
+                MethodDefinitionHandle mainHandle = reader.MethodDefinitions
+                    .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "Main");
+                Assert.Equal(MetadataTokens.GetToken(mainHandle), pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
+                using MetadataReaderProvider pdb = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
+                Assert.Equal(mainHandle, pdb.GetMetadataReader().DebugMetadataHeader!.EntryPoint);
+            }
+            else
+            {
+                Assert.Null(result);
+            }
+        }
+
+        [Fact]
+        public void EntryPointAcrossDocuments_ReportsDuplicateAndRetainsFirst()
+        {
+            var first = new SourceText("""
+                .assembly test { }
+                .method public static void Main() cil managed { .entrypoint ret }
+                """, "first.il");
+            var second = new SourceText("""
+                .method public static void Other() cil managed { .entrypoint ret }
+                """, "second.il");
+
+            var (diagnostics, result) = new DocumentCompiler().Compile(
+                [first, second],
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true });
+
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.DuplicateEntryPoint, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Equal("second.il", error.Location.Source.Path);
+            Assert.Equal(new SourceSpan(second.Text.IndexOf(".entrypoint", StringComparison.Ordinal), ".entrypoint".Length), error.Location.Span);
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinitionHandle mainHandle = reader.MethodDefinitions
+                .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "Main");
+            Assert.Equal(MetadataTokens.GetToken(mainHandle), pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void InstanceEntryPoint_WithSubsequentEntryPoint_ReportsDuplicateAndRetainsFirst(bool errorTolerant)
+        {
+            string source = """
+                .assembly test { }
+                .class public Program
+                {
+                    .method public instance void Invalid() cil managed { .entrypoint ret }
+                    .method public static void Main() cil managed { .entrypoint ret }
+                }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = errorTolerant, Debug = true });
+            Assert.Collection(diagnostics,
+                error =>
+                {
+                    Assert.Equal(DiagnosticIds.InstanceEntryPoint, error.Id);
+                    Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+                    Assert.Equal(new SourceSpan(source.IndexOf(".entrypoint", StringComparison.Ordinal), ".entrypoint".Length), error.Location.Span);
+                },
+                error =>
+                {
+                    Assert.Equal(DiagnosticIds.DuplicateEntryPoint, error.Id);
+                    Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+                    Assert.Equal(new SourceSpan(source.LastIndexOf(".entrypoint", StringComparison.Ordinal), ".entrypoint".Length), error.Location.Span);
+                });
+            if (errorTolerant)
+            {
+                Assert.NotNull(result);
+                using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+                MetadataReader reader = pe.GetMetadataReader();
+                MethodDefinitionHandle invalidHandle = reader.MethodDefinitions
+                    .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "Invalid");
+                Assert.Equal(MetadataTokens.GetToken(invalidHandle), pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
+                using MetadataReaderProvider pdb = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
+                Assert.Equal(invalidHandle, pdb.GetMetadataReader().DebugMetadataHeader!.EntryPoint);
+            }
+            else
+            {
+                Assert.Null(result);
+            }
+        }
+
         [Fact]
         public void EntryPointMethod_SetsCorHeaderEntryPointToken()
         {
@@ -232,6 +666,57 @@ namespace ILAssembler.Tests
             Assert.Equal(
                 MetadataTokens.GetToken(mainHandle),
                 pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
+        }
+
+        [Fact]
+        public void EntryPointMethod_IsPortablePdbHeaderEntryPoint()
+        {
+            // Main is not the first MethodDef, so the PDB header's entry point must name Main itself.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static void Helper() cil managed
+                    {
+                        ret
+                    }
+
+                    .method public static int32 Main() cil managed
+                    {
+                        .entrypoint
+                        ldc.i4.0
+                        ret
+                    }
+                }
+                """;
+
+            using var pdb = PortablePdbTestReader.Compile(source);
+            MethodDefinitionHandle mainHandle = pdb.GetMethodHandle("Main");
+
+            Assert.NotEqual(1, MetadataTokens.GetRowNumber(mainHandle));
+            Assert.Equal(mainHandle, pdb.Pdb.DebugMetadataHeader!.EntryPoint);
+        }
+
+        [Fact]
+        public void NoEntryPointMethod_PortablePdbHeaderEntryPointIsNil()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static int32 Main() cil managed
+                    {
+                        ldc.i4.0
+                        ret
+                    }
+                }
+                """;
+
+            using var pdb = PortablePdbTestReader.Compile(source);
+
+            Assert.True(pdb.Pdb.DebugMetadataHeader!.EntryPoint.IsNil);
         }
 
 
@@ -472,7 +957,7 @@ namespace ILAssembler.Tests
                 _ => default!,
                 new Options());
 
-            Assert.Contains(malformedDiagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.Contains(malformedDiagnostics, diagnostic => diagnostic.Id == DiagnosticIds.Parser);
             Assert.Empty(validDiagnostics);
             Assert.NotNull(result);
             var image = new BlobBuilder();

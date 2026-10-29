@@ -21,6 +21,175 @@ namespace ILAssembler.Tests
 {
     public class FieldTests
     {
+        private const FieldAttributes NotSerializedField = (FieldAttributes)0x0080;
+        private const string LocalFieldOffsetAttributeDefinition = """
+            .class public System.Runtime.InteropServices.FieldOffsetAttribute extends [mscorlib]System.Attribute
+            {
+                .method public specialname rtspecialname instance void .ctor(int32 offset) cil managed
+                {
+                    ldarg.0
+                    call instance void [mscorlib]System.Attribute::.ctor()
+                    ret
+                }
+            }
+            """;
+
+        [Theory]
+        [InlineData("", "", "")]
+        [InlineData(".class public Test {", "", "}")]
+        [InlineData(".class public Outer { .class nested public Inner {", "", "} }")]
+        [InlineData(".class public Test`1<T> {", "", "}")]
+        [InlineData(".class public Test {", "} .class public Test {", "}")]
+        public void DuplicateFields_RequireErrorTolerantMode(string prefix, string between, string suffix)
+        {
+            string source = $$"""
+                .assembly test { }
+                {{prefix}}
+                .field public static int32 Value = int32(1)
+                {{between}}
+                .field private static int32 Value = int32(2)
+                {{suffix}}
+                """;
+
+            foreach (bool errorTolerant in new[] { false, true })
+            {
+                var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                    source, new Options { ErrorTolerant = errorTolerant });
+                Diagnostic diagnostic = Assert.Single(diagnostics);
+                Assert.Equal("ILA0034", diagnostic.Id);
+                Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+                Assert.Equal("Duplicate field definition 'Value'", diagnostic.Message);
+                Assert.Equal("test.il", diagnostic.Location.Source.Path);
+                Assert.Equal(source.LastIndexOf(".field", StringComparison.Ordinal), diagnostic.Location.Span.Start);
+
+                if (!errorTolerant)
+                {
+                    Assert.Null(result);
+                    continue;
+                }
+
+                Assert.NotNull(result);
+                using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+                MetadataReader reader = pe.GetMetadataReader();
+                FieldDefinition[] fields = reader.FieldDefinitions.Select(reader.GetFieldDefinition).ToArray();
+                Assert.Equal(2, fields.Length);
+                Assert.All(fields, field => Assert.Equal("Value", reader.GetString(field.Name)));
+                Assert.Equal(reader.GetBlobBytes(fields[0].Signature), reader.GetBlobBytes(fields[1].Signature));
+                Assert.Equal(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.HasDefault, fields[0].Attributes);
+                Assert.Equal(FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.HasDefault, fields[1].Attributes);
+                Assert.Equal(1, reader.GetBlobReader(reader.GetConstant(fields[0].GetDefaultValue()).Value).ReadInt32());
+                Assert.Equal(2, reader.GetBlobReader(reader.GetConstant(fields[1].GetDefaultValue()).Value).ReadInt32());
+            }
+        }
+
+        [Theory]
+        [InlineData(".field public int32 Value", ".field public int64 Value")]
+        [InlineData(".field public int32 Value", ".field public int32 'value'")]
+        [InlineData(".field privatescope int32 Value", ".field privatescope int32 Value")]
+        [InlineData(".field privatescope int32 Value", ".field public int32 Value")]
+        [InlineData(".field public int32 Value", ".field privatescope int32 Value")]
+        [InlineData(".field public int32 Value", ".field public int32 modopt([mscorlib]System.ObsoleteAttribute) Value")]
+        [InlineData(".field public !0 Value", ".field public !1 Value")]
+        public void DistinctFields_ArePreserved(string first, string second)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public Test`2<T, U>
+                {
+                    {{first}}
+                    {{second}}
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            Assert.Equal(2, pe.GetMetadataReader().FieldDefinitions.Count);
+        }
+
+        [Fact]
+        public void SameFieldInDifferentOwners_IsPreserved()
+        {
+            string source = """
+                .assembly test { }
+                .field public static int32 Value
+                .class public A
+                {
+                    .field public static int32 Value
+                    .class nested public B { .field public static int32 Value }
+                }
+                .class public B { .field public static int32 Value }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(4, reader.FieldDefinitions.Count);
+            Assert.All(reader.TypeDefinitions, handle => Assert.Single(reader.GetTypeDefinition(handle).GetFields()));
+        }
+
+        [Theory]
+        [InlineData("int32", "int32")]
+        [InlineData("!T", "!0")]
+        [InlineData("int32 modreq([mscorlib]System.ObsoleteAttribute)", "int32 modreq([mscorlib]System.ObsoleteAttribute)")]
+        public void DuplicateFields_CompareEncodedSignatures(string firstType, string secondType)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public Test`1<T>
+                {
+                    .field public {{firstType}} Value
+                    .field public static {{secondType}} Value
+                    .field private {{firstType}} Value
+                }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = true });
+            Assert.Equal(2, diagnostics.Length);
+            Assert.All(diagnostics, diagnostic =>
+            {
+                Assert.Equal(DiagnosticIds.DuplicateField, diagnostic.Id);
+                Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            });
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(3, reader.FieldDefinitions.Count);
+            byte[][] signatures = reader.FieldDefinitions.Select(handle =>
+                reader.GetBlobBytes(reader.GetFieldDefinition(handle).Signature)).ToArray();
+            Assert.Equal(signatures[0], signatures[1]);
+            Assert.Equal(signatures[0], signatures[2]);
+        }
+
+        [Fact]
+        public void DuplicateField_ErrorTolerantPreservesLayoutAndCustomAttributeOwner()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public explicit Test
+                {
+                    .field [0] public int32 Value
+                    .field [4] public int32 Value
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                    .field [8] public int32 Following
+                }
+                """;
+
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = true });
+            Assert.Equal(DiagnosticIds.DuplicateField, Assert.Single(diagnostics).Id);
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            MetadataReader reader = pe.GetMetadataReader();
+            FieldDefinition[] fields = reader.FieldDefinitions.Select(reader.GetFieldDefinition).ToArray();
+            Assert.Equal(3, fields.Length);
+            Assert.Equal(new[] { 0, 4, 8 }, fields.Select(field => field.GetOffset()));
+            Assert.Empty(fields[0].GetCustomAttributes());
+            Assert.Single(fields[1].GetCustomAttributes());
+            Assert.Empty(fields[2].GetCustomAttributes());
+        }
+
         [Fact]
         public void TrailingCustomAttribute_AttachesToField()
         {
@@ -251,6 +420,214 @@ namespace ILAssembler.Tests
             Assert.Equal(ConstantTypeCode.NullReference, nullConstant.TypeCode);
         }
 
+        [Theory]
+        [InlineData("System.NonSerializedAttribute", NotSerializedField)]
+        [InlineData("System.Runtime.CompilerServices.SpecialNameAttribute", FieldAttributes.SpecialName)]
+        public void PseudoCustomAttribute_OnField_LowersToFlagAndDropsAttribute(string attributeType, FieldAttributes expected)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field public int32 Value
+                }
+
+                .custom (field int32 Test::Value) instance void [mscorlib]{{attributeType}}::.ctor() = ( 01 00 00 00 )
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+
+            Assert.Equal(expected, field.Attributes & expected);
+            Assert.Empty(field.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_FieldOffset_CreatesFieldLayoutAndDropsAttribute()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public explicit ansi Test extends [mscorlib]System.Object
+                {
+                    .field public int32 Value
+                }
+
+                .custom (field int32 Test::Value) instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(uint32) = ( 01 00 08 00 00 00 00 00 )
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+
+            Assert.Equal(8, field.GetOffset());
+            Assert.Empty(field.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData(null, 16)]
+        [InlineData(0, 0)]
+        [InlineData(4, 4)]
+        [InlineData(int.MaxValue, int.MaxValue)]
+        public void PseudoCustomAttribute_FieldOffset_PreservesExplicitOffset(int? explicitOffset, int expectedOffset)
+        {
+            string offset = explicitOffset is { } value ? $"[{value}]" : "";
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public explicit ansi Test extends [mscorlib]System.Object
+                {
+                    .field {{offset}} public int32 Value
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(int32) = (01 00 08 00 00 00 00 00)
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(int32) = (01 00 10 00 00 00 00 00)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+
+            Assert.Equal(expectedOffset, field.GetOffset());
+            Assert.Equal(1, reader.GetTableRowCount(TableIndex.FieldLayout));
+            Assert.Empty(field.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData(null, false)]
+        [InlineData(null, true)]
+        [InlineData(0, false)]
+        [InlineData(0, true)]
+        [InlineData(4, false)]
+        [InlineData(4, true)]
+        public void PseudoCustomAttribute_FieldOffset_ExplicitOwnerUsesSourceOrder(
+            int? explicitOffset,
+            bool attributeFirst)
+        {
+            string offset = explicitOffset is { } value ? $"[{value}]" : "";
+            string attribute = """
+                .custom (field int32 Test::Value) instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(int32) = (01 00 20 00 00 00 00 00)
+                """;
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                {{(attributeFirst ? attribute : "")}}
+                .class public explicit ansi Test extends [mscorlib]System.Object
+                {
+                    .field {{offset}} public int32 Value
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(int32) = (01 00 08 00 00 00 00 00)
+                }
+                {{(attributeFirst ? "" : attribute)}}
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+
+            Assert.Equal(explicitOffset ?? (attributeFirst ? 8 : 32), field.GetOffset());
+            Assert.Equal(1, reader.GetTableRowCount(TableIndex.FieldLayout));
+            Assert.Empty(field.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData(null, false)]
+        [InlineData(null, true)]
+        [InlineData(0, false)]
+        [InlineData(0, true)]
+        [InlineData(4, false)]
+        [InlineData(4, true)]
+        public void PseudoCustomAttribute_FieldOffset_LocalConstructorUsesSourceOrder(
+            int? explicitOffset,
+            bool attributeFirst)
+        {
+            string offset = explicitOffset is { } value ? $"[{value}]" : "";
+            string attribute = """
+                .custom instance void System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(int32) = (01 00 20 00 00 00 00 00)
+                """;
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                {{LocalFieldOffsetAttributeDefinition}}
+                .class public explicit ansi Test extends [mscorlib]System.Object
+                {
+                    .field {{offset}} public int32 Value
+                    {{(attributeFirst ? attribute : "")}}
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(int32) = (01 00 08 00 00 00 00 00)
+                    {{(attributeFirst ? "" : attribute)}}
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+
+            Assert.Equal(explicitOffset ?? (attributeFirst ? 8 : 32), field.GetOffset());
+            Assert.Equal(1, reader.GetTableRowCount(TableIndex.FieldLayout));
+            Assert.Empty(field.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData(null, false)]
+        [InlineData(null, true)]
+        [InlineData(0, false)]
+        [InlineData(0, true)]
+        [InlineData(4, false)]
+        [InlineData(4, true)]
+        public void PseudoCustomAttribute_FieldOffset_LocalConstructorAndExplicitOwnerUseSourceOrder(
+            int? explicitOffset,
+            bool attributeFirst)
+        {
+            string offset = explicitOffset is { } value ? $"[{value}]" : "";
+            string attribute = """
+                .custom (field int32 Test::Value) instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(int32) = (01 00 10 00 00 00 00 00)
+                """;
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                {{LocalFieldOffsetAttributeDefinition}}
+                {{(attributeFirst ? attribute : "")}}
+                .class public explicit ansi Test extends [mscorlib]System.Object
+                {
+                    .field {{offset}} public int32 Value
+                    .custom instance void System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(int32) = (01 00 20 00 00 00 00 00)
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(int32) = (01 00 08 00 00 00 00 00)
+                }
+                {{(attributeFirst ? "" : attribute)}}
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+
+            Assert.Equal(explicitOffset ?? (attributeFirst ? 8 : 16), field.GetOffset());
+            Assert.Equal(1, reader.GetTableRowCount(TableIndex.FieldLayout));
+            Assert.Empty(field.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData("00 00 00 80", DiagnosticIds.PseudoCustomAttributeInvalidValue)]
+        [InlineData("FF FF FF FF", DiagnosticIds.PseudoCustomAttributeInvalidValue)]
+        [InlineData("", DiagnosticIds.PseudoCustomAttributeInvalidBlob)]
+        public void PseudoCustomAttribute_FieldOffset_WithExplicitOffsetStillValidatesAttribute(
+            string value,
+            string expectedDiagnostic)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public explicit ansi Test extends [mscorlib]System.Object
+                {
+                    .field [4] public int32 Value
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(int32) = (01 00 {{value}} 00 00)
+                }
+                """;
+
+            ImmutableArray<Diagnostic> diagnostics =
+                DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
+
+            Assert.Equal(expectedDiagnostic, Assert.Single(diagnostics).Id);
+        }
 
         [Fact]
         public void FieldRVA_MultipleDataSections()

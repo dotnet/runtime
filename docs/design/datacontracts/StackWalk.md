@@ -120,6 +120,12 @@ TargetPointer GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandl
 ```
 
 ## Version 1
+
+Version 1 targets prepare signature layouts before using signature-scanning transition frames.
+Version 2 retains the algorithms below, with the cached-map extensions described in
+[Version 2](#version-2). The reader shares their implementation and treats the cached-map field
+as optional when inspecting a Version 1 target.
+
 To create a full walk of the managed stack, two types of 'stacks' must be read.
 
 1. True call frames on the thread's stack
@@ -155,6 +161,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `ExternalMethodFrame` | `Indirection` | `pointer` | Import slot pointer for GCRefMap resolution via FindReadyToRunModule |
 | `FaultingExceptionFrame` | `TargetContext` | `pointer` | Frame's Target Context |
 | `Frame` | `Next` | `pointer` | Pointer to next from on linked list |
+| `FramedMethodFrame` | `CachedGCRefMap` | `pointer` | Saved method-entry or declaration-map lookup result: null if unexamined, an all-ones pointer if no map was found |
 | `FramedMethodFrame` | `MethodDescPtr` | `pointer` | Pointer to Frame's method desc |
 | `FramedMethodFrame` | `TransitionBlockPtr` | `pointer` | Pointer to Frame's TransitionBlock |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | `pointer` | Pointer to the Frame's DebuggerEval object |
@@ -184,9 +191,20 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `InterpMethodContextFrame` | `Stack` | `pointer` | Pointer to the stack base for this interpreted method, used as the frame pointer when interpreter GC info uses a stack-base register |
 | `InterpreterFrame` | `IsFaulting` | `uint8` | Boolean indicating whether the topmost interpreted frame has thrown an exception. When set, the context for the top interpreted frame must include CONTEXT_EXCEPTION_ACTIVE so exception unwinders treat the IP as a faulting instruction rather than a return-from-call |
 | `InterpreterFrame` | `TopInterpMethodContextFrame` | `pointer` | Pointer to the InterpreterFrame's top InterpMethodContextFrame |
+| `MethodDesc` | `CodeData` | `pointer` | Pointer to per-method code data containing entry-point and code-versioning state |
+| `MethodDesc` | `Flags` | `uint16` | The method's flags |
+| `MethodDescCodeData` | `GCRefMap` | `pointer` | Optional cached ReadyToRun method-entry GC reference map used by prestub and call-counting frames |
+| `MethodTable` | `AuxiliaryData` | `pointer` | Pointer to the AuxiliaryData of a method table |
+| `MethodTable` | `InterfaceMap` | `pointer` | Optional pointer to the array of interface MethodTable pointers used for contextual virtual argument-map lookup |
+| `MethodTable` | `MTFlags` | `uint32` | One of the flags fields on MethodTable |
+| `MethodTable` | `MTFlags2` | `uint32` | One of the flags fields on MethodTable |
+| `MethodTable` | `NumInterfaces` | `uint16` | Number of interfaces of MethodTable |
+| `MethodTable` | `NumVirtuals` | `uint16` | Number of virtual methods in MethodTable |
+| `MethodTable` | `ParentMethodTable` | `pointer` | Parent type pointer of MethodTable |
 | `Module` | `ReadyToRunInfo` | `pointer` | Pointer to the module's ReadyToRun information |
 | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
+| `PortableEntryPoint` | `ActualCode` | `pointer` | Native code for the entrypoint; on WebAssembly R2R code this is a function-table index (only defined if `FeaturePortableEntrypoints` is enabled) |
 | `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
 | `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
@@ -212,6 +230,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `TransitionBlock` | `CalleeSavedRegisters` | `pointer` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
 | `TransitionBlock` | `FirstGCRefMapSlot` | `pointer` | Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset |
 | `TransitionBlock` | `ReturnAddress` | `CodePointer` | Return address associated with the TransitionBlock |
+| `TransitionBlock` | `StackPointer` | `pointer` | WASM only: R2R linear-stack pointer of the caller, saved by the transition helper |
 | `VASigCookie` | `SizeOfArgs` | `uint32` | Total size in bytes of the varargs argument area; used on x86 to locate the argument base |
 
 ### Global variables used
@@ -229,10 +248,12 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | --- |
 | `CallingConvention` |
 | `Debugger` |
+| `EcmaMetadata` |
 | `Exception` |
 | `ExecutionManager` |
 | `GC` |
 | `GCInfo` |
+| `Loader` |
 | `Object` |
 | `PlatformMetadata` |
 | `RuntimeInfo` |
@@ -448,10 +469,10 @@ Most of the handlers are implemented in `BaseFrameHandler`. Platform specific co
 
 #### InlinedCallFrame
 
-InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
+InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context. On WASM this includes recording the following `InterpreterFrame` for the interpreter unwind.
 
 * On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
-* On WASM, a `CallerReturnAddress` of `INLINED_PINVOKE_FROM_R2R` (`1`) marks an active inlined P/Invoke from ReadyToRun code rather than an address. SP is taken from `CallSiteSP`, IP is the R2R virtual IP of the shadow frame at `CallSiteSP`, and FP is that shadow frame's base. If no virtual IP can be recovered, IP is set to null.
+* On WASM, a `CallerReturnAddress` of `INLINED_PINVOKE_FROM_R2R` (`1`) marks an active inlined P/Invoke from ReadyToRun code rather than an address. SP is taken from `CallSiteSP`, IP is the R2R virtual IP of the shadow frame at `CallSiteSP`, and FP is the WASM logical frame pointer at `CallSiteSP` (see below). If no virtual IP can be recovered, IP is set to null.
 
 An active InlinedCallFrame stays the current Frame after its context update so the skipped-Frame check can step past it once the walk reaches the managed caller. If the updated IP is not managed code (for example, no WASM R2R virtual IP could be recovered), the walk fails, matching native `StackFrameIterator::NextRaw`; otherwise it would never advance past the Frame.
 
@@ -460,6 +481,8 @@ An active InlinedCallFrame stays the current Frame after its context update so t
 #### SoftwareExceptionFrame
 
 SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all ABI specified (platform specific) callee-saved registers are copied from the stored context to the working context.
+
+On WASM the only callee-saved register is the frame pointer (`InterpreterFP`), and the `CalleeSavedRegisters` data descriptor is empty, so the IP, SP and FP are copied explicitly from the stored context (native `SoftwareExceptionFrame::UpdateRegDisplay_Impl`).
 
 **Return Address**: Read from the `ReturnAddress` field on the frame.
 
@@ -470,10 +493,45 @@ TransitionFrames hold a pointer to a `TransitionBlock`. The TransitionBlock hold
 When updating the context from a TransitionFrame, the IP, SP, and all ABI specified callee-saved registers are copied over.
 
 * On ARM, the additional register values stored in `ArgumentRegisters` are copied over. The `TransitionBlock` holds a pointer to the `ArgumentRegister` struct containing these values.
-* On x86, the caller SP also skips callee-popped stack arguments. For `ExternalMethodFrame` and `StubDispatchFrame`, the argument size comes from the frame's GCRefMap, including when its MethodDesc is null. `ReadStackPop()` gives the number of pointer-sized slots to add to the SP. If no GCRefMap is available, MethodDesc-backed frames use the argument map computed from their signature. `PInvokeCalliFrame` instead uses `VASigCookie.SizeOfArgs`.
+* On x86, the caller SP also skips callee-popped stack arguments. For `ExternalMethodFrame` and `StubDispatchFrame`, the argument size comes from the frame's GCRefMap, including when its MethodDesc is null. `PrestubMethodFrame` and `CallCountingHelperFrame` instead use `MethodDescCodeData.GCRefMap` when available. `ReadStackPop()` gives the number of pointer-sized slots to add to the SP. If no GCRefMap is available, MethodDesc-backed frames use the argument map computed from their signature. `PInvokeCalliFrame` instead uses `VASigCookie.SizeOfArgs`.
 * For an x86 `StubDispatchFrame` without a GCRefMap, resolve its method from the stored MethodDesc or its representative MethodTable and slot. If no method is available, the SP stays at the end of the transition block and the IP is adjusted to the call instruction by subtracting five bytes from the saved return address.
+* On WASM, a transition helper called from R2R code records the caller's R2R linear-stack pointer in `TransitionBlock.StackPointer`, and may leave `ReturnAddress` 0. When `ReturnAddress` is 0 and `StackPointer` is set, the return address is the R2R virtual IP of the frame at `StackPointer` (native `FramedMethodFrame::GetTransitionBlock_Impl`). When `StackPointer` is set and a return address is known, the caller's SP is `StackPointer` and its FP is the WASM logical frame pointer at `StackPointer` (native `TransitionFrame::GetSP`); otherwise the SP is the end of the TransitionBlock and the FP is null. This also applies when the interpreted chain under an `InterpreterFrame` is exhausted and the walker applies the `InterpreterFrame`'s transition.
 
-**Return Address**: Read from `TransitionBlock.ReturnAddress`. For an x86 `StubDispatchFrame` with neither a method nor a GCRefMap, subtract five bytes to return the adjusted call address, matching the context update.
+**WASM R2R frame records.** An unwindable R2R frame records a 32-bit frame identity at offset 0 and half of its function-local virtual IP at offset 4. Stack pointers at or below the first linear-memory page do not identify an R2R frame. Identity `0` (`STACK_WALK_INDIRECT_TO_FRAMEPOINTER`) identifies a localloc slot; the actual frame pointer is stored one pointer-sized slot later. Identity `1` (`TERMINATE_R2R_STACK_WALK`) terminates the R2R walk.
+
+Root-method frame identities have three forms:
+
+* An aligned identity is a `PortableEntryPoint`; its `ActualCode` is the method's function-table index.
+* A negative odd identity identifies a directly called CoreLib managed helper. The CoreLib runtime-function index is `(~identity) >> 1` and is resolved against the CoreLib R2R image whose `MinVirtualIP` is `0x80000001`.
+* A positive odd identity identifies a reverse-P/Invoke root. Its function-table index is `identity >> 1`. Because only reverse-P/Invoke roots are emitted without a portable-entrypoint argument, this identity also records that the caller is native.
+
+A funclet instead stores its establishing-frame pointer plus two, giving the identity low bits `10`. These tags are followed until the root-method frame is reached. The physical funclet frame supplies the function-local virtual IP, while the root frame supplies the identity used to find the controlling method's base virtual IP. cDAC requires each establishing-frame link to move toward the caller and bounds the traversal so corrupt target memory cannot create an unbounded walk.
+
+**WASM R2R unwinding.** The virtual IP is the identity-derived method base plus twice the physical frame's stored function-local value. `WasmContext.Unwind` resolves its current virtual IP through `IExecutionManager.GetCodeBlockHandle`, then uses `GetUnwindInfo` and `GetUnwindInfoBaseAddress` to locate the unwind data. It reads the fixed frame size as a uint32 ULEB128 value from `unwindInfoBaseAddress + RuntimeFunction.UnwindData` and adds that size to the physical frame base. A zero frame size terminates the R2R walk because it would make no progress; malformed uint32 ULEB128 data is invalid.
+
+For a managed caller, the resulting stack pointer identifies the caller's R2R frame record; its virtual IP and logical frame pointer are resolved as above. When the current frame has a positive odd reverse-P/Invoke identity, unwinding still preserves the advanced caller SP for the explicit `Frame` chain, but leaves IP and FP null because the caller is native. When the resulting stack pointer has no R2R frame record (a terminator, an interpreter transition or the stack top), the caller is not R2R code: the advanced SP is kept, IP and FP are null, and walking continues through the explicit `Frame` or interpreter frame chain. The R2R walk is cleared (SP, IP and FP all null) only when the current frame cannot be unwound at all: no R2R frame at SP, no unwind data, or a zero frame size.
+
+```csharp
+// WasmContext.Unwind: one R2R frame, mirroring native RtlVirtualUnwind / WasmUnwindStackFrameCore.
+void Unwind()
+{
+    TargetPointer frameBase = /* frame base of the R2R frame at SP */;
+    uint identity = target.Read<uint>(frameBase + FrameIdentityOffset);
+    uint frameSize = /* ULEB128 in the unwind data of the function containing IP */;
+    if (/* no frame at SP, no unwind data, or frameSize == 0 */)
+    {
+        SP = IP = FP = null;
+        return;
+    }
+
+    SP = frameBase + frameSize;
+    bool callerIsNative = identity is odd && (int)identity > 0;    // reverse P/Invoke root
+    IP = callerIsNative ? null : /* R2R virtual IP at SP, or null when SP has no R2R frame record */;
+    FP = IP != null ? /* WASM logical frame pointer at SP */ : null;
+}
+```
+
+**Return Address**: Read from `TransitionBlock.ReturnAddress`. On WASM, it is derived from `TransitionBlock.StackPointer` when it is 0, as above. For an x86 `StubDispatchFrame` with neither a method nor a GCRefMap, subtract five bytes to return the adjusted call address, matching the context update.
 
 The following Frame types also use this mechanism:
 * FramedMethodFrame
@@ -662,7 +720,7 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress)
 TargetCodePointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
 ```
 
-`GetRuntimeFramePointer` returns the debugger frame pointer that uniquely identifies the current frame. On x64 it is the current stack pointer. On ARM, ARM64, RISCV64, and LoongArch64 it is the caller stack pointer. On x86, frameless managed methods use the unwound stack pointer minus the callee-popped argument size and one pointer, while runtime-unwindable native markers use the return-address slot from the recovered hijacked context.
+`GetRuntimeFramePointer` returns the debugger frame pointer that uniquely identifies the current frame. On x64 it is the current stack pointer. On ARM, ARM64, RISCV64, and LoongArch64 it is the caller stack pointer; for interpreted frames the caller stack pointer is the parent `InterpMethodContextFrame` (including the zeroed root frame of an interpreter activation), or the owning `InterpreterFrame` when there is no parent, matching native `VirtualUnwindInterpreterCallFrame`. On x86, frameless managed methods use the unwound stack pointer minus the callee-popped argument size and one pointer, while runtime-unwindable native markers use the return-address slot from the recovered hijacked context.
 
 ```csharp
 TargetPointer GetRuntimeFramePointer(IStackDataFrameHandle stackDataFrameHandle)
@@ -779,10 +837,10 @@ At each frame yielded by `Filter`, the walk determines whether to scan for GC re
 
 - **StubDispatchFrame / ExternalMethodFrame**: Resolve GCRefMap via `FindGCRefMap` using the frame's `Indirection` pointer, otherwise fall back to signature-based scanning.
 - **DynamicHelperFrame**: Use flag-based scanning (`DynamicHelperFrameFlags`).
-- **PrestubMethodFrame / CallCountingHelperFrame**: Use signature-based scanning.
+- **PrestubMethodFrame / CallCountingHelperFrame**: Read `MethodDesc.CodeData` from the frame's `MethodDescPtr`, then use `MethodDescCodeData.GCRefMap` if both pointers are non-null. If no map is available, use signature-based scanning.
 - Other frame types: No GC roots to report.
 
-See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path. The signature-based scanning fallback (`PromoteCallerStack`) is currently a stub awaiting an `ICallingConvention` contract port; the stress harness handles the resulting gaps via a deferred-frame sentinel (see [tests/StressTests/known-issues.md](../../../src/native/managed/cdac/tests/StressTests/known-issues.md) and tracking issue [dotnet/runtime#127765](https://github.com/dotnet/runtime/issues/127765)).
+See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path. The signature-based scanning fallback (`PromoteCallerStack`) uses `CallingConvention.TryComputeArgGCRefMapBlob`. If the target data does not provide enough signature layout information, the frame is marked as deferred.
 
 #### GCFrame and Exception Tracker Roots
 
@@ -797,6 +855,14 @@ Both sets carry a non-zero, stack-resident `Source` and `StackPointer` set to th
 
 A **GCRefMap** is a compact per-callsite encoding that describes which stack slots in a `TransitionBlock` contain GC references. GCRefMaps are pre-computed by the ReadyToRun compiler and stored in the PE image's import section auxiliary data.
 
+Lazy method-entry resolution can cache an import's map in the target's `MethodDescCodeData.GCRefMap`.
+The cached pointer remains valid because collectible modules do not participate in ReadyToRun.
+It describes the exact, non-wrapper method's incoming calling convention and can be reused by
+prestub and call-counting frames, including after code-version transitions. It must not be reused
+for dispatch frames, which can suppress a hidden instantiation argument. A cached map does not
+imply that the method's signature value types have been loaded for ABI lowering or signature-based
+scanning. If the field is absent or null, readers retain the signature-based fallback.
+
 The GCRefMap encoding format — including token values, bit encoding, lookup table structure, and per-architecture position semantics — is documented in the [ReadyToRun format specification](../coreclr/botr/readytorun-format.md#readytorun_import_sectionsauxiliarydata).
 
 #### Resolution Flow
@@ -808,8 +874,8 @@ GCRefMap resolution from a frame's `Indirection` pointer proceeds as follows:
 3. Compute the RVA of the indirection address: `rva = indirection - imageBase`.
 4. Search through `READYTORUN_IMPORT_SECTION` entries to find the section containing the RVA.
 5. Compute the slot index within the section: `index = (rva - sectionVA) / entrySize`.
-6. Use the section's `AuxiliaryData` RVA to locate the GCRefMap lookup table.
-7. Use stride-based lookup (stride = 1024) plus linear scan to find the specific GCRefMap entry.
+6. If the section has the `GCRefMap` flag (`0x0008`), read the DWORD at `imageBase + Signatures + index * 4`. This RVA points directly to the GCRefMap prefix of the import signature.
+7. Otherwise, for older images, use the section's `AuxiliaryData` RVA to locate the GCRefMap lookup table, then use stride-based lookup (stride = 1024) plus linear scan to find the specific entry.
 
 #### Slot Mapping
 
@@ -835,3 +901,155 @@ The x86 GCInfo decoder lives under the [GCInfo contract](GCInfo.md) at `src/nati
 The x86 architecture uses a custom unwinding algorithm defined in `gc_unwind_x86.inl`. The cDAC uses a copy of this algorithm ported to managed code in `X86Unwinder.cs`.
 
 Currently there isn't great documentation on the algorithm, beyond inspecting the implementations.
+
+## Version 2
+
+Version 2 supports cached method-entry and virtual declaration-map lookup for
+`PrestubMethodFrame`, `CallCountingHelperFrame`, and `StubDispatchFrame`. Compatible maps
+supply argument roots and, on x86, the stack-pop count without resolving the method signature.
+If no compatible map is available, the signature-based path is retained. GC root enumeration
+and x86 frame unwinding first use the frame's saved lookup result, if complete.
+Otherwise they use the same metadata-only lookup. Import maps on
+`ExternalMethodFrame` and `StubDispatchFrame` take precedence over method-entry maps.
+
+The runtime publishes Version 2 when ReadyToRun imports can leave signature layouts unloaded.
+An older reader must not apply Version 1's signature-only algorithm to such a target.
+The API surface and all other stack-walking algorithms are unchanged.
+
+### Contextual receiver token
+
+`GCRefMap` tokens `THIS_REF` (value 5) and `THIS_BYREF` (value 6) describe whether the original
+call site's receiver was an object reference or an interior pointer. They use the two-bit
+escape followed by extended integer 5 or 7 respectively; neither consumes an extra bit.
+`VASIG_COOKIE` moves from value 5 to value 7, whose extended integer 9 takes two groups.
+Tokens 0 through 4 retain their encoding. A target publishing Version 1 retains the old
+value 5 for `VASIG_COOKIE`; the reader normalizes this token when decoding target maps.
+The receiver interpretation can be overridden by the frame:
+
+- `ExternalMethodFrame` uses the encoded fallback.
+- `StubDispatchFrame` always reports an object reference.
+- `PrestubMethodFrame` and `CallCountingHelperFrame` report an interior pointer only when
+  the method's owning type is a value type and the method is not an unboxing stub.
+
+All supported ReadyToRun instance import maps use `THIS_REF` or `THIS_BYREF`: the runtime's minimum supported
+ReadyToRun major version is 33. No per-map receiver-format flag or receiver-token validation is needed.
+Signature-synthesized maps may continue to use concrete `REF` and `INTERIOR` tokens; synthetic
+maps for explicit-context shared bodies are not eligible for declaration-map borrowing.
+Signature-synthesized blobs retain the target's cookie encoding and are decoded accordingly.
+
+### Loaded virtual declaration lookup
+
+First try the method's own cached map. Non-dispatch method-entry frames can use an exact
+map even for instantiated generic methods and bodies with an explicit method-descriptor
+or method-table argument. Dispatch frames suppress hidden instantiation arguments, so their
+own-map lookup requires the same eligibility as declaration-map borrowing below.
+If no compatible own map exists, reject methods with a method instantiation and, for
+non-dispatch bodies, methods whose generic context is an explicit argument. For an instance method,
+enumerate the owning type's method definitions for the same slot, excluding unboxing stubs.
+Try every matching definition until a shareable map is found, then search ancestors in
+nearest-to-farthest order while the slot remains virtual in each type. An interface searches
+only its own definitions. Do not use the current vtable entry or restrict the search to the
+ultimate slot introducer: publication can attach a map to an overriding call declaration.
+
+Declaration-map eligibility is determined from loaded method metadata: reject method
+instantiations and methods requiring an explicit method-descriptor or method-table argument.
+Return an eligible method's raw cached map without decoding its contents. Skip missing or
+ineligible maps and continue searching same-slot definitions and eligible ancestors.
+Publication attaches an import map directly to the already-resolved call declaration,
+without traversing the hierarchy, decoding maps, or checking an image-format flag during
+preparation. The runtime rejects images predating the contextual-receiver format; legacy
+concrete import-map rejection is not part of Version 2 lookup.
+If lookup in the method's owning type fails during root enumeration, obtain the actual receiver
+type from the saved `this` object for reference types, boxed wrappers, and dispatch frames. Do not dereference
+`this` for object-returning constructors (String constructors and synthetic array
+constructors), static methods, excluded generic bodies, or unboxed value-type bodies.
+Ordinary instance constructors have a receiver and are eligible for receiver-based lookup.
+The live runtime saves successful lookups and completed misses on the frame before
+reporting argument roots. A single pointer field holds null for an uninitialized lookup,
+an all-ones target pointer for a completed miss, or the map address for a successful lookup.
+The runtime uses volatile loads and stores to publish the complete result in one operation
+to concurrent walkers. Changing the frame's method or representative dispatch slot
+invalidates the saved result by resetting the pointer to null.
+Both root scanning and native x86 unwinding complete the lookup on the first walk.
+The marking walk precedes relocation, so subsequent walks reuse the saved result even if
+the receiver root now contains its future address.
+An uninitialized lookup during native relocation violates this ordering invariant and
+asserts in checked builds; retail builds still restrict such a lookup to method metadata.
+Relocation can update a root before the object has moved, so it must not repeat receiver
+lookup. Diagnostic readers never write this cache. They consume a completed saved result,
+including null, before looking for another map. If the lookup is uninitialized, a
+diagnostic unwind may perform the same metadata and receiver lookup as the first live
+walk: relocation that needed this lookup would already have completed it during marking.
+This lets x86 unwind before the first GC without requiring signature layouts that
+map-based preparation deliberately left unloaded. A completed miss retains signature fallback.
+For diagnostic receiver eligibility, recognize String constructors from their String owning
+type and instance-initializer metadata (`RTSpecialName` and `.ctor`), and synthetic array
+constructors from their array-method kind. Missing String method metadata prevents receiver
+lookup for that method; it does not prevent receiver lookup for methods on other types.
+A String constructor frame can retain the instance constructor MethodDesc even though its
+actual static-factory ABI supplies no receiver.
+
+When the method belongs to an interface, first find its exact interface method-table pointer
+and source slot in the receiver hierarchy's dispatch maps. Normalize the matching target slot
+through the final receiver's vtable to obtain the actual implementation MethodDesc, then search
+its owning type and eligible ancestors for same-slot declaration maps. Interface and class
+slot ordinals are not interchangeable. If resolution fails, no map can be shared.
+
+For subsequent dispatch-map comparisons, match methods by defining module and metadata token,
+async-variant and return-dropping-variant identity, and canonical owning MethodTable identity.
+Do not compare slot ordinals alone or blindly search the receiver's raw target slot: an
+inherited nonvirtual method can have the same ordinal as an unrelated derived virtual method.
+
+For the receiver and each parent:
+
+1. Locate its dispatch map at `AuxiliaryData + sizeof(MethodTableAuxiliaryData)` when
+   `MTFlags2 & 0x4` is set; otherwise consult its canonical method table. Interpret the encoded
+   map in the original, actual method-table context.
+2. For each class alias `(source, target)`, normalize both endpoints through the final receiver's
+   vtable. If either method matches the implementation's definition and canonical owner, try
+   shareable maps from both same-slot declaration searches beginning at the map-owning type,
+   including overriding declarations on eligible ancestors.
+3. For each interface entry whose target normalizes to the same implementation definition and
+   canonical owner, read the interface pointer from the map owner's `InterfaceMap[typeID - 1]`,
+   then try the interface's source-slot declaration map. Each interface array element is one
+   target pointer.
+
+Missing final receiver vtable methods do not match. If lookup finds no map, retain the
+signature-based fallback and deferred-frame behavior described above.
+
+The native runtime can memoize a successful complex lookup in the target method's existing
+`MethodDescCodeData.GCRefMap` when the method requires no instantiation argument, without
+allocating code data. cDAC and DAC do not write this cache.
+The reader consumes a preexisting native memoized map through the own-cached-map path above.
+
+### Dispatch-map encoding
+
+Dispatch integers are MSB-first: count leading ones before a zero, at most five. Read
+`(1 << ones) - 1` payload bits and add the corresponding base from
+`[0, 1, 3, 11, 139, 32907]`. Invalid prefixes are rejected.
+
+The Version 2 header is `(numberOfInterfaceTypes << 1) | hasClassAliases`. When the low bit
+is set, read an alias count and that many absolute `(sourceSlot, targetSlot)` pairs.
+The interface portion is unchanged: each type group encodes a type-ID delta plus one,
+entry count, and a `hasNegatives` bit. Type IDs start at -1. Source and target slots start
+at -1 within each group and use deltas plus one. If negative target deltas are enabled,
+decode `0 -> 0, 1 -> +1, 2 -> -1, 3 -> +2, ...`. Version 1 does not perform virtual
+declaration-map lookup.
+
+### Data descriptor and dependency changes from `c1`
+
+<!-- BEGIN GENERATED: usage contract=StackWalk version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+| Change | Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- | --- |
+| Added | `MethodTableAuxiliaryData` | *(type size)* | `uint32` | Size of the auxiliary data before the inline encoded dispatch map |
+
+### Global variable changes from `c1`
+
+_No changes._
+
+### Contract dependency changes from `c1`
+
+_No changes._
+<!-- END GENERATED: usage contract=StackWalk version=c2 diff-from=c1 -->

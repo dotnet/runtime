@@ -28,7 +28,7 @@
 
 #include "daccess.h"
 
-GPTR_IMPL(MethodTable, g_pFreeObjectEEType);
+GPTR_IMPL(MethodTable, g_pFreeObjectMethodTable);
 
 #ifndef DACCESS_COMPILE
 
@@ -539,6 +539,7 @@ bool GCToEEInterface::WasCurrentThreadCreatedByGC()
     return ThreadStore::RawGetCurrentThread()->IsGCSpecial();
 }
 
+#ifdef FEATURE_MULTITHREADING
 struct ThreadStubArguments
 {
     void (*m_pRealStartRoutine)(void*);
@@ -604,9 +605,11 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
 
     return true;
 }
+#endif // FEATURE_MULTITHREADING
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
+#ifdef FEATURE_MULTITHREADING
     if (!is_suspendable)
         return CreateNonSuspendableThread(threadStart, arg, name);
 
@@ -659,6 +662,9 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     ASSERT(res == WAIT_OBJECT_0);
 
     return true;
+#else
+    return false;
+#endif // FEATURE_MULTITHREADING
 }
 
 // NativeAOT does not use async pinned handles
@@ -724,8 +730,8 @@ void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint
 
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
-    assert(g_pFreeObjectEEType != nullptr);
-    return (MethodTable*)g_pFreeObjectEEType;
+    assert(g_pFreeObjectMethodTable != nullptr);
+    return (MethodTable*)g_pFreeObjectMethodTable;
 }
 
 bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value)

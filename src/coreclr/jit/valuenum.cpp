@@ -2069,7 +2069,7 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 
 //------------------------------------------------------------------------
 // VNIgnoreIntToLongCast: Looks through a sign-extending int-to-long cast
-//    or convert long-typed integral constants to int.
+//    or converts non-handle long-typed integral constants to int.
 //
 // Arguments:
 //    vn - The value number to inspect.
@@ -2077,7 +2077,7 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 // Return Value:
 //    The value number of the original TYP_INT operand if 'vn' is a VNF_Cast
 //    that sign-extends a TYP_INT to TYP_LONG; or the value number of a TYP_INT
-//    constant if 'vn' is a TYP_LONG constant that fits in an int; otherwise, 'vn' itself.
+//    constant if 'vn' is a non-handle TYP_LONG constant that fits in an int; otherwise, 'vn' itself.
 //
 ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
 {
@@ -2099,7 +2099,7 @@ ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
             }
         }
 
-        // Also look through any long-typed integral constant that fits in an int.
+        // Also look through any non-handle long-typed integral constant that fits in an int.
         int intCns;
         if (IsVNIntegralConstant(vn, &intCns))
         {
@@ -4936,6 +4936,10 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
+            case GT_GT:
+            case GT_GE:
+            case GT_LT:
+            case GT_LE:
                 if (m_compiler->opts.compReloc && (IsVNHandle(arg0VN) || IsVNHandle(arg1VN)))
                 {
                     return false;
@@ -4944,10 +4948,6 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
 
             case GT_EQ:
             case GT_NE:
-            case GT_GT:
-            case GT_GE:
-            case GT_LT:
-            case GT_LE:
                 break;
 
             default:
@@ -7227,7 +7227,7 @@ bool ValueNumStore::IsVNLog2(ValueNum vn, int* upperBound)
 bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 {
     auto vnVisitor = [this](ValueNum vn) -> VNVisit {
-        if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)))
+        if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)) || IsVNHandle(vn))
         {
             return VNVisit::Abort;
         }
@@ -15379,6 +15379,12 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             vnf = VNF_GetdynamicNongcthreadstaticBase;
             break;
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            vnf = VNF_GetdynamicGcthreadstaticBaseOptimized;
+            break;
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
+            vnf = VNF_GetdynamicNongcthreadstaticBaseOptimized;
+            break;
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
             vnf = VNF_GetdynamicGcthreadstaticBaseNoctor;
             break;
@@ -15489,6 +15495,10 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_GVMLookupForSlot;
             break;
 
+        case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+            vnf = VNF_InterfaceLookupForSlot;
+            break;
+
         case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
             vnf = VNF_ReadyToRunVirtualFuncPtr;
             break;
@@ -15546,8 +15556,8 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
     bool pure        = s_helperCallProperties.IsPure(helpFunc);
     bool isAlloc     = s_helperCallProperties.IsAllocator(helpFunc);
-    bool modHeap     = s_helperCallProperties.MutatesHeap(helpFunc);
     bool mayRunCctor = s_helperCallProperties.MayRunCctor(helpFunc);
+    bool modHeap     = s_helperCallProperties.MutatesHeap(helpFunc) || mayRunCctor; // a cctor may modify the heap
     bool noThrow     = s_helperCallProperties.NoThrow(helpFunc);
 
     ValueNumPair vnpExc = ValueNumStore::VNPForEmptyExcSet();
@@ -15636,9 +15646,11 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
-                // These take ThreadStaticInfo as parameters.
+                // These take ThreadStaticInfo or a thread static block index as parameters.
                 vnpExc = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_ThreadClassInitExc,
                                            vnStore->VNPNormalPair(
@@ -15668,6 +15680,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
             case CORINFO_HELP_VIRTUAL_FUNC_PTR:
             case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+            case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
                 vnpExc = fgValueNumberIndirNullCheckExceptions(call->gtArgs.GetThisArg()->GetNode());
                 break;
 
@@ -15696,14 +15709,6 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         if (pure || isAlloc)
         {
             VNFunc vnf = fgValueNumberJitHelperMethodVNFunc(helpFunc);
-
-            if (mayRunCctor)
-            {
-                if ((call->gtFlags & GTF_CALL_HOISTABLE) == 0)
-                {
-                    modHeap = true;
-                }
-            }
 
             if (isAlloc && (call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayLocal) != nullptr))
             {
@@ -16214,6 +16219,16 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 break;
 
             case GT_INTRINSIC:
+                if (tree->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_Log2)
+                {
+                    // The signed Log2 fallback throws ArgumentOutOfRangeException for negative inputs.
+                    ValueNumPair excSet = vnStore->VNPExcSetSingleton(
+                        vnStore->VNPairForFunc(TYP_REF, VNF_HelperOpaqueExc,
+                                               vnStore->VNPairForExpr(compCurBB, TYP_I_IMPL)));
+                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excSet);
+                    break;
+                }
+
                 assert(tree->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType);
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsIntrinsic()->gtGetOp1());
                 break;

@@ -14,6 +14,92 @@ namespace ILAssembler.Tests
 {
     public class DocumentCompilerTests
     {
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void DuplicateFieldInLaterSource_ReportsItsLocation(bool include, bool errorTolerant)
+        {
+            const string first = """
+                .assembly test { }
+                .class public Test { .field public static int32 Value }
+                """;
+            const string second = ".class public Test { .field public static int32 Value }";
+            ImmutableArray<SourceText> documents = include
+                ? [new SourceText(first + "\n#include \"second.il\"", "first.il")]
+                : [new SourceText(first, "first.il"), new SourceText(second, "second.il")];
+
+            var compiler = new DocumentCompiler();
+            var (diagnostics, result) = compiler.Compile(
+                documents,
+                path => path == "second.il" ? new SourceText(second, path) : throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = errorTolerant });
+
+            Diagnostic diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.DuplicateField, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            Assert.Equal("second.il", diagnostic.Location.Source.Path);
+            Assert.Equal(second.IndexOf(".field", StringComparison.Ordinal), diagnostic.Location.Span.Start);
+            if (errorTolerant)
+            {
+                Assert.NotNull(result);
+                using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+                Assert.Equal(2, pe.GetMetadataReader().FieldDefinitions.Count);
+            }
+            else
+            {
+                Assert.Null(result);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SyntaxErrorInMethod_WithErrorTolerance_PreservesValidInstructionsAndFollowingMethod(bool errorTolerant)
+        {
+            string source = """
+                .assembly test { }
+                .class public Test
+                {
+                    .method public static void Damaged() cil managed
+                    {
+                        nop
+                        box
+                        nop
+                        ret
+                    }
+                    .method public static int32 Following() cil managed
+                    {
+                        ldc.i4.2
+                        ret
+                    }
+                }
+                """;
+
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
+                DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options { ErrorTolerant = errorTolerant });
+
+            Diagnostic diagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == DiagnosticIds.Parser));
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            if (!errorTolerant)
+            {
+                Assert.Null(result);
+                return;
+            }
+
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(new[] { "Damaged", "Following" },
+                reader.MethodDefinitions.Select(handle => reader.GetString(reader.GetMethodDefinition(handle).Name)));
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x2A },
+                DocumentCompilerTestHelpers.GetMethodBody(pe, "Damaged").GetILBytes());
+            Assert.Equal(new byte[] { 0x18, 0x2A },
+                DocumentCompilerTestHelpers.GetMethodBody(pe, "Following").GetILBytes());
+        }
+
         [Fact]
         public void ParserDiagnosticInLaterDocument_UsesDocumentPath_AndErrorTolerantStillEmitsImage()
         {
@@ -40,8 +126,9 @@ namespace ILAssembler.Tests
                 _ => throw new InvalidOperationException("Unexpected include"),
                 _ => throw new InvalidOperationException("Unexpected resource"),
                 new Options { ErrorTolerant = true });
-            var parserDiagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == "Parser"));
+            var parserDiagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == DiagnosticIds.Parser));
 
+            Assert.Equal("ILA0000", parserDiagnostic.Id);
             Assert.Equal("broken.il", parserDiagnostic.Location.Source.Path);
             Assert.True(parserDiagnostic.Location.Span.Start >= 0);
             Assert.True(parserDiagnostic.Location.Span.Length > 0);
@@ -409,7 +496,7 @@ namespace ILAssembler.Tests
                 _ => throw new InvalidOperationException("Unexpected resource"),
                 new Options { ErrorTolerant = true });
 
-            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.Parser);
             Assert.NotNull(image);
 
             var imageBuilder = new BlobBuilder();

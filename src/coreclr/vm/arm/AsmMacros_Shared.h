@@ -6,3 +6,8 @@
 
 #include "asmconstants.h"
 #include "unixasmmacros.inc"
+
+.macro TAILCALL_GC_POLL_RARE
+        PREPARE_EXTERNAL_VAR_INDIRECT g_pPollGC, r2
+        EPILOG_BRANCH_REG r2
+.endm
