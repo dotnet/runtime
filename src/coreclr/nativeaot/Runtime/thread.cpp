@@ -205,21 +205,6 @@ void Thread::SetDeferredTransitionFrameForNativeHelperThread()
 }
 #endif // !DACCESS_COMPILE
 
-//
-// This is used by the EH system to find the place where execution left managed code when an exception leaks out of a
-// pinvoke and we need to FailFast via the appropriate class library.
-//
-// May only be used from the same thread and while in preemptive mode with an active pinvoke on the stack.
-//
-#ifndef DACCESS_COMPILE
-void * Thread::GetCurrentThreadPInvokeReturnAddress()
-{
-    ASSERT(ThreadStore::GetCurrentThread() == this);
-    ASSERT(!IsCurrentThreadInCooperativeMode());
-    return ((PInvokeTransitionFrame*)m_pTransitionFrame)->m_RIP;
-}
-#endif // !DACCESS_COMPILE
-
 PTR_ExInfo Thread::GetCurExInfo()
 {
     ValidateExInfoStack();
@@ -902,7 +887,9 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 // Standard calling convention variant and actual implementation for RhpGcPoll
 EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 {
+#ifndef FEATURE_PORTABLE_HELPERS
     ASSERT(!Thread::IsHijackTarget(pFrame->m_RIP));
+#endif // !FEATURE_PORTABLE_HELPERS
 
     Thread* pThread = ThreadStore::GetCurrentThread();
     pFrame->m_pThread = pThread;

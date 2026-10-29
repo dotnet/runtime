@@ -15,7 +15,6 @@ EXTERN_C void RhpPInvokeImpl(uintptr_t callersStackPointer, PInvokeTransitionFra
 {
     Thread* pCurThread = ThreadStore::RawGetCurrentThread();
     pFrame->m_ShadowSP = callersStackPointer;
-    pFrame->m_RIP = nullptr;
 
     // Link the frame and transition to preemptive GC mode for the native call.
     pCurThread->InlinePInvoke(pFrame);
