@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="DerivedTypeIsNotSupportedMessageFormat">
         <source>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</source>
-        <target state="new">Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</target>
+        <target state="translated">Określony typ „{0}” nie jest obsługiwanym typem pochodnym dla typu polimorficznego „{1}”. Typy pochodne muszą być przypisane do typu podstawowego.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedTypeIsNotSupportedTitle">
         <source>Derived type is not a supported polymorphic derived type.</source>
-        <target state="new">Derived type is not a supported polymorphic derived type.</target>
+        <target state="translated">Typ pochodny nie jest obsługiwanym polimorficznym typem pochodnym.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
@@ -64,42 +64,42 @@
       </trans-unit>
       <trans-unit id="DerivedTypeDiscriminatorCollisionMessageFormat">
         <source>The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</source>
-        <target state="new">The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</target>
+        <target state="translated">Dyskryminator typu „{0}” jest określony więcej niż raz dla typu polimorficznego „{1}”. Typy pochodne muszą odpowiadać unikatowym dyskryminatorom.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedTypeDiscriminatorCollisionTitle">
         <source>Derived types produce a duplicate type discriminator.</source>
-        <target state="new">Derived types produce a duplicate type discriminator.</target>
+        <target state="translated">Typy pochodne powodują dyskryminowanie zduplikowanego typu.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</target>
+        <target state="translated">Typ „{0}” umożliwia stosowanie metody JsonPolymorphicAttribute.InferClosedTypePolymorphism, ale nie jest typem zamkniętym, więc nie można wywnioskować żadnych typów pochodnych. Zadeklaruj typ jako„zamknięty” albo zarejestruj jego typy pochodne przy użyciu atrybutu JsonDerivedTypeAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeTitle">
         <source>Inferred closed type polymorphism is enabled on a type that is not a closed type.</source>
-        <target state="new">Inferred closed type polymorphism is enabled on a type that is not a closed type.</target>
+        <target state="translated">Włączono wywnioskowany polimorfizm typów zamkniętych dla typu, który nie jest typem zamkniętym.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</target>
+        <target state="translated">Typ „{0}” włącza JsonPolymorphicAttribute.InferClosedTypePolymorphism, ale deklaruje też atrybut JsonDerivedTypeAttribute. Jawne rejestracje zastępują wnioskowanie, więc tylko typy pochodne zadeklarowane jawnie są serializowane polimorficznie.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesTitle">
         <source>Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</source>
-        <target state="new">Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</target>
+        <target state="translated">Wywnioskowany polimorfizm typów zamkniętych nie ma wpływu na typ, który jawnie rejestruje typy pochodne.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleMessageFormat">
         <source>The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</source>
-        <target state="new">The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</target>
+        <target state="translated">Wywnioskowany typ pochodny „{0}” jest mniej dostępny niż polimorficzny typ podstawowy „{1}”. Wywnioskowane typy pochodne muszą być co najmniej tak dostępne jak typ podstawowy.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleTitle">
         <source>Inferred derived type is less accessible than the polymorphic base type.</source>
-        <target state="new">Inferred derived type is less accessible than the polymorphic base type.</target>
+        <target state="translated">Wywnioskowany typ pochodny jest mniej dostępny niż polimorficzny typ podstawowy.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">

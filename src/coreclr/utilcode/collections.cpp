@@ -1,310 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // Collections.cpp
 //
-
-//
 // This contains Collections C++ utility classes.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
 #include "utilcode.h"
 #include "ex.h"
-
-//
-//
-// CHashTable
-//
-//
-
-#ifndef DACCESS_COMPILE
-
-//*****************************************************************************
-// This is the second part of construction where we do all of the work that
-// can fail.  We also take the array of structs here because the calling class
-// presumably needs to allocate it in its NewInit.
-//*****************************************************************************
-HRESULT CHashTable::NewInit(            // Return status.
-    BYTE        *pcEntries,             // Array of structs we are managing.
-    ULONG      iEntrySize)             // Size of the entries.
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(iEntrySize >= sizeof(FREEHASHENTRY));
-
-    // Allocate the bucket chain array and init it.
-    if ((m_piBuckets = new (nothrow) ULONG [m_iBuckets]) == NULL)
-        return (OutOfMemory());
-    memset(m_piBuckets, 0xff, m_iBuckets * sizeof(ULONG));
-
-    // Save the array of structs we are managing.
-    m_pcEntries = (TADDR)pcEntries;
-    m_iEntrySize = iEntrySize;
-    return (S_OK);
-}
-
-//*****************************************************************************
-// Add the struct at the specified index in m_pcEntries to the hash chains.
-//*****************************************************************************
-BYTE *CHashTable::Add(                  // New entry.
-    ULONG      iHash,                  // Hash value of entry to add.
-    ULONG      iIndex)                 // Index of struct in m_pcEntries.
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HASHENTRY   *psEntry;               // The struct we are adding.
-
-    // Get a pointer to the entry we are adding.
-    psEntry = EntryPtr(iIndex);
-
-    // Compute the hash value for the entry.
-    iHash %= m_iBuckets;
-
-    _ASSERTE(m_piBuckets[iHash] != iIndex &&
-        (m_piBuckets[iHash] == UINT32_MAX || EntryPtr(m_piBuckets[iHash])->iPrev != iIndex));
-
-    // Setup this entry.
-    psEntry->iPrev = UINT32_MAX;
-    psEntry->iNext = m_piBuckets[iHash];
-
-    // Link it into the hash chain.
-    if (m_piBuckets[iHash] != UINT32_MAX)
-        EntryPtr(m_piBuckets[iHash])->iPrev = iIndex;
-    m_piBuckets[iHash] = iIndex;
-    return ((BYTE *) psEntry);
-}
-
-//*****************************************************************************
-// Delete the struct at the specified index in m_pcEntries from the hash chains.
-//*****************************************************************************
-void CHashTable::Delete(
-    ULONG      iHash,                  // Hash value of entry to delete.
-    ULONG      iIndex)                 // Index of struct in m_pcEntries.
-{
-    WRAPPER_NO_CONTRACT;
-
-    HASHENTRY   *psEntry;               // Struct to delete.
-
-    // Get a pointer to the entry we are deleting.
-    psEntry = EntryPtr(iIndex);
-    Delete(iHash, psEntry);
-}
-
-//*****************************************************************************
-// Delete the struct at the specified index in m_pcEntries from the hash chains.
-//*****************************************************************************
-void CHashTable::Delete(
-    ULONG      iHash,                  // Hash value of entry to delete.
-    HASHENTRY   *psEntry)               // The struct to delete.
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    // Compute the hash value for the entry.
-    iHash %= m_iBuckets;
-
-    _ASSERTE(psEntry->iPrev != psEntry->iNext || psEntry->iPrev == UINT32_MAX);
-
-    // Fix the predecessor.
-    if (psEntry->iPrev == UINT32_MAX)
-        m_piBuckets[iHash] = psEntry->iNext;
-    else
-        EntryPtr(psEntry->iPrev)->iNext = psEntry->iNext;
-
-    // Fix the successor.
-    if (psEntry->iNext != UINT32_MAX)
-        EntryPtr(psEntry->iNext)->iPrev = psEntry->iPrev;
-}
-
-//*****************************************************************************
-// The item at the specified index has been moved, update the previous and
-// next item.
-//*****************************************************************************
-void CHashTable::Move(
-    ULONG      iHash,                  // Hash value for the item.
-    ULONG      iNew)                   // New location.
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HASHENTRY   *psEntry;               // The struct we are deleting.
-
-    psEntry = EntryPtr(iNew);
-    _ASSERTE(psEntry->iPrev != iNew && psEntry->iNext != iNew);
-
-    if (psEntry->iPrev != UINT32_MAX)
-        EntryPtr(psEntry->iPrev)->iNext = iNew;
-    else
-        m_piBuckets[iHash % m_iBuckets] = iNew;
-    if (psEntry->iNext != UINT32_MAX)
-        EntryPtr(psEntry->iNext)->iPrev = iNew;
-}
-
-#endif // !DACCESS_COMPILE
-
-//*****************************************************************************
-// Search the hash table for an entry with the specified key value.
-//*****************************************************************************
-BYTE *CHashTable::Find(                 // Index of struct in m_pcEntries.
-    ULONG      iHash,                  // Hash value of the item.
-    SIZE_T     key)                    // The key to match.
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    ULONG      iNext;                  // Used to traverse the chains.
-    HASHENTRY   *psEntry;               // Used to traverse the chains.
-
-    // Start at the top of the chain.
-    iNext = m_piBuckets[iHash % m_iBuckets];
-
-    // Search until we hit the end.
-
-#ifdef _DEBUG
-    unsigned count = 0;
-#endif
-
-    while (iNext != UINT32_MAX)
-    {
-        // Compare the keys.
-        psEntry = EntryPtr(iNext);
-
-#ifdef _DEBUG
-        count++;
-#endif
-        if (!Cmp(key, psEntry))
-        {
-#ifdef _DEBUG
-            if (count > m_maxSearch)
-                m_maxSearch = count;
-#endif
-
-            return ((BYTE *) psEntry);
-        }
-
-        // Advance to the next item in the chain.
-        iNext = psEntry->iNext;
-    }
-
-    // We couldn't find it.
-    return (0);
-}
-
-//*****************************************************************************
-// Search the hash table for the next entry with the specified key value.
-//*****************************************************************************
-ULONG CHashTable::FindNext(            // Index of struct in m_pcEntries.
-    SIZE_T     key,                    // The key to match.
-    ULONG      iIndex)                 // Index of previous match.
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    ULONG      iNext;                  // Used to traverse the chains.
-    HASHENTRY   *psEntry;               // Used to traverse the chains.
-
-    // Start at the next entry in the chain.
-    iNext = EntryPtr(iIndex)->iNext;
-
-    // Search until we hit the end.
-    while (iNext != UINT32_MAX)
-    {
-        // Compare the keys.
-        psEntry = EntryPtr(iNext);
-        if (!Cmp(key, psEntry))
-            return (iNext);
-
-        // Advance to the next item in the chain.
-        iNext = psEntry->iNext;
-    }
-
-    // We couldn't find it.
-    return (UINT32_MAX);
-}
-
-//*****************************************************************************
-// Returns the next entry in the list.
-//*****************************************************************************
-BYTE *CHashTable::FindNextEntry(        // The next entry, or0 for end of list.
-    HASHFIND    *psSrch)                // Search object.
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    HASHENTRY   *psEntry;               // Used to traverse the chains.
-
-    for (;;)
-    {
-        // See if we already have one to use and if so, use it.
-        if (psSrch->iNext != UINT32_MAX)
-        {
-            psEntry = EntryPtr(psSrch->iNext);
-#if DACCESS_COMPILE
-            // If there is a simple infinite loop in the linked list
-            // If more complex forms of infinite loops are present, this code may need to be adjusted to handle an arbitrary cycle.
-            if (psEntry->iNext == psSrch->iNext)
-                return NULL;
-#endif
-            psSrch->iNext = psEntry->iNext;
-            return ((BYTE *) psEntry);
-        }
-
-        // Advance to the next bucket.
-        if (psSrch->iBucket < m_iBuckets)
-            psSrch->iNext = m_piBuckets[psSrch->iBucket++];
-        else
-            break;
-    }
-
-    // There were no more entries to be found.
-    return (0);
-}
-
-#ifdef DACCESS_COMPILE
-
-void
-CHashTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                              ULONG numEntries)
-{
-    SUPPORTS_DAC;
-
-    // This class may be embedded so do not enum 'this'.
-    DacEnumMemoryRegion(m_pcEntries,
-                        (ULONG)numEntries * m_iEntrySize);
-    DacEnumMemoryRegion(dac_cast<TADDR>(m_piBuckets),
-                        (ULONG)m_iBuckets * sizeof(ULONG));
-}
-
-#endif // #ifdef DACCESS_COMPILE
 
 //
 //
@@ -374,99 +79,6 @@ void CClosedHashBase::Delete(
         if ((ptr -= m_iEntrySize) < &m_rgData[0])
             ptr = EntryPtr(m_iSize - 1);
     }
-}
-
-
-//*****************************************************************************
-// Iterates over all active values, passing each one to pDeleteLoopFunc.
-// If pDeleteLoopFunc returns TRUE, the entry is deleted. This is safer
-// and faster than using FindNext() and Delete().
-//*****************************************************************************
-void CClosedHashBase::DeleteLoop(
-    DELETELOOPFUNC pDeleteLoopFunc,     // Decides whether to delete item
-    void *pCustomizer)                  // Extra value passed to deletefunc.
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    int i;
-
-    if (m_rgData == 0)
-    {
-        return;
-    }
-
-    for (i = 0; i < m_iSize; i++)
-    {
-        BYTE *pEntry = EntryPtr(i);
-        if (Status(pEntry) == USED)
-        {
-            if (pDeleteLoopFunc(pEntry, pCustomizer))
-            {
-                if (m_bPerfect)
-                {
-                    SetStatus(pEntry, FREE);
-                    // One less non free entry.
-                    --m_iCount;
-                }
-                else
-                {
-                    SetStatus(pEntry, DELETED);
-                }
-            }
-        }
-    }
-
-    if (!m_bPerfect)
-    {
-        // Now free DELETED entries that are no longer part of a chain.
-        for (i = 0; i < m_iSize; i++)
-        {
-            if (Status(EntryPtr(i)) == FREE)
-            {
-                break;
-            }
-        }
-        if (i != m_iSize)
-        {
-            int iFirstFree = i;
-
-            do
-            {
-                if (i-- == 0)
-                {
-                    i = m_iSize - 1;
-                }
-                while (Status(EntryPtr(i)) == DELETED)
-                {
-                    SetStatus(EntryPtr(i), FREE);
-
-
-                    // One less non free entry.
-                    --m_iCount;
-
-                    if (i-- == 0)
-                    {
-                        i = m_iSize - 1;
-                    }
-                }
-
-                while (Status(EntryPtr(i)) != FREE)
-                {
-                    if (i-- == 0)
-                    {
-                        i = m_iSize - 1;
-                    }
-                }
-
-            }
-            while (i != iFirstFree);
-        }
-    }
-
 }
 
 //*****************************************************************************
@@ -729,6 +341,7 @@ void *CStructArray::InsertThrowing(
     CONTRACTL
     {
         THROWS;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -759,6 +372,7 @@ void *CStructArray::Insert(int iIndex)
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -785,6 +399,7 @@ void *CStructArray::AppendThrowing()
     CONTRACTL
     {
         THROWS;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -803,6 +418,7 @@ void *CStructArray::Append()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -831,6 +447,7 @@ void CStructArray::AllocateBlockThrowing(int iCount)
     CONTRACTL
     {
         THROWS;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -847,6 +464,7 @@ int CStructArray::AllocateBlock(int iCount)
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -874,6 +492,7 @@ void CStructArray::Delete(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -896,6 +515,7 @@ void CStructArray::Grow(
 {
     CONTRACTL {
         THROWS;
+        GC_NOTRIGGER;
     } CONTRACTL_END;
 
     BYTE        *pTemp;                 // temporary pointer used in realloc.
@@ -958,11 +578,12 @@ void CStructArray::Grow(
 //*****************************************************************************
 // Free the memory for this item.
 //*****************************************************************************
-void CStructArray::Clear()
+void CStructArray::Clear() noexcept
 {
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 

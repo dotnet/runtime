@@ -282,13 +282,6 @@ bool MyICJI::satisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent, // the exa
     return jitInstance->mc->repSatisfiesMethodConstraints(parent, method);
 }
 
-// load and restore the method
-void MyICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
-{
-    jitInstance->mc->cr->AddCall("methodMustBeLoadedBeforeCodeIsRun");
-    jitInstance->mc->cr->recMethodMustBeLoadedBeforeCodeIsRun(method);
-}
-
 // Returns the global cookie for the /GS unsafe buffer checks
 // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
 void MyICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
@@ -428,6 +421,18 @@ bool MyICJI::isValueClass(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("isValueClass");
     return jitInstance->mc->repIsValueClass(cls);
+}
+
+bool MyICJI::isByRefLike(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("isByRefLike");
+    return jitInstance->mc->repIsByRefLike(cls);
+}
+
+bool MyICJI::isSharedInst(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("isSharedInst");
+    return jitInstance->mc->repIsSharedInst(cls);
 }
 
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
@@ -695,22 +700,6 @@ CorInfoInitClassResult MyICJI::initClass(CORINFO_FIELD_HANDLE field, // Non-null
 {
     jitInstance->mc->cr->AddCall("initClass");
     return jitInstance->mc->repInitClass(field, method, context);
-}
-
-// This used to be called "loadClass".  This records the fact
-// that the class must be loaded (including restored if necessary) before we execute the
-// code that we are currently generating.  When jitting code
-// the function loads the class immediately.  When zapping code
-// the zapper will if necessary use the call to record the fact that we have
-// to do a fixup/restore before running the method currently being generated.
-//
-// This is typically used to ensure value types are loaded before zapped
-// code that manipulates them is executed, so that the GC can access information
-// about those value types.
-void MyICJI::classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("classMustBeLoadedBeforeCodeIsRun");
-    jitInstance->mc->cr->recClassMustBeLoadedBeforeCodeIsRun(cls);
 }
 
 // returns the class handle for the special builtin classes
@@ -1086,15 +1075,47 @@ void MyICJI::reportMetadata(const char* key, const void* value, size_t length)
         return;
     }
 
-#define JITMETADATAINFO(name, type, flags)
-#define JITMETADATAMETRIC(name, type, flags) \
-    if ((strcmp(key, #name) == 0) && (length == sizeof(type)))   \
-    {                                                            \
-        memcpy(&jitInstance->mc->cr->name, value, sizeof(type)); \
-        return;                                                  \
-    }
+    struct MetricEntry
+    {
+        const char* Name;
+        void (*Store)(CompileResult* cr, const void* value, size_t length);
+    };
 
+    static const MetricEntry s_metrics[] = {
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags)                                                                           \
+    {#name, [](CompileResult* cr, const void* value, size_t length) {                                                  \
+         if (length == sizeof(type))                                                                                   \
+         {                                                                                                             \
+             cr->name = *static_cast<const type*>(value);                                                              \
+         }                                                                                                             \
+     }},
 #include "jitmetadatalist.h"
+    };
+
+    const size_t count = ArrLen(s_metrics);
+
+    // The JIT reports metrics in the order they are declared in jitmetadatalist.h,
+    // so resume the search where the previous one matched instead of always scanning
+    // from the start. In practice this matches on the first comparison.
+    size_t index = m_metricSearchStart;
+    for (size_t i = 0; i < count; i++)
+    {
+        const MetricEntry& entry = s_metrics[index];
+
+        index++;
+        if (index == count)
+        {
+            index = 0;
+        }
+
+        if (strcmp(key, entry.Name) == 0)
+        {
+            m_metricSearchStart = index;
+            entry.Store(jitInstance->mc->cr, value, length);
+            return;
+        }
+    }
 }
 
 /*-------------------------- Misc ---------------------------------------*/
@@ -1401,13 +1422,6 @@ void MyICJI::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CON
     jitInstance->mc->repGetAddressOfPInvokeTarget(method, pLookup);
 }
 
-// Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
-LPVOID MyICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("GetCookieForPInvokeCalliSig");
-    return jitInstance->mc->repGetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
-}
-
 // Generate a cookie based on the signature to pass to INTOP_CALLI
 LPVOID MyICJI::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
@@ -1551,10 +1565,10 @@ bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, b
     return jitInstance->mc->repConvertPInvokeCalliToCall(pResolvedToken, fMustConvert);
 }
 
-bool MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+bool MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported, bool preserveNegativeDependency)
 {
     jitInstance->mc->cr->AddCall("notifyInstructionSetUsage");
-    return jitInstance->mc->repNotifyInstructionSetUsage(instructionSet, supported);
+    return jitInstance->mc->repNotifyInstructionSetUsage(instructionSet, supported, preserveNegativeDependency);
 }
 
 void MyICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)

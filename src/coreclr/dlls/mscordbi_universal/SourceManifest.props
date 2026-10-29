@@ -1,0 +1,36 @@
+<Project>
+  <ItemGroup>
+    <!-- Manifest of source paths needed to compile the universal DBI. Used when building out of tree. -->
+    <UniversalDbiSourceManifestSource Include="eng/native" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/clrdefinitions.cmake" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/clrfeatures.cmake" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/debug/dbgutil" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/debug/debug-pal" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/debug/di" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/debug/inc" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/debug/shared" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/dlls/mscordbi" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/dlls/mscordbi_universal" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/dlls/mscorrc" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/gc/env/etmdummy.h" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/inc" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/md" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/minipal" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/nativeresources" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/pal/inc" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/pal/prebuilt" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/pal/src" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/CLREventBase.h" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/unix/CLREventBase.cpp" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/runtime/windows/CLREventBase.cpp" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/utilcode" />
+    <UniversalDbiSourceManifestSource Include="src/coreclr/vm/eventpipeadaptertypes.h" />
+    <UniversalDbiSourceManifestSource Include="src/native/containers" />
+    <UniversalDbiSourceManifestSource Include="src/native/eventpipe" />
+    <UniversalDbiSourceManifestSource Include="src/native/external/libunwind.cmake" />
+    <UniversalDbiSourceManifestSource Include="src/native/external/libunwind" />
+    <UniversalDbiSourceManifestSource Include="src/native/external/libunwind_extras" />
+    <UniversalDbiSourceManifestSource Include="src/native/inc/generatedumpflags.h" />
+    <UniversalDbiSourceManifestSource Include="src/native/minipal" />
+  </ItemGroup>
+</Project>

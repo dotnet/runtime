@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace JitTest_Directed_ConstantFolding_folding_extends_int32_on_64_bit_hosts;
+
 using Xunit;
 public class FoldingExtendsInt32On64BitHostsTest
 {

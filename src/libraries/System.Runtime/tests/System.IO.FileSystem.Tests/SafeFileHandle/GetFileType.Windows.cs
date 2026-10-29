@@ -125,5 +125,42 @@ namespace System.IO.Tests
                 Assert.Equal(FileHandleType.SymbolicLink, handle.Type);
             }
         }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public unsafe void FileStream_SymbolicLink_CanSeek_IsNotAffectedByType(bool accessTypeFirst)
+        {
+            string targetPath = GetTestFilePath();
+            string linkPath = GetTestFilePath();
+            File.WriteAllText(targetPath, "test");
+            File.CreateSymbolicLink(linkPath, targetPath);
+
+            using SafeFileHandle handle = OpenSymbolicLink(linkPath);
+            if (accessTypeFirst)
+            {
+                Assert.Equal(FileHandleType.SymbolicLink, handle.Type);
+            }
+
+            using FileStream stream = new(handle, FileAccess.Read);
+            Assert.True(stream.CanSeek);
+            Assert.Equal(FileHandleType.SymbolicLink, handle.Type);
+            Assert.True(stream.CanSeek);
+        }
+
+        private static unsafe SafeFileHandle OpenSymbolicLink(string path)
+        {
+            SafeFileHandle handle = Interop.Kernel32.CreateFile(
+                path,
+                Interop.Kernel32.GenericOperations.GENERIC_READ,
+                FileShare.ReadWrite,
+                null,
+                FileMode.Open,
+                Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT | Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS,
+                IntPtr.Zero);
+
+            Assert.False(handle.IsInvalid);
+            return handle;
+        }
     }
 }

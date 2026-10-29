@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 
 #include "common.h"
+#include <minipal/time.h>
 #include "eepolicy.h"
 #include "corhost.h"
 #include "dbginterface.h"
@@ -51,7 +52,6 @@ static void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca)
             if (exitCode != goodExit)
             {
                 _ASSERTE(!"Bad Exit value");
-                FAULT_NOT_FATAL();      // if we OOM we can simply give up
                 minipal_log_print_error("Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
                 DebugBreak();
             }
@@ -548,7 +548,7 @@ static void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_P
             // for GC during the stacktrace reporting.
             GCX_PREEMP();
 
-            ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
+            minipal_sleep(INFINITE);
         }
         return;
     }
@@ -883,11 +883,11 @@ static void InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
         if (GetThreadNULLOk() != nullptr)
         {
             GCX_PREEMP();
-            ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
+            minipal_sleep(INFINITE);
         }
         else
         {
-            ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
+            minipal_sleep(INFINITE);
         }
 
         // If the wait ever returns (for example, a spurious wakeup), the owner failed to
@@ -1021,18 +1021,21 @@ void DisplayStackOverflowException()
     PrintToStdErrA("Stack overflow.\n");
 }
 
+static volatile LONG g_stackOverflowCallStackLogged = 0;
+
 DWORD LogStackOverflowStackTraceThread(void* arg)
 {
     LogCallstackForLogWorker((Thread*)arg, NULL, s_stdErrWriter, /*captureStackOverflowTrace*/ true);
+    InterlockedExchange(&g_stackOverflowCallStackLogged, 2);
 
-    return 0;
+   return 0;
 }
 
 void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pExceptionInfo, BOOL fSkipDebugger)
 {
     // This is fatal error.  We do not care about SO mode any more.
     // All of the code from here on out is robust to any failures in any API's that are called.
-    CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
+    CONTRACT_VIOLATION(GCViolation | ModeViolation | TakesLockViolation);
 
     WRAPPER_NO_CONTRACT;
 
@@ -1088,8 +1091,6 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         fef.InitAndLink(pExceptionContext);
     }
 
-    static volatile LONG g_stackOverflowCallStackLogged = 0;
-
     // Dump stack trace only for the first thread failing with stack overflow to prevent mixing
     // multiple stack traces together.
     if (InterlockedCompareExchange(&g_stackOverflowCallStackLogged, 1, 0) == 0)
@@ -1100,19 +1101,25 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
         DisplayStackOverflowException();
 
+#ifdef FEATURE_MULTITHREADING
         HandleHolder stackDumpThreadHandle{ Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET SO Tracer")) };
         if (stackDumpThreadHandle != NULL)
         {
             // Wait for the stack trace logging completion
-            DWORD res = WaitForSingleObject(stackDumpThreadHandle, INFINITE);
-            _ASSERTE(res == WAIT_OBJECT_0);
+            while (g_stackOverflowCallStackLogged != 2)
+            {
+                minipal_sleep(1);
+            }
  #ifdef _DEBUG
             if (g_LogStackOverflowExit)
                 PrintToStdErrA("@Stack trace printing helper thread exited.\n");
  #endif
         }
-
-        g_stackOverflowCallStackLogged = 2;
+        else
+#endif // FEATURE_MULTITHREADING
+        {
+            InterlockedExchange(&g_stackOverflowCallStackLogged, 2);
+        }
     }
     else
     {
@@ -1123,7 +1130,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         // Wait for the thread that is logging the stack trace to complete
         while (g_stackOverflowCallStackLogged != 2)
         {
-            Sleep(50);
+            minipal_sleep(50);
         }
     }
 
@@ -1232,7 +1239,6 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
     WRAPPER_NO_CONTRACT;
 
     // All of the code from here on out is robust to any failures in any API's that are called.
-    FAULT_NOT_FATAL();
 
     EXCEPTION_RECORD   exceptionRecord;
     EXCEPTION_POINTERS exceptionPointers;
@@ -1269,8 +1275,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
     {
         // This is fatal error.  We do not care about SO mode any more.
         // All of the code from here on out is robust to any failures in any API's that are called.
-        CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
-
+        CONTRACT_VIOLATION(GCViolation | ModeViolation | TakesLockViolation);
 
         // Setting g_fFatalErrorOccurredOnGCThread allows code to avoid attempting to make GC mode transitions which could
         // block indefinitely if the fatal error occurred during the GC.

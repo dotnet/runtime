@@ -251,7 +251,7 @@ public partial class ZipArchiveEntry
                 int keySizeBits = GetAesKeySizeBits(Encryption);
                 aesKeys = WinZipAesStream.CreateKey(password, _aesSalt, keySizeBits);
             }
-            else if (IsZipCryptoEncrypted)
+            else if (EncryptionMethod == ZipEncryptionMethod.ZipCrypto)
             {
                 zipCryptoCheckByte = CalculateZipCryptoCheckByte();
                 zipCryptoKeys = ZipCryptoStream.CreateKey(password);
@@ -434,7 +434,7 @@ public partial class ZipArchiveEntry
 
             // Write WinZip AES extra field AFTER Zip64 (matching sync version order)
             // Must match the exact check used in the sync version WriteCentralDirectoryFileHeader
-            if (UseAesEncryption)
+            if (IsAesEncrypted)
             {
                 await CreateAesExtraField().WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
 
@@ -552,7 +552,7 @@ public partial class ZipArchiveEntry
                 return DecryptAndStoreForUpdateWithAesAsync(aesKeys, cancellationToken);
             }
 
-            if (IsZipCryptoEncrypted)
+            if (EncryptionMethod == ZipEncryptionMethod.ZipCrypto)
             {
                 byte checkByte = CalculateZipCryptoCheckByte();
                 ZipCryptoKeys keys = ZipCryptoStream.CreateKey(password);
@@ -662,7 +662,7 @@ public partial class ZipArchiveEntry
             message = SR.LocalFileHeaderCorrupt;
             return (false, message);
         }
-        else if (IsEncrypted && (ushort)_headerCompressionMethod == WinZipAesMethod)
+        else if (IsAesEncrypted)
         {
             _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
             // AES case - skip the local file header and validate it exists.
@@ -707,7 +707,7 @@ public partial class ZipArchiveEntry
 
             // Write WinZip AES extra field if using AES encryption
             // Must match the exact check used in the sync version WriteLocalFileHeader
-            if (UseAesEncryption)
+            if (IsAesEncrypted)
             {
                 await CreateAesExtraField().WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
 
@@ -788,7 +788,7 @@ public partial class ZipArchiveEntry
                     await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
                     _storedUncompressedData = null;
                 }
-                else if (UseAesEncryption && _derivedAesKeyMaterial != null)
+                else if (IsAesEncrypted && _derivedAesKeyMaterial != null)
                 {
 
                     if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
@@ -879,7 +879,8 @@ public partial class ZipArchiveEntry
             }
             else // _compressedBytes path - copying unchanged entry data
             {
-                if (_uncompressedSize == 0)
+                bool emptyEncryptedEntry = _uncompressedSize == 0 && Encryption != ZipEncryptionMethod.None;
+                if (_uncompressedSize == 0 && !emptyEncryptedEntry)
                 {
                     // reset size to ensure proper central directory size header
                     _compressedSize = 0;
@@ -904,7 +905,7 @@ public partial class ZipArchiveEntry
                         Encryption = ZipEncryptionMethod.None;
                     }
 
-                    await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
+                    await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
 
                     // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
                     // (because Encryption was temporarily set to None and the stream is seekable).
@@ -932,8 +933,8 @@ public partial class ZipArchiveEntry
                     CompressionMethod = savedCompressionMethod;
                 }
 
-                // according to ZIP specs, zero-byte files MUST NOT include file data
-                if (_uncompressedSize != 0)
+                // according to ZIP specs, zero-byte unencrypted files MUST NOT include file data
+                if (_uncompressedSize != 0 || emptyEncryptedEntry)
                 {
                     Debug.Assert(_compressedBytes != null);
                     foreach (byte[] compressedBytes in _compressedBytes)

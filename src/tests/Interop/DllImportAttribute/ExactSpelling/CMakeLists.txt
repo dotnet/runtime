@@ -4,7 +4,7 @@ include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 set(SOURCES ExactSpellingNative.cpp)
 
 # add the executable
-add_library (ExactSpellingNative SHARED ${SOURCES})
+add_library (ExactSpellingNative ${TEST_LIB_TYPE} ${SOURCES})
 target_link_libraries(ExactSpellingNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets

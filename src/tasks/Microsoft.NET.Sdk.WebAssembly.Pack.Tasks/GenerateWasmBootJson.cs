@@ -130,6 +130,8 @@ public class GenerateWasmBootJson : Task
         // boot config, letting the loader stream-instantiate instead of buffering and parsing. The
         // AttachWebcilSizes task attaches these as PayloadSize/TableSize metadata on the resources.
         var webcilSizes = new Dictionary<string, (int tableSize, int payloadSize)>();
+        // Routes of composite ReadyToRun owner images, flagged isCompositeImage in the boot config.
+        var compositeImages = new HashSet<string>(StringComparer.Ordinal);
 
         var result = new BootJsonData
         {
@@ -292,6 +294,14 @@ public class GenerateWasmBootJson : Task
                         }
                     }
                 }
+                else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals("readyToRunComposite", assetTraitValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
+                    Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a composite ReadyToRun image.", resource.ItemSpec);
+                    compositeImages.Add(resourceRoute);
+                    resourceList = resourceData.coreAssembly;
+                }
                 else if (string.Equals("runtime", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
                     MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
@@ -360,7 +370,7 @@ public class GenerateWasmBootJson : Task
                             resourceList = resourceData.modulesAfterConfigLoaded ??= new();
                         }
 
-                        string newTargetPath = "../" + targetPath; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+                        string newTargetPath = "../" + targetPath;
                         AddResourceToList(resource, resourceList, newTargetPath);
                     }
 
@@ -469,7 +479,7 @@ public class GenerateWasmBootJson : Task
                 {
                     result.appsettings ??= new();
 
-                    configUrl = "../" + configUrl; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+                    configUrl = "../" + configUrl;
                     result.appsettings.Add(configUrl);
                 }
                 else
@@ -515,7 +525,7 @@ public class GenerateWasmBootJson : Task
 
         string? imports = null;
         if (IsTargeting100OrLater())
-            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes);
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes, compositeImages);
 
         helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 

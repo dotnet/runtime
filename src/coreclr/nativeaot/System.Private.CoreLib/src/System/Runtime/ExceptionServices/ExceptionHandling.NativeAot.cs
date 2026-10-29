@@ -20,5 +20,13 @@ namespace System.Runtime.ExceptionServices
 
             return true;
         }
+
+        public static partial Exception? GetCurrentException()
+        {
+            unsafe
+            {
+                return EH.GetCurrentException(RuntimeImports.RhpGetCurrentExInfo()) as Exception;
+            }
+        }
     }
 }

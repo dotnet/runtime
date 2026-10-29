@@ -7,6 +7,7 @@ namespace b191926;
 
 using System;
 using Xunit;
+
 public class f8192
 {
     internal static void Callee(

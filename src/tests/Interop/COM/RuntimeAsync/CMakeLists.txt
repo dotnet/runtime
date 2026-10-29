@@ -6,5 +6,5 @@ set(SOURCES
     RuntimeAsyncNative.cpp)
 
 # add the executable
-add_library (RuntimeAsyncNative SHARED ${SOURCES})
+add_library (RuntimeAsyncNative ${TEST_LIB_TYPE} ${SOURCES})
 target_link_libraries(RuntimeAsyncNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})

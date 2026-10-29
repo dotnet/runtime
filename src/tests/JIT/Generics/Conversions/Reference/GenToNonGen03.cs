@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_Conversions_Reference_GenToNonGen03;
+
 using System;
 using Xunit;
 
@@ -96,6 +98,7 @@ public class Test_GenToNonGen03
 
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

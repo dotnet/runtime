@@ -292,50 +292,11 @@ BOOL gc_heap::find_loh_space_for_no_gc()
     return (saved_loh_segment_no_gc != 0);
 }
 
-BOOL gc_heap::loh_allocated_for_no_gc()
-{
-    if (!saved_loh_segment_no_gc)
-        return FALSE;
-
-    heap_segment* seg = generation_allocation_segment (generation_of (loh_generation));
-    do
-    {
-        if (seg == saved_loh_segment_no_gc)
-        {
-            return FALSE;
-        }
-        seg = heap_segment_next (seg);
-    } while (seg);
-
-    return TRUE;
-}
-
 BOOL gc_heap::commit_loh_for_no_gc (heap_segment* seg)
 {
     uint8_t* end_committed = heap_segment_allocated (seg) + loh_allocation_no_gc;
     assert (end_committed <= heap_segment_reserved (seg));
     return (grow_heap_segment (seg, end_committed));
-}
-
-void gc_heap::thread_no_gc_loh_segments()
-{
-#ifdef MULTIPLE_HEAPS
-    for (int i = 0; i < n_heaps; i++)
-    {
-        gc_heap* hp = g_heaps[i];
-        if (hp->loh_allocated_for_no_gc())
-        {
-            hp->thread_uoh_segment (loh_generation, hp->saved_loh_segment_no_gc);
-            hp->saved_loh_segment_no_gc = 0;
-        }
-    }
-#else //MULTIPLE_HEAPS
-    if (loh_allocated_for_no_gc())
-    {
-        thread_uoh_segment (loh_generation, saved_loh_segment_no_gc);
-        saved_loh_segment_no_gc = 0;
-    }
-#endif //MULTIPLE_HEAPS
 }
 
 void gc_heap::set_loh_allocations_for_no_gc()
@@ -843,7 +804,7 @@ void gc_heap::allocate_for_no_gc_after_gc()
 
 enable_no_gc_region_callback_status gc_heap::enable_no_gc_callback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold)
 {
-    dprintf(1, ("[no_gc_callback] calling enable_no_gc_callback with callback_threshold = %llu\n", callback_threshold));
+    dprintf(1, ("[no_gc_callback] calling enable_no_gc_callback with callback_threshold = %" PRIu64 "\n", callback_threshold));
     enable_no_gc_region_callback_status status = enable_no_gc_region_callback_status::succeed;
     suspend_EE();
     {
@@ -898,12 +859,12 @@ enable_no_gc_region_callback_status gc_heap::enable_no_gc_callback(NoGCRegionCal
 #endif
                     if (dd_new_allocation (hp->dynamic_data_of (soh_gen0)) <= (ptrdiff_t)soh_withheld_budget)
                     {
-                        dprintf(1, ("[no_gc_callback] failed because of running out of soh budget= %llu\n", soh_withheld_budget));
+                        dprintf(1, ("[no_gc_callback] failed because of running out of soh budget= %zu\n", soh_withheld_budget));
                         status = insufficient_budget;
                     }
                     if (dd_new_allocation (hp->dynamic_data_of (loh_generation)) <= (ptrdiff_t)loh_withheld_budget)
                     {
-                        dprintf(1, ("[no_gc_callback] failed because of running out of loh budget= %llu\n", loh_withheld_budget));
+                        dprintf(1, ("[no_gc_callback] failed because of running out of loh budget= %zu\n", loh_withheld_budget));
                         status = insufficient_budget;
                     }
                 }

@@ -71,7 +71,7 @@ namespace System.Buffers.Text
         /// <param name="source">The input span which contains UTF-8 encoded text in Base64 that needs to be decoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <returns>The number of bytes written into <paramref name="destination"/>. This can be used to slice the output for subsequent calls, if necessary.</returns>
-        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the encoded output.</exception>
+        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the decoded output.</exception>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64 character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
         public static int DecodeFromUtf8(ReadOnlySpan<byte> source, Span<byte> destination)
@@ -167,7 +167,7 @@ namespace System.Buffers.Text
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="charsConsumed">When this method returns, contains the number of input chars consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
-        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow,
+        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to decode; <see langword="false"/> when more data may follow,
         /// such as when calling in a loop. Calls with <see langword="false"/> should be followed up with another call where this parameter is <see langword="true"/>. The default is <see langword="true" />.</param>
         /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         public static OperationStatus DecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination,
@@ -181,7 +181,7 @@ namespace System.Buffers.Text
         /// <param name="source">The input span which contains ASCII chars in Base64 that needs to be decoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <returns>The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</returns>
-        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the encoded output.</exception>
+        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the decoded output.</exception>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64 character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
         public static int DecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination)

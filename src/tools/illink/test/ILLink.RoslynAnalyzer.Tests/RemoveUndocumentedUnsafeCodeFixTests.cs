@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using System.Threading.Tasks;
 using ILLink.CodeFix;
 using Xunit;
@@ -46,6 +46,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public int P
                     {
                         {|IL5005:unsafe|} get => 0;
+                        set { }
                     }
                 }
                 """;
@@ -55,6 +56,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public int P
                     {
                         get => 0;
+                        set { }
                     }
                 }
                 """;

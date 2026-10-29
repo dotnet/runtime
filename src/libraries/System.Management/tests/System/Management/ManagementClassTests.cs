@@ -4,6 +4,7 @@
 using System;
 using System.CodeDom;
 using System.IO;
+using System.Linq;
 using Xunit;
 
 namespace System.Management.Tests
@@ -23,6 +24,25 @@ namespace System.Management.Tests
                 CodeTypeDeclaration classDom = managementClass.GetStronglyTypedClassCode(includeSystemClassInClassDef, systemPropertyClass);
                 Assert.Equal(systemPropertyClass ? "ManagementSystemProperties" : "LogicalDisk", classDom.Name);
             }
+        }
+
+        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34360", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework uses its inbox System.Management implementation")]
+        public void GeneratedCollectionAndEnumeratorImplementIDisposable()
+        {
+            using var managementClass = new ManagementClass(null, "Win32_LogicalDisk", null);
+            CodeTypeDeclaration classDom = managementClass.GetStronglyTypedClassCode(false, false);
+
+            CodeTypeDeclaration collection = Assert.Single(
+                classDom.Members.OfType<CodeTypeDeclaration>(),
+                type => type.Members.OfType<CodeMemberField>().Any(field => field.Name == "privColObj"));
+            AssertDisposableWrapper(collection, "privColObj");
+
+            CodeTypeDeclaration enumerator = Assert.Single(
+                collection.Members.OfType<CodeTypeDeclaration>(),
+                type => type.Members.OfType<CodeMemberField>().Any(field => field.Name == "privObjEnum"));
+            AssertDisposableWrapper(enumerator, "privObjEnum");
         }
 
         [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
@@ -135,6 +155,25 @@ namespace System.Management.Tests
                 ManagementException managementException = Assert.Throws<ManagementException>(() => targetNamespace.Get());
                 Assert.Equal(ManagementStatus.NotFound, managementException.ErrorCode);
             }
+        }
+
+        private static void AssertDisposableWrapper(CodeTypeDeclaration wrapper, string wrappedFieldName)
+        {
+            Assert.Contains(wrapper.BaseTypes.Cast<CodeTypeReference>(), type => type.BaseType == typeof(IDisposable).FullName);
+
+            CodeMemberMethod disposeMethod = Assert.Single(
+                wrapper.Members.OfType<CodeMemberMethod>(),
+                method => method.Name == nameof(IDisposable.Dispose));
+            Assert.Contains(
+                disposeMethod.ImplementationTypes.Cast<CodeTypeReference>(),
+                type => type.BaseType == typeof(IDisposable).FullName);
+
+            CodeExpressionStatement statement = Assert.IsType<CodeExpressionStatement>(
+                Assert.Single(disposeMethod.Statements.Cast<CodeStatement>()));
+            CodeMethodInvokeExpression invocation = Assert.IsType<CodeMethodInvokeExpression>(statement.Expression);
+            Assert.Equal(nameof(IDisposable.Dispose), invocation.Method.MethodName);
+            CodeVariableReferenceExpression target = Assert.IsType<CodeVariableReferenceExpression>(invocation.Method.TargetObject);
+            Assert.Equal(wrappedFieldName, target.VariableName);
         }
     }
 }

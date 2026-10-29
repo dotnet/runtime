@@ -9,12 +9,9 @@
 ;;
 ;; CONSTANTS -- INTEGER
 ;;
-TSF_SuppressGcStress            equ 0x08
 TSF_DoNotTriggerGc              equ 0x10
-TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC equ 0x18
 
 ;; Bit position for the flags above, to be used with tbz/tbnz instructions
-TSF_SuppressGcStress_Bit        equ 3
 TSF_DoNotTriggerGc_Bit          equ 4
 
 ;; GC type flags
@@ -303,11 +300,3 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
         EPILOG_RESTORE_REG_PAIR   x27, x28, #0x60
         EPILOG_RESTORE_REG_PAIR   fp, lr, #0x80!
     MEND
-
-
-#ifdef FEATURE_GC_STRESS
-    SETALIAS THREAD__HIJACKFORGCSTRESS, ?HijackForGcStress@Thread@@SAXPEAUPAL_LIMITED_CONTEXT@@@Z
-
-    EXTERN RhpStressGc
-    EXTERN $THREAD__HIJACKFORGCSTRESS
-#endif ;; FEATURE_GC_STRESS

@@ -16,6 +16,7 @@ namespace System.Text.Json.Serialization
     {
         internal override bool SupportsCreateObjectDelegate => true;
         private protected sealed override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Enumerable;
+        internal sealed override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _) => JsonValueType.Array;
         internal override Type ElementType => typeof(TElement);
 
         protected abstract void Add(in TElement value, ref ReadStack state);

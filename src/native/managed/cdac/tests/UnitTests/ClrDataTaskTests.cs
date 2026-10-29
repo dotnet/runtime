@@ -36,7 +36,7 @@ public unsafe class ClrDataTaskTests
             .Build();
 
         TargetPointer taskAddress = new TargetPointer(0x5000);
-        IXCLRDataTask task = new ClrDataTask(taskAddress, target, legacyImpl: null);
+        IXCLRDataTask task = new ClrDataTask(taskAddress, target, legacyImpl: null, new());
         DacComNullableByRef<IXCLRDataAppDomain> appDomain = new(isNullRef: false);
         int hr = task.GetCurrentAppDomain(appDomain);
 

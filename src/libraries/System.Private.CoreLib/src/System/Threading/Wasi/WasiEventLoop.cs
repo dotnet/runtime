@@ -56,6 +56,10 @@ namespace System.Threading
                 s_mainTask = mainTask;
                 while (!mainTask.IsCompleted)
                 {
+#if FEATURE_PERFTRACING && CORECLR && !FEATURE_MULTITHREADING
+                    // Before Dispatch, which can block in wasi:io/poll, so the pump's timer is registered first.
+                    WasiEventPipeJobs.Pump();
+#endif
                     ThreadPoolWorkQueue.Dispatch();
                     WasiFinalizerScheduler.DrainIfPending();
                 }
@@ -78,6 +82,10 @@ namespace System.Threading
                 s_mainTask = mainTask;
                 while (!mainTask.IsCompleted)
                 {
+#if FEATURE_PERFTRACING && CORECLR && !FEATURE_MULTITHREADING
+                    // Before Dispatch, which can block in wasi:io/poll, so the pump's timer is registered first.
+                    WasiEventPipeJobs.Pump();
+#endif
                     ThreadPoolWorkQueue.Dispatch();
                     WasiFinalizerScheduler.DrainIfPending();
                 }
@@ -107,8 +115,11 @@ namespace System.Threading
             s_checkScheduled = false;
 
             var holders = new List<PollableHolder>(s_pollables.Count);
-            var hooks = new List<PollHook>(s_pollables.Count);
-            var pending = new List<Pollable>(s_pollables.Count);
+            // One entry per subscribed pollable, used to map ready indexes back to their hook.
+            var hooks = new List<PollHook>(s_hooks.Count);
+            // Each live hook once, regardless of how many pollables it subscribed this round.
+            var activeHooks = new List<PollHook>(s_hooks.Count);
+            var pending = new List<Pollable>(s_pollables.Count + s_hooks.Count);
             for (int i = 0; i < s_pollables.Count; i++)
             {
                 var holder = s_pollables[i];
@@ -123,6 +134,7 @@ namespace System.Threading
                 var hook = s_hooks[i];
                 if (!hook.isDisposed)
                 {
+                    activeHooks.Add(hook);
                     var handles = hook.BeforePollHook(hook.State);
                     for (int h = 0; h < handles.Count; h++)
                     {
@@ -180,9 +192,9 @@ namespace System.Threading
                 }
             }
 
-            for (int i = 0; i < hooks.Count; i++)
+            for (int i = 0; i < activeHooks.Count; i++)
             {
-                PollHook hook = hooks[i];
+                PollHook hook = activeHooks[i];
                 if (!hook.isDisposed)
                 {
                     s_hooks.Add(hook);

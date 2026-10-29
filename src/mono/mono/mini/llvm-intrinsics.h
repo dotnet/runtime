@@ -116,10 +116,10 @@ INTRINS(BZHI_I32, x86_bmi_bzhi_32, X86)
 INTRINS(BZHI_I64, x86_bmi_bzhi_64, X86)
 INTRINS(BEXTR_I32, x86_bmi_bextr_32, X86)
 INTRINS(BEXTR_I64, x86_bmi_bextr_64, X86)
-INTRINS(PEXT_I32, x86_bmi_pext_32, X86)
-INTRINS(PEXT_I64, x86_bmi_pext_64, X86)
-INTRINS(PDEP_I32, x86_bmi_pdep_32, X86)
-INTRINS(PDEP_I64, x86_bmi_pdep_64, X86)
+INTRINS_OVR(PEXT_I32, pext, Generic, LLVMInt32Type ())
+INTRINS_OVR(PEXT_I64, pext, Generic, LLVMInt64Type ())
+INTRINS_OVR(PDEP_I32, pdep, Generic, LLVMInt32Type ())
+INTRINS_OVR(PDEP_I64, pdep, Generic, LLVMInt64Type ())
 
 INTRINS_OVR(SIMD_SQRT_R8, sqrt, Generic, sse_r8_t)
 INTRINS_OVR(SIMD_SQRT_R4, sqrt, Generic, sse_r4_t)
@@ -426,8 +426,11 @@ INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UMINV, aarch64_neon_uminv, Arm64, Across, 
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FMAXV, aarch64_neon_fmaxv, Arm64, Across, V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FMINV, aarch64_neon_fminv, Arm64, Across, V64 | V128 | R4 | R8)
 
-INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SADDLP, aarch64_neon_saddlp, Arm64, Widen, V64 | V128 | I1 | I2 | I4 | I8)
-INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UADDLP, aarch64_neon_uaddlp, Arm64, Widen, V64 | V128 | I1 | I2 | I4 | I8)
+/* The element width here is that of the (widened) result, so I1 is not a valid
+ * combination: the narrowest result element width is 16 bits. Listing it would
+ * also make add_intrinsic () index intrin_types out of bounds. */
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SADDLP, aarch64_neon_saddlp, Arm64, Widen, V64 | V128 | I2 | I4 | I8)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UADDLP, aarch64_neon_uaddlp, Arm64, Widen, V64 | V128 | I2 | I4 | I8)
 
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_FCVTXN, aarch64_neon_fcvtxn, Arm64, v64_r4_t, v128_r8_t)
 

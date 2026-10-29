@@ -55,6 +55,8 @@ namespace System.Security.Cryptography.Csp.Tests
                 "TryDecryptCbcCore",
                 "TryEncryptCfbCore",
                 "TryDecryptCfbCore",
+                "EncryptKeyWrapCore",
+                "DecryptKeyWrapCore",
                 "EncryptKeyWrapPaddedCore",
                 "DecryptKeyWrapPaddedCore",
             };

@@ -1658,11 +1658,28 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Same(gauge9, gauge10);
                 Assert.Same(gauge9, gauge11);
 
+                List<KeyValuePair<string, object?>> l4 = new List<KeyValuePair<string, object?>>
+                {
+                    new KeyValuePair<string, object?>("a", "a"),
+                    new KeyValuePair<string, object?>("b", "b"),
+                    new KeyValuePair<string, object?>("c", "c")
+                };
+                Counter<int> counter12 = meter.CreateCounter<int>("name10", null, null, l4);
+
+                List<KeyValuePair<string, object?>> l5 = new List<KeyValuePair<string, object?>>
+                {
+                    new KeyValuePair<string, object?>("a", "a"),
+                    new KeyValuePair<string, object?>("c", "c"),
+                    new KeyValuePair<string, object?>("b", "bbb")
+                };
+                Counter<int> counter13 = meter.CreateCounter<int>("name10", null, null, l5);
+                Assert.NotSame(counter12, counter13);
+
                 KeyValuePair<string, object?>[] t1 = counter9.Tags.ToArray();
                 Assert.Equal(l1.Count, t1.Length);
                 t1[0] = new KeyValuePair<string, object?>(t1[0].Key, "newValue"); // change value of one item;
-                Counter<int> counter12 = meter.CreateCounter<int>("name9", null, null, t1);
-                Assert.NotSame(counter9, counter12);
+                Counter<int> counter14 = meter.CreateCounter<int>("name9", null, null, t1);
+                Assert.NotSame(counter9, counter14);
 
                 Gauge<int> gauge12 = meter.CreateGauge<int>("name9", null, null, t1);
                 Assert.NotSame(gauge9, gauge12);

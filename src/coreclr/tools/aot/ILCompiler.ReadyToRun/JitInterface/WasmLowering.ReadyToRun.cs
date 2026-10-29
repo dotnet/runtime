@@ -21,7 +21,15 @@ namespace Internal.JitInterface
             {
                 // Check to see if this argument lowers to a byref on the wasm side
                 argit.GetArgType(out TypeHandle typeHandle);
-                if (WasmLowering.LowerToAbiType(typeHandle.GetRuntimeTypeHandle()) == null)
+                TypeDesc type = typeHandle.GetRuntimeTypeHandle();
+
+                // Types split across several wasm parameters are passed by value, not by reference.
+                if (TryGetMultiSegmentLayout(type, out _, out _))
+                {
+                    return false;
+                }
+
+                if (WasmLowering.LowerToAbiType(type) == null)
                 {
                     return true;
                 }

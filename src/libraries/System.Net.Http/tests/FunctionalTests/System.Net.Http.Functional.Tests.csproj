@@ -148,7 +148,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="ByteArrayContentTest.cs" />
     <Compile Include="CompressedContentTest.cs" />
-    <Compile Include="CompressedContentTest.NonBrowser.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'" />
+    <Compile Include="CompressedContentTest.NonBrowser.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ChannelBindingAwareContent.cs"
              Link="Common\System\Net\Http\ChannelBindingAwareContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\DribbleStream.cs"

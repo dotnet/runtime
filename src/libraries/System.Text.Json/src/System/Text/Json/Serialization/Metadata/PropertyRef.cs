@@ -41,8 +41,10 @@ namespace System.Text.Json.Serialization.Metadata
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ReadOnlySpan<byte> propertyName, ulong key)
         {
-            // If the property name is less than 8 bytes, it is embedded in the key so no further comparison is necessary.
-            return key == Key && (propertyName.Length <= PropertyNameKeyLength || propertyName.SequenceEqual(Utf8PropertyName));
+            // If both property names are less than 8 bytes, they are embedded in the key so no further comparison is necessary.
+            return key == Key &&
+                ((propertyName.Length <= PropertyNameKeyLength && Utf8PropertyName.Length <= PropertyNameKeyLength)
+                    || propertyName.SequenceEqual(Utf8PropertyName));
         }
 
         /// <summary>

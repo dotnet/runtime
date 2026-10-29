@@ -100,6 +100,30 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        public static void FormatMessage_UsesSuppliedFormatAndOtherPropertyDisplayName()
+        {
+            const string ExternalFormat = "external {0}:{1}";
+            const string ErrorMessageFormat = "internal {0}:{1}";
+            CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.ComparePropertyWithDisplayName))
+            {
+                ErrorMessage = ErrorMessageFormat
+            };
+
+            Assert.Equal(
+                $"external name:{nameof(CompareObject.ComparePropertyWithDisplayName)}",
+                attribute.FormatMessage(ExternalFormat, "name"));
+            Assert.Equal(
+                $"internal name:{nameof(CompareObject.ComparePropertyWithDisplayName)}",
+                attribute.FormatErrorMessage("name"));
+
+            Assert.Throws<ValidationException>(() =>
+                attribute.Validate("test1", new ValidationContext(new CompareObject("test"))));
+
+            Assert.Equal("external name:CustomDisplayName", attribute.FormatMessage(ExternalFormat, "name"));
+            Assert.Equal("internal name:CustomDisplayName", attribute.FormatErrorMessage("name"));
+        }
+
+        [Fact]
         public static void IsValid_ValidationContextNull_ThrowsArgumentNullException()
         {
             var attribute = new CompareAttribute(nameof(CompareObject.ComparePropertyWithDisplayName));

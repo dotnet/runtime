@@ -58,7 +58,7 @@ deployment/HttpHeadersFuzzer/local-run.bat
 See the [libFuzzer options](https://llvm.org/docs/LibFuzzer.html#options) documentation for more information on how to customize the fuzzing process.
 For example, here is how you can run the fuzzer against a `header-inputs` corpus directory for 10 minutes, running multiple instances in parallel:
 ```cmd
-deployment/HttpHeadersFuzzer/local-run.bat header-inputs -timeout=30 -max_total_time=600 -jobs=5
+deployment/HttpHeadersFuzzer/local-run.bat header-inputs -max_total_time=600 -jobs=5
 ```
 
 ### Generating coverage reports
@@ -100,6 +100,7 @@ internal sealed class IPAddressFuzzer : IFuzzer
 ```
 
 - `TargetAssemblies` is a list of assemblies where the tested code lives and that must be instrumented.
+- `TargetAssemblyPrefixes` optionally limits instrumentation to type/namespace prefixes within those assemblies.
 - `TargetCoreLibPrefixes` is the same, but for types/namespaces in `System.Private.CoreLib`.
 - `FuzzTarget` is the logic that the fuzzer will run for every test input. It should exercise code from the target assemblies.
 

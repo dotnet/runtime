@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
   <PropertyGroup>
     <EnableXUnitReporter>true</EnableXUnitReporter>
+    <EnableAzurePipelinesReporter>true</EnableAzurePipelinesReporter>
     <Creator>$(_Creator)</Creator>
     <HelixAccessToken>$(_HelixAccessToken)</HelixAccessToken>
     <HelixBuild>$(_HelixBuild)</HelixBuild>

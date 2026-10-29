@@ -556,11 +556,15 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public bool TryGetReadyToRunHeader(out int rva, out bool isComposite)
         {
-            // Check the ManagedNativeHeaderDirectory (same as PE's CorHeader.ManagedNativeHeaderDirectory)
-            if ((_corFlags & CorFlags.ILLibrary) != 0 && _managedNativeHeaderDirectory.Size != 0)
+            // Unlike PE, Webcil has no export table, so composite images cannot publish an
+            // RTR_HEADER export. Both single-assembly and composite Webcil images instead locate
+            // the ReadyToRun header through the CLI header's ManagedNativeHeader directory, which
+            // is what WebcilDecoder::FindReadyToRunHeader does in the runtime.
+            if (_managedNativeHeaderDirectory.Size != 0)
             {
                 rva = _managedNativeHeaderDirectory.RelativeVirtualAddress;
-                isComposite = false;
+                // As with PE, an image that is not marked as an IL library is a composite image.
+                isComposite = (_corFlags & CorFlags.ILLibrary) == 0;
                 return true;
             }
 
@@ -735,7 +739,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             webcilOffset = 0;
 
             // Parse WASM module structure to find the data section (id=11)
-            // which contains the Webcil payload as a passive data segment.
+            // which contains the Webcil payload. The payload segment is active in a self-installing
+            // (wrapper version 2) image and passive in the legacy version 0 wrapper, so both kinds
+            // have to be inspected.
             int offset = 8; // Skip WASM magic + version
             while (offset < image.Length)
             {
@@ -752,45 +758,39 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if (sectionId == 11) // Data section
                 {
                     // Data section contains: count(LEB128) then count segments.
-                    // Each passive segment: kind=1(byte) + size(LEB128) + bytes
-                    // The Webcil payload is in the second passive data segment.
+                    // Passive segment: kind=1(byte) + size(LEB128) + bytes
+                    // Active segment:  kind=0(byte) [+ memidx if kind=2] + offset expr + size + bytes
                     uint segmentCount = ReadLebU32(image, ref offset);
                     for (uint i = 0; i < segmentCount && offset < sectionEnd; i++)
                     {
                         byte kind = image[offset++];
-                        if (kind == 1) // Passive segment
-                        {
-                            uint dataSize = ReadLebU32(image, ref offset);
-                            // Check if this segment starts with the Webcil magic
-                            if (dataSize >= 4 && offset + dataSize <= image.Length)
-                            {
-                                uint magic = BinaryPrimitives.ReadUInt32LittleEndian(image.AsSpan(offset));
-                                if (magic == WebcilConstants.WEBCIL_MAGIC && TryReadHeader(image, offset, out _))
-                                {
-                                    webcilOffset = offset;
-                                    return true;
-                                }
-                            }
-                            offset += (int)dataSize;
-                        }
-                        else if (kind == 0) // Active segment (memory 0)
-                        {
-                            // Skip the init expression + data
-                            SkipConstExpr(image, ref offset);
-                            uint dataSize = ReadLebU32(image, ref offset);
-                            offset += (int)dataSize;
-                        }
-                        else if (kind == 2) // Active segment (explicit memory index)
+                        if (kind == 2) // Active segment with an explicit memory index
                         {
                             ReadLebU32(image, ref offset); // memory index
-                            SkipConstExpr(image, ref offset);
-                            uint dataSize = ReadLebU32(image, ref offset);
-                            offset += (int)dataSize;
                         }
-                        else
+                        else if (kind is not (0 or 1))
                         {
                             return false; // Unknown segment kind
                         }
+
+                        if (kind != 1) // Active segments carry an offset constant expression
+                        {
+                            SkipConstExpr(image, ref offset);
+                        }
+
+                        uint dataSize = ReadLebU32(image, ref offset);
+                        // Check if this segment starts with the Webcil magic
+                        if (dataSize >= 4 && offset + dataSize <= image.Length)
+                        {
+                            uint magic = BinaryPrimitives.ReadUInt32LittleEndian(image.AsSpan(offset));
+                            if (magic == WebcilConstants.WEBCIL_MAGIC && TryReadHeader(image, offset, out _))
+                            {
+                                webcilOffset = offset;
+                                return true;
+                            }
+                        }
+
+                        offset += (int)dataSize;
                     }
                     return false;
                 }

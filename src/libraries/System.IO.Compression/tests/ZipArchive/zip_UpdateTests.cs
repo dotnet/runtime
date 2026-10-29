@@ -1635,5 +1635,199 @@ namespace System.IO.Compression.Tests
                 }
             }
         }
+
+        /// <summary>
+        /// Changing LastWriteTime on a ZipCrypto-encrypted entry in Update mode without reopening it
+        /// (with its password) to rewrite its data must not silently produce an archive whose correct
+        /// password is subsequently rejected: the password verification bytes baked into the ciphertext
+        /// are derived from the entry's LastWriteTime, so the stale ciphertext and the rewritten header
+        /// would otherwise disagree. Disposing the archive should throw instead.
+        /// </summary>
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Update_ChangeLastWriteTimeOnZipCryptoEntryWithoutReencrypting_Throws(bool async, bool sameInstant)
+        {
+            const string password = "PLACEHOLDER";
+            using MemoryStream ms = new MemoryStream();
+
+            await CreateZipCryptoArchive(async, ms, password);
+
+            ms.Position = 0;
+            ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entryToModify = updateArchive.GetEntry("a.txt");
+            Assert.NotNull(entryToModify);
+
+            // Only change the timestamp -- do not reopen the entry to rewrite its data.
+            DateTimeOffset originalTimestamp = entryToModify.LastWriteTime;
+            TimeSpan differentOffset = originalTimestamp.Offset == TimeSpan.Zero ? TimeSpan.FromHours(1) : TimeSpan.Zero;
+            DateTimeOffset newTimestamp = sameInstant
+                ? originalTimestamp.ToOffset(differentOffset)
+                : new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero);
+            Assert.NotEqual(originalTimestamp.DateTime, newTimestamp.DateTime);
+            if (sameInstant)
+            {
+                Assert.Equal(originalTimestamp, newTimestamp);
+            }
+            entryToModify.LastWriteTime = newTimestamp;
+
+            await Assert.ThrowsAsync<NotSupportedException>(() => DisposeZipArchive(async, updateArchive));
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_ChangeLastWriteTimeOnLaterZipCryptoEntryWithoutReencrypting_DoesNotModifyArchive(bool async)
+        {
+            const string password = "PLACEHOLDER";
+            using MemoryStream ms = new MemoryStream();
+
+            ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry firstEntry = createArchive.CreateEntry("first.txt", CompressionLevel.NoCompression);
+            await WriteEntryContents(async, firstEntry, "first");
+
+            ZipArchiveEntry encryptedEntry = createArchive.CreateEntry("encrypted.txt", password, ZipEncryptionMethod.ZipCrypto);
+            encryptedEntry.LastWriteTime = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+            await WriteEntryContents(async, encryptedEntry, "secret");
+            await DisposeZipArchive(async, createArchive);
+
+            byte[] originalArchive = ms.ToArray();
+            ms.Position = 0;
+
+            ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry firstEntryToModify = updateArchive.GetEntry("first.txt");
+            Assert.NotNull(firstEntryToModify);
+            using Stream writeStream = async
+                ? await firstEntryToModify.OpenAsync(FileAccess.Write)
+                : firstEntryToModify.Open(FileAccess.Write);
+            using (StreamWriter writer = new StreamWriter(writeStream, leaveOpen: true))
+            {
+                writer.Write(new string('x', 1024));
+            }
+
+            ZipArchiveEntry encryptedEntryToModify = updateArchive.GetEntry("encrypted.txt");
+            Assert.NotNull(encryptedEntryToModify);
+            encryptedEntryToModify.LastWriteTime = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero);
+
+            await Assert.ThrowsAsync<NotSupportedException>(() => DisposeZipArchive(async, updateArchive));
+            Assert.False(writeStream.CanWrite);
+            Assert.Throws<NotSupportedException>(() => writeStream.WriteByte(0));
+            Assert.Equal(originalArchive, ms.ToArray());
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+            ZipArchiveEntry firstEntryAfterFailure = readArchive.GetEntry("first.txt");
+            Assert.NotNull(firstEntryAfterFailure);
+            Assert.Equal("first", await ReadEntryContents(async, firstEntryAfterFailure));
+
+            ZipArchiveEntry encryptedEntryAfterFailure = readArchive.GetEntry("encrypted.txt");
+            Assert.NotNull(encryptedEntryAfterFailure);
+            Assert.Equal("secret", await ReadEntryContents(async, encryptedEntryAfterFailure, password));
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [InlineData(false, 0, 0, true)]
+        [InlineData(false, 0, 1, false)]
+        [InlineData(false, 0, 2, false)]
+        [InlineData(false, 1, 0, false)]
+        [InlineData(true, 0, 0, true)]
+        [InlineData(true, 0, 1, false)]
+        [InlineData(true, 0, 2, false)]
+        [InlineData(true, 1, 0, false)]
+        public async Task Update_ChangeLastWriteTimeWithoutChangingZipCryptoCheckByte_Succeeds(
+            bool async, int days, int seconds, bool changeOffset)
+        {
+            const string password = "PLACEHOLDER";
+            using MemoryStream ms = new MemoryStream();
+
+            await CreateZipCryptoArchive(async, ms, password);
+
+            ms.Position = 0;
+            ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entryToModify = updateArchive.GetEntry("a.txt");
+            Assert.NotNull(entryToModify);
+
+            DateTimeOffset originalTimestamp = entryToModify.LastWriteTime;
+            TimeSpan differentOffset = originalTimestamp.Offset == TimeSpan.Zero ? TimeSpan.FromHours(1) : TimeSpan.Zero;
+            DateTimeOffset newTimestamp = changeOffset
+                ? new DateTimeOffset(originalTimestamp.DateTime, differentOffset)
+                : originalTimestamp.AddDays(days).AddSeconds(seconds);
+            entryToModify.LastWriteTime = newTimestamp;
+            Assert.NotEqual(originalTimestamp, entryToModify.LastWriteTime);
+            await DisposeZipArchive(async, updateArchive);
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+            ZipArchiveEntry verify = readArchive.GetEntry("a.txt");
+            Assert.NotNull(verify);
+            DateTime expectedTimestamp = seconds == 1 ? originalTimestamp.DateTime : newTimestamp.DateTime;
+            Assert.Equal(expectedTimestamp, verify.LastWriteTime.DateTime);
+            Assert.Equal("hello", await ReadEntryContents(async, verify, password));
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        /// <summary>
+        /// Changing LastWriteTime on a ZipCrypto-encrypted entry is allowed when the entry is also
+        /// reopened with its password to rewrite its data, since the data (and its password
+        /// verification bytes) gets re-encrypted using the new timestamp.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_ChangeLastWriteTimeOnZipCryptoEntryAndReencrypt_Succeeds(bool async)
+        {
+            const string password = "PLACEHOLDER";
+            using MemoryStream ms = new MemoryStream();
+
+            await CreateZipCryptoArchive(async, ms, password);
+
+            ms.Position = 0;
+            ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entryToModify = updateArchive.GetEntry("a.txt");
+            Assert.NotNull(entryToModify);
+
+            DateTimeOffset newTimestamp = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero);
+            entryToModify.LastWriteTime = newTimestamp;
+            await WriteEntryContents(async, entryToModify, "hello", password);
+            await DisposeZipArchive(async, updateArchive);
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+            ZipArchiveEntry verify = readArchive.GetEntry("a.txt");
+            Assert.NotNull(verify);
+            Assert.Equal(newTimestamp.DateTime, verify.LastWriteTime.DateTime);
+
+            Assert.Equal("hello", await ReadEntryContents(async, verify, password));
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        private static async Task CreateZipCryptoArchive(bool async, Stream stream, string password)
+        {
+            ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry("a.txt", password, ZipEncryptionMethod.ZipCrypto);
+            entry.LastWriteTime = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+            await WriteEntryContents(async, entry, "hello");
+            await DisposeZipArchive(async, archive);
+        }
+
+        private static async Task WriteEntryContents(bool async, ZipArchiveEntry entry, string contents, string password = null)
+        {
+            using Stream stream = password is null
+                ? await OpenEntryStream(async, entry)
+                : await OpenEntryStream(async, entry, password);
+            using StreamWriter writer = new StreamWriter(stream);
+            writer.Write(contents);
+        }
+
+        private static async Task<string> ReadEntryContents(bool async, ZipArchiveEntry entry, string password = null)
+        {
+            using Stream stream = password is null
+                ? await OpenEntryStream(async, entry)
+                : await OpenEntryStream(async, entry, password);
+            using StreamReader reader = new StreamReader(stream);
+
+            return reader.ReadToEnd();
+        }
     }
 }

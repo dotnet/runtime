@@ -132,6 +132,7 @@ CompPhaseNameMacro(PHASE_WASM_EH_FLOW,               "Wasm eh control flow",    
 CompPhaseNameMacro(PHASE_WASM_REPAIR_TRY_ENTRIES,    "Wasm repair try entries",        false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_TRANSFORM_SCCS,        "Wasm transform sccs",            false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_CONTROL_FLOW,          "Wasm control flow",              false, -1, false)
+CompPhaseNameMacro(PHASE_WASM_IDENTIFY_GCSAFE_LOCALS, "Wasm identify GC safe locals",  false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_SPILL_REFS,            "Wasm spill refs",                false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_VIRTUAL_IP,            "Wasm virtual IP",                false, -1, false)
 

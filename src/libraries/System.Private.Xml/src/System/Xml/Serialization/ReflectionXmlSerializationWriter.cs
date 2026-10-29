@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml.Schema;
 
@@ -156,13 +157,25 @@ namespace System.Xml.Serialization
             // its items are written as a single whitespace-separated list so that the value round-trips.
             bool isListText = text != null && text.IsList && elements.Length == 0;
 
-            var arr = o as IList;
-
-            if (arr != null)
+            IList? list = o as IList;
+            if (list is not null && list.Count == 0)
             {
-                for (int i = 0; i < arr.Count; i++)
+                return;
+            }
+
+            if (TryWritePrimitiveItems(elements, text, choice, o))
+            {
+                return;
+            }
+
+            Array? choiceArray = choiceSources as Array;
+            if (list is not null)
+            {
+                for (int i = 0; i < list.Count; i++)
                 {
-                    object? ai = arr[i];
+                    object? ai = list[i];
+                    object? choiceSource = choiceArray?.GetValue(i);
+
                     if (isListText && i > 0)
                     {
                         // Separate list items with a single space. The separator is written purely by
@@ -173,7 +186,6 @@ namespace System.Xml.Serialization
                         WriteValue(" ");
                     }
 
-                    var choiceSource = ((Array?)choiceSources)?.GetValue(i);
                     WriteElements(ai, choiceSource, elements, text, choice, true, true);
                 }
             }
@@ -189,15 +201,142 @@ namespace System.Xml.Serialization
                     while (e.MoveNext())
                     {
                         object ai = e.Current;
+                        object? choiceSource = choiceArray?.GetValue(c++);
+
                         if (isListText && c > 0)
                         {
                             WriteValue(" ");
                         }
 
-                        var choiceSource = ((Array?)choiceSources)?.GetValue(c++);
                         WriteElements(ai, choiceSource, elements, text, choice, true, true);
                     }
                 }
+            }
+        }
+
+        private bool TryWritePrimitiveItems(ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, object o)
+        {
+            if (elements.Length != 1 ||
+                text is not null ||
+                choice is not null ||
+                elements[0].Mapping is not PrimitiveMapping mapping ||
+                mapping is EnumMapping)
+            {
+                return false;
+            }
+
+            ElementAccessor element = elements[0];
+            Type? elementType = mapping.TypeDesc!.Type;
+
+            if (elementType == typeof(bool))
+                return TryWritePrimitiveItems<bool>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(byte))
+                return TryWritePrimitiveItems<byte>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(sbyte))
+                return TryWritePrimitiveItems<sbyte>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(short))
+                return TryWritePrimitiveItems<short>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(ushort))
+                return TryWritePrimitiveItems<ushort>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(int))
+                return TryWritePrimitiveItems<int>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(uint))
+                return TryWritePrimitiveItems<uint>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(long))
+                return TryWritePrimitiveItems<long>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(ulong))
+                return TryWritePrimitiveItems<ulong>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(float))
+                return TryWritePrimitiveItems<float>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(double))
+                return TryWritePrimitiveItems<double>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(decimal))
+                return TryWritePrimitiveItems<decimal>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(DateTime))
+            {
+                return mapping.TypeDesc.FormatterName switch
+                {
+                    "DateTime" => TryWritePrimitiveItems<DateTime>(o, element, mapping, static value => XmlCustomFormatter.FromDateTime(value)),
+                    "Date" => TryWritePrimitiveItems<DateTime>(o, element, mapping, static value => XmlCustomFormatter.FromDate(value)),
+                    "Time" => TryWritePrimitiveItems<DateTime>(o, element, mapping, static value => XmlCustomFormatter.FromTime(value)),
+                    _ => false,
+                };
+            }
+            if (elementType == typeof(Guid))
+                return TryWritePrimitiveItems<Guid>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(char))
+                return TryWritePrimitiveItems<char>(o, element, mapping, static value => XmlCustomFormatter.FromChar(value));
+            if (elementType == typeof(TimeSpan))
+                return TryWritePrimitiveItems<TimeSpan>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(DateTimeOffset))
+                return TryWritePrimitiveItems<DateTimeOffset>(o, element, mapping, static value => XmlConvert.ToString(value));
+            if (elementType == typeof(DateOnly))
+                return TryWritePrimitiveItems<DateOnly>(o, element, mapping, static value => XmlCustomFormatter.FromDateOnly(value));
+            if (elementType == typeof(TimeOnly))
+                return TryWritePrimitiveItems<TimeOnly>(o, element, mapping, static value => XmlCustomFormatter.FromTimeOnly(value));
+
+            return false;
+        }
+
+        private bool TryWritePrimitiveItems<T>(object o, ElementAccessor element, PrimitiveMapping mapping, Func<T, string> formatter)
+            where T : struct
+        {
+            if (o is not IEnumerable<T> items)
+            {
+                return false;
+            }
+
+            string name = element.Name;
+            string? ns = element.Any && element.Name.Length == 0 ? null : (element.Form == XmlSchemaForm.Qualified ? element.Namespace : string.Empty);
+            WritePrimitiveMethodRequirement suffixNullable = mapping.IsSoap ? WritePrimitiveMethodRequirement.Encoded : WritePrimitiveMethodRequirement.None;
+            WritePrimitiveMethodRequirement suffixRaw = mapping.TypeDesc!.XmlEncodingNotRequired ? WritePrimitiveMethodRequirement.Raw : WritePrimitiveMethodRequirement.None;
+            WritePrimitiveMethodRequirement method = element.IsNullable
+                ? WritePrimitiveMethodRequirement.WriteNullableStringLiteral | suffixNullable | suffixRaw
+                : WritePrimitiveMethodRequirement.WriteElementString | suffixRaw;
+            XmlQualifiedName? xmlQualifiedName = mapping.IsSoap ? new XmlQualifiedName(mapping.TypeName, mapping.Namespace) : null;
+            bool hasDefault = mapping.TypeDesc.HasDefaultSupport && element.Default is T;
+            T defaultValue = hasDefault ? (T)element.Default! : default;
+
+            if (items is T[] array)
+            {
+                for (int i = 0; i < array.Length; i++)
+                {
+                    WritePrimitiveItem(method, name, ns, array[i], hasDefault, defaultValue, xmlQualifiedName, formatter);
+                }
+            }
+            else if (o is IList && items is IList<T> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    WritePrimitiveItem(method, name, ns, list[i], hasDefault, defaultValue, xmlQualifiedName, formatter);
+                }
+            }
+            else
+            {
+                foreach (T item in items)
+                {
+                    WritePrimitiveItem(method, name, ns, item, hasDefault, defaultValue, xmlQualifiedName, formatter);
+                }
+            }
+
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void WritePrimitiveItem<T>(
+            WritePrimitiveMethodRequirement method,
+            string name,
+            string? ns,
+            T value,
+            bool hasDefault,
+            T defaultValue,
+            XmlQualifiedName? xmlQualifiedName,
+            Func<T, string> formatter)
+            where T : struct
+        {
+            if (!hasDefault || !EqualityComparer<T>.Default.Equals(value, defaultValue))
+            {
+                WritePrimitiveString(method, name, ns, formatter(value), xmlQualifiedName);
             }
         }
 
@@ -1064,51 +1203,7 @@ namespace System.Xml.Serialization
 
             if (hasValidStringValue)
             {
-                if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteElementString))
-                {
-                    if (hasRequirement(method, WritePrimitiveMethodRequirement.Raw))
-                    {
-                        WriteElementStringRaw(name, ns, stringValue, xmlQualifiedName);
-                    }
-                    else
-                    {
-                        WriteElementString(name, ns, stringValue, xmlQualifiedName);
-                    }
-                }
-
-                else if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteNullableStringLiteral))
-                {
-                    if (hasRequirement(method, WritePrimitiveMethodRequirement.Encoded))
-                    {
-                        if (hasRequirement(method, WritePrimitiveMethodRequirement.Raw))
-                        {
-                            WriteNullableStringEncodedRaw(name, ns, stringValue, xmlQualifiedName);
-                        }
-                        else
-                        {
-                            WriteNullableStringEncoded(name, ns, stringValue, xmlQualifiedName);
-                        }
-                    }
-                    else
-                    {
-                        if (hasRequirement(method, WritePrimitiveMethodRequirement.Raw))
-                        {
-                            WriteNullableStringLiteralRaw(name, ns, stringValue);
-                        }
-                        else
-                        {
-                            WriteNullableStringLiteral(name, ns, stringValue);
-                        }
-                    }
-                }
-                else if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteAttribute))
-                {
-                    WriteAttribute(name, ns, stringValue);
-                }
-                else
-                {
-                    Debug.Fail("https://github.com/dotnet/runtime/issues/18037: Add More Tests for Serialization Code");
-                }
+                WritePrimitiveString(method, name, ns, stringValue, xmlQualifiedName);
             }
             else if (o is byte[] a)
             {
@@ -1128,6 +1223,54 @@ namespace System.Xml.Serialization
                 {
                     Debug.Fail("https://github.com/dotnet/runtime/issues/18037: Add More Tests for Serialization Code");
                 }
+            }
+            else
+            {
+                Debug.Fail("https://github.com/dotnet/runtime/issues/18037: Add More Tests for Serialization Code");
+            }
+        }
+
+        private void WritePrimitiveString(WritePrimitiveMethodRequirement method, string name, string? ns, string? value, XmlQualifiedName? xmlQualifiedName)
+        {
+            if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteElementString))
+            {
+                if (hasRequirement(method, WritePrimitiveMethodRequirement.Raw))
+                {
+                    WriteElementStringRaw(name, ns, value, xmlQualifiedName);
+                }
+                else
+                {
+                    WriteElementString(name, ns, value, xmlQualifiedName);
+                }
+            }
+            else if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteNullableStringLiteral))
+            {
+                if (hasRequirement(method, WritePrimitiveMethodRequirement.Encoded))
+                {
+                    if (hasRequirement(method, WritePrimitiveMethodRequirement.Raw))
+                    {
+                        WriteNullableStringEncodedRaw(name, ns, value, xmlQualifiedName);
+                    }
+                    else
+                    {
+                        WriteNullableStringEncoded(name, ns, value, xmlQualifiedName);
+                    }
+                }
+                else
+                {
+                    if (hasRequirement(method, WritePrimitiveMethodRequirement.Raw))
+                    {
+                        WriteNullableStringLiteralRaw(name, ns, value);
+                    }
+                    else
+                    {
+                        WriteNullableStringLiteral(name, ns, value);
+                    }
+                }
+            }
+            else if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteAttribute))
+            {
+                WriteAttribute(name, ns, value);
             }
             else
             {

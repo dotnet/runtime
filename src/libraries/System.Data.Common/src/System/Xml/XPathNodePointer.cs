@@ -203,7 +203,7 @@ namespace System.Xml
             }
         }
 
-        //note that, we've have lost the prefix in this senario ( defoliation will toss prefix away. )
+        //note that, we've have lost the prefix in this scenario ( defoliation will toss prefix away. )
         internal string Name
         {
             get
@@ -234,7 +234,7 @@ namespace System.Xml
                 }
                 else
                 { //when column is not null
-                    //we've lost prefix in this senario.
+                    //we've lost prefix in this scenario.
                     return _doc.NameTable.Add(_column.EncodedColumnName);
                 }
             }

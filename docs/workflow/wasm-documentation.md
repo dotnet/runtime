@@ -51,7 +51,7 @@ For debugging instructions including VS Code and Chrome DevTools setup, see the 
 
 ### Running coreclr callhelpers generator
 
-After building the runtime, use the `generate-coreclr-helpers` script for your platform (`.cmd` or `.sh`) in `src/tasks/WasmAppBuilder` to [re]generate the call helpers in `src/coreclr/vm/wasm`.
+After building the runtime, use the `generate-coreclr-helpers` script for your platform (`.cmd` or `.sh`) in `src/coreclr/vm/wasm` to [re]generate the call helpers in `src/coreclr/vm/wasm`.
 
 ## Features and Configuration
 

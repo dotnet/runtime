@@ -2,6 +2,9 @@
   <PropertyGroup>
     <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- The test has its own Main, so the WASI ReadyToRun failure is skipped here.
+         ActiveIssue https://github.com/dotnet/runtime/issues/134949 -->
+    <R2RIncompatible Condition="'$(TargetOS)' == 'wasi'">true</R2RIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>

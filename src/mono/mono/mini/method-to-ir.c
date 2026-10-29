@@ -694,8 +694,13 @@ compute_bb_regions (MonoCompile *cfg)
 }
 
 
-static gboolean
-ip_in_finally_clause (MonoCompile *cfg, int offset)
+/*
+ * Return the index of the innermost finally/fault clause whose handler contains
+ * OFFSET, or -1 if there is none. The clauses are ordered from inner to outer,
+ * so the first match is the innermost one.
+ */
+static int
+ip_get_finally_clause_index (MonoCompile *cfg, int offset)
 {
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
@@ -706,9 +711,9 @@ ip_in_finally_clause (MonoCompile *cfg, int offset)
 			continue;
 
 		if (MONO_OFFSET_IN_HANDLER (clause, GINT_TO_UINT32(offset)))
-			return TRUE;
+			return GUINT_TO_INT (i);
 	}
-	return FALSE;
+	return -1;
 }
 
 /* Find clauses between ip and target, from inner to outer */
@@ -3404,6 +3409,26 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 }
 
 /*
+ * Box a gsharedvt Nullable<T> via a non-generic runtime helper, passing the value by
+ * address and the concrete class from the rgctx. This avoids a per-T box wrapper that
+ * cannot be emitted at AOT time when the consuming assembly runs interpreted.
+ */
+static MonoInst*
+mini_emit_nullable_box_helper (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
+{
+	MonoInst *iargs [2], *addr, *var;
+
+	var = get_vreg_to_inst (cfg, val->dreg);
+	if (!var)
+		var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (klass), OP_LOCAL, val->dreg);
+	EMIT_NEW_VARLOADA (cfg, addr, var, var->inst_vtype);
+
+	iargs [0] = addr;
+	iargs [1] = mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
+	return mono_emit_jit_icall (cfg, mono_helper_box_nullable, iargs);
+}
+
+/*
  * Returns NULL and set the cfg exception on error.
  */
 MonoInst*
@@ -3425,11 +3450,9 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 				MonoInst *addr;
 				MonoMethodSignature *sig = mono_method_signature_internal (method);
 				if (mini_is_gsharedvt_klass (klass))
-					addr = mini_emit_get_gsharedvt_info_klass (cfg, klass,
-															   MONO_RGCTX_INFO_NULLABLE_CLASS_BOX);
-				else
-					addr = emit_get_rgctx_method (cfg, context_used, method,
-												  MONO_RGCTX_INFO_METHOD_FTNDESC);
+					return mini_emit_nullable_box_helper (cfg, val, klass, context_used);
+				addr = emit_get_rgctx_method (cfg, context_used, method,
+											  MONO_RGCTX_INFO_METHOD_FTNDESC);
 				cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
 				return mini_emit_llvmonly_calli (cfg, sig, &val, addr);
 			} else {
@@ -3495,9 +3518,14 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 		/* Nullable case */
 		MONO_START_BB (cfg, is_nullable_bb);
 
-		{
+		if (cfg->llvm_only) {
+			MonoInst *box_call = mini_emit_nullable_box_helper (cfg, val, klass, context_used);
+			EMIT_NEW_UNALU (cfg, res, OP_MOVE, dreg, box_call->dreg);
+			res->type = STACK_OBJ;
+			res->klass = klass;
+		} else {
 			MonoInst *box_addr = mini_emit_get_gsharedvt_info_klass (cfg, klass,
-													MONO_RGCTX_INFO_NULLABLE_CLASS_BOX);
+										MONO_RGCTX_INFO_NULLABLE_CLASS_BOX);
 			MonoInst *box_call;
 			MonoMethodSignature *box_sig;
 
@@ -3510,10 +3538,7 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 			box_sig->param_count = 1;
 			box_sig->params [0] = m_class_get_byval_arg (klass);
 
-			if (cfg->llvm_only)
-				box_call = mini_emit_llvmonly_calli (cfg, box_sig, &val, box_addr);
-			else
-				box_call = mini_emit_calli (cfg, box_sig, &val, box_addr, NULL, NULL);
+			box_call = mini_emit_calli (cfg, box_sig, &val, box_addr, NULL, NULL);
 			EMIT_NEW_UNALU (cfg, res, OP_MOVE, dreg, box_call->dreg);
 			res->type = STACK_OBJ;
 			res->klass = klass;
@@ -6436,6 +6461,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoBasicBlock *tblock = NULL;
 	MonoBasicBlock *init_localsbb = NULL, *init_localsbb2 = NULL;
 	MonoSimpleBasicBlock *bb = NULL, *original_bb = NULL;
+	/*
+	 * For each finally clause, the bblocks containing its ENDFINALLY instructions and the
+	 * targets of the LEAVE instructions which invoke it. Only used by the LLVM backend.
+	 */
+	GSList **llvm_clause_endfinally_bbs = NULL;
+	GSList **llvm_clause_leave_target_bbs = NULL;
 	MonoMethod *method_definition;
 	MonoInst **arg_array;
 	MonoMethodHeader *header;
@@ -6638,6 +6669,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if (header->num_clauses) {
 			cfg->spvars = g_hash_table_new (NULL, NULL);
 			cfg->exvars = g_hash_table_new (NULL, NULL);
+
+			if (COMPILE_LLVM (cfg)) {
+				llvm_clause_endfinally_bbs = mono_mempool_alloc0 (cfg->mempool, sizeof (GSList*) * header->num_clauses);
+				llvm_clause_leave_target_bbs = mono_mempool_alloc0 (cfg->mempool, sizeof (GSList*) * header->num_clauses);
+			}
 		}
 		cfg->clause_is_dead = mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * header->num_clauses);
 
@@ -11204,14 +11240,20 @@ field_access_end:
 			if (COMPILE_LLVM (cfg))
 				INLINE_FAILURE ("throw");
 			break;
-		case MONO_CEE_ENDFINALLY:
-			if (!ip_in_finally_clause (cfg, GPTRDIFF_TO_INT (ip - header->code)))
+		case MONO_CEE_ENDFINALLY: {
+			int clause_index = ip_get_finally_clause_index (cfg, GPTRDIFF_TO_INT (ip - header->code));
+
+			if (clause_index < 0)
 				UNVERIFIED;
 			/* mono_save_seq_point_info () depends on this */
 			if (sp != stack_start)
 				emit_seq_point (cfg, method, ip, FALSE, FALSE);
 			MONO_INST_NEW (cfg, ins, OP_ENDFINALLY);
 			MONO_ADD_INS (cfg->cbb, ins);
+
+			if (llvm_clause_endfinally_bbs)
+				llvm_clause_endfinally_bbs [clause_index] = g_slist_prepend_mempool (cfg->mempool, llvm_clause_endfinally_bbs [clause_index], cfg->cbb);
+
 			start_new_bblock = 1;
 			ins_has_side_effect = FALSE;
 
@@ -11223,6 +11265,7 @@ field_access_end:
 				sp--;
 			}
 			break;
+		}
 		case MONO_CEE_LEAVE:
 		case MONO_CEE_LEAVE_S: {
 			GList *handlers;
@@ -11324,16 +11367,10 @@ field_access_end:
 					MONO_START_BB (cfg, dont_throw);
 					cfg->cbb->clause_holes = tmp;
 
-					if (COMPILE_LLVM (cfg)) {
+					if (llvm_clause_leave_target_bbs) {
 						MonoBasicBlock *target_bb;
-
-						/*
-						 * Link the finally bblock with the target, since it will
-						 * conceptually branch there.
-						 */
-						GET_BBLOCK (cfg, tblock, cfg->cil_start + clause->handler_offset + clause->handler_len - 1);
 						GET_BBLOCK (cfg, target_bb, target);
-						link_bblock (cfg, tblock, target_bb);
+						llvm_clause_leave_target_bbs [leave->index] = g_slist_prepend_mempool (cfg->mempool, llvm_clause_leave_target_bbs [leave->index], target_bb);
 					}
 				}
 			}
@@ -12527,6 +12564,19 @@ all_bbs_done:
 
 				NEW_SEQ_POINT (cfg, seq_point_ins, i, FALSE);
 				mono_add_seq_point (cfg, NULL, seq_point_ins, SEQ_POINT_NATIVE_OFFSET_DEAD_CODE);
+			}
+		}
+	}
+
+	/*
+	 * Link the finally bblock with the target, since it will
+	 * conceptually branch there.
+	 */
+	if (llvm_clause_endfinally_bbs) {
+		for (guint i = 0; i < header->num_clauses; ++i) {
+			for (GSList *l = llvm_clause_endfinally_bbs [i]; l; l = l->next) {
+				for (GSList *l2 = llvm_clause_leave_target_bbs [i]; l2; l2 = l2->next)
+					link_bblock (cfg, (MonoBasicBlock*)l->data, (MonoBasicBlock*)l2->data);
 			}
 		}
 	}

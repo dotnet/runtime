@@ -1,15 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: StubGen.cpp
-//
-
-//
-
 
 #include "common.h"
 #include <limits>
 
+#include <inttypes.h>
 #include "stubgen.h"
 #include "jitinterface.h"
 #include "ilstubcache.h"
@@ -392,26 +387,6 @@ lShortForm:
     return instr;
 }
 
-void ILStubLinker::PatchInstructionArgument(ILCodeLabel* pLabel, UINT_PTR uNewArg
-    DEBUG_ARG(UINT16 uExpectedInstruction))
-{
-    LIMITED_METHOD_CONTRACT;
-
-    UINT            idx                 = pLabel->m_idxLabeledInstruction;
-    ILCodeStream*   pLabelCodeStream    = pLabel->m_pCodeStreamOfLabel;
-    ILInstruction*  pLabelInstrBuffer   = (ILInstruction*)pLabelCodeStream->m_pqbILInstructions->Ptr();
-
-    CONSISTENCY_CHECK(pLabelInstrBuffer[idx].uInstruction == ILCodeStream::CEE_CODE_LABEL);
-    CONSISTENCY_CHECK(pLabelInstrBuffer[idx].iStackDelta == 0);
-
-    idx++;
-
-    CONSISTENCY_CHECK(idx < pLabelCodeStream->m_uCurInstrIdx);
-    CONSISTENCY_CHECK(pLabelInstrBuffer[idx].uInstruction == uExpectedInstruction);
-
-    pLabelInstrBuffer[idx].uArg = uNewArg;
-}
-
 ILCodeLabel::ILCodeLabel()
 {
     m_pNext                 = NULL;
@@ -530,11 +505,11 @@ ILStubLinker::LogILInstruction(
         case ShortInlineVar:
         case ShortInlineI:
         case InlineI:
-            strArgument.Printf("0x%p", pInstruction->uArg);
+            strArgument.Printf("0x%zx", (size_t)pInstruction->uArg);
             break;
 
         case InlineI8:
-            strArgument.Printf("0x%llx", (uint64_t)pInstruction->uArg);
+            strArgument.Printf("0x%" PRIx64, (uint64_t)pInstruction->uArg);
             break;
 
         case InlineMethod:
@@ -546,7 +521,7 @@ ILStubLinker::LogILInstruction(
         case InlineTok:
             // No token value when we dump IL for ETW
             if (pDumpILStubCode == NULL)
-                strArgument.Printf("0x%08p", pInstruction->uArg);
+                strArgument.Printf("0x%08zx", (size_t)pInstruction->uArg);
 
             // Dump to szTokenNameBuffer if logging, otherwise dump to szArgumentBuffer to avoid an extra space because we are omitting the token
             _ASSERTE(FitsIn<mdToken>(pInstruction->uArg));
@@ -654,7 +629,6 @@ static void LogJitFlags(DWORD facility, DWORD level, CORJIT_FLAGS jitFlags)
 
     // these are all we care about at the moment
     LOG_FLAG(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB);
-    LOG_FLAG(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
 
 #undef LOG_FLAGS
 
@@ -717,6 +691,12 @@ bool ILStubLinker::FirstPassLink(ILInstruction* pInstrBuffer, UINT numInstr, siz
     {
         ILCodeStream::ILInstrEnum instr = (ILCodeStream::ILInstrEnum)pInstrBuffer[i].uInstruction;
         CONSISTENCY_CHECK(ILCodeStream::IsSupportedInstruction(instr));
+
+        if ((instr == ILCodeStream::CEE_LDARG) && (pInstrBuffer[i].uArg == SECRET_STUB_ARGUMENT))
+        {
+            CONSISTENCY_CHECK(m_uSecretStubArgumentIndex != static_cast<DWORD>(-1));
+            pInstrBuffer[i].uArg = m_uSecretStubArgumentIndex + (m_fHasThis ? 1 : 0);
+        }
 
         //
         // down-size instructions
@@ -1468,6 +1448,11 @@ void ILCodeStream::EmitLDARG   (unsigned uArgIdx)
     }
     Emit(CEE_LDARG, 1, uArgIdx);
 }
+void ILCodeStream::EmitLoadSecretStubArgument()
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_LDARG, 1, ILStubLinker::SECRET_STUB_ARGUMENT);
+}
 void ILCodeStream::EmitLDARGA  (unsigned uArgIdx)
 {
     WRAPPER_NO_CONTRACT;
@@ -1993,7 +1978,6 @@ DWORD ILStubLinker::NewLocal(CorElementType typ)
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2031,7 +2015,6 @@ DWORD StubSigBuilder::Append(LocalDesc* pLoc)
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pLoc));
     }
     CONTRACTL_END;
@@ -2505,6 +2488,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     m_iTargetStackDelta(0),
     m_cbCurrentCompressedSigLen(1),
     m_nLocals(0),
+    m_uSecretStubArgumentIndex(static_cast<DWORD>(-1)),
     m_fHasThis(false),
     m_pMD(pMD),
     m_pBuildingEHClauseStack(NULL),
@@ -2515,7 +2499,6 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -2919,6 +2902,14 @@ DWORD ILStubLinker::SetStubTargetArgType(CorElementType typ, bool fConsumeStubAr
 
     LocalDesc locDesc(typ);
     return SetStubTargetArgType(&locDesc, fConsumeStubArg);
+}
+
+void ILStubLinker::SetSecretStubArgumentIndex(DWORD uArgIdx)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(m_uSecretStubArgumentIndex == static_cast<DWORD>(-1));
+    m_uSecretStubArgumentIndex = uArgIdx;
 }
 
 void ILStubLinker::SetStubTargetCallingConv(CorCallingConvention uNativeCallingConv)

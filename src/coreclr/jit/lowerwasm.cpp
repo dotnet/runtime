@@ -35,11 +35,36 @@ void Lowering::SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason))
 // IsCallTargetInRange: Can a call target address be encoded in-place?
 //
 // Return Value:
-//    Currently always false for Wasm, all managed calls are indirect through the PEP.
+//    False when PEP is enabled, true when it is not enabled.
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
-    return false;
+    return !m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS);
+}
+
+//---------------------------------------------------------------------------------------------
+// AddWasmPortableEntryPointArg: Add and lower the portable entrypoint argument for a managed call.
+//
+// Arguments:
+//    call  - The managed call.
+//    value - The portable entrypoint value.
+//
+void Lowering::AddWasmPortableEntryPointArg(GenTreeCall* call, GenTree* value)
+{
+    NewCallArg portableEntryPointArg = NewCallArg::Primitive(value).WellKnown(WellKnownArg::WasmPortableEntryPoint);
+    CallArg*   arg                   = call->gtArgs.PushBack(m_compiler, portableEntryPointArg);
+
+    arg->SetEarlyNode(nullptr);
+    arg->SetLateNode(value);
+    call->gtArgs.PushLateBack(arg);
+
+    unsigned  argIndex = call->gtArgs.CountArgs() - 1;
+    regNumber argReg   = MakeWasmReg(argIndex, WasmValueType::I);
+    arg->AbiInfo =
+        ABIPassingInformation::FromSegmentByValue(m_compiler,
+                                                  ABIPassingSegment::InRegister(argReg, 0, TARGET_POINTER_SIZE));
+    BlockRange().InsertBefore(call, value);
+    LowerArg(call, arg);
 }
 
 //---------------------------------------------------------------------------------------------
@@ -76,24 +101,7 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
     DISPTREE(call);
 
     JITDUMP("Add new arg to call arg list corresponding to PEP target");
-    NewCallArg pepTargetArg =
-        NewCallArg::Primitive(callTargetLclForArg).WellKnown(WellKnownArg::WasmPortableEntryPoint);
-    CallArg* pepArg = call->gtArgs.PushBack(m_compiler, pepTargetArg);
-
-    pepArg->SetEarlyNode(nullptr);
-    pepArg->SetLateNode(callTargetLclForArg);
-    call->gtArgs.PushLateBack(pepArg);
-
-    // Set up ABI information for this arg; PEP's should be passed as the last param to a wasm function
-    unsigned  pepIndex = call->gtArgs.CountArgs() - 1;
-    regNumber pepReg   = MakeWasmReg(pepIndex, WasmValueType::I);
-    pepArg->AbiInfo =
-        ABIPassingInformation::FromSegmentByValue(m_compiler,
-                                                  ABIPassingSegment::InRegister(pepReg, 0, TARGET_POINTER_SIZE));
-    BlockRange().InsertBefore(call, callTargetLclForArg);
-
-    // Lower the new PEP arg now that the call abi info is updated and lcl var is inserted
-    LowerArg(call, pepArg);
+    AddWasmPortableEntryPointArg(call, callTargetLclForArg);
     DISPTREE(call);
 
     JITDUMP("Rewrite PEP call's control expression to indirect through the new local variable\n");
@@ -190,6 +198,11 @@ GenTreeAddrMode* Lowering::GetFoldableAddrMode(GenTreeIndir* indirNode)
         return nullptr;
     }
 
+    if (!IsInvariantInRange(lea->Base(), indirNode))
+    {
+        return nullptr;
+    }
+
     if (indirNode->OperIs(GT_STOREIND) &&
         m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(indirNode->AsStoreInd()))
     {
@@ -197,6 +210,38 @@ GenTreeAddrMode* Lowering::GetFoldableAddrMode(GenTreeIndir* indirNode)
     }
 
     return lea;
+}
+
+//------------------------------------------------------------------------
+// TryFoldLclAddrOffset: Fold a local address's frame offset into its indirection's memarg.
+//
+// Arguments:
+//    indirNode - The indirection node of interest
+//
+// Notes:
+//    Codegen for GT_LCL_ADDR is "local.get $FP; i32.const <frame offset>; i32.add". Flagging the node makes
+//    it emit just the frame pointer, and the indirection supplies the frame offset as its memarg instead.
+//    The frame pointer plus a non-negative frame offset stays within the shadow stack, so the memarg's
+//    infinite-precision addition cannot differ from the "i32.add" it replaces.
+//
+//    SIMD12 indirections re-materialize the address for the trailing lane access, and a multiply-used
+//    address is read back from a wasm local that would no longer hold the full address, so neither folds.
+//
+//    Folding relies on the flagged node keeping its single use: because GT_LCL_ADDR is invariant, neither
+//    the stackifier ("CanMoveForward") nor "fgWasmSpillRefs" can replace it with a temporary.
+//
+void Lowering::TryFoldLclAddrOffset(GenTreeIndir* indirNode)
+{
+    GenTree* const addr = indirNode->Addr();
+
+    if (!indirNode->OperIs(GT_IND, GT_STOREIND) || !addr->OperIs(GT_LCL_ADDR) || indirNode->TypeIs(TYP_SIMD12) ||
+        ((addr->gtLIRFlags & LIR::Flags::MultiplyUsed) != LIR::Flags::None))
+    {
+        return;
+    }
+
+    assert(addr->IsInvariant());
+    addr->gtLIRFlags |= LIR::Flags::FoldedAddr;
 }
 
 //------------------------------------------------------------------------
@@ -293,7 +338,6 @@ GenTree* Lowering::LowerNeg(GenTreeOp* node)
 //
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
-    // TODO-WASM: recognize eqz cases
     return nullptr;
 }
 
@@ -529,18 +573,21 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     {
         MakeSrcContained(indirNode, foldable);
     }
+    else
+    {
+        TryFoldLclAddrOffset(indirNode);
+    }
 
     // Contain a relocatable address constant so it folds into the load's memarg offset.
     //
-    // Codegen for such a constant is "global.get $imageBase; i32.const <reloc>; i32.add"; containing it lets
-    // genCodeForIndir emit just the image base and put the relocated address in the memarg instead. Only loads
-    // can do this: the parent emits the base in place of the address, and a store cannot because its value
-    // operand has already been pushed. A multiply-used address is excluded because codegen re-materializes it
-    // from a register that would no longer hold the full address.
+    // The load emits the address base and puts the relocated address in the memarg. A store cannot contain
+    // its address because its value operand has already been pushed. Multiply-used addresses are excluded
+    // because codegen re-materializes them from registers that must still hold the full address.
     //
-    GenTree* addr = indirNode->Addr();
+    GenTree* addr                    = indirNode->Addr();
+    bool     isNativeFunctionAddress = m_compiler->IsNativeAot() && addr->IsIconHandle(GTF_ICON_FTN_ADDR);
     if (indirNode->OperIs(GT_IND) && !indirNode->TypeIs(TYP_SIMD12) && addr->IsIconHandle() &&
-        addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler) &&
+        !isNativeFunctionAddress && addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler) &&
         ((addr->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None))
     {
         MakeSrcContained(indirNode, addr);
@@ -616,7 +663,21 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    // TODO-WASM-CQ: do containment for [i32|i64].eqz.
+    if (!cmp->OperIs(GT_EQ, GT_NE))
+    {
+        return;
+    }
+
+    GenTree* zero = cmp->gtGetOp2();
+    if (!zero->IsIntegralConst(0))
+    {
+        zero = cmp->gtGetOp1();
+    }
+
+    if (zero->IsIntegralConst(0))
+    {
+        MakeSrcContained(cmp, zero);
+    }
 }
 
 //------------------------------------------------------------------------

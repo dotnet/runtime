@@ -40,7 +40,6 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, SigTypeContext *pRes)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
 
         PRECONDITION(CheckPointer(md));
@@ -63,7 +62,6 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, S
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
 
         PRECONDITION(CheckPointer(md));
@@ -89,12 +87,15 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, S
 }
 
 #ifndef DACCESS_COMPILE
-TypeHandle GetDeclaringMethodTableFromTypeVarTypeDesc(TypeVarTypeDesc *pTypeVar, MethodDesc *pMD)
+static TypeHandle GetDeclaringMethodTableFromTypeVarTypeDesc(TypeVarTypeDesc *pTypeVar, MethodDesc *pMD)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     // This can only happen for reflection over type variables. Notably the logic which is used to enumerate the locals
     // of a MethodBody which was found by reflection over a type variable. This only needs to be non-null
@@ -130,12 +131,14 @@ TypeHandle GetDeclaringMethodTableFromTypeVarTypeDesc(TypeVarTypeDesc *pTypeVar,
 void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, Instantiation exactMethodInst, SigTypeContext *pRes)
 {
     // This method has an unusual contract for SigTypeContext so that it can be used to load type with a declaringType which is a generic variable.
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-
+        MODE_ANY;
         PRECONDITION(CheckPointer(md));
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     if (declaringType.IsNull())
     {
@@ -174,7 +177,6 @@ void SigTypeContext::InitTypeContext(FieldDesc *pFD, TypeHandle declaringType, S
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
 
         PRECONDITION(CheckPointer(declaringType, NULL_OK));
         PRECONDITION(CheckPointer(pFD));
@@ -189,7 +191,6 @@ void SigTypeContext::InitTypeContext(TypeHandle th, SigTypeContext *pRes)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END;
 
     if (th.IsNull())
@@ -321,4 +322,3 @@ BOOL SigTypeContext::Equal(const SigTypeContext *pCtx1, const SigTypeContext *pC
 
     return TRUE;
 }
-

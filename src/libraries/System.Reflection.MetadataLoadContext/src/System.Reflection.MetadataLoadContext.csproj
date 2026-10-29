@@ -77,7 +77,7 @@
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\InternalManifestResourceInfo.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\MetadataExtensions.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\MetadataTable.cs" />
-    <Compile Include="System\Reflection\TypeLoading\General\HashHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Collections\HashHelpers.cs" Link="System\Collections\HashHelpers.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Helpers.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\MethodSig.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\RoAssemblyName.cs" />

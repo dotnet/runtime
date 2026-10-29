@@ -41,10 +41,7 @@ Written in 2006, by:
       * [2.2.8.4 Critical Section Holder](#2.2.8.4)
   * [2.3 Does your code follow our OOM rules?](#2.3)
     * [2.3.1 What is OOM and why is it important?](#2.3.1)
-    * [2.3.2 Documenting where OOM's can happen](#2.3.2)
-      * [2.3.2.1 Functions that handle OOM's internally](#2.3.2.1)
-      * [2.3.2.2 OOM state control outside of contracts](#2.3.2.2)
-      * [2.3.2.3 Remember...](#2.3.2.3)
+    * [2.3.2 Handling OOM failures](#2.3.2)
   * [2.4 Are you using SString and/or the safe string manipulation functions?](#2.4)
     * [2.4.1 SString](#2.4.1)
   * [2.5 Are you using safemath.h for pointer and memory size allocations?](#2.5)
@@ -70,14 +67,13 @@ Written in 2006, by:
   * [2.10 Does your function declare a CONTRACT?](#2.10)
     * [2.10.1 What can be said in a contract?](#2.10.1)
       * [2.10.1.1 THROWS/NOTHROW](#2.10.1.1)
-      * [2.10.1.2 INJECT_FAULT(handler-stmt)/FORBID_FAULT](#2.10.1.2)
-      * [2.10.1.3 GC_TRIGGERS/GC_NOTRIGGER](#2.10.1.3)
-      * [2.10.1.4 MODE_PREEMPTIVE/ MODE_COOPERATIVE/ MODE_ANY](#2.10.1.4)
-      * [2.10.1.5 LOADS_TYPE(loadlevel)](#2.10.1.5)
-      * [2.10.1.6 CAN_TAKE_LOCK / CANNOT_TAKE_LOCK](#2.10.1.6)
-      * [2.10.1.7 EE_THREAD_REQUIRED / EE_THREAD_NOT_REQUIRED](#2.10.1.7)
-      * [2.10.1.8 PRECONDITION(expr)](#2.10.1.8)
-      * [2.10.1.9 POSTCONDITION(expr)](#2.10.1.9)
+      * [2.10.1.2 GC_TRIGGERS/GC_NOTRIGGER](#2.10.1.2)
+      * [2.10.1.3 MODE_PREEMPTIVE/ MODE_COOPERATIVE/ MODE_ANY](#2.10.1.3)
+      * [2.10.1.4 LOADS_TYPE(loadlevel)](#2.10.1.4)
+      * [2.10.1.5 CAN_TAKE_LOCK / CANNOT_TAKE_LOCK](#2.10.1.5)
+      * [2.10.1.6 EE_THREAD_REQUIRED / EE_THREAD_NOT_REQUIRED](#2.10.1.6)
+      * [2.10.1.7 PRECONDITION(expr)](#2.10.1.7)
+      * [2.10.1.8 POSTCONDITION(expr)](#2.10.1.8)
     * [2.10.2 Is order important?](#2.10.2)
     * [2.10.3 Using the right form of contract](#2.10.3)
     * [2.10.4 When is it safe to use a runtime contract?](#2.10.4)
@@ -85,8 +81,10 @@ Written in 2006, by:
     * [2.10.6 For more details...](#2.10.6)
   * [2.11 Using standard headers](#2.11)
     * [2.11.1 Do not use wchar_t](#2.11.1)
-	* [2.11.2 Do not use C++ Standard-defined exceptions](#2.11.2)
-	* [2.11.3 Do not use getenv on Unix platforms](#2.11.3)
+    * [2.11.2 C++ Standard-defined exceptions](#2.11.2)
+    * [2.11.3 Do not use getenv on Unix platforms](#2.11.3)
+    * [2.11.4 Restrictions on C++ Standard Library types](#2.11.4)
+      * [2.11.4.1 C++ Standard Library APIs that are legal to call in `MODE_COOPERATIVE`](#2.11.4.1)
   * [2.12 Is your code DAC compliant?](#2.12)
 
 # <a name="1"></a>1 Why you must read this document
@@ -639,76 +637,12 @@ This means that:
 
 - Any operation that fails due to an OOM must allow future retries. This means any changes to global data structures must be rolled back and OOM exceptions cannot be cached.
 - OOM failures must be distinguishable from other error results. OOM's must never be transformed into some other error code. Doing so may cause some operations to cache the error and return the same error on each retry.
-- Every function must declare whether or not it can generate an OOM error. We cannot write OOM-safe code if we have no way to know what calls can generate OOM's. This declaration is done by the INJECT_FAULT and FORBID_FAULT contract annotations.
 
-### <a name="2.3.2"></a>2.3.2 Documenting where OOM's can happen
+### <a name="2.3.2"></a>2.3.2 Handling OOM failures
 
-Sometimes, a code sequence requires that no opportunities for OOM occur. Backout code is the most common example. This can become hard to maintain if the code calls out to other functions. Because of this, it is very important that every function document in its contract whether or not it can fail due to OOM. We do this using the (poorly named) INJECT_FAULT and FORBID_FAULT annotations.
+Treat every allocation as capable of failing unless the called API explicitly documents otherwise. Code that mutates shared state must remain retryable after an OOM, typically by using holders or another backout mechanism to defer committing changes until all required allocations succeed.
 
-To document that a function _can_ fail due to OOM:
-
-**Runtime-based (preferred)**
-
-	void AllocateThingie()
-	{
-	    CONTRACTL
-	    {
-	        INJECT_FAULT(COMPlusThrowOM(););
-	    }
-	    CONTRACTL_END
-	}
-
-**Static**
-
-	void AllocateThingie()
-	{
-	    STATIC_CONTRACT_FAULT;
-	}
-
-To document that a function _cannot_ fail due to OOM:
-
-**Runtime-based (preferred)**
-
-	BOOL IsARedObject()
-	{
-	    CONTRACTL
-	    {
-	        FORBID_FAULT;
-	    }
-	    CONTRACTL_END
-	}
-
-**Static**
-
-	BOOL IsARedObject()
-	{
-	    STATIC_CONTRACT_FORBID_FAULT;
-	}
-
-INJECT_FAULT()'s argument is the code that executes when the function reports an OOM. Typically this is to throw an OOM exception or return E_OUTOFMEMORY. The original intent for this was for our OOM fault injection test harness to insert simulated OOM's at this point and execute this line. At the moment, this argument is ignored but we may still employ this fault injection idea in the future so please code it appropriately.
-
-The CLR asserts if you invoke an INJECT_FAULT function under the scope of a FORBID_FAULT. All our allocation functions, including the C++ new operator, are declared INJECT_FAULT.
-
-#### <a name="2.3.2.1"></a>2.3.2.1 Functions that handle OOM's internally
-
-Sometimes, a function handles an internal OOM without needing to notify the caller. For example, perhaps the additional memory was used to implement an internal cache but your function can still do its job without it. Or perhaps the function is a logging function in which case, it can silently NOP – the caller doesn't care. In such cases, wrap the allocation in the FAULT_NOT_FATAL holder which temporarily lifts the FORBID_FAULT state.
-
-	{
-	    FAULT_NOT_FATAL();
-	    pv = new Foo();
-	}
-
-FAULT_NOT_FATAL() is almost identical to a CONTRACT_VIOLATION() but the name indicates that it is by design, not a bug. It is analogous to TRY/CATCH for exceptions.
-
-#### <a name="2.3.2.2"></a>2.3.2.2 OOM state control outside of contracts
-
-If you wish to set the OOM state for a scope rather than a function, use the FAULT_FORBID() holder. To test the current state, use the ARE_FAULTS_FORBIDDEN() predicate.
-
-#### <a name="2.3.2.3"></a>2.3.2.3 Remember...
-
-- Do not use INJECT_FAULT to indicate the possibility of non-OOM errors such as entries not existing in a hash table or a COM object not supporting an interface. INJECT_FAULT indicates OOM errors and no other type.
-- Be very suspicious if your INJECT_FAULT() argument is anything other than throwing an OOM exception or returning E_OUTOFMEMORY. OOM errors must be distinguishable from other types of errors so if you're merely returning NULL without indicating the type of error, you'd better be a simple memory allocator or some other function that will never fail for any reason other than an OOM.
-- THROWS and INJECT_FAULT correlate strongly but are independent. A NOTHROW/INJECT_FAULT combo might indicate a function that returns HRESULTs including E_OUTOFMEMORY. A THROWS/FORBID_FAULT however indicates a function that can throw an exception but not an OutOfMemoryException. While theoretically possible, such a contract is probably a bug.
+If an allocation is optional, such as memory used only for a cache or diagnostics, handle its failure explicitly and leave the surrounding operation in a valid state. Otherwise, propagate the OOM without converting it to an unrelated error.
 
 ## <a name="2.4"></a>2.4 Are you using SString and/or the safe string manipulation functions?
 
@@ -967,11 +901,11 @@ CrstUnordered (used in rules inside CrstTypes.def) is a special level that says 
 
 The following matrix lists the effective contract and side-effects of entering a crst for all combinations of CRST_HOST_BREAKABLE and CRST_UNSAFE_\* flags. The SAMELEVEL flag has no effect on any of these parameters.
 
-|                     | Default                                                                                   | CRST_HOST_BREAKABLE                                                                      |
-| ------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Default             | NOTHROW<br> FORBID_FAULT<br>GC_TRIGGERS<br>MODE_ANY<br>(switches thread to preemptive)    | THROWS<br>INJECT_FAULT<br>GC_TRIGGERS<br>MODE_ANY<br>(switches thread to preemptive)     |
-| CRST_UNSAFE_COOPGC  | NOTHROW<br>FORBID_FAULT<br>GC_NOTRIGGER<br>MODE_COOP<br>(puts thread in GCNoTrigger mode) | THROWS<br>INJECT_FAULT<br>GC_NOTRIGGER<br>MODE_COOP<br>(puts thread in GCNoTrigger mode) |
-| CRST_UNSAFE_ANYMODE | NOTHROW<br>FORBID_FAULT<br>GC_NOTRIGGER<br>MODE_ANY<br>(puts thread in GCNoTrigger mode)  | THROWS<br>INJECT_FAULT<br>GC_NOTRIGGER<br>MODE_ANY<br>(puts thread in GCNoTrigger mode)  |
+|                     | Default                                                            | CRST_HOST_BREAKABLE                                                   |
+| ------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| Default             | NOTHROW<br>GC_TRIGGERS<br>MODE_ANY<br>(switches thread to preemptive)    | THROWS<br>GC_TRIGGERS<br>MODE_ANY<br>(switches thread to preemptive)     |
+| CRST_UNSAFE_COOPGC  | NOTHROW<br>GC_NOTRIGGER<br>MODE_COOP<br>(puts thread in GCNoTrigger mode) | THROWS<br>GC_NOTRIGGER<br>MODE_COOP<br>(puts thread in GCNoTrigger mode) |
+| CRST_UNSAFE_ANYMODE | NOTHROW<br>GC_NOTRIGGER<br>MODE_ANY<br>(puts thread in GCNoTrigger mode)  | THROWS<br>GC_NOTRIGGER<br>MODE_ANY<br>(puts thread in GCNoTrigger mode)  |
 
 ### <a name="2.6.11"></a>2.6.11 Using Events and Waitable Handles
 
@@ -1092,7 +1026,6 @@ Here is a typical contract:
 	    CONTRACTL
 	    {
 	        THROWS;                                     // This function may throw
-	        INJECT_FAULT(COMPlusThrowOM());             // This function may fail due to OOM
 	        GC_TRIGGERS;                                // This function may trigger a GC
 	        MODE_COOPERATIVE;                           // Must be in GC-cooperative mode to call
 	        CAN_TAKE_LOCK;                              // This function may take a Crst, spinlock, etc.
@@ -1109,7 +1042,7 @@ There are several flavors of contracts. This example shows the most common type 
 
 At runtime (on a checked build), the contract does the following:
 
-At the start of Foo(), it validates that it's safe to throw, safe to generate an out of memory error, safe to trigger gc, that the GC mode is cooperative, and that your preconditions are true.
+At the start of Foo(), it validates that it's safe to throw, safe to trigger gc, that the GC mode is cooperative, and that your preconditions are true.
 
 On a retail build, CONTRACT expands to nothing.
 
@@ -1121,27 +1054,23 @@ As you can see, a contract is a laundry list of "items" that either assert some 
 
 Declares whether an exception can be thrown out of this function. Declaring **NOTHROW** puts the thread in a NOTHROW state for the duration of the function call. You will get an assert if you throw an exception or call a function declared THROWS. An EX_TRY/EX_CATCH construct however will lift the NOTHROW state for the duration of the TRY body.
 
-#### <a name="2.10.1.2"></a>2.10.1.2 INJECT_FAULT(_handler-stmt_)/FORBID_FAULT
-
-This is a poorly named item. INJECT_FAULT declares that the function can **fail** due to an out of memory (OOM) condition. FORBID_FAULT means that the function promises never to fail due to OOM. FORBID_FAULT puts the thread in a FORBID_FAULT state for the duration of the function call. You will get an assert if you allocate memory (even with the C++ new operator) or call a function declared INJECT_FAULT.
-
-#### <a name="2.10.1.3"></a>2.10.1.3 GC_TRIGGERS/GC_NOTRIGGER
+#### <a name="2.10.1.2"></a>2.10.1.2 GC_TRIGGERS/GC_NOTRIGGER
 
 Declares whether the function is allowed to trigger a GC. GC_NOTRIGGER puts the thread in a NOTRIGGER state where any call to a GC_TRIGGERS function will assert.
 
 **Observation:** THROWS does not necessarily imply GC_TRIGGERS. COMPlusThrow does not trigger GC.
 
-#### <a name="2.10.1.4"></a>2.10.1.4 MODE_PREEMPTIVE/ MODE_COOPERATIVE/ MODE_ANY
+#### <a name="2.10.1.3"></a>2.10.1.3 MODE_PREEMPTIVE/ MODE_COOPERATIVE/ MODE_ANY
 
 This item asserts that the thread is in a particular mode or declares that the function is mode-agnostic. It does not change the state of the thread in any way.
 
-#### <a name="2.10.1.5"></a>2.10.1.5 LOADS_TYPE(_loadlevel_)
+#### <a name="2.10.1.4"></a>2.10.1.4 LOADS_TYPE(_loadlevel_)
 
 This item asserts that the function may invoke the loader and cause a type to loaded up to (and including) the indicated loadlevel. Valid load levels are taken from ClassLoadLevel enumerationin [classLoadLevel.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/classloadlevel.h).
 
 The CLR asserts if any attempt is made to load a type past the current limit set by LOADS_TYPE. A call to any function that has a LOADS_TYPE contract is treated as an attempt to load a type up to that limit.
 
-#### <a name="2.10.1.6"></a>2.10.1.6 CAN_TAKE_LOCK / CANNOT_TAKE_LOCK
+#### <a name="2.10.1.5"></a>2.10.1.5 CAN_TAKE_LOCK / CANNOT_TAKE_LOCK
 
 These declare whether a function or callee takes any kind of EE or user lock: Crst, SpinLock, readerwriter, clr critical section, or even your own home-grown spin lock (e.g., ExecutionManager::IncrementReader).
 
@@ -1160,7 +1089,7 @@ In TLS we keep track of the current intent (whether to lock), and actual reality
     - Remembers stack of lock pointers for diagnosis
   - ASSERT_NO_EE_LOCKS_HELD(): Handy way for you to verify no locks are held right now on this thread (i.e., lock count == 0)
 
-#### <a name="2.10.1.7"></a>2.10.1.7 EE_THREAD_REQUIRED / EE_THREAD_NOT_REQUIRED
+#### <a name="2.10.1.6"></a>2.10.1.6 EE_THREAD_REQUIRED / EE_THREAD_NOT_REQUIRED
 
 These declare whether a function or callee deals with the case "GetThread() == NULL".
 
@@ -1210,11 +1139,11 @@ You should only use BEGIN/END_GETTHREAD_ALLOWED(_IN_NO_THROW_REGION) if:
 
 If the latter is true, it's generally best to push BEGIN/END_GETTHREAD_ALLOWED down the callee chain so all callers benefit.
 
-#### <a name="2.10.1.8"></a>2.10.1.8 PRECONDITION(_expr_)
+#### <a name="2.10.1.7"></a>2.10.1.7 PRECONDITION(_expr_)
 
 This is pretty self-explanatory. It is basically an **_ASSERTE.** Both _ASSERTE's and PRECONDITIONS are used widely in the codebase. The expression can evaluate to either a Boolean or a Check.
 
-#### <a name="2.10.1.9"></a>2.10.1.9 POSTCONDITION(_expr_)
+#### <a name="2.10.1.8"></a>2.10.1.8 POSTCONDITION(_expr_)
 
 This is an expression that's tested on a _normal_ function exit. It will not be tested if an exception is thrown out of the function. Postconditions can access the function's locals provided that the locals were declared at the top level scope of the function. C++ objects will not have been destructed yet.
 
@@ -1229,10 +1158,11 @@ Preconditions and postconditions will execute in the order declared. The "intrin
 Contracts come in several forms:
 
 - CONTRACTL: This is the most common type. It does runtime checks as well as being visible to the static scanner. It is suitable for all runtime contracts except those that use postconditions. When in doubt, use this form.
+- STANDARD_VM_CONTRACT: The recommended default for ordinary EE code. It is a CONTRACTL containing THROWS, GC_TRIGGERS, and MODE_PREEMPTIVE. Use an explicit CONTRACTL instead when a function needs different annotations or additional checks.
 - CONTRACT(returntype): This is an uglier version that's needed if you include a POSTCONDITION. You must supply the correct function return type for this form and it cannot be "void" (use CONTRACT_VOID instead.) You must also use the special RETURN macro rather than the normal return keyword.
 - CONTRACT_VOID: Use this if you need a postcondition and the return type is void. CONTRACT(void) will not work.
 - STATIC_CONTRACT_\*: This form generates no runtime code but still emits the hidden tags visible to the static contract scanner. Use this only if checked build perf would suffer greatly by putting a runtime contract there or if for some technical reason, the runtime-based contract is not possible..
-- LIMITED_METHOD_CONTRACT: A static contract equivalent to NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY/CANNOT_TAKE_LOCK. Use this form only for trivial one-liner functions. Remember it does not do runtime checks so it should not be used for complex functions.
+- LIMITED_METHOD_CONTRACT: A static contract equivalent to NOTHROW/GC_NOTRIGGER/MODE_ANY/CANNOT_TAKE_LOCK. Use this form only for trivial one-liner functions. Remember it does not do runtime checks so it should not be used for complex functions.
 - WRAPPER_NO_CONTRACT: A static no-op contract for functions that trivially wrap another. This was invented back when we didn't have static contracts and we now wish it hadn't been invented. Please don't use this in new code.
 
 ### <a name="2.10.4"></a>2.10.4 When is it safe to use a runtime contract?
@@ -1260,29 +1190,37 @@ See the big block comment at the start of [src\inc\contract.h][contract.h].
 
 The C and C++ standard headers are available for usage in the CoreCLR code-base. However, there are restrictions on using the standard-provided APIs for code that will run as part of CoreCLR.
 
-Code that will only run in other processes, such as `createdump` or other extraneous tools, do not have the same set of restrictions.
+Code that will only run in other processes, such as `createdump` or other extraneous tools, has fewer restrictions.
+
+For Linux builds, we build against an older C++ runtime to support older Linux distributions, but we bundle a newer C++ Standard Library implementation. This means CoreCLR code can use new C++ library features, but there may be some corners where particular features are not supported and fail at link time. Those features are not supported in CoreCLR code and should be avoided.
 
 ### <a name="2.11.1"></a> 2.11.1 Do not use wchar_t
 
 The `wchar_t` type is implementation-defined, with Windows and Unix-based platforms using different definitions (2 byte vs 4 byte). Use the `WCHAR` alias instead, which is always 2 bytes. The CoreCLR PAL provides implementations of a variety of the C standard `wchar_t` APIs with the `WCHAR` type instead. These methods, as well as the methods in the [CoreCLR minipal](https://github.com/dotnet/runtime/tree/main/src/coreclr/minipal) and in the [repo minipal](https://github.com/dotnet/runtime/tree/main/src/native/minipal) should be used. In these minipals, the APIs may use `char16_t` or a locally-defined `CHAR16_T` type. In both cases, these types are compatible with the `WCHAR` alias in CoreCLR. If a minipal API exists, it should be used instead of the PAL API.
 
-### <a name="2.11.2"></a> 2.11.2 Do not use C++ Standard-defined exceptions
+### <a name="2.11.2"></a> 2.11.2 C++ Standard-defined exceptions
 
-The exception handling mechanisms in CoreCLR only handle `Exception`-derived types and `PAL_SEHException`. As a result, standard C++ exceptions, derived from `std::exception`, will cause runtime instability and should never be used. There is one standard C++ exception type the CoreCLR infrastructure supports, `std::bad_alloc`. Since CoreCLR supports `std::bad_alloc`, the standard container allocators, `std::allocator<T>` and the standard C++ containers, can be used as long as only the non-throwing members are used.
+The CoreCLR exception handling mechanisms convert exceptions derived from `std::exception` to the closest existing managed exception type. `std::bad_alloc` is converted to `OutOfMemoryException`, `std::system_error` is converted through the runtime's Win32 exception handling, and unknown `std::exception` types are converted to `System.Exception`.
 
-For example, `std::vector<T>::at()` should not be used as it may throw an `std::out_of_range` exception. Check the C++ standard or [cppreference.com](https://en.cppreference.com) for each member you plan to use to ensure that it will not throw a C++ standard exception other than `std::bad_alloc`.
+Standard library APIs that can throw must only be used in code with a `THROWS` contract and within the scope of the runtime's exception handling infrastructure. Do not throw types that do not derive from `std::exception`.
 
 ### <a name="2.11.3"></a> 2.11.3 Do not use getenv on Unix platforms
 
 The POSIX API `setenv` is not thread safe with `getenv` and can lead to crashes. CoreCLR provides a `PAL_getenv` API that is thread-safe. This API should be used instead when on non-Windows platforms.
 
-### <a name="2.11.4"></a> 2.11.4 Limit usage of standard template types in shipping executables
+### <a name="2.11.4"></a> 2.11.4 Restrictions on C++ Standard Library types
 
-For Linux x64 and amd64 platforms, we build against a very old libstdc++, the version that shipped with Ubuntu 16.04. As a result, we strive to reduce our usage of template types (where code from the headers will be inserted into our binaries) in shipping executables and libraries.
+Using types and algorithms from the C++ standard is supported within the CoreCLR code base; however, we do not support it in our DAC/cDAC tooling. Do not use C++ Standard-defined containers, smart pointers, etc. for any fields accessed by the DAC or cDAC. Only use our collections that have cDAC contracts when you need to expose them for diagnostic tooling.
 
-This rule applies to both `coreclr` as well as shipping external executables like `createdump`.
+For cases where diagnostic tooling integration is not required, you may use C++ Standard-defined types and algorithms meeting the C++ standard version CoreCLR builds with (defined in [eng/native/configurecompiler.cmake](../../eng/native/configurecompiler.cmake)).
 
-For non-shipping native code, like the `superpmi` tools suite, standard headers can be used without limitation.
+Additionally, code that calls C++ standard APIs must be marked `THROWS` unless the called API is marked `noexcept`.
+
+Except for APIs listed in the following section, code that calls C++ standard APIs must be marked as `MODE_PREEMPTIVE` or within a `GCX_PREEMP()` scope. For an item to be listed in the following list, it must, at minimum, not perform an unbounded set of operations.
+
+#### <a name="2.11.4.1"></a>2.11.4.1 C++ Standard Library APIs that are legal to call in `MODE_COOPERATIVE`
+
+There are no C++ Standard Library APIs currently legal to call in `MODE_COOPERATIVE`.
 
 ## <a name="2.12"></a>2.12 Is your code DAC compliant?
 

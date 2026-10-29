@@ -481,6 +481,12 @@ namespace System.Tests
 
             // Valid number without trailing characters
             yield return new object[] { "123", NumberStyles.Integer, null, 123u, 3 };
+
+            // Leading whitespace is counted as consumed even when the signs aren't the invariant "+"/"-"
+            NumberFormatInfo nonInvariantSignFormat = new NumberFormatInfo() { NegativeSign = "\u2212" };
+            yield return new object[] { " 5", NumberStyles.Integer, nonInvariantSignFormat, 5u, 2 };
+            yield return new object[] { "  123abc", NumberStyles.Integer, nonInvariantSignFormat, 123u, 5 };
+            yield return new object[] { "  +123abc", NumberStyles.Integer, nonInvariantSignFormat, 123u, 6 };
         }
 
         [Theory]

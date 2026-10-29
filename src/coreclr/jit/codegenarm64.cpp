@@ -2196,7 +2196,9 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     }
     else
     {
-        if (emitter::emitIns_valid_imm_for_mov(imm, size))
+        emitAttr immSize = EA_SIZE(size);
+
+        if (emitter::emitIns_valid_imm_for_mov(imm, immSize))
         {
             GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE,
                                       INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
@@ -2214,7 +2216,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             // Determine whether movn or movz will require the fewest instructions to populate the immediate
             int preferMovn = 0;
 
-            for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
+            for (int i = (immSize == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
             {
                 if (uint16_t(imm >> i) == 0xffff)
                     ++preferMovn; // a single movk 0xffff could be skipped if movn was used
@@ -2229,7 +2231,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             // This can allow skipping filling a halfword
             uint16_t skipVal = (preferMovn > 0) ? 0xffff : 0;
 
-            unsigned bits = (size == EA_8BYTE) ? 64 : 32;
+            unsigned bits = (immSize == EA_8BYTE) ? 64 : 32;
 
             // Iterate over imm examining 16 bits at a time
             for (unsigned i = 0; i < bits; i += 16)
@@ -2702,7 +2704,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     if (op2->OperIs(GT_MUL) && op2->isContained())
     {
         // In the future, we might consider enabling this for floating-point "unsafe" math.
-        assert(varTypeIsIntegral(tree));
+        assert(varTypeIsIntegral(tree) || tree->TypeIs(TYP_BYREF));
 
         // These operations cannot set flags
         assert((tree->gtFlags & GTF_SET_FLAGS) == 0);
@@ -2740,7 +2742,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     }
     else if (op2->OperIs(GT_LSH, GT_RSH, GT_RSZ) && op2->isContained())
     {
-        assert(varTypeIsIntegral(tree));
+        assert(varTypeIsIntegral(tree) || tree->TypeIs(TYP_BYREF));
 
         GenTree* a = op1;
         GenTree* b = op2->gtGetOp1();
@@ -2799,6 +2801,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     }
     else if (op2->OperIs(GT_ROR) && op2->isContained())
     {
+        // ROR is only contained under AND/OR/XOR parents, which are never TYP_BYREF.
         assert(varTypeIsIntegral(tree));
 
         GenTree* a = op1;
@@ -2841,7 +2844,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     }
     else if (op2->OperIs(GT_CAST) && op2->isContained())
     {
-        assert(varTypeIsIntegral(tree));
+        assert(varTypeIsIntegral(tree) || tree->TypeIs(TYP_BYREF));
 
         GenTree* a = op1;
         GenTree* b = op2->AsCast()->CastOp();
@@ -3430,7 +3433,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // illegal pages at any time during the tickling process.
         //
         //       subs  regCnt, SP, regCnt      // regCnt now holds ultimate SP
-        //       bvc   Loop                    // result is smaller than original SP (no wrap around)
+        //       bhs   Loop                    // result is smaller than original SP (no wrap around)
         //       mov   regCnt, #0              // Overflow, pick lowest possible value
         //
         //  Loop:
@@ -3454,7 +3457,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         //       subs  regCnt, SP, regCnt      // regCnt now holds ultimate SP
         GetEmitter()->emitIns_R_R_R(INS_subs, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
 
-        inst_JMP(EJ_vc, loop); // branch if the V flag is not set
+        inst_JMP(EJ_hs, loop); // branch if the subtraction didn't borrow (C flag set)
 
         // Overflow, set regCnt to lowest possible value
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, regCnt);
@@ -4268,7 +4271,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // 'data' goes into x15 (REG_WRITE_BARRIER_SRC)
         genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {
@@ -4882,7 +4885,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
         ins = (op2 == nullptr) ? INS_cinc : INS_csinc;
     }
 
-    if (tree->OperIs(GT_SELECT, GT_SELECT_INV, GT_SELECT_NEG))
+    if (tree->OperIs(GT_SELECT, GT_SELECT_INC, GT_SELECT_INV, GT_SELECT_NEG))
     {
         opcond = tree->AsConditional()->gtCond;
         genConsumeRegs(opcond);
@@ -5126,8 +5129,6 @@ int CodeGenInterface::genTotalFrameSize() const
     // included in the compCalleeRegsPushed count. This is like prespill on ARM32, but
     // since we don't use "push" instructions to save them, we don't have to do the
     // save of these varargs register arguments as the first thing in the prolog.
-
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
 
     int totalFrameSize = (m_compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) +
                          m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
@@ -5807,7 +5808,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     // but we don't alter SP.
     target_size_t lastTouchDelta = 0;
 
-    assert(!m_compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
+    assert(!m_compiler->compHasSecretStubArgument() || (REG_SECRET_STUB_PARAM != initReg));
 
     if (frameSize < pageSize)
     {

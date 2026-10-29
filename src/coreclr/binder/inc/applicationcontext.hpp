@@ -52,13 +52,6 @@ namespace BINDER_SPACE
 
         void OnDestructPerEntryCleanupAction(const SimpleNameToFileNameMapEntry & e)
         {
-            if (e.m_wszILFileName == nullptr)
-            {
-                // Don't delete simple name here since it's a filename only entry and will be cleaned up
-                // by the SimpleName -> FileName entry which reuses the same filename pointer.
-                return;
-            }
-
             if (e.m_wszSimpleName != nullptr)
             {
                 delete [] e.m_wszSimpleName;
@@ -86,8 +79,7 @@ namespace BINDER_SPACE
 
         HRESULT SetupBindingPaths(/* in */ SString &sTrustedPlatformAssemblies,
                                   /* in */ SString &sPlatformResourceRoots,
-                                  /* in */ SString &sAppPaths,
-                                  /* in */ BOOL     fAcquireLock);
+                                  /* in */ SString &sAppPaths);
 
         // Getters/Setter
         inline ExecutionContext *GetExecutionContext();

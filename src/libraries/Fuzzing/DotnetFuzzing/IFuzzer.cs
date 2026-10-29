@@ -12,6 +12,9 @@ internal interface IFuzzer
     /// If the code under test is only in CoreLib, you may return an empty array.</summary>
     string[] TargetAssemblies { get; }
 
+    /// <summary>Optional type/namespace prefixes to instrument within <see cref="TargetAssemblies"/>.</summary>
+    string[] TargetAssemblyPrefixes => [];
+
     /// <summary>List of prefixes (CoreLib namespaces/types) that should be instrumented.
     /// If the code under test is outside CoreLib, you may return an empty array.</summary>
     string[] TargetCoreLibPrefixes { get; }

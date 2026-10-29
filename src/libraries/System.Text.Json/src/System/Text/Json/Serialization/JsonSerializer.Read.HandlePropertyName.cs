@@ -94,7 +94,7 @@ namespace System.Text.Json
                     }
                     else
                     {
-                        ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                        ThrowHelper.ThrowJsonException_MetadataUnexpectedProperty(propertyName, ref state);
                     }
                 }
             }
@@ -129,7 +129,7 @@ namespace System.Text.Json
                 Debug.Assert(genericArgs.Length == 2);
                 Debug.Assert(genericArgs[0].UnderlyingSystemType == typeof(string));
                 Debug.Assert(
-                    genericArgs[1].UnderlyingSystemType == JsonTypeInfo.ObjectType ||
+                    genericArgs[1].UnderlyingSystemType == typeof(object) ||
                     genericArgs[1].UnderlyingSystemType == typeof(JsonElement) ||
                     genericArgs[1].UnderlyingSystemType == typeof(Nodes.JsonNode));
 #endif

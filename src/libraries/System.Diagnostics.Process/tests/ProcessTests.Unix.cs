@@ -79,34 +79,40 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.FreeBSD)]
+        public void ProcessStart_UseShellExecute_OnUnix_ThrowsWhenNoOpenerOnPath()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["PATH"] = string.Empty;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                Win32Exception exception = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = Environment.CurrentDirectory }));
+                Assert.Equal(Interop.Errors.ERROR_NO_ASSOCIATION, exception.NativeErrorCode);
+            }, options).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop("Opens program")]
         [SkipOnPlatform(TestPlatforms.MacCatalyst, "In App Sandbox mode, the process doesn't have read access to the binary.")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ProcessStart_DirectoryNameInCurDirectorySameAsFileNameInExecDirectory_Success()
         {
-            string fileToOpen = "dotnet";
-            string curDir = Environment.CurrentDirectory;
-            string dotnetFolder = Path.Combine(Path.GetTempPath(),"dotnet");
-            bool shouldDelete = !Directory.Exists(dotnetFolder);
-            try
-            {
-                Directory.SetCurrentDirectory(Path.GetTempPath());
-                Directory.CreateDirectory(dotnetFolder);
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "dotnet"));
 
+            RemoteExecutor.Invoke(StartDotnet, new RemoteInvokeOptions
+            {
+                StartInfo = new ProcessStartInfo { WorkingDirectory = TestDirectory }
+            }).Dispose();
+
+            static void StartDotnet()
+            {
+                string fileToOpen = "dotnet";
                 using (var px = Process.Start(fileToOpen))
                 {
                     Assert.NotNull(px);
                 }
-            }
-            finally
-            {
-                if (shouldDelete)
-                {
-                    Directory.Delete(dotnetFolder);
-                }
-
-                Directory.SetCurrentDirectory(curDir);
             }
         }
 
@@ -763,6 +769,64 @@ namespace System.Diagnostics.Tests
             Assert.True(processReaped);
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void WaitForExit_StoppedChild_DoesNotPreventReapingOtherChildren(bool useAsync)
+        {
+            RemoteExecutor.Invoke(async useAsyncString =>
+            {
+                const uint StoppedProcessStatus = 4; // SSTOP in sys/proc.h.
+                using Process stopped = Process.Start("/bin/sleep", "300");
+                using Process exiting = Process.Start("/bin/sleep", "300");
+                int stoppedPid = stopped.Id;
+                int exitingPid = exiting.Id;
+                int killSignal = Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL);
+                using var sigChildReceived = new ManualResetEventSlim();
+                using PosixSignalRegistration registration = PosixSignalRegistration.Create(PosixSignal.SIGCHLD, context =>
+                {
+                    context.Cancel = true;
+                    sigChildReceived.Set();
+                });
+
+                try
+                {
+                    Assert.Equal(0, Interop.Sys.Kill(stoppedPid, Interop.Sys.GetPlatformSIGSTOP()));
+
+                    Assert.True(SpinWait.SpinUntil(
+                        () => Interop.libproc.GetProcessInfoById(stoppedPid) is { } info &&
+                            info.pbsd.pbi_status == StoppedProcessStatus, WaitInMS));
+
+                    sigChildReceived.Reset();
+                    Assert.Equal(0, Interop.Sys.Kill(Environment.ProcessId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGCHLD)));
+                    Assert.True(sigChildReceived.Wait(WaitInMS));
+
+                    Assert.Equal(0, Interop.Sys.Kill(exitingPid, killSignal));
+                    if (bool.Parse(useAsyncString))
+                    {
+                        using var cts = new CancellationTokenSource(WaitInMS);
+                        await exiting.WaitForExitAsync(cts.Token);
+                    }
+                    else
+                    {
+                        Assert.True(exiting.WaitForExit(WaitInMS));
+                    }
+                    Assert.True(exiting.HasExited);
+                }
+                finally
+                {
+                    // Bypass managed process locks so cleanup also works if the reaper is stuck.
+                    Assert.Equal(0, Interop.Sys.Kill(stoppedPid, killSignal));
+                    Assert.True(stopped.WaitForExit(WaitInMS));
+                    exiting.Kill();
+                    Assert.True(exiting.WaitForExit(WaitInMS));
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }, useAsync.ToString()).Dispose();
+        }
+
         private static Process CreateShortProcess()
         {
             Process process = new Process();
@@ -1060,7 +1124,6 @@ namespace System.Diagnostics.Tests
 
         private const int O_RDONLY = 0;
         private const int O_WRONLY = 1;
-
         private static readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
 
         private string WriteScriptFile(string directory, string name, int returnValue)

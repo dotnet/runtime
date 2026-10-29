@@ -31,12 +31,6 @@
 #include <link.h>
 #endif
 #include <dlfcn.h>
-#if defined(TARGET_WASI)
-// pal_wasi_missing.h provides Dl_info for the struct InitializeTemplateThunkLocals
-// declaration below; the actual dladdr() call is FEATURE_MAP_THUNKS_FROM_IMAGE-only
-// (Apple) so the stub is never invoked on WASI.
-#include "../../pal/src/include/pal/wasi/pal_wasi_missing.h"
-#endif
 #endif // TARGET_APPLE
 
 #ifdef TARGET_APPLE
@@ -55,6 +49,10 @@ static const off_t MaxDoubleMappedSize = UINT_MAX;
 
 bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecutableCodeSize)
 {
+#ifdef TARGET_WASM
+    // Double mapping is not supported on Wasm
+    return false;
+#else // TARGET_WASM
     if (minipal_detect_rosetta())
     {
         // Rosetta doesn't support double mapping correctly
@@ -142,6 +140,31 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         return false;
     }
 
+    // Verify that the backing file can actually be mapped both writable and executable.
+    // Some sandboxes allow creating the file, but deny making its mappings executable
+    // later, which would otherwise surface as a failure in the middle of the runtime
+    // startup. Detect that here so that the allocator can fall back to the non-W^X path.
+    {
+        size_t pageSize = (size_t)sysconf(_SC_PAGE_SIZE);
+        void* pRW = mmap(NULL, pageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        void* pRX = mmap(NULL, pageSize, PROT_NONE, MAP_SHARED, fd, 0);
+        bool canDoubleMap = (pRW != MAP_FAILED) && (pRX != MAP_FAILED) &&
+            (mprotect(pRX, pageSize, PROT_READ | PROT_EXEC) == 0);
+        if (pRX != MAP_FAILED)
+        {
+            munmap(pRX, pageSize);
+        }
+        if (pRW != MAP_FAILED)
+        {
+            munmap(pRW, pageSize);
+        }
+        if (!canDoubleMap)
+        {
+            close(fd);
+            return false;
+        }
+    }
+
     *pMaxExecutableCodeSize = maxDoubleMappedMemorySize;
     *pHandle = (void*)(size_t)fd;
 #else // !TARGET_APPLE
@@ -151,6 +174,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 #endif // !TARGET_APPLE
 
     return true;
+#endif // TARGET_WASM
 }
 
 void VMToOSInterface::DestroyDoubleMemoryMapper(void *mapperHandle)
@@ -314,7 +338,7 @@ bool VMToOSInterface::ReleaseRWMapping(void* pStart, size_t size)
     return munmap(pStart, size) != -1;
 }
 
-#ifndef TARGET_APPLE
+#if !defined(TARGET_APPLE) && !defined(TARGET_WASM)
 #define MAX_TEMPLATE_THUNK_TYPES 3 // Maximum number of times the CreateTemplate api can be called
 struct TemplateThunkMappingData
 {
@@ -477,7 +501,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
         return __atomic_load_n(&s_pThunkData, __ATOMIC_ACQUIRE);
     }
 }
-#endif
+#endif // !TARGET_APPLE && !TARGET_WASM
 
 bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
 {
@@ -490,7 +514,9 @@ bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
 
 void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
 {
-#ifdef TARGET_APPLE
+#if defined(TARGET_WASM)
+    return NULL;
+#elif defined(TARGET_APPLE)
     return pImageTemplate;
 #elif defined(TARGET_X86)
     return NULL; // X86 doesn't support high performance relative addressing, which makes the template system not work
@@ -538,7 +564,9 @@ void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize,
 
 void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStartSpecification, void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
-#ifdef TARGET_APPLE
+#if defined(TARGET_WASM)
+    return NULL;
+#elif defined(TARGET_APPLE)
     vm_address_t addr, taddr;
     vm_prot_t prot, max_prot;
     kern_return_t ret;

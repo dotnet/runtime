@@ -613,44 +613,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END CallEHFilterFunclet, _TEXT
 
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    ld a1, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics(a0)
-    fence r,rw
-    bnez a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
-    mv  a0, a1
-    ret
-
-LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetNonGCStaticBase
-    ld a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable(a0)
-    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, t4
-    ld t4, 0(t4)
-    EPILOG_BRANCH_REG        t4
-LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    ld a1, OFFSETOF__DynamicStaticsInfo__m_pGCStatics(a0)
-    fence r,rw
-    bnez a1, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
-    mv  a0, a1
-    ret
-
-LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetGCStaticBase
-    ld a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable(a0)
-    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, t4
-    ld t4, 0(t4)
-    EPILOG_BRANCH_REG        t4
-LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
@@ -805,17 +767,6 @@ LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
     EPILOG_RETURN
 LEAF_END GetThreadStaticsVariableOffset, _TEXT
 #endif // !TARGET_LINUX_MUSL
-
-LEAF_ENTRY JIT_PollGC, _TEXT
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, t0
-        lw      t0, 0(t0)
-        bnez    t0, LOCAL_LABEL(JIT_PollGCRarePath)
-        ret
-LOCAL_LABEL(JIT_PollGCRarePath):
-        PREPARE_EXTERNAL_VAR g_pPollGC, t0
-        ld      t0, 0(t0)
-        jr      t0
-LEAF_END JIT_PollGC, _TEXT
 
 //a0 -This pointer
 //a1 -ReturnBuffer

@@ -112,18 +112,6 @@ RhpInterfaceDispatchSlow proc
         jmp         _RhpUniversalTransitionTailCall@0
 RhpInterfaceDispatchSlow endp
 
-;; Initial dispatch on an interface when we don't have a cache yet.
-FASTCALL_FUNC RhpInitialDynamicInterfaceDispatch, 0
-ALTERNATE_ENTRY _RhpInitialInterfaceDispatch
-        ;; Trigger an AV if we're dispatching on a null this.
-        ;; The exception handling infrastructure is aware of the fact that this is the first
-        ;; instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
-        ;; to a NullReferenceException at the callsite.
-        cmp     dword ptr [ecx], ecx
-
-        jmp RhpInterfaceDispatchSlow
-FASTCALL_ENDFUNC
-
 endif ;; FEATURE_CACHED_INTERFACE_DISPATCH
 
 end

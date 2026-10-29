@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using System.Security.Authentication;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
@@ -188,7 +189,15 @@ internal static partial class MsQuicConfiguration
             allowedCipherSuites = CipherSuitePolicyToFlags(cipherSuitesPolicy);
         }
 
-        if (!MsQuicApi.UsesSChannelBackend)
+        if (MsQuicApi.UsesSChannelBackend)
+        {
+            // Either user code passed SslStreamCertificateContext and
+            // intermediates have already been retrieved, or they will be
+            // retrieved by the cert context we build internally, there is no
+            // need for MsQuic to do another AIA fetch
+            flags |= QUIC_CREDENTIAL_FLAGS.CACHE_ONLY_URL_RETRIEVAL;
+        }
+        else
         {
             flags |= QUIC_CREDENTIAL_FLAGS.USE_PORTABLE_CERTIFICATES;
         }
@@ -203,15 +212,6 @@ internal static partial class MsQuicConfiguration
 
     private static unsafe MsQuicConfigurationSafeHandle CreateInternal(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
     {
-        if (!MsQuicApi.UsesSChannelBackend && certificate is X509Certificate2 cert && intermediates is null)
-        {
-            // MsQuic will not lookup intermediates in local CA store if not explicitly provided,
-            // so we build the cert context to get on feature parity with SslStream. Note that this code
-            // path runs after the MsQuicConfigurationCache check.
-            SslStreamCertificateContext context = SslStreamCertificateContext.Create(cert, additionalCertificates: null, offline: true, trust: null);
-            intermediates = context.IntermediateCertificates;
-        }
-
         QUIC_HANDLE* handle;
 
         using MsQuicBuffers msquicBuffers = new MsQuicBuffers();
@@ -227,8 +227,18 @@ internal static partial class MsQuicConfiguration
             "ConfigurationOpen failed");
         MsQuicConfigurationSafeHandle configurationHandle = new MsQuicConfigurationSafeHandle(handle);
 
+        SslStreamCertificateContext? context = null;
+
         try
         {
+            if (certificate is X509Certificate2 cert && intermediates is null)
+            {
+                // Build the local chain after the configuration cache check. Avoid OCSP fetches
+                // because we have no way to pass the staple to the MsQuic API anyway.
+                context = CreateCertificateContext(null, cert, additionalCertificates: null, offline: false, trust: null, noOcspFetch: true);
+                intermediates = context.IntermediateCertificates;
+            }
+
             QUIC_CREDENTIAL_CONFIG config = new QUIC_CREDENTIAL_CONFIG
             {
                 Flags = flags,
@@ -288,7 +298,11 @@ internal static partial class MsQuicConfiguration
                 ThrowHelper.ThrowIfMsQuicError(status, SR.net_quic_tls_version_notsupported);
             }
 
-            if (status == MsQuic.QUIC_STATUS_CERT_NO_CERT && certificate != null && certificate.HasPrivateKey())
+            // Schannel reports SEC_E_NO_CREDENTIALS (mapped to QUIC_STATUS_CERT_NO_CERT) for
+            // server certificates and SEC_E_UNKNOWN_CREDENTIALS for client certificates when the
+            // private key is ephemeral, which is not supported on Windows.
+            if ((status == MsQuic.QUIC_STATUS_CERT_NO_CERT || (Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.UnknownCredentials) &&
+                certificate is not null && certificate.HasPrivateKey())
             {
                 using Microsoft.Win32.SafeHandles.SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificate.Handle);
                 if (safeCertContextHandle.HasEphemeralPrivateKey)
@@ -305,9 +319,22 @@ internal static partial class MsQuicConfiguration
             configurationHandle.Dispose();
             throw;
         }
+        finally
+        {
+            if (context is not null)
+            {
+                ReleaseResources(context);
+            }
+        }
 
         return configurationHandle;
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = nameof(SslStreamCertificateContext.Create))]
+    private static extern SslStreamCertificateContext CreateCertificateContext(SslStreamCertificateContext? context, X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline, SslCertificateTrust? trust, bool noOcspFetch);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method)]
+    private static extern void ReleaseResources(SslStreamCertificateContext context);
 
     private static QUIC_ALLOWED_CIPHER_SUITE_FLAGS CipherSuitePolicyToFlags(CipherSuitesPolicy cipherSuitesPolicy)
     {

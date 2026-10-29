@@ -231,7 +231,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             new DerivedTypeWithOpenGenericOnBaseWithRUCOnDerived<TestType>();
         }
 
-        [ExpectedWarning("IL2091", nameof(IGenericInterfaceTypeWithRequirements<T>))]
         [RequiresUnreferencedCode("RUC")]
         class DerivedTypeWithOpenGenericOnBaseWithRUCOnDerived<T> : BaseTypeWithOpenGenericDAMT<T>, IGenericInterfaceTypeWithRequirements<T>
         {

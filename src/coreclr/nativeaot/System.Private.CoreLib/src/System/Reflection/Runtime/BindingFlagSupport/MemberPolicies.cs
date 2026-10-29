@@ -25,11 +25,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //=================================================================================================================
 
         //
-        // Returns all of the directly declared members on the given Type.
-        //
-        public abstract IEnumerable<M> GetDeclaredMembers(Type type);
-
-        //
         // Returns all of the directly declared members on the given TypeInfo whose name matches optionalNameFilter. If optionalNameFilter is null,
         // returns all directly declared members.
         //
@@ -41,14 +36,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //  Only the MemberAccessMask bits are set.)
         //
         public abstract void GetMemberAttributes(M member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot);
-
-        //
-        // Policy to decide whether "derivedMember" is a virtual override of "baseMember." Used to implement MethodInfo.GetBaseDefinition(),
-        // parent chain traversal for discovering inherited custom attributes, and suppressing lookup results in the Type.Get*() api family.
-        //
-        // Does not consider explicit overrides (methodimpls.) Does not consider "overrides" of interface methods.
-        //
-        public abstract bool ImplicitlyOverrides(M baseMember, M derivedMember);
 
         //
         // Policy to decide how BindingFlags should be reinterpreted for a given member type.
@@ -188,8 +175,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             // Either way, we can trust Reflection's result here.
             return false;
         }
-
-        protected const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
         //
         // This returns a fixed value from 0 to MemberIndex.Count-1 with each possible type of M

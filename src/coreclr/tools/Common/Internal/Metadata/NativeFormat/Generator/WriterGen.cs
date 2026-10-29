@@ -180,6 +180,31 @@ internal sealed class WriterGen : CsWriter
         WriteLine("return _hash;");
         CloseScope("GetHashCode");
 
+        bool hasHashtables = false;
+        foreach (var member in record.Members)
+        {
+            hasHashtables |= (member.Flags & MemberDefFlags.HashTable) != 0;
+        }
+
+        if (hasHashtables)
+        {
+            OpenScope("internal override void PlaceHashtables(Section section)");
+            foreach (var member in record.Members)
+            {
+                if ((member.Flags & MemberDefFlags.HashTable) == 0)
+                    continue;
+
+                string fieldName = member.GetMemberFieldName() + "Hashtable";
+                WriteLine($"Debug.Assert({fieldName} is null);");
+                WriteLine($"{fieldName} = new VertexHashtable();");
+                OpenScope($"foreach ({member.TypeName} record in {member.Name})");
+                WriteLine($"{fieldName}.Append((uint)record.GetLookupHashCode(), record);");
+                CloseScope();
+                WriteLine($"section.Place({fieldName});");
+            }
+            CloseScope("PlaceHashtables");
+        }
+
         OpenScope("internal override void Save(NativeWriter writer)");
         if (isConstantStringValue)
         {
@@ -210,7 +235,10 @@ internal sealed class WriterGen : CsWriter
                             + ((i == typeSet.Length - 1) ? ");" : " ||"));
                 }
             }
-            WriteLine($"writer.Write({member.Name});");
+            if ((member.Flags & MemberDefFlags.HashTable) != 0)
+                WriteLine($"writer.WriteRelativeOffset({member.GetMemberFieldName()}Hashtable);");
+            else
+                WriteLine($"writer.Write({member.Name});");
         }
         CloseScope("Save");
 
@@ -256,6 +284,9 @@ internal sealed class WriterGen : CsWriter
             {
                 WriteLine($"public {fieldType} {member.Name};");
             }
+
+            if ((member.Flags & MemberDefFlags.HashTable) != 0)
+                WriteLine($"private VertexHashtable {member.GetMemberFieldName()}Hashtable;");
         }
 
         CloseScope(record.Name);

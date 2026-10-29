@@ -21,12 +21,11 @@ Abstract:
 #define _PAL_MAP_H_
 
 #include "corunix.hpp"
+#include "list.h"
 #include <sys/param.h>
 
 extern "C"
 {
-#include "list.h"
-
 #ifndef NO_INO
 #define NO_INO ((ino_t)-1)
 #endif

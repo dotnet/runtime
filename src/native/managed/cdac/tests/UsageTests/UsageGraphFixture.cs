@@ -15,7 +15,13 @@ public sealed class UsageGraphFixture
     public UsageGraphFixture()
     {
         CdacRoot = FindCdacRoot();
-        Usage = UsageGraphAnalyzer.Analyze(CdacRoot.FullName);
+        Usage = UsageGraphAnalyzer.Analyze(new UsageGraphAnalysisOptions(
+            Path.Combine(
+                CdacRoot.FullName,
+                "Microsoft.Diagnostics.DataContractReader.Contracts",
+                "Microsoft.Diagnostics.DataContractReader.Contracts.csproj"),
+            "Microsoft.Diagnostics.DataContractReader.Contracts.CoreCLRContracts",
+            CdacRoot.FullName));
     }
 
     public DirectoryInfo CdacRoot { get; }

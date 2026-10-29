@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+    <HasMergedInTests>true</HasMergedInTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="ConstrainedCall\class1_d.ilproj" />
+    <MergedWrapperProjectReference Include="ConstrainedCall\class2_d.ilproj" />
+    <MergedWrapperProjectReference Include="ConstrainedCall\vt1_d.ilproj" />
+    <MergedWrapperProjectReference Include="ConstrainedCall\vt2_d.ilproj" />
+    <MergedWrapperProjectReference Include="ConstrainedCall\vt3_d.ilproj" />
+    <MergedWrapperProjectReference Include="ConstrainedCall\vt4_d.ilproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Arrays\ConstructedTypes\Jagged\class01.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\class01_instance.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\class01_static.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\class02.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\class03.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\class04.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\class05.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\class06.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\class07.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\struc01.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\Struct01.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\Struct01_instance.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\struct01_static.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\struct02.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\struct03.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\struct04.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\struct05.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\struct06.cs" />
+    <Compile Include="Arrays\ConstructedTypes\Jagged\struct07.cs" />
+    <Compile Include="ConstrainedCall\class1.cs" />
+    <Compile Include="ConstrainedCall\class2.cs" />
+    <Compile Include="ConstrainedCall\vt1.cs" />
+    <Compile Include="ConstrainedCall\vt2.cs" />
+    <Compile Include="ConstrainedCall\vt3.cs" />
+    <Compile Include="ConstrainedCall\vt4.cs" />
+    <Compile Include="Constraints\Call_instance01.cs" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

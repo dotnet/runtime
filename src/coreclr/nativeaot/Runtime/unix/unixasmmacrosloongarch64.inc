@@ -150,7 +150,7 @@ C_FUNC(\Name):
     INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)
 .endm
 
-// Target cannot be x0.
+// Target cannot be a0.
 .macro INLINE_GET_ALLOC_CONTEXT_BASE target
     INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)
 .endm
@@ -222,9 +222,7 @@ C_FUNC(\Name):
 // CONSTANTS -- INTEGER
 //
 #define TSF_Attached                    0x01
-#define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
-#define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
 
 // Bit position for the flags above, to be used with bstrpick.d+beq/bne instructions
 #define TrapThreadsFlags_TrapThreads_Bit     0

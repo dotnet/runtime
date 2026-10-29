@@ -31,7 +31,7 @@ public class MiscTests : BlazorWasmTestBase
     [InlineData(Configuration.Release, true)]
     [InlineData(Configuration.Release, false)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
-    [TestCategory("native-mono")]
+    [TestCategory("native"), TestCategory("mono")]
     public void NativeBuild_WithDeployOnBuild_UsedByVS(Configuration config, bool nativeRelink)
     {
         string extraProperties = config == Configuration.Debug
@@ -59,7 +59,7 @@ public class MiscTests : BlazorWasmTestBase
 
     [Theory]
     [InlineData(Configuration.Release)]
-    [TestCategory("native-mono")]
+    [TestCategory("native"), TestCategory("mono")]
     public void DefaultTemplate_AOT_InProjectFile(Configuration config)
     {
         string extraProperties = config == Configuration.Debug
@@ -80,7 +80,7 @@ public class MiscTests : BlazorWasmTestBase
     }
 
     [Fact]
-    [TestCategory("native-mono")]
+    [TestCategory("native")]
     public void BugRegression_60479_WithRazorClassLib()
     {
         Configuration config = Configuration.Release;
@@ -133,7 +133,7 @@ public class MiscTests : BlazorWasmTestBase
 
         if (publish)
         {
-            string publishDir = Path.Combine(serverDir, "bin", config.ToString(), DefaultTargetFrameworkForBlazor, "publish");
+            string publishDir = Path.Combine(serverDir, "bin", config.ToString(), DefaultTargetFrameworkForBlazorTemplate, "publish");
             string client1Framework = Path.Combine(publishDir, "wwwroot", "client1", "_framework");
             string client2Framework = Path.Combine(publishDir, "wwwroot", "client2", "_framework");
 
@@ -155,8 +155,8 @@ public class MiscTests : BlazorWasmTestBase
             // folder name comes from static web assets metadata and isn't necessarily the
             // project directory name), and the static web assets middleware serves them
             // from there during dotnet run.
-            string client1ObjDir = Path.Combine(client1Dir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor);
-            string client2ObjDir = Path.Combine(client2Dir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor);
+            string client1ObjDir = Path.Combine(client1Dir, "obj", config.ToString(), DefaultTargetFrameworkForBlazorTemplate);
+            string client2ObjDir = Path.Combine(client2Dir, "obj", config.ToString(), DefaultTargetFrameworkForBlazorTemplate);
             string client1Framework = WasmSdkBasedProjectProvider.GetMaterializedFrameworkDir(client1ObjDir);
             string client2Framework = WasmSdkBasedProjectProvider.GetMaterializedFrameworkDir(client2ObjDir);
 

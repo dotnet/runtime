@@ -26,11 +26,88 @@
 #include "corsym.h"
 #include "generics.h"
 #include "stackwalk.h"
+#include "hostinformation.h"
 
 #define PORTABLE_PDB_MINOR_VERSION              20557
 #define IMAGE_DEBUG_TYPE_EMBEDDED_PORTABLE_PDB  17
 
 #ifndef DACCESS_COMPILE
+
+#ifdef TARGET_BROWSER
+static void TryLoadInMemorySymbols(Module* pModule)
+{
+    STANDARD_VM_CONTRACT;
+
+    PEAssembly* pAssembly = pModule->GetPEAssembly();
+    if (!HostInformation::HasExternalProbe() || !pAssembly->HasLoadedPEImage())
+        return;
+
+    PEImageLayout* pLayout = pAssembly->GetLoadedLayout();
+    if (!pLayout->HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_DEBUG))
+        return;
+
+    COUNT_T debugDirectorySize = 0;
+    IMAGE_DEBUG_DIRECTORY* entries = reinterpret_cast<IMAGE_DEBUG_DIRECTORY*>(
+        pLayout->GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_DEBUG, &debugDirectorySize));
+    if (entries == nullptr || debugDirectorySize % sizeof(IMAGE_DEBUG_DIRECTORY) != 0)
+        return;
+
+    for (COUNT_T i = 0; i < debugDirectorySize / sizeof(IMAGE_DEBUG_DIRECTORY); i++)
+    {
+        const IMAGE_DEBUG_DIRECTORY& entry = entries[i];
+        if (entry.Type != IMAGE_DEBUG_TYPE_CODEVIEW || entry.MinorVersion != PORTABLE_PDB_MINOR_VERSION)
+            continue;
+
+        RVA rva = entry.AddressOfRawData != 0 ? entry.AddressOfRawData : pLayout->OffsetToRva(entry.PointerToRawData);
+        if (entry.SizeOfData <= offsetof(CV_INFO_PDB70, path) || !pLayout->CheckRva(rva, entry.SizeOfData))
+            return;
+
+        const CV_INFO_PDB70* codeView = reinterpret_cast<const CV_INFO_PDB70*>(pLayout->GetRvaData(rva));
+        if (codeView->magic != CV_SIGNATURE_RSDS)
+            return;
+
+        size_t pathSize = entry.SizeOfData - offsetof(CV_INFO_PDB70, path);
+        size_t pathLength = strnlen(codeView->path, pathSize);
+        if (pathLength == pathSize)
+            return;
+
+        // CodeView paths can come from either Windows or Unix, regardless of the runtime platform.
+        const char* fileName = codeView->path;
+        for (size_t j = 0; j < pathLength; j++)
+        {
+            if (codeView->path[j] == '/' || codeView->path[j] == '\\')
+                fileName = codeView->path + j + 1;
+        }
+
+        if (*fileName == '\0')
+            return;
+
+        StackSString pdbPath;
+        const SString& assemblyPath = pAssembly->GetIdentityPath();
+        SString::CIterator directoryEnd = assemblyPath.End();
+        if (assemblyPath.FindBack(directoryEnd, DIRECTORY_SEPARATOR_CHAR_W))
+        {
+            directoryEnd++;
+            pdbPath.Set(assemblyPath, assemblyPath.Begin(), directoryEnd);
+        }
+        pdbPath.AppendUTF8(fileName);
+
+        void* pdbData = nullptr;
+        int64_t pdbSize = 0;
+        if (!HostInformation::ExternalAssemblyProbe(pdbPath, &pdbData, &pdbSize))
+            return;
+
+        if (pdbData == nullptr || pdbSize <= 0 || pdbSize > INT32_MAX)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+        GCX_PREEMP();
+        ReleaseHolder<CGrowableStream> symbolStream(new CGrowableStream(1.0f, 1));
+        IfFailThrow(symbolStream->Write(pdbData, static_cast<ULONG>(pdbSize), nullptr));
+        pModule->SetInMemorySymbolStream(symbolStream);
+        return;
+    }
+}
+#endif // TARGET_BROWSER
 
 //
 // Notes:
@@ -38,7 +115,7 @@
 //    Else if a native debugger is attached, this should send a native break event (kernel32!DebugBreak)
 //    Else, this should invoke Watson.
 //
-extern "C" void QCALLTYPE DebugDebugger_Break()
+extern "C" void QCALLTYPE DebugDebugger_Break(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -80,6 +157,8 @@ extern "C" void QCALLTYPE DebugDebugger_Break()
     }
 
     END_QCALL;
+#else
+    *qcallError = 0;
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -192,13 +271,13 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
     //        NOT AT ALL!!!, but we can assume it's a function
     //                       because we asked the stackwalker for it!
     MethodDesc* pFunc = pCf->GetFunction();
+    DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
 
     if (pFunc != nullptr && pFunc == g_pEnvironmentCallEntryPointMethodDesc)
     {
         return SWA_CONTINUE;
     }
 
-    DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
     if (pData->cElements >= pData->cElementsAllocated)
     {
         DebugStackTrace::Element* pTemp = new (nothrow) DebugStackTrace::Element[2*pData->cElementsAllocated];
@@ -291,7 +370,8 @@ static void GetStackFrames(DebugStackTrace::GetStackFramesData *pData)
 
 extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
     void* diagnosticIP,
-    QCall::ObjectHandleOnStack exception)
+    QCall::ObjectHandleOnStack exception,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -319,7 +399,8 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
 extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     QCall::ObjectHandleOnStack stackFrameHelper,
     BOOL fNeedFileInfo,
-    QCall::ObjectHandleOnStack exception)
+    QCall::ObjectHandleOnStack exception,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -787,6 +868,13 @@ extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
 
                     // If there is a in memory symbol stream
                     CGrowableStream* stream = pModule->GetInMemorySymbolStream();
+#ifdef TARGET_BROWSER
+                    if (stream == nullptr)
+                    {
+                        TryLoadInMemorySymbols(pModule);
+                        stream = pModule->GetInMemorySymbolStream();
+                    }
+#endif // TARGET_BROWSER
                     if (stream != NULL)
                     {
                         MemoryRange range = stream->GetRawBuffer();
@@ -798,6 +886,14 @@ extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
                         CLR_I4 *pInMemoryPdbSize = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiInMemoryPdbSize)->GetDirectPointerToNonObjectElements();
                         pInMemoryPdbSize[iNumValidFrames] = (CLR_I4)range.Size();
                     }
+#ifdef TARGET_BROWSER
+                    else if (pPEAssembly->HasLoadedPEImage() && pPEAssembly->GetLoadedLayout()->IsWebcilFormat())
+                    {
+                        // PEReader cannot read Webcil. A failed lookup must not prevent symbol lookup for other frames.
+                        CLR_I4* methodTokens = (CLR_I4*)((I4ARRAYREF)gc.pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
+                        methodTokens[iNumValidFrames] = 0;
+                    }
+#endif // TARGET_BROWSER
                     else
                     {
                         // Set the pdb path (assembly file name)
@@ -822,7 +918,7 @@ extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     END_QCALL;
 }
 
-extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
+extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -848,7 +944,7 @@ struct StrongHandleHolderTraits final
 {
     using Type = OBJECTHANDLE;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type handle)
+    static void Free(Type handle) noexcept
     {
         WRAPPER_NO_CONTRACT;
         if (handle != NULL)
@@ -861,14 +957,17 @@ using StrongHandleHolder = LifetimeHolder<StrongHandleHolderTraits>;
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
 // Argument: dataUNSAFE - a pointer the custom notification object being sent
-extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data)
+extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
 #ifdef DEBUGGING_SUPPORTED
     // Send notification only if the debugger is attached
     if (!CORDebuggerAttached())
+    {
+        *qcallError = 0;
         return;
+    }
 
     BEGIN_QCALL;
 
@@ -893,6 +992,8 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
     }
 
     END_QCALL;
+#else
+    *qcallError = 0;
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -1160,6 +1261,8 @@ void InsertIntoNativeToILCache(void* ip, bool fAdjustOffset, uint32_t dwILOffset
     CONTRACTL
     {
         THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 

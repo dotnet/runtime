@@ -20,7 +20,7 @@ static WCHAR* asStringW(CQuickBytes *out)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return NULL;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -39,7 +39,7 @@ static CHAR* asStringA(CQuickBytes *out)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return NULL;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -61,7 +61,7 @@ static HRESULT appendStrW(CQuickBytes *out, const WCHAR* str)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -84,7 +84,7 @@ static HRESULT appendStrA(CQuickBytes *out, const CHAR* str)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -104,7 +104,7 @@ static HRESULT appendStrNumW(CQuickBytes *out, int num)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -118,7 +118,7 @@ static HRESULT appendStrNumA(CQuickBytes *out, int num)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -132,7 +132,7 @@ static HRESULT appendStrHexW(CQuickBytes *out, int num)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -146,7 +146,7 @@ static HRESULT appendStrHexA(CQuickBytes *out, int num)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -569,7 +569,7 @@ static HRESULT PrettyPrintTypeA(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -846,7 +846,7 @@ static HRESULT PrettyPrintClass(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -913,7 +913,7 @@ HRESULT PrettyPrintSigInternalLegacy(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -930,7 +930,7 @@ HRESULT PrettyPrintSigWorkerInternal(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 

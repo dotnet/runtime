@@ -112,7 +112,7 @@ them for the new task assembly.
 
 1. The task assembly dir, and its path need to be in two properties:
     ```xml
-    <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
+    <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', 'Debug', 'net'))</MonoTargetsTasksDir>
     <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
     ```
 

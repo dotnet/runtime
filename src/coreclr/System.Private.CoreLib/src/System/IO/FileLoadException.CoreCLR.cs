@@ -32,9 +32,11 @@ namespace System.IO
             return string.Format(format!, fileName, message);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetFileLoadExceptionMessage(int hResult, StringHandleOnStack retString);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FileLoadException_GetMessageForHR")]
         private static partial void GetMessageForHR(int hresult, StringHandleOnStack retString);
 

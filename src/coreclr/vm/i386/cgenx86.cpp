@@ -79,9 +79,11 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     MethodDesc * pFunc = GetFunction();
     _ASSERTE(pFunc != NULL);
 
-    UpdateRegDisplayHelper(pRD, pFunc->CbStackPop());
+    // The map supplies the stack-pop size without requiring signature value-type layouts.
+    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc(nullptr);
+    UpdateRegDisplayHelper(pRD, pGCRefMap != nullptr ? CbStackPopUsingGCRefMap(pGCRefMap) : pFunc->CbStackPop());
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStackPop)
@@ -124,7 +126,7 @@ void ExternalMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool upda
 
     UpdateRegDisplayHelper(pRD, CbStackPopUsingGCRefMap(GetGCRefMap()));
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ExternalMethodFrane::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ExternalMethodFrane::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 
@@ -166,7 +168,7 @@ void StubDispatchFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
         pRD->pCurrentContext->Eip = pRD->ControlPC;
     }
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    StubDispatchFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    StubDispatchFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 PCODE StubDispatchFrame::GetReturnAddress_Impl()
@@ -228,7 +230,7 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     pRD->IsCallerContextValid = FALSE;
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -295,7 +297,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 #ifdef FEATURE_HIJACK
@@ -335,7 +337,7 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
 
     pRD->IsCallerContextValid = FALSE;
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread
@@ -367,27 +369,10 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 #endif  // FEATURE_HIJACK
-
-void PInvokeCalliFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    VASigCookie *pVASigCookie = GetVASigCookie();
-    UpdateRegDisplayHelper(pRD, pVASigCookie->sizeOfArgs);
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    PInvokeCalliFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-}
 
 #ifndef UNIX_X86_ABI
 void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -412,7 +397,7 @@ void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TailCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TailCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 #endif // !UNIX_X86_ABI
 

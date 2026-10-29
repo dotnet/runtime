@@ -2322,6 +2322,17 @@ void emitter::emitInsSve_R_R(instruction     ins,
             fmt = IF_SVE_BI_2A;
             break;
 
+        case INS_sve_aesimc:
+        case INS_sve_aesmc:
+            assert(insScalableOptsNone(sopt));
+            assert(insOptsNone(opt) || (opt == INS_OPTS_SCALABLE_B));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isScalableVectorSize(size));
+            emitInsSve_Mov(INS_sve_mov, EA_SCALABLE, reg1, reg2, /* canSkip */ true, INS_OPTS_SCALABLE_B);
+            emitInsSve_R(ins, attr, reg1, opt);
+            return;
+
         case INS_sve_fmov:
             assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));                        // ddddd
@@ -3016,6 +3027,8 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
             return;
 
+        case INS_sve_aesd:
+        case INS_sve_aese:
         case INS_sve_sm4e:
         case INS_sve_sqxtnt:
         case INS_sve_uqxtnt:
@@ -12707,7 +12720,7 @@ void emitter::emitDispSveImmIndex(regNumber reg1, insOpts opt, ssize_t imm)
 void emitter::emitDispSveReg(regNumber reg, bool addComma)
 {
     assert(isVectorRegister(reg));
-    printf(emitSveRegName(reg));
+    printf("%s", emitSveRegName(reg));
 
     if (addComma)
         emitDispComma();
@@ -12719,7 +12732,7 @@ void emitter::emitDispSveReg(regNumber reg, bool addComma)
 void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
 {
     assert(isVectorRegister(reg));
-    printf(emitSveRegName(reg));
+    printf("%s", emitSveRegName(reg));
 
     if (opt != INS_OPTS_NONE)
     {
@@ -12737,7 +12750,7 @@ void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
 void emitter::emitDispSveRegIndex(regNumber reg, ssize_t index, bool addComma)
 {
     assert(isVectorRegister(reg));
-    printf(emitSveRegName(reg));
+    printf("%s", emitSveRegName(reg));
     emitDispElementIndex(index, addComma);
 }
 
@@ -12821,7 +12834,7 @@ const char* emitter::emitPredicateRegName(regNumber reg, PredicateType ptype)
 void emitter::emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma)
 {
     assert(isPredicateRegister(reg));
-    printf(emitPredicateRegName(reg, ptype));
+    printf("%s", emitPredicateRegName(reg, ptype));
 
     if (ptype == PREDICATE_MERGE)
     {

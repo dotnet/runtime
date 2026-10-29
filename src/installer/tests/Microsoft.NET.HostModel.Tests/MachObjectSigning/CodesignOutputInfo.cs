@@ -74,7 +74,7 @@ internal sealed record CodesignOutputInfo
         var ExecutableSegmentBase = ulong.Parse(lines[13].Split('=', splitOptions)[1]);
         var ExecutableSegmentLimit = ulong.Parse(lines[14].Split('=', splitOptions)[1]);
         var ExecutableSegmentFlags = (ExecutableSegmentFlags)Convert.ToUInt64(lines[15].Split('=', splitOptions)[1].TrimStart("0x").ToString(), 16);
-        Assert.True(lines[16].StartsWith("Page size=4096"), "Expected 'Page size=4096' at line 16");
+        Assert.True(lines[16].StartsWith("Page size=", StringComparison.Ordinal), "Expected 'Page size=' at line 16");
         var (SpecialSlotHashes, CodeHashes) = ExtractHashes(lines.Skip(17));
 
         return new CodesignOutputInfo
@@ -125,7 +125,7 @@ internal sealed record CodesignOutputInfo
         }
     }
 
-    public const string SampleCodesignOutput = """
+    public static string GetSampleCodesignOutput(int pageSize) => $$"""
     Executable=/Users/jacksonschuster/source/runtime3/artifacts/bin/osx-x64.Debug/corehost/singlefilehost
     Identifier=singlefilehost-5555494409d4df688bf436b291061028f736b11c
     Format=Mach-O thin (x86_64)
@@ -142,7 +142,7 @@ internal sealed record CodesignOutputInfo
     Executable Segment base=0
     Executable Segment limit=8949760
     Executable Segment flags=0x1
-    Page size=4096
+    Page size={{pageSize}}
         -7=4d8d4b9e4116e8edd996176b5553463acb64287bb635e7f141155529e20457bc
         -6=0000000000000000000000000000000000000000000000000000000000000000
         -5=cca8afe72425463c13b813da9ae468ae3b5fe20fe5fe1d3f34302ba2f15722f2

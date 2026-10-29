@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
+using System.Net.NetworkInformation;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Runtime.ExceptionServices;
@@ -513,7 +514,7 @@ namespace System.Net.Http
                     if (NetEventSource.Log.IsEnabled()) connection.Trace("HTTP3 connection no longer usable");
                     connection.Dispose();
                 }
-            };
+            }
         }
 
         /// <summary>
@@ -656,12 +657,10 @@ namespace System.Net.Http
             {
                 int parseIdx = 0;
 
-                if (AltSvcHeaderParser.Parser.TryParseValue(altSvcHeaderValue, null, ref parseIdx, out object? parsedValue))
+                // An empty value (or one made only of separators) parses successfully but yields no value; skip it.
+                if (AltSvcHeaderParser.Parser.TryParseValue(altSvcHeaderValue, null, ref parseIdx, out object? parsedValue) &&
+                    parsedValue is AltSvcHeaderValue value)
                 {
-                    Debug.Assert(parsedValue is not null);
-
-                    var value = (AltSvcHeaderValue)parsedValue;
-
                     // 'clear' should be the only value present.
                     if (ReferenceEquals(AltSvcHeaderValue.Clear, value))
                     {
@@ -755,11 +754,10 @@ namespace System.Net.Http
                     _persistAuthority = nextAuthorityPersist;
                 }
 
-                if (!nextAuthorityPersist)
+                // NetworkChange notifications aren't supported on every platform.
+                if (!nextAuthorityPersist && NetworkChange.IsSupported)
                 {
-#if !ILLUMOS && !SOLARIS && !HAIKU
                     _poolManager.StartMonitoringNetworkChanges();
-#endif
                 }
             }
         }

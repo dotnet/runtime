@@ -3,7 +3,7 @@ include("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 set(SOURCES SetLastErrorNative.cpp)
 
 # add the shared library
-add_library(SetLastErrorNative SHARED ${SOURCES})
+add_library(SetLastErrorNative ${TEST_LIB_TYPE} ${SOURCES})
 target_link_libraries(SetLastErrorNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets

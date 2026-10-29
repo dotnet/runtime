@@ -173,6 +173,18 @@ namespace System.Reflection.Context.Virtual
             return false;
         }
 
+        // A property added by the context has no metadata definition, so it only matches itself,
+        // also when a derived type reports it as an InheritedPropertyInfo.
+        public override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            ArgumentNullException.ThrowIfNull(other);
+
+            if (other is InheritedPropertyInfo inheritedProperty)
+                other = inheritedProperty.UnderlyingProperty;
+
+            return Equals(other);
+        }
+
         public override bool Equals(object? obj)
         {
             // We don't need to compare the getters and setters.

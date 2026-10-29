@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,6 +34,143 @@ namespace System.IO.Compression
             }
 
             Assert.Equal(noWritesLength, dest.Length);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ExceptionMidOperation_DisposeDoesNotUseStaleBuffer(bool async)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/132393: if writing compressed output
+            // throws mid-write, the compressor must not retain a reference to the caller's input buffer, or a
+            // later flush (e.g. Dispose) could read from memory the caller has since reused or freed.
+
+            // Use input large enough that the underlying stream's write can be made to fail after only part of
+            // it was consumed.
+            int dataLength = BufferSize * 300;
+            byte[] originalData = new byte[dataLength];
+            new Random(42).NextBytes(originalData);
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(dataLength);
+            originalData.AsSpan(0, dataLength).CopyTo(buffer);
+
+            var faultyStream = new ThrowsAfterNWritesStream(writesAllowedBeforeThrow: 1);
+            Stream compressor = CreateStream(faultyStream, CompressionMode.Compress, leaveOpen: true);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<IOException>(() => compressor.WriteAsync(buffer, 0, dataLength));
+            }
+            else
+            {
+                Assert.Throws<IOException>(() => compressor.Write(buffer, 0, dataLength));
+            }
+            Assert.True(faultyStream.DidThrow, "Test setup issue: the underlying stream never threw, so the regression path wasn't exercised.");
+
+            // The deflater must not still have unconsumed input at this point (streams not backed by a
+            // Deflater, e.g. ZstandardStream, aren't covered by this check).
+            bool? deflaterNeedsInput = GetEngineNeedsInput(compressor, "_deflater");
+            if (deflaterNeedsInput.HasValue)
+            {
+                Assert.True(deflaterNeedsInput.Value,
+                    "The compressor still has unconsumed input after the failed write; it is retaining a stale buffer reference.");
+            }
+
+            // Simulate the caller returning the (now partially-consumed) buffer to a pool and someone else reusing it.
+            buffer.AsSpan(0, dataLength).Clear();
+            ArrayPool<byte>.Shared.Return(buffer);
+
+            faultyStream.StopThrowing();
+
+            // Must complete without throwing or reading from the buffer above.
+            if (async)
+            {
+                await compressor.DisposeAsync();
+            }
+            else
+            {
+                compressor.Dispose();
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CopyTo_ExceptionMidOperation_DoesNotUseStaleBuffer(bool async)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/132393 covering decompression: if
+            // writing decompressed output throws mid-write, the inflater must not retain a reference to the
+            // source buffer, since ownership of it isn't the decompressor's to keep once the copy fails.
+
+            // Use highly compressible data so a single chunk of compressed input expands into many multiples of
+            // the internal output buffer, forcing several destination writes per input chunk - so the
+            // destination's write can be made to fail while the inflater still has unconsumed input left.
+            int dataLength = BufferSize * 300;
+            byte[] originalData = new byte[dataLength]; // all zeros: highly compressible
+
+            var compressed = new MemoryStream();
+            using (Stream compressor = CreateStream(compressed, CompressionMode.Compress, leaveOpen: true))
+            {
+                compressor.Write(originalData, 0, originalData.Length);
+            }
+            compressed.Position = 0;
+
+            Stream decompressor = CreateStream(compressed, CompressionMode.Decompress, leaveOpen: true);
+            var faultyDestination = new ThrowsAfterNWritesStream(writesAllowedBeforeThrow: 1);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<IOException>(() => decompressor.CopyToAsync(faultyDestination));
+            }
+            else
+            {
+                Assert.Throws<IOException>(() => decompressor.CopyTo(faultyDestination));
+            }
+            Assert.True(faultyDestination.DidThrow, "Test setup issue: the destination stream never threw, so the regression path wasn't exercised.");
+
+            // The inflater must not still have unconsumed input at this point (streams not backed by an
+            // Inflater, e.g. ZstandardStream, aren't covered by this check).
+            bool? inflaterNeedsInput = GetEngineNeedsInput(decompressor, "_inflater");
+            if (inflaterNeedsInput.HasValue)
+            {
+                Assert.True(inflaterNeedsInput.Value,
+                    "The decompressor still has unconsumed input after the failed write; it is retaining a stale buffer reference.");
+            }
+
+            // Must complete without throwing.
+            decompressor.Dispose();
+        }
+
+        // Uses reflection to check whether the Deflater/Inflater (engineFieldName: "_deflater" or "_inflater")
+        // backing the given stream has no unconsumed input pending. Returns null if not applicable (e.g.
+        // ZstandardStream). Reflection is used since the test assembly has no InternalsVisibleTo access.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075",
+            Justification = "Test-only reflection over internal implementation types that are always present at test time.")]
+        private static bool? GetEngineNeedsInput(Stream compressionStream, string engineFieldName)
+        {
+            object target = compressionStream;
+
+            // GZipStream/ZLibStream wrap a DeflateStream; unwrap it if necessary to get to the field holding the engine.
+            FieldInfo? wrapperField = target.GetType().GetField("_deflateStream", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (wrapperField != null)
+            {
+                target = wrapperField.GetValue(target)!;
+            }
+
+            FieldInfo? engineField = target.GetType().GetField(engineFieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+            if (engineField is null)
+            {
+                return null;
+            }
+
+            object? engine = engineField.GetValue(target);
+            if (engine is null)
+            {
+                return null;
+            }
+
+            MethodInfo needsInputMethod = engine.GetType().GetMethod("NeedsInput", BindingFlags.Public | BindingFlags.Instance)!;
+            return (bool)needsInputMethod.Invoke(engine, null)!;
         }
 
         [Fact]
@@ -852,6 +992,52 @@ namespace System.IO.Compression
         ReadAsync,
         Copy,
         CopyAsync
+    }
+
+    /// <summary>
+    /// A MemoryStream whose Write/WriteAsync overloads throw an IOException after a configurable number of
+    /// successful calls, simulating an underlying stream failing partway through an operation.
+    /// </summary>
+    internal sealed class ThrowsAfterNWritesStream : MemoryStream
+    {
+        private int _writesAllowedBeforeThrow;
+        private bool _throwingEnabled = true;
+
+        public ThrowsAfterNWritesStream(int writesAllowedBeforeThrow)
+        {
+            _writesAllowedBeforeThrow = writesAllowedBeforeThrow;
+        }
+
+        public bool DidThrow { get; private set; }
+
+        public void StopThrowing() => _throwingEnabled = false;
+
+        private void CheckThrow()
+        {
+            if (_throwingEnabled && _writesAllowedBeforeThrow-- <= 0)
+            {
+                DidThrow = true;
+                throw new IOException("Simulated write failure.");
+            }
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            CheckThrow();
+            base.Write(buffer, offset, count);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            CheckThrow();
+            return base.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            CheckThrow();
+            return base.WriteAsync(buffer, cancellationToken);
+        }
     }
 
     internal sealed class BadWrappedStream : MemoryStream

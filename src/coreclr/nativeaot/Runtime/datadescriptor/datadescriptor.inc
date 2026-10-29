@@ -175,7 +175,7 @@ CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 
 CDAC_GLOBAL_POINTER(RuntimeInstance, &g_pTheRuntimeInstance)
 
-CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &g_pFreeObjectEEType)
+CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &g_pFreeObjectMethodTable)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
@@ -256,7 +256,7 @@ CDAC_GLOBAL_CONTRACT(StressLog, c2)
 CDAC_GLOBAL_CONTRACT(Loader, n1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, n1)
 CDAC_GLOBAL_CONTRACT(SyncBlock, n1)
-CDAC_GLOBAL_CONTRACT(SymbolName, n1)
+CDAC_GLOBAL_CONTRACT(SymbolName, n2)
 CDAC_GLOBAL_CONTRACT(CodeVersions, n1)
 CDAC_GLOBAL_CONTRACT(ReJIT, n1)
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, n1)

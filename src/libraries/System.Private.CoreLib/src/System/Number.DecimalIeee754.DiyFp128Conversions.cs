@@ -17,10 +17,9 @@ internal static partial class Number
     // `UInt{64,128}Powers10` tables already present for parsing/formatting and build the required power
     // of ten on the fly by chunked multiply/divide in the engine. A coefficient (< 2^113) loads into a
     // binary128 significand exactly, and every 10^k with k below the format precision is exact in the
-    // 128-bit `ux` fraction (5^34 < 2^114), so the only rounding is the final round-to-nearest-even
-    // extraction of the P-digit result. That keeps the transcendental cores bit-faithful to Intel while
-    // the conversion stays within the <= 1 ulp faithful target; the extended-precision table path is a
-    // documented later refinement.
+    // 128-bit `ux` fraction (5^34 < 2^114). The scaled value can still round in each multiply/divide.
+    // Cancellation-sensitive reductions must therefore preserve small residuals in decimal before
+    // conversion. The result is rounded once at its final decimal quantum, including for subnormals.
 
     /// <summary>
     /// Builds a normalized <see cref="DiyFp128"/> holding the exact value of the non-zero magnitude
@@ -50,11 +49,17 @@ internal static partial class Number
     {
         int remaining = int.Abs(power);
         int maxChunk = TDecimal.Precision - 1;
+        int previousChunk = 0;
+        DiyFp128 pow = default;
 
         while (remaining > 0)
         {
             int chunk = int.Min(remaining, maxChunk);
-            DiyFp128 pow = DiyFp128FromUInt128(UInt128.CreateTruncating(TDecimal.Power10(chunk)), 0);
+            if (chunk != previousChunk)
+            {
+                pow = DiyFp128FromUInt128(UInt128.CreateTruncating(TDecimal.Power10(chunk)), 0);
+                previousChunk = chunk;
+            }
 
             if (power > 0)
             {
@@ -112,7 +117,7 @@ internal static partial class Number
         int binaryExponent = value._exponent - 1;
         const double Log10Of2 = 0.30102999566398119521;
         int d = (int)double.Floor(binaryExponent * Log10Of2);
-        int q = d - (precision - 1);
+        int q = int.Max(d - (precision - 1), TDecimal.MinAdjustedExponent);
 
         UInt128 pow10P = UInt128.CreateTruncating(TDecimal.MaxSignificand);
         pow10P++;                                                                         // 10^P
@@ -132,7 +137,7 @@ internal static partial class Number
                 continue;
             }
 
-            if ((coefficient != UInt128.Zero) && (coefficient < pow10Pm1))
+            if ((coefficient != UInt128.Zero) && (coefficient < pow10Pm1) && (q > TDecimal.MinAdjustedExponent))
             {
                 // Under-shot (estimate was one high); pull in another decimal place.
                 q--;
@@ -152,6 +157,14 @@ internal static partial class Number
     /// </summary>
     private static UInt128 DiyFp128RoundToUInt128(DiyFp128 value)
     {
+        if (value._exponent <= 0)
+        {
+            // Values below 1/2, including the tie itself, round to the even integer zero.
+            return ((value._exponent == 0) && ((value._hi != UxMsb) || (value._lo != 0)))
+                ? UInt128.One
+                : UInt128.Zero;
+        }
+
         int shift = 128 - value._exponent;
         Debug.Assert(shift is > 0 and < 128);
 
@@ -169,14 +182,15 @@ internal static partial class Number
     }
 
     /// <summary>
-    /// Encodes <c>(sign, coefficient, exponent)</c> into the BID bit pattern, reducing the coefficient to
-    /// a representable subnormal (ties-to-even) when the exponent is below the minimum and returning the
-    /// format's infinity when it is above the maximum.
+    /// Encodes an already rounded <c>(sign, coefficient, exponent)</c> into the BID bit pattern,
+    /// returning the format's infinity when the exponent is above the maximum.
     /// </summary>
     private static TValue EncodeDecimalFromUInt128<TDecimal, TValue>(bool signed, UInt128 coefficient, int exponent)
         where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
         where TValue : unmanaged, IBinaryInteger<TValue>
     {
+        Debug.Assert(exponent >= TDecimal.MinAdjustedExponent);
+
         if (coefficient == UInt128.Zero)
         {
             return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, TValue.Zero, TDecimal.MinAdjustedExponent);
@@ -185,36 +199,6 @@ internal static partial class Number
         if (exponent > TDecimal.MaxAdjustedExponent)
         {
             return signed ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
-        }
-
-        if (exponent < TDecimal.MinAdjustedExponent)
-        {
-            // Fold the extra magnitude into the coefficient as a subnormal, rounding ties-to-even.
-            int deficit = TDecimal.MinAdjustedExponent - exponent;
-
-            if (deficit >= UInt128.PowersOf10.Length)
-            {
-                // The coefficient has at most 34 digits, so a larger divisor rounds it entirely to zero.
-                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, TValue.Zero, TDecimal.MinAdjustedExponent);
-            }
-
-            UInt128 power = UInt128.PowersOf10[deficit];
-            UInt128 quotient = coefficient / power;
-            UInt128 remainder = coefficient - (quotient * power);
-            UInt128 half = power >> 1; // 10^deficit is even, so this is an exact half
-
-            if ((remainder > half) || ((remainder == half) && UInt128.IsOddInteger(quotient)))
-            {
-                quotient++;
-            }
-
-            coefficient = quotient;
-            exponent = TDecimal.MinAdjustedExponent;
-
-            if (coefficient == UInt128.Zero)
-            {
-                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, TValue.Zero, exponent);
-            }
         }
 
         return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, TValue.CreateTruncating(coefficient), exponent);

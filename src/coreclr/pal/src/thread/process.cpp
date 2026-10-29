@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     process.cpp
 
 Abstract:
-
     Implementation of process object and functions related to processes.
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -225,11 +221,6 @@ struct UnambiguousProcessDescriptor
     DWORD m_processId;
 };
 #pragma pack(pop)
-
-static
-DWORD
-StartupHelperThread(
-    LPVOID p);
 
 static
 BOOL
@@ -1384,7 +1375,6 @@ BOOL
 PROCBuildCreateDumpCommandLine(
     const char* argv[],
     char** pprogram,
-    char** ppidarg,
     const char* dumpName,
     const char* logFileName,
     INT dumpType,
@@ -1415,11 +1405,6 @@ PROCBuildCreateDumpCommandLine(
         program[0] = '\0';
     }
     if (strcat_s(program, programLen, DumpGeneratorName) != SAFECRT_SUCCESS)
-    {
-        return FALSE;
-    }
-    *ppidarg = PROCFormatInt(gPID);
-    if (*ppidarg == nullptr)
     {
         return FALSE;
     }
@@ -1481,8 +1466,6 @@ PROCBuildCreateDumpCommandLine(
         argv[argc++] = "--logtofile";
         argv[argc++] = logFileName;
     }
-
-    argv[argc++] = *ppidarg;
 
     argv[argc] = nullptr;
     _ASSERTE(argc < MAX_ARGV_ENTRIES);
@@ -1562,7 +1545,7 @@ PROCLaunchCreateDump(
         {
             fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
             close(child_write_pipe);
-            exit(-1);
+            _exit(EXIT_FAILURE);
         }
 
         // Only dup the child's stderr if there is error buffer
@@ -1594,7 +1577,7 @@ PROCLaunchCreateDump(
             if (execve(argv[0], (char**)argv, palEnvironment) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
-                exit(-1);
+                _exit(EXIT_FAILURE);
             }
         }
     }
@@ -1764,8 +1747,7 @@ PROCAbortInitialize()
         }
 
         char* program = nullptr;
-        char* pidarg = nullptr;
-        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dumpName, logFilePath, dumpType, flags))
+        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, dumpName, logFilePath, dumpType, flags))
         {
             return FALSE;
         }
@@ -1814,14 +1796,12 @@ PAL_GenerateCoreDump(
         dumpName = nullptr;
     }
     char* program = nullptr;
-    char* pidarg = nullptr;
-    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, nullptr, dumpType, flags);
+    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, dumpName, nullptr, dumpType, flags);
     if (result)
     {
         result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer, CrashDumpSerialize_None);
     }
     free(program);
-    free(pidarg);
     return result;
 }
 
@@ -2121,17 +2101,6 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     abort();
 }
 
-#define FATAL_ASSERT(e, msg) \
-    do \
-    { \
-        if (!(e)) \
-        { \
-            fprintf(stderr, "FATAL ERROR: " msg); \
-            PROCAbort(); \
-        } \
-    } \
-    while(0)
-
 /*++
 Function:
   CreateInitialProcessAndThreadObjects
@@ -2239,7 +2208,6 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
     if(locked && PALIsInitialized())
     {
         PROCNotifyProcessShutdown();
-        PALCommonCleanup();
     }
 }
 

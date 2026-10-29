@@ -29,6 +29,110 @@ public unsafe class DacDbiImplTests
     private const uint DebuggerIgnorePdbsPriv = 0x00008000;
     private const ulong CorDBDefaultEnCFunctionVersion = 1;
 
+    [Theory]
+    [MemberData(nameof(RuntimeProductVersions))]
+    public void GetRuntimeVersion_ReportsTargetProductVersion(MockTarget.Architecture arch, string productVersion)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(arch, [(Constants.Globals.RuntimeProductVersionString, productVersion)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        COR_VERSION version = new() { dwMajor = uint.MaxValue, dwMinor = uint.MaxValue, dwBuild = uint.MaxValue, dwSubBuild = uint.MaxValue };
+
+        int hr = dacDbi.GetRuntimeVersion(&version);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(42u, version.dwMajor);
+        Assert.Equal(7u, version.dwMinor);
+        Assert.Equal(19u, version.dwBuild);
+        Assert.Equal(0u, version.dwSubBuild);
+    }
+
+    public static IEnumerable<object[]> RuntimeProductVersions()
+    {
+        foreach (object[] architecture in new MockTarget.StdArch())
+        {
+            foreach (string productVersion in new[] { "42.7.19", "42.7.19-preview.3.12345.6", "42.7.19+build.12345", "42.7.19-preview.3+build.12345" })
+                yield return [architecture[0], productVersion];
+        }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("not-a-version")]
+    [InlineData("42..19")]
+    [InlineData("42.7")]
+    [InlineData("42.7.19.1")]
+    public void GetRuntimeVersion_InvalidVersion_InitializesOutput(string productVersion)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(new() { IsLittleEndian = true, Is64Bit = true },
+            [(Constants.Globals.RuntimeProductVersionString, productVersion)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        COR_VERSION version = new() { dwMajor = uint.MaxValue, dwMinor = uint.MaxValue, dwBuild = uint.MaxValue, dwSubBuild = uint.MaxValue };
+
+        int hr = dacDbi.GetRuntimeVersion(&version);
+
+        Assert.Equal(new FormatException().HResult, hr);
+        Assert.Equal(0u, version.dwMajor);
+        Assert.Equal(0u, version.dwMinor);
+        Assert.Equal(0u, version.dwBuild);
+        Assert.Equal(0u, version.dwSubBuild);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRuntimeVersion_ContractFailure_InitializesOutput(MockTarget.Architecture arch)
+    {
+        InvalidOperationException exception = new("Target version is unavailable.");
+        var runtimeInfo = new Mock<IRuntimeInfo>();
+        runtimeInfo.Setup(r => r.GetRuntimeProductVersion()).Throws(exception);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch).AddMockContract(runtimeInfo).Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        COR_VERSION version = new() { dwMajor = uint.MaxValue, dwMinor = uint.MaxValue, dwBuild = uint.MaxValue, dwSubBuild = uint.MaxValue };
+
+        int hr = dacDbi.GetRuntimeVersion(&version);
+
+        Assert.Equal(exception.HResult, hr);
+        Assert.Equal(0u, version.dwMajor);
+        Assert.Equal(0u, version.dwMinor);
+        Assert.Equal(0u, version.dwBuild);
+        Assert.Equal(0u, version.dwSubBuild);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRuntimeVersion_NullOutput_ReturnsInvalidArgument(MockTarget.Architecture arch)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(arch, []);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        Assert.Equal(System.HResults.E_INVALIDARG, dacDbi.GetRuntimeVersion(null));
+    }
+
+    [Theory]
+    [InlineData("wasm", "Browser", TargetArchitecture.Wasm, TargetOperatingSystem.Browser, 4u)]
+    [InlineData("wasm", "Unix", TargetArchitecture.Wasm, TargetOperatingSystem.Unix, 4u)]
+    [InlineData("arm64", "Apple", TargetArchitecture.Arm64, TargetOperatingSystem.Apple, 8u)]
+    [InlineData("x64", "Windows", TargetArchitecture.AMD64, TargetOperatingSystem.Windows, 8u)]
+    public void GetTargetInfo_ReportsOperatingSystem(
+        string architecture,
+        string operatingSystem,
+        TargetArchitecture expectedArchitecture,
+        TargetOperatingSystem expectedOperatingSystem,
+        uint pointerSize)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = pointerSize == 8 };
+        Target target = RuntimeInfoTests.CreateTarget(arch,
+            [(Constants.Globals.Architecture, architecture), (Constants.Globals.OperatingSystem, operatingSystem)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        TargetInfo targetInfo = default;
+
+        int hr = dacDbi.GetTargetInfo(&targetInfo);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(expectedArchitecture, targetInfo.Arch);
+        Assert.Equal(expectedOperatingSystem, targetInfo.OS);
+        Assert.Equal(pointerSize, targetInfo.PointerSize);
+    }
+
     private static (DacDbiImpl DacDbi, TestPlaceholderTarget Target) CreateDacDbiWithLoader(
         MockTarget.Architecture arch,
         Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)
@@ -38,7 +142,7 @@ public unsafe class DacDbiImplTests
             builder.AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion));
             configure(loader, builder);
         });
-        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+        var dacDbi = new DacDbiImpl(target, legacyObj: null, new());
         return (dacDbi, target);
     }
 
@@ -50,7 +154,7 @@ public unsafe class DacDbiImplTests
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
             .AddMockContract(mockThread)
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
 
         int hr = dacDbi.IsThreadSuspendedOrHijacked(0, null);
 
@@ -70,7 +174,7 @@ public unsafe class DacDbiImplTests
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
             .AddMockContract(mockThread)
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
         Interop.BOOL result = Interop.BOOL.TRUE;
 
         int hr = dacDbi.IsThreadSuspendedOrHijacked(ThreadAddress, &result);
@@ -84,7 +188,7 @@ public unsafe class DacDbiImplTests
     {
         MockTarget.Architecture architecture = new() { IsLittleEndian = true, Is64Bit = true };
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(architecture).Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
 
         Assert.Equal(System.HResults.S_OK, dacDbi.DacSetTargetConsistencyChecks(Interop.BOOL.TRUE));
         Assert.Equal(System.HResults.S_OK, dacDbi.DacSetTargetConsistencyChecks(Interop.BOOL.FALSE));
@@ -327,7 +431,7 @@ public unsafe class DacDbiImplTests
             .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
             .AddMockContract(mockLoader)
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     private static (DacDbiImpl DacDbi, TestPlaceholderTarget Target) CreateDacDbiWithExceptionMT(
@@ -340,7 +444,7 @@ public unsafe class DacDbiImplTests
         builder.AddMockContract(mockObject);
         builder.AddMockContract(mockRts);
         var target = builder.Build();
-        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+        var dacDbi = new DacDbiImpl(target, legacyObj: null, new());
         return (dacDbi, target);
     }
 
@@ -706,7 +810,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(loader)
             .AddMockContract(ecma)
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     [Theory]
@@ -912,7 +1016,7 @@ public unsafe class DacDbiImplTests
             .AddContract<IRuntimeInfo>(version: "c1")
             .AddMockContract(mockThread)
             .Build();
-        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+        var dacDbi = new DacDbiImpl(target, legacyObj: null, new());
 
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
         ctx.RawContextFlags = 0;
@@ -949,7 +1053,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(mockThread)
             .Build();
 
-        return (new DacDbiImpl(target, legacyObj: null), target);
+        return (new DacDbiImpl(target, legacyObj: null, new()), target);
     }
 
     private delegate void GetStackLimitDataCallback(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
@@ -980,7 +1084,79 @@ public unsafe class DacDbiImplTests
             .AddMockContract(codeVersions)
             .AddMockContract(new Mock<IPlatformMetadata>())
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe void CollectAsyncLocalCallback(AsyncLocalData* pLocal, nint pUserData)
+    {
+        GCHandle handle = GCHandle.FromIntPtr(pUserData);
+        ((List<AsyncLocalData>)handle.Target!).Add(*pLocal);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EnumerateAsyncLocals_MapsEntryPointToDiagnosticCodeStart(bool useCodeAddress)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        TargetPointer methodDesc = new(0xf0003000);
+        TargetCodePointer entryPoint = new(0xf0005000);
+        TargetCodePointer codeStart = new(0xf0006100);
+        const ulong CodeAddress = 0xf0006140;
+        MethodDescHandle methodDescHandle = new(methodDesc);
+        NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateSynthetic(methodDesc);
+
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
+        rts.Setup(r => r.GetAsyncMethodFlags(methodDescHandle)).Returns(AsyncMethodFlags.None);
+        rts.Setup(r => r.GetNativeCode(methodDescHandle)).Returns(entryPoint);
+
+        var codeVersions = new Mock<ICodeVersions>();
+        codeVersions.Setup(c => c.GetNativeCodeVersionForIP(new TargetCodePointer(CodeAddress))).Returns(nativeCodeVersion);
+        codeVersions.Setup(c => c.GetNativeCode(nativeCodeVersion)).Returns(entryPoint);
+
+        var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(entryPoint)).Returns(codeStart);
+
+        var debugInfo = new Mock<IDebugInfo>(MockBehavior.Strict);
+        debugInfo.Setup(d => d.GetAsyncSuspensionPoints(codeStart)).Returns(
+        [
+            new AsyncSuspensionInfo
+            {
+                NativeOffset = 0x10,
+                Locals = [new AsyncLocalInfo { Offset = 8, ILVarNumber = 1 }, new AsyncLocalInfo { Offset = 16, ILVarNumber = 3 }],
+            },
+        ]);
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddMockContract(rts)
+            .AddMockContract(codeVersions)
+            .AddMockContract(executionManager)
+            .AddMockContract(debugInfo)
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        List<AsyncLocalData> locals = new();
+        GCHandle gcHandle = GCHandle.Alloc(locals);
+        try
+        {
+            int hr = dacDbi.EnumerateAsyncLocals(
+                methodDesc.Value,
+                useCodeAddress ? CodeAddress : 0,
+                state: 0,
+                &CollectAsyncLocalCallback,
+                GCHandle.ToIntPtr(gcHandle));
+
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+        finally
+        {
+            gcHandle.Free();
+        }
+
+        Assert.Equal([(8u, 1u), (16u, 3u)], locals.ConvertAll(l => (l.Offset, l.IlVarNum)));
     }
 
     [Theory]
@@ -1018,9 +1194,9 @@ public unsafe class DacDbiImplTests
         rts.Setup(r => r.GetMethodTable(asyncVariantHandle)).Throws(new VirtualReadException());
 
         var precodeStubs = new Mock<IPrecodeStubs>();
-        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(interpreterPrecode)).Returns(nativeCode);
 
         var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(interpreterPrecode)).Returns(nativeCode);
         executionManager.Setup(e => e.GetCodeBlockHandle(nativeCode)).Returns(codeBlock);
         executionManager
             .Setup(e => e.GetMethodRegionInfo(codeBlock, out It.Ref<uint>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<uint>.IsAny))
@@ -1103,9 +1279,9 @@ public unsafe class DacDbiImplTests
         ILCodeVersionHandle ilCodeVersion = ILCodeVersionHandle.CreateExplicit(new TargetPointer(0x8000));
 
         var precodeStubs = new Mock<IPrecodeStubs>();
-        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(new TargetCodePointer(CodeAddress))).Returns(nativeCode);
 
         var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(new TargetCodePointer(CodeAddress))).Returns(nativeCode);
         executionManager.Setup(e => e.GetCodeBlockHandle(nativeCode)).Returns(codeBlock);
         executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(codeStart);
         executionManager.Setup(e => e.GetMethodDesc(codeBlock)).Returns(methodDesc);
@@ -1163,9 +1339,9 @@ public unsafe class DacDbiImplTests
         ITypeHandle typeHandle = new TargetTypeHandle(methodTable);
 
         var precodeStubs = new Mock<IPrecodeStubs>();
-        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(new TargetCodePointer(CodeAddress))).Throws(new VirtualReadException());
 
         var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(new TargetCodePointer(CodeAddress))).Throws(new VirtualReadException());
         executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(CodeAddress))).Returns(codeBlock);
         executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(codeStart);
         executionManager.Setup(e => e.GetMethodDesc(codeBlock)).Returns(methodDesc);
@@ -1234,7 +1410,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(mockCodeVersions)
             .AddMockContract(mockReJIT)
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     private static Mock<ILoader> SetupMockLoader(TargetPointer modulePtr, uint methodTk, TargetPointer methodDesc)
@@ -1405,7 +1581,7 @@ public unsafe class DacDbiImplTests
             builder.AddMockContract(mockThread);
         }
 
-        var dacDbi = new DacDbiImpl(builder.Build(), legacyObj: null);
+        var dacDbi = new DacDbiImpl(builder.Build(), legacyObj: null, new());
 
         DacDbiMonitorLockInfo result;
         int hr = dacDbi.GetThreadOwningMonitorLock(ObjectAddr, &result);
@@ -1466,7 +1642,7 @@ public unsafe class DacDbiImplTests
             .AddContract<IThread>(version: "c1")
             .AddContract<IStackWalk>(version: "c1");
         TestPlaceholderTarget target = targetBuilder.Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
         return (dacDbi, thread, frameBuilder);
     }
 
@@ -1590,7 +1766,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(gcInfo)
             .AddMockContract(new Mock<ILoader>())
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
         StackWalkHandleData handleData = new(stackWalk.Object, default);
         handleData.Reset([], isFirst: true);
         nuint stackWalkHandle = handleData.GetHandle();
@@ -1828,7 +2004,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(mockLoader)
             .AddMockContract(mockEcmaMetadata)
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     [Theory]
@@ -1915,7 +2091,7 @@ public unsafe class DacDbiImplTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void HasReadWriteMetadata_NullOutput_ReturnsError(MockTarget.Architecture arch)
     {
-        DacDbiImpl dacDbi = new(new TestPlaceholderTarget.Builder(arch).Build(), legacyObj: null);
+        DacDbiImpl dacDbi = new(new TestPlaceholderTarget.Builder(arch).Build(), legacyObj: null, new());
 
         int hr = dacDbi.HasReadWriteMetadata(0x1000, null);
 
@@ -1954,7 +2130,7 @@ public unsafe class DacDbiImplTests
             .AddTypes(types)
             .AddContract<IEcmaMetadata>(version: "c1")
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
         Interop.BOOL result = Interop.BOOL.TRUE;
 
         int hr = dacDbi.HasReadWriteMetadata(readOnlyPEAssembly.Address, &result);

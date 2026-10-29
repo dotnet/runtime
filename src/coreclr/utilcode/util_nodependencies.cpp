@@ -612,6 +612,7 @@ void ConfigDWORD::init(const CLRConfig::ConfigDWORDInfo & info)
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 

@@ -1,13 +1,14 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using System.Collections.Immutable;
 using System.Composition;
 using System.Threading.Tasks;
 using ILLink.CodeFixProvider;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ILLink.CodeFix
@@ -30,7 +31,7 @@ namespace ILLink.CodeFix
         public override ImmutableArray<string> FixableDiagnosticIds =>
             [ExternMemberRequiresUnsafeOrSafeDiagnosticId];
 
-        public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+        public override FixAllProvider GetFixAllProvider() => UnsafeMigrationFixAllProvider.Instance;
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context) =>
             UnsafeModifierCodeFixHelpers.RegisterAddUnsafeCodeFixAsync(
@@ -41,7 +42,8 @@ namespace ILLink.CodeFix
                     or IndexerDeclarationSyntax
                     or EventDeclarationSyntax
                     or EventFieldDeclarationSyntax
-                    or LocalFunctionStatementSyntax);
+                    or LocalFunctionStatementSyntax,
+                insertAfterModifier: SyntaxKind.ExternKeyword);
     }
 }
 #endif

@@ -50,7 +50,7 @@
 
     // Perform the rest of the PInvokeTransitionFrame initialization.
     st.d  \threadReg, $sp, OFFSETOF__PInvokeTransitionFrame__m_pThread   // Thread * (unused by stackwalker)
-    st.d  \BITMASK, $sp, OFFSETOF__PInvokeTransitionFrame__m_pThread + 8 // save the register bitmask passed in by caller
+    st.d  \BITMASK, $sp, OFFSETOF__PInvokeTransitionFrame__m_Flags       // save the register bitmask passed in by caller
 
     addi.d  \trashReg, $sp,  PROBE_FRAME_SIZE                            // recover value of caller's SP
     st.d  \trashReg, $sp, 0x68                                           // save caller's SP
@@ -104,15 +104,13 @@
     //
     // Fix the stack by restoring the original return address
     //
-    // Load m_pvHijackedReturnAddress
     ld.d  $ra, $a4, OFFSETOF__Thread__m_pvHijackedReturnAddress
 
     //
     // Clear hijack state
     //
-    // Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
     st.d  $zero, $a4, OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation
-    st.d  $zero, $a4, OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation + 8
+    st.d  $zero, $a4, OFFSETOF__Thread__m_pvHijackedReturnAddress
 .endm
 
 //
@@ -145,28 +143,9 @@ NESTED_END RhpWaitForGC
 
 .global C_FUNC(RhpGcPoll2)
 
-LEAF_ENTRY RhpGcPoll
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a0
-    bnez  $a0, C_FUNC(RhpGcPollRare)
-    jirl  $r0, $ra, 0
-LEAF_END RhpGcPoll
-
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
     PUSH_COOP_PINVOKE_FRAME  $a0
     bl  RhpGcPoll2
     POP_COOP_PINVOKE_FRAME
     jirl  $r0, $ra, 0
 NESTED_END RhpGcPollRare
-
-
-#ifdef FEATURE_GC_STRESS
-
-//
-// GC Stress Hijack targets
-//
-LEAF_ENTRY RhpGcStressHijack, _TEXT
-    // NYI
-    EMIT_BREAKPOINT
-LEAF_END RhpGcStressHijack, _TEXT
-
-#endif  // FEATURE_GC_STRESS

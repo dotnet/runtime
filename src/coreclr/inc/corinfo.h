@@ -432,6 +432,11 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_BULK_WRITEBARRIER,
 
+    // Same as CORINFO_HELP_BULK_WRITEBARRIER, but it is the raw worker: it does not split the copy
+    // into chunks and does not poll for GC afterwards. The JIT is only allowed to use it when the
+    // size is a small compile-time constant, so that the copy cannot starve the GC.
+    CORINFO_HELP_BULK_WRITEBARRIER_SMALL,
+
     /* Accessing fields */
 
     CORINFO_HELP_GETFIELDADDR,
@@ -460,6 +465,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE,
     CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE,
+    CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED,
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED,
     CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR,
     CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR,
     CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR,
@@ -481,7 +488,6 @@ enum CorInfoHelpFunc
 
     /* Miscellaneous */
 
-    CORINFO_HELP_PINVOKE_CALLI,         // Indirect pinvoke call
     CORINFO_HELP_TAILCALL,              // Perform a tail call
 
     CORINFO_HELP_GETCURRENTMANAGEDTHREADID,
@@ -498,11 +504,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_RUNTIMEHANDLE_CLASS,           // determine a type/field/method handle at run-time
 
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
-    CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time, the type may be null
     CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD, // Convert from a MethodDesc (native structure pointer) to RuntimeMethodHandle at run-time
     CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD, // Convert from a FieldDesc (native structure pointer) to RuntimeFieldHandle at run-time
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time
-    CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time, handle might point to a null type
 
     CORINFO_HELP_VIRTUAL_FUNC_PTR,      // look up a virtual method at run-time
 
@@ -556,6 +560,7 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
+    CORINFO_HELP_JIT_RESUME_AFTER_CATCH, // Re-permit GC mode transitions before resuming managed code after a catch
 
     CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument
     CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS, // Transition to cooperative mode and track transitions in reverse P/Invoke prolog.
@@ -633,9 +638,10 @@ enum CorInfoWasmType
 
 enum CorInfoTypeWithMod
 {
-    CORINFO_TYPE_MASK            = 0x3F,        // lower 6 bits are type mask
-    CORINFO_TYPE_MOD_PINNED      = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
-    CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80    // can be applied to VALUECLASS to indicate 'needs helper to copy'
+    CORINFO_TYPE_MASK                     = 0x3F,  // lower 6 bits are type mask
+    CORINFO_TYPE_MOD_PINNED               = 0x40,  // can be applied to CLASS, or BYREF to indicate pinned
+    CORINFO_TYPE_MOD_COPY_WITH_HELPER     = 0x80,  // can be applied to VALUECLASS to indicate 'needs helper to copy'
+    CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT = 0x100, // can be applied to NATIVEINT to indicate the secret stub argument
 };
 
 inline CorInfoType strip(CorInfoTypeWithMod val) {
@@ -918,6 +924,8 @@ enum class CorInfoReloc
     WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                            // e.g. in R2R scenarios as an offset from __image_base
     WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
+    WASM_METHOD_RELATIVE_VIRTUAL_IP_I32, // Wasm: the current method's virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
+    WASM_METHOD_FRAME_IDENTITY_SLEB, // Wasm: the current method's runtime-specific shadow-frame identity, encoded as a 5-byte varint32.
 };
 
 enum CorInfoGCType
@@ -938,6 +946,7 @@ enum CorInfoClassId
     CLASSID_STRING,
     CLASSID_ARGUMENT_HANDLE,
     CLASSID_RUNTIME_TYPE,
+    CLASSID_NUMERICS_VECTORT,
 };
 
 enum CorInfoInline
@@ -1836,6 +1845,14 @@ struct CORINFO_ASYNC_INFO
     CORINFO_METHOD_HANDLE restoreContextsMethHnd;
     // Method handle for AsyncHelpers.RestoreContextsOnSuspension, used before suspending in async methods
     CORINFO_METHOD_HANDLE restoreContextsOnSuspensionMethHnd;
+    // Method handle for AsyncHelpers.RestoreInlinedFrameContexts, used when an inlined
+    // async callee logically returns to its caller after having been resumed
+    CORINFO_METHOD_HANDLE restoreInlinedFrameContextsMethHnd;
+    // Method handles for AsyncHelpers.CaptureInlinedFrameTransition*, used on suspension to capture
+    // the contexts each inlined async frame hands to its caller
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionWithContinuationContextMethHnd;
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionNoContinuationContextMethHnd;
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
     // Finish suspension without saving continuation context (i.e. custom awaiter or ConfigureAwait(false))
     CORINFO_METHOD_HANDLE finishSuspensionNoContinuationContextMethHnd;
     // Finish suspension with saving continuation context (i.e. normal task await)
@@ -2365,11 +2382,6 @@ public:
             CORINFO_METHOD_HANDLE       method
             ) = 0;
 
-    // load and restore the method
-    virtual void methodMustBeLoadedBeforeCodeIsRun(
-            CORINFO_METHOD_HANDLE       method
-            ) = 0;
-
     // Returns the global cookie for the /GS unsafe buffer checks
     // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
     virtual void getGSCookie(
@@ -2510,6 +2522,12 @@ public:
 
     // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_VALUECLASS, except faster.
     virtual bool isValueClass(CORINFO_CLASS_HANDLE cls) = 0;
+
+    // Quick check whether the type is byref-like. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_BYREF_LIKE, except faster.
+    virtual bool isByRefLike(CORINFO_CLASS_HANDLE cls) = 0;
+
+    // Quick check whether the type is shared by generic instantiations. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_SHAREDINST, except faster.
+    virtual bool isSharedInst(CORINFO_CLASS_HANDLE cls) = 0;
 
     // return flags (a bitfield of CorInfoFlags values)
     virtual uint32_t getClassAttribs (
@@ -2771,20 +2789,6 @@ public:
             CORINFO_METHOD_HANDLE   method,         // Method referencing the field or prolog
                                                     // NULL - method being compiled
             CORINFO_CONTEXT_HANDLE  context         // Exact context of method
-            ) = 0;
-
-    // This used to be called "loadClass".  This records the fact
-    // that the class must be loaded (including restored if necessary) before we execute the
-    // code that we are currently generating.  When jitting code
-    // the function loads the class immediately.  When zapping code
-    // the zapper will if necessary use the call to record the fact that we have
-    // to do a fixup/restore before running the method currently being generated.
-    //
-    // This is typically used to ensure value types are loaded before zapped
-    // code that manipulates them is executed, so that the GC can access information
-    // about those value types.
-    virtual void classMustBeLoadedBeforeCodeIsRun(
-            CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
     // returns the class handle for the special builtin classes
@@ -3384,12 +3388,6 @@ public:
             CORINFO_CONST_LOOKUP *  pLookup
             ) = 0;
 
-    // Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
-    virtual void* GetCookieForPInvokeCalliSig(
-            CORINFO_SIG_INFO*   szMetaSig,
-            void**              ppIndirection = NULL
-            ) = 0;
-
     // Generate a cookie based on the signature to pass to INTOP_CALLI in the interpreter.
     virtual void* GetCookieForInterpreterCalliSig(
             CORINFO_SIG_INFO*   szMetaSig) = 0;
@@ -3533,15 +3531,19 @@ public:
         ) = 0;
 
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
+    // On success, pResolvedToken->hMethod and pResolvedToken->hClass are set to the method
+    // and class that should be called instead.
     virtual bool convertPInvokeCalliToCall(
             CORINFO_RESOLVED_TOKEN *    pResolvedToken,
             bool                        fMustConvert
             ) = 0;
 
     // Notify EE about intent to use or not to use instruction set in the method. Returns true if the instruction set is supported unconditionally.
+    // preserveNegativeDependency requests that the absence of the instruction set be preserved as a prerequisite.
     virtual bool notifyInstructionSetUsage(
             CORINFO_InstructionSet      instructionSet,
-            bool                        supportEnabled
+            bool                        supportEnabled,
+            bool                        preserveNegativeDependency
             ) = 0;
 
     // Notify EE that JIT needs an entry-point that is tail-callable.

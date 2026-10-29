@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Argument_UnknownComInterface" xml:space="preserve">
+    <value>The interface details strategy does not provide COM interface details for type '{0}'.</value>
+  </data>
   <data name="InvalidOperation_HCCountOverflow" xml:space="preserve">
     <value>Handle collector count overflows or underflows.</value>
   </data>

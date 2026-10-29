@@ -30,6 +30,7 @@
 #include "CommonMacros.inl"
 #include "NativeContext.h"
 #include <minipal/debugger.h>
+#include <minipal/time.h>
 #include "corexcep.h"
 #include <public/fatal_error_handling.h>
 
@@ -75,7 +76,7 @@ static void WaitForFatalErrorHandlerIfGcSafe(uint64_t previousThreadId)
 #endif
     if (pThread == nullptr || !pThread->IsCurrentThreadInCooperativeMode())
     {
-        PalSleep(INFINITE);
+        minipal_sleep(INFINITE);
     }
 }
 
@@ -217,6 +218,12 @@ FCIMPL0(void, RhpValidateExInfoStack)
 {
     Thread * pThisThread = ThreadStore::GetCurrentThread();
     pThisThread->ValidateExInfoStack();
+}
+FCIMPLEND
+
+FCIMPL0(ExInfo *, RhpGetCurrentExInfo)
+{
+    return ThreadStore::GetCurrentThread()->GetCurExInfo();
 }
 FCIMPLEND
 

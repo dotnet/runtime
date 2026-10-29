@@ -11,7 +11,9 @@
 #endif // !RIGHT_SIDE_COMPILE
 
 #include <minipal/mutex.h>
+#include <minipal/conditionvariable.h>
 #include <minipal/guid.h>
+#include "debugwait.h"
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 
@@ -279,6 +281,13 @@ public:
     void Enter();
     void Leave();
 
+#ifdef RIGHT_SIDE_COMPILE
+    minipal_mutex& GetMutex()
+    {
+        return m_sLock;
+    }
+#endif // RIGHT_SIDE_COMPILE
+
 private:
 #ifdef RIGHT_SIDE_COMPILE
     minipal_mutex       m_sLock;
@@ -358,7 +367,7 @@ public:
     // requires the addresses of a couple of runtime data structures to service certain debugger requests that
     // may be delivered once the session is established.
 #ifdef RIGHT_SIDE_COMPILE
-    HRESULT Init(const ProcessDescriptor& pd, HANDLE hProcessExited);
+    HRESULT Init(const ProcessDescriptor& pd, const WaitHandle& processExited);
 #else
     HRESULT Init(DebuggerIPCControlBlock * pDCB);
 #endif // RIGHT_SIDE_COMPILE
@@ -424,8 +433,8 @@ public:
 
     // Retrieves the auto-reset handle which is signalled by the session each time a new event is received
     // from the other side.
-    HANDLE GetIPCEventReadyEvent();
-    HANDLE GetDebugEventReadyEvent();
+    WaitEvent *GetIPCEventReadyEvent();
+    WaitEvent *GetDebugEventReadyEvent();
 
     // Copies the last event received from the other side into the provided buffer. This should only be called
     // (once) after the event returned from GetIPCEventReadyEvent()/GetDebugEventReadyEvent() has been signalled.
@@ -560,7 +569,7 @@ private:
         MessageHeader   m_sHeader;       // Inline message header
         PBYTE           m_pbDataBlock;   // Pointer to optional message data block (or NULL)
         DWORD           m_cbDataBlock;   // Count of bytes in above block if it's non-NULL
-        HANDLE          m_hReplyEvent;   // Optional event to signal if this message is replied to (or NULL)
+        WaitEvent   *m_hReplyEvent; // Optional event to signal if this message is replied to (or NULL)
         PBYTE           m_pbReplyBlock;  // Optional buffer to place data block from reply into (or NULL)
         DWORD           m_cbReplyBlock;  // Size in bytes of the above buffer if it is non-NULL
         Message        *m_pOrigMessage;  // Used when we need to find the original message from a copy
@@ -587,7 +596,7 @@ private:
     LONG m_ref;
 
     // Some flags used to record how far we got in Init() (used for cleanup in Shutdown()).
-    bool m_fInitStateLock;
+    bool m_fInitStateLock = false;
 
     // Protocol version. This consists of two parts. The major version is incremented on incompatible protocol
     // updates. That is, a session between left and right sides that cannot use a protocol with the exact same
@@ -640,23 +649,23 @@ private:
     SessionState    m_eState;
 
 #ifdef RIGHT_SIDE_COMPILE
-    // Manual reset event that is signalled whenever the session state is SS_Open or SS_Closed (after waiting
-    // on this event the caller should check to see which state it was).
-    HANDLE          m_hSessionOpenEvent;
+    // Notified whenever the session reaches a state that resolves WaitForSessionToOpen().
+    minipal_condition_variable m_sessionStateCondition;
+    bool m_fInitSessionStateCondition = false;
 #endif // RIGHT_SIDE_COMPILE
 
     // Thread responsible for initial Connect()/Accept() on a low level transport connection and
     // subsequently for all message reception on that connection. Any error will cause the thread to reset
     // back into the Connect()/Accept() phase (along with the resulting session state change).
-    HANDLE          m_hTransportThread;
+    HANDLE          m_hTransportThread = NULL;
 
-    IDebugChannel* m_channel;
+    IDebugChannel* m_channel = NULL;
 
 #ifdef RIGHT_SIDE_COMPILE
     // On the RS the transport thread needs to know the IP address and port number to Connect() to.
     ProcessDescriptor m_pd;                  // Descriptor of a process we're talking to.
 
-    HANDLE            m_hProcessExited;       // event which will be signaled when the debuggee is terminated
+    WaitHandle *m_hProcessExited = NULL;     // wait which will be signaled when the debuggee is terminated
 
     bool              m_fDebuggerAttached;
 #endif
@@ -676,12 +685,12 @@ private:
     // at any one time). The buffer is a circular array: clients read from the buffer at head index which is
     // followed by some number of valid buffers (wrapping around to the start of the array if necessary). New
     // events are added after these (and grow the array if the tail would touch the head otherwise).
-    DbgEventBufferEntry * m_pEventBuffers;                  // Pointer to array of incoming debugger events
+    DbgEventBufferEntry * m_pEventBuffers = NULL;           // Pointer to array of incoming debugger events
     DWORD           m_cEventBuffers;                        // Size of the array above (in events)
     DWORD           m_cValidEventBuffers;                   // Number of events that actually contain data
     DWORD           m_idxEventBufferHead;                   // Index of the first valid event
     DWORD           m_idxEventBufferTail;                   // Index of the first invalid event
-    HANDLE          m_rghEventReadyEvent[IPCET_Max];        // The event signalled when a new event arrives
+    WaitEvent *m_rghEventReadyEvent[IPCET_Max] = {};        // The event signalled when a new event arrives
 
 #ifndef RIGHT_SIDE_COMPILE
     // The LS requires the addresses of a couple of runtime data structures in order to service MT_GetDCB etc.
@@ -811,6 +820,8 @@ private:
     // Initialize all session state to correct starting values. Used during Init() and on the LS when we
     // gracefully close one session and prepare for another.
     void InitSessionState();
+    void SetSessionState(SessionState state);
+    void SetSessionStateUnderLock(SessionState state);
 
     // The entry point of the transport worker thread. This one's static, so we immediately dispatch to an
     // instance method version defined below for convenience in the implementation.

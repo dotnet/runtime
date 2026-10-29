@@ -1,8 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <HasMergedInTests>true</HasMergedInTests>
+  </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="coverage/**/*.??proj" />
-    <MergedWrapperProjectReference Include="nullabletypes/**/*.??proj" />
-    <ProjectReference Include="jmp/**/*.??proj" />
+    <MergedWrapperProjectReference Include="callconv\CdeclMemberFunction\CdeclMemberFunctionTest.csproj" />
+    <MergedWrapperProjectReference Include="callconv\PlatformDefaultMemberFunction\PlatformDefaultMemberFunctionTest.csproj" />
+    <MergedWrapperProjectReference Include="callconv\StdCallMemberFunction\StdCallMemberFunctionTest.csproj" />
+    <MergedWrapperProjectReference Include="callconv\ThisCall\EmptyThisCallTest.csproj" />
+    <MergedWrapperProjectReference Include="callconv\ThisCall\ThisCallTest.csproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\ldfldstatic1_importer_r.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\stfldstatic1_importer_r.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\subovfun1_r.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\tls1.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\tls2.ilproj" />
+    <MergedWrapperProjectReference Include="debugging\debuginfo\tests_d.ilproj" />
+    <MergedWrapperProjectReference Include="debugging\debuginfo\tests_r.ilproj" />
+    <ProjectReference Include="PREFIX\PrimitiveVT\helper.csproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\add_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\4\add_unaligned_4.ilproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Arrays\nintindexoutofrange.cs" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

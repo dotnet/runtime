@@ -108,6 +108,19 @@ namespace System.Runtime
             return pTargetCode;
         }
 
+#if TARGET_WASM
+        [RuntimeExport("RhpDispatchResolve")]
+        private static IntPtr RhpDispatchResolve(object pObject, IntPtr pCell)
+        {
+            if (pObject is null)
+            {
+                throw new NullReferenceException();
+            }
+
+            return RhpResolveInterfaceMethod(pObject, pCell);
+        }
+#endif
+
         [RuntimeExport("RhpResolveInterfaceMethod")]
         private static IntPtr RhpResolveInterfaceMethod(object pObject, IntPtr pCell)
         {

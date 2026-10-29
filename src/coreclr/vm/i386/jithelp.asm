@@ -44,9 +44,6 @@ JIT_TailCallVSDLeave            TEXTEQU <_JIT_TailCallVSDLeave@0>
 JIT_TailCallHelper              TEXTEQU <_JIT_TailCallHelper@4>
 JIT_TailCallReturnFromVSD       TEXTEQU <_JIT_TailCallReturnFromVSD@0>
 
-g_pPollGC                       TEXTEQU <_g_pPollGC>
-g_TrapReturningThreads          TEXTEQU <_g_TrapReturningThreads>
-
 EXTERN  g_ephemeral_low:DWORD
 EXTERN  g_ephemeral_high:DWORD
 EXTERN  g_lowest_address:DWORD
@@ -59,9 +56,6 @@ ifdef FEATURE_HIJACK
 EXTERN  JIT_TailCallHelper:PROC
 endif
 EXTERN @JIT_FailFast@0:PROC
-
-EXTERN g_pPollGC:DWORD
-EXTERN g_TrapReturningThreads:DWORD
 
 
 ifdef WRITE_BARRIER_CHECK
@@ -919,54 +913,5 @@ _JIT_PatchedWriteBarrierGroup_End@0 ENDP
 _JIT_PatchedCodeLast@0 proc public
 ret
 _JIT_PatchedCodeLast@0 endp
-
-; This is the first function outside the "keep together range". Used by BBT scripts.
-_JIT_PatchedCodeEnd@0 proc public
-ret
-_JIT_PatchedCodeEnd@0 endp
-
-; The following helper will access ("probe") a word on each page of the stack
-; starting with the page right beneath esp down to the one pointed to by eax.
-; The procedure is needed to make sure that the "guard" page is pushed down below the allocated stack frame.
-; The call to the helper will be emitted by JIT in the function prolog when large (larger than 0x3000 bytes) stack frame is required.
-;
-; NOTE: this helper will modify a value of esp and must establish the frame pointer.
-PROBE_PAGE_SIZE equ 1000h
-
-_JIT_StackProbe@0 PROC public
-    ; On entry:
-    ;   eax - the lowest address of the stack frame being allocated (i.e. [InitialSp - FrameSize])
-    ;
-    ; NOTE: this helper will probe at least one page below the one pointed by esp.
-    push    ebp
-    mov     ebp, esp
-
-    and     esp, -PROBE_PAGE_SIZE ; esp points to the **lowest address** on the last probed page
-                                  ; This is done to make the loop end condition simpler.
-ProbeLoop:
-    test    [esp - 4], eax        ; esp points to the lowest address on the **last probed** page
-    sub     esp, PROBE_PAGE_SIZE  ; esp points to the lowest address of the **next page** to probe
-    cmp     esp, eax
-    jg      ProbeLoop             ; if esp > eax, then we need to probe at least one more page.
-
-    mov     esp, ebp
-    pop     ebp
-    ret
-
-_JIT_StackProbe@0 ENDP
-
-PUBLIC _JIT_StackProbe_End@0
-_JIT_StackProbe_End@0 PROC
-    ret
-_JIT_StackProbe_End@0 ENDP
-
-@JIT_PollGC@0 PROC public
-    cmp [g_TrapReturningThreads], 0
-    jnz JIT_PollGCRarePath
-    ret
-JIT_PollGCRarePath:
-    mov eax, g_pPollGC
-    jmp eax
-@JIT_PollGC@0 ENDP
 
     end

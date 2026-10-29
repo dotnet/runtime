@@ -157,42 +157,6 @@ NESTED_END OnHijackTripThread, _TEXT
 
 #endif // FEATURE_HIJACK
 
-// void* PacStripPtr(void *);
-// This function strips the pointer of PAC info that is passed as an argument.
-// We prefer to strip a pointer where it's not going to be used to branch execution to.
-// It is a no-op on non-PAC enabled machines.
-.arch_extension pauth
-    NESTED_ENTRY PacStripPtr, _TEXT, NoHandler
-        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -16
-        mov lr, x0
-        xpaclri
-        mov x0, lr
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
-        EPILOG_RETURN
-    NESTED_END PacStripPtr, _TEXT
-
-// void* PacSignPtr(void *, void *);
-// This function signs the input pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
-.arch_extension pauth
-    LEAF_ENTRY PacSignPtr, _TEXT
-        mov x17, x0
-        mov x16, x1
-        pacia1716
-        mov x0, x17
-        ret
-    LEAF_END PacSignPtr, _TEXT
-
-// void* PacAuthPtr(void *, void *);
-// This function authenticates the input signed-pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
-.arch_extension pauth
-    LEAF_ENTRY PacAuthPtr, _TEXT
-        mov x17, x0
-        mov x16, x1
-        autia1716
-        mov x0, x17
-        ret
-    LEAF_END PacAuthPtr, _TEXT
-
 // ------------------------------------------------------------------
 // Redirection Stub for GC in fully interruptible method
 //GenerateRedirectedHandledJITCaseStub GCThreadControl
@@ -502,48 +466,6 @@ DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
 DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
 #endif
 
-//
-// JIT Static access helpers when coreclr host specifies single appdomain flag
-//
-
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
-    ldar x1, [x1]
-    tbnz x1, #0, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
-    mov x0, x1
-    ret lr
-
-LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetNonGCStaticBase
-    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
-    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, x1
-    ldr      x1, [x1]
-    br       x1
-LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics
-    ldar x1, [x1]
-    tbnz x1, #0, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
-    mov x0, x1
-    ret lr
-
-LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetGCStaticBase
-    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
-    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, x1
-    ldr      x1, [x1]
-    br       x1
-LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-
 #ifdef PROFILING_SUPPORTED
 
 // ------------------------------------------------------------------
@@ -688,17 +610,6 @@ LEAF_END GetTLSResolverAddress, _TEXT
 #endif // TARGET_ANDROID
 #endif // !TARGET_APPLE
 
-LEAF_ENTRY  JIT_PollGC, _TEXT
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, x9
-        ldr     w9, [x9]
-        cbnz    w9, LOCAL_LABEL(JIT_PollGCRarePath)
-        ret
-LOCAL_LABEL(JIT_PollGCRarePath):
-        PREPARE_EXTERNAL_VAR g_pPollGC, x9
-        ldr     x9, [x9]
-        br x9
-LEAF_END  JIT_PollGC, _TEXT
-
 //x0 -This pointer
 //x1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
@@ -725,6 +636,9 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     mov x22, x0
 #endif
     INLINE_GETTHREAD x20 // thrashes x0 on Apple OSes (and possibly other arg registers on other Unixes)
+#ifdef TARGET_APPLE
+    mov x0, x22
+#endif
     cbz x20, LOCAL_LABEL(NoManagedThreadOrCallStub)
 
     ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
@@ -734,8 +648,6 @@ LOCAL_LABEL(NoManagedThreadOrCallStub):
 #ifdef TARGET_APPLE
     // GetInterpThreadContextWithPossiblyMissingThreadOrCallStub can destroy all argument registers, so we
     // need to save them. For non-Apple, they have been already saved in the PROLOG_WITH_TRANSITION_BLOCK
-    // Restore x0 thrashed by the INLINE_GETTHREAD
-    mov x0, x22
     SAVE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
 #endif
@@ -754,9 +666,6 @@ LOCAL_LABEL(HaveInterpThreadContext):
 
 #ifdef TARGET_APPLE
 LOCAL_LABEL(HaveInterpThreadContext):
-    // On Apple, the INLINE_GETTHREAD is guaranteed to not to thrash argument registers other than x0
-    // So we restore just the x0
-    mov x0, x22
 #endif // TARGET_APPLE
 
     ldr x9, [x19] // InterpMethod*

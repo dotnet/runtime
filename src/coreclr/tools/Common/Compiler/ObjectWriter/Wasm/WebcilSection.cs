@@ -1,44 +1,51 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using Internal.Text;
+using Internal.TypeSystem;
 using Microsoft.NET.WebAssembly.Webcil;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal class WebcilSection : WasmSection
+    /// <summary>
+    /// A WebCIL section is a subsection of the "webcilPayload" data segment in the WebAssembly module.
+    /// </summary>
+    internal class WebcilSection : SectionDataEmitter
     {
-        public readonly int Index;
         public WebcilSectionHeader Header;
-        public readonly Stream _stream;
-        private PaddingHelper _paddingHelper;
-        public int MinAlignment = 1;
+        public int Alignment { get; private set; } = WebCilObjectWriter.WebcilSectionAlignment;
 
-        public uint Padding => Header.SizeOfRawData - (uint)_stream.Length;
+        public uint Padding => Header.SizeOfRawData - (uint)ContentReadStream.Length;
 
-        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int index)
-            : base(WasmSectionType.Data, stream, name)
+        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int sectionIndex)
+            : base(stream, name, sectionIndex)
         {
             Header = header;
-            _stream = stream;
-            Index = index;
-            _paddingHelper = new PaddingHelper(WasmObjectWriter.WebcilSectionAlignment);
+        }
+
+        public void UpdateAlignment(int alignment)
+        {
+            Debug.Assert(BitOperations.IsPow2(alignment));
+            Alignment = Math.Max(Alignment, alignment);
         }
 
         public override int EncodeSize()
         {
-            return (int)_stream.Length;
+            return (int)ContentReadStream.Length;
         }
 
-        public override int Emit(Stream outputFileStream)
+        public override int EmitToStream(Stream outputFileStream)
         {
             // Emit the raw contents of this Webcil section followed by any required padding.
-            _stream.Position = 0;
-            _stream.CopyTo(outputFileStream);
-            _paddingHelper.PadStream(outputFileStream, (int)Padding);
+            ContentReadStream.Position = 0;
+            ContentReadStream.CopyTo(outputFileStream);
+            WasmDataSegmentEncoding.EmitPadding(outputFileStream, (int)Padding);
 
-            return (int)_stream.Length + (int)Padding;
+            return (int)ContentReadStream.Length + (int)Padding;
         }
     }
 }

@@ -45,6 +45,8 @@ internal sealed class JaggedArrayRecord : ArrayRecord
     [RequiresDynamicCode("May call Array.CreateInstance().")]
     private protected override Array Deserialize(Type arrayType, bool allowNulls)
     {
+        CheckExpectedRecordCount(_records, allowNulls);
+
         // This method returns arrays of ArrayRecords.
         Array array = _lengths.Length switch
         {

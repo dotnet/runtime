@@ -134,23 +134,28 @@ namespace ILLink.RoslynAnalyzer
                 if (dataFlowAnalyzerContext.TrimAnalyzer is null)
                     return;
 
-                // Examine generic instantiations in base types and interface list
+                // Examine generic instantiations in the interface list
                 context.RegisterSymbolAction(context =>
                 {
                     var type = (INamedTypeSymbol)context.Symbol;
-                    // RUC on type doesn't silence DAM warnings about generic base/interface types.
-                    // This knowledge lives in IsInRequiresUnreferencedCodeAttributeScope,
-                    // which we still call for consistency here, but it is expected to return false.
-                    if (type.IsInRequiresUnreferencedCodeAttributeScope(out _))
-                        return;
 
                     var location = GetPrimaryLocation(type.Locations);
 
                     var typeNameResolver = new TypeNameResolver(context.Compilation);
-                    var genericArgumentDataFlow = new GenericArgumentDataFlow(dataFlowAnalyzerContext.TrimAnalyzer, FeatureContext.None, typeNameResolver, type, location, context.ReportDiagnostic);
 
-                    foreach (var interfaceType in type.Interfaces)
-                        genericArgumentDataFlow.ProcessGenericArgumentDataFlow(interfaceType);
+                    // The generic instantiations in the interface list are only reachable through the
+                    // members of the type, which are all in the Requires scope of a type-level
+                    // RequiresUnreferencedCode, so the attribute silences these warnings.
+                    // This is not the case for the DynamicallyAccessedMembers hierarchy below, or for
+                    // attributes on the type, which may be accessed via reflection from code which is
+                    // not in a Requires scope.
+                    if (!type.HasAttribute(RequiresUnreferencedCodeAnalyzer.RequiresUnreferencedCodeAttribute))
+                    {
+                        var genericArgumentDataFlow = new GenericArgumentDataFlow(dataFlowAnalyzerContext.TrimAnalyzer, FeatureContext.None, typeNameResolver, type, location, context.ReportDiagnostic);
+
+                        foreach (var interfaceType in type.Interfaces)
+                            genericArgumentDataFlow.ProcessGenericArgumentDataFlow(interfaceType);
+                    }
 
                     DynamicallyAccessedMembersTypeHierarchy.ApplyDynamicallyAccessedMembersToTypeHierarchy(typeNameResolver, location, type, context.ReportDiagnostic);
                 }, SymbolKind.NamedType);

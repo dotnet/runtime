@@ -27,7 +27,7 @@ typedef enum
 #define minipal_log_print_error(...) minipal_log_print(minipal_log_flags_error, __VA_ARGS__)
 #define minipal_log_print_info(...) minipal_log_print(minipal_log_flags_info, __VA_ARGS__)
 #define minipal_log_print_verbose(...) minipal_log_print(minipal_log_flags_verbose, __VA_ARGS__)
-int minipal_log_print(minipal_log_flags flags, const char* fmt, ... );
+int minipal_log_print(minipal_log_flags flags, const char* fmt, ... ) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
 
 #define minipal_log_vprint_fatal(...) minipal_log_vprint(minipal_log_flags_fatal, __VA_ARGS__)
 #define minipal_log_vprint_error(...) minipal_log_vprint(minipal_log_flags_error, __VA_ARGS__)

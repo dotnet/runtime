@@ -239,7 +239,10 @@ check_stack_helper (TransformData *td, int n)
 #define CHECK_TYPELOAD(klass) \
 	do { \
 		if (!(klass) || mono_class_has_failure (klass)) { \
-			mono_error_set_for_class_failure (error, klass); \
+			if (klass) \
+				mono_error_set_for_class_failure (error, klass); \
+			else \
+				mono_error_set_generic_error (error, "System", "TypeLoadException", ""); \
 			goto exit; \
 		} \
 	} while (0)
@@ -759,7 +762,16 @@ handle_branch (TransformData *td, int long_op, int offset)
 	if (offset < 0 && td->sp == td->stack && !td->inlined_method) {
 		// Backwards branch inside unoptimized method where the IL stack is empty
 		// This is candidate for a patchpoint
-		target_bb->patchpoint_bb = TRUE;
+		if (!target_bb->patchpoint_bb) {
+			target_bb->patchpoint_bb = TRUE;
+			// Nested handler patchpoints also affect enclosing finally continuations.
+			for (guint i = 0; i < td->header->num_clauses; i++) {
+				MonoExceptionClause *clause = &td->header->clauses [i];
+				if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY &&
+						MONO_OFFSET_IN_HANDLER (clause, GINT_TO_UINT32 (target_bb->il_offset)))
+					td->clause_has_patchpoint [i] = TRUE;
+			}
+		}
 		if (mono_interp_tiering_enabled () && !target_bb->patchpoint_data && td->optimized) {
 			// The optimized imethod will store mapping from bb index to native offset so it
 			// can resume execution in the optimized method, once we tier up in patchpoint
@@ -961,7 +973,7 @@ binary_arith_op(TransformData *td, int mint_op)
 	if (type1 != type2) {
 		g_warning("%s.%s: %04x arith type mismatch %s %d %d",
 			m_class_get_name (td->method->klass), td->method->name,
-			td->ip - td->il_code, mono_interp_opname (mint_op), type1, type2);
+			(guint32)(td->ip - td->il_code), mono_interp_opname (mint_op), type1, type2);
 	}
 	op = mint_op + type1 - STACK_TYPE_I4;
 	td->sp -= 2;
@@ -2449,6 +2461,13 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				ERROR_DECL(error);
 				gpointer systype = mono_type_get_object_checked (m_class_get_byval_arg (constrained_class), error);
 				return_val_if_nok (error, FALSE);
+
+				// GetType is still required to null check the managed pointer, even though we
+				// can resolve the result to a constant without dereferencing it.
+				interp_add_ins (td, MINT_CKNULL);
+				interp_ins_set_sreg (td->last_ins, td->sp [-1].var);
+				set_simple_type_and_var (td, td->sp - 1, td->sp [-1].type);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 
 				td->sp--;
 				interp_add_ins (td, MINT_LDPTR);
@@ -4787,6 +4806,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 
 	imethod->clause_data_offsets = (guint32*)imethod_alloc0 (td, header->num_clauses * sizeof (guint32));
 	td->clause_vars = (int*)mono_mempool_alloc (td->mempool, sizeof (int) * header->num_clauses);
+	td->clause_has_patchpoint = (gboolean*)mono_mempool_alloc0 (td->mempool, sizeof (gboolean) * header->num_clauses);
 	for (guint i = 0; i < header->num_clauses; i++) {
 		int var = interp_create_var (td, mono_get_object_type ());
 		td->vars [var].global = TRUE;
@@ -5063,7 +5083,8 @@ interp_handle_box_patterns (TransformData *td, MonoClass *box_class, const unsig
 		return FALSE;
 	MonoMethod *method = td->inlined_method ? td->inlined_method : td->method;
 	MonoMethod *cmethod;
-	if (*next_ip == CEE_CALL &&
+	if (!mono_class_is_nullable (box_class) &&
+			*next_ip == CEE_CALL &&
 			(cmethod = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error)) &&
 			(cmethod->klass == mono_defaults.object_class) &&
 			(strcmp (cmethod->name, "GetType") == 0)) {
@@ -5574,7 +5595,7 @@ retry_emit:
 		InterpBasicBlock *new_bb = td->offset_to_bb [in_offset];
 		if (new_bb != NULL && td->cbb != new_bb) {
 			if (td->verbose_level)
-				g_print ("BB%d (IL_%04lx):\n", new_bb->index, new_bb->il_offset);
+				g_print ("BB%d (IL_%04x):\n", new_bb->index, new_bb->il_offset);
 			// If we were emitting into previous bblock, we are finished now
 			if (td->cbb->emit_state == BB_STATE_EMITTING)
 				td->cbb->emit_state = BB_STATE_EMITTED;
@@ -5683,7 +5704,7 @@ retry_emit:
 		if (bb->dead || td->cbb->dead) {
 			g_assert (op_size > 0); /* The BB formation pass must catch all bad ops */
 			if (td->verbose_level > 1)
-				g_print ("SKIPPING DEAD OP at %x\n", in_offset);
+				g_print ("SKIPPING DEAD OP at %x\n", (guint32)in_offset);
 			link_bblocks = FALSE;
 			td->ip += op_size;
 			continue;
@@ -5693,8 +5714,8 @@ retry_emit:
 
 		if (td->verbose_level > 1) {
 			g_print ("IL_%04lx %-10s, sp %ld, %s %-12s\n",
-				td->ip - td->il_code,
-				mono_opcode_name (*td->ip), td->sp - td->stack,
+				(gulong)(td->ip - td->il_code),
+				mono_opcode_name (*td->ip), (glong)(td->sp - td->stack),
 				td->sp > td->stack ? stack_type_string [td->sp [-1].type] : "  ",
 				(td->sp > td->stack && (td->sp [-1].type == STACK_TYPE_O || td->sp [-1].type == STACK_TYPE_VT)) ? (td->sp [-1].klass == NULL ? "?" : m_class_get_name (td->sp [-1].klass)) : "");
 		}
@@ -8384,7 +8405,7 @@ retry_emit:
 				/*stackval_from_data (signature->ret, frame->retval, sp->data.vt, signature->pinvoke);*/
 
 				if (td->sp > td->stack)
-					g_warning ("CEE_MONO_RETOBJ: more values on stack: %d", td->sp-td->stack);
+					g_warning ("CEE_MONO_RETOBJ: more values on stack: %d", (int)(td->sp-td->stack));
 				break;
 			case CEE_MONO_LDNATIVEOBJ: {
 				token = read32 (td->ip + 1);
@@ -8461,7 +8482,7 @@ retry_emit:
 				break;
 			}
 			default:
-				g_error ("transform.c: Unimplemented opcode: 0xF0 %02x at 0x%x\n", *td->ip, td->ip-header->code);
+				g_error ("transform.c: Unimplemented opcode: 0xF0 %02x at 0x%x\n", *td->ip, (int)(td->ip-header->code));
 			}
 			break;
 #if 0
@@ -8863,7 +8884,7 @@ retry_emit:
 				++td->ip;
 				break;
 			default:
-				g_error ("transform.c: Unimplemented opcode: 0xFE %02x (%s) at 0x%x\n", *td->ip, mono_opcode_name (256 + *td->ip), td->ip-header->code);
+				g_error ("transform.c: Unimplemented opcode: 0xFE %02x (%s) at 0x%x\n", *td->ip, mono_opcode_name (256 + *td->ip), (int)(td->ip-header->code));
 			}
 			break;
 		default: {
@@ -9215,7 +9236,7 @@ interp_mark_ref_slots_for_var (TransformData *td, int var)
 			int index = td->vars [var].offset / sizeof (gpointer);
 			mono_bitset_set (td->ref_slots, index);
 			if (td->verbose_level)
-				g_print ("Stack ref slot at off %d for var %d\n", index * sizeof (gpointer), var);
+				g_print ("Stack ref slot at off %d for var %d\n", (int)(index * sizeof (gpointer)), var);
 		}
 	}
 }
@@ -9852,7 +9873,7 @@ retry:
 
 	/* Check if we use excessive stack space */
 	if (td->max_stack_height > header->max_stack * 3u && header->max_stack > 16)
-		g_warning ("Excessive stack space usage for method %s, %d/%d", method->name, td->max_stack_height, header->max_stack);
+		g_warning ("Excessive stack space usage for method %s, %u/%d", method->name, td->max_stack_height, header->max_stack);
 
 	guint32 code_len_u8, code_len_u16;
 	code_len_u8 = GPTRDIFF_TO_UINT32 ((guint8 *) td->new_code_end - (guint8 *) td->new_code);

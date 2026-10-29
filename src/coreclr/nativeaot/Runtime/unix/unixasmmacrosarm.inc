@@ -6,7 +6,6 @@
 //
 
 #define TSF_Attached                    0x01
-#define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
 // These must match the PInvokeTransitionFrameFlags enum
@@ -66,6 +65,15 @@ C_FUNC(\Name):
 .macro LEAF_END Name, Section
         .size \Name, .-\Name
         .fnend
+.endm
+
+.macro LEAF_END_MARKED Name, Section
+        .thumb_func
+        .global C_FUNC(\Name\()_End)
+C_FUNC(\Name\()_End):
+        LEAF_END \Name, \Section
+        // make sure this symbol gets its own address
+        nop
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg

@@ -12,6 +12,8 @@ using ILLink.Shared.TrimAnalysis;
 using Internal.TypeSystem;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 #nullable enable
@@ -20,17 +22,40 @@ namespace ILCompiler.Dataflow
 {
     internal static class GenericArgumentDataFlow
     {
-        public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, TypeDesc contextType)
+        public static void ProcessGenericArgumentDataFlow(
+            IDependencySink dependencies,
+            NodeFactory factory,
+            in MessageOrigin origin,
+            TypeDesc type,
+            TypeDesc contextType,
+            bool suppressTrimAnalysisWarnings = false,
+            bool suppressAotAnalysisWarnings = false)
         {
-            ProcessGenericArgumentDataFlow(ref dependencies, factory, origin, type, contextType.Instantiation, Instantiation.Empty);
+            ProcessGenericArgumentDataFlow(
+                dependencies,
+                factory,
+                origin,
+                type,
+                contextType.Instantiation,
+                Instantiation.Empty,
+                suppressTrimAnalysisWarnings,
+                suppressAotAnalysisWarnings);
         }
 
-        public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, MethodDesc contextMethod)
+        public static void ProcessGenericArgumentDataFlow(IDependencySink dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, MethodDesc contextMethod)
         {
-            ProcessGenericArgumentDataFlow(ref dependencies, factory, origin, type, contextMethod.OwningType.Instantiation, contextMethod.Instantiation);
+            ProcessGenericArgumentDataFlow(dependencies, factory, origin, type, contextMethod.OwningType.Instantiation, contextMethod.Instantiation);
         }
 
-        public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, Instantiation typeContext, Instantiation methodContext)
+        public static void ProcessGenericArgumentDataFlow(
+            IDependencySink dependencies,
+            NodeFactory factory,
+            in MessageOrigin origin,
+            TypeDesc type,
+            Instantiation typeContext,
+            Instantiation methodContext,
+            bool suppressTrimAnalysisWarnings = false,
+            bool suppressAotAnalysisWarnings = false)
         {
             if (!type.HasInstantiation)
                 return;
@@ -48,18 +73,27 @@ namespace ILCompiler.Dataflow
 
             var diagnosticContext = new DiagnosticContext(
                 origin,
-                !logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
-                logger);
-            var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlowOrigin: null, enabled: true);
+                suppressTrimmerDiagnostics: suppressTrimAnalysisWarnings || logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                suppressAotDiagnostics: suppressAotAnalysisWarnings || logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
+                suppressSingleFileDiagnostics: logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
+                logger: logger);
+            var reflectionMarker = new ReflectionMarker(
+                logger,
+                factory,
+                flowAnnotations,
+                typeHierarchyDataFlowOrigin: null,
+                enabled: true,
+                suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings,
+                suppressAotAnalysisWarnings: suppressAotAnalysisWarnings);
 
             ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, instantiatedType);
 
             if (reflectionMarker.Dependencies.Count > 0)
             {
-                if (dependencies == null)
-                    dependencies = reflectionMarker.Dependencies;
-                else
-                    dependencies.AddRange(reflectionMarker.Dependencies);
+                foreach (DependencyListEntry dependency in reflectionMarker.Dependencies)
+                {
+                    dependencies.Add(dependency);
+                }
             }
         }
 

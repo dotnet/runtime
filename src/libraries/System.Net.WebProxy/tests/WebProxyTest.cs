@@ -194,6 +194,8 @@ namespace System.Net.Tests
 
             yield return new object[] { new Uri($"http://nodotinhostname"), true };
             yield return new object[] { new Uri($"http://{Guid.NewGuid():N}"), true };
+            // A non-ASCII hostname without a separator stays local; its IDN form gains no dot.
+            yield return new object[] { new Uri("http://b\u00FCcher"), true };
             foreach (IPAddress address in Dns.GetHostEntryAsync(Dns.GetHostName()).GetAwaiter().GetResult().AddressList)
             {
                 if (address.AddressFamily == AddressFamily.InterNetwork)
@@ -223,6 +225,12 @@ namespace System.Net.Tests
 
             yield return new object[] { new Uri($"http://{Guid.NewGuid():N}.com"), false };
             yield return new object[] { new Uri($"http://{IPAddress.None}"), false };
+
+            // Hosts with non-ASCII dot separators that IDN maps to '.' (ideographic full stop U+3002,
+            // fullwidth full stop U+FF0E, halfwidth ideographic full stop U+FF61) are not local.
+            yield return new object[] { new Uri($"http://{Guid.NewGuid():N}\u3002com"), false };
+            yield return new object[] { new Uri($"http://{Guid.NewGuid():N}\uFF0Ecom"), false };
+            yield return new object[] { new Uri($"http://{Guid.NewGuid():N}\uFF61com"), false };
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/23428", TestPlatforms.AnyUnix)]

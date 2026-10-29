@@ -181,15 +181,21 @@ void WasmRegAlloc::IdentifyCandidates()
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
             varIsRegCandidate = false;
         }
-        // We also need to ensure that any GC refs are not stored in wasm locals until we have support for
-        // spilling them to the stack before calls.
-        // TODO-WASM: Add support for spilling GC refs in order to relax this second restriction.
+        // We also need to ensure that any GC refs are not stored in wasm locals unless they are pre-identified as
+        // candidates (identified as never gc-exposed).
+        // TODO-WASM: Add support for spilling GC ref locals in order to relax this second restriction and enregister
+        // more GC ref locals.
         if (varTypeIsGC(varDsc->lvType))
         {
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
-            varIsRegCandidate = false;
+            bool isRefCandidate =
+                varDsc->lvTracked &&
+                VarSetOps::IsMember(m_compiler, *m_compiler->m_wasmGCRefCandidates, varDsc->lvVarIndex);
+            if (!isRefCandidate)
+            {
+                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
+                varIsRegCandidate = false;
+            }
         }
-
         if (varIsRegCandidate)
         {
             JITDUMP("RA candidate: V%02u\n", lclNum);
@@ -431,14 +437,6 @@ void WasmRegAlloc::CollectReferencesForBlock(BasicBlock* block)
 //
 void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 {
-    // Track how many times this funclet will materialize the image base, so we can
-    // decide below whether to cache it in a wasm local.
-    //
-    if (node->IsCnsIntOrI() && node->IsIconHandle() && node->AsIntConCommon()->ImmedValNeedsReloc(m_compiler))
-    {
-        m_perFuncletData[m_currentFunclet]->m_imageBaseUses++;
-    }
-
     switch (node->OperGet())
     {
         case GT_NULLCHECK:
@@ -587,16 +585,12 @@ void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
 
     // For a fast tail call, wrap the SP arg with ADD(SP, FRAME_SIZE) so codegen
     // undoes the prolog's SP adjustment and the callee sees the incoming SP.
-    // The arg has been rewritten to GT_PHYSREG above (args are visited before the call).
     if (callNode->IsFastTailCall())
     {
         CallArg* const spArg = callNode->gtArgs.FindWellKnownArg(WellKnownArg::WasmShadowStackPointer);
         if (spArg != nullptr)
         {
             GenTree* const physReg = spArg->GetNode();
-            assert(physReg != nullptr);
-            assert(physReg->OperIs(GT_PHYSREG));
-            assert(physReg->AsPhysReg()->gtSrcReg == m_perFuncletData[m_currentFunclet]->m_spReg);
             // Fast tail calls from funclets are not supported.
             assert(m_currentFunclet == ROOT_FUNC_IDX);
 
@@ -805,9 +799,6 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     // TODO-WASM-TP: this is nice and simple, but can we do this more efficiently?
     GenTree* value          = lclNode->Data();
     GenTree* insertionPoint = value->gtFirstNodeInOperandOrder();
-
-    // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
-    // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
 
     var_types storeType = lclNode->TypeGet();
     // We can end up with a block copy operation storing a non-STRUCT into a STRUCT due to type erasure.
@@ -1112,35 +1103,12 @@ void WasmRegAlloc::ResolveReferences()
                 unreached();
         }
 
-        // Decide up front whether to cache the image base in a wasm local, so the local can be
-        // declared as part of an existing group rather than one of its own.
-        //
-        // Each use costs 6 bytes as a `global.get` (the global index is a padded relocation) and
-        // 2 bytes as a `local.get`, against 8 bytes to initialize the local in the prolog. So
-        // three uses is the first count that wins.
-        //
-        PhysicalRegBank& imageBaseBank  = virtToPhysRegMap[static_cast<unsigned>(TypeToWasmValueType(TYP_I_IMPL))];
-        const bool       cacheImageBase = data->m_imageBaseUses >= 3;
-
-        if (cacheImageBase)
-        {
-            imageBaseBank.DeclaredCount++;
-        }
-
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
             PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
             physRegs.IndexBase        = indexBase;
             physRegs.Index            = indexBase;
             indexBase += physRegs.DeclaredCount;
-        }
-
-        // Reserve the last slot of the bank for the image base. The allocator below only ever
-        // hands out the slots the virtual registers need, so it never reaches this one.
-        //
-        if (cacheImageBase)
-        {
-            funcInfo->funWasmImageBaseLocalIndex = imageBaseBank.IndexBase + imageBaseBank.DeclaredCount - 1;
         }
 
         // Allocate all our virtual registers to physical ones.
@@ -1157,7 +1125,11 @@ void WasmRegAlloc::ResolveReferences()
                     unsigned                     lclNum  = m_compiler->lvaGetLclNum(varDsc);
                     const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
                     assert(abiInfo.HasExactlyOneRegisterSegment());
-                    physReg = abiInfo.Segment(0).GetRegister();
+                    regNumber abiReg = abiInfo.Segment(0).GetRegister();
+                    if (WasmRegToType(virtReg) == WasmRegToType(abiReg))
+                    {
+                        physReg = abiReg;
+                    }
                 }
                 else if ((varDsc != nullptr) && varDsc->lvIsParamRegTarget)
                 {
@@ -1165,7 +1137,11 @@ void WasmRegAlloc::ResolveReferences()
                     const ParameterRegisterLocalMapping* mapping =
                         m_compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
                     assert(mapping != nullptr);
-                    physReg = mapping->RegisterSegment->GetRegister();
+                    regNumber abiReg = mapping->RegisterSegment->GetRegister();
+                    if (WasmRegToType(virtReg) == WasmRegToType(abiReg))
+                    {
+                        physReg = abiReg;
+                    }
                 }
             }
             else

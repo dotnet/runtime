@@ -140,8 +140,7 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            const int PostebStackBufferSize = 256;
-            Span<TChar> postebStackBuffer = stackalloc TChar[PostebStackBufferSize];
+            ReadOnlySpan<TChar> hyphen = T.PostEBPrefix[0..1];
             int areaOffset = 0;
             int preebIndex;
             while ((preebIndex = pemData.IndexOfByOffset(T.PreEBPrefix, areaOffset)) >= 0)
@@ -178,19 +177,59 @@ namespace System.Security.Cryptography
                 }
 
                 int contentStartIndex = preebEndIndex + T.Ending.Length;
-                int postebLength = T.PostEBPrefix.Length + label.Length + T.Ending.Length;
 
-                Span<TChar> postebBuffer = postebLength > PostebStackBufferSize
-                    ? new TChar[postebLength]
-                    : postebStackBuffer;
-                ReadOnlySpan<TChar> posteb = WritePostEB(label, postebBuffer);
-                int postebStartIndex = pemData.IndexOfByOffset(posteb, contentStartIndex);
+                // Find the next hyphen.  If it's not the start of a PostEB, then it's not our
+                // PostEB, so we're not a PreEB, so resume searching there.
+                //
+                // For a non-empty label, the PreEB suffix cannot start another PreEB because
+                // IsValidLabel would have returned false if the label ended with whitespace, and
+                // a PreEB must be preceded by whitespace (or be at index 0). An empty label can
+                // overlap another PreEB; that case is handled below when choosing the next offset.
+                int nextHyphen = pemData.IndexOfByOffset(hyphen, contentStartIndex);
 
-                if (postebStartIndex < 0)
+                // No hyphen at all? No PostEB, so we're done.
+                if (nextHyphen < 0)
                 {
+                    fields = default;
+                    return false;
+                }
+
+                if (!pemData.Slice(nextHyphen).StartsWith(T.PostEBPrefix))
+                {
+                    // An empty label's ending can overlap the start of another PreEB.
+                    preebEndIndex = label.IsEmpty ? labelStartIndex : nextHyphen;
                     goto NextAfterLabel;
                 }
 
+                int postebStartIndex = nextHyphen;
+                int postebLabelStartIndex = postebStartIndex + T.PostEBPrefix.Length;
+                int postebEndIndex = pemData.IndexOfByOffset(T.Ending, postebLabelStartIndex);
+
+                if (postebEndIndex < 0)
+                {
+                    fields = default;
+                    return false;
+                }
+
+                ReadOnlySpan<TChar> postLabel = pemData[postebLabelStartIndex..postebEndIndex];
+
+                // If the PostEB label doesn't match, the document looks (at best), like
+                //
+                // -----BEGIN SOMELABEL-----
+                // base64
+                // -----END OTHERLABEL-----
+                //
+                // For a non-empty label, none of the purported base64 has any other hyphens, so
+                // no other PreEB could be there. Resume searching at postebEndIndex in case it
+                // says "-----END SOMELABEL\n-----BEGIN ". An empty label can overlap another
+                // PreEB, so resume at labelStartIndex instead.
+                if (!postLabel.SequenceEqual(label))
+                {
+                    preebEndIndex = label.IsEmpty ? labelStartIndex : postebEndIndex;
+                    goto NextAfterLabel;
+                }
+
+                int postebLength = T.PostEBPrefix.Length + label.Length + T.Ending.Length;
                 int pemEndIndex = postebStartIndex + postebLength;
 
                 // The PostEB must either end at the end of the string, or
@@ -198,6 +237,9 @@ namespace System.Security.Cryptography
                 if (pemEndIndex < pemData.Length - 1 &&
                     !IsWhiteSpaceCharacter(pemData[pemEndIndex], T.Whitespace))
                 {
+                    // No matches can occur before the alleged post-EB suffix,
+                    // so jump ahead.
+                    preebEndIndex = postebEndIndex;
                     goto NextAfterLabel;
                 }
 
@@ -205,6 +247,9 @@ namespace System.Security.Cryptography
 
                 if (!TryCountBase64<TChar, T>(pemData[contentRange], out int base64start, out int base64end, out int decodedSize))
                 {
+                    // No matches can occur before the alleged post-EB suffix,
+                    // so jump ahead.
+                    preebEndIndex = postebEndIndex;
                     goto NextAfterLabel;
                 }
 
@@ -228,16 +273,6 @@ namespace System.Security.Cryptography
 
             fields = default;
             return false;
-
-            static ReadOnlySpan<TChar> WritePostEB(ReadOnlySpan<TChar> label, Span<TChar> destination)
-            {
-                int size = T.PostEBPrefix.Length + label.Length + T.Ending.Length;
-                Debug.Assert(destination.Length >= size);
-                T.PostEBPrefix.CopyTo(destination);
-                label.CopyTo(destination.Slice(T.PostEBPrefix.Length));
-                T.Ending.CopyTo(destination.Slice(T.PostEBPrefix.Length + label.Length));
-                return destination.Slice(0, size);
-            }
         }
 
         private static int IndexOfByOffset<TChar>(this ReadOnlySpan<TChar> str, ReadOnlySpan<TChar> value, int startPosition)

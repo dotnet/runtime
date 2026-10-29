@@ -379,55 +379,11 @@ static HRESULT CoCreateProfiler(
 
 //---------------------------------------------------------------------------------------
 //
-// Implementation of CHashTableImpl functions.  This class a simple implementation of
-// CHashTable to provide a very simple implementation of the Cmp pure virtual function
-//
-
-EEToProfInterfaceImpl::CHashTableImpl::CHashTableImpl(ULONG iBuckets)
-    : CHashTable(iBuckets)
-{
-    WRAPPER_NO_CONTRACT;
-}
-
-EEToProfInterfaceImpl::CHashTableImpl::~CHashTableImpl()
-{
-    WRAPPER_NO_CONTRACT;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Comparison function for hash table of ClassIDs
-//
-// Arguments:
-//      pc1 - hash key to compare
-//      pc2 - hash value to compare
-//
-// Return Value:
-//      TRUE if the key & value refer to the same ClassID; otherwise FALSE
-//
-
-BOOL EEToProfInterfaceImpl::CHashTableImpl::Cmp(SIZE_T k1, const HASHENTRY * pc2)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    ClassID key = (ClassID) k1;
-    ClassID val = ((CLASSHASHENTRY *)pc2)->m_clsId;
-
-    return (key != val);
-}
-
-
-//---------------------------------------------------------------------------------------
-// Private maintenance functions for initialization, cleanup, etc.
-
-EEToProfInterfaceImpl::AllocByClassData *EEToProfInterfaceImpl::m_pSavedAllocDataBlock = NULL;
-
-//---------------------------------------------------------------------------------------
-//
 // EEToProfInterfaceImpl ctor just sets initial values
 //
 
 EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
+    m_pSavedAllocDataBlock(NULL),
     m_pCallback2(NULL),
     m_pCallback3(NULL),
     m_pCallback4(NULL),
@@ -467,8 +423,6 @@ EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
     m_dwConcurrentGCWaitTimeoutInMs(INFINITE),
     m_bHasTimedOutWaitingForConcurrentGC(FALSE)
 {
-    // Also NULL out this static.  (Note: consider making this a member variable.)
-    m_pSavedAllocDataBlock = NULL;
     LIMITED_METHOD_CONTRACT;
 }
 
@@ -991,11 +945,6 @@ EEToProfInterfaceImpl::~EEToProfInterfaceImpl()
         _ASSERTE((UINT_PTR)m_pSavedAllocDataBlock != 0xFFFFFFFF);
 #endif
 
-        _ASSERTE(m_pSavedAllocDataBlock->pHashTable != NULL);
-        // Get rid of the hash table
-        if (m_pSavedAllocDataBlock->pHashTable)
-            delete m_pSavedAllocDataBlock->pHashTable;
-
         // Get rid of the two arrays used to hold class<->numinstance info
         if (m_pSavedAllocDataBlock->cLength != 0)
         {
@@ -1006,12 +955,7 @@ EEToProfInterfaceImpl::~EEToProfInterfaceImpl()
             delete [] m_pSavedAllocDataBlock->arrcObjects;
         }
 
-        // Get rid of the hash array used by the hash table
-        if (m_pSavedAllocDataBlock->arrHash)
-        {
-            delete [] m_pSavedAllocDataBlock->arrHash;
-        }
-
+        delete m_pSavedAllocDataBlock;
         m_pSavedAllocDataBlock = NULL;
     }
 
@@ -1086,7 +1030,7 @@ UINT_PTR EEToProfInterfaceImpl::EEFunctionIDMapper(FunctionID funcId, BOOL * pbH
         CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                     LL_INFO100,
                                     "**PROF: Calling profiler's FunctionIDMapper2. funcId: 0x%p. clientData: 0x%p.\n",
-                                    funcId,
+                                    (void*)funcId,
                                     m_pProfilersFuncIDMapper2ClientData));
 
         // The attached profiler may not want to hook this function, so ask it
@@ -1098,7 +1042,7 @@ UINT_PTR EEToProfInterfaceImpl::EEFunctionIDMapper(FunctionID funcId, BOOL * pbH
         CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                     LL_INFO100,
                                     "**PROF: Calling profiler's FunctionIDMapper. funcId: 0x%p.\n",
-                                    funcId));
+                                    (void*)funcId));
 
         // The attached profiler may not want to hook this function, so ask it
         clientId = m_pProfilersFuncIDMapper(funcId, pbHookFunction);
@@ -1413,11 +1357,6 @@ HRESULT EEToProfInterfaceImpl::EndMovedReferences(void * pHeapId)
 }
 
 
-#define HASH_ARRAY_SIZE_INITIAL 1024
-#define HASH_ARRAY_SIZE_INC     256
-#define HASH_NUM_BUCKETS        32
-#define HASH(x)       ( (ULONG) ((SIZE_T)x) )  // A simple hash function
-
 //---------------------------------------------------------------------------------------
 //
 // Callback used by the GC when walking the heap (via AllocByClassHelper in
@@ -1478,95 +1417,24 @@ HRESULT EEToProfInterfaceImpl::AllocByClass(ObjectID objId, ClassID clsId, void 
             if (pData == NULL)
                 return (E_OUTOFMEMORY);
 
-            // Create a new hash table
-            pData->pHashTable = new (nothrow) CHashTableImpl(HASH_NUM_BUCKETS);
-            if (!pData->pHashTable)
-            {
-                delete pData;
-                return (E_OUTOFMEMORY);
-            }
-
-            // Get the memory for the array that the hash table is going to use
-            pData->arrHash = new (nothrow) CLASSHASHENTRY[HASH_ARRAY_SIZE_INITIAL];
-            if (pData->arrHash == NULL)
-            {
-                delete pData->pHashTable;
-                delete pData;
-                return (E_OUTOFMEMORY);
-            }
-
-            // Save the number of elements in the array
-            pData->cHash = HASH_ARRAY_SIZE_INITIAL;
-
-            // Now initialize the hash table
-            HRESULT hr = pData->pHashTable->NewInit((BYTE *)pData->arrHash, sizeof(CLASSHASHENTRY));
-            if (hr == E_OUTOFMEMORY)
-            {
-                delete [] pData->arrHash;
-                delete pData->pHashTable;
-                delete pData;
-                return (E_OUTOFMEMORY);
-            }
-            _ASSERTE(pData->pHashTable->IsInited());
-
-            // Null some entries
-            pData->arrClsId = NULL;
-            pData->arrcObjects = NULL;
-            pData->cLength = 0;
-
             // Hold on to the structure
             m_pSavedAllocDataBlock = pData;
         }
 
-        // Got some memory and hash table to store entries, yay!
-        *((size_t *)pHeapId) = (size_t)pData;
-
         // Initialize the data
-        pData->iHash = 0;
-        pData->pHashTable->Clear();
+        pData->hashTable.RemoveAll(true);
     }
 
-    _ASSERTE(pData->iHash <= pData->cHash);
     _ASSERTE(dwProcId == GetCurrentProcessId());
 
-    // Lookup to see if this class already has an entry
-    CLASSHASHENTRY * pEntry =
-        reinterpret_cast<CLASSHASHENTRY *>(pData->pHashTable->Find(HASH(clsId), (SIZE_T)clsId));
-
-    // If this class has already been encountered, just increment the counter.
-    if (pEntry)
-        pEntry->m_count++;
-
-    // Otherwise, need to add this one as a new entry in the hash table
-    else
+    if (!pData->hashTable.Update(clsId, [](AllocByClassEntry &entry) { entry.m_count++; }))
     {
-        // If we're full, we need to realloc
-        if (pData->iHash == pData->cHash)
-        {
-            // Try to realloc the memory
-            CLASSHASHENTRY     *tmp = new (nothrow) CLASSHASHENTRY[pData->cHash + HASH_ARRAY_SIZE_INC];
-            if (!tmp)
-            {
-                return (E_OUTOFMEMORY);
-            }
-
-            _ASSERTE(pData->arrHash);
-            memcpy (tmp, pData->arrHash, pData->cHash*sizeof(CLASSHASHENTRY));
-            delete [] pData->arrHash;
-            pData->arrHash = tmp;
-            // Tell the hash table that the memory location of the array has changed
-            pData->pHashTable->SetTable((BYTE *)pData->arrHash);
-
-            // Save the new size of the array
-            pData->cHash += HASH_ARRAY_SIZE_INC;
-        }
-
-        // Now add the new entry
-        CLASSHASHENTRY *pNewEntry = (CLASSHASHENTRY *) pData->pHashTable->Add(HASH(clsId), pData->iHash++);
-
-        pNewEntry->m_clsId = clsId;
-        pNewEntry->m_count = 1;
+        AllocByClassEntry newEntry = { clsId, 1 };
+        if (!pData->hashTable.AddNoThrow(newEntry))
+            return E_OUTOFMEMORY;
     }
+
+    *((size_t *)pHeapId) = (size_t)pData;
 
     // Indicate success
     return (S_OK);
@@ -2885,7 +2753,7 @@ HRESULT EEToProfInterfaceImpl::ThreadCreated(ThreadID threadId)
                                           (LF_CORPROF,
                                            LL_INFO100,
                                            "**PROF: Notifying profiler of created thread. ThreadId: 0x%p.\n",
-                                           threadId));
+                                           (void*)threadId));
 
     // Notify the profiler of the newly created thread.
     {
@@ -2949,7 +2817,7 @@ HRESULT EEToProfInterfaceImpl::ThreadDestroyed(ThreadID threadId)
                                           (LF_CORPROF,
                                            LL_INFO100,
                                            "**PROF: Notifying profiler of destroyed thread. ThreadId: 0x%p.\n",
-                                           threadId));
+                                           (void*)threadId));
 
     // From now on, issue no more callbacks for this thread
     SetProfilerCallbacksAllowedForThread((Thread *) threadId, FALSE);
@@ -2993,7 +2861,7 @@ HRESULT EEToProfInterfaceImpl::ThreadAssignedToOSThread(ThreadID managedThreadId
         (LF_CORPROF,
         LL_INFO100,
         "**PROF: Notifying profiler of thread assignment.  ThreadId: 0x%p, OSThreadId: 0x%08x\n",
-        managedThreadId,
+        (void*)managedThreadId,
         osThreadId));
 
     // Notify the profiler of the thread being assigned to the OS thread
@@ -3113,7 +2981,7 @@ HRESULT EEToProfInterfaceImpl::JITCompilationFinished(FunctionID functionId,
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: JITCompilationFinished 0x%p, hr=0x%08x.\n",
-                                functionId,
+                                (void*)functionId,
                                 hrStatus));
 
     _ASSERTE(functionId);
@@ -3152,7 +3020,7 @@ HRESULT EEToProfInterfaceImpl::JITCompilationStarted(FunctionID functionId,
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: JITCompilationStarted 0x%p.\n",
-                                functionId));
+                                (void*)functionId));
 
     // Currently JITCompilationStarted is always called with fIsSafeToBlock==TRUE.  If this ever changes,
     // it's safe to remove this assert, but this should serve as a trigger to change our
@@ -3183,7 +3051,7 @@ HRESULT EEToProfInterfaceImpl::DynamicMethodUnloaded(FunctionID functionId)
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
         LL_INFO1000,
         "**PROF: DynamicMethodUnloaded 0x%p.\n",
-        functionId));
+        (void*)functionId));
 
     _ASSERTE(functionId);
 
@@ -3219,7 +3087,7 @@ HRESULT EEToProfInterfaceImpl::DynamicMethodJITCompilationFinished(FunctionID fu
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: DynamicMethodJITCompilationFinished 0x%p.\n",
-                                functionId));
+                                (void*)functionId));
 
     _ASSERTE(functionId);
 
@@ -3256,7 +3124,7 @@ HRESULT EEToProfInterfaceImpl::DynamicMethodJITCompilationStarted(FunctionID fun
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: DynamicMethodJITCompilationStarted 0x%p.\n",
-                                functionId));
+                                (void*)functionId));
 
     _ASSERTE(functionId);
 
@@ -3304,7 +3172,7 @@ HRESULT EEToProfInterfaceImpl::JITCachedFunctionSearchStarted(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: JITCachedFunctionSearchStarted 0x%p.\n",
-                                functionId));
+                                (void*)functionId));
     _ASSERTE(functionId);
     _ASSERTE(pbUseCachedFunction != NULL);
 
@@ -3342,7 +3210,7 @@ HRESULT EEToProfInterfaceImpl::JITCachedFunctionSearchFinished(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: JITCachedFunctionSearchFinished 0x%p, %s.\n",
-                                functionId,
+                                (void*)functionId,
                                 (result == COR_PRF_CACHED_FUNCTION_FOUND ?
                                     "Cached function found" :
                                     "Cached function not found")));
@@ -3391,8 +3259,8 @@ HRESULT EEToProfInterfaceImpl::JITInlining(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: JITInlining caller: 0x%p, callee: 0x%p.\n",
-                                callerId,
-                                calleeId));
+                                (void*)callerId,
+                                (void*)calleeId));
 
     _ASSERTE(callerId);
     _ASSERTE(calleeId);
@@ -3432,7 +3300,7 @@ HRESULT EEToProfInterfaceImpl::ReJITCompilationStarted(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: ReJITCompilationStarted 0x%p 0x%p.\n",
-                                functionId, reJitId));
+                                (void*)functionId, (void*)reJitId));
 
     // Should only be called on profilers that support ICorProfilerCallback4
     _ASSERTE(m_pCallback4 != NULL);
@@ -3480,8 +3348,8 @@ HRESULT EEToProfInterfaceImpl::GetReJITParameters(
 
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
-                                "**PROF: GetReJITParameters 0x%p 0x%p.\n",
-                                moduleId, methodId));
+                                "**PROF: GetReJITParameters 0x%p 0x%x.\n",
+                                (void*)moduleId, methodId));
 
     // Should only be called on profilers that support ICorProfilerCallback4
     _ASSERTE(m_pCallback4 != NULL);
@@ -3524,7 +3392,7 @@ HRESULT EEToProfInterfaceImpl::ReJITCompilationFinished(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: ReJITCompilationFinished 0x%p 0x%p hr=0x%x.\n",
-                                functionId, reJitId, hrStatus));
+                                (void*)functionId, (void*)reJitId, hrStatus));
 
     // Should only be called on profilers that support ICorProfilerCallback4
     _ASSERTE(m_pCallback4 != NULL);
@@ -3567,7 +3435,7 @@ HRESULT EEToProfInterfaceImpl::ReJITError(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: ReJITError 0x%p 0x%x 0x%p 0x%x.\n",
-                                moduleId, methodId, functionId, hrStatus));
+                                (void*)moduleId, methodId, (void*)functionId, hrStatus));
 
     // Should only be called on profilers that support ICorProfilerCallback4
     _ASSERTE(m_pCallback4 != NULL);
@@ -3608,7 +3476,7 @@ HRESULT EEToProfInterfaceImpl::ModuleLoadStarted(ModuleID moduleId)
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: ModuleLoadStarted 0x%p.\n",
-                                moduleId));
+                                (void*)moduleId));
 
     _ASSERTE(moduleId != 0);
 
@@ -3646,7 +3514,7 @@ HRESULT EEToProfInterfaceImpl::ModuleLoadFinished(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: ModuleLoadFinished 0x%p.\n",
-                                moduleId));
+                                (void*)moduleId));
 
     _ASSERTE(moduleId != 0);
 
@@ -3683,7 +3551,7 @@ HRESULT EEToProfInterfaceImpl::ModuleUnloadStarted(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: ModuleUnloadStarted 0x%p.\n",
-                                moduleId));
+                                (void*)moduleId));
 
     _ASSERTE(moduleId != 0);
 
@@ -3720,7 +3588,7 @@ HRESULT EEToProfInterfaceImpl::ModuleUnloadFinished(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: ModuleUnloadFinished 0x%p.\n",
-                                moduleId));
+                                (void*)moduleId));
     _ASSERTE(moduleId != 0);
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -3755,8 +3623,8 @@ HRESULT EEToProfInterfaceImpl::ModuleAttachedToAssembly(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: ModuleAttachedToAssembly 0x%p, 0x%p.\n",
-                                moduleId,
-                                AssemblyId));
+                                (void*)moduleId,
+                                (void*)AssemblyId));
 
     _ASSERTE(moduleId != 0);
 
@@ -3790,7 +3658,7 @@ HRESULT EEToProfInterfaceImpl::ModuleInMemorySymbolsUpdated(ModuleID moduleId)
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
         LL_INFO10,
         "**PROF: ModuleInMemorySymbolsUpdated.  moduleId: 0x%p.\n",
-        moduleId
+        (void*)moduleId
         ));
     HRESULT hr = S_OK;
 
@@ -3835,7 +3703,7 @@ HRESULT EEToProfInterfaceImpl::ClassLoadStarted(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO100,
                                 "**PROF: ClassLoadStarted 0x%p.\n",
-                                classId));
+                                (void*)classId));
 
     _ASSERTE(classId);
 
@@ -3874,7 +3742,7 @@ HRESULT EEToProfInterfaceImpl::ClassLoadFinished(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO100,
                                 "**PROF: ClassLoadFinished 0x%p, 0x%08x.\n",
-                                classId,
+                                (void*)classId,
                                 hrStatus));
 
     _ASSERTE(classId);
@@ -3916,7 +3784,7 @@ HRESULT EEToProfInterfaceImpl::ClassUnloadStarted(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO100,
                                 "**PROF: ClassUnloadStarted 0x%p.\n",
-                                classId));
+                                (void*)classId));
 
     _ASSERTE(classId);
 
@@ -3955,7 +3823,7 @@ HRESULT EEToProfInterfaceImpl::ClassUnloadFinished(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO100,
                                 "**PROF: ClassUnloadFinished 0x%p, 0x%08x.\n",
-                                classId,
+                                (void*)classId,
                                 hrStatus));
 
     _ASSERTE(classId);
@@ -3995,7 +3863,7 @@ HRESULT EEToProfInterfaceImpl::AppDomainCreationStarted(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: AppDomainCreationStarted 0x%p.\n",
-                                appDomainId));
+                                (void*)appDomainId));
 
     _ASSERTE(appDomainId != 0);
 
@@ -4032,7 +3900,7 @@ HRESULT EEToProfInterfaceImpl::AppDomainCreationFinished(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: AppDomainCreationFinished 0x%p, 0x%08x.\n",
-                                appDomainId,
+                                (void*)appDomainId,
                                 hrStatus));
 
     _ASSERTE(appDomainId != 0);
@@ -4068,7 +3936,7 @@ HRESULT EEToProfInterfaceImpl::AppDomainShutdownStarted(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: AppDomainShutdownStarted 0x%p.\n",
-                                appDomainId));
+                                (void*)appDomainId));
 
     _ASSERTE(appDomainId != 0);
 
@@ -4104,7 +3972,7 @@ HRESULT EEToProfInterfaceImpl::AppDomainShutdownFinished(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: AppDomainShutdownFinished 0x%p, 0x%08x.\n",
-                                appDomainId,
+                                (void*)appDomainId,
                                 hrStatus));
 
     _ASSERTE(appDomainId != 0);
@@ -4146,7 +4014,7 @@ HRESULT EEToProfInterfaceImpl::AssemblyLoadStarted(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: AssemblyLoadStarted 0x%p.\n",
-                                assemblyId));
+                                (void*)assemblyId));
 
     _ASSERTE(assemblyId != 0);
 
@@ -4184,7 +4052,7 @@ HRESULT EEToProfInterfaceImpl::AssemblyLoadFinished(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: AssemblyLoadFinished 0x%p, 0x%08x.\n",
-                                assemblyId,
+                                (void*)assemblyId,
                                 hrStatus));
 
     _ASSERTE(assemblyId != 0);
@@ -4220,7 +4088,7 @@ HRESULT EEToProfInterfaceImpl::AssemblyUnloadStarted(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: AssemblyUnloadStarted 0x%p.\n",
-                                assemblyId));
+                                (void*)assemblyId));
 
     _ASSERTE(assemblyId != 0);
 
@@ -4256,7 +4124,7 @@ HRESULT EEToProfInterfaceImpl::AssemblyUnloadFinished(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: AssemblyUnloadFinished 0x%p, 0x%08x.\n",
-                                assemblyId,
+                                (void*)assemblyId,
                                 hrStatus));
 
     _ASSERTE(assemblyId != 0);
@@ -4297,7 +4165,7 @@ HRESULT EEToProfInterfaceImpl::UnmanagedToManagedTransition(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10000,
                                 "**PROF: UnmanagedToManagedTransition 0x%p.\n",
-                                functionId));
+                                (void*)functionId));
 
     _ASSERTE(reason == COR_PRF_TRANSITION_CALL || reason == COR_PRF_TRANSITION_RETURN);
 
@@ -4334,7 +4202,7 @@ HRESULT EEToProfInterfaceImpl::ManagedToUnmanagedTransition(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10000,
                                 "**PROF: ManagedToUnmanagedTransition 0x%p.\n",
-                                functionId));
+                                (void*)functionId));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -4371,7 +4239,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionThrown(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: ExceptionThrown. ObjectID: 0x%p. ThreadID: 0x%p\n",
-                                thrownObjectId,
+                                (void*)thrownObjectId,
                                 GetThreadNULLOk()));
 
     {
@@ -4406,7 +4274,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionSearchFunctionEnter(
                                 LL_INFO1000,
                                 "**PROF: ExceptionSearchFunctionEnter. ThreadID: 0x%p, functionId: 0x%p\n",
                                 GetThreadNULLOk(),
-                                functionId));
+                                (void*)functionId));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -4471,7 +4339,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionSearchFilterEnter(FunctionID functionId)
                                 LL_INFO1000,
                                 "**PROF: ExceptionSearchFilterEnter. ThreadID: 0x%p, functionId: 0x%p\n",
                                 GetThreadNULLOk(),
-                                functionId));
+                                (void*)functionId));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -4583,7 +4451,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionUnwindFunctionEnter(FunctionID functionI
         LL_INFO1000,
         "**PROF: ExceptionUnwindFunctionEnter. ThreadID: 0x%p, functionId: 0x%p\n",
         GetThreadNULLOk(),
-        functionId));
+        (void*)functionId));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -4654,7 +4522,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionUnwindFinallyEnter(FunctionID functionId
         LL_INFO1000,
         "**PROF: ExceptionUnwindFinallyEnter. ThreadID: 0x%p, functionId: 0x%p\n",
         GetThreadNULLOk(),
-        functionId));
+        (void*)functionId));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -4724,7 +4592,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionCatcherEnter(FunctionID functionId, Obje
         (LF_CORPROF,
         LL_INFO1000, "**PROF: ExceptionCatcherEnter.        ThreadID: 0x%p, functionId: 0x%p\n",
         GetThreadNULLOk(),
-        functionId));
+        (void*)functionId));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -4798,8 +4666,8 @@ HRESULT EEToProfInterfaceImpl::COMClassicVTableCreated(
 
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO100,
-                                "**PROF: COMClassicWrapperCreated %#x %#08x... %#x %d.\n",
-                                classId,
+                                "**PROF: COMClassicWrapperCreated %#lx %#08x... %p %d.\n",
+                                (unsigned long)classId,
                                 implementedIID.Data1,
                                 pVTable,
                                 cSlots));
@@ -4841,8 +4709,8 @@ HRESULT EEToProfInterfaceImpl::COMClassicVTableDestroyed(
 
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO100,
-                                "**PROF: COMClassicWrapperDestroyed %#x %#08x... %#x.\n",
-                                classId,
+                                "**PROF: COMClassicWrapperDestroyed %#lx %#08x... %p.\n",
+                                (unsigned long)classId,
                                 implementedIID.Data1,
                                 pVTable));
 
@@ -5083,8 +4951,8 @@ HRESULT EEToProfInterfaceImpl::RuntimeThreadSuspended(ThreadID suspendedThreadId
 
     CHECK_PROFILER_STATUS(kEE2PNone);
 
-    LOG((LF_CORPROF, LL_INFO1000, "**PROF: RuntimeThreadSuspended. ThreadID 0x%p.\n",
-         suspendedThreadId));
+        LOG((LF_CORPROF, LL_INFO1000, "**PROF: RuntimeThreadSuspended. ThreadID 0x%p.\n",
+            (void*)suspendedThreadId));
 
     // NOTE: We're notrigger, so we cannot switch to preemptive mode.
 
@@ -5179,7 +5047,7 @@ HRESULT EEToProfInterfaceImpl::RuntimeThreadResumed(ThreadID resumedThreadId)
 
     CHECK_PROFILER_STATUS(kEE2PNone);
 
-    LOG((LF_CORPROF, LL_INFO1000, "**PROF: RuntimeThreadResumed. ThreadID 0x%p.\n", resumedThreadId));
+    LOG((LF_CORPROF, LL_INFO1000, "**PROF: RuntimeThreadResumed. ThreadID 0x%p.\n", (void*)resumedThreadId));
 
     // NOTE: We're notrigger, so we cannot switch to preemptive mode.
 
@@ -5233,8 +5101,8 @@ HRESULT EEToProfInterfaceImpl::ObjectAllocated(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: ObjectAllocated. ObjectID: 0x%p.  ClassID: 0x%p\n",
-                                objectId,
-                                classId));
+                                (void*)objectId,
+                                (void*)classId));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5375,10 +5243,11 @@ HRESULT EEToProfInterfaceImpl::NotifyAllocByClass(AllocByClassData *pData)
         "**PROF: ObjectsAllocatedByClass.\n"));
 
     _ASSERTE(pData != NULL);
-    _ASSERTE(pData->iHash > 0);
+    ULONG classCount = pData->hashTable.GetCount();
+    _ASSERTE(classCount > 0);
 
     // If the arrays are not long enough, get rid of them.
-    if (pData->cLength != 0 && pData->iHash > pData->cLength)
+    if (pData->cLength != 0 && classCount > pData->cLength)
     {
         _ASSERTE(pData->arrClsId != NULL && pData->arrcObjects != NULL);
         delete [] pData->arrClsId;
@@ -5389,13 +5258,13 @@ HRESULT EEToProfInterfaceImpl::NotifyAllocByClass(AllocByClassData *pData)
     // If there are no arrays, must allocate them.
     if (pData->cLength == 0)
     {
-        pData->arrClsId = new (nothrow) ClassID[pData->iHash];
+        pData->arrClsId = new (nothrow) ClassID[classCount];
         if (pData->arrClsId == NULL)
         {
             return E_OUTOFMEMORY;
         }
 
-        pData->arrcObjects = new (nothrow) ULONG[pData->iHash];
+        pData->arrcObjects = new (nothrow) ULONG[classCount];
         if (pData->arrcObjects == NULL)
         {
             delete [] pData->arrClsId;
@@ -5405,34 +5274,31 @@ HRESULT EEToProfInterfaceImpl::NotifyAllocByClass(AllocByClassData *pData)
         }
 
         // Indicate that the memory was successfully allocated
-        pData->cLength = pData->iHash;
+        pData->cLength = classCount;
     }
 
     // Now copy all the data
-    HASHFIND hFind;
-    CLASSHASHENTRY * pCur = (CLASSHASHENTRY *) pData->pHashTable->FindFirstEntry(&hFind);
     size_t iCur = 0;    // current index for arrays
 
-    while (pCur != NULL)
+    for (AllocByClassTable::Iterator entry = pData->hashTable.Begin(); entry != pData->hashTable.End(); entry++)
     {
-        _ASSERTE(iCur < pData->iHash);
+        _ASSERTE(iCur < classCount);
 
-        pData->arrClsId[iCur] = pCur->m_clsId;
-        pData->arrcObjects[iCur] = (DWORD) pCur->m_count;
+        pData->arrClsId[iCur] = entry->m_clsId;
+        pData->arrcObjects[iCur] = (DWORD) entry->m_count;
 
         // Move to the next entry
         iCur++;
-        pCur = (CLASSHASHENTRY *) pData->pHashTable->FindNextEntry(&hFind);
     }
 
-    _ASSERTE(iCur == pData->iHash);
+    _ASSERTE(iCur == classCount);
 
     // Now communicate the results to the profiler
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
         // whose try/catch blocks aren't visible to the contract system
         PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
-        return m_pCallback2->ObjectsAllocatedByClass((ULONG)pData->iHash, pData->arrClsId, pData->arrcObjects);
+        return m_pCallback2->ObjectsAllocatedByClass(classCount, pData->arrClsId, pData->arrcObjects);
     }
 }
 

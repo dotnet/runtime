@@ -167,10 +167,6 @@ struct RuntimeThreadLocals
 #ifdef FEATURE_SUSPEND_REDIRECTION
     uint8_t*                m_redirectionContextBuffer;             // storage for redirection context, allocated on demand
 #endif //FEATURE_SUSPEND_REDIRECTION
-
-#ifdef FEATURE_GC_STRESS
-    uint32_t                m_uRand;                                // current per-thread random number
-#endif // FEATURE_GC_STRESS
 };
 
 struct ReversePInvokeFrame
@@ -194,14 +190,9 @@ public:
                                                     // ...Prior to setting this bit the state is TSF_Unknown.
         TSF_Detached            = 0x00000002,       // Thread was detached and no longer can run managed code.
                                                     // ...TSF_Attached is cleared when TSF_Detached is set.
-        TSF_SuppressGcStress    = 0x00000008,       // Do not allow gc stress on this thread, used in DllMain
-                                                    // ...and on the Finalizer thread
         TSF_DoNotTriggerGc      = 0x00000010,       // Do not allow hijacking of this thread, also intended to
                                                     // ...be checked during allocations in debug builds.
         TSF_IsGcSpecialThread   = 0x00000020,       // Set to indicate a GC worker thread used for background GC
-#ifdef FEATURE_GC_STRESS
-        TSF_IsRandSeedSet       = 0x00000040,       // set to indicate the random number generator for GCStress was inited
-#endif // FEATURE_GC_STRESS
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
         TSF_Redirected          = 0x00000080,       // Set to indicate the thread is redirected and will inevitably
@@ -230,7 +221,6 @@ private:
     bool IsStateSet(ThreadStateFlags flags);
 
 #ifdef FEATURE_HIJACK
-    void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction);
     void CrossThreadUnhijack();
@@ -293,13 +283,6 @@ public:
     static bool         IsHijackTarget(void * address) { return false; }
 #endif // FEATURE_HIJACK
 
-#ifdef FEATURE_GC_STRESS
-    static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
-#endif // FEATURE_GC_STRESS
-
-    bool                IsSuppressGcStressSet();
-    void                SetSuppressGcStress();
-    void                ClearSuppressGcStress();
     bool                IsWithinStackBounds(PTR_VOID p);
     void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
     void                PushExInfo(ExInfo * pExInfo);
@@ -318,11 +301,6 @@ public:
 #ifndef DACCESS_COMPILE
     void                SetThreadStressLog(void * ptsl);
 #endif // DACCESS_COMPILE
-#ifdef FEATURE_GC_STRESS
-    void                SetRandomSeed(uint32_t seed);
-    uint32_t            NextRand();
-    bool                IsRandInited();
-#endif // FEATURE_GC_STRESS
     PTR_ExInfo          GetCurExInfo();
 
     bool                IsCurrentThreadInCooperativeMode();

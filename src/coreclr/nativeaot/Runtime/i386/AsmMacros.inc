@@ -115,7 +115,6 @@ endm
 ;;
 ;; CONSTANTS -- INTEGER
 ;;
-TSF_SuppressGcStress            equ 08h
 TSF_DoNotTriggerGc              equ 10h
 
 ;; GC type flags
@@ -156,16 +155,11 @@ G_EPHEMERAL_HIGH                            equ _g_ephemeral_high
 G_CARD_TABLE                                equ _g_card_table
 RhpWaitForGC2                               equ @RhpWaitForGC2@4
 RhpTrapThreads                              equ _RhpTrapThreads
-RhpStressGc                                 equ @RhpStressGc@0
 RhpGcPoll2                                  equ @RhpGcPoll2@4
 RhHandleGet                                 equ @RhHandleGet@4
 DivInt64Internal                            equ @DivInt64Internal_FCall@16
 RhpGcSafeZeroMemory                         equ @RhpGcSafeZeroMemory@8
 RhpGetNumThunkBlocksPerMapping              equ @RhpGetNumThunkBlocksPerMapping@0
-
-ifdef FEATURE_GC_STRESS
-THREAD__HIJACKFORGCSTRESS                   equ ?HijackForGcStress@Thread@@SGXPAUPAL_LIMITED_CONTEXT@@@Z
-endif ;; FEATURE_GC_STRESS
 
 ;;
 ;; IMPORTS
@@ -189,11 +183,6 @@ EXTERN RhHandleGet                              : PROC
 EXTERN RhpGcSafeZeroMemory                      : PROC
 EXTERN RhpGetNumThunkBlocksPerMapping           : PROC
 EXTERN DivInt64Internal                         : PROC
-
-ifdef FEATURE_GC_STRESS
-EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
-EXTERN RhpStressGc                              : PROC
-endif ;; FEATURE_GC_STRESS
 
 EXTERN G_LOWEST_ADDRESS : DWORD
 EXTERN G_HIGHEST_ADDRESS : DWORD

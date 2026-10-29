@@ -306,8 +306,10 @@ struct ResolveHolder
 
         // ResolveStub._failEntryPoint(a0:MethodToken, a1,.., a7, t5:IndirectionCellAndFlags)
         // {
-        //     if(--*(this._pCounter) < 0) t5 = t5 | SDF_ResolveBackPatch;
-        //     this._resolveEntryPoint(a0, [a1..a7]);
+        //     if (--*(this._pCounter) >= 0)
+        //         return this._resolveEntryPoint(a0, [a1..a7]);
+        //     t5 = t5 | SDF_ResolveBackPatch;
+        //     return this._slowEntryPoint(a0, [a1..a7]);
         // }
 //#undef PC_REL_OFFSET
 //#define PC_REL_OFFSET(_member, _index) (((INT32)(offsetof(ResolveStub, _member) - (offsetof(ResolveStub, _failEntryPoint[_index])))) & 0xffff)
@@ -328,16 +330,16 @@ struct ResolveHolder
         _stub._failEntryPoint[4] = 0x01f32023;
 
         static_assert(SDF_ResolveBackPatch == 0x1);
-        // ;; ori t5, t5, t6 >=0 ? SDF_ResolveBackPatch:0;
+        // ;; t6 = t6 < 0 ? SDF_ResolveBackPatch : 0;
         // 	slti t6, t6, 0
         _stub._failEntryPoint[5] = 0x000faf93;
-        // 	xori t6, t6, 1
-        _stub._failEntryPoint[6] = 0x001fcf93;
+        // 	beq t6, x0, _resolveEntryPoint
+        _stub._failEntryPoint[6] = 0xf80f84e3;
         // 	or  t5, t5, t6
         _stub._failEntryPoint[7] = 0x01ff6f33;
 
-        // 	j	_resolveEntryPoint   // pc - 128 = pc + 4 - resolveEntryPointLen * 4 - slowEntryPointLen * 4 - failEntryPointLen * 4;
-        _stub._failEntryPoint[8] = 0xf81ff06f;
+        // 	j	_slowEntryPoint
+        _stub._failEntryPoint[8] = 0xfd1ff06f;
 
         static_assert(9 == ResolveStub::failEntryPointLen);
         _stub._pCounter = counterAddr;

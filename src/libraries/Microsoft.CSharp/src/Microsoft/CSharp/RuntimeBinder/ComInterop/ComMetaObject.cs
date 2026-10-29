@@ -9,6 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     // Note: we only need to support the operations used by ComBinder
     [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class ComMetaObject : DynamicMetaObject
     {
         internal ComMetaObject(Expression expression, BindingRestrictions restrictions, object arg)

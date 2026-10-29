@@ -6,7 +6,7 @@ using System.Numerics;
 using Point = System.Numerics.Vector4;
 using Xunit;
 
-namespace VectorMathTests
+namespace SIMDTests.AbsSqrtTests
 {
     public class Program
     {

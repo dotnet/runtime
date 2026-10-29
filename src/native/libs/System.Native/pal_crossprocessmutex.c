@@ -69,16 +69,19 @@ static int32_t AcquirePThreadMutexWithTimeout(pthread_mutex_t* mutex, int32_t ti
 #endif
 }
 
+// This layout lives in the shared memory file and is shared with other processes. It must match the layout written by the
+// CoreCLR PAL in .NET 10 and earlier (NamedMutexSharedData in src/coreclr/pal/src/include/pal/mutex.hpp), since both
+// implementations use the same SyncSystemVersion. In particular, OwnerThreadId is 64 bits wide and IsAbandoned follows it.
 struct LowLevelCrossProcessMutex
 {
     pthread_mutex_t Mutex;
     uint32_t OwnerProcessId;
-    uint32_t OwnerThreadId;
+    uint64_t OwnerThreadId;
     uint8_t IsAbandoned;
 };
 
 #define INVALID_PROCESS_ID (uint32_t)(-1)
-#define INVALID_THREAD_ID (uint32_t)(-1)
+#define INVALID_THREAD_ID (uint64_t)(-1)
 
 int32_t SystemNative_LowLevelCrossProcessMutex_Size(void)
 {
@@ -136,7 +139,7 @@ int32_t SystemNative_LowLevelCrossProcessMutex_Destroy(LowLevelCrossProcessMutex
     return ConvertErrorPlatformToPal(pthread_mutex_destroy(&mutex->Mutex));
 }
 
-void SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t* pOwnerProcessId, uint32_t* pOwnerThreadId)
+void SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t* pOwnerProcessId, uint64_t* pOwnerThreadId)
 {
     assert(mutex != NULL);
     assert(pOwnerProcessId != NULL);
@@ -146,7 +149,7 @@ void SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(LowLevelC
     *pOwnerThreadId = mutex->OwnerThreadId;
 }
 
-void SystemNative_LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t ownerProcessId, uint32_t ownerThreadId)
+void SystemNative_LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(LowLevelCrossProcessMutex* mutex, uint32_t ownerProcessId, uint64_t ownerThreadId)
 {
     assert(mutex != NULL);
 

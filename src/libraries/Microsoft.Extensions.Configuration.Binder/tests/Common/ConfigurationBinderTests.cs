@@ -2710,7 +2710,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(CultureInfo.GetCultureInfoByIetfLanguageTag("yo-NG"), obj.Prop17);
             Assert.Equal(DateTime.Parse("2023-03-29T18:23:43.9977489+00:00", CultureInfo.InvariantCulture), obj.Prop19);
             Assert.Equal(DateTimeOffset.Parse("2023-03-29T18:21:22.8046981+00:00", CultureInfo.InvariantCulture), obj.Prop20);
-            Assert.Equal((decimal)5.3, obj.Prop21);
+            Assert.Equal(5.3m, obj.Prop21);
             Assert.Equal(TimeSpan.Parse("10675199.02:48:05.4775807", CultureInfo.InvariantCulture), obj.Prop23);
             Assert.Equal(Guid.Parse("e905a75b-d195-494d-8938-e55dcee44574"), obj.Prop24);
             Uri.TryCreate("https://microsoft.com", UriKind.RelativeOrAbsolute, out Uri? value);
@@ -2882,6 +2882,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 #if !BUILDING_SOURCE_GENERATOR_TESTS
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135045", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public void TraceSwitchTest()
         {
             var dic = new Dictionary<string, string>
@@ -2912,6 +2913,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 #if !BUILDING_SOURCE_GENERATOR_TESTS
         [ActiveIssue("Investigate Build browser-wasm linux Release LibraryTests_EAT CI failure for reflection impl", TestPlatforms.Browser)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135045", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsReadyToRunCompiled))]
 #endif
         public void TestGraphWithUnsupportedMember()
         {

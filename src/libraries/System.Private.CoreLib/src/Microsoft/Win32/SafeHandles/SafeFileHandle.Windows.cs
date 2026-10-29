@@ -336,10 +336,9 @@ namespace Microsoft.Win32.SafeHandles
         // GetNamedPipeInfo requires GENERIC_READ or GENERIC_WRITE and FILE_READ_ATTRIBUTES access.
         // There are valid scenarios like CreateNamedPipeW(PIPE_ACCESS_OUTBOUND) where GetNamedPipeInfo fails with ERROR_ACCESS_DENIED.
         // 3. Switching from GetNamedPipeInfo to getsockopt to distinguish pipes from sockets. It would add a dependency on ws2_32.dll, which is not desirable.
-        // That is why we use the cached file type (if available), and if not available, we use GetFileType to determine whether the file is seekable or not.
-        private bool GetCanSeekCore() => _cachedFileType != -1
-            ? (FileHandleType)_cachedFileType == FileHandleType.RegularFile
-            : Interop.Kernel32.GetFileType(this) == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
+        // That is why we use GetFileType directly. Using the cached Type value would make the result depend on whether Type was queried first:
+        // handles such as symbolic links are FILE_TYPE_DISK, but their refined type is not RegularFile.
+        private bool GetCanSeekCore() => Interop.Kernel32.GetFileType(this) == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
 
         internal FileHandleType GetFileTypeCore()
         {

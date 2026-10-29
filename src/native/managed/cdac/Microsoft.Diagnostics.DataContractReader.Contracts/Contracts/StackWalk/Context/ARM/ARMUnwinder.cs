@@ -625,6 +625,15 @@ internal class ARMUnwinder(Target target)
         vfpSaveCount >>= 16;
 
         //
+        // Move LR->PC for the pop case if the Ret field is 0. This must be
+        // accurate so that the opcode size computation below is correct.
+        //
+        if (retBits == 0)
+        {
+            popMask = (popMask & ~0x4000u) | 0x8000u;
+        }
+
+        //
         // If the stack adjustment is folded into the push/pop, encode this
         // by setting one of the low 4 bits of the push/pop mask and recovering
         // the actual stack adjustment.
@@ -845,13 +854,16 @@ internal class ARMUnwinder(Target target)
         // While iterating, accumulate the total scope size.
         //
         uint scopeSize = 0;
-        byte opcode = _target.Read<byte>(unwindCodePtr);
-        while (unwindCodePtr < unwindCodesEndPtr && opcode < 0xfd)
+        byte opcode = 0;
+        while (unwindCodePtr < unwindCodesEndPtr)
         {
+            opcode = _target.Read<byte>(unwindCodePtr);
+            if (opcode >= 0xfd)
+                break;
+
             byte tableValue = UnwindOpTable[opcode];
             scopeSize += (uint)tableValue >> 4;
             unwindCodePtr += tableValue & 0xfu;
-            opcode = _target.Read<byte>(unwindCodePtr);
         }
 
         //

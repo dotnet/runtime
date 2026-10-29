@@ -1487,21 +1487,19 @@ DAC_INSTANCE*
 DacInstanceManager::Add(DAC_INSTANCE* inst)
 {
     _ASSERTE(inst != NULL);
-    const KeyValuePair<TADDR, DAC_INSTANCE*>* pEntry = m_hash.LookupPtr(inst->addr);
-    if (pEntry != NULL)
-    {
-        DAC_INSTANCE* existing = pEntry->Value();
+    if (!m_hash.Update(inst->addr, [&](KeyValuePair<TADDR, DAC_INSTANCE*> &entry)
+        {
+            DAC_INSTANCE* existing = entry.Value();
 
-        //This is necessary to preserve the semantics of Supersede, however, it
-        //is more or less dead code.
-        inst->next = existing;
+            //This is necessary to preserve the semantics of Supersede, however, it
+            //is more or less dead code.
+            inst->next = existing;
 
-        //verify descending order
-        _ASSERTE(inst->size >= existing->size);
+            //verify descending order
+            _ASSERTE(inst->size >= existing->size);
 
-        m_hash.ReplacePtr(pEntry, KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst));
-    }
-    else
+            entry = KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst);
+        }))
     {
         inst->next = NULL;
         m_hash.Add(KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst));
@@ -1747,7 +1745,11 @@ DacInstanceManager::Supersede(DAC_INSTANCE* inst)
                 // Removing the head of the chain.
                 if (inst->next != NULL)
                 {
-                    m_hash.ReplacePtr(pEntry, KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst->next));
+                    bool updated = m_hash.Update(inst->addr, [&](KeyValuePair<TADDR, DAC_INSTANCE*> &entry)
+                    {
+                        entry = KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst->next);
+                    });
+                    _ASSERTE(updated);
                 }
                 else
                 {
@@ -5138,7 +5140,15 @@ ClrDataAccess::Initialize(void)
 #endif
 
     CorDebugPlatform targetPlatform;
-    IfFailRet(m_pTarget->GetPlatform(&targetPlatform));
+    hr = m_pTarget->GetPlatform(&targetPlatform);
+    if (hr == E_NOTIMPL)
+    {
+        targetPlatform = hostPlatform; // If the target doesn't implement GetPlatform, assume it matches the host platform.
+    }
+    else
+    {
+        IfFailRet(hr);
+    }
 
     if (targetPlatform != hostPlatform)
     {
@@ -6558,7 +6568,9 @@ CLRDataCreateInstance(REFIID iid,
     if (enable.IsSet())
     {
         DWORD val;
-        if (enable.TryAsInteger(10, val) && val == 1)
+        // cDAC does not yet support the memory enumeration used to create debugger dumps.
+        if (enable.TryAsInteger(10, val) && val == 1 &&
+            !(IsEqualIID(iid, __uuidof(ICLRDataEnumMemoryRegions))))
         {
             // TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
             uint64_t contractDescriptorAddr = 0;
@@ -6572,11 +6584,11 @@ CLRDataCreateInstance(REFIID iid,
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.
-                    cdac.CreateSosInterface(&cdacInterface);
-                    _ASSERTE(cdacInterface != nullptr);
-
-                    // Lifetime is now managed by cDAC implementation of SOS interfaces
-                    pClrDataAccess->Release();
+                    if (cdac.CreateSosInterface(&cdacInterface) == S_OK && cdacInterface != nullptr)
+                    {
+                        // Lifetime is now managed by cDAC implementation of SOS interfaces.
+                        pClrDataAccess->Release();
+                    }
                 }
 
                 // Release the AddRef from the QI.

@@ -16,6 +16,8 @@ namespace System.Net
     /// </summary>
     internal class CommandStream : NetworkStreamWrapper
     {
+        private const int MaxResponseLength = 4 * 1024;
+
         private static readonly AsyncCallback s_writeCallbackDelegate = new AsyncCallback(WriteCallback);
         private static readonly AsyncCallback s_readCallbackDelegate = new AsyncCallback(ReadCallback);
 
@@ -403,6 +405,11 @@ namespace System.Net
 
         private static void ReadCallback(IAsyncResult asyncResult)
         {
+            if (asyncResult.CompletedSynchronously)
+            {
+                return;
+            }
+
             ReceiveState state = (ReceiveState)asyncResult.AsyncState!;
             try
             {
@@ -517,16 +524,22 @@ namespace System.Net
                     {
                         if (_isAsync)
                         {
-                            BeginRead(state.Buffer, 0, state.Buffer.Length, s_readCallbackDelegate, state);
-                            return null;
+                            IAsyncResult asyncResult = BeginRead(state.Buffer, 0, state.Buffer.Length, s_readCallbackDelegate, state);
+                            if (!asyncResult.CompletedSynchronously)
+                            {
+                                return null;
+                            }
+
+                            bytesRead = EndRead(asyncResult);
                         }
                         else
                         {
                             bytesRead = Read(state.Buffer, 0, state.Buffer.Length);
-                            if (bytesRead == 0)
-                                CloseSocket();
-                            ReceiveCommandResponseCallback(state, bytesRead);
                         }
+
+                        if (bytesRead == 0)
+                            CloseSocket();
+                        ReceiveCommandResponseCallback(state, bytesRead);
                     }
                     catch (IOException)
                     {
@@ -599,6 +612,11 @@ namespace System.Net
 
                     string szResponse = new string(chars, 0, numChars);
 
+                    if ((szResponse.Length + state.Resp.StatusBuffer.Length) > MaxResponseLength)
+                    {
+                        throw GenerateException(SR.Format(SR.net_ftp_response_too_large, MaxResponseLength), WebExceptionStatus.ServerProtocolViolation, null);
+                    }
+
                     state.Resp.StatusBuffer.Append(szResponse);
                     if (!CheckValid(state.Resp, ref validThrough, ref completeLength))
                     {
@@ -627,16 +645,22 @@ namespace System.Net
                     {
                         if (_isAsync)
                         {
-                            BeginRead(state.Buffer, 0, state.Buffer.Length, s_readCallbackDelegate, state);
-                            return;
+                            IAsyncResult asyncResult = BeginRead(state.Buffer, 0, state.Buffer.Length, s_readCallbackDelegate, state);
+                            if (!asyncResult.CompletedSynchronously)
+                            {
+                                return;
+                            }
+
+                            bytesRead = EndRead(asyncResult);
                         }
                         else
                         {
                             bytesRead = Read(state.Buffer, 0, state.Buffer.Length);
-                            if (bytesRead == 0)
-                                CloseSocket();
-                            continue;
                         }
+
+                        if (bytesRead == 0)
+                                CloseSocket();
+                        continue;
                     }
                     catch (IOException)
                     {

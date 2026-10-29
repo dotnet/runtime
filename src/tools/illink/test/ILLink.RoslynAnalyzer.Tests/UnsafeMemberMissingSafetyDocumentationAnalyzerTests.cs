@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using System.Threading.Tasks;
 using Xunit;
 
@@ -93,6 +93,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public int Accessor
                     {
                         unsafe get => 0;
+                        set { }
                     }
 
                     public void Outer()
@@ -114,8 +115,8 @@ namespace ILLink.RoslynAnalyzer.Tests
             var source = """
                 class C
                 {
-                    static unsafe C() { }
-                    unsafe ~C() { }
+                    static {|CS9377:unsafe|} C() { }
+                    {|CS9377:unsafe|} ~C() { }
                 }
                 """;
 

@@ -33,6 +33,7 @@ namespace System.Numerics.Tensors
 
         internal Tensor(T[]? array)
         {
+            ThrowHelper.ThrowIfArrayTypeMismatch(array);
             _shape = TensorShape.Create(array);
             _values = (array is not null) ? array : [];
             _start = 0;
@@ -40,14 +41,16 @@ namespace System.Numerics.Tensors
 
         internal Tensor(T[]? array, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
+            ThrowHelper.ThrowIfArrayTypeMismatch(array);
             _shape = TensorShape.Create(array, lengths, strides);
             _values = (array is not null) ? array : [];
             _start = 0;
         }
 
-        internal Tensor(T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+        internal Tensor(T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false)
         {
-            _shape = TensorShape.Create(array, start, lengths, strides);
+            ThrowHelper.ThrowIfArrayTypeMismatch(array);
+            _shape = TensorShape.Create(array, start, lengths, strides, pinned);
             _values = (array is not null) ? array : [];
             _start = start;
         }
@@ -193,7 +196,10 @@ namespace System.Numerics.Tensors
         {
             // Ensure that the native code has just one forward branch that is predicted-not-taken.
             ref T ret = ref Unsafe.NullRef<T>();
-            if (_shape.FlattenedLength != 0) ret = ref MemoryMarshal.GetArrayDataReference(_values);
+            if (_shape.FlattenedLength != 0)
+            {
+                ret = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_values), _start);
+            }
             return ref ret;
         }
 
@@ -214,7 +220,7 @@ namespace System.Numerics.Tensors
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Slice(ReadOnlySpan{nint})" />
         public Tensor<T> Slice(params ReadOnlySpan<nint> startIndexes)
         {
-            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNInt, nint>(startIndexes, out nint linearOffset);
+            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForSlice, nint>(startIndexes, out nint linearOffset);
 
             // The source tensor can have no more than int.MaxValue elements so linearOffset will always be in range of int.
             Debug.Assert((int)(linearOffset) == linearOffset);
@@ -374,46 +380,55 @@ namespace System.Numerics.Tensors
         public struct Enumerator : IEnumerator<T>
         {
             private readonly Tensor<T> _tensor;
-            private nint[] _indexes;
             private nint _linearOffset;
             private nint _itemsEnumerated;
+            private bool _hasCurrent;
 
             internal Enumerator(Tensor<T> tensor)
             {
                 _tensor = tensor;
-                _indexes = new nint[tensor.Rank];
-
-                _indexes[^1] = -1;
-
-                _linearOffset = tensor._start - (!tensor.IsEmpty ? tensor.Strides[^1] : 0);
+                _linearOffset = tensor._start;
                 _itemsEnumerated = 0;
+                _hasCurrent = false;
             }
 
             /// <inheritdoc cref="IEnumerator{T}.Current" />
-            public readonly ref T Current => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_tensor._values), _linearOffset);
+            public readonly ref T Current
+            {
+                get
+                {
+                    if (!_hasCurrent)
+                    {
+                        ThrowHelper.ThrowInvalidOperation_EnumerationNotPositioned();
+                    }
+                    return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_tensor._values), _linearOffset);
+                }
+            }
 
             /// <inheritdoc cref="IEnumerator.MoveNext()" />
             public bool MoveNext()
             {
                 if (_itemsEnumerated == _tensor._shape.FlattenedLength)
                 {
+                    _hasCurrent = false;
                     return false;
                 }
 
-                _linearOffset = _tensor._shape.AdjustToNextIndex(_tensor._shape, _linearOffset, _indexes);
+                _linearOffset = _tensor._start + (_tensor.IsDense
+                    ? _itemsEnumerated
+                    : _tensor._shape.GetLinearOffsetForDimension(_itemsEnumerated, _tensor.Rank));
 
                 _itemsEnumerated++;
+                _hasCurrent = true;
                 return true;
             }
 
             /// <inheritdoc cref="IEnumerator.Reset()" />
             public void Reset()
             {
-                Array.Clear(_indexes);
-                _indexes[^1] = -1;
-
-                _linearOffset = _tensor._start - (!_tensor.IsEmpty ? _tensor.Strides[^1] : 0);
+                _linearOffset = _tensor._start;
                 _itemsEnumerated = 0;
+                _hasCurrent = false;
             }
 
             //

@@ -15,7 +15,7 @@ namespace System.Text
     //
     internal static partial class EncodingTable
     {
-        private static readonly ConcurrentDictionary<string, int> s_nameToCodePage = new(StringComparer.OrdinalIgnoreCase);
+        private static ConcurrentDictionary<string, int>? s_nameToCodePage;
         private static CodePageDataItem?[]? s_codePageToCodePageData;
 
         /*=================================GetCodePageFromName==========================
@@ -31,6 +31,11 @@ namespace System.Text
         internal static int GetCodePageFromName(string name)
         {
             ArgumentNullException.ThrowIfNull(name);
+
+            if (s_nameToCodePage == null)
+            {
+                Interlocked.CompareExchange(ref s_nameToCodePage, new(StringComparer.OrdinalIgnoreCase), null);
+            }
 
             return s_nameToCodePage.GetOrAdd(name, InternalGetCodePageFromName);
         }

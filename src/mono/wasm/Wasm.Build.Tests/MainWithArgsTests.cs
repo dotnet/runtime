@@ -28,17 +28,21 @@ namespace Wasm.Build.Tests
                 .Where(item => !(item.ElementAt(0) is Configuration config && config == Configuration.Debug && item.ElementAt(1) is bool aotValue && aotValue))
                 .UnwrapItemsAsArrays();
 
+        public static IEnumerable<object?[]> MainWithArgsTestDataForCurrentRuntime()
+        {
+            IEnumerable<object?[]> data = MainWithArgsTestData(aot: false);
+            return IsCoreClrRuntime ? data : data.Concat(MainWithArgsTestData(aot: true));
+        }
+
         [Theory]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false })]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true })]
-        [TestCategory("native-mono")]
+        [MemberData(nameof(MainWithArgsTestDataForCurrentRuntime))]
+        [TestCategory("native")]
         public async Task AsyncMainWithArgs(Configuration config, bool aot, string[] args)
             => await TestMainWithArgs(config, aot, "async_main_with_args", "AsyncMainWithArgs.cs", args);
 
         [Theory]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false })]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true })]
-        [TestCategory("native-mono")]
+        [MemberData(nameof(MainWithArgsTestDataForCurrentRuntime))]
+        [TestCategory("native")]
         public async Task NonAsyncMainWithArgs(Configuration config, bool aot, string[] args)
             => await TestMainWithArgs(config, aot, "non_async_main_args", "SyncMainWithArgs.cs", args);
 

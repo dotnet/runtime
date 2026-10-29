@@ -726,9 +726,9 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
             var config = new ConfigurationBuilder().AddXmlFile("NotExistingConfig.xml", optional: true).Build();
         }
 
-        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73432", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+        [Fact]
         public void LoadKeyValuePairsFromValidEncryptedXml()
         {
             var xml = @"

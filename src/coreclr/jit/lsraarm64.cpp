@@ -1417,6 +1417,9 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_SELECT:
+        case GT_SELECT_NEG:
+        case GT_SELECT_INV:
+        case GT_SELECT_INC:
             assert(dstCount == 1);
             srcCount = BuildSelect(tree->AsConditional());
             break;

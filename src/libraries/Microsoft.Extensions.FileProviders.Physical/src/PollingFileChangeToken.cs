@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Security;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
 
@@ -46,23 +47,31 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private DateTime GetLastWriteTimeUtc()
         {
-            _fileInfo.Refresh();
-
-            if (_fileInfo.Exists)
+            try
             {
-                return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(_fileInfo) ?? _fileInfo.LastWriteTimeUtc;
+                _fileInfo.Refresh();
+
+                if (_fileInfo.Exists)
+                {
+                    return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(_fileInfo) ?? _fileInfo.LastWriteTimeUtc;
+                }
+
+                // This is not thread-safe, but that's not an issue since DirectoryInfos are cheap and interchangeable.
+                _directoryInfo ??= new DirectoryInfo(_fileInfo.FullName);
+                _directoryInfo.Refresh();
+
+                if (_directoryInfo.Exists)
+                {
+                    return _directoryInfo.LastWriteTimeUtc;
+                }
+
+                return DateTime.MinValue;
             }
-
-            // This is not thread-safe, but that's not an issue since DirectoryInfos are cheap and interchangeable.
-            _directoryInfo ??= new DirectoryInfo(_fileInfo.FullName);
-            _directoryInfo.Refresh();
-
-            if (_directoryInfo.Exists)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException)
             {
-                return _directoryInfo.LastWriteTimeUtc;
+                // Treat a transient file system failure as no change and retry on the next poll.
+                return _previousWriteTimeUtc;
             }
-
-            return DateTime.MinValue;
         }
 
         /// <summary>

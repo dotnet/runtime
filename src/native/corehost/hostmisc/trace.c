@@ -349,7 +349,7 @@ void trace_println(const pal_char_t* format, ...)
 
 void trace_println_empty(void)
 {
-    trace_println(_X(""));
+    trace_println(_X("%s"), _X(""));
 }
 
 void trace_warning_v(const pal_char_t* format, va_list args)

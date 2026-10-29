@@ -12,5 +12,13 @@ namespace System.Runtime.ExceptionServices
         [SuppressGCTransition]
         [return: MarshalAs(UnmanagedType.U1)]
         private static partial bool TrySetFatalErrorHandler(IntPtr handler);
+
+        public static partial Exception? GetCurrentException()
+        {
+            unsafe
+            {
+                return EH.GetCurrentException(InternalCalls.RhpGetCurrentExInfo()) as Exception;
+            }
+        }
     }
 }

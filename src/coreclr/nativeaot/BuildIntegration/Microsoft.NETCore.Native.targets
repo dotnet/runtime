@@ -41,6 +41,12 @@ The .NET Foundation licenses this file to you under the MIT license.
     <UseSizeOptimizedLinq Condition="'$(UseSizeOptimizedLinq)' == ''">true</UseSizeOptimizedLinq>
   </PropertyGroup>
 
+  <!-- These formats encode function pointers as relative linear-memory addresses, not WASM table indices. -->
+  <PropertyGroup Condition="'$(_targetArchitecture)' == 'wasm'">
+    <IlcDehydrate Condition="'$(IlcDehydrate)' == ''">false</IlcDehydrate>
+    <StackTraceSupport Condition="'$(StackTraceSupport)' == ''">false</StackTraceSupport>
+  </PropertyGroup>
+
   <!-- Configure LINQ expressions -->
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.Linq.Expressions.CanEmitObjectArrayDelegate"
@@ -65,6 +71,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(_targetOS)' == 'win'">.exe</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(_targetOS)' != 'win'"></NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(_targetArchitecture)' == 'wasm'">.wasm</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared'">.dll</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">.dylib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(NativeLib)' == 'Shared'">.so</NativeBinaryExt>
@@ -86,6 +93,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <_LinkNativeOutputs>$(NativeBinary)</_LinkNativeOutputs>
     <_LinkNativeOutputs Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared' and '$(NativeImportLibrary)' != ''">$(NativeBinary);$(NativeImportLibrary)</_LinkNativeOutputs>
     <NativeExecutableExt Condition="'$(NativeExecutableExt)' == '' and '$(_targetOS)' == 'win'">.exe</NativeExecutableExt>
+    <NativeExecutableExt Condition="'$(NativeExecutableExt)' == '' and '$(_targetArchitecture)' == 'wasm'">.wasm</NativeExecutableExt>
     <NativeExecutableExt Condition="'$(NativeExecutableExt)' == ''"></NativeExecutableExt>
     <IlcExportUnmanagedEntrypoints Condition="'$(IlcExportUnmanagedEntrypoints)' == '' and '$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
     <ExportsFile Condition="$(ExportsFile) == '' and '$(BuildingFrameworkLibrary)' != 'true'">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
@@ -279,7 +287,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="'$(CustomNativeMain)' == 'true'" Include="--splitinit" />
       <IlcArg Condition="'$(ExportsFile)' != ''" Include="--exportsfile:$(ExportsFile)" />
       <IlcArg Condition="'$(_targetOS)' == 'win' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeContractDescriptor,DATA" />
-      <IlcArg Condition="'$(_targetOS)' != 'win' and '$(_targetOS)' != 'browser' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeContractDescriptor" />
+      <IlcArg Condition="'$(_targetOS)' != 'win' and '$(_targetArchitecture)' != 'wasm' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeContractDescriptor" />
       <IlcArg Condition="'$(_targetOS)' == 'freebsd' and '$(IsNativeExecutable)' == 'true'" Include="--export-dynamic-symbol:__progname;--export-dynamic-symbol:environ" />
       <IlcArg Condition="'$(IlcExportUnmanagedEntrypoints)' == 'true'" Include="--export-unmanaged-entrypoints" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
@@ -363,7 +371,8 @@ The .NET Foundation licenses this file to you under the MIT license.
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.targets" Condition="'$(_targetOS)' == 'win'" />
-  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Unix.targets" Condition="'$(_targetOS)' != 'win'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Unix.targets" Condition="'$(_targetOS)' != 'win' and '$(_targetArchitecture)' != 'wasm'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Wasm.targets" Condition="'$(_targetArchitecture)' == 'wasm'" />
 
   <Target Name="MultiFileCopyNative"
       Inputs="@(NativeObjects)"
@@ -387,13 +396,13 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(_targetOS)' == 'win' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
       <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' != ''" />
       <CustomLinkerArg Include="-exported_symbols_list /dev/null" Condition="'$(OutputType)' == 'exe' and '$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' == ''" />
-      <CustomLinkerArg Include="-Wl,--version-script=&quot;$(ExportsFile)&quot;" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
-      <CustomLinkerArg Include="-Wl,--export-dynamic" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
-      <CustomLinkerArg Include="-Wl,-u,DotNetRuntimeContractDescriptor" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetOS)' != 'browser' and '$(DebuggerSupport)' != 'false'" />
+      <CustomLinkerArg Include="-Wl,--version-script=&quot;$(ExportsFile)&quot;" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm' and '$(ExportsFile)' != ''" />
+      <CustomLinkerArg Include="-Wl,--export-dynamic" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm' and '$(ExportsFile)' != ''" />
+      <CustomLinkerArg Include="-Wl,-u,DotNetRuntimeContractDescriptor" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm' and '$(DebuggerSupport)' != 'false'" />
       <CustomLinkerArg Include="-Wl,-dead_strip" Condition="'$(_IsApplePlatform)' == 'true'" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
-    <ItemGroup Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'">
+    <ItemGroup Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm'">
       <CustomLinkerArg Include="-Wl,--discard-all" />
       <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(LinkerFlavor)' == '' or '$(LinkerFlavor)' == 'bfd' or '$(LinkerFlavor)' == 'lld'" />
       <CustomLinkerArg Include="-Wl,-T,&quot;$(NativeIntermediateOutputPath)sections.ld&quot;" Condition="'$(LinkerFlavor)' == 'lld' and '$(_LinkerVersion)' &gt; '12'" />
@@ -413,7 +422,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <!-- write linker script for lld (13+) to retain the __modules section -->
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)sections.ld" Lines="OVERWRITE_SECTIONS { __modules : { KEEP(*(__modules)) } }" Overwrite="true" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(LinkerFlavor)' == 'lld' and '$(_LinkerVersion)' &gt; '12'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)sections.ld" Lines="OVERWRITE_SECTIONS { __modules : { KEEP(*(__modules)) } }" Overwrite="true" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm' and '$(LinkerFlavor)' == 'lld' and '$(_LinkerVersion)' &gt; '12'" />
 
     <Exec Command="&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ')"
       Condition="'$(_targetOS)' != 'win' and '$(NativeLib)' != 'Static'"
@@ -432,11 +441,11 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="chmod 644 &quot;$(NativeBinary)&quot;" Condition="'$(NativeLib)' == 'Shared' and !$([MSBuild]::IsOSPlatform('Windows'))" />
 
     <!-- strip symbols, see https://github.com/dotnet/runtime/blob/5d3288d/eng/native/functions.cmake#L374 -->
-    <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm'"
       Command="&quot;$(ObjCopyName)&quot; --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot;" />
-    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm'"
       Command="&quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;$(NativeBinary)&quot;" />
-    <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetArchitecture)' != 'wasm'"
       Command="&quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
 
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' != 'Static'"

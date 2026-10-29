@@ -151,7 +151,7 @@ void SsaRenameState::DumpStack(Stack* stack)
         }
         else
         {
-            printf("V%02u: ", stack - m_stacks);
+            printf("V%02td: ", stack - m_stacks);
         }
 
         for (StackNode* i = stack->Top(); i != nullptr; i = i->m_stackPrev)

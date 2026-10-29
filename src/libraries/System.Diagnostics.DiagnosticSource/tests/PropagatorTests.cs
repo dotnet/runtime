@@ -41,12 +41,18 @@ namespace System.Diagnostics.Tests
                 TestLegacyPropagatorUsingW3CActivity(
                                 DistributedContextPropagator.Current,
                                 "Legacy1=true",
-                                new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("     LegacyKey1     ", "    LegacyValue1    ") });
+                                new List<KeyValuePair<string, string>>() {
+                                    new KeyValuePair<string, string>("     LegacyKey1     ", "    LegacyValue1    "),
+                                    new KeyValuePair<string, string>("LegacyKey1b", "LegacyValue1b"),
+                                    new KeyValuePair<string, string>("LegacyKey1c", "LegacyValue1c") });
 
                 TestLegacyPropagatorUsingHierarchicalActivity(
                                 DistributedContextPropagator.Current,
                                 "Legacy2=true",
-                                new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("LegacyKey2", "LegacyValue2") });
+                                new List<KeyValuePair<string, string>>() {
+                                    new KeyValuePair<string, string>("LegacyKey2", "LegacyValue2"),
+                                    new KeyValuePair<string, string>("LegacyKey2b", "LegacyValue2b"),
+                                    new KeyValuePair<string, string>("LegacyKey2c", "LegacyValue2c") });
 
                 TestFields(DistributedContextPropagator.Current);
 

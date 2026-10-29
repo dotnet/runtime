@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Http;
+using System.Net.Http.Functional.Tests;
 using System.Net.Security;
 using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
@@ -173,36 +174,41 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Connects to remote service")]
         [ConditionalTheory(typeof(ClientWebSocketOptionsTests), nameof(WebSocketsSupported))]
-        [InlineData(false)]
-        [InlineData(true)]
+        [InlineData(false, 1)]
+        [InlineData(true, 1)]
+        [InlineData(true, 3)]
         [SkipOnPlatform(TestPlatforms.Browser, "Certificates not supported on browser")]
-        public async Task RemoteCertificateValidationCallback_PassedRemoteCertificateInfo(bool secure)
+        public async Task RemoteCertificateValidationCallback_PassedRemoteCertificateInfo(bool secure, int connectionCount)
         {
-            bool callbackInvoked = false;
+            int callbackCount = 0;
 
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            // Disable resumption on the server because ClientWebSocketOptions has no such setting.
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                using (var cws = new ClientWebSocket())
-                using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+                for (int i = 0; i < connectionCount; i++)
                 {
+                    using var cws = new ClientWebSocket();
+                    using var cts = new CancellationTokenSource(TimeOutMilliseconds);
                     cws.Options.RemoteCertificateValidationCallback = (source, cert, chain, errors) =>
                     {
                         Assert.NotNull(source);
                         Assert.NotNull(cert);
                         Assert.NotNull(chain);
                         Assert.NotEqual(SslPolicyErrors.None, errors);
-                        callbackInvoked = true;
+                        callbackCount++;
                         return true;
                     };
-                    await cws.ConnectAsync(uri, cts.Token);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        cws.ConnectAsync(uri, cts.Token),
+                        server.AcceptConnectionAsync(async connection =>
+                        {
+                            Assert.NotNull(await LoopbackHelper.WebSocketHandshakeAsync(connection));
+                        }));
+                    Assert.Equal(secure ? i + 1 : 0, callbackCount);
                 }
-            }, server => server.AcceptConnectionAsync(async connection =>
-            {
-                Assert.NotNull(await LoopbackHelper.WebSocketHandshakeAsync(connection));
-            }),
-            new LoopbackServer.Options { UseSsl = secure, WebSocketEndpoint = true });
+            }, new LoopbackServer.Options { UseSsl = secure, WebSocketEndpoint = true, AllowTlsResume = false });
 
-            Assert.Equal(secure, callbackInvoked);
+            Assert.Equal(secure ? connectionCount : 0, callbackCount);
         }
 
         [OuterLoop("Connects to remote service")]

@@ -22,6 +22,7 @@ namespace System.Runtime.CompilerServices
                 ResumeInfo = (ResumeInfo*)Unsafe.AsPointer(in ValueTaskSourceContinuationResume.ResumeInfo);
             }
 
+            [StackTraceHidden]
             public void GetResult(ref byte returnValue)
             {
                 Debug.Assert(Source != null);
@@ -56,6 +57,7 @@ namespace System.Runtime.CompilerServices
                 typedSource.OnCompleted(continuation, state, token, flags);
             }
 
+            [StackTraceHidden]
             private static void GetResult(object source, short token, ref byte result)
             {
                 Debug.Assert(source is IValueTaskSource);
@@ -70,6 +72,7 @@ namespace System.Runtime.CompilerServices
                 typedSource.OnCompleted(continuation, state, token, flags);
             }
 
+            [StackTraceHidden]
             private static void GetResult<T>(object source, short token, ref byte result)
             {
                 Debug.Assert(source is IValueTaskSource<T>);

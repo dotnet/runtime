@@ -18,7 +18,6 @@
 #include "dllimport.h"
 #include "comdelegate.h"
 #include "eeconfig.h"
-#include "comdatetime.h"
 #include <cor.h>
 #include <corpriv.h>
 #include <corerror.h>
@@ -255,7 +254,6 @@ VOID ParseNativeType(Module*                     pModule,
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pNFD));
     }
     CONTRACTL_END;
@@ -383,7 +381,7 @@ VOID ParseNativeType(Module*                     pModule,
             CREATE_MARSHALER_CARRAY_OPERANDS mops;
             mlInfo.GetMops(&mops);
 
-            MethodTable *pMT = mops.methodTable;
+            MethodTable *pMT = mops.elementTypeHandle.GetMethodTable();
 
             if (pMT->IsEnum())
             {

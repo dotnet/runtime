@@ -158,9 +158,12 @@ ds_rt_transport_get_default_name (
 	STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
+	// PAL_GetTransportName returns void, but sets name[0] to '\0' when it fails to generate a name.
 	PAL_GetTransportName (name_len, name, prefix, id, group_id, suffix);
+	return name [0] != '\0';
+#else
+	return false;
 #endif
-	return true;
 }
 
 /*
@@ -231,11 +234,7 @@ static
 uint32_t
 ds_rt_enable_perfmap (uint32_t type)
 {
-    CONTRACTL
-    {
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef FEATURE_PERFMAP
 	PerfMap::PerfMapType perfMapType = (PerfMap::PerfMapType)type;
