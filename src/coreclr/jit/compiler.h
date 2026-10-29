@@ -9216,23 +9216,23 @@ public:
             return dsc;
         }
 
-        // Create a no-throw bounds check assertion: idxVN u< lenVN where lenVN is never negative
-        // Effectively, this means "idxVN is in range [0, lenVN)".
-        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp, ValueNum idxVN, ValueNum lenVN)
+        // Create a no-throw bounds check assertion: idxVN u< lenVN
+        // When lenVN is never negative, this means "idxVN is in range [0, lenVN)".
+        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp,
+                                                ValueNum        idxVN,
+                                                ValueNum        lenVN,
+                                                bool            isLenNeverNegative)
         {
             assert(idxVN != ValueNumStore::NoVN);
             assert(lenVN != ValueNumStore::NoVN);
 
-            AssertionDsc dsc    = CreateEmptyAssertion(comp);
-            dsc.m_assertionKind = OAK_LT_UN;
-            dsc.m_op1.m_kind    = O1K_VN;
-            dsc.m_op1.m_vn      = idxVN;
-            dsc.m_op2.m_kind    = O2K_VN_ADD_CNS;
-            dsc.m_op2.m_vn      = lenVN;
-
-            // Normally, the VN of an O2K_VN_ADD_CNS assertion isn't proven non-negative, but
-            // in this particular case we know it is (it's a length).
-            dsc.m_op2.m_isVNNeverNegative = true;
+            AssertionDsc dsc              = CreateEmptyAssertion(comp);
+            dsc.m_assertionKind           = OAK_LT_UN;
+            dsc.m_op1.m_kind              = O1K_VN;
+            dsc.m_op1.m_vn                = idxVN;
+            dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
+            dsc.m_op2.m_vn                = lenVN;
+            dsc.m_op2.m_isVNNeverNegative = isLenNeverNegative;
             dsc.m_op2.m_icon.m_iconVal    = 0;
             return dsc;
         }
