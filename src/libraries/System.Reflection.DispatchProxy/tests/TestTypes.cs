@@ -169,6 +169,11 @@ public unsafe interface TestType_IPointerReturnService
     int* Get();
 }
 
+public unsafe interface TestType_IPointerArgumentService
+{
+    void Set(int* p);
+}
+
 // Negative -- demonstrates trying to use a class for the interface type for the proxy
 public class TestType_ConcreteClass
 {

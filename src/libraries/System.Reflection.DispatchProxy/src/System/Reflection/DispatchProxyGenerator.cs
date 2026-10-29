@@ -52,11 +52,11 @@ namespace System.Reflection
         private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
         private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
 
-        private static MethodInfo BoxPointerInvokeMethod =>
-            field ??= typeof(Func<IntPtr, Type, object?>).GetMethod(nameof(Func<IntPtr, Type, object?>.Invoke))!;
+        private static MethodInfo BoxPointerMethod =>
+            field ??= typeof(DispatchProxyGenerator).GetMethod(nameof(BoxPointer), BindingFlags.NonPublic | BindingFlags.Static)!;
 
-        private static MethodInfo UnboxPointerInvokeMethod =>
-            field ??= typeof(Func<object?, IntPtr>).GetMethod(nameof(Func<object?, IntPtr>.Invoke))!;
+        private static MethodInfo UnboxPointerMethod =>
+            field ??= typeof(DispatchProxyGenerator).GetMethod(nameof(UnboxPointer), BindingFlags.NonPublic | BindingFlags.Static)!;
 
         private static unsafe object? BoxPointer(IntPtr pointer, Type type) =>
             pointer == IntPtr.Zero ? null : Pointer.Box((void*)pointer, type);
@@ -272,25 +272,6 @@ namespace System.Reflection
                         }
                     }
                 }
-            }
-
-            internal FieldInfo BoxPointerField =>
-                field ??= DefinePointerHelper(nameof(BoxPointer), new Func<IntPtr, Type, object?>(BoxPointer));
-
-            internal FieldInfo UnboxPointerField =>
-                field ??= DefinePointerHelper(nameof(UnboxPointer), new Func<object?, IntPtr>(UnboxPointer));
-
-            // Proxies call BoxPointer and UnboxPointer through a delegate because they can't call them directly:
-            // the methods aren't accessible outside System.Reflection.DispatchProxy. IgnoresAccessChecksTo would
-            // allow the call on CoreCLR, but Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only
-            // once, so after a pointer call it would miss the one added later for a proxy's internal base type.
-            // Called under GetProxyType's lock, so each helper type is defined once per proxy assembly.
-            private FieldBuilder DefinePointerHelper(string name, Delegate helper)
-            {
-                TypeBuilder tb = _mb.DefineType(name + "Helper", TypeAttributes.NotPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
-                FieldBuilder fb = tb.DefineField(name, helper.GetType(), FieldAttributes.Assembly | FieldAttributes.Static);
-                tb.CreateType().GetField(name, BindingFlags.NonPublic | BindingFlags.Static)!.SetValue(null, helper);
-                return fb;
             }
         }
 
@@ -733,26 +714,20 @@ namespace System.Reflection
                 }
             }
 
-            // The delegate must be on the stack below the value, which is already there,
-            // so the value goes through a local while the delegate is loaded.
+            // The proxy assembly can call BoxPointer and UnboxPointer only through an IgnoresAccessChecksTo
+            // attribute for System.Reflection.DispatchProxy, which EnsureTypeIsVisible adds.
             private static void EmitBoxPointer(ProxyAssembly assembly, ILGenerator il, Type type)
             {
-                LocalBuilder pointer = il.DeclareLocal(typeof(IntPtr));
-                il.Emit(OpCodes.Stloc, pointer);
-                il.Emit(OpCodes.Ldsfld, assembly.BoxPointerField);
-                il.Emit(OpCodes.Ldloc, pointer);
+                assembly.EnsureTypeIsVisible(typeof(DispatchProxyGenerator));
                 il.Emit(OpCodes.Ldtoken, type);
                 il.Emit(OpCodes.Call, s_getTypeFromHandleMethod);
-                il.Emit(OpCodes.Callvirt, BoxPointerInvokeMethod);
+                il.Emit(OpCodes.Call, BoxPointerMethod);
             }
 
             private static void EmitUnboxPointer(ProxyAssembly assembly, ILGenerator il)
             {
-                LocalBuilder value = il.DeclareLocal(typeof(object));
-                il.Emit(OpCodes.Stloc, value);
-                il.Emit(OpCodes.Ldsfld, assembly.UnboxPointerField);
-                il.Emit(OpCodes.Ldloc, value);
-                il.Emit(OpCodes.Callvirt, UnboxPointerInvokeMethod);
+                assembly.EnsureTypeIsVisible(typeof(DispatchProxyGenerator));
+                il.Emit(OpCodes.Call, UnboxPointerMethod);
             }
 
             private static void Ldind(ILGenerator il, Type type)

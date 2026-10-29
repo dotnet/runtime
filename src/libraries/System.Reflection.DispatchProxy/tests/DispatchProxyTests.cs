@@ -1002,10 +1002,11 @@ namespace DispatchProxyTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnMono("Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only once")]
         public static unsafe void Invoke_Pointer_Parameter_Receives_Pointer(bool useGenericCreate)
         {
             int value = 42;
-            var proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+            TestType_IPointerService proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
 
             object received = null;
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
@@ -1026,11 +1027,12 @@ namespace DispatchProxyTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnMono("Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only once")]
         public static unsafe void Invoke_Pointer_Return_Accepts_Pointer_IntPtr_And_Null(bool useGenericCreate)
         {
             int value = 42;
             int* p = &value;
-            var proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+            TestType_IPointerService proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
 
             object result = null;
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) => result;
@@ -1058,10 +1060,11 @@ namespace DispatchProxyTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnMono("Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only once")]
         public static unsafe void Invoke_Ref_Out_Pointer_Parameter(bool useGenericCreate)
         {
             int* values = stackalloc int[3];
-            var proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+            TestType_IPointerService proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
 
             object received = "Failed";
             object written = null;
@@ -1115,12 +1118,13 @@ namespace DispatchProxyTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnMono("Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only once")]
         public static unsafe void Invoke_Pointer_Method_Forwarded_To_MethodInfo_Invoke(bool useGenericCreate)
         {
             int* ints = stackalloc int[2];
             long* longs = stackalloc long[2];
             var target = new TestType_PointerService();
-            var proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+            TestType_IPointerService proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) => method.Invoke(target, args);
 
             Assert.Equal((nint)(ints + 1), (nint)proxy.Echo(ints));
@@ -1133,11 +1137,12 @@ namespace DispatchProxyTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnMono("Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only once")]
         public static unsafe void Invoke_Void_Pointer_Double_Pointer_And_In_Pointer(bool useGenericCreate)
         {
             int value = 42;
             int* p = &value;
-            var proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+            TestType_IPointerService proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
 
             object received = null;
             object result = null;
@@ -1164,12 +1169,15 @@ namespace DispatchProxyTests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnMono("Mono reads a dynamic assembly's IgnoresAccessChecksTo attributes only once")]
         public static void Invoke_Pointer_Parameter_In_Another_AssemblyLoadContext(bool useGenericCreate)
         {
             EchoPointerThroughProxy(useGenericCreate);
 
-            // Each new load context gets a proxy assembly that must define its own helpers.
-            InvokeInNewAssemblyLoadContext(nameof(EchoPointerThroughProxy), useGenericCreate);
+            // Each new load context gets its own proxy assembly, which needs its own access to BoxPointer and
+            // UnboxPointer. One proxy here only boxes a pointer and the other only unboxes one, so each conversion
+            // must add that access by itself.
+            InvokeInNewAssemblyLoadContext(nameof(PassPointerThroughProxy), useGenericCreate);
             InvokeInNewAssemblyLoadContext(nameof(ReturnPointerThroughProxy), useGenericCreate);
         }
 
@@ -1183,16 +1191,30 @@ namespace DispatchProxyTests
         private static unsafe void EchoPointerThroughProxy(bool useGenericCreate)
         {
             int value = 42;
-            var proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
+            TestType_IPointerService proxy = CreateHelper<TestType_IPointerService, TestDispatchProxy>(useGenericCreate);
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) => args[0];
             Assert.Equal((nint)(&value), (nint)proxy.Echo(&value));
+        }
+
+        private static unsafe void PassPointerThroughProxy(bool useGenericCreate)
+        {
+            int value = 42;
+            object received = null;
+            TestType_IPointerArgumentService proxy = CreateHelper<TestType_IPointerArgumentService, TestDispatchProxy>(useGenericCreate);
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                received = args[0];
+                return null;
+            };
+            proxy.Set(&value);
+            Assert.Equal((nint)(&value), (nint)Pointer.Unbox(received));
         }
 
         private static unsafe void ReturnPointerThroughProxy(bool useGenericCreate)
         {
             int value = 42;
             object result = Pointer.Box(&value, typeof(int*));
-            var proxy = CreateHelper<TestType_IPointerReturnService, TestDispatchProxy>(useGenericCreate);
+            TestType_IPointerReturnService proxy = CreateHelper<TestType_IPointerReturnService, TestDispatchProxy>(useGenericCreate);
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) => result;
             Assert.Equal((nint)(&value), (nint)proxy.Get());
         }
