@@ -8,7 +8,7 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using Xunit;
 
-namespace ILAssembler.Tests;
+namespace Microsoft.DotNet.ILAssembler.Tests;
 
 public sealed class Win32ResourceTests : IDisposable
 {

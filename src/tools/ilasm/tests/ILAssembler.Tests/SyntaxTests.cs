@@ -16,9 +16,9 @@ using System.Threading.Tasks;
 using Antlr4.Runtime;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
+using DocumentCompilerTestHelpers = Microsoft.DotNet.ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class SyntaxTests
     {
@@ -42,7 +42,7 @@ namespace ILAssembler.Tests
         public void StringCharStream_SeekPastEnd_ClampsToEnd()
         {
             Type streamType = typeof(DocumentCompiler).Assembly.GetType(
-                "ILAssembler.StringCharStream",
+                "Microsoft.DotNet.ILAssembler.StringCharStream",
                 throwOnError: true)!;
             var stream = (ICharStream)Activator.CreateInstance(
                 streamType,
@@ -516,7 +516,7 @@ namespace ILAssembler.Tests
         private static object CreateGrammarActions()
         {
             Type grammarActionsType = typeof(DocumentCompiler).Assembly.GetType(
-                "ILAssembler.GrammarActions",
+                "Microsoft.DotNet.ILAssembler.GrammarActions",
                 throwOnError: true)!;
             return Activator.CreateInstance(
                 grammarActionsType,

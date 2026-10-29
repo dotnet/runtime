@@ -3,7 +3,7 @@
 
 using System;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     internal static class NameHelpers
     {

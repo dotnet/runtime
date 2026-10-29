@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using Xunit;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     /// <summary>
     /// The sequence points of method bodies, read back from the Portable PDB: each instruction is mapped when

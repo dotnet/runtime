@@ -4,7 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace ILAssembler
+namespace Microsoft.DotNet.ILAssembler
 {
     internal interface INamed
     {

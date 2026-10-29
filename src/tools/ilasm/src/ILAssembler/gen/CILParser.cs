@@ -19,7 +19,7 @@
 // Ambiguous reference in cref attribute
 #pragma warning disable 419
 
-namespace ILAssembler {
+namespace Microsoft.DotNet.ILAssembler {
 
 #nullable enable annotations
 
@@ -19524,4 +19524,4 @@ public partial class CILParser : Parser {
 
 
 }
-} // namespace ILAssembler
+} // namespace Microsoft.DotNet.ILAssembler

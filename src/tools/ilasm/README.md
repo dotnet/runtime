@@ -2,6 +2,9 @@
 
 This directory contains the ILAssembler tool and its build instructions.
 
+The managed assembler library uses the `Microsoft.DotNet.ILAssembler` namespace and assembly name.
+It is packable as the non-shipping `Microsoft.DotNet.ILAssembler` NuGet package.
+
 ## Build Instructions
 
 ### Regular Builds

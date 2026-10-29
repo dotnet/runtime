@@ -17,9 +17,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
+using DocumentCompilerTestHelpers = Microsoft.DotNet.ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class AssemblyTests
     {
@@ -252,8 +252,8 @@ namespace ILAssembler.Tests
                 .class public auto ansi Test { }
                 """;
 
-            var sourceText = new ILAssembler.SourceText(source, "test.il");
-            var compiler = new ILAssembler.DocumentCompiler();
+            var sourceText = new Microsoft.DotNet.ILAssembler.SourceText(source, "test.il");
+            var compiler = new Microsoft.DotNet.ILAssembler.DocumentCompiler();
             var (diagnostics, result) = compiler.Compile(sourceText, _ => default!, _ => default!, new Options());
 
             foreach (var d in diagnostics)

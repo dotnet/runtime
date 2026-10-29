@@ -1,12 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <AssemblyName>Microsoft.DotNet.ILAssembler</AssemblyName>
+    <RootNamespace>Microsoft.DotNet.ILAssembler</RootNamespace>
+    <Description>Managed assembler for Common Intermediate Language (CIL).</Description>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);CS3021</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsAotCompatible>true</IsAotCompatible>
+    <IsPackable>true</IsPackable>
     <IsShipping>false</IsShipping>
   </PropertyGroup>
 

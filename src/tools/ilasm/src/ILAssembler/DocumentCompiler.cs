@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using Antlr4.Runtime;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 public sealed class DocumentCompiler
 {
     public (ImmutableArray<Diagnostic>, CompilationResult?) Compile(SourceText document, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]?> resourceLocator, Options options)
