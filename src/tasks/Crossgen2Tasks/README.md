@@ -71,7 +71,9 @@ Crossgen2 reference and composite-input wildcards are expanded for these checks;
 wildcard invocations still bypass caching.
 A hit restores their recorded presence/absence. Unrelated outputs are untouched.
 PDB-only compilation preserves the native image it reads
-and cleans only its symbol output. When legacy symbols are requested, preparation
+and cleans only its symbol output. Its leading native CodeView output record is not an
+IL-PDB dependency; subsequent IL-PDB records and reference symbols remain protected.
+When legacy symbols are requested, preparation
 uses the declared symbol path rather than the modern crossgen2 naming convention.
 
 Legacy crossgen, crossgen2 version 5, separate PDB-generation tasks, composites,

@@ -320,7 +320,8 @@ namespace Microsoft.NET.Build.Tasks
                     {
                         using FileStream stream = File.OpenRead(assembly);
                         using var pe = new PEReader(stream);
-                        foreach (var candidate in Crossgen2Cache.GetSymbolCandidates(pe, assembly, Environment.CurrentDirectory))
+                        foreach (var candidate in Crossgen2Cache.GetSymbolCandidates(pe, assembly, Environment.CurrentDirectory,
+                            skipNativePdbOutput: IsPdbCompilation && Crossgen2Cache.PathComparer.Equals(assembly, Path.GetFullPath(_outputR2RImage))))
                         {
                             if (!ValidateInput(candidate.Path))
                             {
