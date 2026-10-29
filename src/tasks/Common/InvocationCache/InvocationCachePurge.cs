@@ -1,31 +1,33 @@
-// Copyright (c) .NET Foundation and contributors. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#nullable enable
 
 using System;
 using System.Globalization;
 using System.IO;
-using ILLink.Tasks;
 
-namespace ILLink.CacheTool;
+namespace Microsoft.NET.Build.Tasks;
 
-internal static class CachePurge
+internal static class InvocationCachePurge
 {
-    internal static int Run(string cacheDirectory, DateTimeOffset cutoff, TextWriter output, TextWriter error)
+    internal static int Run(string cacheDirectory, string versionDirectory, string toolName,
+        DateTimeOffset cutoff, TextWriter output, TextWriter error)
     {
         int deleted = 0;
         int kept = 0;
         int errors = 0;
-        string entriesDirectory = Path.Combine(cacheDirectory, ILLinkCacheEntry.VersionDirectory);
+        string entriesDirectory = Path.Combine(cacheDirectory, versionDirectory);
         try
         {
             foreach (string entry in Directory.EnumerateDirectories(entriesDirectory))
             {
-                if (!ILLinkCacheEntry.IsEntryName(Path.GetFileName(entry)))
+                if (!InvocationCacheEntry.IsEntryName(Path.GetFileName(entry)))
                     continue;
 
                 try
                 {
-                    DateTimeOffset lastUsed = GetLastUsed(entry, error);
+                    DateTimeOffset lastUsed = GetLastUsed(entry, toolName, error);
 
                     if (lastUsed >= cutoff)
                     {
@@ -39,23 +41,23 @@ internal static class CachePurge
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException or InvalidDataException)
                 {
                     errors++;
-                    error.WriteLine($"Could not purge ILLink cache entry '{entry}': {ex.Message}");
+                    error.WriteLine($"Could not purge {toolName} cache entry '{entry}': {ex.Message}");
                 }
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             errors++;
-            error.WriteLine($"Could not enumerate ILLink cache '{entriesDirectory}': {ex.Message}");
+            error.WriteLine($"Could not enumerate {toolName} cache '{entriesDirectory}': {ex.Message}");
         }
 
-        output.WriteLine($"ILLink cache purge: Deleted: {deleted}, Kept: {kept}, Errors: {errors}");
+        output.WriteLine($"{toolName} cache purge: Deleted: {deleted}, Kept: {kept}, Errors: {errors}");
         return errors == 0 ? 0 : 1;
     }
 
-    private static DateTimeOffset GetLastUsed(string entry, TextWriter error)
+    private static DateTimeOffset GetLastUsed(string entry, string toolName, TextWriter error)
     {
-        string marker = Path.Combine(entry, ILLinkCacheEntry.LastUsedFileName);
+        string marker = Path.Combine(entry, InvocationCacheEntry.LastUsedFileName);
         string reason = "missing or invalid";
         try
         {
@@ -72,7 +74,7 @@ internal static class CachePurge
             reason = ex.Message;
         }
 
-        error.WriteLine($"Could not read a valid last-used marker for ILLink cache entry '{entry}' ({reason}); using directory creation time.");
+        error.WriteLine($"Could not read a valid last-used marker for {toolName} cache entry '{entry}' ({reason}); using directory creation time.");
         return new DateTimeOffset(Directory.GetCreationTimeUtc(entry), TimeSpan.Zero);
     }
 }

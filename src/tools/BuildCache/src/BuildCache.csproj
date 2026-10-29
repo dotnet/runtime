@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <AssemblyName>dotnet-build-cache</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <UseAppHost>false</UseAppHost>
+    <RollForward>Major</RollForward>
+    <IsPackable>true</IsPackable>
+    <IsShipping>false</IsShipping>
+    <PackAsTool>true</PackAsTool>
+    <PackageId>dotnet-build-cache</PackageId>
+    <ToolCommandName>dotnet-build-cache</ToolCommandName>
+    <Description>Experimental build invocation cache maintenance tool.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCacheConfiguration.cs" Link="InvocationCacheConfiguration.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCacheEntry.cs" Link="InvocationCacheEntry.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCachePurge.cs" Link="InvocationCachePurge.cs" />
+    <InternalsVisibleTo Include="BuildCache.Tests" />
+    <None Include="..\README.md" Pack="true" PackagePath="/" />
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+  </ItemGroup>
+</Project>
