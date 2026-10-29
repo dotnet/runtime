@@ -383,7 +383,8 @@ C_FUNC(\Name\()_End):
 #include <amd64/InlineTls.inc>
 
 
-// Inlined version of GetThreadEEAllocContext. Trashes volatile registers.
+// Inlined version of GetThreadEEAllocContext. Trashes volatile registers since it calls __tls_get_addr
+// (or GetThreadEEAllocContext with emulated TLS), unlike the Windows version.
 .macro INLINE_GET_ALLOC_CONTEXT_BASE
 #ifdef FEATURE_EMULATED_TLS
         call    C_FUNC(GetThreadEEAllocContext)

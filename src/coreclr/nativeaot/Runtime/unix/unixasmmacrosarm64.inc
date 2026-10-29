@@ -182,19 +182,10 @@ C_FUNC(\Name):
 #include <arm64/InlineTls.inc>
 
 // Loads the address of a thread-local variable into the target register,
-// which cannot be x0. Preserves all other registers.
+// which cannot be x0. Preserves all other registers, except x16 and x17 on Apple.
 .macro INLINE_GET_TLS_VAR_PRESERVE_REGS target, var
     stp     x0, lr, [sp,#-0x10]!
-#if defined(__APPLE__)
-    // Apple's tls_get_var trashes xip0 (and possibly xip1)
-    stp     xip0, xip1, [sp,#-0x10]!
-#endif
-
     INLINE_GET_TLS_VAR \target, \var
-
-#if defined(__APPLE__)
-    ldp     xip0, xip1, [sp],#0x10
-#endif
     ldp     x0, lr, [sp],#0x10
 .endm
 
