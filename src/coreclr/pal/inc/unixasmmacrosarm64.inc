@@ -377,39 +377,7 @@ C_FUNC(\Name\()_End):
 
 .endm
 
-// Loads the address of a thread-local variable into the target register,
-// which cannot be x0.
-// Preserves registers except for xip0 and xip1 on Apple
-.macro INLINE_GET_TLS_VAR target, var
-    .ifc \target, x0
-        .error "target cannot be x0"
-    .endif
-
-    // This sequence of instructions is recognized and potentially patched
-    // by the linker (GD->IE/LE relaxation).
-#if defined(__APPLE__)
-
-    adrp    x0, \var@TLVPPAGE
-    ldr     x0, [x0, \var@TLVPPAGEOFF]
-    ldr     \target, [x0]
-
-    blr     \target
-    // End of the sequence
-
-    mov     \target, x0
-#else
-    adrp    x0, :tlsdesc:\var
-    ldr     \target, [x0, #:tlsdesc_lo12:\var]
-    add     x0, x0, :tlsdesc_lo12:\var
-    .tlsdesccall \var
-    blr     \target
-    // End of the sequence
-
-    mrs     \target, tpidr_el0
-    add     \target, \target, x0
-#endif
-
-.endm
+#include <arm64/InlineTls.inc>
 
 
 // Inlined version of GetThreadEEAllocContext. Target cannot be x0 or x1.
@@ -431,14 +399,11 @@ C_FUNC(\Name\()_End):
         EPILOG_RESTORE_REG_PAIR           x0, x1, 0x10
         EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
 #else
-        PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
         INLINE_GET_TLS_VAR \target, t_runtime_thread_locals
 
         .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
-                add     \target, x0, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+                add     \target, \target, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
         .endif
-
-        EPILOG_RESTORE_REG_PAIR_INDEXED   x0, lr, 0x10
 #endif
 .endm
 

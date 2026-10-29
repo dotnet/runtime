@@ -390,21 +390,14 @@ C_FUNC(\Name):
 
 
 // thumb with PIC version
-.macro INLINE_GET_TLS_VAR var
-        ldr     r0, 2f
-1:
-        add     r0, pc, r0
-        bl      __tls_get_addr
-        b       3f
+#include <arm/InlineTls.inc>
 
-        // Inline data
-        // LLVM assembler has no concept of subsections and this is not expressible as
-        // cross-section relocation.
-        .p2align 2
-2:
-        .extern \var
-        .type \var, tls_object
-        .long  \var(TLSGD) + (2b - 1b - 4)
-3:
+.macro INLINE_GETTHREAD
+#ifdef FEATURE_EMULATED_TLS
+        bl      C_FUNC(GetThreadHelper)
+#else
+        INLINE_GET_TLS_VAR C_FUNC(t_CurrentThreadInfo)
+        ldr     r0, [r0, #OFFSETOF__ThreadLocalInfo__m_pThread]
+#endif
 .endm
 

@@ -258,23 +258,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 // thumb with PIC version
-.macro INLINE_GET_TLS_VAR Var
-        ldr     r0, 2f
-1:
-        add     r0, pc, r0
-        bl      __tls_get_addr
-        b       3f
-
-        // Inline data
-        // LLVM assembler has no concept of subsections and this is not expressible as
-        // cross-section relocation.
-        .p2align 2
-2:
-        .extern \Var
-        .type \Var, tls_object
-        .long  \Var(TLSGD) + (2b - 1b - 4)
-3:
-.endm
+#include <arm/InlineTls.inc>
 
 .macro INLINE_GETTHREAD
 #ifdef FEATURE_EMULATED_TLS
