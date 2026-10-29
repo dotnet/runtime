@@ -111,14 +111,9 @@ namespace System.IO.Compression
 
         // Calculate the huffman code for each character based on the code length for each character.
         // This algorithm is described in standard RFC 1951
-        private uint[] CalculateHuffmanCode()
+        private unsafe uint[] CalculateHuffmanCode()
         {
-            scoped Span<uint> bitLengthCount;
-            // SAFETY: To be audited
-            unsafe
-            {
-                bitLengthCount = stackalloc uint[17];
-            }
+            Span<uint> bitLengthCount = stackalloc uint[17];
             bitLengthCount.Clear();
             foreach (int codeLength in _codeLengthArray)
             {
@@ -126,12 +121,7 @@ namespace System.IO.Compression
             }
             bitLengthCount[0] = 0;  // clear count for length 0
 
-            scoped Span<uint> nextCode;
-            // SAFETY: To be audited
-            unsafe
-            {
-                nextCode = stackalloc uint[17];
-            }
+            Span<uint> nextCode = stackalloc uint[17];
             nextCode.Clear();
             uint tempCode = 0;
             for (int bits = 1; bits <= 16; bits++)

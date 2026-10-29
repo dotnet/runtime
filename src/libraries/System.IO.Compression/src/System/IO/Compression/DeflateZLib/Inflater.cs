@@ -45,22 +45,17 @@ namespace System.IO.Compression
         /// </summary>
         public bool Finished() => _finished;
 
-        public bool Inflate(out byte b)
+        public unsafe bool Inflate(out byte b)
         {
             fixed (byte* bufPtr = &b)
             {
-                int bytesRead;
-                // SAFETY: To be audited
-                unsafe
-                {
-                    bytesRead = InflateVerified(bufPtr, 1);
-                }
+                int bytesRead = InflateVerified(bufPtr, 1);
                 Debug.Assert(bytesRead == 0 || bytesRead == 1);
                 return bytesRead != 0;
             }
         }
 
-        public int Inflate(byte[] bytes, int offset, int length)
+        public unsafe int Inflate(byte[] bytes, int offset, int length)
         {
             // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
             if (length == 0)
@@ -69,27 +64,19 @@ namespace System.IO.Compression
             Debug.Assert(null != bytes, "Can't pass in a null output buffer!");
             fixed (byte* bufPtr = bytes)
             {
-                // SAFETY: To be audited
-                unsafe
-                {
-                    return InflateVerified(bufPtr + offset, length);
-                }
+                return InflateVerified(bufPtr + offset, length);
             }
         }
 
-        public int Inflate(Span<byte> destination)
+        public unsafe int Inflate(Span<byte> destination)
         {
             // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
             if (destination.Length == 0)
                 return 0;
 
-            // SAFETY: To be audited
-            unsafe
+            fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination))
             {
-                fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination))
-                {
-                    return InflateVerified(bufPtr, destination.Length);
-                }
+                return InflateVerified(bufPtr, destination.Length);
             }
         }
 
@@ -109,22 +96,14 @@ namespace System.IO.Compression
                 int bytesRead = 0;
                 if (_uncompressedSize == -1)
                 {
-                    // SAFETY: To be audited
-                    unsafe
-                    {
-                        ReadOutput(bufPtr, length, out bytesRead);
-                    }
+                    ReadOutput(bufPtr, length, out bytesRead);
                 }
                 else
                 {
                     if (_uncompressedSize > _currentInflatedCount)
                     {
                         length = (int)Math.Min(length, _uncompressedSize - _currentInflatedCount);
-                        // SAFETY: To be audited
-                        unsafe
-                        {
-                            ReadOutput(bufPtr, length, out bytesRead);
-                        }
+                        ReadOutput(bufPtr, length, out bytesRead);
                         _currentInflatedCount += bytesRead;
                     }
                     else
@@ -147,7 +126,7 @@ namespace System.IO.Compression
 
         private unsafe void ReadOutput(byte* bufPtr, int length, out int bytesRead)
         {
-            if (/* SAFETY: To be audited */ unsafe(ReadInflateOutput(bufPtr, length, ZLibNative.FlushCode.NoFlush, out bytesRead)) == ZLibNative.ErrorCode.StreamEnd)
+            if (ReadInflateOutput(bufPtr, length, ZLibNative.FlushCode.NoFlush, out bytesRead) == ZLibNative.ErrorCode.StreamEnd)
             {
                 if (!NeedsInput() && IsGzipStream() && IsInputBufferHandleAllocated)
                 {
@@ -166,7 +145,7 @@ namespace System.IO.Compression
         ///
         /// Returns false if the leftover input is another GZip data stream.
         /// </summary>
-        private bool ResetStreamForLeftoverInput()
+        private unsafe bool ResetStreamForLeftoverInput()
         {
             Debug.Assert(!NeedsInput());
             Debug.Assert(IsGzipStream());
@@ -181,7 +160,7 @@ namespace System.IO.Compression
                 uint nextAvailIn = _zlibStream.AvailIn;
 
                 // Check the leftover bytes to see if they start with the gzip header ID bytes
-                if (/* SAFETY: To be audited */ unsafe(*nextInPointer != ZLibNative.GZip_Header_ID1 || (nextAvailIn > 1 && *(nextInPointer + 1) != ZLibNative.GZip_Header_ID2)))
+                if (*nextInPointer != ZLibNative.GZip_Header_ID1 || (nextAvailIn > 1 && *(nextInPointer + 1) != ZLibNative.GZip_Header_ID2))
                 {
                     return true;
                 }
@@ -244,7 +223,7 @@ namespace System.IO.Compression
             SetInput(inputBuffer.AsMemory(startIndex, count));
         }
 
-        public void SetInput(ReadOnlyMemory<byte> inputBuffer)
+        public unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(!IsInputBufferHandleAllocated);
@@ -255,11 +234,7 @@ namespace System.IO.Compression
             lock (SyncLock)
             {
                 _inputBufferHandle = inputBuffer.Pin();
-                // SAFETY: To be audited
-                unsafe
-                {
-                    _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
-                }
+                _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
                 _zlibStream.AvailIn = (uint)inputBuffer.Length;
                 _finished = false;
                 _nonEmptyInput = true;
@@ -391,6 +366,6 @@ namespace System.IO.Compression
             return new Inflater(windowBits, uncompressedSize, zlibStream);
         }
 
-        private bool IsInputBufferHandleAllocated => /* SAFETY: To be audited */ unsafe(_inputBufferHandle.Pointer != default);
+        private unsafe bool IsInputBufferHandleAllocated => _inputBufferHandle.Pointer != default;
     }
 }

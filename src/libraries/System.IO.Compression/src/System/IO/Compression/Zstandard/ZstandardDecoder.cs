@@ -142,11 +142,7 @@ namespace System.IO.Compression
         [MemberNotNull(nameof(_context))]
         private void InitializeDecoder()
         {
-            // SAFETY: To be audited
-            unsafe
-            {
-                _context = Interop.Zstd.ZSTD_createDCtx();
-            }
+            _context = Interop.Zstd.ZSTD_createDCtx();
             if (_context.IsInvalid)
             {
                 throw new OutOfMemoryException();
@@ -186,7 +182,6 @@ namespace System.IO.Compression
                 return OperationStatus.DestinationTooSmall;
             }
 
-            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
@@ -256,7 +251,6 @@ namespace System.IO.Compression
                 return true;
             }
 
-            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* dataPtr = &MemoryMarshal.GetReference(data))
@@ -292,7 +286,6 @@ namespace System.IO.Compression
                 return false;
             }
 
-            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
@@ -332,13 +325,12 @@ namespace System.IO.Compression
                 return false;
             }
 
-            using var dctx = /* SAFETY: To be audited */ unsafe(Interop.Zstd.ZSTD_createDCtx());
+            using var dctx = Interop.Zstd.ZSTD_createDCtx();
             if (dctx.IsInvalid)
             {
                 throw new OutOfMemoryException();
             }
 
-            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
@@ -418,12 +410,7 @@ namespace System.IO.Compression
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(maxWindowLog2, ZstandardUtils.WindowLog_Max, nameof(maxWindowLog2));
             }
 
-            nuint result;
-            // SAFETY: To be audited
-            unsafe
-            {
-                result = Interop.Zstd.ZSTD_DCtx_setParameter(_context, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindowLog2);
-            }
+            nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindowLog2);
             ZstandardUtils.ThrowIfError(result);
         }
 

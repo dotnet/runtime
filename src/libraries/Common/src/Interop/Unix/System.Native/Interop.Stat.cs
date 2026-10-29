@@ -57,12 +57,12 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FStat", SetLastError = true)]
-        internal static unsafe partial int FStat(SafeHandle fd, out FileStatus output);
+        internal static partial int FStat(SafeHandle fd, out FileStatus output);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Stat", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        internal static unsafe partial int Stat(string path, out FileStatus output);
+        internal static partial int Stat(string path, out FileStatus output);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LStat", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        internal static unsafe partial int LStat(string path, out FileStatus output);
+        internal static partial int LStat(string path, out FileStatus output);
     }
 }

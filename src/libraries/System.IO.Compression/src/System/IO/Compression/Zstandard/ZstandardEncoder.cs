@@ -192,11 +192,7 @@ namespace System.IO.Compression
         [MemberNotNull(nameof(_context))]
         private void InitializeEncoder()
         {
-            // SAFETY: To be audited
-            unsafe
-            {
-                _context = Interop.Zstd.ZSTD_createCCtx();
-            }
+            _context = Interop.Zstd.ZSTD_createCCtx();
             if (_context.IsInvalid)
             {
                 throw new OutOfMemoryException();
@@ -248,7 +244,6 @@ namespace System.IO.Compression
             bytesConsumed = 0;
             bytesWritten = 0;
 
-            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
@@ -306,12 +301,7 @@ namespace System.IO.Compression
             ArgumentOutOfRangeException.ThrowIfNegative(inputLength);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(inputLength, nint.MaxValue);
 
-            nuint result;
-            // SAFETY: To be audited
-            unsafe
-            {
-                result = Interop.Zstd.ZSTD_compressBound((nuint)inputLength);
-            }
+            nuint result = Interop.Zstd.ZSTD_compressBound((nuint)inputLength);
             if (ZstandardUtils.IsError(result))
             {
                 throw new ArgumentOutOfRangeException(nameof(inputLength));
@@ -367,7 +357,7 @@ namespace System.IO.Compression
         {
             bytesWritten = 0;
 
-            using SafeZstdCompressHandle ctx = /* SAFETY: To be audited */ unsafe(Interop.Zstd.ZSTD_createCCtx());
+            using SafeZstdCompressHandle ctx = Interop.Zstd.ZSTD_createCCtx();
             if (ctx.IsInvalid)
             {
                 throw new OutOfMemoryException();
@@ -387,7 +377,6 @@ namespace System.IO.Compression
                 SetWindowLog(ctx, windowLog2);
             }
 
-            // SAFETY: To be audited
             unsafe
             {
                 fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
@@ -464,7 +453,7 @@ namespace System.IO.Compression
                 throw new InvalidOperationException(SR.ZstandardEncoderDecoder_InvalidState);
             }
 
-            if (ZstandardUtils.IsError(/* SAFETY: To be audited */ unsafe(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context, (ulong)length)), out var error))
+            if (ZstandardUtils.IsError(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context, (ulong)length), out var error))
             {
                 ZstandardUtils.Throw(error);
             }
@@ -516,12 +505,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(handle != null);
 
-            nuint result;
-            // SAFETY: To be audited
-            unsafe
-            {
-                result = Interop.Zstd.ZSTD_CCtx_setParameter(handle, parameter, value);
-            }
+            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(handle, parameter, value);
             ZstandardUtils.ThrowIfError(result);
         }
     }

@@ -198,18 +198,13 @@ namespace System.IO.Compression
 
         // Compute and check the HMAC for the entire stream. This is called at the end of the stream, after all data has been read/written,
         // similarly to how CRC is computed for non-encrypted ZIP entries. The HMAC is stored in the last 10 bytes of the stream.
-        private void FinalizeAndCompareHMAC(byte[] storedAuth)
+        private unsafe void FinalizeAndCompareHMAC(byte[] storedAuth)
         {
 
             Debug.Assert(_hmac is not null, "HMAC should have been initialized");
 
             // Finalize HMAC computation after reading, so we can use stackalloc
-            scoped Span<byte> expectedAuth;
-            // SAFETY: To be audited
-            unsafe
-            {
-                expectedAuth = stackalloc byte[SHA1.HashSizeInBytes];
-            }
+            Span<byte> expectedAuth = stackalloc byte[SHA1.HashSizeInBytes];
             if (!_hmac.TryGetHashAndReset(expectedAuth, out int bytesWritten) || bytesWritten < 10)
             {
                 throw new InvalidDataException(SR.WinZipAuthCodeMismatch);

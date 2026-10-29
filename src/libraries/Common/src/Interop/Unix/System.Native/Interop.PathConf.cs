@@ -21,6 +21,6 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_PathConf", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        private static unsafe partial int PathConf(string path, PathConfName name);
+        private static partial int PathConf(string path, PathConfName name);
     }
 }

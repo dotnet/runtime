@@ -60,7 +60,7 @@ namespace System.IO.Compression
 
         public bool NeedsInput() => 0 == _zlibStream.AvailIn;
 
-        internal void SetInput(ReadOnlyMemory<byte> inputBuffer)
+        internal unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(!inputBuffer.IsEmpty);
@@ -69,11 +69,7 @@ namespace System.IO.Compression
             {
                 _inputBufferHandle = inputBuffer.Pin();
 
-                // SAFETY: To be audited
-                unsafe
-                {
-                    _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
-                }
+                _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
                 _zlibStream.AvailIn = (uint)inputBuffer.Length;
             }
         }
@@ -112,7 +108,7 @@ namespace System.IO.Compression
             }
         }
 
-        private ZErrorCode ReadDeflateOutput(byte[] outputBuffer, ZFlushCode flushCode, out int bytesRead)
+        private unsafe ZErrorCode ReadDeflateOutput(byte[] outputBuffer, ZFlushCode flushCode, out int bytesRead)
         {
             Debug.Assert(outputBuffer?.Length > 0);
 

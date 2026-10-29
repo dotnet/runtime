@@ -17,11 +17,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            // SAFETY: To be audited
-            unsafe
-            {
-                Interop.Zstd.ZSTD_freeCCtx(handle);
-            }
+            Interop.Zstd.ZSTD_freeCCtx(handle);
 
             // release the addref we took in SetDictionary
             _dictionary?.DangerousRelease();
@@ -43,11 +39,7 @@ namespace Microsoft.Win32.SafeHandles
             try
             {
                 dictionary.DangerousAddRef(ref added);
-                // SAFETY: To be audited
-                unsafe
-                {
-                    ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_CCtx_refCDict(this, dictionary));
-                }
+                ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_CCtx_refCDict(this, dictionary));
 
                 _dictionary = dictionary;
             }
@@ -58,18 +50,13 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        public nuint SetPrefix(ReadOnlyMemory<byte> prefix)
+        public unsafe nuint SetPrefix(ReadOnlyMemory<byte> prefix)
         {
             MemoryHandle handle = prefix.Pin();
 
-            nuint result;
-            // SAFETY: To be audited
-            unsafe
-            {
-                result = Interop.Zstd.ZSTD_CCtx_refPrefix(this, (byte*)handle.Pointer, (nuint)prefix.Length);
-            }
+            nuint result = Interop.Zstd.ZSTD_CCtx_refPrefix(this, (byte*)handle.Pointer, (nuint)prefix.Length);
 
-            if (/* SAFETY: To be audited */ unsafe(Interop.Zstd.ZSTD_isError(result)) != 0)
+            if (Interop.Zstd.ZSTD_isError(result) != 0)
             {
                 handle.Dispose();
             }
@@ -82,25 +69,16 @@ namespace Microsoft.Win32.SafeHandles
             return result;
         }
 
-        public void Reset()
+        public unsafe void Reset()
         {
-            // SAFETY: To be audited
-            unsafe
-            {
-                ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_CCtx_reset(this, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only));
-            }
+            ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_CCtx_reset(this, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only));
 
             // Restore the dictionary or clear the prefix before releasing its pinned memory.
             if (_prefixHandle != null)
             {
-                nuint result;
-                // SAFETY: To be audited
-                unsafe
-                {
-                    result = _dictionary is not null
-                        ? Interop.Zstd.ZSTD_CCtx_refCDict(this, _dictionary)
-                        : Interop.Zstd.ZSTD_CCtx_refPrefix(this, null, 0);
-                }
+                nuint result = _dictionary is not null
+                    ? Interop.Zstd.ZSTD_CCtx_refCDict(this, _dictionary)
+                    : Interop.Zstd.ZSTD_CCtx_refPrefix(this, null, 0);
                 ZstandardUtils.ThrowIfError(result);
                 _prefixHandle.Value.Dispose();
                 _prefixHandle = null;
@@ -118,11 +96,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            // SAFETY: To be audited
-            unsafe
-            {
-                Interop.Zstd.ZSTD_freeDCtx(handle);
-            }
+            Interop.Zstd.ZSTD_freeDCtx(handle);
 
             // release the addref we took in SetDictionary
             _dictionary?.DangerousRelease();
@@ -144,11 +118,7 @@ namespace Microsoft.Win32.SafeHandles
             try
             {
                 dictionary.DangerousAddRef(ref added);
-                // SAFETY: To be audited
-                unsafe
-                {
-                    ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_DCtx_refDDict(this, dictionary));
-                }
+                ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_DCtx_refDDict(this, dictionary));
 
                 _dictionary = dictionary;
             }
@@ -159,18 +129,13 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        public nuint SetPrefix(ReadOnlyMemory<byte> prefix)
+        public unsafe nuint SetPrefix(ReadOnlyMemory<byte> prefix)
         {
             MemoryHandle handle = prefix.Pin();
 
-            nuint result;
-            // SAFETY: To be audited
-            unsafe
-            {
-                result = Interop.Zstd.ZSTD_DCtx_refPrefix(this, (byte*)handle.Pointer, (nuint)prefix.Length);
-            }
+            nuint result = Interop.Zstd.ZSTD_DCtx_refPrefix(this, (byte*)handle.Pointer, (nuint)prefix.Length);
 
-            if (/* SAFETY: To be audited */ unsafe(Interop.Zstd.ZSTD_isError(result)) != 0)
+            if (Interop.Zstd.ZSTD_isError(result) != 0)
             {
                 handle.Dispose();
             }
@@ -183,25 +148,16 @@ namespace Microsoft.Win32.SafeHandles
             return result;
         }
 
-        public void Reset()
+        public unsafe void Reset()
         {
-            // SAFETY: To be audited
-            unsafe
-            {
-                ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_DCtx_reset(this, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only));
-            }
+            ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_DCtx_reset(this, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only));
 
             // Restore the dictionary or clear the prefix before releasing its pinned memory.
             if (_prefixHandle != null)
             {
-                nuint result;
-                // SAFETY: To be audited
-                unsafe
-                {
-                    result = _dictionary is not null
-                        ? Interop.Zstd.ZSTD_DCtx_refDDict(this, _dictionary)
-                        : Interop.Zstd.ZSTD_DCtx_refPrefix(this, null, 0);
-                }
+                nuint result = _dictionary is not null
+                    ? Interop.Zstd.ZSTD_DCtx_refDDict(this, _dictionary)
+                    : Interop.Zstd.ZSTD_DCtx_refPrefix(this, null, 0);
                 ZstandardUtils.ThrowIfError(result);
                 _prefixHandle.Value.Dispose();
                 _prefixHandle = null;
@@ -219,11 +175,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            // SAFETY: To be audited
-            unsafe
-            {
-                Interop.Zstd.ZSTD_freeCDict(handle);
-            }
+            Interop.Zstd.ZSTD_freeCDict(handle);
             _pinnedData.Dispose();
             return true;
         }
@@ -239,11 +191,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            // SAFETY: To be audited
-            unsafe
-            {
-                Interop.Zstd.ZSTD_freeDDict(handle);
-            }
+            Interop.Zstd.ZSTD_freeDDict(handle);
             _pinnedData.Dispose();
             return true;
         }
