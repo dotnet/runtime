@@ -21,8 +21,7 @@ namespace System.Text.Json.SourceGeneration
         public static LanguageVersion? GetLanguageVersion(this Compilation compilation)
             => compilation is CSharpCompilation csc ? csc.LanguageVersion : null;
 
-        // IModuleSymbol.MemorySafetyRulesVersion is experimental in the Roslyn versions that declare it; older ones get
-        // MemorySafetyRulesPolyfills. Both cover the compiler option and the legacy feature flag.
+        // IModuleSymbol.MemorySafetyRulesVersion is experimental
 #pragma warning disable RSEXPERIMENTAL006
         public static bool UsesUpdatedMemorySafetyRules(this SemanticModel semanticModel)
             => (int)semanticModel.Compilation.SourceModule.MemorySafetyRulesVersion >= 2;

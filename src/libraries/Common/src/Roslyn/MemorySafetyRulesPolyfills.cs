@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Microsoft.CodeAnalysis
@@ -30,8 +31,10 @@ namespace Microsoft.CodeAnalysis
             /// <remarks>
             /// The real property is an enum, so callers compare <c>(int)module.MemorySafetyRulesVersion</c>. Hosts that
             /// predate the API only know the <c>updated-memory-safety-rules</c> feature flag, which is read from the
-            /// parse options of a source module's syntax trees.
+            /// parse options of a source module's syntax trees. Experimental like the real API, so switching to it
+            /// changes no diagnostics.
             /// </remarks>
+            [Experimental("RSEXPERIMENTAL006")]
             public int MemorySafetyRulesVersion =>
                 s_getMemorySafetyRulesVersion is { } getVersion ? getVersion(module)
                 : module.Locations.FirstOrDefault()?.SourceTree?.Options.Features.ContainsKey("updated-memory-safety-rules") == true ? 2

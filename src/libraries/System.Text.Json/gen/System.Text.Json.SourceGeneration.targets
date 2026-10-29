@@ -25,6 +25,7 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)Polyfills\StringPolyfills.cs" Link="Common\Polyfills\StringPolyfills.cs" />
     <Compile Include="$(CommonPath)System\Buffers\SpanAction.cs" Link="Common\System\Buffers\SpanAction.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" Link="Common\System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>

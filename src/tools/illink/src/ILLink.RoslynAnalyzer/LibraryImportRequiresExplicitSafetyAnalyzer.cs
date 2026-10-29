@@ -9,8 +9,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-// IModuleSymbol.MemorySafetyRulesVersion is experimental in the Roslyn versions that declare it; older ones get
-// MemorySafetyRulesPolyfills.
+// IModuleSymbol.MemorySafetyRulesVersion is experimental
 #pragma warning disable RSEXPERIMENTAL006
 
 namespace ILLink.RoslynAnalyzer

@@ -7,8 +7,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
-// IModuleSymbol.MemorySafetyRulesVersion is experimental in the Roslyn versions that declare it; older ones get
-// MemorySafetyRulesPolyfills.
+// IModuleSymbol.MemorySafetyRulesVersion is experimental
 #pragma warning disable RSEXPERIMENTAL006
 
 namespace Microsoft.Interop
@@ -40,8 +39,7 @@ namespace Microsoft.Interop
             => compilation.SourceModule.UsesUpdatedMemorySafetyRules();
 
         /// <summary>
-        /// Determines whether a module uses the updated memory safety rules, from either the
-        /// <c>MemorySafetyRulesVersion</c> compiler option or the legacy <c>updated-memory-safety-rules</c> feature flag.
+        /// Determines whether a module uses the updated memory safety rules.
         /// </summary>
         public static bool UsesUpdatedMemorySafetyRules(this IModuleSymbol module)
             => (int)module.MemorySafetyRulesVersion >= 2;
