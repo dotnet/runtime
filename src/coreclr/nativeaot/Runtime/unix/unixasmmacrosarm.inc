@@ -257,7 +257,6 @@ C_FUNC(\Name\()_End):
         EPILOG_STACK_FREE 4           // Discard caller's SP
 .endm
 
-// thumb with PIC version
 #include <arm/InlineTls.inc>
 
 .macro INLINE_GETTHREAD

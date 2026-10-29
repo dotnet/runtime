@@ -179,13 +179,28 @@ C_FUNC(\Name):
 #define xip1 x17
 #define xpr x18
 
+#include <arm64/InlineTls.inc>
+
 // Loads the address of a thread-local variable into the target register,
 // which cannot be x0. Preserves all other registers.
-#include <arm64/InlineTls.inc>
+.macro INLINE_GET_TLS_VAR_PRESERVE_REGS target, var
+    stp     x0, lr, [sp,#-0x10]!
+#if defined(__APPLE__)
+    // Apple's tls_get_var trashes xip0 (and possibly xip1)
+    stp     xip0, xip1, [sp,#-0x10]!
+#endif
+
+    INLINE_GET_TLS_VAR \target, \var
+
+#if defined(__APPLE__)
+    ldp     xip0, xip1, [sp],#0x10
+#endif
+    ldp     x0, lr, [sp],#0x10
+.endm
 
 // Inlined version of RhpGetThread. Target cannot be x0.
 .macro INLINE_GETTHREAD target
-    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
+    INLINE_GET_TLS_VAR_PRESERVE_REGS \target, C_FUNC(tls_CurrentThread)
 .endm
 
 // Target cannot be x0.
@@ -208,7 +223,7 @@ C_FUNC(\Name):
     .endif
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
 #else
-    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
+    INLINE_GET_TLS_VAR_PRESERVE_REGS \target, C_FUNC(tls_CurrentThread)
 #endif
 .endm
 

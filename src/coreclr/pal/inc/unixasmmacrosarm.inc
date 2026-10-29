@@ -389,7 +389,6 @@ C_FUNC(\Name):
 .endm
 
 
-// thumb with PIC version
 #include <arm/InlineTls.inc>
 
 .macro INLINE_GETTHREAD

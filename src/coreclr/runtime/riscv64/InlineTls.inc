@@ -8,7 +8,8 @@
         .error "target cannot be a0"
     .endif
 
-    addi sp, sp, -72
+    // 72 bytes of saved registers, padded to 80 to keep sp 16-byte aligned at the call
+    addi sp, sp, -80
     sd ra,  64(sp)
     sd t1,  56(sp)
     sd a1,  48(sp)
@@ -32,7 +33,7 @@
     ld a5,  16(sp)
     ld a6,   8(sp)
     ld a7,   0(sp)
-    addi sp, sp, 72
+    addi sp, sp, 80
 
     add \target, a0, \ofs
 

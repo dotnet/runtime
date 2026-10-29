@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// Thumb with PIC version.
 // Loads the address of a thread-local variable into r0. Trashes r1-r3, r12 and lr.
 .macro INLINE_GET_TLS_VAR Var
         ldr     r0, 2f
