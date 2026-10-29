@@ -37,6 +37,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     private readonly Configuration _config;
     private readonly TargetPointer _runtimeImageBase;
+    private readonly PageCache _pageCache;
 
     private DataTargetDelegates _dataTargetDelegates;
 
@@ -153,7 +154,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         _config = mainDescriptor.Config;
         _runtimeImageBase = runtimeImageBase;
-        _dataTargetDelegates = dataTargetDelegates;
+        _dataTargetDelegates = dataTargetDelegates.WithPageCache(out PageCache pageCache);
+        _pageCache = pageCache;
 
         AddDescriptor(mainDescriptor);
         BuildDescriptors(forceBuild: true);
@@ -200,6 +202,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override void Flush(FlushScope scope)
     {
+        _pageCache.Clear();
         base.Flush(scope);
 
         BuildDescriptors();
@@ -1040,6 +1043,66 @@ public sealed unsafe class ContractDescriptorTarget : Target
         }
     }
 
+    private sealed class PageCache(ReadFromTargetDelegate reader, WriteToTargetDelegate writer)
+    {
+        private const int PageSize = 4096;
+        private const int PageCount = 32;
+
+        private struct Page
+        {
+            public ulong Address;
+            public bool Available;
+        }
+
+        private readonly Dictionary<ulong, int> _pageIndices = new(PageCount);
+        private readonly Page[] _pages = new Page[PageCount];
+        private readonly byte[] _data = new byte[PageCount * PageSize];
+        private int _nextPage;
+
+        public int Read(ulong address, Span<byte> buffer)
+        {
+            int offset = (int)(address & (PageSize - 1));
+            // Leave large, empty, and boundary-crossing reads to the underlying reader.
+            if (buffer.IsEmpty || buffer.Length > PageSize - offset)
+                return reader(address, buffer);
+
+            ulong pageAddress = address & ~(ulong)(PageSize - 1);
+            if (!_pageIndices.TryGetValue(pageAddress, out int pageIndex))
+            {
+                pageIndex = _nextPage;
+                ref Page page = ref _pages[pageIndex];
+                // Remove the old mapping before a failed read can overwrite its bytes.
+                if (_pageIndices.Count == PageCount)
+                    _pageIndices.Remove(page.Address);
+
+                page.Available = false;
+                page.Available = reader(pageAddress, _data.AsSpan(pageIndex * PageSize, PageSize)) >= 0;
+                page.Address = pageAddress;
+                _pageIndices.Add(pageAddress, pageIndex);
+                _nextPage = (pageIndex + 1) % PageCount;
+            }
+
+            if (!_pages[pageIndex].Available)
+                return reader(address, buffer);
+
+            _data.AsSpan(pageIndex * PageSize + offset, buffer.Length).CopyTo(buffer);
+            return 0;
+        }
+
+        public int Write(ulong address, Span<byte> buffer)
+        {
+            // A failed write can still modify target memory.
+            Clear();
+            return writer(address, buffer);
+        }
+
+        public void Clear()
+        {
+            _pageIndices.Clear();
+            _nextPage = 0;
+        }
+    }
+
     private sealed class ReadCallbackScope(ContractDescriptorTarget target, DataTargetDelegates original) : IDisposable
     {
         private bool _disposed;
@@ -1084,6 +1147,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public int AllocVirtual(ulong size, out ulong allocatedAddress)
         {
             return allocVirtual(size, out allocatedAddress);
+        }
+
+        public DataTargetDelegates WithPageCache(out PageCache cache)
+        {
+            cache = new(readFromTarget, writeToTarget);
+            return new(cache.Read, cache.Write, getThreadContext, setThreadContext, allocVirtual);
         }
 
         public DataTargetDelegates WithReadCallback(Action<ulong, ulong> reportRead)
