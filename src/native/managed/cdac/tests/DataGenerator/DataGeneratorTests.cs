@@ -87,31 +87,31 @@ public class DataGeneratorTests
     }
 
     [Fact]
-    public void EnsureAllFieldsReadDeclaresGeneratedPropertyDependencies()
+    public void TryReadAllFieldsDeclaresGeneratedPropertyDependencies()
     {
-        InterfaceMapping map = typeof(TestNative).GetInterfaceMap(typeof(IReadableData));
-        int index = Array.IndexOf(map.InterfaceMethods, typeof(IReadableData).GetMethod(nameof(IReadableData.EnsureAllFieldsRead))!);
-        MethodInfo ensureAllFieldsRead = map.TargetMethods[index];
+        MethodInfo tryReadAllFields = typeof(TestNative).GetMethod(
+            "TryReadAllFields",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
 
         Assert.Equal(
             [
                 (FieldName: "A", NativeType: "uint32"),
                 (FieldName: "B", NativeType: "pointer"),
             ],
-            Dependencies(ensureAllFieldsRead)
+            Dependencies(tryReadAllFields)
                 .Select(attribute => (attribute.FieldName, attribute.NativeType)));
-        Assert.False(UsesTypeSize(ensureAllFieldsRead));
+        Assert.False(UsesTypeSize(tryReadAllFields));
     }
 
     [Fact]
-    public void EnsureAllFieldsReadWithCustomInitHasNoShortCircuitingDependencies()
+    public void TryReadAllFieldsWithCustomInitHasNoShortCircuitingDependencies()
     {
-        InterfaceMapping map = typeof(TestCustomInit).GetInterfaceMap(typeof(IReadableData));
-        int index = Array.IndexOf(map.InterfaceMethods, typeof(IReadableData).GetMethod(nameof(IReadableData.EnsureAllFieldsRead))!);
-        MethodInfo ensureAllFieldsRead = map.TargetMethods[index];
+        MethodInfo tryReadAllFields = typeof(TestCustomInit).GetMethod(
+            "TryReadAllFields",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
 
-        Assert.Empty(Dependencies(ensureAllFieldsRead));
-        Assert.False(UsesTypeSize(ensureAllFieldsRead));
+        Assert.Empty(Dependencies(tryReadAllFields));
+        Assert.False(UsesTypeSize(tryReadAllFields));
     }
 
     [Fact]

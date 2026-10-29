@@ -770,6 +770,26 @@ namespace System.Net.Sockets
         public static bool TryCompleteReceiveFrom(SafeSocketHandle socket, IList<ArraySegment<byte>> buffers, SocketFlags flags, Span<byte> socketAddress, out int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode) =>
             TryCompleteReceiveFrom(socket, default(Span<byte>), buffers, flags, socketAddress, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode);
 
+        // WASI sockets don't support MSG_PEEK, so a zero-byte receive checks readiness with a non-blocking poll instead.
+        private static unsafe bool TryCompleteZeroByteReceiveWasi(SafeSocketHandle socket, out SocketError errorCode)
+        {
+            Interop.Error err = Interop.Sys.Poll(socket, Interop.PollEvents.POLLIN, timeout: 0, out Interop.PollEvents events);
+            if (err != Interop.Error.SUCCESS)
+            {
+                // wasi-libc can't poll a TCP socket that isn't connected; a zero-length receive reports the real error (ENOTCONN).
+                byte buffer;
+                if (SysReceive(socket, SocketFlags.None, new Span<byte>(&buffer, 0), out Interop.Error receiveErr) < 0)
+                {
+                    err = receiveErr;
+                }
+                errorCode = GetSocketErrorForErrorCode(err);
+                return true;
+            }
+
+            errorCode = SocketError.Success;
+            return events != Interop.PollEvents.POLLNONE;
+        }
+
         public static unsafe bool TryCompleteReceive(SafeSocketHandle socket, Span<byte> buffer, SocketFlags flags, out int bytesReceived, out SocketError errorCode)
         {
             try
@@ -784,6 +804,12 @@ namespace System.Net.Sockets
                 }
                 else if (buffer.Length == 0)
                 {
+                    if (OperatingSystem.IsWasi() && flags == SocketFlags.None)
+                    {
+                        bytesReceived = 0;
+                        return TryCompleteZeroByteReceiveWasi(socket, out errorCode);
+                    }
+
                     // Special case a receive of 0 bytes into a single buffer.  A common pattern is to ReceiveAsync 0 bytes in order
                     // to be asynchronously notified when data is available, without needing to dedicate a buffer.  Some platforms (e.g. macOS),
                     // however complete a 0-byte read successfully when data isn't available, as the request can logically be satisfied
@@ -852,6 +878,14 @@ namespace System.Net.Sockets
                 }
                 else if (buffer.Length == 0)
                 {
+                    if (OperatingSystem.IsWasi() && flags == SocketFlags.None && socketAddress.Length == 0)
+                    {
+                        receivedSocketAddressLength = 0;
+                        bytesReceived = 0;
+                        receivedFlags = SocketFlags.None;
+                        return TryCompleteZeroByteReceiveWasi(socket, out errorCode);
+                    }
+
                     // Special case a receive of 0 bytes into a single buffer.  A common pattern is to ReceiveAsync 0 bytes in order
                     // to be asynchronously notified when data is available, without needing to dedicate a buffer.  Some platforms (e.g. macOS),
                     // however complete a 0-byte read successfully when data isn't available, as the request can logically be satisfied

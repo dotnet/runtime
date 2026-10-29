@@ -6,6 +6,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -13,6 +14,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
+using Antlr4.Runtime;
 using Internal.IL;
 using Xunit;
 using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
@@ -49,6 +51,40 @@ namespace ILAssembler.Tests
         private const string CSharpVendorGuid = "{994B45C4-E6E9-11D2-903F-00C04FA302A1}";
         private const string DocumentTypeGuid = "{5A869D0B-6611-11D3-BD2A-0000F80849BD}";
         private const string VisualBasicLanguageGuid = "{3A12D0B8-C26C-11D0-B442-00A0244A1DD2}";
+
+        [Theory]
+        [InlineData("""'C:\p\win.cs'""")]
+        [InlineData("\"C:\\p\\win.cs\"")]
+        public void LinePath_UnsupportedEscapes_AreLexerErrors(string path)
+        {
+            using var errors = new StringWriter();
+            var lexer = new CILLexer(new AntlrInputStream($".line 10 {path}"), TextWriter.Null, errors);
+
+            IList<IToken> tokens = lexer.GetAllTokens();
+
+            Assert.Contains("token recognition error", errors.ToString());
+            Assert.DoesNotContain(tokens, token => token.Type is CILLexer.SQSTRING or CILLexer.QSTRING);
+        }
+
+        [Theory]
+        [InlineData("""'C:\\p\\win.cs'""")]
+        [InlineData("\"C:\\\\p\\\\win.cs\"")]
+        public void LinePath_EscapedBackslashes_PreserveDocumentName(string path)
+        {
+            string source = DocumentCompilerTestHelpers.MethodSource($"""
+                .line 10 {path}
+                ret
+                """);
+            using MetadataReaderProvider provider = MetadataReaderProvider.FromPortablePdbImage(
+                DocumentCompilerTestHelpers.CompileAndGetPortablePdb(source, new Options { Debug = true }));
+            MetadataReader reader = provider.GetMetadataReader();
+            Document document = reader.GetDocument(reader.Documents.ElementAt(1));
+
+            Assert.Equal(@"C:\p\win.cs", reader.GetString(document.Name));
+            MethodDebugInformation information = reader.GetMethodDebugInformation(reader.MethodDebugInformation.Single());
+            Assert.Equal(reader.Documents.ElementAt(1), information.Document);
+            Assert.Equal(10, Assert.Single(information.GetSequencePoints()).StartLine);
+        }
 
         [Fact]
         public void LanguageDecl_DoesNotThrow()
@@ -429,6 +465,9 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
+        [InlineData(".language '{3f5162f8-07c6-11d3-9053-00c04fa302a1}'")]
+        [InlineData(".language '{3f5162f8-07c6-11d3-9053-00c04fa302a1}', '{994b45c4-e6e9-11d2-903f-00c04fa302a1}'")]
+        [InlineData(".language '{3f5162f8-07c6-11d3-9053-00c04fa302a1}', '{994b45c4-e6e9-11d2-903f-00c04fa302a1}', '{5a869d0b-6611-11d3-bd2a-0000f80849bd}'")]
         [InlineData(".language '3f5162f8-07c6-11d3-9053-00c04fa302a1'")]
         [InlineData(".language '3f5162f8-07c6-11d3-9053-00c04fa302a1', '994b45c4-e6e9-11d2-903f-00c04fa302a1'")]
         [InlineData(".language '3f5162f8-07c6-11d3-9053-00c04fa302a1', '994b45c4-e6e9-11d2-903f-00c04fa302a1', '5a869d0b-6611-11d3-bd2a-0000f80849bd'")]

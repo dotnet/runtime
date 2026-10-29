@@ -1127,7 +1127,7 @@ namespace System.Text.Json.SourceGeneration
                 INamedTypeSymbol? closedBaseType = null;
                 if ((shouldInferClosedTypePolymorphism || needsRuntimeInferenceGuard || inferClosedTypePolymorphismOverride is true) &&
                     typeToGenerate.Type is INamedTypeSymbol namedBaseType &&
-                    namedBaseType.IsClosedType())
+                    namedBaseType.IsClosed)
                 {
                     closedBaseType = namedBaseType;
                 }

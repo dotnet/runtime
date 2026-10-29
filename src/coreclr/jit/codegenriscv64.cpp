@@ -1308,7 +1308,9 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             else if (data->IsIntegralConst())
             {
                 ssize_t cnsVal = data->AsIntConCommon()->IconValue();
-                dataReg        = (targetReg == REG_NA) ? rsGetRsvdReg() : targetReg; // Use tempReg if spilled
+                // If spilled, use RA as the temp: the reserved register may be needed below
+                // to form the address of a stack local whose offset does not fit in simm12.
+                dataReg = (targetReg == REG_NA) ? REG_RA : targetReg;
 
                 if (data->IsIconHandle() && data->AsIntCon()->FitsInAddrBase(m_compiler) &&
                     data->AsIntCon()->AddrNeedsReloc(m_compiler))
@@ -5695,7 +5697,11 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
                 const bool     isDstSigned = !varTypeIsUnsigned(cast->gtCastType);
                 const unsigned excludeMsb  = isDstSigned ? 1 : 0;
                 const unsigned typeSize    = 8 * castSize - excludeMsb;
-                GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, typeSize);
+                // The upper 32 bits of an (u)int source are not guaranteed to be sign-extended,
+                // so only shift within the lower 32 bits
+                const bool isSrcInt = desc.CheckSrcSize() == 4;
+                GetEmitter()->emitIns_R_R_I(isSrcInt ? INS_srliw : INS_srli, isSrcInt ? EA_4BYTE : EA_8BYTE, tempReg,
+                                            reg, typeSize);
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
             }
             else // Signed to signed cast
@@ -5704,7 +5710,17 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
                 const auto extensionSize = (8 - castSize) * 8;
                 GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, reg, extensionSize);
                 GetEmitter()->emitIns_R_R_I(INS_srai, EA_8BYTE, tempReg, tempReg, extensionSize);
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, reg);
+                if (desc.CheckSrcSize() == 4) // int
+                {
+                    // The upper 32 bits of an int source are not guaranteed to be sign-extended,
+                    // so compare only the lower 32 bits
+                    GetEmitter()->emitIns_R_R_R(INS_subw, EA_4BYTE, tempReg, tempReg, reg);
+                    genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
+                }
+                else
+                {
+                    genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, reg);
+                }
             }
         }
         break;

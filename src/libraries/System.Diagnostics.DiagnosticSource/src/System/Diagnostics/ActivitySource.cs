@@ -47,7 +47,8 @@ namespace System.Diagnostics
 
         private ActivitySource(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope, string? telemetrySchemaUrl)
         {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+            Name = name;
             Version = version;
             Scope = scope;
             TelemetrySchemaUrl = telemetrySchemaUrl;

@@ -239,6 +239,8 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ManagedThreadId.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.CoreCLR.MultiThreading.cs" Condition="'$(FeatureMultithreading)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.CoreCLR.SingleThreading.cs" Condition="'$(FeatureMultithreading)' != 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.CoreCLR.cs" />
     <!-- Keep the native-layout fields in the common partial before variant-specific fields. -->
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.CoreCLR.cs" />

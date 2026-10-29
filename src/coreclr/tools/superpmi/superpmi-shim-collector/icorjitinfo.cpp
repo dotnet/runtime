@@ -337,14 +337,6 @@ bool interceptor_ICJI::satisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent, 
     return temp;
 }
 
-// load and restore the method
-void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
-{
-    mc->cr->AddCall("methodMustBeLoadedBeforeCodeIsRun");
-    original_ICorJitInfo->methodMustBeLoadedBeforeCodeIsRun(method);
-    mc->cr->recMethodMustBeLoadedBeforeCodeIsRun(method);
-}
-
 // Returns the global cookie for the /GS unsafe buffer checks
 // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
 void interceptor_ICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
@@ -508,6 +500,22 @@ bool interceptor_ICJI::isValueClass(CORINFO_CLASS_HANDLE cls)
     bool temp = original_ICorJitInfo->isValueClass(cls);
     mc->recIsValueClass(cls, temp);
     return temp;
+}
+
+bool interceptor_ICJI::isByRefLike(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isByRefLike");
+    bool result = original_ICorJitInfo->isByRefLike(cls);
+    mc->recIsByRefLike(cls, result);
+    return result;
+}
+
+bool interceptor_ICJI::isSharedInst(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isSharedInst");
+    bool result = original_ICorJitInfo->isSharedInst(cls);
+    mc->recIsSharedInst(cls, result);
+    return result;
 }
 
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
@@ -845,23 +853,6 @@ CorInfoInitClassResult interceptor_ICJI::initClass(
     CorInfoInitClassResult temp = original_ICorJitInfo->initClass(field, method, context);
     mc->recInitClass(field, method, context, temp);
     return temp;
-}
-
-// This used to be called "loadClass".  This records the fact
-// that the class must be loaded (including restored if necessary) before we execute the
-// code that we are currently generating.  When jitting code
-// the function loads the class immediately.  When zapping code
-// the zapper will if necessary use the call to record the fact that we have
-// to do a fixup/restore before running the method currently being generated.
-//
-// This is typically used to ensure value types are loaded before zapped
-// code that manipulates them is executed, so that the GC can access information
-// about those value types.
-void interceptor_ICJI::classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
-{
-    mc->cr->AddCall("classMustBeLoadedBeforeCodeIsRun");
-    original_ICorJitInfo->classMustBeLoadedBeforeCodeIsRun(cls);
-    mc->cr->recClassMustBeLoadedBeforeCodeIsRun(cls);
 }
 
 // returns the class handle for the special builtin classes

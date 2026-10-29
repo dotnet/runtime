@@ -194,30 +194,9 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
 NESTED_END RhpWaitForGC, _TEXT
 
 
-LEAF_ENTRY RhpGcPoll, _TEXT
-        cmp         dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_None
-        jne         LOCAL_LABEL(RhpGcPoll_RarePath)
-        ret
-LOCAL_LABEL(RhpGcPoll_RarePath):
-        jmp C_FUNC(RhpGcPollRare)
-LEAF_END RhpGcPoll, _TEXT
-
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
         PUSH_COOP_PINVOKE_FRAME rdi
         call        C_FUNC(RhpGcPoll2)
         POP_COOP_PINVOKE_FRAME
         ret
 NESTED_END RhpGcPollRare, _TEXT
-
-
-#ifdef FEATURE_GC_STRESS
-
-//
-// GC Stress Hijack targets
-//
-LEAF_ENTRY RhpGcStressHijack, _TEXT
-    // NYI
-    int 3
-LEAF_END RhpGcStressHijack, _TEXT
-
-#endif  // FEATURE_GC_STRESS

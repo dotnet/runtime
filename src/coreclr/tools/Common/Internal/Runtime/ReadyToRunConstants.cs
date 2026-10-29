@@ -41,6 +41,7 @@ namespace Internal.ReadyToRunConstants
         None  = 0x0000,
         Eager = 0x0001, // Section before module activation.
         PCode = 0x0004, // Section contains pointers to code
+        GCRefMap = 0x0008, // Each signature is prefixed by its argument GC reference map.
     }
 
     /// <summary>

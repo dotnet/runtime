@@ -51,18 +51,14 @@ namespace ILAssembler.Tests
 
 
         [Fact]
-        public void ExportHead_ObsoleteSyntax_DoesNotThrow()
+        public void ExportHead_InvalidTopLevelSyntax_ReportsDiagnostic()
         {
-            string source = """
-                .assembly test { }
-                .export [System.Object]
-                .class public auto ansi beforefieldinit Test
-                {
-                }
-                """;
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                ".assembly test {} .export [System.Object] .class Test {}",
+                new Options());
 
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
-            Assert.Empty(diagnostics);
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.Parser && diagnostic.Severity == DiagnosticSeverity.Error);
+            Assert.Null(result);
         }
 
 

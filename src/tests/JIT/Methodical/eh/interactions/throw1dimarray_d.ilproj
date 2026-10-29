@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
+    <!-- The shared IL fixture deliberately repeats local names in the PDB. -->
+    <IlasmFlags>$(IlasmFlags) -ERR</IlasmFlags>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

@@ -277,14 +277,6 @@ bool WrapICorJitInfo::satisfiesMethodConstraints(
     return temp;
 }
 
-void WrapICorJitInfo::methodMustBeLoadedBeforeCodeIsRun(
-          CORINFO_METHOD_HANDLE method)
-{
-    API_ENTER(methodMustBeLoadedBeforeCodeIsRun);
-    wrapHnd->methodMustBeLoadedBeforeCodeIsRun(method);
-    API_LEAVE(methodMustBeLoadedBeforeCodeIsRun);
-}
-
 void WrapICorJitInfo::getGSCookie(
           GSCookie* pCookieVal,
           GSCookie** ppCookieVal)
@@ -432,6 +424,24 @@ bool WrapICorJitInfo::isValueClass(
     API_ENTER(isValueClass);
     bool temp = wrapHnd->isValueClass(cls);
     API_LEAVE(isValueClass);
+    return temp;
+}
+
+bool WrapICorJitInfo::isByRefLike(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isByRefLike);
+    bool temp = wrapHnd->isByRefLike(cls);
+    API_LEAVE(isByRefLike);
+    return temp;
+}
+
+bool WrapICorJitInfo::isSharedInst(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isSharedInst);
+    bool temp = wrapHnd->isSharedInst(cls);
+    API_LEAVE(isSharedInst);
     return temp;
 }
 
@@ -734,14 +744,6 @@ CorInfoInitClassResult WrapICorJitInfo::initClass(
     CorInfoInitClassResult temp = wrapHnd->initClass(field, method, context);
     API_LEAVE(initClass);
     return temp;
-}
-
-void WrapICorJitInfo::classMustBeLoadedBeforeCodeIsRun(
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(classMustBeLoadedBeforeCodeIsRun);
-    wrapHnd->classMustBeLoadedBeforeCodeIsRun(cls);
-    API_LEAVE(classMustBeLoadedBeforeCodeIsRun);
 }
 
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getBuiltinClass(

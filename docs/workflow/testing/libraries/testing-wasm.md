@@ -187,7 +187,8 @@ XHARNESS_COMMAND=test-browser ./build.sh libs.tests -test -os browser -c Release
 ```
 
 Omit `RunSmokeTestsOnly` to build and run all supported library suites. To isolate trimming
-from R2R, keep `EnableAggressiveTrimming=true` and pass `PublishReadyToRun=false`.
+from R2R, keep `EnableAggressiveTrimming=true` and pass `PublishReadyToRun=false`
+and `TestTrimming=true`, so trimming remains enabled without ReadyToRun.
 Use clean project-specific `bin` and `obj` browser-wasm outputs when switching modes;
 stale staged assets can otherwise cause assembly-loading failures before tests start.
 

@@ -6981,18 +6981,19 @@ void InterpCompiler::EmitStelem(InterpType interpType)
 void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
 {
     bool isBoxedStatic  = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
+    if ((pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS) != 0)
+    {
+        CORINFO_GENERICHANDLE_RESULT embedInfo;
+        m_compHnd->embedGenericHandle(pResolvedToken, true, m_methodInfo->ftn, &embedInfo);
+        EmitPushHelperCall(CORINFO_HELP_INITCLASS, embedInfo, StackTypeI, NULL);
+        m_pStackPointer--; // The InitClass helper doesn't actually return anything, so we pop the stack
+    }
+
     switch (pFieldInfo->fieldAccessor)
     {
         case CORINFO_FIELD_STATIC_ADDRESS:
         case CORINFO_FIELD_STATIC_RVA_ADDRESS:
         {
-            if ((pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS) != 0)
-            {
-                CORINFO_GENERICHANDLE_RESULT embedInfo;
-                m_compHnd->embedGenericHandle(pResolvedToken, true, m_methodInfo->ftn, &embedInfo);
-                EmitPushHelperCall(CORINFO_HELP_INITCLASS, embedInfo, StackTypeI, NULL);
-                m_pStackPointer--; // The InitClass helper doesn't actually return anything, so we pop the stack
-            }
             // const field address
             assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
             AddIns(INTOP_LDPTR);
@@ -7008,11 +7009,13 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             switch (pFieldInfo->helper)
             {
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+                case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
                 case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
                     helperArg = (void*)(size_t)m_compHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
                     break;
                 case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+                case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
                     helperArg = (void*)(size_t)m_compHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
                     break;
                 case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
@@ -7068,6 +7071,7 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             break;
         }
+        case CORINFO_FIELD_STATIC_TLS:
         case CORINFO_FIELD_STATIC_ADDR_HELPER:
         {
             AddIns(INTOP_CALL_HELPER_P_P);

@@ -868,28 +868,14 @@ static PTR_BYTE FindGCRefMap(PTR_Module pZapModule, TADDR ptr)
     RVA rva = pNativeImage->GetDataRva(ptr);
 
     PTR_READYTORUN_IMPORT_SECTION pImportSection = pZapModule->GetImportSectionForRVA(rva);
-    if (pImportSection == NULL)
+    if (pImportSection == NULL ||
+        (pImportSection->Flags & ReadyToRunImportSectionFlags::GCRefMap) == ReadyToRunImportSectionFlags::None)
         return NULL;
 
     COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / pImportSection->EntrySize;
 
-    PTR_BYTE pGCRefMap = dac_cast<PTR_BYTE>(pNativeImage->GetRvaData(pImportSection->AuxiliaryData));
-    _ASSERTE(pGCRefMap != NULL);
-
-    // GCRefMap starts with lookup index to limit size of linear scan that follows.
-    PTR_BYTE p = pGCRefMap + dac_cast<PTR_DWORD>(pGCRefMap)[index / GCREFMAP_LOOKUP_STRIDE];
-    COUNT_T remaining = index % GCREFMAP_LOOKUP_STRIDE;
-
-    while (remaining > 0)
-    {
-        while ((*p & 0x80) != 0)
-            p++;
-        p++;
-
-        remaining--;
-    }
-
-    return p;
+    PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
+    return dac_cast<PTR_BYTE>(pNativeImage->GetRvaData(pSignatures[index]));
 }
 
 PTR_BYTE StubDispatchFrame::GetGCRefMap()
@@ -1491,6 +1477,62 @@ void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
 //
 //
 
+PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc(ScanContext* sc)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    FrameIdentifier frame = GetFrameIdentifier();
+    switch (frame)
+    {
+    case FrameIdentifier::PrestubMethodFrame:
+    case FrameIdentifier::CallCountingHelperFrame:
+    case FrameIdentifier::StubDispatchFrame:
+    {
+        FramedMethodFrame* pFrame = static_cast<FramedMethodFrame*>(this);
+        // Cache both hits and misses so later walks never repeat receiver-based lookup.
+        // Diagnostic unwinding may perform a cold lookup: any relocation that needed
+        // this lookup would already have completed it during marking.
+        const PTR_BYTE noMap = dac_cast<PTR_BYTE>(static_cast<TADDR>(-1));
+        PTR_BYTE cachedMap = VolatileLoad(&pFrame->m_pCachedGCRefMap);
+        if (cachedMap != nullptr)
+            return cachedMap == noMap ? nullptr : cachedMap;
+
+        MethodDesc* pMD = GetFunction();
+        if (pMD == nullptr)
+            return nullptr;
+#ifndef DACCESS_COMPILE
+        _ASSERTE(sc == nullptr || sc->promotion);
+#endif // DACCESS_COMPILE
+        bool dispatch = frame == FrameIdentifier::StubDispatchFrame;
+        PTR_BYTE map = pMD->FindGCRefMap(nullptr, dispatch);
+        // A relocated receiver root can point at its destination before the object is copied;
+        // dereferencing it here could read an invalid MethodTable.
+        if (sc != nullptr && !sc->promotion)
+            return map;
+        // Object-returning constructors do not supply an ordinary receiver. A String prestub
+        // frame can still name the instance constructor rather than its static factory.
+        if (map == nullptr && !pMD->IsStatic() && !pMD->IsObjectReturningCtor() && !pMD->HasMethodInstantiation() &&
+            (dispatch || !pMD->RequiresInstArg()))
+        {
+            MethodTable* pReceiverMT = pMD->GetMethodTable();
+            if (dispatch || !pReceiverMT->IsValueType() || pMD->IsUnboxingStub())
+            {
+                PTR_TADDR receiver = dac_cast<PTR_TADDR>(GetThisPtr());
+                if (*receiver != 0)
+                    pReceiverMT = dac_cast<PTR_Object>(*receiver)->GetGCSafeMethodTable();
+            }
+            map = pMD->FindGCRefMap(pReceiverMT, dispatch);
+        }
+#ifndef DACCESS_COMPILE
+        VolatileStore(&pFrame->m_pCachedGCRefMap, map != nullptr ? map : noMap);
+#endif // DACCESS_COMPILE
+        return map;
+    }
+    default:
+        return nullptr;
+    }
+}
+
 void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1514,6 +1556,13 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     pFunction = GetFunction();
     if (pFunction == NULL)
         return;
+
+    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc(sc);
+    if (pGCRefMap != nullptr)
+    {
+        PromoteCallerStackUsingGCRefMap(fn, sc, pGCRefMap);
+        return;
+    }
 
     // Now get the signature...
     Signature callSignature = pFunction->GetSignature();
@@ -1545,8 +1594,7 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 
         MetaSig msig(pSig, cbSigSize, pFunction->GetModule(), &typeContext);
 
-        bool fCtorOfVariableSizedObject = msig.HasThis() && (pFunction->GetMethodTable() == g_pStringClass) && pFunction->IsCtor();
-        if (fCtorOfVariableSizedObject)
+        if (pFunction->IsStringCtor())
             msig.ClearHasThis();
 
         if (pFunction->RequiresInstArg() && !SuppressParamTypeArg())
@@ -1656,6 +1704,24 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
 
         switch (token)
         {
+        case GCREFMAP_THIS_REF:
+        case GCREFMAP_THIS_BYREF:
+        {
+            bool interior = token == GCREFMAP_THIS_BYREF;
+            FrameIdentifier frame = GetFrameIdentifier();
+            if (frame == FrameIdentifier::StubDispatchFrame)
+                interior = false;
+            else if (frame == FrameIdentifier::PrestubMethodFrame || frame == FrameIdentifier::CallCountingHelperFrame)
+            {
+                MethodDesc* pMD = GetFunction();
+                interior = pMD->GetMethodTable()->IsValueType() && !pMD->IsUnboxingStub();
+            }
+            if (interior)
+                PromoteCarefully(fn, dac_cast<PTR_PTR_Object>(ppObj), sc, GC_CALL_INTERIOR);
+            else
+                fn(dac_cast<PTR_PTR_Object>(ppObj), sc, CHECK_APP_DOMAIN);
+            break;
+        }
         case GCREFMAP_SKIP:
             break;
         case GCREFMAP_REF:
@@ -1966,6 +2032,14 @@ static void DumpGCRefMap(const char *name, BYTE *address)
                     buf.AppendUTF8("I(");
                     break;
 
+                case GCREFMAP_THIS_REF:
+                    buf.AppendUTF8("THIS:R(");
+                    break;
+
+                case GCREFMAP_THIS_BYREF:
+                    buf.AppendUTF8("THIS:I(");
+                    break;
+
                 case GCREFMAP_METHOD_PARAM:
                     buf.AppendUTF8("M(");
                     break;
@@ -2028,11 +2102,18 @@ bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell
     while (!invalidGCRefMap && !(decoderNew.AtEnd() && decoderExisting.AtEnd()))
     {
         if (decoderNew.AtEnd() != decoderExisting.AtEnd() ||
-            decoderNew.CurrentPos() != decoderExisting.CurrentPos() ||
-            decoderNew.ReadToken() != decoderExisting.ReadToken())
+            decoderNew.CurrentPos() != decoderExisting.CurrentPos())
         {
             invalidGCRefMap = true;
+            break;
         }
+        int newToken = decoderNew.ReadToken();
+        int oldToken = decoderExisting.ReadToken();
+        if (oldToken == GCREFMAP_THIS_REF)
+            oldToken = GCREFMAP_REF;
+        else if (oldToken == GCREFMAP_THIS_BYREF)
+            oldToken = GCREFMAP_INTERIOR;
+        invalidGCRefMap |= newToken != oldToken;
     }
     if (invalidGCRefMap)
     {
@@ -2060,8 +2141,7 @@ void ComputeCallRefMap(MethodDesc* pMD,
     pMD->GetSig(&pSig, &cbSigSize);
     MetaSig msig(pSig, cbSigSize, pMD->GetModule(), &typeContext);
 
-    bool fCtorOfVariableSizedObject = msig.HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
-    if (fCtorOfVariableSizedObject)
+    if (pMD->IsStringCtor())
     {
         msig.ClearHasThis();
     }

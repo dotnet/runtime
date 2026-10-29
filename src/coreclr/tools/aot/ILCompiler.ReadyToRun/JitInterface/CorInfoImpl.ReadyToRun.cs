@@ -516,7 +516,6 @@ namespace Internal.JitInterface
 
         private void AddAdditionalDependency(ISymbolNode node, string reason)
         {
-            _additionalDependencies ??= new DependencyList();
             _additionalDependencies.Add(node, reason);
         }
 
@@ -2557,12 +2556,6 @@ namespace Internal.JitInterface
                     classMustBeLoadedBeforeCodeIsRun(type);
                 }
             }
-        }
-
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-        {
-            TypeDesc type = HandleToObject(cls);
-            classMustBeLoadedBeforeCodeIsRun(type);
         }
 
         private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)

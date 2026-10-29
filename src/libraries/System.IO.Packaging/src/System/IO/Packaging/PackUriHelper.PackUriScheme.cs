@@ -248,8 +248,7 @@ namespace System.IO.Packaging
         /// <returns></returns>
         private static Uri ValidatePackageUri(Uri packageUri)
         {
-            if (packageUri == null)
-                throw new ArgumentNullException(nameof(packageUri));
+            ArgumentNullException.ThrowIfNull(packageUri);
 
             if (!packageUri.IsAbsoluteUri)
                 throw new ArgumentException(SR.UriShouldBeAbsolute, nameof(packageUri));
@@ -260,8 +259,7 @@ namespace System.IO.Packaging
         //validates is a given uri has pack:// scheme
         private static Uri ValidatePackUri(Uri packUri)
         {
-            if (packUri == null)
-                throw new ArgumentNullException(nameof(packUri));
+            ArgumentNullException.ThrowIfNull(packUri);
 
             if (!packUri.IsAbsoluteUri)
                 throw new ArgumentException(SR.UriShouldBeAbsolute, nameof(packUri));

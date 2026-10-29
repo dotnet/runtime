@@ -182,6 +182,7 @@ internal sealed class Program
             // Assembly options
             options.AssemblyName = Get(_command.AssemblyName);
             options.KeyFile = Get(_command.KeyFile);
+            options.Win32ResourceFile = Get(_command.ResourceFile);
             options.Optimize = Get(_command.Optimize);
             options.PseudoAttributes = Get(_command.PseudoAttributes);
             options.Fold = Get(_command.Fold);
@@ -192,19 +193,21 @@ internal sealed class Program
             string? includePath = Get(_command.IncludePath);
             string baseDir = Path.GetDirectoryName(Path.GetFullPath(inputFiles[0])) ?? ".";
 
+            // An included file is named by its full path: its instructions' sequence
+            // points are in a PDB document of that name.
             SourceText LoadIncludedDocument(string path)
             {
                 // Try the path as-is first
                 if (File.Exists(path))
                 {
-                    return new SourceText(File.ReadAllText(path), path);
+                    return new SourceText(File.ReadAllText(path), Path.GetFullPath(path));
                 }
 
                 // Try relative to the base directory
                 string fullPath = Path.Combine(baseDir, path);
                 if (File.Exists(fullPath))
                 {
-                    return new SourceText(File.ReadAllText(fullPath), fullPath);
+                    return new SourceText(File.ReadAllText(fullPath), Path.GetFullPath(fullPath));
                 }
 
                 // Try the include path if specified
@@ -213,7 +216,7 @@ internal sealed class Program
                     fullPath = Path.Combine(includePath, path);
                     if (File.Exists(fullPath))
                     {
-                        return new SourceText(File.ReadAllText(fullPath), fullPath);
+                        return new SourceText(File.ReadAllText(fullPath), Path.GetFullPath(fullPath));
                     }
                 }
 
@@ -248,27 +251,17 @@ internal sealed class Program
 
             // Report diagnostics
             bool hasErrors = false;
-            foreach (var diagnostic in diagnostics)
+            if (!errorTolerant)
             {
-                if (diagnostic.Severity == DiagnosticSeverity.Error)
+                foreach (var diagnostic in diagnostics)
                 {
-                    hasErrors = true;
-                    Console.Error.WriteLine($"Error: {diagnostic.Location}: {diagnostic.Message}");
-                }
-                else if (diagnostic.Severity == DiagnosticSeverity.Warning && !errorTolerant)
-                {
-                    Console.WriteLine($"Warning: {diagnostic.Location}: {diagnostic.Message}");
+                    hasErrors |= diagnostic.Severity == DiagnosticSeverity.Error;
+                    Console.WriteLine($"{diagnostic.Location} : {diagnostic.Severity.ToString().ToLowerInvariant()} {diagnostic.Id} : {diagnostic.Message}");
                 }
             }
 
             // In error-tolerant mode, continue even with errors
-            if (compilationResult is null)
-            {
-                Console.Error.WriteLine("***** FAILURE *****");
-                return 1;
-            }
-
-            if (hasErrors && !errorTolerant)
+            if (compilationResult is null || hasErrors)
             {
                 Console.Error.WriteLine("***** FAILURE *****");
                 return 1;

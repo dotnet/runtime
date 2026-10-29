@@ -1352,30 +1352,77 @@ static void ResolveMethodNameFromMD(CLRDATA_ADDRESS mdAddr, char* buf, int bufLe
     snprintf(buf, bufLen, "<unknown 0x%llx>", (unsigned long long)mdAddr);
 }
 
+static bool IsRuntimeArgLayoutAvailable(const SigPointer& signature, Module* pModule, const SigTypeContext* pTypeContext)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return signature.PeekElemTypeClosed(pModule, pTypeContext) != ELEMENT_TYPE_VALUETYPE ||
+        !signature.GetTypeHandleThrowing(pModule, pTypeContext, ClassLoader::DontLoadTypes,
+                                        CLASS_LOAD_APPROXPARENTS, TRUE).IsNull();
+}
+
+static const char* GetRuntimeArgLayoutFallback(CrawlFrame* pCF)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (pCF->IsFrameless())
+        return pCF->GetGCInfo() != nullptr ? "native-gc-info" : nullptr;
+
+    Frame* pFrame = pCF->GetFrame();
+    if (pFrame == nullptr)
+        return nullptr;
+
+    switch (pFrame->GetFrameIdentifier())
+    {
+        case FrameIdentifier::ExternalMethodFrame:
+            return static_cast<ExternalMethodFrame*>(pFrame)->GetGCRefMap() != nullptr ? "r2r-gcrefmap" : nullptr;
+
+        case FrameIdentifier::StubDispatchFrame:
+            if (static_cast<StubDispatchFrame*>(pFrame)->GetGCRefMap() != nullptr)
+                return "r2r-gcrefmap";
+            FALLTHROUGH;
+
+        case FrameIdentifier::PrestubMethodFrame:
+        case FrameIdentifier::CallCountingHelperFrame:
+            return static_cast<TransitionFrame*>(pFrame)->GetGCRefMapFromMethodDesc(nullptr) != nullptr ?
+                "r2r-gcrefmap" : nullptr;
+
+        default:
+            // Other explicit frames protect their roots without PromoteCallerStack.
+            return "frame-specific-roots";
+    }
+}
+
 // Compute the runtime's authoritative GCRefMap blob for `pMD` and copy it
 // into the caller's buffer (up to `bufSize` bytes). Returns the actual blob
 // length on success, or a negative HRESULT-coded value on failure:
 //   -1                  ComputeCallRefMap threw (signature couldn't be classified)
 //   -2                  blob exceeded `bufSize` (caller should treat as oracle skip)
+//   -3                  a value-type layout is not loaded yet
 // A return >= 0 means `*pBufOut` has `return-value` valid bytes.
 static int ComputeRuntimeArgGCRefMap(MethodDesc* pMD, BYTE* pBufOut, int bufSize)
 {
     GCRefMapBuilder builder;
     bool threw = false;
+    bool unavailableLayout = false;
 
-    // ComputeCallRefMap chains down to FakeGcScanRoots which declares
-    // STANDARD_VM_CONTRACT (MODE_PREEMPTIVE, GC_TRIGGERS, THROWS). The cdacstress
-    // hook fires from inside the allocator while the thread is in cooperative
-    // GC mode, so the strict mode/GC contract would assert. The work is
-    // signature-walking + metadata loads, both of which are safe to perform
-    // here (the runtime itself loads metadata in cooperative mode during JIT,
-    // and we hold s_cdacLock around the whole call). Acknowledge the contract
-    // violation explicitly so Checked builds don't false-fire.
+    // FakeGcScanRoots declares a preemptive, GC-triggering contract, but the
+    // allocation hook is cooperative and cannot load types during its stack walk.
+    // Probe value-type layouts without loading before invoking the oracle.
     CONTRACT_VIOLATION(ModeViolation | GCViolation);
 
     EX_TRY
     {
-        ComputeCallRefMap(pMD, &builder, /*isDispatchCell*/ false);
+        MetaSig sig(pMD);
+        unavailableLayout = !IsRuntimeArgLayoutAvailable(sig.GetReturnProps(), sig.GetModule(), sig.GetSigTypeContext());
+        for (UINT i = 0; !unavailableLayout && i < sig.NumFixedArgs(); i++)
+        {
+            sig.SkipArg();
+            unavailableLayout = !IsRuntimeArgLayoutAvailable(sig.GetArgProps(), sig.GetModule(), sig.GetSigTypeContext());
+        }
+
+        if (!unavailableLayout)
+            ComputeCallRefMap(pMD, &builder, /*isDispatchCell*/ false);
     }
     EX_CATCH
     {
@@ -1385,6 +1432,8 @@ static int ComputeRuntimeArgGCRefMap(MethodDesc* pMD, BYTE* pBufOut, int bufSize
 
     if (threw)
         return -1;
+    if (unavailableLayout)
+        return -3;
 
     DWORD blobLen = 0;
     PVOID blob = builder.GetBlob(&blobLen);
@@ -1429,6 +1478,8 @@ static const char* GCRefMapTokenName(int token)
         case GCREFMAP_METHOD_PARAM:  return "METHOD_PARAM";
         case GCREFMAP_TYPE_PARAM:    return "TYPE_PARAM";
         case GCREFMAP_VASIG_COOKIE:  return "VASIG_COOKIE";
+        case GCREFMAP_THIS_REF:      return "THIS_REF";
+        case GCREFMAP_THIS_BYREF:    return "THIS_BYREF";
         default:                     return "?";
     }
 }
@@ -1601,11 +1652,11 @@ static void LogArgIteratorMismatch(MethodDesc* pMD, CLRDATA_ADDRESS mdAddr,
 // Verify ArgIterator output for a single MD. Computes the runtime oracle
 // blob (via ComputeCallRefMap), asks the cDAC for the same blob via the
 // private Request opcode, and compares byte-for-byte.
-static void VerifyArgIteratorForMD(MethodDesc* pMD, FrameIdentifier frameId)
+static void VerifyArgIteratorForMD(MethodDesc* pMD, FrameIdentifier frameId, CrawlFrame* pCF)
 {
     char methodName[256];
     ResolveMethodNameFromMD((CLRDATA_ADDRESS)(LONG_PTR)pMD, methodName, sizeof(methodName));
-    LPCSTR frameName = Frame::GetFrameTypeName(frameId);
+    LPCSTR frameName = pCF->IsFrameless() ? "Frameless" : Frame::GetFrameTypeName(frameId);
     if (frameName == nullptr)
         frameName = "<unknown>";
 
@@ -1617,11 +1668,28 @@ static void VerifyArgIteratorForMD(MethodDesc* pMD, FrameIdentifier frameId)
     // surfaces as an ARG_SKIP ("runtime-blob-too-large").
     const int kStackBufSize = 64;
 
-    // 1. Runtime oracle. If the runtime itself can't classify this MD there's
-    //    nothing for the cDAC to be wrong about, so silently skip --
-    //    counted as ARG_SKIP for visibility in stats.
+    // 1. Runtime oracle. Unavailable layouts are safe only if this frame can
+    //    report its roots without walking the signature.
     BYTE rtBlob[kStackBufSize];
     int rtLen = ComputeRuntimeArgGCRefMap(pMD, rtBlob, (int)sizeof(rtBlob));
+    if (rtLen == -3)
+    {
+        const char* fallback = GetRuntimeArgLayoutFallback(pCF);
+        if (fallback == nullptr)
+        {
+            InterlockedIncrement(&s_argIterError);
+            CDAC_LOG("[ARG_ERROR] MD=0x%llx frame=%s reason=runtime-type-not-loaded-without-gc-support %s\n",
+                (unsigned long long)(LONG_PTR)pMD, frameName, methodName);
+            return;
+        }
+
+        InterlockedIncrement(&s_argIterSkip);
+        // A later visit may find the layout loaded, or use a different frame.
+        s_argIterVerifiedMDs->Remove(pMD);
+        CDAC_LOG("[ARG_SKIP] MD=0x%llx frame=%s reason=runtime-type-not-loaded fallback=%s %s\n",
+            (unsigned long long)(LONG_PTR)pMD, frameName, fallback, methodName);
+        return;
+    }
     if (rtLen < 0)
     {
         InterlockedIncrement(&s_argIterSkip);
@@ -1760,7 +1828,7 @@ static void VerifyArgIteratorOnStack(Thread* pThread)
         }
         EX_END_CATCH
 
-        VerifyArgIteratorForMD(pMD, id);
+        VerifyArgIteratorForMD(pMD, id, pCF);
         c->lastFrameId = id;
         return SWA_CONTINUE;
     };

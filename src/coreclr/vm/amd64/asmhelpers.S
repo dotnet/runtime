@@ -327,17 +327,6 @@ LEAF_END GetTlsIndexObjectDescOffset, _TEXT
 #endif // !FEATURE_EMULATED_TLS
 #endif // !TARGET_OSX
 
-LEAF_ENTRY  JIT_PollGC, _TEXT
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, rax
-        cmp     dword ptr [rax], 0
-        jnz     LOCAL_LABEL(JIT_PollGCRarePath)
-        ret
-LOCAL_LABEL(JIT_PollGCRarePath):
-        PREPARE_EXTERNAL_VAR g_pPollGC, rax
-        mov     rax, [rax]
-        jmp     rax
-LEAF_END  JIT_PollGC, _TEXT
-
 //rdi -This pointer
 //rsi -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT

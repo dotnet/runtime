@@ -232,7 +232,7 @@ namespace System.Formats.Cbor.Tests
                 new object[] { CborTag.MimeMessage, 42 },
                 42.0m,
                 (BigInteger)1,
-                CborTestHelpers.UnixEpoch,
+                DateTimeOffset.UnixEpoch,
             };
     }
 }

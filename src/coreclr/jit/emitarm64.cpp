@@ -10753,6 +10753,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 ins = INS_adrp;
                 fmt = IF_DI_1E;
                 dst = emitOutputShortAddress(dst, ins, fmt, relPageAddr, addrReg);
+                emitGCregDeadUpd(addrReg, dst);
 
                 ssize_t imm12 = (ssize_t)dstAddr & 0xFFF; // 12 bits
                 assert(isValidUimm<12>(imm12));
@@ -11811,6 +11812,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // Local jmp/load case
                 assert(id->idIsBound());
                 dst = emitOutputLJ(ig, dst, id);
+                if (fmt == IF_LARGEADR)
+                {
+                    // ADRP overwrites the destination before ADD computes the full address.
+                    emitGCregDeadUpd(id->idReg1(), odst + sizeof(code_t));
+                }
             }
             sz = sizeof(instrDescJmp);
             break;

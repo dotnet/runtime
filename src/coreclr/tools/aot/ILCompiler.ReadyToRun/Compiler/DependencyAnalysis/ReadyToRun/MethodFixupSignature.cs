@@ -13,6 +13,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
 using ILCompiler.ReadyToRun.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -21,6 +22,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly ReadyToRunFixupKind _fixupKind;
 
         private readonly MethodWithToken _method;
+
+        private byte[] _gcRefMap;
+
+        internal bool EmitGCRefMap { get; set; }
+
+        public override int Offset => _gcRefMap?.Length ?? 0;
 
         public MethodFixupSignature(
             ReadyToRunFixupKind fixupKind,
@@ -51,9 +58,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool NeedsInstantiationArg => _method.ConstrainedType?.IsCanonicalSubtype(CanonicalFormKind.Any) ?? false;
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        internal byte[] GetGCRefMap(NodeFactory factory)
         {
-            DependencyList list = base.ComputeNonRelocationBasedDependencies(factory);
+            if (_gcRefMap is null)
+            {
+                GCRefMapBuilder builder = new GCRefMapBuilder(factory.Target, relocsOnly: false);
+                builder.GetCallRefMap(Method, IsUnboxingStub || IsInstantiatingStub);
+                _gcRefMap = builder.Builder.ToObjectData().Data;
+            }
+            return _gcRefMap;
+        }
+
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
+        {
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
             MethodDesc canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
                 !Method.IsAbstract &&
@@ -62,11 +80,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 factory.CompilationModuleGroup.CrossModuleCompileable(canonMethod) &&
                 factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
             {
-                list = list ?? new DependencyList();
                 try
                 {
                     factory.DetectGenericCycles(_method.Method, canonMethod);
-                    list.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
+                    sink.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
                 }
                 catch (TypeSystemException)
                 {
@@ -87,8 +104,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // instantiations of virtual methods that have at least one non-canonical argument (aka a valuetype).
                 if (HasNonCanonicalInstantiationArguments(canonMethod) && !factory.CanBeInGenericCycle(Method))
                 {
-                    list = list ?? new DependencyList();
-                    list.Add(factory.GVMDependencies(Method), "Virtual dispatch dependency");
+                    sink.Add(factory.GVMDependencies(Method), "Virtual dispatch dependency");
                 }
             }
 
@@ -101,11 +117,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 !Method.IsFinal &&
                 !Method.OwningType.IsGenericDefinition)
             {
-                list = list ?? new DependencyList();
-                list.Add(factory.VirtualMethodUse(canonMethod), "Non-GVM virtual slot use");
+                sink.Add(factory.VirtualMethodUse(canonMethod), "Non-GVM virtual slot use");
             }
-
-            return list;
         }
 
         private static bool HasNonCanonicalInstantiationArguments(MethodDesc canonMethod)
@@ -128,6 +141,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder(factory, relocsOnly);
+            if (EmitGCRefMap)
+            {
+                foreach (byte value in GetGCRefMap(factory))
+                {
+                    dataBuilder.EmitByte(value);
+                }
+            }
+
+            // Keep the symbol at the fixup opcode so plain signature consumers do not mistake
+            // the preceding GCRefMap for a fixup.
             dataBuilder.AddSymbol(this);
 
             // Optimize some of the fixups into a more compact form.

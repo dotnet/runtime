@@ -7352,21 +7352,28 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
 {
     noway_assert(call->gtCallType == CT_USER_FUNC);
 
-    GenTree* thisArgNode;
+    CallArg* thisArg;
     if (call->IsTailCallViaJitHelper())
     {
         assert(call->gtArgs.CountArgs() > 0);
-        thisArgNode = call->gtArgs.GetArgByIndex(0)->GetNode();
+        thisArg = call->gtArgs.GetArgByIndex(0);
     }
     else
     {
         assert(call->gtArgs.HasThisPointer());
-        thisArgNode = call->gtArgs.GetThisArg()->GetNode();
+        thisArg = call->gtArgs.GetThisArg();
     }
 
     // get a reference to the thisPtr being passed
+    GenTree* thisArgNode = thisArg->GetNode();
+#if HAS_FIXED_REGISTER_SET
     assert(thisArgNode->OperIs(GT_PUTARG_REG));
     GenTree* thisPtr = thisArgNode->AsUnOp()->gtGetOp1();
+    LIR::Use thisPtrUse(BlockRange(), &thisArgNode->AsUnOp()->gtOp1, thisArgNode);
+#else
+    GenTree* thisPtr = thisArgNode;
+    LIR::Use thisPtrUse(BlockRange(), &thisArg->NodeRef(), call);
+#endif
 
     // If what we are passing as the thisptr is not already a local, make a new local to place it in
     // because we will be creating expressions based on it.
@@ -7383,7 +7390,6 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
             vtableCallTemp = m_compiler->lvaGrabTemp(true DEBUGARG("virtual vtable call"));
         }
 
-        LIR::Use thisPtrUse(BlockRange(), &thisArgNode->AsUnOp()->gtOp1, thisArgNode);
         ReplaceWithLclVar(thisPtrUse, vtableCallTemp);
 
         lclNum = vtableCallTemp;

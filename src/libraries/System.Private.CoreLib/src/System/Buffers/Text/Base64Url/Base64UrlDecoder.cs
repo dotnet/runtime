@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NET
@@ -478,6 +479,7 @@ namespace System.Buffers.Text
             public int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<byte> span) => default(Base64DecoderByte).IndexOfAnyExceptWhiteSpace(span);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [SuppressReadyToRunCanonicalRooting]
             public OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> utf8, Span<byte> bytes,
                 ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : IBase64Decoder<byte> =>
                 DecodeWithWhiteSpaceBlockwise(decoder, utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
@@ -564,6 +566,7 @@ namespace System.Buffers.Text
             public int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<ushort> span) => default(Base64DecoderChar).IndexOfAnyExceptWhiteSpace(span);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [SuppressReadyToRunCanonicalRooting]
             public OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source, Span<byte> bytes,
                 ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : IBase64Decoder<ushort> =>
                 DecodeWithWhiteSpaceBlockwise(decoder, source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);

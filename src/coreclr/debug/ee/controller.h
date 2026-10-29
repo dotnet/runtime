@@ -363,8 +363,7 @@ enum DebuggerPatchKind { PATCH_KIND_IL_PRIMARY, PATCH_KIND_IL_REPLICA, PATCH_KIN
 // this should contain all the info that's needed over the course of a
 // patch's lifetime.
 //
-// FREEHASHENTRY entry:  Three ULONGs, this is required
-//      by the underlying hashtable implementation
+// ULONG iPrev, iNext, iFree:  Slot indices for the patch chains and free list.
 //  DWORD opcode:  A nonzero opcode && address field means that
 //      the patch has been applied to something. This may not be a full
 //      opcode, it is possible it is a partial opcode.
@@ -419,7 +418,9 @@ struct DebuggerControllerPatch
     friend class DebuggerPatchTable;
     friend class DebuggerController;
 
-    FREEHASHENTRY           entry;
+    ULONG                   iPrev;
+    ULONG                   iNext;
+    ULONG                   iFree;
     DebuggerController      *controller;
     DebuggerFunctionKey     key;
     SIZE_T                  offset;
@@ -653,100 +654,102 @@ bool ShouldBindPatchToMethodDesc(MethodDesc* pMD, MethodDesc* pMethodDescFilter)
 #define DPT_INVALID_SLOT (UINT32_MAX)
 #define DPT_DEFAULT_TRACE_TYPE TRACE_OTHER
 
-/* Although CHashTableAndData can grow, we always use a fixed number of buckets.
- * This is problematic for tables like the patch table which are usually small, but
- * can become huge.  When the number of entries far exceeds the number of buckets,
- * lookup and addition basically degrade into linear searches.  There is a trade-off
- * here between wasting memory for unused buckets, and performance of large tables.
- * Also note that the number of buckets should be a prime number.
-*/
-#define DPT_HASH_BUCKETS 1103
+struct DebuggerPatchKey
+{
+    TADDR address;
+    TADDR module;
+    mdMethodDef token;
+};
 
-class DebuggerPatchTable : private CHashTableAndData<CNewZeroData>
+struct DebuggerPatchListEntry : DebuggerHeapHashEntry
+{
+    DebuggerPatchKey key;
+    ULONG first;
+};
+
+class EMPTY_BASES DebuggerPatchListTraits : public DefaultSHashTraits<DebuggerPatchListEntry>
+{
+public:
+    typedef DebuggerPatchKey key_t;
+    static key_t GetKey(const element_t &element) { return element.key; }
+    static BOOL Equals(key_t left, key_t right)
+    {
+        return left.address == right.address && left.module == right.module && left.token == right.token;
+    }
+    static count_t Hash(key_t key)
+    {
+        TADDR value = key.address != 0 ? key.address : key.module;
+        return HashCOUNT_T(key.token, DebuggerHashPointer(value));
+    }
+    static element_t Null() { return {}; }
+    static element_t Deleted()
+    {
+        element_t element = {};
+        element.key.address = static_cast<TADDR>(-1);
+        return element;
+    }
+    static bool IsNull(const element_t &element) { return element.key.address == 0 && element.key.module == 0; }
+    static bool IsDeleted(const element_t &element) { return element.key.address == static_cast<TADDR>(-1); }
+};
+
+class DebuggerPatchTable
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(DebuggerPatchTable);
 
     friend struct ::cdac_data<DebuggerPatchTable>;
 
 public:
+#ifndef DACCESS_COMPILE
+    virtual ~DebuggerPatchTable();
+#else
     virtual ~DebuggerPatchTable() = default;
+#endif
 
     friend class DebuggerRCThread;
 private:
     //incremented so that we can get DPT-wide unique PIDs.
     // pid = Patch ID.
     SIZE_T m_patchId;
-    // Given a patch, retrieves the correct key.  The return value of this function is passed to Cmp(), Find(), etc.
-    SIZE_T Key(DebuggerControllerPatch *patch)
+    // Slots retain their indices when the SHash index grows. Readers in another process
+    // consume only this zero-initialized, contiguous storage and its published capacity.
+    TADDR m_pcEntries;
+    ULONG m_iEntries;
+    ULONG m_iFree;
+    SHash<DebuggerPatchListTraits> m_patchLists;
+
+    static DebuggerPatchKey Key(DebuggerControllerPatch *patch)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        // Most clients of CHashTable pass a host pointer as the key.   However, the key really could be
-        // anything.  In our case, the key can either be a host pointer of type DebuggerFunctionKey or
-        // the address of the patch.
-        if (patch->address == NULL)
-        {
-            return (SIZE_T)(&patch->key);
-        }
-        else
-        {
-            return (SIZE_T)(dac_cast<TADDR>(patch->address));
-        }
+        return patch->address == nullptr
+            ? DebuggerPatchKey{0, dac_cast<TADDR>(patch->key.module), patch->key.md}
+            : DebuggerPatchKey{dac_cast<TADDR>(patch->address), 0, 0};
     }
 
-    // Given two DebuggerControllerPatches, tells
-    // whether they are equal or not.  Does this by comparing the correct
-    // key.
-    // BYTE* pc1:  If pc2 is hashed by address,
-    //  pc1 is an address.  If
-    //  pc2 is hashed by DebuggerFunctionKey,
-    //  pc1 is a DebuggerFunctionKey
-    //Returns true if the two patches are equal, false otherwise
-    BOOL Cmp(SIZE_T k1, const HASHENTRY * pc2)
+    DebuggerControllerPatch *FindPatch(DebuggerPatchKey key)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        DebuggerControllerPatch * pPatch2 = dac_cast<PTR_DebuggerControllerPatch>(const_cast<HASHENTRY *>(pc2));
-
-        if (pPatch2->address == NULL)
-        {
-            // k1 is a host pointer of type DebuggerFunctionKey.
-            DebuggerFunctionKey * pKey1 = reinterpret_cast<DebuggerFunctionKey *>(k1);
-
-            return ((pKey1->module != pPatch2->key.module) || (pKey1->md != pPatch2->key.md));
-        }
-        else
-        {
-            return ((SIZE_T)(dac_cast<TADDR>(pPatch2->address)) != k1);
-        }
+        const DebuggerPatchListEntry *entry = m_patchLists.LookupPtr(key);
+        return entry == nullptr || entry->first == DPT_INVALID_SLOT ? nullptr
+            : EntryPtr(entry->first);
     }
 
-    //Computes a hash value based on an address
-    ULONG HashAddress(PTR_CORDB_ADDRESS_TYPE address)
+    DebuggerControllerPatch *EntryPtr(ULONG index)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (ULONG)(SIZE_T)(dac_cast<TADDR>(address));
+        return dac_cast<PTR_DebuggerControllerPatch>(m_pcEntries + index * sizeof(DebuggerControllerPatch));
     }
 
-    //Computes a hash value based on a DebuggerFunctionKey
-    ULONG HashKey(DebuggerFunctionKey * pKey)
+    ULONG ItemIndex(DebuggerControllerPatch *patch)
     {
-        SUPPORTS_DAC;
-        return HashPtr(pKey->md, pKey->module);
+        LIMITED_METHOD_DAC_CONTRACT;
+        return static_cast<ULONG>((dac_cast<TADDR>(patch) - m_pcEntries) / sizeof(DebuggerControllerPatch));
     }
 
-    //Computes a hash value from a patch, using the address field
-    // if the patch is hashed by address, using the DebuggerFunctionKey
-    // otherwise
-    ULONG Hash(DebuggerControllerPatch * pPatch)
-    {
-        SUPPORTS_DAC;
-
-        if (pPatch->address == NULL)
-            return HashKey(&(pPatch->key));
-        else
-            return HashAddress(pPatch->address);
-    }
+#ifndef DACCESS_COMPILE
+    DebuggerControllerPatch *AddPatch(DebuggerPatchKey key);
+    void EnsureList(DebuggerPatchKey key);
+    void LinkPatch(DebuggerControllerPatch *patch);
+#endif
     //Public Members
 public:
     enum {
@@ -756,7 +759,8 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-    DebuggerPatchTable() : CHashTableAndData<CNewZeroData>(DPT_HASH_BUCKETS) { }
+    DebuggerPatchTable() : m_patchId(DCP_PATCHID_FIRST_VALID), m_pcEntries(0),
+        m_iEntries(0), m_iFree(DPT_INVALID_SLOT) { }
 
     HRESULT Init()
     {
@@ -764,8 +768,7 @@ public:
 
         m_patchId = DCP_PATCHID_FIRST_VALID;
 
-        SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-        return NewInit(17, sizeof(DebuggerControllerPatch), 101);
+        return S_OK;
     }
 
     // Assuming that the chain of patches (as defined by all the
@@ -818,16 +821,12 @@ public:
     // We can hopefully remove them.
     static SIZE_T GetOffsetOfEntries()
     {
-        // assert that we the offsets of these fields in the base class is
-        // the same as the offset of this field in this class.
-        _ASSERTE((void*)(DebuggerPatchTable*)NULL == (void*)(CHashTableAndData<CNewZeroData>*)NULL);
-        return helper_GetOffsetOfEntries();
+        return offsetof(DebuggerPatchTable, m_pcEntries);
     }
 
     static SIZE_T GetOffsetOfCount()
     {
-        _ASSERTE((void*)(DebuggerPatchTable*)NULL == (void*)(CHashTableAndData<CNewZeroData>*)NULL);
-        return helper_GetOffsetOfCount();
+        return offsetof(DebuggerPatchTable, m_iEntries);
     }
 
     // GetPatch  find the first  patch in the hash table
@@ -839,12 +838,7 @@ public:
     // this Module,mdMethodDef pair
     DebuggerControllerPatch *GetPatch(Module *module, mdToken md)
     {
-        DebuggerFunctionKey key;
-
-        key.module = module;
-        key.md = md;
-
-        return reinterpret_cast<DebuggerControllerPatch *>(Find(HashKey(&key), (SIZE_T)&key));
+        return FindPatch({0, dac_cast<TADDR>(module), md});
     }
 #endif // #ifndef DACCESS_COMPILE
 
@@ -856,44 +850,47 @@ public:
         SUPPORTS_DAC;
         ARM_ONLY(_ASSERTE(dac_cast<TADDR>(address) & THUMB_CODE));
 
-        DebuggerControllerPatch * pPatch =
-            dac_cast<PTR_DebuggerControllerPatch>(Find(HashAddress(address), (SIZE_T)(dac_cast<TADDR>(address))));
-
-        return pPatch;
+        return FindPatch({dac_cast<TADDR>(address), 0, 0});
     }
 
     DebuggerControllerPatch *GetNextPatch(DebuggerControllerPatch *prev);
 
     // Find the first patch in the patch table, and store
-    //      index info in info.  Along with GetNextPatch, this can
-    //      iterate through the whole patch table.  Note that since the
-    //      hashtable operates via iterating through all the contents
-    //      of all the buckets, if you add an entry while iterating
-    //      through the table, you  may or may not iterate across
+    //      the next slot index in pIndex. Along with GetNextPatch, this can
+    //      iterate through the whole patch table by scanning its slots.
+    //      If you add an entry while iterating
+    //      through the table, you may or may not iterate across
     //      the new entries.  You will iterate through all the entries
     //      that were present at the beginning of the run.  You
     //      safely delete anything you've already iterated by, anything
     //      else is kinda risky.
-    DebuggerControllerPatch * GetFirstPatch(HASHFIND * pInfo)
+    DebuggerControllerPatch *GetFirstPatch(ULONG *pIndex)
     {
         SUPPORTS_DAC;
 
-        return dac_cast<PTR_DebuggerControllerPatch>(FindFirstEntry(pInfo));
+        *pIndex = 0;
+        return GetNextPatch(pIndex);
     }
 
     // Along with GetFirstPatch, this can iterate through
     //      the whole patch table.  See GetFirstPatch for more info
     //      on the rules of iterating through the table.
-    DebuggerControllerPatch * GetNextPatch(HASHFIND * pInfo)
+    DebuggerControllerPatch *GetNextPatch(ULONG *pIndex)
     {
         SUPPORTS_DAC;
 
-        return dac_cast<PTR_DebuggerControllerPatch>(FindNextEntry(pInfo));
+        while (*pIndex < m_iEntries)
+        {
+            DebuggerControllerPatch *patch = EntryPtr((*pIndex)++);
+            if (!patch->IsFree())
+                return patch;
+        }
+        return nullptr;
     }
 
     // Used by DebuggerController to translate an index
     //      of a patch into a direct pointer.
-    inline HASHENTRY * GetEntryPtr(ULONG iEntry)
+    inline DebuggerControllerPatch *GetEntryPtr(ULONG iEntry)
     {
         SUPPORTS_DAC;
 
@@ -902,11 +899,11 @@ public:
 
     // Used by DebuggerController to grab indices of patches
     //      rather than holding direct pointers to them.
-    inline ULONG GetItemIndex(HASHENTRY * p)
+    inline ULONG GetItemIndex(DebuggerControllerPatch *patch)
     {
         SUPPORTS_DAC;
 
-        return ItemIndex(p);
+        return ItemIndex(patch);
     }
 
     // Count how many patches are in the table.

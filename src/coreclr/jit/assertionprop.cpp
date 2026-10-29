@@ -929,6 +929,8 @@ void Compiler::optAssertionInit(bool isLocalProp)
             optMaxAssertionCount = 64;
         }
 
+        optAssertionTabCapacity = optMaxAssertionCount;
+
         // Local assertion prop keeps mappings from each local var to the assertions about that var.
         //
         optAssertionDep =
@@ -947,21 +949,17 @@ void Compiler::optAssertionInit(bool isLocalProp)
         optLocalAssertionProp           = false;
         optCrossBlockLocalAssertionProp = false;
 
-        // Heuristic for sizing the assertion table.
-        //
-        // The weighting of basicBlocks vs locals reflects their relative contribution observed empirically.
-        // Validated against 1,115,046 compiled methods:
-        //   - 94.6% of methods stay at the floor of 64 (only 1.9% actually need more).
-        //   - Underpredicts for 481 methods (0.043%), with a worst-case deficit of 127.
-        //   - Only 0.4% of methods hit the 256 cap.
-        optMaxAssertionCount = (AssertionIndex)max(64, min(256, (int)(lvaTrackedCount + 3 * fgBBcount + 48) >> 2));
+        // The table grows on demand and the bit vectors are sized by the actual number
+        // of assertions once all of them are created (see optAssertionPropMain).
+        optMaxAssertionCount    = 512;
+        optAssertionTabCapacity = 64;
 
         optComplementaryAssertionMap = new (this, CMK_AssertionProp)
-            AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
+            AssertionIndex[optAssertionTabCapacity + 1](); // zero-inited (NO_ASSERTION_INDEX)
     }
 
-    optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
-    optAssertionTraitsInit(optMaxAssertionCount);
+    optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optAssertionTabCapacity];
+    optAssertionTraitsInit(optAssertionTabCapacity);
 
     optAssertionCount      = 0;
     optAssertionOverflow   = 0;
@@ -1620,6 +1618,27 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
     {
         optAssertionOverflow++;
         return NO_ASSERTION_INDEX;
+    }
+
+    if (optAssertionCount == optAssertionTabCapacity)
+    {
+        // Only global assertion prop grows the table, see optAssertionInit.
+        assert(!optLocalAssertionProp);
+        const AssertionIndex newCapacity =
+            (AssertionIndex)min(2u * optAssertionTabCapacity, (unsigned)optMaxAssertionCount);
+
+        AssertionDsc* newTab = new (this, CMK_AssertionProp) AssertionDsc[newCapacity];
+        for (unsigned i = 0; i < optAssertionCount; i++)
+        {
+            newTab[i] = optAssertionTabPrivate[i];
+        }
+        optAssertionTabPrivate = newTab;
+
+        AssertionIndex* newMap = new (this, CMK_AssertionProp) AssertionIndex[newCapacity + 1]();
+        memcpy(newMap, optComplementaryAssertionMap, (optAssertionTabCapacity + 1) * sizeof(AssertionIndex));
+        optComplementaryAssertionMap = newMap;
+
+        optAssertionTabCapacity = newCapacity;
     }
 
     optAssertionTabPrivate[optAssertionCount] = newAssertion;
@@ -6780,6 +6799,9 @@ PhaseStatus Compiler::optAssertionPropMain()
     {
         madeChanges |= optCreateJumpTableImpliedAssertions(switchBlock);
     }
+
+    // All assertions are created, size the bit vectors accordingly.
+    optAssertionTraitsInit(max(optAssertionCount, (AssertionIndex)1));
 
     if (optAssertionCount == 0)
     {

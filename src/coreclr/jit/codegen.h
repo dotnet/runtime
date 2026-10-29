@@ -237,6 +237,7 @@ protected:
 
     void genEmitStartBlock(BasicBlock* block);
     void genEmitEndBlock(BasicBlock* block);
+    bool genIsCatchRetTargetWithoutCode(BasicBlock* block);
 
 public:
 #if HAS_FIXED_REGISTER_SET

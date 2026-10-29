@@ -132,9 +132,6 @@ bool satisfiesMethodConstraints(
           CORINFO_CLASS_HANDLE parent,
           CORINFO_METHOD_HANDLE method) override;
 
-void methodMustBeLoadedBeforeCodeIsRun(
-          CORINFO_METHOD_HANDLE method) override;
-
 void getGSCookie(
           GSCookie* pCookieVal,
           GSCookie** ppCookieVal) override;
@@ -198,6 +195,12 @@ size_t printClassName(
           size_t* pRequiredBufferSize) override;
 
 bool isValueClass(
+          CORINFO_CLASS_HANDLE cls) override;
+
+bool isByRefLike(
+          CORINFO_CLASS_HANDLE cls) override;
+
+bool isSharedInst(
           CORINFO_CLASS_HANDLE cls) override;
 
 uint32_t getClassAttribs(
@@ -316,9 +319,6 @@ CorInfoInitClassResult initClass(
           CORINFO_FIELD_HANDLE field,
           CORINFO_METHOD_HANDLE method,
           CORINFO_CONTEXT_HANDLE context) override;
-
-void classMustBeLoadedBeforeCodeIsRun(
-          CORINFO_CLASS_HANDLE cls) override;
 
 CORINFO_CLASS_HANDLE getBuiltinClass(
           CorInfoClassId classId) override;

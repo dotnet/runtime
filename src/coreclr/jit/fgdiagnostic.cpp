@@ -3476,6 +3476,12 @@ void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
                         assert((simdSize == 16) || (simdSize == 32));
                         break;
                     }
+
+                    case NI_X86Base_DivRem:
+                    case NI_X86Base_X64_DivRem:
+                    {
+                        break;
+                    }
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)

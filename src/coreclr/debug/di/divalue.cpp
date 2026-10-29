@@ -2093,7 +2093,7 @@ HRESULT CordbObjectValue::GetFieldValueForType(ICorDebugType * pType,
             ThrowHR(E_INVALIDARG);
         }
 
-       FieldData * pFieldData;
+       const FieldData * pFieldData;
 
     #ifdef _DEBUG
         pFieldData = NULL;
@@ -3130,7 +3130,7 @@ HRESULT CordbVCObjectValue::GetFieldValueForType(ICorDebugType * pType,
             pCordbType = static_cast<CordbType *> (pType);
         }
 
-        FieldData * pFieldData;
+        const FieldData * pFieldData;
 
     #ifdef _DEBUG
         pFieldData = NULL;

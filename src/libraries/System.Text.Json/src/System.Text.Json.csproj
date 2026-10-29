@@ -50,7 +50,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="..\Common\JsonUnknownTypeHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
     <Compile Include="..\Common\JsonUnmappedMemberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnmappedMemberHandling.cs" />
     <Compile Include="..\Common\ReflectionExtensions.cs" Link="Common\System\Text\Json\Serialization\ReflectionExtensions.cs" />
-    <Compile Include="..\Common\ThrowHelper.cs" Link="Common\System\Text\Json\ThrowHelper.cs" />
     <Compile Include="System\Runtime\InteropServices\JsonMarshal.cs" />
     <Compile Include="System\Text\Json\AppContextSwitchHelper.cs" />
     <Compile Include="System\Text\Json\BitStack.cs" />
@@ -390,10 +389,18 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CommonPath)Polyfills\BitArrayPolyfills.cs" Link="Common\Polyfills\BitArrayPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\CollectionsPolyfills.cs" Link="Common\Polyfills\CollectionsPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\ConcurrentDictionaryPolyfills.cs" Link="Common\Polyfills\ConcurrentDictionaryPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\DictionaryPolyfills.cs" Link="Common\Polyfills\DictionaryPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\EnumPolyfills.cs" Link="Common\Polyfills\EnumPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\ReadOnlySequencePolyfills.cs" Link="Common\Polyfills\ReadOnlySequencePolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\RuntimeHelpersPolyfills.cs" Link="Common\Polyfills\RuntimeHelpersPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\StopwatchPolyfills.cs" Link="Common\Polyfills\StopwatchPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StringPolyfills.cs" Link="Common\Polyfills\StringPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\TypePolyfills.cs" Link="Common\Polyfills\TypePolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\UInt64Polyfills.cs" Link="Common\Polyfills\UInt64Polyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\VolatilePolyfills.cs" Link="Common\Polyfills\VolatilePolyfills.cs" />
+    <Compile Include="$(CommonPath)System\Buffers\SpanAction.cs" Link="Common\System\Buffers\SpanAction.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

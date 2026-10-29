@@ -65,6 +65,31 @@ InteropSafe interopsafe;
 
 #ifndef DACCESS_COMPILE
 
+void *DebuggerHeapHashEntry::operator new[](size_t size, const std::nothrow_t &) noexcept
+{
+    if (size > INT_MAX)
+        return nullptr;
+    return CNewZeroData::Alloc(static_cast<int>(size), 0);
+}
+
+void *DebuggerHeapHashEntry::operator new[](size_t size)
+{
+    void *memory = operator new[](size, std::nothrow);
+    if (memory == nullptr)
+        ThrowOutOfMemory();
+    return memory;
+}
+
+void DebuggerHeapHashEntry::operator delete[](void *memory)
+{
+    CNewZeroData::Free(static_cast<BYTE *>(memory), 0);
+}
+
+void DebuggerHeapHashEntry::operator delete[](void *memory, const std::nothrow_t &) noexcept
+{
+    operator delete[](memory);
+}
+
 DebuggerRCThread        *g_pRCThread = NULL;
 
 // Do some compile time checking on the events in DbgIpcEventTypes.h
@@ -1062,7 +1087,69 @@ HRESULT Debugger::CheckInitModuleTable()
     return S_OK;
 }
 
-// Checks if the m_pModules table has been allocated, and if not does so.
+#ifndef DACCESS_COMPILE
+HRESULT DebuggerPendingFuncEvalTable::AddPendingEval(Thread *pThread, DebuggerEval *pDE)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pThread != nullptr && pDE != nullptr);
+    _ASSERTE(pDE->m_nextPendingEval == nullptr);
+
+    if (m_table.Update(pThread, [&](DebuggerPendingFuncEval &entry)
+        {
+            // Keep newest-first order independently of SHash rehashing.
+            pDE->m_nextPendingEval = entry.pDE;
+            entry.pDE = pDE;
+        }))
+    {
+        return S_OK;
+    }
+
+    DebuggerPendingFuncEval newEntry = {};
+    newEntry.pThread = pThread;
+    newEntry.pDE = pDE;
+    return m_table.AddNoThrow(newEntry) ? S_OK : E_OUTOFMEMORY;
+}
+
+void DebuggerPendingFuncEvalTable::RemovePendingEval(Thread *pThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pThread != nullptr);
+
+    DebuggerEval *pDE = nullptr;
+    bool removeEntry = false;
+    if (!m_table.Update(pThread, [&](DebuggerPendingFuncEval &entry)
+        {
+            pDE = entry.pDE;
+            if (pDE->m_nextPendingEval == nullptr)
+                removeEntry = true;
+            else
+                entry.pDE = pDE->m_nextPendingEval;
+        }))
+    {
+        return;
+    }
+
+    if (removeEntry)
+    {
+        m_table.Remove(pThread);
+    }
+    pDE->m_nextPendingEval = nullptr;
+}
+#endif // DACCESS_COMPILE
+
+// Checks if the pending-evaluation table has been allocated, and if not does so.
 HRESULT Debugger::CheckInitPendingFuncEvalTable()
 {
     CONTRACTL
@@ -1102,83 +1189,14 @@ ULONG DebuggerMethodInfoTable::CheckDmiTable(void)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ULONG cApparent = 0;
-    ULONG cOfficial = 0;
-
-    if (NULL != m_pcEntries)
+    ULONG count = 0;
+    for (Iterator iterator = m_table.Begin(), end = m_table.End(); iterator != end; iterator++)
     {
-        DebuggerMethodInfoEntry *dcp;
-        int i = 0;
-        while (i++ <m_iEntries)
-        {
-            dcp = (DebuggerMethodInfoEntry*)&(((DebuggerMethodInfoEntry *)m_pcEntries)[i]);
-            if(dcp->pFD != 0 &&
-               dcp->pFD != (MethodDesc*)0xcdcdcdcd &&
-               dcp->mi != NULL)
-            {
-                cApparent++;
-
-                _ASSERTE( dcp->pFD == dcp->mi->m_fd );
-                LOG((LF_CORDB, LL_INFO1000, "DMIT::CDT:Entry:0x%p mi:0x%p\nPrevs:\n",
-                    dcp, dcp->mi));
-                DebuggerMethodInfo *dmi = dcp->mi->m_prevMethodInfo;
-
-                while(dmi != NULL)
-                {
-                    LOG((LF_CORDB, LL_INFO1000, "\t0x%p\n", dmi));
-                    dmi = dmi->m_prevMethodInfo;
-                }
-                dmi = dcp->mi->m_nextMethodInfo;
-
-                LOG((LF_CORDB, LL_INFO1000, "Nexts:\n", dmi));
-                while(dmi != NULL)
-                {
-                    LOG((LF_CORDB, LL_INFO1000, "\t0x%p\n", dmi));
-                    dmi = dmi->m_nextMethodInfo;
-                }
-
-                LOG((LF_CORDB, LL_INFO1000, "DMIT::CDT:DONE\n",
-                    dcp, dcp->mi));
-            }
-        }
-
-        if (m_piBuckets == 0)
-        {
-            LOG((LF_CORDB, LL_INFO1000, "DMIT::CDT: The table is officially empty!\n"));
-            return cOfficial;
-        }
-
-        LOG((LF_CORDB, LL_INFO1000, "DMIT::CDT:Looking for official entries:\n"));
-
-        ULONG iNext = m_piBuckets[0];
-        ULONG iBucket = 1;
-        HASHENTRY   *psEntry = NULL;
-        while (TRUE)
-        {
-            while (iNext != UINT32_MAX)
-            {
-                cOfficial++;
-
-                psEntry = EntryPtr(iNext);
-                dcp = ((DebuggerMethodInfoEntry *)psEntry);
-
-                LOG((LF_CORDB, LL_INFO1000, "\tEntry:0x%p mi:0x%p @idx:0x%x @bucket:0x%x\n",
-                    dcp, dcp->mi, iNext, iBucket));
-
-                iNext = psEntry->iNext;
-            }
-
-            // Advance to the next bucket.
-            if (iBucket < m_iBuckets)
-                iNext = m_piBuckets[iBucket++];
-            else
-                break;
-        }
-
-        LOG((LF_CORDB, LL_INFO1000, "DMIT::CDT:Finished official entries: ****************"));
+        _ASSERTE(iterator->key.pModule != nullptr);
+        count++;
     }
-
-    return cOfficial;
+    _ASSERTE(count == m_table.GetCount());
+    return count;
 }
 #endif // _DEBUG_DMI_TABLE
 
@@ -1225,6 +1243,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     }
 
     m_thread = pEvalInfo->vmThreadToken.GetRawPtr();
+    m_nextPendingEval = nullptr;
     m_evalType = pEvalInfo->funcEvalType;
     m_methodToken = pEvalInfo->funcMetadataToken;
     m_classToken = pEvalInfo->funcClassMetadataToken;
@@ -4632,7 +4651,7 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
     CONTRACTL_END;
 
     HRESULT     hr =                S_OK;
-    HASHFIND    hf;
+    ULONG       patchIndex;
     SIZE_T      *pidTableEntry =    NULL;
     SIZE_T      pidInCaseTableMoves;
     Module      *pModule =          g_pEEInterface->MethodDescGetModule(fd);
@@ -4657,9 +4676,9 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
         DebuggerPatchTable *pPatchTable = DebuggerController::GetPatchTable();
         GetBPMappingDuplicates()->Clear(); //dups are tracked per-version
 
-        for (DebuggerControllerPatch *dcp = pPatchTable->GetFirstPatch(&hf);
+        for (DebuggerControllerPatch *dcp = pPatchTable->GetFirstPatch(&patchIndex);
              dcp != NULL;
-             dcp = pPatchTable->GetNextPatch( &hf ))
+             dcp = pPatchTable->GetNextPatch(&patchIndex))
         {
             LOG((LF_CORDB, LL_INFO10000, "D::MABFP: Got patch %p, patchId:0x%zx\n", dcp, dcp->patchId));
 
@@ -5514,11 +5533,10 @@ void Debugger::UpdateAllModuleJMCFlag(bool fStatus)
     // and so there is nothing to update.
     if (m_pModules != NULL)
     {
-        HASHFIND f;
-        for (DebuggerModule * m = m_pModules->GetFirstModule(&f);
-             m != NULL;
-             m = m_pModules->GetNextModule(&f))
+        for (DebuggerModuleTable::Iterator iterator = m_pModules->Begin(), end = m_pModules->End();
+             iterator != end; iterator++)
         {
+            DebuggerModule *m = iterator->module;
             // the primary module may get called multiple times, but that's ok.
             UpdateModuleJMCFlag(m->GetRuntimeModule(), fStatus);
         } // end for all modules.
@@ -5585,13 +5603,11 @@ void Debugger::SetModuleDefaultJMCStatus(Module * pRuntimeModule, bool fStatus)
     if (pTable != NULL)
     {
         Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
-        HASHFIND info;
-
-        for (DebuggerMethodInfo *dmi = pTable->GetFirstMethodInfo(&info);
-            dmi != NULL;
-            dmi = pTable->GetNextMethodInfo(&info))
+        for (DebuggerMethodInfoTable::Iterator iterator = pTable->Begin(), end = pTable->End();
+             iterator != end; iterator++)
         {
-            if (dmi->GetRuntimeModule() == pRuntimeModule)
+            DebuggerMethodInfo *dmi = iterator->mi;
+            if (dmi != nullptr && dmi->GetRuntimeModule() == pRuntimeModule)
             {
                 // This DMI is in this module, so update its status
                 dmi->SetJMCStatus(fStatus);
@@ -7560,7 +7576,7 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
     // FuncEvalComplete event, so if the user asks for another func eval then there will be a new pending eval when we
     // loop and check again.
     //
-    DebuggerPendingFuncEval *pfe;
+    const DebuggerPendingFuncEval *pfe;
 
     while (GetPendingEvals() != NULL && (pfe = GetPendingEvals()->GetPendingEval(pThread)) != NULL)
     {
@@ -9401,13 +9417,11 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         DebuggerMethodInfoTable * pTable = GetMethodInfoTable();
         if (pTable != NULL)
         {
-            HASHFIND info;
-
-            for (DebuggerMethodInfo *dmi = pTable->GetFirstMethodInfo(&info);
-                dmi != NULL;
-                dmi = pTable->GetNextMethodInfo(&info))
+            for (DebuggerMethodInfoTable::Iterator iterator = pTable->Begin(), end = pTable->End();
+                 iterator != end; iterator++)
             {
-                if (dmi->m_module == pRuntimeModule)
+                DebuggerMethodInfo *dmi = iterator->mi;
+                if (dmi != nullptr && dmi->m_module == pRuntimeModule)
                 {
                     dmi->SetJMCStatus(false);
                 }
@@ -10656,14 +10670,14 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             if (pMethodInfoTable != NULL)
             {
-                HASHFIND hashFind;
                 DebuggerDataLockHolder debuggerDataLockHolder(this);
 
-                for (DebuggerMethodInfo * pMethodInfo = pMethodInfoTable->GetFirstMethodInfo(&hashFind);
-                    pMethodInfo != NULL;
-                    pMethodInfo = pMethodInfoTable->GetNextMethodInfo(&hashFind))
+                for (DebuggerMethodInfoTable::Iterator iterator = pMethodInfoTable->Begin(), end = pMethodInfoTable->End();
+                     iterator != end; iterator++)
                 {
-                    pMethodInfo->SetJMCStatus(false);
+                    DebuggerMethodInfo *pMethodInfo = iterator->mi;
+                    if (pMethodInfo != nullptr)
+                        pMethodInfo->SetJMCStatus(false);
                 }
             }
             LOG((LF_CORDB, LL_EVERYTHING, "Done clearing JMC methods!\n"));
@@ -14144,12 +14158,9 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 
         if (pDE->m_argData == NULL)
         {
-            DeleteInteropSafeExecutable(pDE);
+            DeleteInteropSafe(pDE);
             return E_OUTOFMEMORY;
         }
-
-        // Pass back the address of the argument data area so the right side can write to it for us.
-        *argDataArea = pDE->m_argData;
     }
 
     // Hijacked evals rewrite the thread's native context to enter FuncEvalHijack when execution resumes.
@@ -14199,7 +14210,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 
         if (FAILED(hr))
         {
-            DeleteInteropSafeExecutable(pDE);  // Note this runs the destructor for DebuggerEval, which releases its internal buffers
+            DeleteInteropSafe(pDE);
             return hr;
         }
 
@@ -14207,7 +14218,12 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         // the process continues. Interpreter evals run from the INTOP_BREAKPOINT handler after
         // the debugger callback returns — no context modification and no IncThreadsAtUnsafePlaces
         // needed because the stack remains walkable.
-        GetPendingEvals()->AddPendingEval(pDE->m_thread, pDE);
+        hr = GetPendingEvals()->AddPendingEval(pDE->m_thread, pDE);
+        if (FAILED(hr))
+        {
+            DeleteInteropSafe(pDE);
+            return hr;
+        }
 
         LOG((LF_CORDB, LL_INFO1000, "D::FES: Non-hijack func eval setup for pDE:%p on thread %p (fInException=%d)\n",
              pDE, pThread, fInException));
@@ -14216,6 +14232,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 
     // Return that all went well. Tracing the stack at this point should not show that the func eval is setup, but it
     // will show a wrong IP, so it shouldn't be done.
+    *argDataArea = pDE->m_argData;
     *debuggerEvalKey = pDE;
 
     LOG((LF_CORDB, LL_INFO100000, "D:FES for pDE:%p evalType:%d on thread %p, id=0x%x\n",

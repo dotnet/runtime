@@ -155,6 +155,9 @@
   <data name="BrotliDecoder_Disposed" xml:space="preserve">
     <value>Can not access a closed Decoder.</value>
   </data>
+  <data name="BrotliDecoder_InvalidSetParameter" xml:space="preserve">
+    <value>The BrotliDecoder {0} can not be changed at current decoder state.</value>
+  </data>
   <!-- BrotliStream.Compress -->
   <data name="BrotliStream_Compress_UnsupportedOperation" xml:space="preserve">
     <value>Can not perform Read operations on a BrotliStream constructed with CompressionMode.Compress.</value>

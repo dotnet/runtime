@@ -335,7 +335,6 @@ TAILJMP_RAX TEXTEQU <DB 048h, 0FFh, 0E0h>
 ;;
 ;; CONSTANTS -- INTEGER
 ;;
-TSF_SuppressGcStress            equ 08h
 TSF_DoNotTriggerGc              equ 10h
 
 ;;
@@ -370,14 +369,6 @@ TrapThreadsFlags_None            equ 0
 TrapThreadsFlags_TrapThreads     equ 1
 
 ;;
-;; CONSTANTS -- SYMBOLS
-;;
-
-ifdef FEATURE_GC_STRESS
-THREAD__HIJACKFORGCSTRESS                   equ ?HijackForGcStress@Thread@@SAXPEAUPAL_LIMITED_CONTEXT@@@Z
-endif ;; FEATURE_GC_STRESS
-
-;;
 ;; IMPORTS
 ;;
 
@@ -390,10 +381,6 @@ EXTERN RhThrowHwEx                              : PROC
 EXTERN RhThrowEx                                : PROC
 EXTERN RhRethrow                                : PROC
 EXTERN RhpGcPoll2                               : PROC
-ifdef FEATURE_GC_STRESS
-EXTERN RhpStressGc                              : PROC
-EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
-endif ;; FEATURE_GC_STRESS
 
 EXTERN RhpTrapThreads       : DWORD
 EXTERN g_lowest_address     : QWORD

@@ -220,12 +220,16 @@
                                           Include="$(LibrariesNativeArtifactsPath)libSystem.Security.Cryptography.Native.Android.a" />
 
       <!-- Same situation on WASI with CoreCLR: System.IO.Compression.Native/CMakeLists.txt
-           installs libSystem.IO.Compression.Native.a and libz.a directly into the
-           CoreCLR sharedFramework directory for CLR_CMAKE_TARGET_WASI, where they are
-           picked up by RuntimeFiles. Exclude the libs.native copies to avoid duplicates. -->
-      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
+           installs libSystem.IO.Compression.Native.a, libz.a and the brotli libraries directly
+           into the CoreCLR sharedFramework directory for CLR_CMAKE_TARGET_WASI, where they are
+           picked up by RuntimeFiles. Exclude the libs.native copies to avoid duplicates.
+           This does not apply to NativeAOT, whose RuntimeFiles come from aotsdk instead. -->
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(BuildNativeAOTRuntimePack)' != 'true'"
                                           Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
-                                                   $(LibrariesNativeArtifactsPath)libz.a" />
+                                                   $(LibrariesNativeArtifactsPath)libz.a;
+                                                   $(LibrariesNativeArtifactsPath)libbrotlicommon.a;
+                                                   $(LibrariesNativeArtifactsPath)libbrotlidec.a;
+                                                   $(LibrariesNativeArtifactsPath)libbrotlienc.a" />
 
       <!-- Same situation on browser with CoreCLR: these libraries are always installed to both
            LibrariesNativeArtifactsPath (the top-level, flavor-agnostic native artifacts directory
@@ -282,6 +286,7 @@
         Exclude="$(LibrariesSharedFrameworkDir)libminipal.a;
                  $(LibrariesSharedFrameworkDir)libSystem.IO.Compression.Native.a;
                  $(LibrariesSharedFrameworkDir)libz.a;
+                 $(LibrariesSharedFrameworkDir)dotnet.native.js;
                  $(LibrariesSharedFrameworkDir)libBrowserHost.js.map;
                  $(LibrariesSharedFrameworkDir)libSystem.Native.Browser.js.map;
                  $(LibrariesSharedFrameworkDir)libSystem.Native.Browser.Utils.js.map;
@@ -292,10 +297,14 @@
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'"
                              Include="
         $(HostSharedFrameworkDir)libBrowserHost.a;
-        $(HostSharedFrameworkDir)dotnet.native.js;
-        $(HostSharedFrameworkDir)dotnet.native.js.symbols;
-        $(HostSharedFrameworkDir)dotnet.native.wasm;
         "
+        IsNative="true" />
+
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'"
+                             Include="
+        $(LibrariesSharedFrameworkDir)dotnet.native.js;
+        $(LibrariesSharedFrameworkDir)dotnet.native.js.symbols;
+        $(LibrariesSharedFrameworkDir)dotnet.native.wasm;"
         IsNative="true" />
 
       <!-- Headers included by the CoreCLR native relink generated sources (see BrowserWasmApp.CoreCLR.targets).

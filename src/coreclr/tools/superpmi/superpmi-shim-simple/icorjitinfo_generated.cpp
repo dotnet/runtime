@@ -204,12 +204,6 @@ bool interceptor_ICJI::satisfiesMethodConstraints(
     return original_ICorJitInfo->satisfiesMethodConstraints(parent, method);
 }
 
-void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(
-          CORINFO_METHOD_HANDLE method)
-{
-    original_ICorJitInfo->methodMustBeLoadedBeforeCodeIsRun(method);
-}
-
 void interceptor_ICJI::getGSCookie(
           GSCookie* pCookieVal,
           GSCookie** ppCookieVal)
@@ -318,6 +312,18 @@ bool interceptor_ICJI::isValueClass(
           CORINFO_CLASS_HANDLE cls)
 {
     return original_ICorJitInfo->isValueClass(cls);
+}
+
+bool interceptor_ICJI::isByRefLike(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->isByRefLike(cls);
+}
+
+bool interceptor_ICJI::isSharedInst(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->isSharedInst(cls);
 }
 
 uint32_t interceptor_ICJI::getClassAttribs(
@@ -528,12 +534,6 @@ CorInfoInitClassResult interceptor_ICJI::initClass(
           CORINFO_CONTEXT_HANDLE context)
 {
     return original_ICorJitInfo->initClass(field, method, context);
-}
-
-void interceptor_ICJI::classMustBeLoadedBeforeCodeIsRun(
-          CORINFO_CLASS_HANDLE cls)
-{
-    original_ICorJitInfo->classMustBeLoadedBeforeCodeIsRun(cls);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getBuiltinClass(

@@ -7,8 +7,9 @@
 #include "stresslog.h"
 #include "clrhost.h"
 #include "ex.h"
-#define DONOT_DEFINE_ETW_CALLBACK
+#ifndef SELF_NO_HOST
 #include "eventtracebase.h"
+#endif // !SELF_NO_HOST
 #include "minipal/time.h"
 
  #if !defined(STRESS_LOG_READONLY)

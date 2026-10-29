@@ -778,7 +778,9 @@ Module * Assembly::FindModuleByTypeRef(
                 // Either we're not supposed to load, or we're doing a GC or stackwalk
                 // in which case we shouldn't need to load.  So just look up the module
                 // and return what we find.
-                return pModule->LookupModule(tkType);
+                Module* pLoadedModule = pModule->LookupModule(tkType);
+                _ASSERTE_ALL_BUILDS(pLoadedModule != NULL || loadFlag != Loader::Load);
+                return pLoadedModule;
             }
 
 #ifndef DACCESS_COMPILE

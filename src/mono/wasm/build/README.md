@@ -53,6 +53,30 @@ Implementation:
 
     - If you want to *dependsOn* on this, then use `DependsOnTargets="WasmTriggerPublishApp"`
 
+### Profile-guided CoreCLR ReadyToRun
+
+CoreCLR browser apps can restrict ReadyToRun compilation to methods selected by an external
+MIBC profile:
+
+```xml
+<PropertyGroup>
+  <PublishReadyToRun>true</PublishReadyToRun>
+</PropertyGroup>
+<ItemGroup>
+  <PublishReadyToRunPgoFiles Include="path/to/profile.mibc" />
+</ItemGroup>
+```
+
+`PublishReadyToRunPgoFiles` enables crossgen2 partial compilation for CoreCLR browser apps.
+Methods selected by the profile are compiled eagerly and other methods remain available through
+the interpreter. Without PGO files, `PublishReadyToRun` compiles the full closure.
+
+PGO files must exist when the project is published, but do not need to come from the exact
+build being published. Profile records for methods that can no longer be resolved are ignored.
+Refresh profiles periodically to keep them representative of the application and its workload;
+as the code and behavior diverge from the captured profile, precompilation coverage and optimization
+quality can degrade.
+
 # `WasmApp.{props,targets}`, and `WasmApp.InTree.{props,targets}`
 
 - Any project that wants to use this, can import the props+targets, and set up the

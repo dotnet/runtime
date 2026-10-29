@@ -1457,6 +1457,15 @@ extern "C" DWORD64 __stdcall GetDataCacheZeroIDReg();
 extern "C" uint64_t GetSveLengthFromOS();
 #endif
 
+#ifdef TARGET_WASM
+static bool s_wasmRelaxedSimdSupported;
+
+extern "C" void coreclr_wasm_set_relaxed_simd_supported()
+{
+    s_wasmRelaxedSimdSupported = true;
+}
+#endif
+
 void EEJitManager::SetCpuInfo()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1501,6 +1510,10 @@ void EEJitManager::SetCpuInfo()
 #if defined(TARGET_WASM)
     CPUCompileFlags.Set(InstructionSet_WasmBase);
     CPUCompileFlags.Set(InstructionSet_PackedSimd);
+    if (s_wasmRelaxedSimdSupported)
+    {
+        CPUCompileFlags.Set(InstructionSet_RelaxedSimd);
+    }
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1752,6 +1765,11 @@ void EEJitManager::SetCpuInfo()
             if (((cpuFeatures & ARM64IntrinsicConstants_SveAes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SveAes))
             {
                 CPUCompileFlags.Set(InstructionSet_SveAes);
+            }
+
+            if (((cpuFeatures & ARM64IntrinsicConstants_SvePmull128) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SvePmull128))
+            {
+                CPUCompileFlags.Set(InstructionSet_SvePmull128);
             }
 
             if (((cpuFeatures & ARM64IntrinsicConstants_SveSha3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SveSha3))

@@ -81,19 +81,6 @@ DEFINE_INTERFACE_DISPATCH_STUB 16
 DEFINE_INTERFACE_DISPATCH_STUB 32
 DEFINE_INTERFACE_DISPATCH_STUB 64
 
-// Initial dispatch on an interface when we don't have a cache yet.
-LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
-        // Just tail call to the cache miss helper.
-        b           C_FUNC(RhpInterfaceDispatchSlow)
-LEAF_END RhpInitialInterfaceDispatch, _TEXT
-
-// No as alternate entry due to missed thumb bit in this case
-// See https://github.com/dotnet/runtime/issues/8608
-LEAF_ENTRY RhpInitialDynamicInterfaceDispatch, _TEXT
-        // Just tail call to the cache miss helper.
-        b           C_FUNC(RhpInterfaceDispatchSlow)
-LEAF_END RhpInitialDynamicInterfaceDispatch, _TEXT
-
 // Cache miss case, call the runtime to resolve the target and update the cache.
 // Use universal transition helper to allow an exception to flow out of resolution
 NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT, NoHandler

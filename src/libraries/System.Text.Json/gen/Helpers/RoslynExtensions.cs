@@ -802,45 +802,50 @@ namespace System.Text.Json.SourceGeneration
         //   Source-symbol candidate enumeration mirrored by these polyfills:
         //     https://github.com/dotnet/roslyn/blob/18bf2c8709264bac6615856e507eb44ba2a026e2/src/Compilers/CSharp/Portable/Symbols/Source/SourceMemberContainerSymbol.cs#L903-L961
 
-        /// <summary>
-        /// Polyfill for <c>ITypeSymbol.IsClosed</c>: returns <see langword="true"/> when
-        /// <paramref name="type"/> is an abstract class declared with the <c>closed</c> modifier, whose
-        /// hierarchy the language restricts to its declaring module. Detection is syntactic because the
-        /// compiler-emitted <c>[IsClosedType]</c> attribute is filtered out of the symbol API. When
-        /// available, the built-in API is used through light-up so metadata-only symbols are supported;
-        /// otherwise source declarations fall back to syntax inspection.
-        /// </summary>
-        public static bool IsClosedType(this INamedTypeSymbol type)
+        extension(ITypeSymbol type)
         {
-            if (type is not { TypeKind: TypeKind.Class, IsAbstract: true })
+            /// <summary>
+            /// Gets a value indicating whether the type is an abstract class declared with the
+            /// <c>closed</c> modifier, whose hierarchy the language restricts to its declaring module.
+            /// Detection is syntactic because the compiler-emitted <c>[IsClosedType]</c> attribute is
+            /// filtered out of the symbol API. When available, the built-in API is used through light-up
+            /// so metadata-only symbols are supported; otherwise source declarations fall back to syntax inspection.
+            /// </summary>
+            public bool IsClosed
             {
-                return false;
-            }
-
-            if (s_isClosedTypeAccessor is not null)
-            {
-                return s_isClosedTypeAccessor(type);
-            }
-
-            foreach (SyntaxReference syntaxReference in type.DeclaringSyntaxReferences)
-            {
-                if (syntaxReference.GetSyntax() is BaseTypeDeclarationSyntax declaration)
+                get
                 {
-                    foreach (SyntaxToken modifier in declaration.Modifiers)
+                    if (type is not { TypeKind: TypeKind.Class, IsAbstract: true })
                     {
-                        // The 'closed' contextual keyword is tokenized as a dedicated SyntaxKind by
-                        // closed-aware compilers, but that enum member does not exist in the Roslyn
-                        // version the generator compiles against. Compare the token text instead, which
-                        // is stable across compiler versions.
-                        if (modifier.Text is "closed")
+                        return false;
+                    }
+
+                    if (s_isClosedTypeAccessor is not null)
+                    {
+                        return s_isClosedTypeAccessor(type);
+                    }
+
+                    foreach (SyntaxReference syntaxReference in type.DeclaringSyntaxReferences)
+                    {
+                        if (syntaxReference.GetSyntax() is BaseTypeDeclarationSyntax declaration)
                         {
-                            return true;
+                            foreach (SyntaxToken modifier in declaration.Modifiers)
+                            {
+                                // The 'closed' contextual keyword is tokenized as a dedicated SyntaxKind by
+                                // closed-aware compilers, but that enum member does not exist in the Roslyn
+                                // version the generator compiles against. Compare the token text instead, which
+                                // is stable across compiler versions.
+                                if (modifier.Text is "closed")
+                                {
+                                    return true;
+                                }
+                            }
                         }
                     }
+
+                    return false;
                 }
             }
-
-            return false;
         }
 
         private static Func<ITypeSymbol, bool>? CreateIsClosedTypeAccessor()
@@ -891,7 +896,7 @@ namespace System.Text.Json.SourceGeneration
                             ? candidate.ConstructUnboundGenericType()
                             : candidate;
 
-                        if (candidate.IsClosedType())
+                        if (candidate.IsClosed)
                         {
                             GetClosedDerivedTypesCore(derivedType, enumeratedTypes, ref derivedTypes);
                         }

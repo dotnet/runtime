@@ -77,7 +77,7 @@ namespace System.CommandLine
 
             return token.ToLowerInvariant() switch
             {
-                "linux" or "android" => TargetOS.Linux,
+                "linux" or "android" or "openharmony" => TargetOS.Linux,
                 "win" or "windows" => TargetOS.Windows,
                 "osx" => TargetOS.OSX,
                 "freebsd" => TargetOS.FreeBSD,

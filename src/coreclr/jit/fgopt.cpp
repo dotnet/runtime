@@ -129,6 +129,8 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             changed |= block->NumSucc() > 0;
 
             block->RemoveFlags(BBF_REMOVED | BBF_INTERNAL);
+            // The block's code is gone, so it no longer needs a GC poll.
+            block->RemoveFlags(BBF_NEEDS_GCPOLL);
             block->SetFlags(BBF_IMPORTED);
             block->SetKindAndTargetEdge(BBJ_THROW);
             block->bbSetRunRarely();

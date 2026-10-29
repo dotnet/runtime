@@ -10,6 +10,22 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+#if !TARGET_WINDOWS
+        internal WaitSubsystem.ThreadWaitInfo WaitInfo
+        {
+            get
+            {
+                return Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
+
+                WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
+                {
+                    Interlocked.CompareExchange(ref _waitInfo, new WaitSubsystem.ThreadWaitInfo(this), null!);
+                    return _waitInfo;
+                }
+            }
+        }
+#endif
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CatchAtSafePoint();
 

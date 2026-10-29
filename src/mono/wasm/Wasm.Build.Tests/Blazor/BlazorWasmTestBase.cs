@@ -26,9 +26,18 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, string? targetFramework = null)
                 : base(output, buildContext, new WasmSdkBasedProjectProvider(output, targetFramework ?? DefaultTargetFrameworkForBlazor))
     {
+        string blazorTargetFramework = targetFramework ?? DefaultTargetFrameworkForBlazor;
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
-        _defaultBlazorPublishOptions = _defaultPublishOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs };
-        _defaultBlazorBuildOptions = _defaultBuildOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs };
+        _defaultBlazorPublishOptions = _defaultPublishOptions with
+        {
+            ExtraMSBuildArgs = _blazorExtraMSBuildArgs,
+            TargetFramework = blazorTargetFramework
+        };
+        _defaultBlazorBuildOptions = _defaultBuildOptions with
+        {
+            ExtraMSBuildArgs = _blazorExtraMSBuildArgs,
+            TargetFramework = blazorTargetFramework
+        };
     }
 
     private Dictionary<string, string> blazorHomePageReplacements = new Dictionary<string, string>

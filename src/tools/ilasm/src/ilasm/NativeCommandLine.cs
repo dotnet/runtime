@@ -36,6 +36,7 @@ internal static class NativeCommandLine
         ["PDB"] = "--pdb",
         ["PE6"] = "--pe64",
         ["QUI"] = "--quiet",
+        ["RES"] = "--resource",
         ["STA"] = "--stack",
         ["STR"] = "--stripreloc",
         ["SSV"] = "--ssver",
@@ -132,11 +133,6 @@ internal static class NativeCommandLine
             else
             {
                 string prefix = optionName[..3];
-                if (prefix.Equals("RES", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new ArgumentException(
-                        $"Unsupported native option '{arg}'. The managed ilasm implementation does not support -RESOURCES.");
-                }
                 if (prefix.Equals("MSV", StringComparison.OrdinalIgnoreCase))
                 {
                     throw new ArgumentException(

@@ -336,8 +336,18 @@ namespace System.Threading
                             pollableHandles.Add(EnsurePollable(SubscribeKindTcpSocket, socket->socket.handle, ref socket->socket_pollable.handle));
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECTED:
-                            pollableHandles.Add(EnsurePollable(SubscribeKindInputStream, socket->state.state.connected.input.handle, ref socket->state.state.connected.input_pollable.handle));
-                            pollableHandles.Add(EnsurePollable(SubscribeKindOutputStream, socket->state.state.connected.output.handle, ref socket->state.state.connected.output_pollable.handle));
+                            // Only wait on directions that have a pending operation. An idle connected socket's
+                            // output stream is almost always writable, so always subscribing to it would keep
+                            // the event loop from ever blocking. The hook runs before every poll, so operations
+                            // enqueued later are picked up on the next iteration.
+                            if (asyncContext._readQueue.IsWaiting)
+                            {
+                                pollableHandles.Add(EnsurePollable(SubscribeKindInputStream, socket->state.state.connected.input.handle, ref socket->state.state.connected.input_pollable.handle));
+                            }
+                            if (asyncContext._writeQueue.IsWaiting)
+                            {
+                                pollableHandles.Add(EnsurePollable(SubscribeKindOutputStream, socket->state.state.connected.output.handle, ref socket->state.state.connected.output_pollable.handle));
+                            }
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECT_FAILED:
                             asyncContext.HandleEventsInline(Sys.HandleEvents.Error);

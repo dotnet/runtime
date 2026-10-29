@@ -372,21 +372,30 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                 {
                     TRACE("TryLookupSymbol(" DACCESS_TABLE_SYMBOL ") FAILED\n");
                 }
+                if (TryLookupSymbol(CONTRACT_DESCRIPTOR_SYMBOL, &symbolOffset))
+                {
+                    m_contractDescriptorAddress = baseAddress + symbolOffset;
+                }
             }
         }
         else if (m_appModel == AppModelType::SingleFile)
         {
             if (PopulateForSymbolLookup(baseAddress))
             {
-                uint64_t symbolOffset;
-                if (TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))
+                uint64_t runtimeInfoOffset;
+                if (TryLookupSymbol("DotNetRuntimeInfo", &runtimeInfoOffset))
                 {
                     m_coreclrPath = GetDirectory(moduleName);
                     m_runtimeBaseAddress = baseAddress;
+                    uint64_t contractDescriptorOffset;
+                    if (TryLookupSymbol(CONTRACT_DESCRIPTOR_SYMBOL, &contractDescriptorOffset))
+                    {
+                        m_contractDescriptorAddress = baseAddress + contractDescriptorOffset;
+                    }
 
                     // explicit initialization for old gcc support; instead of just runtimeInfo { }
                     RuntimeInfo runtimeInfo { .Signature = { }, .Version = 0, .RuntimeModuleIndex = { }, .DacModuleIndex = { }, .DbiModuleIndex = { }, .RuntimeVersion = { } };
-                    if (ReadMemory(baseAddress + symbolOffset, &runtimeInfo, sizeof(RuntimeInfo)))
+                    if (ReadMemory(baseAddress + runtimeInfoOffset, &runtimeInfo, sizeof(RuntimeInfo)))
                     {
                         if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
                         {
@@ -401,10 +410,11 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
             if (PopulateForSymbolLookup(baseAddress))
             {
                 uint64_t symbolOffset;
-                if (TryLookupSymbol("DotNetRuntimeContractDescriptor", &symbolOffset))
+                if (TryLookupSymbol(CONTRACT_DESCRIPTOR_SYMBOL, &symbolOffset))
                 {
                     m_coreclrPath = GetDirectory(moduleName);
                     m_runtimeBaseAddress = baseAddress;
+                    m_contractDescriptorAddress = baseAddress + symbolOffset;
                     TRACE("Found valid NativeAOT runtime module\n");
                 }
             }

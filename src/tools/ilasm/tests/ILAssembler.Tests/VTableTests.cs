@@ -21,6 +21,28 @@ namespace ILAssembler.Tests
 {
     public class VTableTests
     {
+        [Theory]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(11)]
+        public void VTableEntry_WithoutFixupDeclarations_IsIgnored(int entry)
+        {
+            string source = $$"""
+                .assembly test {}
+                .method public static void M() cil managed
+                {
+                    .vtentry {{entry}} : 1
+                    ret
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            Assert.Equal(0, pe.PEHeaders.CorHeader!.VtableFixupsDirectory.Size);
+            Assert.Equal(0, pe.PEHeaders.PEHeader!.ExportTableDirectory.Size);
+            Assert.True(pe.PEHeaders.CorHeader.Flags.HasFlag(CorFlags.ILOnly));
+            Assert.Equal(new byte[] { 0x2A }, DocumentCompilerTestHelpers.GetMethodBody(pe).GetILBytes());
+        }
+
         [Fact]
         public void VtfixupDecl_CompilesSuccessfully()
         {

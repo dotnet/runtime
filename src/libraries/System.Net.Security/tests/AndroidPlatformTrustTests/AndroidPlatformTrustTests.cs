@@ -38,6 +38,7 @@ namespace System.Net.Security.Tests
 
             using X509Certificate2 rootCertificate = GetRootCertificate();
             SslPolicyErrors? reportedErrors = null;
+            int callbacks = 0;
 
             (SslStream client, SslStream server) = GetConnectedSslStreams();
             using (client)
@@ -47,15 +48,34 @@ namespace System.Net.Security.Tests
                 var serverOptions = new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCertificate,
+                    EnabledSslProtocols = SslProtocols.Tls12,
                 };
 
                 var clientOptions = new SslClientAuthenticationOptions
                 {
                     TargetHost = "testservereku.contoso.com",
+                    EnabledSslProtocols = SslProtocols.Tls12,
                     RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
                     {
+                        callbacks++;
                         reportedErrors = sslPolicyErrors;
-                        return true;
+                        Assert.Same(client, sender);
+                        Assert.NotNull(certificate);
+                        Assert.Equal(serverCertificate.RawData, certificate.GetRawCertData());
+                        Assert.NotNull(chain);
+
+                        if (OperatingSystem.IsAndroidVersionAtLeast(27) && !OperatingSystem.IsAndroidVersionAtLeast(28))
+                        {
+                            Assert.Throws<InvalidOperationException>(() => client.SslProtocol);
+                            Assert.Throws<InvalidOperationException>(() => client.NegotiatedCipherSuite);
+                        }
+                        else
+                        {
+                            Assert.Equal(SslProtocols.Tls12, client.SslProtocol);
+                            _ = client.NegotiatedCipherSuite;
+                        }
+
+                        return sslPolicyErrors == SslPolicyErrors.None;
                     },
                     CertificateChainPolicy = new X509ChainPolicy
                     {
@@ -68,6 +88,14 @@ namespace System.Net.Security.Tests
                 await Task.WhenAll(
                     client.AuthenticateAsClientAsync(clientOptions),
                     server.AuthenticateAsServerAsync(serverOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.Equal(1, callbacks);
+                Assert.True(client.IsAuthenticated);
+                Assert.True(server.IsAuthenticated);
+                Assert.Equal(SslProtocols.Tls12, client.SslProtocol);
+                Assert.NotEqual(default, client.NegotiatedCipherSuite);
+                Assert.True(Enum.IsDefined(client.NegotiatedCipherSuite));
+                Assert.Equal(server.NegotiatedCipherSuite, client.NegotiatedCipherSuite);
             }
 
             Assert.NotNull(reportedErrors);

@@ -19,7 +19,8 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
         public TracingConfigureOptions(IConfiguration configuration)
         {
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            ArgumentNullException.ThrowIfNull(configuration);
+            _configuration = configuration;
         }
 
         public void Configure(TracingOptions options) => LoadConfig(options);

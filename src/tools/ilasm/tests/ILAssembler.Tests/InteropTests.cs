@@ -224,7 +224,7 @@ namespace ILAssembler.Tests
                 _ => { Assert.Fail("Expected no resources"); return default; },
                 new Options { ErrorTolerant = true });
 
-            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.Parser);
             Assert.NotNull(result);
 
             BlobBuilder image = new();
@@ -267,7 +267,7 @@ namespace ILAssembler.Tests
                 _ => { Assert.Fail("Expected no resources"); return default; },
                 new Options { ErrorTolerant = true });
 
-            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.Parser);
             Assert.NotNull(result);
 
             BlobBuilder image = new();

@@ -82,21 +82,6 @@
     DEFINE_INTERFACE_DISPATCH_STUB 64
 
     //
-    // Initial dispatch on an interface when we don't have a cache yet.
-    //
-    LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
-    ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
-        // Trigger an AV if we're dispatching on a null this.
-        // The exception handling infrastructure is aware of the fact that this is the first
-        // instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
-        // to a NullReferenceException at the callsite.
-        lw zero, 0(a0)
-
-        // Just tail call to the cache miss helper.
-        tail       C_FUNC(RhpInterfaceDispatchSlow)
-    LEAF_END RhpInitialInterfaceDispatch, _TEXT
-
-    //
     // Cache miss case, call the runtime to resolve the target and update the cache.
     // Use universal transition helper to allow an exception to flow out of resolution.
     //

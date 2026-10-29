@@ -79,7 +79,9 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     MethodDesc * pFunc = GetFunction();
     _ASSERTE(pFunc != NULL);
 
-    UpdateRegDisplayHelper(pRD, pFunc->CbStackPop());
+    // The map supplies the stack-pop size without requiring signature value-type layouts.
+    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc(nullptr);
+    UpdateRegDisplayHelper(pRD, pGCRefMap != nullptr ? CbStackPopUsingGCRefMap(pGCRefMap) : pFunc->CbStackPop());
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }

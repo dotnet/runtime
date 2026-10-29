@@ -21,13 +21,13 @@ from the project's root directory. New package sources must be added after the `
 
 Once you have added the package sources, add a reference to the ILCompiler package either by running
 ```bash
-> dotnet add package Microsoft.DotNet.ILCompiler -v 11.0.0-*
+> dotnet add package Microsoft.DotNet.ILCompiler -v 12.0.0-*
 ```
 
 or by adding the following element to the project file:
 ```xml
 <ItemGroup>
-  <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="11.0.0-*" />
+  <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="12.0.0-*" />
 </ItemGroup>
 ```
 

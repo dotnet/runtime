@@ -1200,6 +1200,40 @@ namespace System.Threading.Threads.Tests
             Assert.InRange((int)stopwatch.ElapsedMilliseconds, 100, int.MaxValue);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(0, false)]
+        [InlineData(0, true)]
+        [InlineData(10, false)]
+        [InlineData(10, true)]
+        [InlineData(50, false)]
+        [InlineData(50, true)]
+        public static void SleepSingleThreadTest(int millisecondsTimeout, bool useTimeSpan)
+        {
+            Action sleep = useTimeSpan
+                ? () => Thread.Sleep(TimeSpan.FromMilliseconds(millisecondsTimeout))
+                : () => Thread.Sleep(millisecondsTimeout);
+
+            Thread.CurrentThread.Interrupt();
+            Assert.Throws<ThreadInterruptedException>(sleep);
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            sleep();
+            stopwatch.Stop();
+
+            Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+            Assert.Equal(ThreadState.Running, Thread.CurrentThread.ThreadState & ThreadState.WaitSleepJoin);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void InfiniteSleepWithoutThreadsThrows()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Thread.Sleep(Timeout.Infinite));
+            Assert.Throws<PlatformNotSupportedException>(() => Thread.Sleep(Timeout.InfiniteTimeSpan));
+            Thread.CurrentThread.Interrupt();
+            Assert.Throws<ThreadInterruptedException>(() => Thread.Sleep(Timeout.Infinite));
+            Thread.Sleep(0);
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
