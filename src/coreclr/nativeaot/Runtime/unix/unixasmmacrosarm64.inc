@@ -10,14 +10,6 @@
 C_FUNC(\Name):
 .endm
 
-.macro LABELED_RETURN_ADDRESS Name
-        .global C_FUNC(\Name)
-#if !defined(__APPLE__)
-        .hidden C_FUNC(\Name)
-#endif
-C_FUNC(\Name):
-.endm
-
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
 #if defined(__APPLE__)
@@ -31,37 +23,9 @@ C_FUNC(\Name):
         .cfi_startproc
 .endm
 
-.macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
-#if defined(__APPLE__)
-        adrp \HelperReg, C_FUNC(\Name)@GOTPAGE
-        ldr  \HelperReg, [\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
-        ldr  \HelperReg, [\HelperReg]
-#else
-        adrp \HelperReg, C_FUNC(\Name)
-        ldr  \HelperReg, [\HelperReg, :lo12:C_FUNC(\Name)]
-#endif
-.endm
-
-.macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
-#if defined(__APPLE__)
-        adrp x\HelperReg, C_FUNC(\Name)@GOTPAGE
-        ldr  x\HelperReg, [x\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
-        ldr  w\HelperReg, [x\HelperReg]
-#else
-        adrp x\HelperReg, C_FUNC(\Name)
-        ldr  w\HelperReg, [x\HelperReg, :lo12:C_FUNC(\Name)]
-#endif
-.endm
-
-
-
 .macro EMIT_BREAKPOINT
         brk #0
 .endm
-
-#define xip0 x16
-#define xip1 x17
-#define xpr x18
 
 // Loads the address of a thread-local variable into the target register,
 // which cannot be x0. Preserves all other registers.
@@ -171,10 +135,6 @@ C_FUNC(\Name):
     ldp         x0, x1, [sp, #0x10]
     ldr         x2,  [sp, #0x20]
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 48
-.endm
-
-.macro  InterlockedOperationBarrier
-    dmb ish
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2

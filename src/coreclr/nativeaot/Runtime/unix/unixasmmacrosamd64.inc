@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#define C_VAR(Name) rip + C_FUNC(Name)
-
 #include <amd64/UnixAsmMacros.inc>
 
 .macro NESTED_ENTRY Name, Section, Handler
@@ -32,13 +30,6 @@ C_FUNC(\Name):
         .p2align 4
 C_FUNC(\Name):
         .cfi_startproc
-.endm
-
-.macro push_imm imm
-.att_syntax
-        push            $\imm
-.intel_syntax noprefix
-        .cfi_adjust_cfa_offset 8
 .endm
 
 #define SIZEOF_FP_REGS 0x80

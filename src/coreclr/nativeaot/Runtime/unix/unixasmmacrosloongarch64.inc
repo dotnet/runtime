@@ -48,17 +48,6 @@ C_FUNC(\Name):
         .cfi_def_cfa_register  22
 .endm
 
-.macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ssize
-        addi.d  $sp, $sp, -\ssize
-        .cfi_adjust_cfa_offset  \ssize
-
-        st.d  $r\reg1, $sp, 0
-        st.d  $r\reg2, $sp, 8
-        .cfi_rel_offset  \reg1, 0
-        .cfi_rel_offset  \reg2, 8
-.endm
-
-
 .macro EPILOG_RESTORE_REG reg, ofs
         ld.d  $r\reg, $sp, \ofs
         .cfi_restore  \reg
@@ -90,10 +79,6 @@ C_FUNC(\Name):
 // Target cannot be a0.
 .macro INLINE_GET_ALLOC_CONTEXT_BASE target
     INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)
-.endm
-
-.macro  InterlockedOperationBarrier
-    dbar  0
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2

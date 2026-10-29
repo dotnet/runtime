@@ -23,6 +23,15 @@ push_vol_reg macro Reg
 
         endm
 
+push_imm macro imm
+
+        .errnz ___STACK_ADJUSTMENT_FORBIDDEN, push_vol_reg cannot be used after save_reg_postrsp
+
+        push    imm
+        .allocstack 8
+
+        endm
+
 push_eflags macro
 
         .errnz ___STACK_ADJUSTMENT_FORBIDDEN, push_eflags cannot be used after save_reg_postrsp
@@ -179,8 +188,141 @@ ALTERNATE_ENTRY macro Name
 Name label proc
         endm
 
+LABELED_RETURN_ADDRESS macro Name
+
+Name label proc
+PUBLIC Name
+        endm
+
 ;
+; Useful for enabling C++ to know where to patch code at runtime.
+;
+PATCH_LABEL macro Name
+        public Name
+Name::
+        endm
+
+;
+; Appropriate instructions for certain specific scenarios:
+;  - REPRET: should be used as the return instruction when the return is a branch
+;            target or immediately follows a conditional branch
 ;  - TAILJMP_RAX: ("jmp rax") should be used for tailcalls, this emits an instruction
 ;            sequence which is recognized by the unwinder as a valid epilogue terminator
 ;
+REPRET      TEXTEQU <DB 0F3h, 0C3h>
 TAILJMP_RAX TEXTEQU <DB 048h, 0FFh, 0E0h>
+
+NOP_2_BYTE macro
+
+        xchg ax,ax
+
+        endm
+
+NOP_3_BYTE macro
+
+        nop dword ptr [rax]
+
+        endm
+
+PUSH_CALLEE_SAVED_REGISTERS macro
+
+        push_nonvol_reg r15
+        push_nonvol_reg r14
+        push_nonvol_reg r13
+        push_nonvol_reg r12
+        push_nonvol_reg rbp
+        push_nonvol_reg rbx
+        push_nonvol_reg rsi
+        push_nonvol_reg rdi
+
+        endm
+
+SAVE_CALLEE_SAVED_REGISTERS macro ofs
+
+        save_reg_postrsp    rdi, ofs + 0h
+        save_reg_postrsp    rsi, ofs + 8h
+        save_reg_postrsp    rbx, ofs + 10h
+        save_reg_postrsp    rbp, ofs + 18h
+        save_reg_postrsp    r12, ofs + 20h
+        save_reg_postrsp    r13, ofs + 28h
+        save_reg_postrsp    r14, ofs + 30h
+        save_reg_postrsp    r15, ofs + 38h
+
+        endm
+
+POP_CALLEE_SAVED_REGISTERS macro
+
+        pop             rdi
+        pop             rsi
+        pop             rbx
+        pop             rbp
+        pop             r12
+        pop             r13
+        pop             r14
+        pop             r15
+
+        endm
+
+SAVE_ARGUMENT_REGISTERS macro ofs
+
+        save_reg_postrsp rcx, ofs + 0h
+        save_reg_postrsp rdx, ofs + 8h
+        save_reg_postrsp r8,  ofs + 10h
+        save_reg_postrsp r9,  ofs + 18h
+
+        endm
+
+RESTORE_ARGUMENT_REGISTERS macro ofs
+
+        mov             rcx, [rsp + ofs + 0h]
+        mov             rdx, [rsp + ofs + 8h]
+        mov             r8,  [rsp + ofs + 10h]
+        mov             r9,  [rsp + ofs + 18h]
+
+        endm
+
+SAVE_FLOAT_ARGUMENT_REGISTERS macro ofs
+
+        save_xmm128_postrsp xmm0, ofs
+        save_xmm128_postrsp xmm1, ofs + 10h
+        save_xmm128_postrsp xmm2, ofs + 20h
+        save_xmm128_postrsp xmm3, ofs + 30h
+
+        endm
+
+RESTORE_FLOAT_ARGUMENT_REGISTERS macro ofs
+
+        movdqa          xmm0, [rsp + ofs]
+        movdqa          xmm1, [rsp + ofs + 10h]
+        movdqa          xmm2, [rsp + ofs + 20h]
+        movdqa          xmm3, [rsp + ofs + 30h]
+
+        endm
+
+_tls_array     equ 58h     ;; offsetof(TEB, ThreadLocalStoragePointer)
+
+;;
+;; __declspec(thread) variable
+;;
+INLINE_GET_TLS_VAR macro destReg, trashReg, variable
+    EXTERN _tls_index : DWORD
+    EXTERN variable:DWORD
+
+;;
+;; construct 'eax' from 'rax' so that the register size and data size match
+;;
+;; BEWARE: currently only r10 is allowed as destReg from the r8-r15 set.
+;;
+ifidni <destReg>, <r10>
+destRegDWORD EQU r10d
+else
+destRegDWORD TEXTEQU @CatStr( e, @SubStr( destReg, 2, 2 ) )
+endif
+
+    mov         destRegDWORD, [_tls_index]
+    mov         trashReg, gs:[_tls_array]
+    mov         trashReg, [trashReg + destReg * 8]
+    mov         destRegDWORD, SECTIONREL variable
+    add         destReg, trashReg
+
+endm

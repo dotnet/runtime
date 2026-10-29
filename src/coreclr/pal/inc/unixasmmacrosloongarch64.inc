@@ -10,14 +10,6 @@ C_FUNC(\Name):
         .cfi_startproc
 .endm
 
-.macro LEAF_END_MARKED Name, Section
-C_FUNC(\Name\()_End):
-        .global C_FUNC(\Name\()_End)
-        LEAF_END \Name, \Section
-        // make sure this symbol gets its own address
-        nop
-.endm
-
 .macro PROLOG_STACK_ALLOC Size
         addi.d $sp, $sp, -\Size
         //.cfi_adjust_cfa_offset \Size
@@ -82,88 +74,6 @@ C_FUNC(\Name\()_End):
         addi.d  $sp, $sp, \ssize
         //.cfi_adjust_cfa_offset -\ssize
         .cfi_def_cfa 3,-\ssize
-.endm
-
-.macro EPILOG_BRANCH Target
-        b \Target
-.endm
-
-//-----------------------------------------------------------------------------
-// The Following sets of SAVE_*_REGISTERS expect the memory to be reserved and
-// base address to be passed in $reg
-//
-
-// Reserve 64 bytes of memory before calling  SAVE_CALLEESAVED_REGISTERS
-.macro SAVE_CALLEESAVED_REGISTERS reg, ofs
-
-        PROLOG_SAVE_REG_PAIR 23, 24, \ofs + 16
-        PROLOG_SAVE_REG_PAIR 25, 26, \ofs + 32
-        PROLOG_SAVE_REG_PAIR 27, 28, \ofs + 48
-        PROLOG_SAVE_REG_PAIR 29, 30, \ofs + 64
-        PROLOG_SAVE_REG      31,     \ofs + 80
-
-.endm
-
-// Reserve 64 bytes of memory before calling  SAVE_FLOAT_CALLEESAVED_REGISTERS
-.macro SAVE_FLOAT_CALLEESAVED_REGISTERS reg, ofs
-
-        fst.d  $f24, \reg, \ofs
-        fst.d  $f25, \reg, \ofs+8
-        fst.d  $f26, \reg, \ofs+16
-        fst.d  $f27, \reg, \ofs+24
-        fst.d  $f28, \reg, \ofs+32
-        fst.d  $f29, \reg, \ofs+40
-        fst.d  $f30, \reg, \ofs+48
-        fst.d  $f31, \reg, \ofs+56
-
-.endm
-
-.macro RESTORE_CALLEESAVED_REGISTERS reg, ofs
-
-        EPILOG_RESTORE_REG      31,     \ofs + 80
-        EPILOG_RESTORE_REG_PAIR 29, 30, \ofs + 64
-        EPILOG_RESTORE_REG_PAIR 27, 28, \ofs + 48
-        EPILOG_RESTORE_REG_PAIR 25, 26, \ofs + 32
-        EPILOG_RESTORE_REG_PAIR 23, 24, \ofs + 16
-.endm
-
-.macro RESTORE_ARGUMENT_REGISTERS reg, ofs
-
-        ld.d $a7, \reg, \ofs+56
-        ld.d $a6, \reg, \ofs+48
-        ld.d $a5, \reg, \ofs+40
-        ld.d $a4, \reg, \ofs+32
-        ld.d $a3, \reg, \ofs+24
-        ld.d $a2, \reg, \ofs+16
-        ld.d $a1, \reg, \ofs+8
-        ld.d $a0, \reg, \ofs
-
-.endm
-
-.macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs
-
-        fld.d  $f7, \reg, \ofs+56
-        fld.d  $f6, \reg, \ofs+48
-        fld.d  $f5, \reg, \ofs+40
-        fld.d  $f4, \reg, \ofs+32
-        fld.d  $f3, \reg, \ofs+24
-        fld.d  $f2, \reg, \ofs+16
-        fld.d  $f1, \reg, \ofs+8
-        fld.d  $f0, \reg, \ofs
-
-.endm
-
-.macro RESTORE_FLOAT_CALLEESAVED_REGISTERS reg, ofs
-
-        fld.d  $f24, $r\reg, \ofs
-        fld.d  $f25, $r\reg, \ofs+8
-        fld.d  $f26, $r\reg, \ofs+16
-        fld.d  $f27, $r\reg, \ofs+24
-        fld.d  $f28, $r\reg, \ofs+32
-        fld.d  $f29, $r\reg, \ofs+40
-        fld.d  $f30, $r\reg, \ofs+48
-        fld.d  $f31, $r\reg, \ofs+56
-
 .endm
 
 //-----------------------------------------------------------------------------
@@ -416,22 +326,6 @@ $__RedirectionStubEndFuncName
         NESTED_END
 #else
         EMIT_BREAKPOINT
-#endif
-.endm
-
-//-----------------------------------------------------------------------------
-// Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
-// out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
-// before a call (if you have a frame pointer and a dynamic stack). A breakpoint will be invoked if the stack
-// is misaligned.
-//
-.macro  CHECK_STACK_ALIGNMENT
-
-#ifdef _DEBUG
-        andi    $t4, $sp, 0xf
-        beq     $t4, $r0, 0f
-        EMIT_BREAKPOINT
-0:
 #endif
 .endm
 

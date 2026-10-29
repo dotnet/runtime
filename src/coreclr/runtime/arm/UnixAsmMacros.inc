@@ -40,6 +40,10 @@ C_FUNC(\Name\()_End):
         nop
 .endm
 
+.macro NESTED_END_MARKED Name, Section
+        LEAF_END_MARKED \Name, \Section
+.endm
+
 .macro GLOBAL_LABEL Name
         .global C_FUNC(\Name)
 C_FUNC(\Name):
@@ -125,13 +129,32 @@ C_FUNC(\Name):
         vpush_nonvol_reg "\RegList"
 .endm
 
+.macro PROLOG_STACK_ALLOC Size
+        sub sp, sp, #\Size
+        .pad #\Size
+.endm
+
 .macro PROLOG_STACK_SAVE Register
         .setfp \Register, sp
         mov \Register, sp
 .endm
 
+.macro PROLOG_STACK_SAVE_OFFSET Register, Offset
+        .setfp \Register, sp, \Offset
+        add \Register, sp, \Offset
+.endm
+
 .macro EPILOG_STACK_RESTORE Register
         mov sp, \Register
+.endm
+
+.macro EPILOG_STACK_RESTORE_OFFSET Register, Offset
+        sub \Register, \Offset
+        mov sp, \Register
+.endm
+
+.macro EPILOG_BRANCH Target
+        b \Target
 .endm
 
 .macro EPILOG_BRANCH_REG reg
