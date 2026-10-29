@@ -56,7 +56,7 @@ extends:
           - osx_arm64
           jobParameters:
             nameSuffix: Diagnostics_CheckedCoreCLR
-            buildArgs: -s clr.runtime+clr.corelib -c $(_BuildConfig)
+            buildArgs: -s clr.runtime+clr.corelib+clr.nativecorelib -c $(_BuildConfig)
             timeoutInMinutes: 120
             postBuildSteps:
             - template: /eng/pipelines/common/upload-artifact-step.yml

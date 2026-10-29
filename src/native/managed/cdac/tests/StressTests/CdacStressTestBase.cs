@@ -193,7 +193,8 @@ public abstract class CdacStressTestBase
     /// tolerates <see cref="CdacStressResults.KnownIssues"/> for GCREFS.
     /// <c>[ARG_SKIP]</c> is emitted by the native harness when either side
     /// returns <c>E_NOTIMPL</c> / <c>S_FALSE</c> -- an acknowledged gap, not a
-    /// divergence. <c>[ARG_FAIL]</c> (byte-for-byte mismatch) and
+    /// divergence -- or when an unloaded layout has alternative GC support.
+    /// <c>[ARG_FAIL]</c> (byte-for-byte mismatch) and
     /// <c>[ARG_ERROR]</c> (unexpected failure HR from cDAC or runtime) still
     /// fail the test.
     /// </summary>
@@ -226,6 +227,23 @@ public abstract class CdacStressTestBase
                 $"{total} verifications ({results.ArgIterSkipped} skip(s) tolerated).\n" +
                 $"Log: {results.LogFilePath}\n\n" +
                 $"First {Math.Min(MaxFailLines, results.ArgIterFailureLines.Count)} divergence line(s):\n{sample}");
+        }
+
+        foreach (string line in File.ReadLines(results.LogFilePath))
+        {
+            if (!line.StartsWith("[ARG_SKIP]", StringComparison.Ordinal) ||
+                !line.Contains("reason=runtime-type-not-loaded ", StringComparison.Ordinal))
+                continue;
+
+            string fallback = line.Contains("frame=Frameless ", StringComparison.Ordinal)
+                ? "native-gc-info"
+                : line.Contains("frame=ExternalMethodFrame ", StringComparison.Ordinal) ||
+                  line.Contains("frame=StubDispatchFrame ", StringComparison.Ordinal) ||
+                  line.Contains("frame=PrestubMethodFrame ", StringComparison.Ordinal) ||
+                  line.Contains("frame=CallCountingHelperFrame ", StringComparison.Ordinal)
+                    ? "r2r-gcrefmap"
+                    : "frame-specific-roots";
+            Assert.Contains($" fallback={fallback} ", line);
         }
     }
 
