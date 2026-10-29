@@ -15,4 +15,7 @@
     <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
     <CLRTestEnvironmentVariable Include="DOTNET_TC_QuickJitForLoops" Value="1" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

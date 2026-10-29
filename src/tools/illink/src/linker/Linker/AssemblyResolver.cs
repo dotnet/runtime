@@ -79,13 +79,13 @@ namespace Mono.Linker
         /// <returns>The known unresolved assemblies for probing mode or non probing mode</returns>
         HashSet<string> GetUnresolvedAssemblies(bool probing) => probing ? _unresolvedAssembliesProbing : _unresolvedAssemblies;
 
-        AssemblyDefinition? ResolveFromReferences(AssemblyNameReference name)
+        AssemblyDefinition? ResolveFromReferences(string name)
         {
             foreach (var reference in _references)
             {
                 foreach (var extension in Extensions)
                 {
-                    var fileName = name.Name + extension;
+                    var fileName = name + extension;
                     if (Path.GetFileName(reference) != fileName)
                         continue;
                     try
@@ -104,11 +104,22 @@ namespace Mono.Linker
 
         public AssemblyDefinition? Resolve(AssemblyNameReference name, bool probing)
         {
-            if (AssemblyCache.TryGetValue(name.Name, out AssemblyDefinition? asm))
+            return Resolve(name.Name, probing);
+        }
+
+        internal AssemblyDefinition? ResolveReference(string path)
+        {
+            // An explicit input's file name need not be a valid assembly name.
+            return Resolve(Path.GetFileNameWithoutExtension(path), probing: true);
+        }
+
+        AssemblyDefinition? Resolve(string name, bool probing)
+        {
+            if (AssemblyCache.TryGetValue(name, out AssemblyDefinition? asm))
                 return asm;
 
             var unresolvedAssemblies = GetUnresolvedAssemblies(probing);
-            if (unresolvedAssemblies.Contains(name.Name))
+            if (unresolvedAssemblies.Contains(name))
             {
                 if (!probing)
                     ReportUnresolvedAssembly(name);
@@ -125,7 +136,7 @@ namespace Mono.Linker
                 if (!probing)
                     ReportUnresolvedAssembly(name);
 
-                unresolvedAssemblies.Add(name.Name);
+                unresolvedAssemblies.Add(name);
                 return null;
             }
 
@@ -133,17 +144,17 @@ namespace Mono.Linker
             return asm;
         }
 
-        void ReportUnresolvedAssembly(AssemblyNameReference reference)
+        internal void ReportUnresolvedAssembly(string name)
         {
             _reportedUnresolvedAssemblies ??= new HashSet<string>();
 
-            if (!_reportedUnresolvedAssemblies.Add(reference.Name))
+            if (!_reportedUnresolvedAssemblies.Add(name))
                 return;
 
             if (_context.IgnoreUnresolved)
-                _context.LogMessage($"Ignoring unresolved assembly '{reference.Name}' reference.");
+                _context.LogMessage($"Ignoring unresolved assembly '{name}' reference.");
             else
-                _context.LogError(null, DiagnosticId.CouldNotFindAssemblyReference, reference.Name);
+                _context.LogError(null, DiagnosticId.CouldNotFindAssemblyReference, name);
         }
 
         public virtual void AddSearchDirectory(string directory)
@@ -199,13 +210,13 @@ namespace Mono.Linker
 
         static readonly string[] Extensions = [".dll", ".exe", ".winmd"];
 
-        AssemblyDefinition? SearchDirectory(AssemblyNameReference name)
+        AssemblyDefinition? SearchDirectory(string name)
         {
             foreach (var directory in _directories)
             {
                 foreach (var extension in Extensions)
                 {
-                    string file = Path.Combine(directory, name.Name + extension);
+                    string file = Path.Combine(directory, name + extension);
                     if (!File.Exists(file))
                         continue;
                     try

@@ -2,21 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     list.h
 
 Abstract:
-
     Doubly-linked list manipulation macros (from ntrtl.h)
-
-Revision History:
-
-
-
 --*/
 
 #ifndef _LIST_H_INCLUDED
@@ -61,10 +51,6 @@ typedef struct _LIST_ENTRY {
 //      PLIST_ENTRY ListHead
 //      );
 //
-
-#define RemoveHeadList(ListHead) \
-    (ListHead)->Flink;\
-    {RemoveEntryList((ListHead)->Flink)}
 
 //
 //  PLIST_ENTRY
@@ -120,17 +106,6 @@ typedef struct _LIST_ENTRY {
 //      );
 //
 
-#define InsertHeadList(ListHead,Entry) {\
-    PLIST_ENTRY _EX_Flink;\
-    PLIST_ENTRY _EX_ListHead;\
-    _EX_ListHead = (ListHead);\
-    _EX_Flink = _EX_ListHead->Flink;\
-    (Entry)->Flink = _EX_Flink;\
-    (Entry)->Blink = _EX_ListHead;\
-    _EX_Flink->Blink = (Entry);\
-    _EX_ListHead->Flink = (Entry);\
-    }
-
 #define CONTAINING_RECORD(address, type, field) ((type *)( \
                                                   (PCHAR)(address) - \
                                                   (ULONG_PTR)offsetof(type, field)))
@@ -140,4 +115,3 @@ typedef struct _LIST_ENTRY {
 #endif // __cplusplus
 
 #endif // _LIST_H_INCLUDED
-

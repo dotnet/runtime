@@ -29,6 +29,7 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD     pExceptionRe
 
 void NormalizeThrownObject(OBJECTREF *ppThrowable);
 
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExInfo *pExInfo);
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL, ExKind exKind = ExKind::None);
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExKind exKind = ExKind::None);
 VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);

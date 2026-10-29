@@ -7,7 +7,10 @@ using System.IO;
 using System.Runtime.InteropServices;
 
 using Internal.IL;
+using Internal.IL.Stubs;
+using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler
 {
@@ -78,33 +81,6 @@ namespace ILCompiler
             }
         }
 
-        private IEnumerable<string> ModuleNameVariations(string name)
-        {
-            yield return name;
-
-            if (_target.IsWindows)
-            {
-                string suffix = ".dll";
-
-                if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                    yield return name.Substring(0, name.Length - suffix.Length);
-            }
-            else
-            {
-                string suffix = _target.IsApplePlatform ? ".dylib" : ".so";
-                bool hasSharedLibraryExtension = name.EndsWith(suffix, StringComparison.Ordinal);
-                const string LibPrefix = "lib";
-                bool hasLibPrefix = name.StartsWith(LibPrefix, StringComparison.Ordinal);
-
-                if (hasSharedLibraryExtension)
-                    yield return name.Substring(0, name.Length - suffix.Length);
-                if (hasLibPrefix)
-                    yield return name.Substring(LibPrefix.Length);
-                if (hasLibPrefix && hasSharedLibraryExtension)
-                    yield return name.Substring(LibPrefix.Length, name.Length - suffix.Length - LibPrefix.Length);
-            }
-        }
-
         private IEnumerable<string> EntryPointNameVariations(string name, PInvokeFlags flags)
         {
             if (_target.IsWindows && !flags.ExactSpelling)
@@ -139,11 +115,19 @@ namespace ILCompiler
             }
         }
 
-        public override bool GenerateDirectCall(MethodDesc method, out string externName)
+        public override LinkageMetadata GetLinkageMetadata(MethodDesc method)
         {
             var pInvokeMetadata = method.GetPInvokeMethodMetadata();
+            MethodDesc target = method is PInvokeTargetNativeMethod nativeMethod ? nativeMethod.Target : method;
+            if (_target.IsWasm && target.HasCustomAttribute("System.Runtime.InteropServices", "WasmImportLinkageAttribute"))
+            {
+                Utf8String importName = pInvokeMetadata.Name is null
+                    ? new Utf8String(method.Name.AsSpan())
+                    : new Utf8String(pInvokeMetadata.Name);
+                return new WasmLinkageMetadata(importName, new Utf8String(pInvokeMetadata.Module));
+            }
 
-            foreach (var moduleName in ModuleNameVariations(pInvokeMetadata.Module))
+            foreach (var moduleName in MarshalHelpers.GetPInvokeModuleNameVariations(_target, pInvokeMetadata.Module))
             {
                 if (_directPInvokes.TryGetValue(moduleName, out HashSet<string> entrypoints))
                 {
@@ -151,23 +135,20 @@ namespace ILCompiler
 
                     if (entrypoints == null)
                     {
-                        externName = entryPointMetadataName;
-                        return true;
+                        return new LinkageMetadata(new Utf8String(entryPointMetadataName));
                     }
 
                     foreach (var entryPointName in EntryPointNameVariations(entryPointMetadataName, pInvokeMetadata.Flags))
                     {
                         if (entrypoints.Contains(entryPointName))
                         {
-                            externName = entryPointName;
-                            return true;
+                            return new LinkageMetadata(new Utf8String(entryPointName));
                         }
                     }
                 }
             }
 
-            externName = null;
-            return false;
+            return null;
         }
     }
 }

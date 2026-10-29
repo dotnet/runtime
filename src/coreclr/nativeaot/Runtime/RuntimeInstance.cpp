@@ -10,6 +10,7 @@
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
+#include "NativePrimitiveDecoder.h"
 #include "Crst.h"
 #include "rhbinder.h"
 #include "RuntimeInstance.h"
@@ -26,11 +27,6 @@
 #include "CommonMacros.inl"
 #include "MethodTable.inl"
 #include "../../inc/clrversion.h"
-
-#ifdef  FEATURE_GC_STRESS
-enum HijackType { htLoop, htCallsite };
-bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht);
-#endif // FEATURE_GC_STRESS
 
 #include "shash.inl"
 
@@ -49,7 +45,7 @@ FCIMPL1(uint8_t *, RhGetCrashInfoBuffer, int32_t* pcbMaxSize)
 }
 FCIMPLEND
 
-#if TARGET_UNIX
+#if TARGET_UNIX || TARGET_WASM
 #include "PalCreateDump.h"
 FCIMPL1(void, RhCreateCrashDumpIfEnabled, PEXCEPTION_RECORD pExceptionRecord)
 {
@@ -153,7 +149,7 @@ PTR_uint8_t RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID Co
             uint8_t flags = *pData++;
 
             if ((flags & (uint8_t)AssociatedDataFlags::HasUnboxingStubTarget) != 0)
-                return pData + *dac_cast<PTR_int32_t>(pData);
+                return pData + NativePrimitiveDecoder::PeekInt32(pData);
         }
     }
 
@@ -325,26 +321,6 @@ bool RuntimeInstance::Initialize(HANDLE hPalInstance)
 void RuntimeInstance::Destroy()
 {
     delete this;
-}
-
-bool RuntimeInstance::ShouldHijackLoopForGcStress(uintptr_t CallsiteIP)
-{
-#ifdef FEATURE_GC_STRESS
-    return ShouldHijackForGcStress(CallsiteIP, htLoop);
-#else // FEATURE_GC_STRESS
-    UNREFERENCED_PARAMETER(CallsiteIP);
-    return false;
-#endif // FEATURE_GC_STRESS
-}
-
-bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
-{
-#ifdef FEATURE_GC_STRESS
-    return ShouldHijackForGcStress(CallsiteIP, htCallsite);
-#else // FEATURE_GC_STRESS
-    UNREFERENCED_PARAMETER(CallsiteIP);
-    return false;
-#endif // FEATURE_GC_STRESS
 }
 
 EXTERN_C void* g_pDispatchCache;

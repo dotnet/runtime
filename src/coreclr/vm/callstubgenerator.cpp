@@ -1592,9 +1592,8 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     STANDARD_VM_CONTRACT;
 
     // String constructors are special cases, and have a special calling convention that is associated with the actual function executed (which is a static function with no this parameter)
-    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
+    if (pMD->IsStringCtor())
     {
-        _ASSERTE(pMD->IsFCall());
         MethodDesc *pMDActualImplementation = NonVirtualEntry2MethodDesc(ECall::GetFCallImpl(pMD));
         _ASSERTE(pMDActualImplementation != pMD);
         pMD = pMDActualImplementation;

@@ -906,29 +906,70 @@ namespace System.Net.Http.Functional.Tests
         public Task TimeInQueue_RecordedForNewConnectionsOnly()
         {
             const int RequestCount = 3;
+            const int MaxWarmupAttempts = 10;
+            const string WarmupHeader = "X-Warmup";
 
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
 
-                for (int i = 0; i < RequestCount; i++)
+                await SendRequestAsync();
+                Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
+                int count = timeInQueueRecorder.MeasurementCount;
+
+                if (UseVersion.Major == 2)
                 {
-                    using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
-                    using HttpResponseMessage response = await SendAsync(client, request);
+                    Measurement<double> measurement = Assert.Single(timeInQueueRecorder.GetMeasurements());
+                    VerifyTimeInQueue(InstrumentNames.TimeInQueue, measurement.Value, measurement.Tags.ToArray(), uri, UseVersion);
+
+                    // The first response can complete before the connection is published to the pool.
+                    // Wait for a request that acquires it without queueing before testing immediate reuse.
+                    for (int attempt = 1; attempt <= MaxWarmupAttempts; attempt++)
+                    {
+                        await SendRequestAsync(warmup: true);
+                        int newCount = timeInQueueRecorder.MeasurementCount;
+                        if (newCount == count)
+                        {
+                            break;
+                        }
+
+                        Assert.Equal(count + 1, newCount);
+                        Assert.True(attempt < MaxWarmupAttempts, "The HTTP/2 connection did not become available for immediate reuse.");
+                        count = newCount;
+                        await Task.Delay(100 * attempt);
+                    }
                 }
 
-                // Only the first request is supposed to record time_in_queue.
-                // For follow up requests, the connection should be immediately available.
-                Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
+                for (int i = 1; i < RequestCount; i++)
+                {
+                    await SendRequestAsync();
+                }
+
+                // Once available, the connection should be reused without further queue measurements.
+                Assert.Equal(count, timeInQueueRecorder.MeasurementCount);
+
+                async Task SendRequestAsync(bool warmup = false)
+                {
+                    using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                    if (warmup)
+                    {
+                        request.Headers.Add(WarmupHeader, "true");
+                    }
+                    using HttpResponseMessage response = await SendAsync(client, request);
+                }
 
             }, async server =>
             {
                 await server.AcceptConnectionAsync(async conn =>
                 {
-                    for (int i = 0; i < RequestCount; i++)
+                    for (int i = 0; i < RequestCount;)
                     {
-                        await conn.ReadRequestDataAsync();
+                        HttpRequestData request = await conn.ReadRequestDataAsync();
+                        if (request.GetHeaderValues(WarmupHeader).Length == 0)
+                        {
+                            i++;
+                        }
                         await conn.SendResponseAsync(isFinal: true);
                         conn.CompleteRequestProcessing();
                     }

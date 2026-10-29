@@ -299,7 +299,8 @@ namespace System.CommandLine
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("dotprod");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc2");
+                // RCPC2 is intentionally excluded from the optimistic set since it is not universally available
+                // on supported ARM64 hardware yet, and many methods take an opportunistic dependency on it.
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rdma");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha1");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha2");
@@ -346,7 +347,8 @@ namespace System.CommandLine
                 unsupportedInstructionSet,
                 optimisticInstructionSet,
                 InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(targetArchitecture),
-                targetArchitecture);
+                targetArchitecture,
+                isVectorTOptimistic);
         }
 
         // Produces an InstructionSetSupport where the instruction sets are fixed at compile time: every
@@ -376,7 +378,8 @@ namespace System.CommandLine
                 unsupportedInstructionSets,
                 instructionSetSupport.SupportedFlags,
                 instructionSetSupport.NonSpecifiableFlags,
-                instructionSetSupport.Architecture);
+                instructionSetSupport.Architecture,
+                isVectorTOptimistic: false);
         }
     }
 }

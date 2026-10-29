@@ -27,7 +27,9 @@ namespace Internal.CallingConvention
         GCREFMAP_INTERIOR = 2,
         GCREFMAP_METHOD_PARAM = 3,
         GCREFMAP_TYPE_PARAM = 4,
-        GCREFMAP_VASIG_COOKIE = 5,
+        GCREFMAP_THIS_REF = 5,
+        GCREFMAP_THIS_BYREF = 6,
+        GCREFMAP_VASIG_COOKIE = 7,
     };
 
     public enum CallingConventions
@@ -1851,8 +1853,6 @@ namespace Internal.CallingConvention
                 ASYNC_CONTINUATION_REGISTER_STACK  = 0x0040,
                 ASYNC_CONTINUATION_REGISTER_ECX    = 0x0080,
                 ASYNC_CONTINUATION_REGISTER_EDX    = 0x00C0,*/
-
-        //        METHOD_INVOKE_NEEDS_ACTIVATION  = 0x0040,   // Flag used by ArgIteratorForMethodInvoke
 
         //        RETURN_FP_SIZE_SHIFT            = 8,        // The rest of the flags is cached value of GetFPReturnSize
 

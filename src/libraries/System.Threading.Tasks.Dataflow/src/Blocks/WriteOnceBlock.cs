@@ -381,7 +381,7 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-            if (target == null) throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
 
             // As long as the message being requested is the one we have, allow it to be consumed,
             // but make a copy using the provided cloning function.
@@ -402,7 +402,7 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-            if (target == null) throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
 
             // As long as the message is the one we have, it can be "reserved."
             // Reservations on a WriteOnceBlock are not exclusive, because
@@ -415,7 +415,7 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-            if (target == null) throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
 
             // As long as the message is the one we have, everything's fine.
             if (_header.Id != messageHeader.Id) throw new InvalidOperationException(SR.InvalidOperation_MessageNotReservedByTarget);

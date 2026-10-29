@@ -2272,11 +2272,7 @@ public class Program
         RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
         RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
-        // ActiveIssue https://github.com/dotnet/runtime/issues/133307
-        if (!PlatformDetection.IsWasm || !PlatformDetection.IsReadyToRunCompiled)
-        {
-            RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
-        }
+        RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
         RunTest("TestWithStructureNonBlittableFieldDueToGenerics", TestWithStructureNonBlittableFieldDueToGenerics());
         RunTest("TestSingleElementStructABI", TestSingleElementStructABI());
         RunTest("TestEnumLayoutAlignments", TestEnumLayoutAlignments());
