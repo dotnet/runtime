@@ -514,12 +514,6 @@ namespace Mono.Linker
 
                             continue;
 
-                        case "--update-reference-scopes":
-                            if (!GetBoolParam(token, l => context.UpdateReferenceScopes = l))
-                                return -1;
-
-                            continue;
-
                         case "--disable-opt":
                         {
                             if (!GetStringParam(token, out string? optName))
@@ -1587,7 +1581,6 @@ namespace Mono.Linker
             Console.WriteLine("  --used-attrs-only              Attribute usage is removed if the attribute type is not used. Defaults to false");
             Console.WriteLine("  --link-attributes FILE         Supplementary custom attribute definitions for attributes controlling the trimming behavior.");
             Console.WriteLine("  --ignore-link-attributes       Skips reading embedded attributes. Defaults to false");
-            Console.WriteLine("  --update-reference-scopes      Retarget references to the assembly that defines the type. Defaults to true");
             Console.WriteLine("  --strip-link-attributes        Remove XML link attributes resources for linked assemblies. Defaults to true");
 
             Console.WriteLine();

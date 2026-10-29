@@ -1756,8 +1756,25 @@ namespace ILLink.Tasks.Tests
             Assert.Matches("^[0-9a-f]{64}$", key);
         }
 
+        [Fact]
+        public void CacheKeyAllowsRuntimeIgnoreSubstitutionsArgument()
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            test.Task.ExtraArgs = "--ignore-link-attributes true --ignore-substitutions true";
+
+            Assert.True(test.Task.TryGetCacheKey(host, out string withIgnore));
+
+            test.Task.ExtraArgs = "--ignore-link-attributes true --ignore-substitutions false";
+
+            Assert.True(test.Task.TryGetCacheKey(host, out string withoutIgnore));
+            Assert.NotEqual(withIgnore, withoutIgnore);
+        }
+
         [Theory]
         [InlineData("--ignore-link-attributes false")]
+        [InlineData("--ignore-link-attributes true --ignore-substitutions")]
+        [InlineData("--ignore-link-attributes true --ignore-substitutions yes")]
         [InlineData("--link-attributes attributes.xml")]
         [InlineData("--ignore-link-attributes true --help")]
         [InlineData("--ignore-link-attributes true --link-attributes")]

@@ -93,6 +93,10 @@ namespace Mono.Linker.Steps
 
                     Context.HasLibraryRootAssembly = true;
 
+                    // Keep references pointing at the assemblies the library was compiled against, rather than
+                    // retargeting them to whichever assembly defines the type in the trimming closure
+                    Context.UpdateReferenceScopes = false;
+
                     // Enable EventSource special handling
                     Context.DisableEventSourceSpecialHandling = false;
 
