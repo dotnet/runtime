@@ -7210,6 +7210,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     6 => CorDebugRegister.REGISTER_AMD64_RSI,
                     7 => CorDebugRegister.REGISTER_AMD64_RDI,
                     >= 8 and <= 15 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_AMD64_R8 + (int)(jitRegNum - 8)),
+                    >= 16 and <= 31 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_AMD64_XMM0 + (int)(jitRegNum - 16)),
                     _ => null,
                 };
 
@@ -7231,6 +7232,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     30 => CorDebugRegister.REGISTER_ARM64_LR,
                     31 => CorDebugRegister.REGISTER_ARM64_SP,
                     32 => CorDebugRegister.REGISTER_ARM64_PC,
+                    >= 33 and <= 64 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_ARM64_V0 + (int)(jitRegNum - 33)),
                     _ => null,
                 };
 

@@ -985,6 +985,36 @@ public unsafe class DacDbiImplTests
     }
 
     [Theory]
+    [InlineData("x64", 16u, 31u, CorDebugRegister.REGISTER_AMD64_XMM0)]
+    [InlineData("arm64", 33u, 64u, CorDebugRegister.REGISTER_ARM64_V0)]
+    public void ConvertJitRegNumToCorDebugRegister_FloatingPointRegisters(
+        string targetArch, uint firstJitRegister, uint lastJitRegister, CorDebugRegister firstRegister)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(new() { IsLittleEndian = true, Is64Bit = true },
+            [(Constants.Globals.Architecture, targetArch)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        for (uint jitRegister = firstJitRegister; jitRegister <= lastJitRegister; jitRegister++)
+        {
+            CorDebugRegister register = default;
+            Interop.BOOL isAmbientSP = Interop.BOOL.TRUE;
+
+            int hr = dacDbi.ConvertJitRegNumToCorDebugRegister(jitRegister, &register, &isAmbientSP);
+
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal((CorDebugRegister)((uint)firstRegister + jitRegister - firstJitRegister), register);
+            Assert.Equal(Interop.BOOL.FALSE, isAmbientSP);
+        }
+
+        CorDebugRegister invalidRegister = firstRegister;
+        Interop.BOOL invalidIsAmbientSP = Interop.BOOL.TRUE;
+        Assert.Equal(System.HResults.E_INVALIDARG,
+            dacDbi.ConvertJitRegNumToCorDebugRegister(lastJitRegister + 1, &invalidRegister, &invalidIsAmbientSP));
+        Assert.Equal(default, invalidRegister);
+        Assert.Equal(Interop.BOOL.FALSE, invalidIsAmbientSP);
+    }
+
+    [Theory]
     [MemberData(nameof(TargetArchitectures))]
     public void CopyContext_CopyModeControlsContextFlags(MockTarget.Architecture arch, string targetArch)
     {
