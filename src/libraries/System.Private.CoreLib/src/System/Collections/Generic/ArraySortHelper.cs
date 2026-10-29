@@ -303,6 +303,12 @@ namespace System.Collections.Generic
                             keys = keys.Slice(nanLeft);
                         }
 
+                        if (IsPrimitiveInteger)
+                        {
+                            BranchlessSort(keys);
+                            return;
+                        }
+
                         IntroSort(keys, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
                     }
                 }
@@ -502,6 +508,223 @@ namespace System.Collections.Generic
             }
 
             return (int)((nint)Unsafe.ByteOffset(ref zeroRef, ref leftRef) / sizeof(T));
+        }
+
+        /// <summary>
+        /// Gets whether <typeparamref name="T"/> is a primitive integer type. For these types, elements that
+        /// compare equal are bitwise identical, so the order in which an unstable sort leaves them is unobservable
+        /// and any correct sorting algorithm produces exactly the same result.
+        /// </summary>
+        private static bool IsPrimitiveInteger =>
+            typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte) ||
+            typeof(T) == typeof(ushort) || typeof(T) == typeof(short) ||
+            typeof(T) == typeof(uint) || typeof(T) == typeof(int) ||
+            typeof(T) == typeof(ulong) || typeof(T) == typeof(long) ||
+            typeof(T) == typeof(nuint) || typeof(T) == typeof(nint);
+
+        // Partitions at or below this size are finished with an insertion sort.
+        private const int BranchlessSortSmallThreshold = 20;
+
+        // Inputs at or above this size choose their pivot with a recursive pseudo-median rather than a median of three.
+        private const int PseudoMedianRecursionThreshold = 64;
+
+        /// <summary>
+        /// Sorts primitive integers with a quicksort that partitions without data-dependent branches.
+        /// </summary>
+        /// <remarks>
+        /// The introsort partition loop branches on every comparison, which on unordered input is mispredicted about half the time.
+        /// This is a variant of pattern-defeating quicksort, closely following the ipnsort algorithm used by Rust's slice::sort_unstable:
+        /// - a branchless Lomuto partition, so the cost per element doesn't depend on how predictable the input is;
+        /// - a recursive pseudo-median pivot selection that is robust against structured inputs;
+        /// - when the pivot is equal to the pivot of the parent partition, it's the smallest element of this partition,
+        ///   so all elements equal to it are split off at once, making inputs with many duplicates O(n log k) for k distinct values;
+        /// - an up-front check for input that is already sorted or in strictly descending order;
+        /// - a heapsort fallback after too many imbalanced partitions, keeping the worst case O(n log n).
+        /// It is only used for primitive integers (see <see cref="IsPrimitiveInteger"/>), where it's unobservable that the
+        /// order of equal elements differs from the one <see cref="IntroSort"/> would produce.
+        /// </remarks>
+        private static void BranchlessSort(Span<T> keys)
+        {
+            Debug.Assert(IsPrimitiveInteger);
+
+            if (keys.Length <= BranchlessSortSmallThreshold)
+            {
+                InsertionSort(keys);
+                return;
+            }
+
+            // Find the length of the run at the start of the input that is either non-descending or strictly descending.
+            // A strictly descending run can be reversed without reordering equal elements.
+            ref T zeroRef = ref MemoryMarshal.GetReference(keys);
+            int runLength = 2;
+            if (LessThan(ref Unsafe.Add(ref zeroRef, 1), ref zeroRef))
+            {
+                while (runLength < keys.Length && LessThan(ref Unsafe.Add(ref zeroRef, runLength), ref Unsafe.Add(ref zeroRef, runLength - 1)))
+                {
+                    runLength++;
+                }
+
+                if (runLength == keys.Length)
+                {
+                    keys.Reverse();
+                    return;
+                }
+            }
+            else
+            {
+                while (runLength < keys.Length && !LessThan(ref Unsafe.Add(ref zeroRef, runLength), ref Unsafe.Add(ref zeroRef, runLength - 1)))
+                {
+                    runLength++;
+                }
+
+                if (runLength == keys.Length)
+                {
+                    return;
+                }
+            }
+
+            BranchlessQuickSort(keys, ancestorPivot: default!, hasAncestorPivot: false, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
+        }
+
+        // BranchlessQuickSort is recursive; block it from being inlined into itself as
+        // this is currently not profitable.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void BranchlessQuickSort(Span<T> keys, T ancestorPivot, bool hasAncestorPivot, int depthLimit)
+        {
+            while (true)
+            {
+                if (keys.Length <= BranchlessSortSmallThreshold)
+                {
+                    InsertionSort(keys);
+                    return;
+                }
+
+                if (depthLimit == 0)
+                {
+                    HeapSort(keys);
+                    return;
+                }
+                depthLimit--;
+
+                int pivotIndex = ChoosePivot(keys);
+                T pivot = keys[pivotIndex];
+
+                // Every element of this partition is greater than or equal to the ancestor pivot. If the chosen pivot is not
+                // greater than it, the pivot is the minimum, so split off all elements equal to it and continue with the rest.
+                if (hasAncestorPivot && !LessThan(ref ancestorPivot, ref pivot))
+                {
+                    int numLessOrEqual = BranchlessPartition(keys, pivotIndex, lessOrEqual: true);
+                    keys = keys.Slice(numLessOrEqual + 1);
+                    hasAncestorPivot = false;
+                    continue;
+                }
+
+                int numLess = BranchlessPartition(keys, pivotIndex, lessOrEqual: false);
+
+                // The recursion depth is bounded by depthLimit, so always recursing into the left side is fine.
+                BranchlessQuickSort(keys.Slice(0, numLess), ancestorPivot, hasAncestorPivot, depthLimit);
+
+                keys = keys.Slice(numLess + 1);
+                ancestorPivot = pivot;
+                hasAncestorPivot = true;
+            }
+        }
+
+        private static int ChoosePivot(Span<T> keys)
+        {
+            Debug.Assert(keys.Length >= 8);
+
+            // Sample from the regions [0, n/8), [4n/8, 5n/8) and [7n/8, n).
+            int lengthDiv8 = keys.Length / 8;
+            int a = 0;
+            int b = lengthDiv8 * 4;
+            int c = lengthDiv8 * 7;
+
+            return keys.Length < PseudoMedianRecursionThreshold ?
+                MedianOfThree(keys, a, b, c) :
+                PseudoMedianOfThree(keys, a, b, c, lengthDiv8);
+        }
+
+        /// <summary>
+        /// Recursively takes the median of three over regions of <paramref name="n"/> elements at <paramref name="a"/>,
+        /// <paramref name="b"/> and <paramref name="c"/>. Sampling many elements rather than a fixed nine avoids
+        /// consistently bad pivots for periodic inputs.
+        /// </summary>
+        private static int PseudoMedianOfThree(Span<T> keys, int a, int b, int c, int n)
+        {
+            if (n * 8 >= PseudoMedianRecursionThreshold)
+            {
+                int nDiv8 = n / 8;
+                a = PseudoMedianOfThree(keys, a, a + nDiv8 * 4, a + nDiv8 * 7, nDiv8);
+                b = PseudoMedianOfThree(keys, b, b + nDiv8 * 4, b + nDiv8 * 7, nDiv8);
+                c = PseudoMedianOfThree(keys, c, c + nDiv8 * 4, c + nDiv8 * 7, nDiv8);
+            }
+
+            return MedianOfThree(keys, a, b, c);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int MedianOfThree(Span<T> keys, int a, int b, int c)
+        {
+            ref T aRef = ref keys[a];
+            ref T bRef = ref keys[b];
+            ref T cRef = ref keys[c];
+
+            bool aLessThanB = LessThan(ref aRef, ref bRef);
+            if (aLessThanB == LessThan(ref aRef, ref cRef))
+            {
+                // keys[a] is either the smallest or the largest of the three, so the median is the larger
+                // or the smaller, respectively, of keys[b] and keys[c].
+                return LessThan(ref bRef, ref cRef) == aLessThanB ? b : c;
+            }
+
+            return a;
+        }
+
+        /// <summary>
+        /// Partitions <paramref name="keys"/> around the element at <paramref name="pivotIndex"/> and returns the pivot's final index.
+        /// Elements before it are less than (or, if <paramref name="lessOrEqual"/> is set, less than or equal to) the pivot;
+        /// elements after it are not.
+        /// </summary>
+        private static int BranchlessPartition(Span<T> keys, int pivotIndex, bool lessOrEqual)
+        {
+            // Move the pivot to the front and partition the rest.
+            ref T zeroRef = ref MemoryMarshal.GetReference(keys);
+            T pivot = keys[pivotIndex];
+            Unsafe.Add(ref zeroRef, pivotIndex) = zeroRef;
+            zeroRef = pivot;
+
+            // Lomuto partition without branches: unconditionally swap each element with the first element not known to belong to
+            // the left side, then grow the left side by one if the element belongs there. The swap is a no-op until the first
+            // element that belongs to the right side has been seen.
+            ref T restRef = ref Unsafe.Add(ref zeroRef, 1);
+            nuint restLength = (uint)(keys.Length - 1);
+            nuint numLeft = 0;
+            if (lessOrEqual)
+            {
+                for (nuint i = 0; i < restLength; i++)
+                {
+                    T value = Unsafe.Add(ref restRef, i);
+                    Unsafe.Add(ref restRef, i) = Unsafe.Add(ref restRef, numLeft);
+                    Unsafe.Add(ref restRef, numLeft) = value;
+                    numLeft += LessThan(ref pivot, ref value) ? 0u : 1u;
+                }
+            }
+            else
+            {
+                for (nuint i = 0; i < restLength; i++)
+                {
+                    T value = Unsafe.Add(ref restRef, i);
+                    Unsafe.Add(ref restRef, i) = Unsafe.Add(ref restRef, numLeft);
+                    Unsafe.Add(ref restRef, numLeft) = value;
+                    numLeft += LessThan(ref value, ref pivot) ? 1u : 0u;
+                }
+            }
+
+            // Put the pivot between the two sides.
+            zeroRef = Unsafe.Add(ref zeroRef, numLeft);
+            Unsafe.Add(ref zeroRef, numLeft) = pivot;
+            return (int)numLeft;
         }
 
         private static void HeapSort(Span<T> keys)
