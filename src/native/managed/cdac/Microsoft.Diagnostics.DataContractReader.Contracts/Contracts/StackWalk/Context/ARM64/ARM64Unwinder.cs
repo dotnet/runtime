@@ -162,7 +162,6 @@ internal class ARM64Unwinder(Target target)
         // behavior.
         //
         bool finalPcFromLr = true;
-        bool isReturnAddressSigned = false;
 
         //
         // Fetch the header word from the .xdata blob
@@ -749,7 +748,7 @@ internal class ARM64Unwinder(Target target)
                     return false;
                 }
 
-                status = UnwindCustom(ref context, curCode, isReturnAddressSigned);
+                status = UnwindCustom(ref context, curCode);
                 finalPcFromLr = false;
             }
 
@@ -764,7 +763,7 @@ internal class ARM64Unwinder(Target target)
                     return false;
                 }
 
-                isReturnAddressSigned = true;
+                context.Lr = CodePointerUtils.StripPtrAuthFromReturnAddress(new TargetCodePointer(context.Lr), _target).Value;
             }
 
             //
@@ -815,9 +814,7 @@ internal class ARM64Unwinder(Target target)
             //
             if (finalPcFromLr)
             {
-                context.Pc = isReturnAddressSigned
-                    ? CodePointerUtils.StripPtrAuthFromReturnAddress(new TargetCodePointer(context.Lr), _target).Value
-                    : context.Lr;
+                context.Pc = context.Lr;
             }
         }
 
@@ -826,8 +823,7 @@ internal class ARM64Unwinder(Target target)
 
     private unsafe bool UnwindCustom(
         ref ARM64Context context,
-        byte customCode,
-        bool isReturnAddressSigned)
+        byte customCode)
     {
         ulong startingSp = context.Sp;
 
@@ -974,9 +970,7 @@ internal class ARM64Unwinder(Target target)
 
             case 0xec:  // MSFT_OP_CLEAR_UNWOUND_TO_CALL
                 context.ContextFlags &= (uint)~ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL;
-                context.Pc = isReturnAddressSigned
-                    ? CodePointerUtils.StripPtrAuthFromReturnAddress(new TargetCodePointer(context.Lr), _target).Value
-                    : context.Lr;
+                context.Pc = context.Lr;
                 break;
 
             default:
