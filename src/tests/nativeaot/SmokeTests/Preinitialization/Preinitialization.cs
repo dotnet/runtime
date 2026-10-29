@@ -65,6 +65,7 @@ internal class Program
         TestInitBlock.Run();
         TestDataflow.Run();
         TestConversions.Run();
+        // ComWrappers are disabled on WASM
         if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
         {
             TestVTables.Run();
@@ -75,7 +76,7 @@ internal class Program
         TestComInterfaceEntry.Run();
         if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
         {
-            TestPreinitializedBclTypes.Run();
+            TestPreinitializedComWrappers.Run();
         }
         TestArrayLoadBounds.Run();
         TestFloatNaNComparison.Run();
@@ -2246,7 +2247,7 @@ unsafe class TestComInterfaceEntry
     }
 }
 
-unsafe class TestPreinitializedBclTypes
+unsafe class TestPreinitializedComWrappers
 {
     // Verify that (given that all of the other tests have passed), that a select number of BCL types
     // that depend on this optimization for high-performance scenarios are preinitialized.
