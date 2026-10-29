@@ -15,14 +15,11 @@
 #define FCALL_CONTRACT
 #define ALLOC_FCDECL1 FCDECL1
 #define ALLOC_FCDECL2 FCDECL2
-using PtrArray = Array;
+using ArrayBase = Array;
 GPTR_DECL(MethodTable, g_pFreeObjectMethodTable);
 
-#define TRANSITION_HELPER_ARG_DECL , uintptr_t callerSP
-#define TRANSITION_HELPER_ARG_VALUE callerSP
-#define TRANSITION_HELPER_ARG_PREPARED , TRANSITION_ARG_PARAM
-#define TRANSITION_HELPER_ARG_HELPER_PASSTHRU , callerSP
-#define PREPARE_TRANSITION_ARG() do { } while (0)
+#define TRANSITION_ARG_TYPE PInvokeTransitionFrame*
+#define RHP_GCALLOC_RETURNS_NULL_ON_FAILURE
 
 static Thread* GetThread()
 {
@@ -32,21 +29,14 @@ static Thread* GetThread()
 #ifdef HOST_WASM
 // This managed helper reuses the caller's shadow stack and never returns to the native allocation frames.
 EXTERN_C [[noreturn]] void RhExceptionHandling_FailedAllocation(uintptr_t sp, MethodTable* pMT, bool isOverflow);
-#define TRANSITION_ARG_PARAM callersStackPointer
+#define PREPARE_TRANSITION_ARG() \
+    PInvokeTransitionFrame frame = {}; \
+    frame.m_ShadowSP = callersStackPointer
+#define TRANSITION_ARG_PARAM &frame
 #else
-#define TRANSITION_ARG_PARAM 0
+#define PREPARE_TRANSITION_ARG() do { } while (0)
+#define TRANSITION_ARG_PARAM nullptr
 #endif // HOST_WASM
-
-EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame);
-
-static void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool isOverflow, uintptr_t callerSP)
-{
-#ifdef HOST_WASM
-    RhExceptionHandling_FailedAllocation(callerSP, pMT, isOverflow);
-#else
-    ASSERT_UNCONDITIONALLY("NYI"); // TODO: Throw overflow or OOM
-#endif // HOST_WASM
-}
 #else
 #include <fcall.h>
 #include <gcinterface.h>
@@ -60,40 +50,44 @@ struct TransitionBlock;
 
 EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool isOverflow, TransitionBlock* pTransitionBlock);
 #define TRANSITION_ARG_TYPE TransitionBlock*
-#ifdef TARGET_WASM
-#define TRANSITION_HELPER_ARG_DECL , TRANSITION_ARG_TYPE pTransitionBlock
-#define TRANSITION_HELPER_ARG_VALUE pTransitionBlock
-#define TRANSITION_HELPER_ARG_HELPER_PASSTHRU , pTransitionBlock
-#define TRANSITION_HELPER_ARG_PREPARED , TRANSITION_ARG_PARAM
-#else
-#define TRANSITION_HELPER_ARG_DECL
-#define TRANSITION_HELPER_ARG_VALUE nullptr
-#define TRANSITION_HELPER_ARG_PREPARED
-#define TRANSITION_HELPER_ARG_HELPER_PASSTHRU
-#endif
-
-EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElements, TRANSITION_ARG_TYPE pTransitionArg);
 #endif // FEATURE_NATIVEAOT
 
-static Object* AllocateObject(MethodTable* pMT, uint32_t uFlags, intptr_t numElements TRANSITION_HELPER_ARG_DECL)
+#ifdef TARGET_WASM
+#define CALLER_STACK_POINTER_ARG_DECL , uintptr_t callersStackPointer
+#define CALLER_STACK_POINTER_ARG_PASSTHRU , callersStackPointer
+#else
+#define CALLER_STACK_POINTER_ARG_DECL
+#define CALLER_STACK_POINTER_ARG_PASSTHRU
+#endif // TARGET_WASM
+
+EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElements, TRANSITION_ARG_TYPE pTransitionArg);
+
+static void FailedAllocation(MethodTable* pMT, bool isOverflow CALLER_STACK_POINTER_ARG_DECL)
+{
+#ifdef FEATURE_NATIVEAOT
+#ifdef HOST_WASM
+    RhExceptionHandling_FailedAllocation(callersStackPointer, pMT, isOverflow);
+#else
+    ASSERT_UNCONDITIONALLY("NYI"); // TODO: Throw overflow or OOM
+#endif // HOST_WASM
+#else
+    PREPARE_TRANSITION_ARG();
+    RhExceptionHandling_FailedAllocation_Helper(pMT, isOverflow, TRANSITION_ARG_PARAM);
+#endif // FEATURE_NATIVEAOT
+}
+
+static Object* AllocateObject(MethodTable* pMT, uint32_t uFlags, intptr_t numElements CALLER_STACK_POINTER_ARG_DECL)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
-#ifdef FEATURE_NATIVEAOT
-    PInvokeTransitionFrame* pTransitionFrame = nullptr;
-#ifdef HOST_WASM
-    PInvokeTransitionFrame frame = {};
-    frame.m_ShadowSP = callerSP;
-    pTransitionFrame = &frame;
-#endif // HOST_WASM
-    Object* obj = RhpGcAlloc(pMT, uFlags, numElements, pTransitionFrame);
+    PREPARE_TRANSITION_ARG();
+    Object* obj = RhpGcAlloc(pMT, uFlags, numElements, TRANSITION_ARG_PARAM);
+#ifdef RHP_GCALLOC_RETURNS_NULL_ON_FAILURE
     if (obj == NULL)
     {
-        RhExceptionHandling_FailedAllocation_Helper(pMT, false /* isOverflow */, TRANSITION_HELPER_ARG_VALUE);
+        FailedAllocation(pMT, false /* isOverflow */ CALLER_STACK_POINTER_ARG_PASSTHRU);
     }
-#else
-    Object* obj = RhpGcAlloc(pMT, uFlags, numElements, TRANSITION_HELPER_ARG_VALUE);
-#endif // FEATURE_NATIVEAOT
+#endif // RHP_GCALLOC_RETURNS_NULL_ON_FAILURE
 
     return obj;
 }
@@ -102,18 +96,17 @@ ALLOC_FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, intptr_t numE
 FCIMPL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, intptr_t numElements)
 {
     WRAPPER_NO_CONTRACT;
-    PREPARE_TRANSITION_ARG();
-    return AllocateObject(pMT, 0, numElements TRANSITION_HELPER_ARG_PREPARED);
+    return AllocateObject(pMT, 0, numElements CALLER_STACK_POINTER_ARG_PASSTHRU);
 }
 FCIMPLEND
 
-static Object* NewArrayFastCore(MethodTable* pMT, intptr_t size TRANSITION_HELPER_ARG_DECL)
+static Object* NewArrayFastCore(MethodTable* pMT, intptr_t size CALLER_STACK_POINTER_ARG_DECL)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
     if (size < 0 || size > INT32_MAX)
     {
-        RhExceptionHandling_FailedAllocation_Helper(pMT, true /* isOverflow */, TRANSITION_HELPER_ARG_VALUE);
+        FailedAllocation(pMT, true /* isOverflow */ CALLER_STACK_POINTER_ARG_PASSTHRU);
     }
 
     Thread* thread = GetThread();
@@ -127,24 +120,24 @@ static Object* NewArrayFastCore(MethodTable* pMT, intptr_t size TRANSITION_HELPE
     if ((size_t)(cxt->getCombinedLimit() - alloc_ptr) >= sizeInBytes)
     {
         cxt->setAllocPtr(alloc_ptr + sizeInBytes);
-        PtrArray* pObject = (PtrArray *)alloc_ptr;
+        ArrayBase* pObject = (ArrayBase *)alloc_ptr;
         pObject->SetMethodTable(pMT);
         pObject->SetNumComponents((int32_t)size);
         return pObject;
     }
 
-    return AllocateObject(pMT, 0, size TRANSITION_HELPER_ARG_HELPER_PASSTHRU);
+    return AllocateObject(pMT, 0, size CALLER_STACK_POINTER_ARG_PASSTHRU);
 }
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
-static Object* NewArrayFastAlign8Core(MethodTable* pMT, intptr_t size TRANSITION_HELPER_ARG_DECL)
+static Object* NewArrayFastAlign8Core(MethodTable* pMT, intptr_t size CALLER_STACK_POINTER_ARG_DECL)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
 
     if (size < 0 || size > INT32_MAX)
     {
-        RhExceptionHandling_FailedAllocation_Helper(pMT, true /* isOverflow */, TRANSITION_HELPER_ARG_VALUE);
+        FailedAllocation(pMT, true /* isOverflow */ CALLER_STACK_POINTER_ARG_PASSTHRU);
     }
 
     Thread* thread = GetThread();
@@ -173,13 +166,13 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, intptr_t size TRANSITION
             alloc_ptr += MIN_OBJECT_SIZE;
         }
         _ASSERTE(IS_ALIGNED(alloc_ptr, sizeof(int64_t)));
-        PtrArray* pObject = (PtrArray *)alloc_ptr;
+        ArrayBase* pObject = (ArrayBase *)alloc_ptr;
         pObject->SetMethodTable(pMT);
         pObject->SetNumComponents((int32_t)size);
         return pObject;
     }
 
-    return AllocateObject(pMT, GC_ALLOC_ALIGN8, size TRANSITION_HELPER_ARG_HELPER_PASSTHRU);
+    return AllocateObject(pMT, GC_ALLOC_ALIGN8, size CALLER_STACK_POINTER_ARG_PASSTHRU);
 }
 
 ALLOC_FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, intptr_t size);
@@ -190,14 +183,13 @@ FCIMPL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, intptr_t size)
 
     // if the element count is <= 0x10000, no overflow is possible because the component size is
     // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
-    PREPARE_TRANSITION_ARG();
     if (size > 0x10000)
     {
         // Overflow here should result in an OOM. Let the slow path take care of it.
-        return AllocateObject(pMT, GC_ALLOC_ALIGN8, size TRANSITION_HELPER_ARG_PREPARED);
+        return AllocateObject(pMT, GC_ALLOC_ALIGN8, size CALLER_STACK_POINTER_ARG_PASSTHRU);
     }
 
-    return NewArrayFastAlign8Core(pMT, size TRANSITION_HELPER_ARG_PREPARED);
+    return NewArrayFastAlign8Core(pMT, size CALLER_STACK_POINTER_ARG_PASSTHRU);
 }
 FCIMPLEND
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -208,18 +200,17 @@ FCIMPL2(Object*, RhpNewArrayFast, MethodTable* pMT, intptr_t size)
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
 
-    PREPARE_TRANSITION_ARG();
 #ifndef HOST_64BIT
     // if the element count is <= 0x10000, no overflow is possible because the component size is
     // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
     if (size > 0x10000)
     {
         // Overflow here should result in an OOM. Let the slow path take care of it.
-        return AllocateObject(pMT, 0, size TRANSITION_HELPER_ARG_PREPARED);
+        return AllocateObject(pMT, 0, size CALLER_STACK_POINTER_ARG_PASSTHRU);
     }
 #endif // !HOST_64BIT
 
-    return NewArrayFastCore(pMT, size TRANSITION_HELPER_ARG_PREPARED);
+    return NewArrayFastCore(pMT, size CALLER_STACK_POINTER_ARG_PASSTHRU);
 }
 FCIMPLEND
 
@@ -227,18 +218,17 @@ ALLOC_FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, intptr_t size);
 FCIMPL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, intptr_t size)
 {
     WRAPPER_NO_CONTRACT;
-    PREPARE_TRANSITION_ARG();
 #ifndef HOST_64BIT
     // if the element count is <= 0x8000000, no overflow is possible because the component size is
     // <= 0x8
     if (size > 0x8000000)
     {
         // Overflow here should result in an OOM. Let the slow path take care of it.
-        return AllocateObject(pMT, 0, size TRANSITION_HELPER_ARG_PREPARED);
+        return AllocateObject(pMT, 0, size CALLER_STACK_POINTER_ARG_PASSTHRU);
     }
 #endif // !HOST_64BIT
 
-    return NewArrayFastCore(pMT, size TRANSITION_HELPER_ARG_PREPARED);
+    return NewArrayFastCore(pMT, size CALLER_STACK_POINTER_ARG_PASSTHRU);
 }
 FCIMPLEND
 
@@ -258,13 +248,12 @@ FCIMPL1(Object*, RhpNewFast, MethodTable* pMT)
     if ((size_t)(cxt->getCombinedLimit() - alloc_ptr) >= sizeInBytes)
     {
         cxt->setAllocPtr(alloc_ptr + sizeInBytes);
-        PtrArray* pObject = (PtrArray*)alloc_ptr;
+        ArrayBase* pObject = (ArrayBase*)alloc_ptr;
         pObject->SetMethodTable(pMT);
         return pObject;
     }
 
-    PREPARE_TRANSITION_ARG();
-    return AllocateObject(pMT, 0, 0 TRANSITION_HELPER_ARG_PREPARED);
+    return AllocateObject(pMT, 0, 0 CALLER_STACK_POINTER_ARG_PASSTHRU);
 }
 FCIMPLEND
 
@@ -273,8 +262,7 @@ ALLOC_FCDECL1(Object*, RhpNewFinalizable, MethodTable* pMT);
 FCIMPL1(Object*, RhpNewFinalizable, MethodTable* pMT)
 {
     _ASSERTE(pMT->HasFinalizer());
-    PREPARE_TRANSITION_ARG();
-    return AllocateObject(pMT, GC_ALLOC_FINALIZE, 0 TRANSITION_HELPER_ARG_PREPARED);
+    return AllocateObject(pMT, GC_ALLOC_FINALIZE, 0 CALLER_STACK_POINTER_ARG_PASSTHRU);
 }
 FCIMPLEND
 #endif // FEATURE_NATIVEAOT
@@ -284,8 +272,7 @@ FCIMPLEND
 ALLOC_FCDECL1(Object*, RhpNewFinalizableAlign8, MethodTable* pMT);
 FCIMPL1(Object*, RhpNewFinalizableAlign8, MethodTable* pMT)
 {
-    PREPARE_TRANSITION_ARG();
-    return AllocateObject(pMT, GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8, 0 TRANSITION_HELPER_ARG_PREPARED);
+    return AllocateObject(pMT, GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8, 0 CALLER_STACK_POINTER_ARG_PASSTHRU);
 }
 FCIMPLEND
 #endif // FEATURE_NATIVEAOT
@@ -321,13 +308,12 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
             alloc_ptr += MIN_OBJECT_SIZE;
         }
         _ASSERTE(IS_ALIGNED(alloc_ptr, sizeof(int64_t)));
-        PtrArray* pObject = (PtrArray*)alloc_ptr;
+        ArrayBase* pObject = (ArrayBase*)alloc_ptr;
         pObject->SetMethodTable(pMT);
         return pObject;
     }
 
-    PREPARE_TRANSITION_ARG();
-    return AllocateObject(pMT, GC_ALLOC_ALIGN8, 0 TRANSITION_HELPER_ARG_PREPARED);
+    return AllocateObject(pMT, GC_ALLOC_ALIGN8, 0 CALLER_STACK_POINTER_ARG_PASSTHRU);
 }
 FCIMPLEND
 
@@ -362,13 +348,12 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
             alloc_ptr += MIN_OBJECT_SIZE;
         }
         _ASSERTE((((uint32_t)alloc_ptr) & (sizeof(int64_t) - 1)) == sizeof(int32_t));
-        PtrArray* pObject = (PtrArray*)alloc_ptr;
+        ArrayBase* pObject = (ArrayBase*)alloc_ptr;
         pObject->SetMethodTable(pMT);
         return pObject;
     }
 
-    PREPARE_TRANSITION_ARG();
-    return AllocateObject(pMT, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0 TRANSITION_HELPER_ARG_PREPARED);
+    return AllocateObject(pMT, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0 CALLER_STACK_POINTER_ARG_PASSTHRU);
 }
 FCIMPLEND
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -381,13 +366,11 @@ FCIMPL2(Object*, RhNewString, MethodTable* pMT, intptr_t stringLength)
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
 
-    PREPARE_TRANSITION_ARG();
-
     if (stringLength > MAX_STRING_LENGTH)
     {
-        RhExceptionHandling_FailedAllocation_Helper(pMT, false, TRANSITION_ARG_PARAM);
+        FailedAllocation(pMT, false CALLER_STACK_POINTER_ARG_PASSTHRU);
     }
 
-    return NewArrayFastCore(pMT, stringLength TRANSITION_HELPER_ARG_PREPARED);
+    return NewArrayFastCore(pMT, stringLength CALLER_STACK_POINTER_ARG_PASSTHRU);
 }
 FCIMPLEND
