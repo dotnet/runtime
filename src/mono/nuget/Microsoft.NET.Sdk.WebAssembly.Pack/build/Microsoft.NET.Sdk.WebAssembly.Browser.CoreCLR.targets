@@ -127,7 +127,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)"
                                Condition="('%(Extension)' == '.dll' or '%(Extension)' == '.pdb') and
                                           Exists('$(_WasmTrimmedClosureDir)%(FileName).dll') and
-                                          Exists('$(_WasmTrimmedClosureDir)%(FileName)%(Extension)')">
+                                          ('%(Extension)' == '.dll' or Exists('$(_WasmTrimmedClosureDir)%(FileName).pdb'))">
         <_WasmInTrimmedClosure>true</_WasmInTrimmedClosure>
       </ReferenceCopyLocalPaths>
       <!-- Do not retain untrimmed symbols when an assembly or its PDB was removed by the linker. -->
