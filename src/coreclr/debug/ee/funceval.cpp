@@ -1563,6 +1563,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
     BYTE * pCatcherStackAddr = (BYTE*) pFEFrame;
 
     // Normal calls and constructors use the managed evaluator.
+    // TODO-ManagedFuncEval: Move the other func eval types to the managed evaluator.
     if ((pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT) || (pDE->m_evalType == DB_IPCE_FET_NORMAL))
     {
         GCProtectArgsAndInvokeManagedFuncEval(pDE, pCatcherStackAddr);

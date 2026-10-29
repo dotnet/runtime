@@ -148,6 +148,8 @@ namespace System.Diagnostics
                 _storage = storage;
                 int argumentCount = checked((int)context->ArgumentCount);
                 _arguments = new Argument[argumentCount];
+
+                // Resolve the target only after capturing values; resolution can run its class initializer.
                 CapturePrimitiveArguments();
                 RuntimeType? declaringType = null;
                 IRuntimeMethodInfo? methodOwner = null;
@@ -175,7 +177,7 @@ namespace System.Diagnostics
                     }
 
                     PrepareArgument(0, declaringType, isByRef: false);
-                    ValidateReceiver(declaringType);
+                    ValidateThis(declaringType);
                 }
                 PrepareResult(context);
 
@@ -443,36 +445,37 @@ namespace System.Diagnostics
                 }
             }
 
-            private void ValidateReceiver(RuntimeType declaringType)
+            private void ValidateThis(RuntimeType declaringType)
             {
                 if (declaringType.IsValueType)
                 {
                     return;
                 }
 
-                object? receiver = _objects[0];
-                bool isVirtual = (_context->Flags & EvaluationFlags.Virtual) != 0;
-                if (isVirtual)
-                {
-                    NativeArgument input = _arguments[0].Input;
-                    if (receiver is null || (!input.HasMemory && (input.Flags & ArgumentFlags.Register) == 0))
-                    {
-                        throw new ArgumentNullException();
-                    }
+                object? thisArg = _objects[0];
 
-                    if (!declaringType.IsInstanceOfType(receiver))
-                    {
-                        throw new ArgumentException(SR.Argument_CORDBBadMethod);
-                    }
-                }
-
-                if (receiver is null)
+                
+                if (thisArg is null)
                 {
                     throw new NullReferenceException(SR.NullReference_This);
                 }
 
-                if ((_context->Flags & (EvaluationFlags.Interface | EvaluationFlags.Shared)) == 0 &&
-                    !receiver.GetType().IsArray && !declaringType.IsInstanceOfType(receiver))
+                if (declaringType == typeof(SZArrayHelper))
+                {
+                    // SZArrayHelper methods are invoked with array "this" parameters by design.
+                    return;
+                }
+
+                if ((_context->Flags & (EvaluationFlags.Interface | EvaluationFlags.Virtual)) == EvaluationFlags.Interface
+                    && declaringType.IsDefined(typeof(DynamicInterfaceCastableImplementationAttribute)))
+                {
+                    // When calling a non-virtual method on a DynamicInterfaceCastableImplementation-attributed interface type,
+                    // the receiver may not be assignable to the interface type
+                    // (as it's only assignable to the type this interface is an implementation of).
+                    return;
+                }
+
+                if (!declaringType.IsInstanceOfType(thisArg))
                 {
                     throw new ArgumentException(SR.Argument_CORDBBadMethod);
                 }
@@ -596,7 +599,6 @@ namespace System.Diagnostics
 
             private void CapturePrimitiveArguments()
             {
-                // Resolve the target only after capturing values; resolution can run its class initializer.
                 for (int i = 0; i < _arguments.Length; i++)
                 {
                     _arguments[i].Input = _context->Arguments[i];
@@ -712,10 +714,6 @@ namespace System.Diagnostics
 
                 Debug.Assert(!IsObject(input.Type) && !argument.UsesInterior);
                 ulong bits = ReadPrimitive(ref value, checked((int)size));
-                if (input.Type is not (CorElementType.ELEMENT_TYPE_I8 or CorElementType.ELEMENT_TYPE_U8 or CorElementType.ELEMENT_TYPE_R8))
-                {
-                    bits = (nuint)bits;
-                }
 
                 if (input.IsLiteral)
                 {

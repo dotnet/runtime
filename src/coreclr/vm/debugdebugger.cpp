@@ -1060,10 +1060,6 @@ void ValidateFuncEvalReturnType(bool isNewObject, MethodTable* pMT)
             COMPlusThrow(kArgumentException, W("Argument_CannotCreateString"));
         }
     }
-    else if (pMT == g_TypedReferenceMT)
-    {
-        COMPlusThrow(kArgumentException, W("Argument_CannotCreateTypedReference"));
-    }
 }
 
 namespace
@@ -1089,65 +1085,44 @@ namespace
         {
             COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
         }
+        MethodDesc* pMD = MemberLoader::GetMethodDescFromMethodDef(
+            data->pModule, data->methodToken, FALSE);
+        MethodTable* pMT = pMD->GetMethodTable();
 
-        Instantiation classInstantiation;
-        Instantiation methodInstantiation;
-        mdTypeDef typeDef = 0;
-        TypeHandle ownerType;
-        if (data->genericArgsCount != 0)
+        uint32_t classArgumentCount = pMT->GetInstantiation().GetNumArgs();
+        uint32_t methodArgumentCount = pMD->GetMethodInstantiation().GetNumArgs();
+        if (classArgumentCount + methodArgumentCount != data->genericArgsCount)
         {
-            if (FAILED(data->pModule->GetMDImport()->GetParentToken(data->methodToken, &typeDef)))
-            {
-                COMPlusThrowHR(E_INVALIDARG);
-            }
-
-            // Debugger type arguments contain the class instantiation followed by the method instantiation.
-            TypeHandle classType = ClassLoader::LoadTypeDefOrRefThrowing(
-                data->pModule, typeDef, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef);
-            uint32_t classArgumentCount = classType.GetNumGenericArgs();
-            if (data->genericArgsCount < classArgumentCount)
-            {
-                COMPlusThrowHR(COR_E_TARGETPARAMCOUNT);
-            }
-            uint32_t methodArgumentCount = data->genericArgsCount - classArgumentCount;
-            classInstantiation = Instantiation(classArgumentCount == 0 ? nullptr : types, classArgumentCount);
-            methodInstantiation = Instantiation(
-                methodArgumentCount == 0 ? nullptr : types + classArgumentCount, methodArgumentCount);
-
-#ifdef FEATURE_COMINTEROP
-            if (!classInstantiation.IsEmpty())
-            {
-                ownerType = ClassLoader::LoadGenericInstantiationThrowing(data->pModule, typeDef, classInstantiation);
-            }
-#endif // FEATURE_COMINTEROP
+            COMPlusThrowHR(COR_E_TARGETPARAMCOUNT);
         }
 
-        MethodDesc* method = MemberLoader::GetMethodDescFromMethodDef(
-            data->pModule, data->methodToken, classInstantiation, methodInstantiation);
-        _ASSERTE(method != nullptr);
-        // A shared MethodDesc does not identify the exact declaring type.
-        if (!classInstantiation.IsEmpty() && ownerType.IsNull())
+        if (classArgumentCount != 0)
         {
-            ownerType = ClassLoader::LoadGenericInstantiationThrowing(data->pModule, typeDef, classInstantiation);
+            pMT = ClassLoader::LoadGenericInstantiationThrowing(data->pModule, pMT->GetCl(), Instantiation(types, classArgumentCount)).AsMethodTable();
         }
-        *data->pOwnerType = ownerType.IsNull() ? TypeHandle(method->GetMethodTable()) : ownerType;
-        *data->ppMethod = method;
-        ValidateFuncEvalReturnType(data->isNewObject, method->GetMethodTable());
-        if (data->isNewObject && !method->IsCtor())
+
+        if (classArgumentCount != 0 || methodArgumentCount != 0)
         {
-            COMPlusThrow(kArgumentException, W("Arg_NoDefCTorWithoutTypeName"));
+            pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD, pMT,
+                                                                FALSE, /* forceBoxedEntryPoint */
+                                                                Instantiation(types + classArgumentCount, methodArgumentCount),
+                                                                FALSE /* allowInstParam */);
         }
-        method->EnsureActive();
+        *data->pOwnerType = TypeHandle(pMT);
+        *data->ppMethod = pMD;
+
+        ValidateFuncEvalReturnType(data->isNewObject, pMD->GetMethodTable());
+        if (data->isNewObject && !pMD->IsCtor())
+        {
+            COMPlusThrow(kArgumentException, W("Arg_TargetMethodNotConstructor"));
+        }
+        pMD->EnsureActive();
         MethodTable* owner = data->pOwnerType->GetMethodTable();
         owner->EnsureInstanceActive();
         owner->CheckRunClassInitThrowing();
         if (data->isNewObject)
         {
-            *data->pResultType = data->genericArgsCount == 0
-                ? TypeHandle(method->GetMethodTable())
-                : ClassLoader::LoadGenericInstantiationThrowing(
-                    method->GetModule(), method->GetMethodTable()->GetCl(),
-                    Instantiation(types, data->genericArgsCount));
+            *data->pResultType = pMT;
         }
     }
 }
@@ -1183,9 +1158,6 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
         declaringType.Set(data->pOwnerType->GetManagedClassObject());
         if (data->isNewObject)
         {
-            MethodTable* resultMT = data->pResultType->GetMethodTable();
-            resultMT->EnsureInstanceActive();
-            ValidateFuncEvalReturnType(true, resultMT);
             if (data->pResultType->IsByRefLike())
             {
                 pContext->pResultData =
