@@ -151,6 +151,49 @@ export async function setup(runtime) {
             }
             return value;
         },
+        sumTwo: (first, second) => exports.SumTwo(first, second),
+        joinThree: (first, second, third) => exports.JoinThree(first, second, third),
+        mixedSix(...args) {
+            check(arguments.length === 6 && typeof this.mixedSixAsync === "function", "Multiple import arity or receiver changed");
+            return exports.MixedSix(...args);
+        },
+        mixedSixAsync: (...args) => exports.MixedSixAsync(...args),
+        mixedSixVoid: (...args) => {
+            check(exports.MixedSixVoid(...args) === undefined, "Multi-argument void returned a value");
+        },
+        sixStrings: (...args) => exports.SixStrings(...args),
+        nestedMultiple: (first, depth, last) => exports.NestedMultiple(first, depth, last),
+        overLimit: (...args) => exports.OverLimit(...args),
+        multiContracts: value => {
+            check(exports.MixedSix() === "<null>|0|0|false|0|<null>", "Missing argument defaults changed");
+            check(exports.MixedSix("a", 1, 2.5, true, 1.25, "z", "ignored") === "a|1|2.5|true|1.25|z", "Extra arguments changed signature");
+            for (const [args, message] of [
+                [["a", "wrong", 2.5, true, 1.25, "z"], worker ? "Int32" : "Value is not an integer"],
+                [["a", 1, 2.5, "wrong", 1.25, "z"], "Boolean"],
+                [["a", 1, 2.5, true, 1.25, 42], "String"],
+            ]) {
+                let error;
+                try {
+                    exports.MixedSix(...args);
+                } catch (caught) {
+                    error = caught;
+                }
+                check(error?.message.includes(message), "Multi-argument validation did not report the wrong argument");
+                error.dispose?.();
+            }
+            if (worker) {
+                let error;
+                try {
+                    exports.OverLimit(1, 2, 3, 4, 5, 6, 7);
+                } catch (caught) {
+                    error = caught;
+                }
+                check(error?.message.includes("at most 6"), "Argument limit must fail explicitly");
+            } else {
+                check(exports.OverLimit(1, 2, 3, 4, 5, 6, 7) === 28, "Ordinary argument support changed");
+            }
+            return value;
+        },
         primitiveContracts: value => {
             for (const [name, defaultValue, message] of [
                 ["EchoBoolean", false, "Boolean"], ["EchoDouble", 0, "Number"], ["EchoSingle", 0, "Number"]

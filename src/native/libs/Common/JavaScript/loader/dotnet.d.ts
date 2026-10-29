@@ -51,7 +51,7 @@ interface DotnetHostBuilder {
     /**
      * Configures the runtime to start on a dedicated web worker.
      * The main thread gets a proxy supporting runMain, runMainAndExit, and exit.
-     * UI imports and exports support zero or one Boolean, Int32, Single, Double, or String argument.
+     * UI imports and exports support up to six Boolean, Int32, Single, Double, or String arguments.
      * Results may be those types or void, synchronously or through a Task.
      * Register each module once, before running managed code.
      * Nested synchronous calls have 16 in-flight slots in each direction.

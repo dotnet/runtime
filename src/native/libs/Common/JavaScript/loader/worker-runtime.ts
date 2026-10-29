@@ -11,6 +11,7 @@
 // -----------------------------------------------------------
 
 import type { LoaderConfig, RuntimeAPI } from "./types";
+import { JavaScriptMarshalerArgSize, WorkerMaxArgumentCount } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 
 import { dotnetNativeBrowserExports, Module } from "./cross-module";
 import { mergeLoaderConfig } from "./config";
@@ -125,7 +126,7 @@ export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promis
         // Pre-allocate frame slots in WASM heap for main→worker arg frames
         const mallocFn = (Module as any)._malloc as (size: number) => number;
         if (mallocFn) {
-            const FRAME_SLOT_SIZE = 256; // 8 args × 32 bytes each
+            const FRAME_SLOT_SIZE = (WorkerMaxArgumentCount + 2) * JavaScriptMarshalerArgSize;
             for (let i = 0; i < FRAME_RING_CAPACITY; i++) {
                 const ptr = mallocFn(FRAME_SLOT_SIZE);
                 Atomics.store(signalView, OFFSET_FRAME_PTRS + i, ptr);
@@ -179,8 +180,8 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
     let closing = false;
     let commandRunning = false;
     const promises = createWorkerPromises();
-    const processExports = createWorkerJSExportDispatcher(signalView, memoryViews, (handle, pointer, stringArgument) => {
-        return runtime.INTERNAL.invokeWorkerJSExport(handle, pointer, stringArgument);
+    const processExports = createWorkerJSExportDispatcher(signalView, memoryViews, (handle, pointer, values) => {
+        return runtime.INTERNAL.invokeWorkerJSExport(handle, pointer, values);
     }, message => {
         if (!closing) self.postMessage(message);
     }, reportFailure);

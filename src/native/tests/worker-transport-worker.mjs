@@ -42,8 +42,14 @@ async function runWorker() {
     const free = new Map();
     let nextPointer = 1024;
     let failNextAllocation = false;
+    let allocationsUntilFailure = -1;
     const module = {
         _malloc: size => {
+            if (allocationsUntilFailure === 0) {
+                allocationsUntilFailure = -1;
+                return 0;
+            }
+            if (allocationsUntilFailure > 0) allocationsUntilFailure--;
             if (failNextAllocation) {
                 failNextAllocation = false;
                 return 0;
@@ -91,13 +97,19 @@ async function runWorker() {
         else new Int32Array(memory.buffer)[pointer / 4] = value;
     }
     function invokeImport(value, isAsync = false, argumentType = int32Type, returnType = int32Type) {
-        const pointer = module._malloc(3 * argumentSize);
+        return invokeImports(argumentType === 0 ? [] : [value], isAsync, argumentType === 0 ? [] : [argumentType], returnType);
+    }
+    function invokeImports(values, isAsync, argumentTypes, returnType) {
+        const pointer = module._malloc((argumentTypes.length + 2) * argumentSize);
         try {
-            new Uint8Array(memory.buffer).fill(0, pointer, pointer + 3 * argumentSize);
-            writePrimitive(pointer + 2 * argumentSize, argumentType === stringType ? int32Type : argumentType, argumentType === stringType ? 0 : value);
+            new Uint8Array(memory.buffer).fill(0, pointer, pointer + (argumentTypes.length + 2) * argumentSize);
+            for (let index = 0; index < argumentTypes.length; index++) {
+                writePrimitive(pointer + (index + 2) * argumentSize, argumentTypes[index] === stringType ? int32Type : argumentTypes[index],
+                    argumentTypes[index] === stringType ? 0 : values[index]);
+            }
             const frame = new Uint8Array(memory.buffer, pointer + argumentSize, argumentSize);
             if (isAsync) frame.fill(0x5a);
-            const result = imports.get("main.js").get("update")(pointer, isAsync, value, argumentType, returnType);
+            const result = imports.get("main.js").get("update")(pointer, isAsync, values, argumentTypes, returnType);
             if (isAsync && !frame.every(value => value === 0x5a)) throw new Error("Async import overwrote the native Task frame");
             return result;
         } finally {
@@ -128,11 +140,11 @@ async function runWorker() {
                     ["StringRepeat", 12, false, int32Type, stringType],
                     ["StringFail", 13, false, stringType, stringType],
                 ].map(([name, handle, isAsync, argumentType, returnType]) => ({
-                    path: ["Sample", "Test", name], handle, supported: true, isAsync, argumentType, returnType,
+                    path: ["Sample", "Test", name], handle, supported: true, isAsync, argumentTypes: [argumentType], returnType,
                 })),
                 ...["Boolean", "Double", "Single"].flatMap((name, index) => ["", "Import", "Async", "AsyncImport"].map((suffix, mode) => ({
                     path: ["Sample", "Test", name + suffix], handle: 20 + index * 4 + mode,
-                    supported: true, isAsync: mode >= 2, argumentType: primitiveTypes[index], returnType: primitiveTypes[index],
+                    supported: true, isAsync: mode >= 2, argumentTypes: [primitiveTypes[index]], returnType: primitiveTypes[index],
                 }))),
                 ...[
                     ["NoArgument", 40, false, 0, int32Type],
@@ -147,10 +159,34 @@ async function runWorker() {
                     ["VoidAsyncFault", 49, true, 0, 1],
                     ["VoidAsyncNull", 50, true, 0, 1],
                 ].map(([name, handle, isAsync, argumentType, returnType]) => ({
-                    path: ["Sample", "Test", name], handle, supported: true, isAsync, argumentType, returnType,
+                    path: ["Sample", "Test", name], handle, supported: true, isAsync, argumentTypes: argumentType === 0 ? [] : [argumentType], returnType,
                 })),
-            ],
-            invokeWorkerJSExport: (handle, pointer, stringArgument) => {
+                ...[
+                    ["Mixed", 60, false, [stringType, int32Type, primitiveTypes[1], primitiveTypes[0], primitiveTypes[2], stringType], stringType],
+                    ["MixedImport", 61, false, [stringType, int32Type, primitiveTypes[1], primitiveTypes[0], primitiveTypes[2], stringType], stringType],
+                    ["MixedAsync", 62, true, [stringType, int32Type, primitiveTypes[1], primitiveTypes[0], primitiveTypes[2], stringType], stringType],
+                    ["MixedAsyncImport", 63, true, [stringType, int32Type, primitiveTypes[1], primitiveTypes[0], primitiveTypes[2], stringType], stringType],
+                    ["MixedVoid", 64, false, [stringType, int32Type, primitiveTypes[1], primitiveTypes[0], primitiveTypes[2], stringType], 1],
+                    ["SixStrings", 65, false, Array(6).fill(stringType), stringType],
+                    ["SixStringsImport", 66, false, Array(6).fill(stringType), stringType],
+                    ["UnsupportedSeven", 67, false, Array(7).fill(int32Type), int32Type],
+                    ["NestedMultiple", 68, false, [stringType, int32Type, stringType], stringType],
+                    ["FailAfterAllocations", 69, false, [int32Type], int32Type],
+                    ["ImportAllocationFailure", 70, false, Array(6).fill(stringType), stringType],
+                ].map(([name, handle, isAsync, argumentTypes, returnType]) => ({
+                    path: ["Sample", "Test", name], handle, supported: handle !== 67, isAsync, argumentTypes, returnType,
+                })),
+            ].map(descriptor => ({ argumentTypes: [int32Type], returnType: int32Type, ...descriptor })),
+            invokeWorkerJSExport: (handle, pointer, values) => {
+                const stringArgument = values[0];
+                if (handle >= 60 && handle <= 68) {
+                    if (handle === 60 || handle === 65) return JSON.stringify(values);
+                    if (handle === 62) return Promise.resolve(JSON.stringify(values));
+                    const argumentTypes = handle === 66 ? Array(6).fill(stringType)
+                        : handle === 68 ? [stringType, int32Type, stringType]
+                            : [stringType, int32Type, primitiveTypes[1], primitiveTypes[0], primitiveTypes[2], stringType];
+                    return invokeImports(values, handle === 63, argumentTypes, handle === 64 ? 1 : stringType);
+                }
                 if (handle >= 20 && handle <= 31) {
                     const type = primitiveTypes[Math.floor((handle - 20) / 4)];
                     const mode = (handle - 20) % 4;
@@ -215,6 +251,12 @@ async function runWorker() {
                     return Promise.reject(new Error("Asynchronous void failure"));
                 } else if (handle === 50) {
                     return null;
+                } else if (handle === 69) {
+                    allocationsUntilFailure = value;
+                    result = 0;
+                } else if (handle === 70) {
+                    allocationsUntilFailure = 2;
+                    return invokeImports(values, false, Array(6).fill(stringType), stringType);
                 } else {
                     throw new Error("Unknown test export");
                 }

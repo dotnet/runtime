@@ -7,6 +7,8 @@
 // dedicated worker in withWorker() mode.
 // -----------------------------------------------------------
 
+import { WorkerMaxArgumentCount } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+
 // Signal states for all signaling slots
 export const enum SignalState {
     IDLE = 0,
@@ -26,14 +28,14 @@ export const enum CommandId {
 }
 
 // Layout version — bump when the signaling buffer layout changes
-export const SIGNALING_VERSION = 6;
+export const SIGNALING_VERSION = 7;
 
 // Number of entries in the JSImport ring buffer (worker → main)
 export const JSIMPORT_RING_CAPACITY = 16;
 // Number of entries in the JSExport ring buffer (main → worker)
 export const JSEXPORT_RING_CAPACITY = 16;
 // Fields per ring entry
-const RING_ENTRY_SIZE = 12;
+const RING_ENTRY_SIZE = 10 + WorkerMaxArgumentCount * 3;
 
 // Number of pre-allocated arg frame pointers for main→worker calls
 export const FRAME_RING_CAPACITY = 16;
@@ -94,13 +96,22 @@ export const RING_ENTRY_PROMISE_ID = 1;
 export const RING_ENTRY_HANDLE = 2;
 export const RING_ENTRY_ARGS_PTR = 3;
 export const RING_ENTRY_RESULT_KIND = 4;
-export const RING_ENTRY_ARGUMENT_TYPE = 5;
+export const RING_ENTRY_ARGUMENT_COUNT = 5;
 export const RING_ENTRY_RETURN_TYPE = 6;
-export const RING_ENTRY_STRING_ARGUMENT = 7;
-export const RING_ENTRY_STRING_ARGUMENT_LENGTH = 8;
-export const RING_ENTRY_STRING_RESULT = 9;
-export const RING_ENTRY_STRING_RESULT_LENGTH = 10;
-export const RING_ENTRY_OPERATION = 11;
+export const RING_ENTRY_STRING_RESULT = 7;
+export const RING_ENTRY_STRING_RESULT_LENGTH = 8;
+export const RING_ENTRY_OPERATION = 9;
+export const RING_ENTRY_ARGUMENTS = 10;
+export const ARGUMENT_ENTRY_TYPE = 0;
+export const ARGUMENT_ENTRY_STRING = 1;
+export const ARGUMENT_ENTRY_STRING_LENGTH = 2;
+
+export function argumentEntryOffset(entry: number, index: number): number {
+    if (!Number.isInteger(index) || index < 0 || index >= WorkerMaxArgumentCount) {
+        throw new Error("withWorker(): invalid argument index");
+    }
+    return entry + RING_ENTRY_ARGUMENTS + index * 3;
+}
 
 export const enum WorkerCallOperation {
     Invoke = 0,

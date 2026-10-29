@@ -168,6 +168,72 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("voidAsyncContracts", nameof(WorkerInteropTest))]
         private static partial Task<int> VoidAsyncContractsOnUI(int value);
 
+        [JSImport("sumTwo", nameof(WorkerInteropTest))]
+        private static partial int SumTwoOnUI(int first, int second);
+
+        [JSImport("joinThree", nameof(WorkerInteropTest))]
+        private static partial string JoinThreeOnUI(string first, string second, string third);
+
+        [JSImport("mixedSix", nameof(WorkerInteropTest))]
+        private static partial string MixedSixOnUI(string first, int number, double fractional, bool flag, float single, string last);
+
+        [JSImport("mixedSixAsync", nameof(WorkerInteropTest))]
+        private static partial Task<string> MixedSixAsyncOnUI(string first, int number, double fractional, bool flag, float single, string last);
+
+        [JSImport("mixedSixVoid", nameof(WorkerInteropTest))]
+        private static partial void MixedSixVoidOnUI(string first, int number, double fractional, bool flag, float single, string last);
+
+        [JSImport("sixStrings", nameof(WorkerInteropTest))]
+        private static partial string SixStringsOnUI(string first, string second, string third, string fourth, string fifth, string sixth);
+
+        [JSImport("nestedMultiple", nameof(WorkerInteropTest))]
+        private static partial string NestedMultipleOnUI(string first, int depth, string last);
+
+        [JSImport("multiContracts", nameof(WorkerInteropTest))]
+        private static partial int CheckMultiContractsOnUI(int value);
+
+        [JSImport("overLimit", nameof(WorkerInteropTest))]
+        private static partial int OverLimitOnUI(int a, int b, int c, int d, int e, int f, int g);
+
+        private static string s_lastMixed;
+
+        private static string FormatMixed(string first, int number, double fractional, bool flag, float single, string last)
+            => FormattableString.Invariant($"{first ?? "<null>"}|{number}|{fractional}|{(flag ? "true" : "false")}|{single}|{last ?? "<null>"}");
+
+        [JSExport]
+        internal static int SumTwo(int first, int second) => first + second;
+
+        [JSExport]
+        internal static string JoinThree(string first, string second, string third) => string.Join("|", first, second, third);
+
+        [JSExport]
+        internal static string MixedSix(string first, int number, double fractional, bool flag, float single, string last)
+            => FormatMixed(first, number, fractional, flag, single, last);
+
+        [JSExport]
+        internal static async Task<string> MixedSixAsync(string first, int number, double fractional, bool flag, float single, string last)
+        {
+            await Task.Delay(1);
+            return FormatMixed(first, number, fractional, flag, single, last);
+        }
+
+        [JSExport]
+        internal static void MixedSixVoid(string first, int number, double fractional, bool flag, float single, string last)
+        {
+            s_lastMixed = FormatMixed(first, number, fractional, flag, single, last);
+        }
+
+        [JSExport]
+        internal static string SixStrings(string first, string second, string third, string fourth, string fifth, string sixth)
+            => string.Join("|", first, second, third, fourth, fifth, sixth);
+
+        [JSExport]
+        internal static int OverLimit(int a, int b, int c, int d, int e, int f, int g) => a + b + c + d + e + f + g;
+
+        [JSExport]
+        internal static string NestedMultiple(string first, int depth, string last)
+            => depth == 0 ? first + "|" + last : NestedMultipleOnUI(first + "L", depth - 1, "R" + last);
+
         private static int s_voidCalls;
 
         [JSExport]
@@ -564,6 +630,75 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("UI void Task fault", error.Message);
             Assert.NotEmpty(error.StackTrace);
             await VoidTaskModeOnUI(5);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        public async Task MultipleMixedArguments(int scenario)
+        {
+            string first = scenario switch
+            {
+                0 => null,
+                1 => "",
+                2 => "first\0value",
+                3 => "I\u0131\u0130i",
+                4 => "a\ud83d\ude00z",
+                _ => new string('x', 400000),
+            };
+            string last = scenario == 0 ? null : "last\0" + scenario.ToString(Globalization.CultureInfo.InvariantCulture);
+            int number = scenario * -17;
+            double fractional = scenario + 0.5;
+            bool flag = scenario % 2 == 0;
+            float single = scenario + 0.25f;
+            string expected = FormatMixed(first, number, fractional, flag, single, last);
+            Assert.Equal(expected, MixedSixOnUI(first, number, fractional, flag, single, last));
+            Assert.Equal(expected, await MixedSixAsyncOnUI(first, number, fractional, flag, single, last));
+            MixedSixVoidOnUI(first, number, fractional, flag, single, last);
+            Assert.Equal(expected, s_lastMixed);
+            Assert.Equal("1st|2nd|3rd", JoinThreeOnUI("1st", "2nd", "3rd"));
+            Assert.Equal(scenario + 42, SumTwoOnUI(scenario, 42));
+            Assert.Equal("a||c|d|e|last", SixStringsOnUI("a", null, "c", "d", "e", "last"));
+        }
+
+        [Fact]
+        public async Task ConcurrentMultipleArguments()
+        {
+            Task<string>[] tasks = new Task<string>[70];
+            for (int i = 0; i < tasks.Length; i++)
+                tasks[i] = MixedSixAsyncOnUI("left", i, 2.5, false, 1.25f, "right");
+            string[] results = await Task.WhenAll(tasks);
+            for (int i = 0; i < results.Length; i++)
+                Assert.Equal(FormatMixed("left", i, 2.5, false, 1.25f, "right"), results[i]);
+        }
+
+        [Fact]
+        public void MultipleArgumentValidationAndLimits()
+        {
+            Assert.Equal(42, CheckMultiContractsOnUI(42));
+            if (Environment.GetEnvironmentVariable("DOTNET_TEST_WITH_WORKER") == "1")
+            {
+                JSException error = Assert.Throws<JSException>(() => OverLimitOnUI(1, 2, 3, 4, 5, 6, 7));
+                Assert.Contains("at most 6", error.Message);
+                Assert.NotEmpty(error.StackTrace);
+            }
+            else
+            {
+                Assert.Equal(28, OverLimitOnUI(1, 2, 3, 4, 5, 6, 7));
+            }
+            Assert.Equal(42, SumTwoOnUI(12, 30));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(4)]
+        public void NestedMultipleArguments(int depth)
+        {
+            Assert.Equal("a" + new string('L', depth) + "|" + new string('R', depth) + "z", NestedMultipleOnUI("a", depth, "z"));
         }
     }
 

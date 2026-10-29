@@ -3,13 +3,82 @@
 
 import { Module } from "./cross-module";
 import type { VoidPtr } from "./types";
-import { MemoryViewManager } from "./shared-signaling";
+import {
+    MemoryViewManager, argumentEntryOffset, RING_ENTRY_ARGUMENT_COUNT,
+    ARGUMENT_ENTRY_TYPE, ARGUMENT_ENTRY_STRING, ARGUMENT_ENTRY_STRING_LENGTH,
+} from "./shared-signaling";
 import type { WorkerReturnType, WorkerValueType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
-import { JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
-export type { WorkerArgumentType, WorkerReturnType, WorkerValueType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+import { isWorkerValueType, JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType, WorkerMaxArgumentCount } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+export type { WorkerReturnType, WorkerValueType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 
 export type WorkerValue = number | boolean | string | null | undefined;
 const ownedStrings = new Map<number, VoidPtr>();
+
+export function readWorkerArgumentTypes(signal: Int32Array, entry: number): WorkerValueType[] {
+    const count = Atomics.load(signal, entry + RING_ENTRY_ARGUMENT_COUNT);
+    if (count < 0 || count > WorkerMaxArgumentCount) throw new Error("withWorker(): invalid argument count");
+    const types: WorkerValueType[] = [];
+    for (let index = 0; index < count; index++) {
+        const type = Atomics.load(signal, argumentEntryOffset(entry, index) + ARGUMENT_ENTRY_TYPE);
+        if (!isWorkerValueType(type)) throw new Error("withWorker(): unsupported argument type");
+        types.push(type);
+    }
+    return types;
+}
+
+export function prepareWorkerArguments(
+    signal: Int32Array, entry: number, memory: MemoryViewManager, pointer: number,
+    values: unknown[], types: WorkerValueType[], writePrimitives = true,
+): void {
+    if (types.length > WorkerMaxArgumentCount) throw new Error("withWorker(): too many arguments");
+    Atomics.store(signal, entry + RING_ENTRY_ARGUMENT_COUNT, types.length);
+    for (let index = 0; index < types.length; index++) {
+        const value = validateWorkerValue(values[index], types[index]);
+        const argument = argumentEntryOffset(entry, index);
+        Atomics.store(signal, argument + ARGUMENT_ENTRY_TYPE, types[index]);
+        Atomics.store(signal, argument + ARGUMENT_ENTRY_STRING, 0);
+        Atomics.store(signal, argument + ARGUMENT_ENTRY_STRING_LENGTH, typeof value === "string" ? value.length : -1);
+        if (writePrimitives && types[index] !== MarshalerType.String) {
+            writeWorkerPrimitive(memory, pointer + (index + 2) * JavaScriptMarshalerArgSize, value, types[index]);
+        }
+    }
+}
+
+export function allocateWorkerArgumentStrings(signal: Int32Array, entry: number, own: (pointer: number) => void): void {
+    const types = readWorkerArgumentTypes(signal, entry);
+    for (let index = 0; index < types.length; index++) {
+        if (types[index] !== MarshalerType.String) continue;
+        const argument = argumentEntryOffset(entry, index);
+        const length = Atomics.load(signal, argument + ARGUMENT_ENTRY_STRING_LENGTH);
+        if (length === -1) continue;
+        const pointer = allocateWorkerString(length);
+        if (pointer) own(pointer);
+        Atomics.store(signal, argument + ARGUMENT_ENTRY_STRING, pointer);
+    }
+}
+
+export function writeWorkerArgumentStrings(
+    signal: Int32Array, entry: number, memory: MemoryViewManager, values: unknown[],
+): void {
+    const types = readWorkerArgumentTypes(signal, entry);
+    for (let index = 0; index < types.length; index++) {
+        const value = values[index];
+        if (types[index] === MarshalerType.String && typeof value === "string") {
+            writeWorkerString(memory, Atomics.load(signal, argumentEntryOffset(entry, index) + ARGUMENT_ENTRY_STRING) >>> 0, value);
+        }
+    }
+}
+
+export function readWorkerArguments(signal: Int32Array, entry: number, memory: MemoryViewManager, pointer: number): WorkerValue[] {
+    const types = readWorkerArgumentTypes(signal, entry);
+    return types.map((type, index) => {
+        const argument = argumentEntryOffset(entry, index);
+        return type === MarshalerType.String
+            ? readWorkerString(memory, Atomics.load(signal, argument + ARGUMENT_ENTRY_STRING) >>> 0,
+                Atomics.load(signal, argument + ARGUMENT_ENTRY_STRING_LENGTH))
+            : readWorkerPrimitive(memory, pointer + (index + 2) * JavaScriptMarshalerArgSize, type);
+    });
+}
 
 export function validateWorkerValue(value: unknown, type: WorkerReturnType): WorkerValue {
     if (type === MarshalerType.Void) return undefined;

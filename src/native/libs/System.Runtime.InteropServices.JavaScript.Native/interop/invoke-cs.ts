@@ -9,11 +9,11 @@ import type { WorkerExportDescriptor } from "../../Common/JavaScript/loader/work
 import { dotnetAssert, dotnetLogger, Module } from "./cross-module";
 
 import { bindAssemblyExports, invokeJSExport } from "./managed-exports";
-import { allocStackFrame, getArg, getMarshalerToCsByType, getMarshalerToJsByType, getSig, getSignatureType, getSignatureResType, getSignatureArgumentCount, getSignatureVersion, jsInteropState } from "./marshal";
+import { allocStackFrame, getArg, getMarshalerToCsByType, getSig, getSignatureType, getSignatureResType, getSignatureArgumentCount, getSignatureVersion, jsInteropState } from "./marshal";
 import { bindArgMarshalToCs } from "./marshal-to-cs";
 import { bindArgMarshalToJs, endMarshalTaskToJs, releaseEagerTaskHolder } from "./marshal-to-js";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, isRuntimeRunning, startMeasure } from "./utils";
-import { isWorkerArgumentType, isWorkerReturnType, MarshalerType, MeasuredBlock } from "./types";
+import { isWorkerValueType, isWorkerReturnType, MarshalerType, MeasuredBlock, WorkerMaxArgumentCount } from "./types";
 import { boundCsFunctionSymbol, exportsByAssembly } from "./gc-handles";
 import { ManagedError } from "./marshaled-types";
 
@@ -42,7 +42,7 @@ export async function getWorkerAssemblyExports(assemblyName: string): Promise<Wo
                 const supported = closure?.isWorkerScalar === true;
                 if (supported) workerExports.set(handle, value);
                 descriptors.push({ path, handle, supported, isAsync: closure?.isAsync === true,
-                    argumentType: closure?.workerArgumentType, returnType: closure?.workerReturnType });
+                    argumentTypes: closure?.workerArgumentTypes ?? [], returnType: closure?.workerReturnType ?? MarshalerType.None });
             } else if (value && typeof value === "object") {
                 walk(value, path);
             }
@@ -57,19 +57,13 @@ export async function getWorkerAssemblyExports(assemblyName: string): Promise<Wo
     }
 }
 
-export function invokeWorkerJSExport(handle: number, args: JSMarshalerArguments, stringArgument?: string | null): unknown {
+export function invokeWorkerJSExport(handle: number, args: JSMarshalerArguments, values: unknown[]): unknown {
     try {
         const fn = workerExports.get(handle);
         if (!fn) throw new Error("withWorker(): unknown or unsupported scalar export");
         const closure: BindingClosureCS = Reflect.get(fn, boundCsFunctionSymbol);
-        let result;
-        if (closure.argsCount === 0) {
-            result = fn();
-        } else {
-            const argumentConverter = getMarshalerToJsByType(closure.workerArgumentType);
-            if (!argumentConverter) throw new Error("Worker argument marshaler is not initialized");
-            result = fn(closure.workerArgumentType === MarshalerType.String ? stringArgument : argumentConverter(getArg(args, 2)));
-        }
+        if (values.length !== closure.argsCount) throw new Error("withWorker(): export argument count mismatch");
+        const result = fn(...values);
         if (closure.isAsync) {
             return result === null ? null : result.catch((error: unknown) => {
                 throw snapshotWorkerExportError(error);
@@ -128,7 +122,7 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
     }
     const resConverter = bindArgMarshalToJs(resSig, resMarshalerType, 1);
 
-    const workerArgumentType = argsCount === 1 ? getSignatureType(getSig(signature, 2)) : MarshalerType.None;
+    const workerArgumentTypes = Array.from({ length: argsCount }, (_, index) => getSignatureType(getSig(signature, index + 2)));
     const rawWorkerReturnType = isAsync ? getSignatureResType(resSig) : resMarshalerType;
     const workerReturnType = rawWorkerReturnType === MarshalerType.None || rawWorkerReturnType === MarshalerType.Discard
         ? MarshalerType.Void : rawWorkerReturnType;
@@ -141,8 +135,8 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
         isAsync,
         isDiscardNoWait,
         isDisposed: false,
-        isWorkerScalar: argsCount <= 1 && isWorkerReturnType(workerReturnType) && isWorkerArgumentType(workerArgumentType),
-        workerArgumentType,
+        isWorkerScalar: argsCount <= WorkerMaxArgumentCount && isWorkerReturnType(workerReturnType) && workerArgumentTypes.every(isWorkerValueType),
+        workerArgumentTypes,
         workerReturnType,
     };
     let boundFn: Function;

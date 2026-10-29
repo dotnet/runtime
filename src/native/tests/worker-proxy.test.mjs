@@ -163,9 +163,9 @@ async function createFixture(options = {}) {
                 calls.push(["exports", assemblyName]);
                 if (options.getExports) await options.getExports();
                 return [
-                    { path: ["Sample", "Test", "Scalar"], handle: 1, supported: true },
-                    { path: ["Sample", "Test", "Scalar.123"], handle: 1, supported: true },
-                    { path: ["Sample", "Test", "Async"], handle: 2, supported: false },
+                    { path: ["Sample", "Test", "Scalar"], handle: 1, supported: true, argumentTypes: [7], returnType: 7 },
+                    { path: ["Sample", "Test", "Scalar.123"], handle: 1, supported: true, argumentTypes: [7], returnType: 7 },
+                    { path: ["Sample", "Test", "Async"], handle: 2, supported: false, argumentTypes: [7], returnType: 7 },
                 ];
             },
             invokeWorkerJSExport: (handle, pointer) => {
@@ -839,7 +839,7 @@ test("zero-argument imports accept a two-slot native frame at the end of memory"
         const pointer = fixture.memory.buffer.byteLength - 64;
         const invoke = fixture.importTransport.createWorkerJSImportInvoker(
             fixture.workers[0].signal, api.INTERNAL.workerMemoryViews, 1, () => {});
-        assert.equal(invoke(pointer, false, undefined, 0, 7), 42);
+        assert.equal(invoke(pointer, false, [], [], 7), 42);
     } finally {
         api.exit(0);
         await fixture.termination;
@@ -886,6 +886,91 @@ test("Task-without-result imports preserve null tasks, synchronous throws, rejec
         await rejected;
         await fixture.termination;
         resolve("late");
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("six mixed arguments retain order, declared arity, null defaults and Task ownership", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    const calls = [];
+    let mode = "sync";
+    try {
+        api.setModuleImports("main.js", {
+            receiver: 42,
+            update(...args) {
+                assert.equal(this.receiver, 42);
+                assert.equal(args.length, 6);
+                calls.push(args);
+                return mode === "async" ? Promise.resolve(JSON.stringify(args)) : JSON.stringify(args);
+            },
+        });
+        const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        const args = ["first\0", -17, -0, true, 1 + 2 ** -24, "last\ud800"];
+        const expected = [...args];
+        expected[4] = Math.fround(expected[4]);
+        assert.equal(exports.Mixed(...args), JSON.stringify(expected));
+        assert.equal(exports.MixedImport(...args, "ignored"), JSON.stringify(expected));
+        assert.ok(Object.is(calls.at(-1)[2], -0));
+        assert.deepEqual(calls.at(-1), expected);
+        assert.equal(await exports.MixedAsync(...args), JSON.stringify(expected));
+        mode = "async";
+        assert.equal(await exports.MixedAsyncImport(...args), JSON.stringify(expected));
+        mode = "sync";
+        assert.equal(exports.MixedVoid(...args), undefined);
+        assert.equal(exports.Mixed(), JSON.stringify(Array(6).fill(null)));
+        assert.throws(() => exports.Mixed("first", "invalid", 2, true, 3, "last"), /Int32/);
+        assert.throws(() => exports.UnsupportedSeven(1, 2, 3, 4, 5, 6, 7), /supported/);
+        mode = "async";
+        const pending = Array.from({ length: 70 }, (_, index) => exports.MixedAsyncImport("left", index, 2.5, false, 1.25, "right"));
+        assert.equal(exports.ActiveAllocations(0), 16);
+        assert.deepEqual(await Promise.all(pending), Array.from({ length: 70 }, (_, index) => JSON.stringify(["left", index, 2.5, false, 1.25, "right"])));
+        assert.equal(exports.ActiveAllocations(0), 16);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("multiple string allocations, nested arguments and partial-allocation failures reclaim every buffer", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    let exports;
+    let mode = "echo";
+    try {
+        api.setModuleImports("main.js", { update: (...args) => {
+            if (mode === "nested") {
+                const [first, depth, last] = args;
+                return depth === 0 ? first + "|" + last : exports.NestedMultiple(first + "L", depth - 1, "R" + last);
+            }
+            if (mode === "error") throw new Error("Multiple UI argument failure");
+            if (mode === "allocation") {
+                exports.FailAfterAllocations(1);
+                return exports.SixStrings("a", "b", "c", "d", "e", "f");
+            }
+            return JSON.stringify(args);
+        } });
+        exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        const args = [null, "", "a\0b", "\ud800", "x".repeat(400000), "last"];
+        assert.equal(exports.SixStrings(...args), JSON.stringify(args));
+        assert.equal(exports.SixStringsImport(...args), JSON.stringify(args));
+        assert.equal(exports.ActiveAllocations(0), 16);
+        mode = "nested";
+        assert.equal(exports.NestedMultiple("a", 4, "z"), "aLLLL|RRRRz");
+        mode = "error";
+        assert.throws(() => exports.SixStringsImport(...args), /Multiple UI argument failure/);
+        exports.FailAfterAllocations(2);
+        assert.throws(() => exports.SixStrings("a", "b", "c", "d", "e", "f"), /unable to allocate/);
+        assert.equal(exports.ActiveAllocations(0), 16);
+        assert.throws(() => exports.ImportAllocationFailure("a", "b", "c", "d", "e", "f"), /unable to allocate/);
+        assert.equal(exports.ActiveAllocations(0), 16);
+        mode = "allocation";
+        assert.throws(() => exports.SixStringsImport("a", "b", "c", "d", "e", "f"), /unable to allocate/);
+        mode = "echo";
+        assert.equal(exports.SixStringsImport(...args), JSON.stringify(args));
+        assert.equal(exports.ActiveAllocations(0), 16);
     } finally {
         api.exit(0);
         await fixture.termination;

@@ -62,8 +62,8 @@ application assets; do not patch files in the NuGet cache or published output.
 Browser ReadyToRun images must be produced by a compiler that includes a maximum
 in their memory imports. Older unbounded images fail shared staging explicitly.
 
-The current bridge supports zero or one Boolean, Int32, Single, Double, or String
-argument and a result of any of those types or void, synchronously or through a
+The current bridge supports up to six mixed Boolean, Int32, Single, Double, or String
+arguments and a result of any of those types or void, synchronously or through a
 Task. Void exports return undefined; Task-without-result completion resolves
 to undefined, while a null Task remains null. Void UI imports ignore their return
 values. DiscardNoWait imports/exports are not supported. Floating-point
@@ -93,7 +93,7 @@ Run the currently supported scalar subset in Chrome:
 Use `WasmTestWithWorker=false` for the same subset on the ordinary runtime.
 The subset includes scalar strings, Unicode and large payloads, native memory
 growth, nested calls, concurrent Tasks, errors and cleanup. It is not the full
-JS interop suite: object identity, arrays, callbacks, multiple arguments and
+JS interop suite: object identity, arrays, callbacks and
 other marshaled signatures still need worker-bridge support.
 When using the shared browser cache, set `CHROME_PATH_FOR_TESTS` and put its
 matching ChromeDriver on `PATH`; a cached driver cannot drive an unrelated
