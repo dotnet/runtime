@@ -63,11 +63,7 @@ VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwWriterLock, 0);
 #ifdef TARGET_WASM
 VirtualIPRangeSection* ExecutionManager::s_pVirtualIPRangeList = nullptr;
 FunctionTableIndexRangeSection* ExecutionManager::s_pFunctionTableIndexRangeList = nullptr;
-#ifdef TARGET_64BIT
-static TADDR s_nextVirtualIP = 0x8000000000000001ULL;
-#else
-static TADDR s_nextVirtualIP = 0x80000001;
-#endif
+static TADDR s_nextVirtualIP = ExecutionManager::WasmInitialVirtualIP;
 #endif // TARGET_WASM
 
 #ifndef DACCESS_COMPILE
@@ -268,6 +264,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -306,6 +303,7 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(m_flushInProgress != 0);
     }
     CONTRACTL_END;
@@ -445,6 +443,7 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1458,6 +1457,15 @@ extern "C" DWORD64 __stdcall GetDataCacheZeroIDReg();
 extern "C" uint64_t GetSveLengthFromOS();
 #endif
 
+#ifdef TARGET_WASM
+static bool s_wasmRelaxedSimdSupported;
+
+extern "C" void coreclr_wasm_set_relaxed_simd_supported()
+{
+    s_wasmRelaxedSimdSupported = true;
+}
+#endif
+
 void EEJitManager::SetCpuInfo()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1502,6 +1510,10 @@ void EEJitManager::SetCpuInfo()
 #if defined(TARGET_WASM)
     CPUCompileFlags.Set(InstructionSet_WasmBase);
     CPUCompileFlags.Set(InstructionSet_PackedSimd);
+    if (s_wasmRelaxedSimdSupported)
+    {
+        CPUCompileFlags.Set(InstructionSet_RelaxedSimd);
+    }
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1753,6 +1765,11 @@ void EEJitManager::SetCpuInfo()
             if (((cpuFeatures & ARM64IntrinsicConstants_SveAes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SveAes))
             {
                 CPUCompileFlags.Set(InstructionSet_SveAes);
+            }
+
+            if (((cpuFeatures & ARM64IntrinsicConstants_SvePmull128) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SvePmull128))
+            {
+                CPUCompileFlags.Set(InstructionSet_SvePmull128);
             }
 
             if (((cpuFeatures & ARM64IntrinsicConstants_SveSha3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SveSha3))
@@ -5914,6 +5931,13 @@ void ExecutionManager::AddFunctionTableIndexRange(DWORD minFunctionTableIndex,
         PRECONDITION(CheckPointer(pModule));
     } CONTRACTL_END;
 
+    // Positive odd frame identities encode table indices without overlapping negative helper identities.
+    if (minFunctionTableIndex == 0 || minFunctionTableIndex >= 0x40000000 ||
+        numRuntimeFunctions > 0x40000000 - minFunctionTableIndex)
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
     FunctionTableIndexRangeSection* pNewRange = new FunctionTableIndexRangeSection(
         minFunctionTableIndex, numRuntimeFunctions, pModule);
 
@@ -5940,24 +5964,6 @@ FunctionTableIndexRangeSection* ExecutionManager::FindFunctionTableIndexRangeSec
         pCurrent = pCurrent->pNext;
     }
     return nullptr;
-}
-
-BOOL ExecutionManager::IsFuncletFunctionIndex(DWORD functionIndex)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    FunctionTableIndexRangeSection* pSection = FindFunctionTableIndexRangeSection(functionIndex);
-    if (pSection == nullptr)
-    {
-        return FALSE;
-    }
-
-    Module* pModule = pSection->pR2RModule;
-    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
-
-    DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
-    PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
-    return RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction);
 }
 
 TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex)
@@ -5994,6 +6000,20 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
         }
         return pR2RInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
     } while (true);
+}
+
+TADDR ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD functionIndex)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    VirtualIPRangeSection* pSection = FindVirtualIPRangeSection(WasmInitialVirtualIP);
+    _ASSERTE(pSection != nullptr);
+    ReadyToRunInfo* pR2RInfo = pSection->rangeSection._pR2RModule->GetReadyToRunInfo();
+    _ASSERTE(pR2RInfo->GetMinVirtualIP() == WasmInitialVirtualIP);
+    _ASSERTE(functionIndex < pR2RInfo->GetRuntimeFunctionCount());
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + functionIndex;
+    _ASSERTE(!RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction));
+    return WasmInitialVirtualIP + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
 }
 
 TADDR ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP)
@@ -6964,10 +6984,13 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
 TypeHandle ReadyToRunJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
                                               CrawlFrame* pCf)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(NULL != pCf);
     _ASSERTE(NULL != pEHClause);

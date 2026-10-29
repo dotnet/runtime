@@ -21,11 +21,14 @@ internal partial class StackWalk_1 : IStackWalk
     private readonly GcScanner _gcScanner;
     private readonly FrameHelpers _frameHelpers;
 
-    internal StackWalk_1(Target target)
+    internal int Version { get; }
+
+    internal StackWalk_1(Target target, int version = 2)
     {
         _target = target;
         _eman = target.Contracts.ExecutionManager;
         _gcScanner = new GcScanner(target);
+        Version = version;
         _frameHelpers = new FrameHelpers(target);
     }
 
@@ -1134,9 +1137,17 @@ internal partial class StackWalk_1 : IStackWalk
         return CallerStackPointer(handle);
     }
 
-    private TargetPointer CallerStackPointer(StackDataFrameHandle handle)
+    private TargetPointer CallerStackPointer(StackDataFrameHandle handle) => CallerStackPointer(handle.Context);
+
+    // Mirrors the caller context the native code manager produces (GetRegdisplayStackMark on
+    // ARM64 et al.): interpreted frames are unwound by InterpreterCodeManager
+    // (VirtualUnwindInterpreterCallFrame), not by the OS unwinder, which has no unwind info for bytecode.
+    internal TargetPointer CallerStackPointer(IPlatformAgnosticContext context)
     {
-        IPlatformAgnosticContext callerContext = handle.Context.Clone();
+        if (IsInterpreterCode(context.InstructionPointer))
+            return _frameHelpers.InterpreterCallerStackPointer(context);
+
+        IPlatformAgnosticContext callerContext = context.Clone();
         callerContext.Unwind(_target);
         return callerContext.StackPointer;
     }

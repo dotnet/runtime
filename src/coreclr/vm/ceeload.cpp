@@ -1963,9 +1963,7 @@ void Module::AddClass(mdTypeDef classdef)
     CONTRACTL
     {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
 
@@ -2345,7 +2343,7 @@ Module::GetAssemblyIfLoaded(
 #endif //!DACCESS_COMPILE
 
     // When walking the stack or computing GC information this function should never fail.
-    _ASSERTE((pAssembly != NULL) || !(IsStackWalkerThread() || IsGCThread()));
+    _ASSERTE_ALL_BUILDS((pAssembly != NULL) || !(IsStackWalkerThread() || IsGCThread()));
 
 #ifdef DACCESS_COMPILE
 
@@ -3042,9 +3040,7 @@ mdToken GetTokenForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
 //=================================================================================
 void SetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry, BYTE *pTarget)
 {
-    CONTRACTL{
-        THROWS;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     DWORD oldProtect;
     if (!ClrVirtualProtect(ppVTEntry, sizeof(BYTE*), PAGE_READWRITE, &oldProtect))

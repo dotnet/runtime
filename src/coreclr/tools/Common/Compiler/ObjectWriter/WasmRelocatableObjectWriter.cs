@@ -19,6 +19,8 @@ namespace ILCompiler.ObjectWriter
     {
         private WasmDataSection _dataSection;
         private DwarfBuilder _dwarfBuilder;
+        private uint _nextVirtualIP = 1; // Zero marks an invalid stack frame.
+        private readonly Dictionary<Utf8String, uint> _methodStartVirtualIPs = new();
 
         // https://github.com/WebAssembly/tool-conventions/blob/main/Linking.md
         private enum SymbolKind : byte
@@ -34,6 +36,7 @@ namespace ILCompiler.ObjectWriter
         private const uint UndefinedSymbol = 0x10; // WASM_SYM_UNDEFINED
         private const uint LocalSymbol = 0x2; // WASM_SYM_BINDING_LOCAL
         private const uint ExportedSymbol = 0x20; // WASM_SYM_EXPORTED
+        private const uint ExplicitNameSymbol = 0x40; // WASM_SYM_EXPLICIT_NAME
         private const byte SegmentInfoSubsection = 5; // WASM_SEGMENT_INFO
         private const byte SymbolTableSubsection = 8; // WASM_SYMBOL_TABLE
         private const uint LinkingVersion = 2;
@@ -165,12 +168,17 @@ namespace ILCompiler.ObjectWriter
                         relocationSection = (name, new MemoryStream(), 0);
                         relocationSections.Add(targetSectionIndex, relocationSection);
                     }
-                    WriteRelocationEntries(section, contentOffset, relocations, relocationSection.Entries);
-                    relocationSections[targetSectionIndex] = (relocationSection.Name, relocationSection.Entries, relocationSection.Count + relocations.Count);
+                    int relocationCount = WriteRelocationEntries(section, contentOffset, relocations, relocationSection.Entries);
+                    relocationSections[targetSectionIndex] = (relocationSection.Name, relocationSection.Entries, relocationSection.Count + relocationCount);
                 }
 
                 foreach ((int targetSectionIndex, var relocationSection) in relocationSections)
                 {
+                    if (relocationSection.Count == 0)
+                    {
+                        continue;
+                    }
+
                     sections.Add(new WasmRelocationSection(
                         relocationSection.Entries,
                         new Utf8String(relocationSection.Name),
@@ -294,6 +302,10 @@ namespace ILCompiler.ObjectWriter
                 _ => throw new UnreachableException(),
             };
             uint flags = symbol.IsImport ? UndefinedSymbol : 0;
+            if (symbol.HasExplicitName)
+            {
+                flags |= ExplicitNameSymbol;
+            }
             if (!symbol.IsImport && _definedSymbols.TryGetValue(symbol.Name, out SymbolDefinition definition) && definition.Global)
             {
                 flags |= ExportedSymbol;
@@ -301,9 +313,9 @@ namespace ILCompiler.ObjectWriter
             entries.WriteByte((byte)kind); // kind: the symbol type.
             WriteULEB128(entries, flags); // flags: a bitfield containing flags for this symbol.
             WriteULEB128(entries, (ulong)symbol.Index); // index: the index of the Wasm object corresponding to the symbol.
-            if (!symbol.IsImport)
+            if (!symbol.IsImport || symbol.HasExplicitName)
             {
-                WriteName(entries, symbol.Name); // name_len/name_data: the optional UTF-8 symbol name, omitted for imports.
+                WriteName(entries, symbol.Name); // name_len/name_data: the UTF-8 symbol name, omitted for imports without an explicit name.
             }
         }
 
@@ -343,49 +355,62 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private unsafe void WriteRelocationEntries(SectionDataEmitter section, int contentOffset, List<SymbolicRelocation> relocs, MemoryStream payload)
+        private unsafe int WriteRelocationEntries(SectionDataEmitter section, int contentOffset, List<SymbolicRelocation> relocs, MemoryStream payload)
         {
             using Stream originalStream = section.ContentReadStream;
             MemoryStream sectionStream = new((int)originalStream.Length);
             originalStream.Position = 0;
             originalStream.CopyTo(sectionStream);
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
+            int relocationCount = 0;
             WasmSection codeSection = _sections.GetSection<WasmSection>(ObjectNodeSection.WasmCodeSection.Name);
             int codeSectionPrefixSize = codeSection.ContentPrefixSize;
 
             foreach (SymbolicRelocation reloc in relocs)
             {
                 int size = Relocation.GetSize(reloc.Type);
-                bool isFunction = _wasmSymbolManager.TryGetSymbol(reloc.SymbolName, out WasmSymbol symbol) &&
-                    symbol.IndexSpace == WasmIndexSpace.Function;
-                bool isSection = _definedSymbols.TryGetValue(reloc.SymbolName, out SymbolDefinition definition) &&
-                    _sections[definition.SectionIndex] is WasmCustomSection;
-                WasmRelocationType type = reloc.Type switch
-                {
-                    RelocType.WASM_FUNCTION_INDEX_LEB => WasmRelocationType.FunctionIndexLeb,
-                    RelocType.WASM_TYPE_INDEX_LEB => WasmRelocationType.TypeIndexLeb,
-                    RelocType.WASM_GLOBAL_INDEX_LEB => WasmRelocationType.GlobalIndexLeb,
-                    RelocType.WASM_TABLE_INDEX_SLEB => WasmRelocationType.TableIndexSleb,
-                    RelocType.WASM_TABLE_INDEX_I32 => WasmRelocationType.TableIndexI32,
-                    RelocType.WASM_TABLE_INDEX_I64 => WasmRelocationType.TableIndexI64,
-                    RelocType.WASM_MEMORY_ADDR_LEB => WasmRelocationType.MemoryAddrLeb,
-                    RelocType.WASM_MEMORY_ADDR_SLEB => WasmRelocationType.MemoryAddrSleb,
-                    RelocType.WASM_MEMORY_ADDR_REL_SLEB when isFunction => WasmRelocationType.TableIndexSleb,
-                    RelocType.WASM_MEMORY_ADDR_REL_SLEB => WasmRelocationType.MemoryAddrRelSleb,
-                    RelocType.IMAGE_REL_BASED_HIGHLOW when isFunction && section is WasmCustomSection => WasmRelocationType.FunctionOffsetI32,
-                    RelocType.IMAGE_REL_BASED_HIGHLOW when isSection => WasmRelocationType.SectionOffsetI32,
-                    RelocType.IMAGE_REL_BASED_HIGHLOW when isFunction => WasmRelocationType.TableIndexI32,
-                    RelocType.IMAGE_REL_BASED_HIGHLOW => WasmRelocationType.MemoryAddrI32,
-                    RelocType.IMAGE_REL_BASED_DIR64 => WasmRelocationType.MemoryAddrI64,
-                    RelocType.IMAGE_REL_BASED_RELPTR32 => WasmRelocationType.MemoryAddrLocrelI32,
-                    _ => throw new NotSupportedException($"Relocation type {reloc.Type} for symbol '{reloc.SymbolName}' in section {section.SectionName} not yet implemented"),
-                };
 
                 sectionStream.Position = reloc.Offset;
                 sectionStream.ReadExactly(relocScratchBuffer.AsSpan(0, size));
                 fixed (byte* pData = relocScratchBuffer)
                 {
                     long addend = reloc.Addend + Relocation.ReadValue(reloc.Type, pData);
+                    if (reloc.Type is RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB)
+                    {
+                        Debug.Assert(addend == 0);
+                        // Check that the method start fits alongside the frame-identity tag, then encode its i32 bits.
+                        addend = unchecked((int)checked(_methodStartVirtualIPs[reloc.SymbolName] * 2 + 1));
+                        Relocation.WriteValue(reloc.Type, pData, addend);
+                        sectionStream.Position = reloc.Offset;
+                        sectionStream.Write(relocScratchBuffer.AsSpan(0, size));
+                        continue;
+                    }
+
+                    bool isFunction = _wasmSymbolManager.TryGetSymbol(reloc.SymbolName, out WasmSymbol symbol) &&
+                        symbol.IndexSpace == WasmIndexSpace.Function;
+                    bool isSection = _definedSymbols.TryGetValue(reloc.SymbolName, out SymbolDefinition definition) &&
+                        _sections[definition.SectionIndex] is WasmCustomSection;
+                    WasmRelocationType type = reloc.Type switch
+                    {
+                        RelocType.WASM_FUNCTION_INDEX_LEB => WasmRelocationType.FunctionIndexLeb,
+                        RelocType.WASM_TYPE_INDEX_LEB => WasmRelocationType.TypeIndexLeb,
+                        RelocType.WASM_GLOBAL_INDEX_LEB => WasmRelocationType.GlobalIndexLeb,
+                        RelocType.WASM_TABLE_INDEX_SLEB => WasmRelocationType.TableIndexSleb,
+                        RelocType.WASM_TABLE_INDEX_I32 => WasmRelocationType.TableIndexI32,
+                        RelocType.WASM_TABLE_INDEX_I64 => WasmRelocationType.TableIndexI64,
+                        RelocType.WASM_MEMORY_ADDR_LEB => WasmRelocationType.MemoryAddrLeb,
+                        RelocType.WASM_MEMORY_ADDR_SLEB when isFunction => WasmRelocationType.TableIndexSleb,
+                        RelocType.WASM_MEMORY_ADDR_SLEB => WasmRelocationType.MemoryAddrSleb,
+                        RelocType.WASM_MEMORY_ADDR_REL_SLEB when isFunction => WasmRelocationType.TableIndexSleb,
+                        RelocType.WASM_MEMORY_ADDR_REL_SLEB => WasmRelocationType.MemoryAddrRelSleb,
+                        RelocType.IMAGE_REL_BASED_HIGHLOW when isFunction && section is WasmCustomSection => WasmRelocationType.FunctionOffsetI32,
+                        RelocType.IMAGE_REL_BASED_HIGHLOW when isSection => WasmRelocationType.SectionOffsetI32,
+                        RelocType.IMAGE_REL_BASED_HIGHLOW when isFunction => WasmRelocationType.TableIndexI32,
+                        RelocType.IMAGE_REL_BASED_HIGHLOW => WasmRelocationType.MemoryAddrI32,
+                        RelocType.IMAGE_REL_BASED_DIR64 => WasmRelocationType.MemoryAddrI64,
+                        RelocType.IMAGE_REL_BASED_RELPTR32 => WasmRelocationType.MemoryAddrLocrelI32,
+                        _ => throw new NotSupportedException($"Relocation type {reloc.Type} for symbol '{reloc.SymbolName}' in section {section.SectionName} not yet implemented"),
+                    };
                     Utf8String symbolName = reloc.SymbolName;
                     if (isFunction && type != WasmRelocationType.FunctionOffsetI32 && addend != 0)
                     {
@@ -405,6 +430,7 @@ namespace ILCompiler.ObjectWriter
                         throw new NotSupportedException($"Nonzero addend for {reloc.Type} relocation to '{reloc.SymbolName}'");
                     }
 
+                    relocationCount++;
                     payload.WriteByte((byte)type); // type: the relocation type.
                     WriteULEB128(payload, checked((ulong)(contentOffset + reloc.Offset))); // offset: offset of the value to rewrite, relative to the section's contents.
                     // index: the symbol index, or the type index for R_WASM_TYPE_INDEX_LEB.
@@ -429,6 +455,7 @@ namespace ILCompiler.ObjectWriter
             }
 
             section.ContentReadStream = sectionStream;
+            return relocationCount;
         }
 
         // COMDAT groups are not supported yet.
@@ -459,6 +486,7 @@ namespace ILCompiler.ObjectWriter
         private protected override void WriteImports()
         {
             WriteImport(new WasmImport("env", WasmWellKnownGlobalSymbolNode.StackPointerName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut)));
+            WriteImport(new WasmImport("env", WasmWellKnownGlobalSymbolNode.AsyncContinuationName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut)));
             WriteImport(new WasmImport("env", "__indirect_function_table", new WasmTableImportType()));
             WriteImport(new WasmImport("env", "memory", new WasmMemoryImportType(WasmLimitType.HasMin, 0)));
         }
@@ -576,6 +604,20 @@ namespace ILCompiler.ObjectWriter
             INodeWithCodeInfo nodeWithCodeInfo,
             Utf8String currentSymbolName)
         {
+            if (nodeWithCodeInfo.FrameInfos is not FrameInfo[] frames || frames.Length == 0)
+            {
+                return;
+            }
+
+            _methodStartVirtualIPs.Add(currentSymbolName, _nextVirtualIP);
+            for (int i = 0; i < frames.Length; i++)
+            {
+                FrameInfo frame = frames[i];
+                DwarfHelper.ReadULEB128(frame.BlobData, out int bytesRead);
+                uint virtualSize = checked((uint)DwarfHelper.ReadULEB128(frame.BlobData.AsSpan(bytesRead)));
+                Debug.Assert(virtualSize != 0);
+                _nextVirtualIP = checked(_nextVirtualIP + virtualSize);
+            }
         }
 
         private protected override void CreateEhSections()

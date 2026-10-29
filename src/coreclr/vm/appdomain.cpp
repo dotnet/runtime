@@ -1070,6 +1070,10 @@ void SystemDomain::LoadBaseSystemClasses()
 #ifndef TARGET_WASM
         g_pPollGC = CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC)->GetMultiCallableAddrOfCode();
 #endif // !TARGET_WASM
+#if defined(FEATURE_PERFTRACING) && defined(FEATURE_MULTITHREADING)
+        // Bind before managed execution; stack walks cannot load methods.
+        CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC_WORKER);
+#endif // FEATURE_PERFTRACING && FEATURE_MULTITHREADING
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
         g_pThrowOverflowException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWOVERFLOWEXCEPTION)->GetMultiCallableAddrOfCode();
         g_pThrowDivideByZeroException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWDIVIDEBYZEROEXCEPTION)->GetMultiCallableAddrOfCode();
@@ -1659,12 +1663,12 @@ void AppDomain::AddAssembly(Assembly * assem)
         CrstHolder ch(GetAssemblyListLock());
 
         // Attempt to find empty space in assemblies list
-        DWORD asmCount = m_Assemblies.GetCount_Unlocked();
-        for (DWORD i = 0; i < asmCount; ++i)
+        ArrayList::Iterator i = m_Assemblies.GetArrayListIterator();
+        while (i.Next())
         {
-            if (m_Assemblies.Get_UnlockedNoReference(i) == NULL)
+            if (i.GetElement() == nullptr)
             {
-                m_Assemblies.Set_Unlocked(i, assem);
+                m_Assemblies.Set_Unlocked(i.GetIndex(), assem);
                 return;
             }
         }
@@ -1684,12 +1688,12 @@ void AppDomain::RemoveAssembly(Assembly * pAsm)
     CONTRACTL_END;
 
     CrstHolder ch(GetAssemblyListLock());
-    DWORD asmCount = m_Assemblies.GetCount_Unlocked();
-    for (DWORD i = 0; i < asmCount; ++i)
+    ArrayList::Iterator i = m_Assemblies.GetArrayListIterator();
+    while (i.Next())
     {
-        if (m_Assemblies.Get_UnlockedNoReference(i) == pAsm)
+        if (i.GetElement() == pAsm)
         {
-            m_Assemblies.Set_Unlocked(i, NULL);
+            m_Assemblies.Set_Unlocked(i.GetIndex(), nullptr);
             return;
         }
     }
@@ -2837,6 +2841,7 @@ BOOL AppDomain::RemoveFileFromCache(PEAssembly * pPEAssembly)
     CONTRACTL
     {
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pPEAssembly));
     }
     CONTRACTL_END;
@@ -3704,10 +3709,13 @@ PTR_LoaderAllocator AppDomain::GetLoaderAllocator()
 
 //------------------------------------------------------------------------
 UINT32 AppDomain::GetTypeID(PTR_MethodTable pMT) {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     return m_typeIDMap.GetTypeID(pMT, true);
 }

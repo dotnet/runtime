@@ -322,7 +322,9 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 //
 // Return Value:
 //    None.
-void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*>& parents)
+void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree**             use,
+                                                ArrayStack<GenTree*>& parents,
+                                                RationalizeVisitor*   revisitor)
 {
     GenTreeHWIntrinsic* hwintrinsic  = (*use)->AsHWIntrinsic();
     NamedIntrinsic      intrinsicId  = hwintrinsic->GetHWIntrinsicId();
@@ -429,6 +431,45 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             }
 
             result = m_compiler->gtNewSimdShuffleNode(retType, op1, op2, simdBaseType, simdSize, isShuffleNative);
+
+            if (result == op1)
+            {
+                // The simd shuffle folded to op1. That means op2 should be a vector constant,
+                // and we can simply remove the shuffle (hwintrinsic) and the constant (op2) from the block range, and
+                // replace the shuffle with op1 with no node re-sequencing.
+                assert(op2->IsCnsVec());
+                JITDUMP("Removing outer identity shuffle:\n");
+                DISPNODE(hwintrinsic);
+                DISPNODE(op2);
+                BlockRange().Remove(hwintrinsic);
+                BlockRange().Remove(op2);
+
+                GenTree* user;
+                if (parents.Height() > 1)
+                {
+                    parents.Top(1)->ReplaceOperand(use, result);
+                    user = parents.Top(1);
+                }
+                else
+                {
+                    // No parent
+                    *use = result;
+                    user = nullptr;
+                }
+                // Since "hwintrinsic" is replaced with "result", pop "hwintrinsic" node (i.e the current node)
+                // and replace it with "result" on parent stack.
+                assert(parents.Top() == hwintrinsic);
+                (void)parents.Pop();
+                parents.Push(result);
+
+                // We need to revisit the new root node (op1) to make sure it is properly processed.
+                // We don't expect the revisit to ever terminate the walk.
+                Compiler::fgWalkResult visitResult = revisitor->PreOrderVisit(use, user);
+                assert(visitResult == Compiler::fgWalkResult::WALK_CONTINUE);
+
+                return;
+            }
+
             break;
         }
 
@@ -2408,7 +2449,7 @@ Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree**
     {
         if (node->AsHWIntrinsic()->IsUserCall())
         {
-            m_rationalizer.RewriteHWIntrinsicAsUserCall(use, this->m_ancestors);
+            m_rationalizer.RewriteHWIntrinsicAsUserCall(use, this->m_ancestors, this);
         }
     }
 #endif // FEATURE_HW_INTRINSICS

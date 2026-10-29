@@ -112,15 +112,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
         internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
 
-#if FEATURE_GC_STRESS
-        //
-        // internal calls for GC stress
-        //
-        [RuntimeImport(RuntimeLibrary, "RhpInitializeGcStress")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpInitializeGcStress();
-#endif // FEATURE_GC_STRESS
-
         // WASM omits the native EH enumerator and StackFrameIterator implementation.
 #if !TARGET_WASM
         [RuntimeImport(RuntimeLibrary, "RhpEHEnumInitFromStackFrameIterator")]

@@ -5,7 +5,11 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 using Internal.IL;
+using Internal.Text;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler
 {
@@ -16,10 +20,10 @@ namespace ILCompiler
     {
         private class DummyConfiguration : PInvokeILEmitterConfiguration
         {
-            public override bool GenerateDirectCall(MethodDesc method, out string externName)
+            public override LinkageMetadata GetLinkageMetadata(MethodDesc method)
             {
-                externName = method.GetPInvokeMethodMetadata().Name;
-                return true;
+                string symbol = method.GetPInvokeMethodMetadata().Name;
+                return new LinkageMetadata(symbol is null ? default : new Utf8String(symbol));
             }
         }
 
@@ -32,15 +36,15 @@ namespace ILCompiler
             return null;
         }
 
-        public override void AddDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public override void AddDependenciesDueToMethodCodePresence(IDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
         }
 
-        public override void AddInterestingInteropConstructedTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public override void AddInterestingInteropConstructedTypeDependencies(DependencySink dependencies, NodeFactory factory, TypeDesc type)
         {
         }
 
-        public override void AddMarshalAPIsGenericDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public override void AddMarshalAPIsGenericDependencies(IDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
         }
     }

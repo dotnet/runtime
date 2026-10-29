@@ -10,6 +10,22 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+#if !TARGET_WINDOWS
+        internal WaitSubsystem.ThreadWaitInfo WaitInfo
+        {
+            get
+            {
+                return Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
+
+                WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
+                {
+                    Interlocked.CompareExchange(ref _waitInfo, new WaitSubsystem.ThreadWaitInfo(this), null!);
+                    return _waitInfo;
+                }
+            }
+        }
+#endif
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CatchAtSafePoint();
 
@@ -22,10 +38,12 @@ namespace System.Threading
             {
                 PollGCWorker();
             }
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static void PollGCWorker() => PollGCInternal();
         }
+
+        // The EventPipe stack walker recognizes this helper through the CoreLib binder
+        // so leading polling frames do not obscure the managed caller.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void PollGCWorker() => PollGCInternal();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PollGC")]
         private static partial void PollGCInternal();
