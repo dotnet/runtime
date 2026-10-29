@@ -165,9 +165,9 @@ extern "C" FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
 
 extern "C" FCDECL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 
+#ifdef TARGET_32BIT
 EXTERN_C FCDECL2_VV(INT64, RhpLMul, INT64 val1, INT64 val2);
 
-#ifndef HOST_64BIT
 #ifdef TARGET_X86
 EXTERN_C void STDCALL RhpLLsh();
 EXTERN_C void STDCALL RhpLRsh();
@@ -177,7 +177,7 @@ EXTERN_C FCDECL2_VV(UINT64, RhpLLsh, UINT64 num, int shift);
 EXTERN_C FCDECL2_VV(INT64, RhpLRsh, INT64 num, int shift);
 EXTERN_C FCDECL2_VV(UINT64, RhpLRsz, UINT64 num, int shift);
 #endif // !TARGET_X86
-#endif // !HOST_64BIT
+#endif // TARGET_32BIT
 
 #ifdef TARGET_X86
 
