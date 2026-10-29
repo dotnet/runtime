@@ -75,7 +75,10 @@ namespace System.Net.Http
                 settings._maxConnectionsPerServer == int.MaxValue &&
                 (settings._pooledConnectionIdleTimeout == TimeSpan.Zero ||
                  settings._pooledConnectionLifetime == TimeSpan.Zero) &&
-                settings._keepAlivePingDelay == Timeout.InfiniteTimeSpan;
+                settings._keepAlivePingDelay == Timeout.InfiniteTimeSpan &&
+                // HTTP/2 and HTTP/3 may pool a new connection before its first request completes.
+                // Keep their pools tracked so handler disposal can close those connections.
+                settings._maxHttpVersion.Major == 1;
 
             // Start out with the timer not running, since we have no pools.
             // When it does run, run it with a frequency based on the idle timeout.

@@ -3975,6 +3975,40 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
 
+        [ConditionalTheory(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ZeroPooledConnectionTimeout_DisposeHandler_ClosesHttp2Connection(bool zeroLifetime)
+        {
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            Http2LoopbackConnection connection;
+
+            using (SocketsHttpHandler handler = CreateHandler())
+            {
+                if (zeroLifetime)
+                {
+                    handler.PooledConnectionLifetime = TimeSpan.Zero;
+                }
+                else
+                {
+                    handler.PooledConnectionIdleTimeout = TimeSpan.Zero;
+                }
+
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+                    connection = await server.EstablishConnectionAsync();
+                    int streamId = await connection.ReadRequestHeaderAsync();
+                    await connection.SendDefaultResponseAsync(streamId);
+
+                    using HttpResponseMessage response = await sendTask;
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            }
+
+            await connection.WaitForClientDisconnectAsync();
+        }
+
         [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
         [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task ShouldEvictConnection_Http2ConnectionAtStreamLimit_EvictedWhileInFlightRequestsComplete()
