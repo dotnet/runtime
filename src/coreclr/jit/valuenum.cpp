@@ -13496,6 +13496,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // An untracked local, and other odd cases.
                     lcl->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lcl->TypeGet()));
                 }
+
+                // Treat Span lengths like array lengths: comparisons against them are worth analyzing.
+                if (varDsc->IsNeverNegative() && lcl->TypeIs(TYP_INT))
+                {
+                    ValueNum lenVN = vnStore->VNConservativeNormalValue(lcl->gtVNPair);
+                    if (!vnStore->IsVNConstant(lenVN))
+                    {
+                        vnStore->SetVNIsCheckedBound(lenVN);
+                    }
+                }
             }
             break;
 
