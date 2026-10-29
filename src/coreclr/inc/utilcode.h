@@ -212,15 +212,26 @@ typedef LPSTR   LPUTF8;
 // of the default char ('?') for any Unicode character that isn't
 // representable.  This is reasonable for writing to the console, but
 // shouldn't be used for most string conversions.
+// UTF-8 needs at most three bytes per UTF-16 code unit, including surrogate pairs.
 #define MAKE_MULTIBYTE_FROMWIDE_BESTFIT(ptrname, widestr, codepage) \
-    int __l##ptrname = (int)u16_strlen(widestr);        \
-    if (__l##ptrname > MAKE_MAX_LENGTH)         \
-        MAKE_TOOLONGACTION;                     \
-    __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
+    UINT __cp##ptrname = (codepage); \
+    int __l##ptrname; \
+    if (__cp##ptrname == CP_UTF8) { \
+        size_t __cch##ptrname = u16_strlen(widestr); \
+        if (__cch##ptrname > MAKE_MAX_LENGTH) { \
+            MAKE_TOOLONGACTION; \
+        } \
+        __l##ptrname = static_cast<int>((__cch##ptrname + 1) * 3); \
+    } else { \
+        __l##ptrname = WideCharToMultiByte(__cp##ptrname, 0, widestr, -1, NULL, 0, NULL, NULL); \
+    } \
+    if (__l##ptrname == 0) { \
+        MAKE_TRANSLATIONFAILED; \
+    } \
     CQuickBytes __CQuickBytes##ptrname; \
     __CQuickBytes##ptrname.AllocThrows(__l##ptrname); \
-    DWORD __cBytes##ptrname = WideCharToMultiByte(codepage, 0, widestr, -1, (LPSTR)__CQuickBytes##ptrname.Ptr(), __l##ptrname, NULL, NULL); \
-    if (__cBytes##ptrname == 0 && __l##ptrname != 0) { \
+    DWORD __cBytes##ptrname = WideCharToMultiByte(__cp##ptrname, 0, widestr, -1, (LPSTR)__CQuickBytes##ptrname.Ptr(), __l##ptrname, NULL, NULL); \
+    if (__cBytes##ptrname == 0) { \
         MAKE_TRANSLATIONFAILED; \
     } \
     LPSTR ptrname = (LPSTR)__CQuickBytes##ptrname.Ptr()

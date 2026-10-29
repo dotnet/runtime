@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -255,6 +256,63 @@ namespace System.Tests
                 handle.Process = null;
                 p.WaitForExit();
                 Assert.NotEqual(RemoteExecutor.SuccessExitCode, p.ExitCode);
+            }
+        }
+
+        [OuterLoop("Calls FailFast in a child process")]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("A", 1100, false, "utf-8")]
+        [InlineData("\u00E9", 1100, false, "utf-8")]
+        [InlineData("\u20AC", 4, false, "utf-8")]
+        [InlineData("\u20AC", 163, false, "utf-8")]
+        [InlineData("\u20AC", 164, false, "utf-8")]
+        [InlineData("\u20AC", 1100, false, "utf-8")]
+        [InlineData("\uD83D\uDE00", 1100, false, "utf-8")]
+        [InlineData("\u20AC", 4, true, "utf-8")]
+        [InlineData("\u20AC", 1100, true, "utf-8")]
+        [InlineData("A", 1100, false, "us-ascii")]
+        public void FailFast_UnicodeReport_IsWritten(string text, int repetitions, bool exceptionMessage, string encodingName)
+        {
+            Encoding encoding = Encoding.GetEncoding(encodingName);
+            string message = string.Concat(Enumerable.Repeat(text, repetitions)) +
+                (encoding.CodePage == Encoding.UTF8.CodePage ? "\uD83D\uDE00TAIL" : "TAIL");
+            var options = new RemoteInvokeOptions
+            {
+                CheckExitCode = false,
+                CrashDumpCollectionType = CrashDumpCollectionType.None,
+                StartInfo = new ProcessStartInfo
+                {
+                    RedirectStandardError = true,
+                    StandardErrorEncoding = encoding
+                }
+            };
+            options.StartInfo.Environment.Remove("DOTNET_EnableCrashReport");
+
+            // Windows console code pages are shared with child processes.
+            Encoding outputEncoding = Console.OutputEncoding;
+            try
+            {
+                using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static (remoteMessage, useException, remoteEncodingName) =>
+                {
+                    Console.OutputEncoding = Encoding.GetEncoding(remoteEncodingName);
+                    if (bool.Parse(useException))
+                    {
+                        Environment.FailFast("exception report", new Exception(remoteMessage));
+                    }
+                    else
+                    {
+                        Environment.FailFast(remoteMessage);
+                    }
+                }, message, exceptionMessage.ToString(), encodingName, options);
+
+                Task<string> errorTask = handle.Process.StandardError.ReadToEndAsync();
+                Assert.True(handle.Process.WaitForExit(RemoteExecutor.FailWaitTimeoutMilliseconds));
+                Assert.NotEqual(RemoteExecutor.SuccessExitCode, handle.Process.ExitCode);
+                Assert.Contains(message, errorTask.GetAwaiter().GetResult());
+            }
+            finally
+            {
+                Console.OutputEncoding = outputEncoding;
             }
         }
 
