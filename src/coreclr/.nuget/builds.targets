@@ -6,23 +6,26 @@
     <BuildIdentityPackage Condition="'$(BuildingAnOfficialBuildLeg)' == 'true' AND ('$(OS)' != 'Windows_NT' OR '$(TargetArchitecture)' != 'x64')">false</BuildIdentityPackage>
   </PropertyGroup>
 
-  <Target Name="FilterProjects" BeforeTargets="Build;Pack">
+  <PropertyGroup Condition="'$(IsGraphBuild)' == 'true'">
+    <AddTransitiveProjectReferencesInStaticGraph>false</AddTransitiveProjectReferencesInStaticGraph>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <_projectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', '$(TargetRid)'))" />
+    <_projectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', ''))"
+                      Condition="'$(BuildIdentityPackage)' == 'true'" />
+    <_projectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', '$(NETCoreSdkRuntimeIdentifier)'))"
+                      Condition="'$(BuildHostILTools)' == 'true' and '$(IsILToolPackage)' == 'true'">
+      <AdditionalProperties>%(AdditionalProperties);PackCrossComponent=true</AdditionalProperties>
+    </_projectsToBuild>
+    <ProjectReference Include="@(_projectsToBuild)" Targets="Build;Pack" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true'">
+    <ProjectReferenceTargets Include="Pack" Targets="Build;Pack" />
+  </ItemGroup>
+
+  <Target Name="ValidatePackageTargetRid" BeforeTargets="Build;Pack">
     <Error Condition="'$(TargetRid)' == ''" Text="'TargetRid' property must be specified."/>
-
-    <!-- Only build packages for current RID or non-RID-specific -->
-    <ItemGroup>
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(TargetRid)'" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(BuildIdentityPackage)' == 'true'">
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == ''" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(BuildHostILTools)' == 'true' and '$(IsILToolPackage)' == 'true'">
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(NETCoreSdkRuntimeIdentifier)'" AdditionalProperties="%(Project.AdditionalProperties);PackCrossComponent=true" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="@(_projectsToBuild)" />
-    </ItemGroup>
   </Target>
 </Project>
