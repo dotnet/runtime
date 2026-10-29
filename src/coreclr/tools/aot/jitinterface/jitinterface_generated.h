@@ -38,7 +38,6 @@ struct JitInterfaceCallbacks
     CorInfoCallConvExtension (* getUnmanagedCallConv)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition);
     bool (* pInvokeMarshalingRequired)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
     bool (* satisfiesMethodConstraints)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method);
-    void (* methodMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method);
     void (* getGSCookie)(void * thisHandle, CorInfoExceptionClass** ppException, GSCookie* pCookieVal, GSCookie** ppCookieVal);
     void (* setPatchpointInfo)(void * thisHandle, CorInfoExceptionClass** ppException, PatchpointInfo* patchpointInfo);
     PatchpointInfo* (* getOSRInfo)(void * thisHandle, CorInfoExceptionClass** ppException, unsigned* ilOffset);
@@ -54,6 +53,8 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getMethodInstantiationArgument)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, unsigned index);
     size_t (* printClassName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     bool (* isValueClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
+    bool (* isByRefLike)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
+    bool (* isSharedInst)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     uint32_t (* getClassAttribs)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassAssemblyName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     void* (* LongLifetimeMalloc)(void * thisHandle, CorInfoExceptionClass** ppException, size_t sz);
@@ -85,7 +86,6 @@ struct JitInterfaceCallbacks
     bool (* getReadyToRunHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONST_LOOKUP* pLookup);
     void (* getReadyToRunDelegateCtorHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pTargetMethod, unsigned int targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* pLookup);
     CorInfoInitClassResult (* initClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context);
-    void (* classMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_CLASS_HANDLE (* getBuiltinClass)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoClassId classId);
     CorInfoType (* getTypeForPrimitiveValueClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoType (* getTypeForPrimitiveNumericClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -474,14 +474,6 @@ public:
     return temp;
 }
 
-    virtual void methodMustBeLoadedBeforeCodeIsRun(
-          CORINFO_METHOD_HANDLE method)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->methodMustBeLoadedBeforeCodeIsRun(_thisHandle, &pException, method);
-    if (pException != nullptr) throw pException;
-}
-
     virtual void getGSCookie(
           GSCookie* pCookieVal,
           GSCookie** ppCookieVal)
@@ -628,6 +620,24 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->isValueClass(_thisHandle, &pException, cls);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool isByRefLike(
+          CORINFO_CLASS_HANDLE cls)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->isByRefLike(_thisHandle, &pException, cls);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool isSharedInst(
+          CORINFO_CLASS_HANDLE cls)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->isSharedInst(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -931,14 +941,6 @@ public:
     CorInfoInitClassResult temp = _callbacks->initClass(_thisHandle, &pException, field, method, context);
     if (pException != nullptr) throw pException;
     return temp;
-}
-
-    virtual void classMustBeLoadedBeforeCodeIsRun(
-          CORINFO_CLASS_HANDLE cls)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->classMustBeLoadedBeforeCodeIsRun(_thisHandle, &pException, cls);
-    if (pException != nullptr) throw pException;
 }
 
     virtual CORINFO_CLASS_HANDLE getBuiltinClass(
