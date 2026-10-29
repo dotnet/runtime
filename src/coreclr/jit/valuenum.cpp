@@ -12973,6 +12973,46 @@ static bool IsByrefStoreForwardingType(var_types type)
     }
 }
 
+#ifdef TARGET_XARCH
+//------------------------------------------------------------------------
+// IsMemoryUpdateSource: Is this load the source of an in-place memory update?
+//
+// Arguments:
+//    load - The GT_IND being numbered
+//
+// Return Value:
+//    True if the load feeds an operator that has a memory-operand form
+//    (e.g. "add [mem], reg") whose result is stored back to the same address.
+//
+// Notes:
+//    Forwarding a previous store's value to such a load lets CSE keep that value
+//    in a register, which prevents lowering from using the memory-operand form.
+//
+static bool IsMemoryUpdateSource(GenTree* load)
+{
+    if (!varTypeIsIntegral(load))
+    {
+        return false;
+    }
+
+    GenTree* op    = load->gtGetParent(nullptr);
+    GenTree* store = (op != nullptr) ? op->gtGetParent(nullptr) : nullptr;
+    if ((store == nullptr) || !store->OperIs(GT_STOREIND) || (store->AsStoreInd()->Data() != op))
+    {
+        return false;
+    }
+
+    if (!op->OperIs(GT_NOT, GT_NEG) &&
+        (!op->OperIsBinary() || !op->OperIsRMWMemOp() || ((op->gtGetOp1() != load) && !op->OperIsCommutative())))
+    {
+        return false;
+    }
+
+    // The store's address may not be numbered yet, so match it the way lowering does.
+    return GenTree::Compare(store->AsStoreInd()->Addr(), load->AsIndir()->Addr());
+}
+#endif // TARGET_XARCH
+
 //------------------------------------------------------------------------
 // fgValueNumberStore: Does value numbering for a store.
 //
@@ -13767,7 +13807,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     if (IsByrefStoreForwardingType(typ) && vnStore->GetVNFunc(fgCurMemoryVN[ByrefExposed], &funcApp) &&
                         funcApp.FuncIs(VNF_ByrefExposedStore) &&
                         (funcApp.GetArg(0) == vnStore->VNNormalValue(addrVN)) &&
-                        (vnStore->TypeOfVN(funcApp.GetArg(2)) == typ))
+                        (vnStore->TypeOfVN(funcApp.GetArg(2)) == typ)
+#ifdef TARGET_XARCH
+                        && !IsMemoryUpdateSource(tree)
+#endif
+                    )
                     {
                         loadVN = funcApp.GetArg(2);
                         if (m_blockToLoop->GetLoop(compCurBB) != nullptr)

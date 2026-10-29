@@ -25,6 +25,10 @@ public class ByrefStoreForwarding
         double doubleValue = -0.5;
         Assert.Equal(2.5, IncrementDouble(ref doubleValue));
         Assert.Equal(2.5, doubleValue);
+
+        int flags = -1;
+        UpdateFlags(ref flags);
+        Assert.Equal(~0x30, flags);
     }
 
     [Fact]
@@ -87,6 +91,19 @@ public class ByrefStoreForwarding
         // X64-NOT: ptr [
         value += 3;
         return value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void UpdateFlags(ref int value)
+    {
+        // ARM64: str w{{[0-9]+}}, [x0]
+        // ARM64-NOT: ldr
+        // X64: and dword ptr [{{[a-z]+}}], -17
+        // X64-NEXT: and dword ptr [{{[a-z]+}}], -33
+        // X64-NEXT: or dword ptr [{{[a-z]+}}], 64
+        value &= ~0x10;
+        value &= ~0x20;
+        value |= 0x40;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
