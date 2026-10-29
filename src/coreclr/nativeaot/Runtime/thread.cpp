@@ -436,7 +436,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
             PInvokeTransitionFrame* pTransitionFrame = GetTransitionFrame();
             ASSERT(pTransitionFrame != NULL);
 
-#ifndef TARGET_WASM
+#ifndef FEATURE_PORTABLE_HELPERS
             if (pTransitionFrame == INTERRUPTED_THREAD_MARKER)
             {
                 GetInterruptedContext()->ForEachPossibleObjectRef
@@ -447,7 +447,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
                     }
                 );
             }
-#endif // !TARGET_WASM
+#endif // !FEATURE_PORTABLE_HELPERS
 
             if (pTransitionFrame < pLowerBound)
                 pLowerBound = pTransitionFrame;

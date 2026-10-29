@@ -251,7 +251,7 @@ enum PInvokeTransitionFrameFlags
 #pragma warning(disable:4200) // nonstandard extension used: zero-sized array in struct/union
 class Thread;
 #if defined(FEATURE_PORTABLE_HELPERS)
-// Portable transitions have no saved machine registers. WASM records the managed shadow SP
+// Portable transitions have no saved machine registers. Record the managed shadow SP
 // separately from the native stack pointer so that the GC can walk managed frames.
 struct PInvokeTransitionFrame
 {
@@ -259,13 +259,9 @@ struct PInvokeTransitionFrame
     Thread*     m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
                             // can be an invalid pointer in universal transition cases (which never need to call GetThread)
     uint32_t    m_Flags;    // PInvokeTransitionFrameFlags
-#ifdef TARGET_WASM
     uintptr_t   m_ShadowSP;
-#endif
 };
-#ifdef TARGET_WASM
-static_assert(sizeof(PInvokeTransitionFrame) == 4 * sizeof(uintptr_t));
-#endif
+static_assert(sizeof(PInvokeTransitionFrame) == 4 * sizeof(uintptr_t), "SizeOfPInvokeTransitionFrame assumes this");
 #else // FEATURE_PORTABLE_HELPERS
 struct PInvokeTransitionFrame
 {
