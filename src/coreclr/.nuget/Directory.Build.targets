@@ -1,4 +1,10 @@
 <Project>
   <Import Project="..\Directory.Build.targets" />
   <Import Project="pkgproj.targets" Condition="'$(UsePkgProjTargets)' != 'false'" />
+
+  <!-- Initialize locally instead of changing project-reference identities after graph construction. -->
+  <Target Name="InitializeGraphPackageFileVersion"
+          BeforeTargets="Build;Pack"
+          DependsOnTargets="_InitializeAssemblyVersion"
+          Condition="'$(IsGraphBuild)' == 'true'" />
 </Project>

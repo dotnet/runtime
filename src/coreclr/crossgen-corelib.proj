@@ -4,11 +4,22 @@
           Condition="'$(TargetArchitecture)' == 'wasm'" />
 
   <ItemGroup>
+    <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build"
+                      AdditionalProperties="$(ClrRuntimeBuildSubsets);$(TargetCxxLibraryProperties)"
+                      Condition="'$(IsGraphBuild)' == 'true' and '$(Restore)' != 'true'" />
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_inbuild.csproj" OutputItemType="Crossgen2Files" />
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))" OutputItemType="CoreLib" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'tasks', 'Crossgen2Tasks', 'Crossgen2Tasks.csproj'))"
                       SetConfiguration="Configuration=$(TasksConfiguration)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true' and '$(Restore)' != 'true'">
+    <ProjectReferenceTargets Include="GetTargetPath" Targets="Build" />
   </ItemGroup>
 
   <PropertyGroup>
