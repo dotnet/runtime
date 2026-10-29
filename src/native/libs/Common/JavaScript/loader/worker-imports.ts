@@ -1,15 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JSMarshalerArguments } from "./types";
+import type { JSMarshalerArguments, VoidPtr } from "./types";
 import type { WorkerPromiseMessage } from "./worker-promises";
 import { captureWorkerPromise, createWorkerPromises } from "./worker-promises";
 import type { WorkerValue, WorkerValueType, WorkerReturnType } from "./worker-values";
 import {
-    allocateWorkerString, freeWorkerString, readWorkerPrimitive, readWorkerString, validateWorkerValue, writeWorkerPrimitive, writeWorkerString,
+    allocateWorkerString, freeWorkerString, readWorkerPrimitive, readWorkerString, writeWorkerPrimitive, writeWorkerString,
     prepareWorkerArguments, allocateWorkerArgumentStrings, writeWorkerArgumentStrings, readWorkerArguments, readWorkerArgumentTypes,
+    encodeWorkerValue, decodeWorkerValue, discardWorkerArguments,
 } from "./worker-values";
-import { isWorkerReturnType, JavaScriptMarshalerArgSize, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+import { isWorkerBufferedType, isWorkerReturnType, JavaScriptMarshalerArgSize, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+import { workerReferences } from "./worker-references";
 import {
     JSIMPORT_RING_CAPACITY, jsimportEntryOffset, jsimportErrorOffset,
     MemoryViewManager, readSharedError, writeSharedError, reserveCallSlot, OFFSET_JSIMPORT_RING, OFFSET_JSIMPORT_QUEUE,
@@ -82,9 +84,38 @@ export function createWorkerJSImportDispatcher(
             }
             Atomics.store(signal, OFFSET_JSIMPORT_TAIL, (tail + 1) >>> 0);
             let state = SignalState.DONE;
+            let pendingEncoding: string | undefined;
+            let pendingReferenceResponse: string | undefined;
             dispatchDepth++;
+            const writeResult = (text: string | null): void => {
+                if (text === null) {
+                    Atomics.store(signal, entry + RING_ENTRY_STRING_RESULT_LENGTH, -1);
+                    return;
+                }
+                Atomics.store(signal, entry + RING_ENTRY_STRING_RESULT_LENGTH, text.length);
+                Atomics.store(signal, entry + RING_ENTRY_SIGNAL, SignalState.ALLOCATE);
+                wakeWorker(signal);
+                const allocationState = spinWaitWithJSImportService(signal, entry + RING_ENTRY_SIGNAL, SignalState.ALLOCATE, memory, () => {
+                    const workerState = Atomics.load(signal, OFFSET_WORKER_STATE);
+                    if (workerState !== SignalState.IDLE) {
+                        const error = workerState === SignalState.ERROR ? readSharedError(signal, OFFSET_WORKER_ERROR_LENGTH)
+                            : new Error("withWorker(): worker has exited");
+                        onFailure(error);
+                        throw error;
+                    }
+                    processPending();
+                });
+                if (allocationState === SignalState.ERROR) throw readSharedError(signal, jsimportErrorOffset(slot));
+                if (allocationState !== SignalState.ALLOCATED) throw new Error("withWorker(): invalid string allocation completion");
+                if (Atomics.load(signal, entry + RING_ENTRY_STRING_RESULT_LENGTH) === -2) throw readSharedError(signal, jsimportErrorOffset(slot));
+                writeWorkerString(memory, Atomics.load(signal, entry + RING_ENTRY_STRING_RESULT) >>> 0, text);
+            };
             try {
-                const invoke = functions.get(Atomics.load(signal, entry + RING_ENTRY_HANDLE));
+                const handle = Atomics.load(signal, entry + RING_ENTRY_HANDLE);
+                const invoke = handle === 0 ? (request: WorkerValue) => {
+                    if (typeof request !== "string") throw new Error("withWorker(): invalid reference request");
+                    return workerReferences(memory).dispatch(request);
+                } : functions.get(handle);
                 if (!invoke) throw new Error("withWorker(): unknown UI import handle");
                 const pointer = Atomics.load(signal, entry + RING_ENTRY_ARGS_PTR) >>> 0;
                 const argumentTypes = readWorkerArgumentTypes(signal, entry);
@@ -97,46 +128,43 @@ export function createWorkerJSImportDispatcher(
                 if (!isWorkerReturnType(returnType)) throw new Error("withWorker(): invalid UI import value type");
                 const values = readWorkerArguments(signal, entry, memory, pointer);
                 const result = invoke(...values);
+                if (handle === 0 && typeof result === "string") pendingReferenceResponse = result;
                 if (Atomics.load(signal, entry + RING_ENTRY_RESULT_KIND) === WorkerResultKind.Promise) {
                     const id = Atomics.load(signal, entry + RING_ENTRY_PROMISE_ID);
-                    const kind = captureWorkerPromise(result, id, "async-import", active, postImports, onFailure, returnType);
+                    const kind = captureWorkerPromise(result, id, "async-import", active, postImports, onFailure, returnType,
+                        isWorkerBufferedType(returnType) ? value => encodeWorkerValue(memory, value, returnType) : undefined,
+                        error => workerReferences(memory).encode(error, true));
                     Atomics.store(signal, entry + RING_ENTRY_RESULT_KIND, kind);
                     continue;
                 }
                 if (returnType === MarshalerType.Void) continue;
-                if (returnType === MarshalerType.String) {
-                    validateWorkerValue(result, returnType);
-                    if (result === null || result === undefined) {
-                        Atomics.store(signal, entry + RING_ENTRY_STRING_RESULT_LENGTH, -1);
-                    } else if (typeof result === "string") {
-                        Atomics.store(signal, entry + RING_ENTRY_STRING_RESULT_LENGTH, result.length);
-                        Atomics.store(signal, entry + RING_ENTRY_SIGNAL, SignalState.ALLOCATE);
-                        wakeWorker(signal);
-                        const allocationState = spinWaitWithJSImportService(signal, entry + RING_ENTRY_SIGNAL, SignalState.ALLOCATE, memory, () => {
-                            const workerState = Atomics.load(signal, OFFSET_WORKER_STATE);
-                            if (workerState !== SignalState.IDLE) {
-                                const error = workerState === SignalState.ERROR ? readSharedError(signal, OFFSET_WORKER_ERROR_LENGTH)
-                                    : new Error("withWorker(): worker has exited");
-                                onFailure(error);
-                                throw error;
-                            }
-                            processPending();
-                        });
-                        if (allocationState === SignalState.ERROR) throw readSharedError(signal, jsimportErrorOffset(slot));
-                        if (allocationState !== SignalState.ALLOCATED) throw new Error("withWorker(): invalid string allocation completion");
-                        if (Atomics.load(signal, entry + RING_ENTRY_STRING_RESULT_LENGTH) === -2) {
-                            throw readSharedError(signal, jsimportErrorOffset(slot));
-                        }
-                        writeWorkerString(memory, Atomics.load(signal, entry + RING_ENTRY_STRING_RESULT) >>> 0, result);
-                    }
+                if (isWorkerBufferedType(returnType)) {
+                    const text = encodeWorkerValue(memory, result, returnType);
+                    if (returnType !== MarshalerType.String && text !== null) pendingEncoding = text;
+                    writeResult(text);
+                    pendingEncoding = undefined;
+                    pendingReferenceResponse = undefined;
                     continue;
                 }
                 const resultPointer = pointer + JavaScriptMarshalerArgSize;
                 writeWorkerPrimitive(memory, resultPointer, result, returnType);
             } catch (error) {
+                if (pendingEncoding !== undefined) workerReferences(memory).cancelEncoding(pendingEncoding);
+                if (pendingReferenceResponse !== undefined) workerReferences(memory).cancelResponse(pendingReferenceResponse);
                 writeSharedError(signal, jsimportErrorOffset(slot), error, "UI import");
+                let encoded: string | undefined;
+                try {
+                    encoded = workerReferences(memory).encode(error, true);
+                    writeResult(encoded);
+                    Atomics.store(signal, entry + RING_ENTRY_RESULT_KIND, WorkerResultKind.Exception);
+                } catch (transportError) {
+                    Atomics.store(signal, entry + RING_ENTRY_RESULT_KIND, WorkerResultKind.Scalar);
+                    if (encoded !== undefined) workerReferences(memory).cancelEncoding(encoded);
+                    writeSharedError(signal, jsimportErrorOffset(slot), error, `UI import; exception transport failed: ${String(transportError)}`);
+                }
                 state = SignalState.ERROR;
             } finally {
+                discardWorkerArguments(memory, entry);
                 dispatchDepth--;
                 Atomics.store(signal, entry + RING_ENTRY_SIGNAL, state);
                 wakeWorker(signal);
@@ -175,9 +203,9 @@ export function createWorkerJSImportDispatcher(
 
 export function createWorkerJSImportInvoker(
     signal: Int32Array, memory: MemoryViewManager, handle: number, processExports: () => void,
-    promises = createWorkerPromises(),
+    promises = createWorkerPromises(memory),
 ) {
-    return (args: JSMarshalerArguments, isAsync = false, values: unknown[] = [],
+    return (args: JSMarshalerArguments | VoidPtr, isAsync = false, values: unknown[] = [],
         argumentTypes: WorkerValueType[] = [MarshalerType.Int32], returnType: WorkerReturnType = MarshalerType.Int32): unknown => {
         const head = Atomics.load(signal, OFFSET_JSIMPORT_HEAD) >>> 0;
         const tail = Atomics.load(signal, OFFSET_JSIMPORT_TAIL) >>> 0;
@@ -193,7 +221,7 @@ export function createWorkerJSImportInvoker(
         try {
             prepareWorkerArguments(signal, entry, memory, Number(args), values, argumentTypes, false);
             allocateWorkerArgumentStrings(signal, entry, pointer => argumentBuffers.add(pointer));
-            writeWorkerArgumentStrings(signal, entry, memory, values);
+            writeWorkerArgumentStrings(signal, entry, memory);
             Atomics.store(signal, entry + RING_ENTRY_PROMISE_ID, id);
             Atomics.store(signal, entry + RING_ENTRY_HANDLE, handle);
             Atomics.store(signal, entry + RING_ENTRY_ARGS_PTR, Number(args));
@@ -232,6 +260,11 @@ export function createWorkerJSImportInvoker(
             }
             if (Atomics.load(signal, entry + RING_ENTRY_PROMISE_ID) !== id) throw new Error("withWorker(): UI import completion mismatch");
             if (state === SignalState.ERROR) {
+                if (Atomics.load(signal, entry + RING_ENTRY_RESULT_KIND) === WorkerResultKind.Exception) {
+                    const text = readWorkerString(memory, resultBuffer, Atomics.load(signal, entry + RING_ENTRY_STRING_RESULT_LENGTH));
+                    if (text === null) throw new Error("withWorker(): missing exception payload");
+                    throw workerReferences(memory).decode(text);
+                }
                 throw readSharedError(signal, jsimportErrorOffset(slot));
             }
             if (state !== SignalState.DONE) throw new Error("withWorker(): invalid UI import completion");
@@ -245,8 +278,8 @@ export function createWorkerJSImportInvoker(
                 }
                 throw new Error("withWorker(): invalid asynchronous UI import completion");
             }
-            if (returnType === MarshalerType.String) {
-                return readWorkerString(memory, resultBuffer, Atomics.load(signal, entry + RING_ENTRY_STRING_RESULT_LENGTH));
+            if (isWorkerBufferedType(returnType)) {
+                return decodeWorkerValue(memory, readWorkerString(memory, resultBuffer, Atomics.load(signal, entry + RING_ENTRY_STRING_RESULT_LENGTH)), returnType);
             }
             if (returnType === MarshalerType.Void) return undefined;
             const resultPointer = Number(args) + JavaScriptMarshalerArgSize;

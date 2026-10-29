@@ -11,7 +11,9 @@
 // -----------------------------------------------------------
 
 import type { LoaderConfig, RuntimeAPI } from "./types";
-import { JavaScriptMarshalerArgSize, WorkerMaxArgumentCount } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+import { JavaScriptMarshalerArgSize, MarshalerType, WorkerMaxArgumentCount } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+import type { WorkerReferenceMessage } from "./worker-references";
+import { workerReferences } from "./worker-references";
 
 import { dotnetNativeBrowserExports, Module } from "./cross-module";
 import { mergeLoaderConfig } from "./config";
@@ -72,7 +74,7 @@ export interface WorkerErrorMessage {
     stack?: string;
 }
 
-export type WorkerToMainMessage = WorkerReadyMessage | WorkerErrorMessage | WorkerExportsResponse | WorkerPromiseMessage;
+export type WorkerToMainMessage = WorkerReadyMessage | WorkerErrorMessage | WorkerExportsResponse | WorkerPromiseMessage | WorkerReferenceMessage;
 
 // -----------------------------------------------------------
 // Wait for init message from main thread
@@ -179,13 +181,27 @@ export async function bootstrapWorkerRuntime(initMsg: WorkerInitMessage): Promis
 function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryViews: MemoryViewManager): void {
     let closing = false;
     let commandRunning = false;
-    const promises = createWorkerPromises();
+    const promises = createWorkerPromises(memoryViews);
     const processExports = createWorkerJSExportDispatcher(signalView, memoryViews, (handle, pointer, values) => {
         return runtime.INTERNAL.invokeWorkerJSExport(handle, pointer, values);
     }, message => {
         if (!closing) self.postMessage(message);
     }, reportFailure);
+    const references = workerReferences(memoryViews);
+    const invokeReference = createWorkerJSImportInvoker(signalView, memoryViews, 0, pumpExports, promises);
+    references.configure("worker", request => {
+        const pointer = Module._malloc(3 * JavaScriptMarshalerArgSize);
+        if (!Number(pointer)) throw new Error("withWorker(): unable to allocate reference frame");
+        try {
+            const result = invokeReference(pointer, false, [request], [MarshalerType.String], MarshalerType.String);
+            if (typeof result !== "string") throw new Error("withWorker(): invalid reference response");
+            return result;
+        } finally {
+            Module._free(pointer);
+        }
+    }, message => self.postMessage(message));
     function reportFailure(error: unknown): void {
+        references.stop(error instanceof Error ? error : new Error(String(error)));
         promises.stop(error instanceof Error ? error : new Error(String(error)));
         writeSharedError(signalView, OFFSET_WORKER_ERROR_LENGTH, error, "worker");
         Atomics.store(signalView, OFFSET_WORKER_STATE, SignalState.ERROR);
@@ -202,7 +218,11 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
         }
     }
 
-    self.addEventListener("message", (ev: MessageEvent<WorkerCommandMessage | WorkerModuleImportsMessage | WorkerExportsRequest | WorkerPromiseMessage>): void => {
+    self.addEventListener("message", (ev: MessageEvent<WorkerCommandMessage | WorkerModuleImportsMessage | WorkerExportsRequest | WorkerPromiseMessage | WorkerReferenceMessage>): void => {
+        if (ev.data.type === "reference-release" || ev.data.type === "reference-settlement") {
+            references.receive(ev.data);
+            return;
+        }
         if (ev.data.type === "async-import" && !closing) {
             promises.complete(ev.data);
             return;
@@ -241,6 +261,7 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
             wakeMain(signalView);
             if (command.commandId !== CommandId.RUN_MAIN) {
                 closing = true;
+                references.stop(new Error("withWorker(): worker has exited"));
                 promises.stop(new Error("withWorker(): worker has exited"));
                 Atomics.store(signalView, OFFSET_WORKER_STATE, SignalState.DONE);
                 self.close();

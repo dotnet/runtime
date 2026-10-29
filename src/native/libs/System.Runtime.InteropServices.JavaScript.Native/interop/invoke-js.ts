@@ -73,10 +73,10 @@ function bindJsImport(signature: JSFunctionSignature): Function {
     const workerAsync = workerResType === MarshalerType.Task || workerResType === MarshalerType.TaskPreCreated;
     const workerArgumentTypes = Array.from({ length: argsCount }, (_, index) => getSignatureType(getSig(signature, index + 2)));
     const rawWorkerReturnType = workerAsync ? getSignatureResType(workerResSig) : workerResType;
-    const workerReturnType = rawWorkerReturnType === MarshalerType.None || rawWorkerReturnType === MarshalerType.Discard
+    const workerReturnType = rawWorkerReturnType === MarshalerType.None || rawWorkerReturnType === MarshalerType.Discard || rawWorkerReturnType === MarshalerType.DiscardNoWait
         ? MarshalerType.Void : rawWorkerReturnType;
     if (workerInvoke && (argsCount > WorkerMaxArgumentCount || !workerArgumentTypes.every(isWorkerValueType) || !isWorkerReturnType(workerReturnType))) {
-        throw new Error(`withWorker(): UI imports require at most ${WorkerMaxArgumentCount} supported primitive/String arguments and a supported result or Task`);
+        throw new Error(`withWorker(): UI imports require at most ${WorkerMaxArgumentCount} supported arguments and a supported result or Task`);
     }
     const fn = workerInvoke
         ? (...values: unknown[]) => {
@@ -271,8 +271,8 @@ function bindFn(closure: BindingClosureJS) {
         // TODO-MT: always false until threads are enabled, nothing sets ReceiverShouldFree yet
         const receiverShouldFree = isReceiverShouldFree(args);
         const mark = startMeasure();
+        const jsArgs = new Array(argsCount);
         try {
-            const jsArgs = new Array(argsCount);
             for (let index = 0; index < argsCount; index++) {
                 const marshaler = argMarshalers[index]!;
                 const jsArg = marshaler(args);
@@ -286,20 +286,17 @@ function bindFn(closure: BindingClosureJS) {
                 resConverter(args, jsResult);
             }
 
-            if (hasCleanup) {
-                for (let index = 0; index < argsCount; index++) {
-                    const cleanup = argCleanup[index];
-                    if (cleanup) {
-                        cleanup(jsArgs[index]);
-                    }
-                }
-            }
         } catch (ex) {
             // TODO-MT: once threads are enabled, an async import posted to another thread leaves the
             // caller awaiting the pre-created Task and it never reads this slot, so the failure has
             // to be delivered through the Task instead. See bind_fn in src/mono/browser/runtime.
             marshalExceptionToCs(<any>args, ex);
         } finally {
+            if (hasCleanup) {
+                for (let index = 0; index < argsCount; index++) {
+                    argCleanup[index]?.(jsArgs[index]);
+                }
+            }
             if (receiverShouldFree) {
                 Module._free(args as any);
             }

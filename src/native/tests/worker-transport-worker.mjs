@@ -10,8 +10,13 @@ const sourceDirectory = new URL("../libs/Common/JavaScript/loader/", import.meta
 
 export function createWorkerModuleLoader(context, stubs, transform = (_specifier, source) => source) {
     const cache = new Map();
-    async function getModule(specifier) {
+    function getModule(specifier) {
         if (cache.has(specifier)) return cache.get(specifier);
+        const pending = loadModule(specifier);
+        cache.set(specifier, pending);
+        return pending;
+    }
+    async function loadModule(specifier) {
         let module;
         if (stubs[specifier]) {
             const exports = stubs[specifier];
@@ -25,7 +30,6 @@ export function createWorkerModuleLoader(context, stubs, transform = (_specifier
             }).outputText;
             module = new SourceTextModule(output, { context, identifier: specifier });
         }
-        cache.set(specifier, module);
         return module;
     }
     return async function load(specifier) {
@@ -79,6 +83,8 @@ async function runWorker() {
     let int32Type;
     let stringType;
     let primitiveTypes;
+    let bufferedTypes;
+    let taskType;
     let voidCalls = 0;
     let lastVoidValue;
     function readPrimitive(pointer, type) {
@@ -91,6 +97,7 @@ async function runWorker() {
         if (type === primitiveTypes[5]) return new Int16Array(memory.buffer)[pointer / 2];
         if (type === primitiveTypes[6]) return new Float64Array(memory.buffer)[pointer / 8];
         if (type === primitiveTypes[7]) return new BigInt64Array(memory.buffer)[pointer / 8];
+        if (type === primitiveTypes[8]) return new Uint32Array(memory.buffer)[pointer / 4];
         return new Int32Array(memory.buffer)[pointer / 4];
     }
     function writePrimitive(pointer, type, value) {
@@ -104,6 +111,7 @@ async function runWorker() {
         else if (type === primitiveTypes[5]) new Int16Array(memory.buffer)[pointer / 2] = value;
         else if (type === primitiveTypes[6]) new Float64Array(memory.buffer)[pointer / 8] = value;
         else if (type === primitiveTypes[7]) new BigInt64Array(memory.buffer)[pointer / 8] = BigInt(value);
+        else if (type === primitiveTypes[8]) new Uint32Array(memory.buffer)[pointer / 4] = value;
         else new Int32Array(memory.buffer)[pointer / 4] = value;
     }
     function invokeImport(value, isAsync = false, argumentType = int32Type, returnType = int32Type) {
@@ -114,8 +122,8 @@ async function runWorker() {
         try {
             new Uint8Array(memory.buffer).fill(0, pointer, pointer + (argumentTypes.length + 2) * argumentSize);
             for (let index = 0; index < argumentTypes.length; index++) {
-                writePrimitive(pointer + (index + 2) * argumentSize, argumentTypes[index] === stringType ? int32Type : argumentTypes[index],
-                    argumentTypes[index] === stringType ? 0 : values[index]);
+                const buffered = argumentTypes[index] === stringType || bufferedTypes.includes(argumentTypes[index]) || argumentTypes[index] === taskType;
+                writePrimitive(pointer + (index + 2) * argumentSize, buffered ? int32Type : argumentTypes[index], buffered ? 0 : values[index]);
             }
             const frame = new Uint8Array(memory.buffer, pointer + argumentSize, argumentSize);
             if (isAsync) frame.fill(0x5a);
@@ -156,10 +164,17 @@ async function runWorker() {
                     path: ["Sample", "Test", name + suffix], handle: 20 + index * 4 + mode,
                     supported: true, isAsync: mode >= 2, argumentTypes: [primitiveTypes[index]], returnType: primitiveTypes[index],
                 }))),
-                ...["Byte", "Char", "Int16", "Int52", "BigInt64"].flatMap((name, index) => ["", "Import", "Async", "AsyncImport"].map((suffix, mode) => ({
+                ...["Byte", "Char", "Int16", "Int52", "BigInt64", "IntPtr"].flatMap((name, index) => ["", "Import", "Async", "AsyncImport"].map((suffix, mode) => ({
                     path: ["Sample", "Test", name + suffix], handle: 80 + index * 4 + mode,
                     supported: true, isAsync: mode >= 2, argumentTypes: [primitiveTypes[index + 3]], returnType: primitiveTypes[index + 3],
                 }))),
+                ...["DateTime", "DateTimeOffset", "Nullable", "Array", "Object", "JSObject", "Exception", "Function"].flatMap((name, index) =>
+                    ["", "Import", "Async", "AsyncImport"].map((suffix, mode) => ({
+                        path: ["Sample", "Test", name + suffix], handle: 120 + index * 4 + mode,
+                        supported: true, isAsync: mode >= 2, argumentTypes: [bufferedTypes[index]], returnType: bufferedTypes[index],
+                    }))),
+                { path: ["Sample", "Test", "AwaitPromise"], handle: 200, supported: true, isAsync: true, argumentTypes: [taskType], returnType: int32Type },
+                { path: ["Sample", "Test", "ImportPromise"], handle: 201, supported: true, isAsync: true, argumentTypes: [taskType], returnType: int32Type },
                 ...[
                     ["NoArgument", 40, false, 0, int32Type],
                     ["NoArgumentAsync", 41, true, 0, int32Type],
@@ -192,6 +207,14 @@ async function runWorker() {
                 })),
             ].map(descriptor => ({ argumentTypes: [int32Type], returnType: int32Type, ...descriptor })),
             invokeWorkerJSExport: (handle, pointer, values) => {
+                if (handle === 200) return Promise.resolve(values[0]);
+                if (handle === 201) return invokeImports(values, true, [taskType], int32Type);
+                if (handle >= 120 && handle < 152) {
+                    const type = bufferedTypes[Math.floor((handle - 120) / 4)];
+                    const mode = (handle - 120) % 4;
+                    const result = mode % 2 ? invokeImport(values[0], mode >= 2, type, type) : values[0];
+                    return mode >= 2 ? Promise.resolve(result) : result;
+                }
                 const stringArgument = values[0];
                 if (handle >= 60 && handle <= 68) {
                     if (handle === 60 || handle === 65) return JSON.stringify(values);
@@ -201,7 +224,7 @@ async function runWorker() {
                             : [stringType, int32Type, primitiveTypes[1], primitiveTypes[0], primitiveTypes[2], stringType];
                     return invokeImports(values, handle === 63, argumentTypes, handle === 64 ? 1 : stringType);
                 }
-                if ((handle >= 20 && handle <= 31) || (handle >= 80 && handle <= 99)) {
+                if ((handle >= 20 && handle <= 31) || (handle >= 80 && handle <= 103)) {
                     const index = handle >= 80 ? Math.floor((handle - 80) / 4) + 3 : Math.floor((handle - 20) / 4);
                     const type = primitiveTypes[index];
                     const mode = (handle - (handle >= 80 ? 80 : 20)) % 4;
@@ -293,7 +316,7 @@ async function runWorker() {
         },
     };
     const context = createContext({
-        AbortController, Atomics, Error, SharedArrayBuffer, setTimeout, clearTimeout,
+        AbortController, Atomics, Error, TypeError, Date, Promise, Uint8Array, Int32Array, Float32Array, Float64Array, SharedArrayBuffer, setTimeout, clearTimeout,
         self: {
             addEventListener: (type, listener) => {
                 if (type === "message") parentPort.on("message", data => listener({ data }));
@@ -320,7 +343,9 @@ async function runWorker() {
     int32Type = types.MarshalerType.Int32;
     stringType = types.MarshalerType.String;
     primitiveTypes = [types.MarshalerType.Boolean, types.MarshalerType.Double, types.MarshalerType.Single,
-        types.MarshalerType.Byte, types.MarshalerType.Char, types.MarshalerType.Int16, types.MarshalerType.Int52, types.MarshalerType.BigInt64];
+        types.MarshalerType.Byte, types.MarshalerType.Char, types.MarshalerType.Int16, types.MarshalerType.Int52, types.MarshalerType.BigInt64, types.MarshalerType.IntPtr];
+    bufferedTypes = ["DateTime", "DateTimeOffset", "Nullable", "Array", "Object", "JSObject", "Exception", "Function"].map(name => types.MarshalerType[name]);
+    taskType = types.MarshalerType.Task;
     parentPort.once("message", message => {
         if (message.type !== "init") throw new Error("Expected worker initialization");
         void workerModule.namespace.bootstrapWorkerRuntime(message);

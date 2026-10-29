@@ -15,14 +15,16 @@ export interface DotnetHostBuilder {
     /**
      * Configures the runtime to start on a dedicated web worker.
      * The main thread gets a proxy supporting runMain, runMainAndExit, and exit.
-     * UI imports and exports support up to six scalar arguments.
+     * UI imports and exports support up to six arguments using the native interop marshalers.
      * Supported scalars: Boolean, Byte, Char, Int16, Int32, Int52, BigInt64, Single, Double, String.
-     * Results may be those types or void, synchronously or through a Task.
+     * Also supports IntPtr, dates, nullable scalars, arrays, memory views, callbacks and object/exception values.
+     * Results may be supported native types or void, synchronously or through a Task.
+     * Managed allocation and reference ownership remain on the runtime worker.
      * Register each module once, before running managed code.
      * Nested synchronous calls have 16 in-flight slots in each direction.
      * Asynchronous calls release those slots after their synchronous prefix.
      * Asynchronous UI imports require native Promise results; custom thenables are not supported.
-     * Other marshaled types, heap access, and diagnostics are not yet supported by the proxy.
+     * Heap access and diagnostics are not yet supported by the proxy.
      * Build the application with WasmEnableSharedMemory=true to select app-owned shared assets.
      * Requires COOP/COEP headers and SharedArrayBuffer support.
      */

@@ -36,6 +36,8 @@ import { createPromiseCompletionSource } from "./promise-completion-source";
 import { dotnetLogger, Module } from "./cross-module";
 import { createWorkerJSImportDispatcher } from "./worker-imports";
 import { createWorkerJSExportClient } from "./worker-exports";
+import type { WorkerReferenceMessage } from "./worker-references";
+import { workerReferences } from "./worker-references";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -136,8 +138,22 @@ function buildProxyRuntimeAPI(
     const workerExports = createWorkerJSExportClient(signalView, memoryViews, worker, workerImports.processPending, () => {
         if (exiting || exited) throw exited ?? new Error("withWorker(): runtime is exiting");
     }, terminate);
+    const references = workerReferences(memoryViews);
+    references.configure("ui", workerExports.invokeReference, message => worker.postMessage(message));
+    const referenceListener = (event: MessageEvent<WorkerReferenceMessage>) => {
+        if (event.data.type === "reference-release" || event.data.type === "reference-settlement") {
+            try {
+                references.receive(event.data);
+            } catch (error) {
+                terminate(error instanceof Error ? error : new Error(String(error)));
+            }
+        }
+    };
+    worker.addEventListener("message", referenceListener);
 
     registerFailureHandler(error => {
+        references.stop(error);
+        worker.removeEventListener("message", referenceListener);
         workerImports.stop();
         workerExports.stop(error);
         exited = error;

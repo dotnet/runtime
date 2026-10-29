@@ -15,6 +15,358 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     [ConditionalClass(typeof(WorkerInteropTest), nameof(IsBrowserDomSupportedOrWorker))]
     public partial class WorkerInteropTest
     {
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial nint EchoPointerOnUI(nint value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Date>]
+        private static partial DateTime EchoDateOnUI([JSMarshalAs<JSType.Date>] DateTime value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Date>]
+        private static partial DateTimeOffset EchoOffsetOnUI([JSMarshalAs<JSType.Date>] DateTimeOffset value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial int? EchoNullableOnUI(int? value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial bool? EchoNullableBooleanOnUI(bool? value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial double? EchoNullableDoubleOnUI(double? value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial byte? EchoNullableByteOnUI(byte? value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial char? EchoNullableCharOnUI(char? value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial short? EchoNullableInt16OnUI(short? value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial float? EchoNullableSingleOnUI(float? value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial nint? EchoNullablePointerOnUI(nint? value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Number>]
+        private static partial long? EchoNullableNumberOnUI([JSMarshalAs<JSType.Number>] long? value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Date>]
+        private static partial DateTimeOffset? EchoNullableOffsetOnUI([JSMarshalAs<JSType.Date>] DateTimeOffset? value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.BigInt>]
+        private static partial long? EchoNullableBigIntOnUI([JSMarshalAs<JSType.BigInt>] long? value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Date>]
+        private static partial DateTime? EchoNullableDateOnUI([JSMarshalAs<JSType.Date>] DateTime? value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial byte[] EchoBytesOnUI(byte[] value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial int[] EchoIntegersOnUI(int[] value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial float[] EchoSinglesOnUI(float[] value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial double[] EchoDoublesOnUI(double[] value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial string[] EchoStringsOnUI(string[] value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Any>]
+        private static partial object EchoObjectOnUI([JSMarshalAs<JSType.Any>] object value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial Exception EchoExceptionOnUI(Exception value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial JSObject EchoJSObjectOnUI(JSObject value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        private static partial JSObject[] EchoJSObjectsOnUI(JSObject[] value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Array<JSType.Any>>]
+        private static partial object[] EchoObjectsOnUI([JSMarshalAs<JSType.Array<JSType.Any>>] object[] value);
+        [JSImport("newObject", nameof(WorkerInteropTest))]
+        private static partial JSObject NewObjectOnUI();
+        [JSImport("echoAsync", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Promise<JSType.Any>>]
+        private static partial Task<object> EchoArrayAsyncOnUI(int[] value);
+        [JSImport("echoAsync", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Promise<JSType.Any>>]
+        private static partial Task<object> EchoObjectAsyncOnUI([JSMarshalAs<JSType.Any>] object value);
+        [JSImport("callFunction", nameof(WorkerInteropTest))]
+        private static partial int CallFunctionOnUI([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>] Func<int, int> function, int value);
+        [JSImport("echo", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>]
+        private static partial Func<int, int> EchoFunctionOnUI([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>] Func<int, int> function);
+        [JSImport("callAction", nameof(WorkerInteropTest))]
+        private static partial void CallActionOnUI([JSMarshalAs<JSType.Function>] Action action);
+        [JSImport("echoTask", nameof(WorkerInteropTest))]
+        private static partial Task<int> EchoTaskOnUI(Task<int> value);
+        [JSImport("editView", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        private static partial Span<byte> EditSpanOnUI([JSMarshalAs<JSType.MemoryView>] Span<byte> value, bool fail);
+        [JSImport("editView", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        private static partial ArraySegment<int> EditSegmentOnUI([JSMarshalAs<JSType.MemoryView>] ArraySegment<int> value, bool fail);
+        [JSImport("editView", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        private static partial Span<int> EditInt32SpanOnUI([JSMarshalAs<JSType.MemoryView>] Span<int> value, bool fail);
+        [JSImport("editView", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        private static partial Span<float> EditSingleSpanOnUI([JSMarshalAs<JSType.MemoryView>] Span<float> value, bool fail);
+        [JSImport("editView", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        private static partial Span<double> EditDoubleSpanOnUI([JSMarshalAs<JSType.MemoryView>] Span<double> value, bool fail);
+        [JSImport("editView", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        private static partial ArraySegment<byte> EditByteSegmentOnUI([JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> value, bool fail);
+        [JSImport("editView", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        private static partial ArraySegment<float> EditSingleSegmentOnUI([JSMarshalAs<JSType.MemoryView>] ArraySegment<float> value, bool fail);
+        [JSImport("editView", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        private static partial ArraySegment<double> EditDoubleSegmentOnUI([JSMarshalAs<JSType.MemoryView>] ArraySegment<double> value, bool fail);
+        [JSImport("disposeView", nameof(WorkerInteropTest))]
+        private static partial bool DisposeLastViewOnUI();
+        [JSImport("disposeManaged", nameof(WorkerInteropTest))]
+        private static partial bool DisposeManagedOnUI([JSMarshalAs<JSType.Any>] object value);
+        [JSImport("disposeManaged", nameof(WorkerInteropTest))]
+        private static partial bool DisposeExceptionOnUI(Exception value);
+        [JSImport("voidArgument", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Discard>]
+        private static partial void DiscardOnUI(string value);
+        [JSImport("voidArgument", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.DiscardNoWait>]
+        private static partial void DiscardNoWaitOnUI(string value);
+        [JSImport("discardContracts", nameof(WorkerInteropTest))]
+        private static partial int DiscardContractsOnUI();
+
+        [JSExport]
+        [return: JSMarshalAs<JSType.Discard>]
+        public static void DiscardExport(string value) => DiscardOnUI(value);
+        [JSExport]
+        [return: JSMarshalAs<JSType.DiscardNoWait>]
+        public static void DiscardNoWaitExport(string value) => DiscardNoWaitOnUI(value);
+        [JSImport("remainingContracts", nameof(WorkerInteropTest))]
+        private static partial Task<int> RemainingContractsOnUI();
+        [JSImport("viewDisposed", nameof(WorkerInteropTest))]
+        private static partial bool LastViewDisposedOnUI();
+
+        [JSExport] public static nint EchoPointer(nint value) => value;
+        [JSExport]
+        [return: JSMarshalAs<JSType.Date>]
+        public static DateTime EchoDate([JSMarshalAs<JSType.Date>] DateTime value) => value;
+        [JSExport]
+        [return: JSMarshalAs<JSType.Date>]
+        public static DateTimeOffset EchoOffset([JSMarshalAs<JSType.Date>] DateTimeOffset value) => value;
+        [JSExport] public static int? EchoNullable(int? value) => value;
+        [JSExport] public static bool? EchoNullableBoolean(bool? value) => value;
+        [JSExport] public static double? EchoNullableDouble(double? value) => value;
+        [JSExport]
+        [return: JSMarshalAs<JSType.BigInt>]
+        public static long? EchoNullableBigInt([JSMarshalAs<JSType.BigInt>] long? value) => value;
+        [JSExport]
+        [return: JSMarshalAs<JSType.Date>]
+        public static DateTime? EchoNullableDate([JSMarshalAs<JSType.Date>] DateTime? value) => value;
+        [JSExport] public static byte[] EchoBytes(byte[] value) => value;
+        [JSExport] public static int[] EchoIntegers(int[] value) => value;
+        [JSExport] public static float[] EchoSingles(float[] value) => value;
+        [JSExport] public static double[] EchoDoubles(double[] value) => value;
+        [JSExport] public static string[] EchoStrings(string[] value) => value;
+        [JSExport]
+        [return: JSMarshalAs<JSType.Any>]
+        public static object EchoObject([JSMarshalAs<JSType.Any>] object value) => value;
+        [JSExport] public static Exception EchoException(Exception value) => value;
+        [JSExport] public static Exception CreateException() => new InvalidOperationException("managed exception identity");
+        [JSExport] public static void ThrowException(Exception value) => throw value;
+        [JSExport]
+        public static async Task ThrowExceptionAsync(Exception value)
+        {
+            await Task.Yield();
+            throw value;
+        }
+        [JSExport] public static JSObject EchoJSObject(JSObject value) => value;
+        [JSExport]
+        public static int ApplyFunction([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>] Func<int, int> function, int value) => function(value);
+        [JSExport]
+        public static void ApplyAction([JSMarshalAs<JSType.Function>] Action action) => action();
+        [JSExport] public static async Task<int> AwaitTask(Task<int> value) => await value;
+        [JSExport]
+        [return: JSMarshalAs<JSType.Promise<JSType.Any>>]
+        public static async Task<object> EchoArrayAsync(int[] value) => await EchoArrayAsyncOnUI(value);
+        [JSExport]
+        [return: JSMarshalAs<JSType.Promise<JSType.Any>>]
+        public static async Task<object> EchoObjectAsync([JSMarshalAs<JSType.Any>] object value) => await EchoObjectAsyncOnUI(value);
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        [InlineData(int.MaxValue)]
+        public void PointerInterop(int value) => Assert.Equal((nint)value, EchoPointerOnUI(value));
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NullableInterop(bool hasValue)
+        {
+            Assert.Equal(hasValue ? 42 : null, EchoNullableOnUI(hasValue ? 42 : null));
+            Assert.Equal(hasValue ? false : null, EchoNullableBooleanOnUI(hasValue ? false : null));
+            Assert.Equal(hasValue ? -1.25 : null, EchoNullableDoubleOnUI(hasValue ? -1.25 : null));
+            Assert.Equal(hasValue ? (byte)255 : null, EchoNullableByteOnUI(hasValue ? (byte)255 : null));
+            Assert.Equal(hasValue ? '\uD800' : null, EchoNullableCharOnUI(hasValue ? '\uD800' : null));
+            Assert.Equal(hasValue ? short.MinValue : null, EchoNullableInt16OnUI(hasValue ? short.MinValue : null));
+            Assert.Equal(hasValue ? 1.25f : null, EchoNullableSingleOnUI(hasValue ? 1.25f : null));
+            Assert.Equal(hasValue ? (nint)(-1) : null, EchoNullablePointerOnUI(hasValue ? (nint)(-1) : null));
+            Assert.Equal(hasValue ? 9007199254740991L : null, EchoNullableNumberOnUI(hasValue ? 9007199254740991L : null));
+            Assert.Equal(hasValue ? long.MaxValue : null, EchoNullableBigIntOnUI(hasValue ? long.MaxValue : null));
+            DateTime? date = hasValue ? DateTime.UnixEpoch.AddMilliseconds(123456) : null;
+            Assert.Equal(date, EchoNullableDateOnUI(date));
+            DateTimeOffset? offset = hasValue ? new DateTimeOffset(date.Value) : null;
+            Assert.Equal(offset, EchoNullableOffsetOnUI(offset));
+        }
+
+        [Theory]
+        [InlineData(-62135596800000L)]
+        [InlineData(0L)]
+        [InlineData(253402300799999L)]
+        public void DateInterop(long milliseconds)
+        {
+            DateTime date = DateTime.UnixEpoch.AddMilliseconds(milliseconds);
+            Assert.Equal(date, EchoDateOnUI(date));
+            Assert.Equal(new DateTimeOffset(date), EchoOffsetOnUI(new DateTimeOffset(date)));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(1000)]
+        public async Task ArrayInterop(int length)
+        {
+            byte[] bytes = new byte[length];
+            int[] integers = new int[length];
+            float[] singles = new float[length];
+            double[] doubles = new double[length];
+            string[] strings = new string[length];
+            for (int i = 0; i < length; i++)
+            {
+                bytes[i] = (byte)i;
+                integers[i] = i - 500;
+                singles[i] = i + 0.25f;
+                doubles[i] = i + 0.125;
+                strings[i] = i % 2 is 0 ? null : "text\0\u0130\U0001F600";
+            }
+            Assert.Equal(bytes, EchoBytesOnUI(bytes));
+            Assert.Equal(integers, EchoIntegersOnUI(integers));
+            Assert.Equal(singles, EchoSinglesOnUI(singles));
+            Assert.Equal(doubles, EchoDoublesOnUI(doubles));
+            Assert.Equal(strings, EchoStringsOnUI(strings));
+            Assert.Equal(integers, Assert.IsType<int[]>(await EchoArrayAsyncOnUI(integers)));
+        }
+
+        [Fact]
+        public async Task ReferenceInterop()
+        {
+            object value = new object();
+            Assert.Same(value, EchoObjectOnUI(value));
+            Assert.Same(value, await EchoObjectAsyncOnUI(value));
+            Exception exception = new InvalidOperationException("reference exception");
+            Assert.Same(exception, EchoExceptionOnUI(exception));
+            using JSObject jsObject = NewObjectOnUI();
+            Assert.True(jsObject.HasProperty("value"));
+            Assert.False(jsObject.HasProperty("missing"));
+            Assert.Equal(42, jsObject.GetPropertyAsInt32("value"));
+            jsObject.SetProperty("value", 43);
+            using JSObject echoed = EchoJSObjectOnUI(jsObject);
+            Assert.Same(jsObject, echoed);
+            Assert.Equal(43, echoed.GetPropertyAsInt32("value"));
+            JSObject[] objects = EchoJSObjectsOnUI([jsObject, null, jsObject]);
+            Assert.Same(jsObject, objects[0]);
+            Assert.Null(objects[1]);
+            Assert.Same(jsObject, objects[2]);
+            object[] values = EchoObjectsOnUI([value, "text\0", true, 42.5, null, exception, jsObject]);
+            Assert.Same(value, values[0]);
+            Assert.Equal("text\0", values[1]);
+            Assert.Equal(true, values[2]);
+            Assert.Equal(42.5, values[3]);
+            Assert.Null(values[4]);
+            Assert.Same(exception, values[5]);
+            Assert.Same(jsObject, values[6]);
+        }
+
+        [Fact]
+        public void DelegateInterop()
+        {
+            Assert.Equal(43, CallFunctionOnUI(value => value + 1, 42));
+            Func<int, int> echoed = EchoFunctionOnUI(value => value + 2);
+            Assert.Equal(44, echoed(42));
+            int count = 0;
+            CallActionOnUI(() => count++);
+            Assert.Equal(1, count);
+        }
+
+        [Fact]
+        public void ReferenceDisposal()
+        {
+            Assert.True(DisposeManagedOnUI(new object()));
+            Assert.True(DisposeExceptionOnUI(new InvalidOperationException("disposed reference exception")));
+        }
+
+        [Fact]
+        public void DiscardInterop() => Assert.Equal(42, DiscardContractsOnUI());
+
+        [Fact]
+        public async Task TaskArgumentInterop() => Assert.Equal(42, await EchoTaskOnUI(Task.FromResult(42)));
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MemoryViewInterop(bool fail)
+        {
+            byte[] bytes = [1, 2, 3];
+            if (fail)
+            {
+                JSException exception = Assert.Throws<JSException>(() => EditSpanOnUI(bytes, true));
+                Assert.Contains("view failure", exception.Message);
+                _ = exception.StackTrace;
+            }
+            else
+            {
+                Assert.Equal(new byte[] { 9, 2, 3 }, EditSpanOnUI(bytes, false).ToArray());
+            }
+            Assert.Equal(9, bytes[0]);
+            Assert.True(LastViewDisposedOnUI());
+            int[] integers = [1, 2, 3];
+            ArraySegment<int> segment = EditSegmentOnUI(new ArraySegment<int>(integers), false);
+            Assert.Equal(9, segment[0]);
+            Assert.Equal(9, integers[0]);
+            Assert.True(DisposeLastViewOnUI());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void MemoryViewElementTypes(int type)
+        {
+            switch (type)
+            {
+                case 0:
+                    byte[] bytes = [1, 2, 3];
+                    Assert.Equal(9, EditSpanOnUI(bytes, false)[0]);
+                    Assert.Equal(9, EditByteSegmentOnUI(new ArraySegment<byte>(bytes), false)[0]);
+                    break;
+                case 1:
+                    int[] integers = [1, 2, 3];
+                    Assert.Equal(9, EditInt32SpanOnUI(integers, false)[0]);
+                    Assert.Equal(9, EditSegmentOnUI(new ArraySegment<int>(integers), false)[0]);
+                    break;
+                case 2:
+                    float[] singles = [1, 2, 3];
+                    Assert.Equal(9, EditSingleSpanOnUI(singles, false)[0]);
+                    Assert.Equal(9, EditSingleSegmentOnUI(new ArraySegment<float>(singles), false)[0]);
+                    break;
+                default:
+                    double[] doubles = [1, 2, 3];
+                    Assert.Equal(9, EditDoubleSpanOnUI(doubles, false)[0]);
+                    Assert.Equal(9, EditDoubleSegmentOnUI(new ArraySegment<double>(doubles), false)[0]);
+                    break;
+            }
+            Assert.True(DisposeLastViewOnUI());
+        }
+
+        [Fact]
+        public async Task RemainingExportContracts() => Assert.Equal(42, await RemainingContractsOnUI());
+
         public static bool IsBrowserDomSupportedOrWorker => PlatformDetection.IsBrowserDomSupported
             || Environment.GetEnvironmentVariable("DOTNET_TEST_WITH_WORKER") == "1";
 
@@ -553,10 +905,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task StringFailureAndRecovery()
         {
             Exception error = Assert.ThrowsAny<Exception>(() => FailStringOnUI("value"));
-            if (Environment.GetEnvironmentVariable("DOTNET_TEST_WITH_WORKER") == "1")
-                Assert.IsType<JSException>(error);
-            else
-                Assert.IsType<InvalidOperationException>(error);
+            Assert.IsType<InvalidOperationException>(error);
             Assert.Contains("Managed string failure", error.Message);
             Assert.Contains(nameof(StringFailureAndRecovery), error.StackTrace);
             JSException asyncError = await Assert.ThrowsAsync<JSException>(() => FailStringAsyncOnUI("value"));

@@ -115,14 +115,25 @@ export type BindingClosureCS = {
 }
 
 export type WorkerValueType = MarshalerType.Boolean | MarshalerType.Byte | MarshalerType.Char | MarshalerType.Int16
-    | MarshalerType.Int32 | MarshalerType.Int52 | MarshalerType.BigInt64 | MarshalerType.Single | MarshalerType.Double | MarshalerType.String;
+    | MarshalerType.Int32 | MarshalerType.Int52 | MarshalerType.BigInt64 | MarshalerType.Single | MarshalerType.Double | MarshalerType.String
+    | MarshalerType.IntPtr | MarshalerType.DateTime | MarshalerType.DateTimeOffset | MarshalerType.Nullable
+    | MarshalerType.JSObject | MarshalerType.Object | MarshalerType.Exception | MarshalerType.Array
+    | MarshalerType.ArraySegment | MarshalerType.Span | MarshalerType.Action | MarshalerType.Function | MarshalerType.Task;
 export type WorkerReturnType = WorkerValueType | MarshalerType.Void;
 export const WorkerMaxArgumentCount = 6;
 
 export function isWorkerValueType(type: MarshalerType): type is WorkerValueType {
     return type === MarshalerType.Boolean || type === MarshalerType.Byte || type === MarshalerType.Char || type === MarshalerType.Int16
         || type === MarshalerType.Int32 || type === MarshalerType.Int52 || type === MarshalerType.BigInt64
-        || type === MarshalerType.Single || type === MarshalerType.Double || type === MarshalerType.String;
+        || type === MarshalerType.Single || type === MarshalerType.Double || type === MarshalerType.String
+        || type === MarshalerType.IntPtr || type === MarshalerType.DateTime || type === MarshalerType.DateTimeOffset
+        || type === MarshalerType.Nullable || type === MarshalerType.JSObject || type === MarshalerType.Object
+        || type === MarshalerType.Exception || type === MarshalerType.Array || type === MarshalerType.ArraySegment
+        || type === MarshalerType.Span || type === MarshalerType.Action || type === MarshalerType.Function || type === MarshalerType.Task;
+}
+
+export function isWorkerBufferedType(type: MarshalerType): boolean {
+    return type === MarshalerType.String || type > MarshalerType.IntPtr && type <= MarshalerType.Function;
 }
 
 export function isWorkerReturnType(type: MarshalerType): type is WorkerReturnType {

@@ -6,10 +6,143 @@ export async function setup(runtime) {
         .System.Runtime.InteropServices.JavaScript.Tests.WorkerInteropTest;
     const worker = runtime.getConfig().workerOptions !== undefined;
     const voidEvents = [];
+    let lastView;
     function check(condition, message) {
         if (!condition) throw new Error(message);
     }
     runtime.setModuleImports("WorkerInteropTest", {
+        newObject: () => ({ value: 42 }),
+        callFunction: (fn, value) => fn(value),
+        callAction: action => action(),
+        echoTask: async value => await value,
+        editView: (view, fail) => {
+            lastView = view;
+            const copy = view.slice();
+            copy[0] = 9;
+            view.set(copy);
+            const target = new copy.constructor(copy.length);
+            view.copyTo(target);
+            check(target[0] === 9 && target[1] === 2, "Memory view copyTo did not update the caller array");
+            if (fail) throw new Error("view failure");
+            return view;
+        },
+        viewDisposed: () => {
+            check(lastView.isDisposed, "Span outlived its import scope");
+            let failed = false;
+            try {
+                lastView.slice();
+            } catch (error) {
+                failed = error.message.includes("ObjectDisposedException");
+            }
+            check(failed, "Disposed Span remains accessible");
+            return true;
+        },
+        disposeView: () => {
+            lastView.dispose();
+            check(lastView.isDisposed, "ArraySegment dispose did not release its owner");
+            let failed = false;
+            try {
+                lastView.slice();
+            } catch (error) {
+                failed = error.message.includes("ObjectDisposedException");
+            }
+            check(failed, "Disposed ArraySegment remains accessible");
+            return true;
+        },
+        disposeManaged: value => {
+            value.dispose();
+            return value.isDisposed;
+        },
+        discardContracts: () => {
+            voidEvents.length = 0;
+            check(exports.DiscardExport("discard") === undefined, "Discard export returned a value");
+            check(exports.DiscardNoWaitExport("discard-no-wait") === undefined, "DiscardNoWait export returned a value");
+            check(voidEvents.join(",") === "discard,discard-no-wait", "Discard ST prefix changed");
+            return 42;
+        },
+        remainingContracts: async () => {
+            for (const pointer of [0, 0x7fffffff, 0x80000000, 0xffffffff]) {
+                check(exports.EchoPointer(pointer) === pointer, "IntPtr lost unsigned Wasm32 bits");
+            }
+            for (const value of [null, 0, 42, -42]) check(exports.EchoNullable(value) === value, "Nullable Int32 changed");
+            for (const value of [null, false, true]) check(exports.EchoNullableBoolean(value) === value, "Nullable Boolean changed");
+            for (const value of [null, -0, NaN, Infinity, -1.25]) check(Object.is(exports.EchoNullableDouble(value), value), "Nullable Double changed");
+            for (const value of [null, -(2n ** 63n), 2n ** 63n - 1n]) check(exports.EchoNullableBigInt(value) === value, "Nullable BigInt changed");
+            for (const milliseconds of [-62135596800000, 0, 253402300799999]) {
+                const date = new Date(milliseconds);
+                check(exports.EchoDate(date).getTime() === milliseconds, "DateTime changed");
+                check(exports.EchoOffset(date).getTime() === milliseconds, "DateTimeOffset changed");
+                check(exports.EchoNullableDate(date).getTime() === milliseconds, "Nullable DateTime changed");
+            }
+            check(exports.EchoNullableDate(null) === null, "Nullable DateTime null changed");
+            let invalidDate;
+            try {
+                exports.EchoDate(new Date(NaN));
+            } catch (error) {
+                invalidDate = error;
+            }
+            check(invalidDate instanceof RangeError, `Invalid Date changed the native error subtype: ${invalidDate?.name}: ${invalidDate?.message}`);
+            for (const [name, value] of [
+                ["EchoBytes", new Uint8Array([0, 255, 42])], ["EchoIntegers", new Int32Array([-2147483648, 0, 2147483647])],
+                ["EchoSingles", new Float32Array([-0, NaN, Infinity])], ["EchoDoubles", new Float64Array([-0, NaN, Infinity])],
+                ["EchoStrings", [null, "", "text\0\u0130\u{1f600}"]],
+            ]) {
+                const result = exports[name](value);
+                check(result.length === value.length && Array.from(result).every((item, index) => Object.is(item, value[index])), name + " changed elements");
+                check(exports[name](null) === null, name + " null changed");
+            }
+            const object = { value: 42, nested: { value: 43 }, get _pointer() {
+                throw new Error("Opaque JSObject getters must not be probed as memory-view metadata");
+            } };
+            const error = new Error("UI reference identity");
+            check(exports.EchoJSObject(object) === object, "JSObject identity changed");
+            check(exports.EchoObject(object) === object, "Object identity changed");
+            check(exports.EchoException(error) === error, "Exception identity changed");
+            const managedError = exports.CreateException();
+            for (const exception of [error, managedError]) {
+                for (const invoke of [
+                    () => exports.ThrowException(exception),
+                    () => exports.ThrowExceptionAsync(exception),
+                ]) {
+                    let caught;
+                    try {
+                        await invoke();
+                    } catch (failure) {
+                        caught = failure;
+                    }
+                    check(caught === exception, "Thrown exception identity changed");
+                    check(caught.stack.length > 0, "Thrown exception lost its stack");
+                }
+            }
+            managedError.dispose();
+            check(exports.ApplyFunction(value => exports.Echo(value + 1), 42) === 43, "Nested callback failed");
+            let actions = 0;
+            exports.ApplyAction(() => actions++);
+            check(actions === 1, "Action failed");
+            check(await exports.AwaitTask(Promise.resolve(42)) === 42, "Task argument failed");
+            const taskError = new Error("UI Task argument failure");
+            const callbackError = new Error("UI callback failure");
+            for (const [invoke, expected] of [
+                [() => exports.AwaitTask(Promise.reject(taskError)), taskError],
+                [() => exports.ApplyFunction(() => {
+                    throw callbackError;
+                }, 0), callbackError],
+            ]) {
+                let failed = false;
+                try {
+                    await invoke();
+                } catch (error) {
+                    failed = error === expected;
+                    error.dispose?.();
+                }
+                check(failed, "Task/callback failure did not cross the bridge");
+            }
+            const tasks = Array.from({ length: 70 }, (_, index) => exports.EchoArrayAsync(new Int32Array([index, -index])));
+            const results = await Promise.all(tasks);
+            check(results.every((value, index) => value[0] === index && value[1] === -index), "Concurrent array Tasks changed");
+            check(await exports.EchoObjectAsync(object) === object, "Task<Object> identity changed");
+            return 42;
+        },
         echo: value => value,
         invokeEcho: value => {
             const result = exports.Echo(value);

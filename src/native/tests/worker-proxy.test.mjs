@@ -6,7 +6,289 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { createContext, SourceTextModule, SyntheticModule } from "node:vm";
 import { Worker as NodeWorker } from "node:worker_threads";
+import ts from "typescript";
 import { createWorkerModuleLoader } from "./worker-transport-worker.mjs";
+
+for (const stage of ["argument", "import", "result", "success"]) {
+    test(`native Span cleanup runs after ${stage} conversion/invocation`, async () => {
+        const source = await readFile(new URL("../libs/System.Runtime.InteropServices.JavaScript.Native/interop/invoke-js.ts", import.meta.url), "utf8");
+        const method = source.match(/function bindFn\(closure: BindingClosureJS\) \{[\s\S]*?\n\}/)?.[0];
+        assert.ok(method, "Native import wrapper must be found");
+        const failures = [];
+        const expected = new Error(stage);
+        const context = createContext({
+            isReceiverShouldFree: () => false, startMeasure: () => 0, endMeasure: () => {},
+            MeasuredBlock: { callCsFunction: 0 },
+            marshalExceptionToCs: (_args, error) => failures.push(error),
+        });
+        const output = ts.transpileModule("export " + method, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
+        const module = new SourceTextModule(output, { context });
+        await module.link(() => {
+            throw new Error("Unexpected native wrapper import");
+        });
+        await module.evaluate();
+        const view = { isDisposed: false };
+        const invoke = module.namespace.bindFn({
+            argsCount: 2, fqn: "span.cleanup", hasCleanup: true,
+            argMarshalers: [() => view, () => {
+                if (stage === "argument") throw expected;
+                return 42;
+            }],
+            fn: () => {
+                if (stage === "import") throw expected;
+                return 43;
+            },
+            resConverter: () => {
+                if (stage === "result") throw expected;
+            },
+            argCleanup: [value => {
+                if (value) value.isDisposed = true;
+            }],
+        });
+        invoke(8);
+        assert.equal(view.isDisposed, true);
+        assert.deepEqual(failures, stage === "success" ? [] : [expected]);
+    });
+}
+
+async function createReferenceFixture() {
+    const context = createContext({ Date, Error, TypeError, RangeError, ReferenceError, SyntaxError, EvalError, URIError, AggregateError,
+        Promise, Uint8Array, Int32Array, Float32Array, Float64Array, DataView });
+    const load = createWorkerModuleLoader(context, {});
+    const module = await load("./worker-references");
+    await module.evaluate();
+    const memory = new WebAssembly.Memory({ initial: 1, maximum: 3, shared: true });
+    const manager = () => ({ refreshIfNeeded: () => ({ u8: new Uint8Array(memory.buffer) }) });
+    const ui = module.namespace.workerReferences(manager());
+    const worker = module.namespace.workerReferences(manager());
+    ui.configure("ui", request => worker.dispatch(request), message => queueMicrotask(() => worker.receive(message)));
+    worker.configure("worker", request => ui.dispatch(request), message => queueMicrotask(() => ui.receive(message)));
+    return { ui, worker, memory };
+}
+
+test("reference codec preserves special numbers, dates and every native array representation", async () => {
+    const { ui, worker } = await createReferenceFixture();
+    for (const value of [undefined, null, false, -0, NaN, Infinity, -Infinity, 2n ** 63n - 1n, "text\0\uD800"]) {
+        assert.ok(Object.is(worker.decode(ui.encode(value)), value));
+    }
+    for (const milliseconds of [-62135596800000, 0, 253402300799999]) {
+        assert.equal(worker.decode(ui.encode(new Date(milliseconds))).getTime(), milliseconds);
+    }
+    for (const value of [
+        new Uint8Array([0, 255]), new Int32Array([-2147483648, 2147483647]),
+        new Float32Array([-0, NaN, Infinity]), new Float64Array([-0, NaN, Infinity]),
+        [null, "", "text\0\u{1f600}", [1, false]],
+    ]) {
+        const result = worker.decode(ui.encode(value));
+        assert.deepEqual(structuredClone(Array.from(result)), Array.from(value));
+        assert.equal(worker.decode(ui.encode(null)), null);
+    }
+    const cycle = [];
+    cycle.push(cycle);
+    assert.throws(() => ui.encode(cycle), /cyclic arrays/);
+});
+
+test("bidirectional object/error/function references preserve identity, receivers and nested synchronous calls", async () => {
+    const { ui, worker } = await createReferenceFixture();
+    const object = { value: 42, nested: { value: 43 }, add(value) {
+        return this.value + value;
+    } };
+    const proxy = worker.decode(ui.encode(object));
+    Object.defineProperty(object, "_pointer", { get() {
+        throw new Error("Opaque object getters must not be probed as memory-view metadata");
+    } });
+    assert.equal(proxy.value, 42);
+    assert.equal("value" in proxy, true);
+    assert.equal("missing" in proxy, false);
+    proxy.value = 44;
+    assert.equal(object.value, 44);
+    assert.equal(proxy.add(2), 46);
+    assert.deepEqual(Object.keys(proxy), Object.keys(object));
+    assert.equal(ui.decode(worker.encode(proxy)), object);
+    assert.equal(worker.decode(ui.encode(object)), proxy);
+    assert.equal(worker.decode(ui.encode(object.nested)), proxy.nested);
+    object.array = [1, 2, 3];
+    object.bytes = new Uint8Array([0, 255]);
+    object.date = new Date(42);
+    for (const key of ["array", "bytes", "date"]) {
+        assert.equal(ui.decode(worker.encode(proxy[key])), object[key]);
+    }
+    assert.equal(Array.isArray(proxy.array), true);
+    assert.deepEqual(Object.keys(proxy.array), ["0", "1", "2"]);
+    assert.ok(proxy.bytes instanceof Uint8Array);
+    assert.equal(proxy.bytes[1], 255);
+    assert.equal(proxy.date.getTime(), 42);
+    delete proxy.date;
+    assert.equal("date" in object, false);
+    const callback = value => proxy.add(value);
+    const remoteCallback = ui.decode(worker.encode(callback));
+    assert.equal(remoteCallback(3), 47);
+    const error = new Error("reference failure");
+    const errorProxy = worker.decode(ui.encode(error));
+    assert.ok(errorProxy instanceof Error);
+    assert.equal(ui.decode(worker.encode(errorProxy)), error);
+    for (const Constructor of [TypeError, RangeError, ReferenceError, SyntaxError, EvalError, URIError]) {
+        const original = new Constructor("error subtype");
+        const result = worker.decode(ui.encode(original));
+        assert.ok(result instanceof Constructor);
+        assert.equal(ui.decode(worker.encode(result)), original);
+    }
+    const fail = worker.decode(ui.encode(() => {
+        throw error;
+    }));
+    assert.throws(fail, value => value === errorProxy);
+    ui.stop(new Error("stopped"));
+    worker.stop(new Error("stopped"));
+    assert.throws(() => proxy.value, /stopped/);
+});
+
+test("reference Promise arguments settle after the initial call and shutdown rejects pending values", async () => {
+    const { ui, worker } = await createReferenceFixture();
+    const values = Array.from({ length: 70 }, (_, index) => worker.decode(ui.encode(Promise.resolve(index))));
+    assert.deepEqual(await Promise.all(values), Array.from({ length: 70 }, (_, index) => index));
+    const error = new Error("Promise reference rejection");
+    await assert.rejects(worker.decode(ui.encode(Promise.reject(error))), reason => ui.decode(worker.encode(reason)) === error);
+    const pending = worker.decode(ui.encode(new Promise(() => {})));
+    worker.stop(new Error("shutdown"));
+    await assert.rejects(pending, /shutdown/);
+});
+
+test("unpublished value encodings release nested references and suppress Promise completions", async () => {
+    const { ui } = await createReferenceFixture();
+    const encoded = ui.encode([{ value: 42 }, Promise.resolve(43)]);
+    ui.cancelEncoding(encoded);
+    assert.throws(() => ui.decode(encoded), /reference has been released/);
+    await new Promise(resolve => setTimeout(resolve, 0));
+});
+
+for (const [viewType, Constructor] of [[0, Uint8Array], [1, Int32Array], [2, Float64Array], [3, Float32Array]]) {
+    test(`live memory view ${Constructor.name} mutates shared memory, refreshes after growth and respects disposal`, async () => {
+        const { ui, worker, memory } = await createReferenceFixture();
+        const view = {
+            _viewType: viewType, _pointer: 64, _length: 3, isDisposed: false,
+            byteLength: 3 * Constructor.BYTES_PER_ELEMENT,
+            slice() {
+                return new Constructor(memory.buffer, 64, 3).slice();
+            },
+            dispose() {
+                this.isDisposed = true;
+            },
+        };
+        new Constructor(memory.buffer, 64, 3).set([1, 2, 3]);
+        const proxy = ui.decode(worker.encode(view, true, true));
+        assert.equal(proxy.length, 3);
+        assert.equal(proxy.byteLength, 3 * Constructor.BYTES_PER_ELEMENT);
+        proxy.set(new Constructor([9]), 1);
+        assert.deepEqual(Array.from(proxy.slice()), [1, 9, 3]);
+        const copy = new Constructor(3);
+        proxy.copyTo(copy);
+        assert.deepEqual(Array.from(copy), [1, 9, 3]);
+        memory.grow(1);
+        proxy.set(new Constructor([7]), 2);
+        assert.deepEqual(Array.from(proxy.slice(1)), [9, 7]);
+        proxy.dispose();
+        assert.equal(view.isDisposed, true);
+        assert.throws(() => proxy.slice(), /ObjectDisposedException/);
+    });
+}
+
+for (const [name, values] of [
+    ["IntPtr", [0, 0x7fffffff, 0x80000000, 0xffffffff]],
+    ["DateTime", [null, new Date(0), new Date(253402300799999)]],
+    ["DateTimeOffset", [null, new Date(-62135596800000), new Date(123456)]],
+    ["Nullable", [null, false, 0, -0, NaN, 2n ** 63n - 1n, new Date(42)]],
+    ["Array", [null, [], [1, false, "text\0"], new Int32Array([-1, 0, 42]), new Float64Array([-0, NaN, Infinity])]],
+    ["Object", [null, { value: 42 }, new Error("Object identity")]],
+    ["JSObject", [null, { value: 42, nested: { value: 43 } }]],
+    ["Exception", [null, new Error("Exception identity")]],
+    ["Function", [null, value => value + 1]],
+]) {
+    test(`${name} crosses real worker rings for synchronous/Task imports and exports`, async () => {
+        const fixture = await createFixture({ threaded: true });
+        const api = await fixture.create();
+        let asyncImport = false;
+        try {
+            api.setModuleImports("main.js", { update: value => asyncImport ? Promise.resolve(value) : value });
+            const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+            const allocations = exports.ActiveAllocations(0);
+            for (const suffix of ["", "Import", "Async", "AsyncImport"]) {
+                asyncImport = suffix === "AsyncImport";
+                for (const value of values) {
+                    const result = await exports[name + suffix](value);
+                    if (value instanceof Date) assert.equal(result.getTime(), value.getTime());
+                    else if (name === "Array" && value !== null) assert.deepEqual(structuredClone(Array.from(result)), Array.from(value));
+                    else assert.ok(Object.is(result, value));
+                }
+            }
+            assert.equal(exports.ActiveAllocations(0), allocations);
+        } finally {
+            api.exit(0);
+            await fixture.termination;
+        }
+    });
+}
+
+test("Task arguments and nested callbacks cross real worker rings without synchronous Promise waits", async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    try {
+        api.setModuleImports("main.js", { update: async value => await value });
+        const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        assert.equal(await exports.AwaitPromise(Promise.resolve(42)), 42);
+        assert.equal(await exports.ImportPromise(Promise.resolve(43)), 43);
+        await assert.rejects(exports.AwaitPromise(Promise.reject(new Error("Task argument rejection"))), /Task argument rejection/);
+        const fn = exports.Function(value => exports.Scalar(value));
+        assert.equal(fn(42), 43);
+        const foreign = new SourceTextModule("export const promise = Promise.resolve(44);", { context: createContext({}) });
+        await foreign.link(() => {
+            throw new Error("Unexpected Promise import");
+        });
+        await foreign.evaluate();
+        assert.equal(await exports.AwaitPromise(foreign.namespace.promise), 44);
+        exports.FailAllocation(0);
+        assert.throws(() => exports.AwaitPromise(Promise.resolve(45)), /unable to allocate/);
+        await new Promise(resolve => setTimeout(resolve, 0));
+        const object = { value: 46 };
+        exports.FailAllocation(0);
+        assert.throws(() => exports.Object(object), /unable to allocate/);
+        assert.equal(exports.Object(object), object);
+        assert.equal(exports.Scalar(46), 47);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("synchronous failures and Task rejections preserve UI and worker exception identity", async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    const uiError = new Error("UI exception identity");
+    let failure = uiError;
+    try {
+        api.setModuleImports("main.js", { update: value => {
+            if (value === 1) return Promise.reject(failure);
+            throw failure;
+        } });
+        const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        assert.throws(() => exports.ThroughImport(0), error => error === uiError);
+        await assert.rejects(exports.AsyncImport(1), error => error === uiError);
+        let workerError;
+        try {
+            exports.Scalar(-1);
+        } catch (error) {
+            workerError = error;
+        }
+        assert.ok(workerError instanceof Error);
+        assert.equal(exports.Exception(workerError), workerError);
+        failure = workerError;
+        assert.throws(() => exports.ThroughImport(0), error => error === workerError);
+        await assert.rejects(exports.AsyncImport(1), error => error === workerError);
+        assert.equal(exports.Scalar(41), 42);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
 
 for (const worker of [false, true]) {
     test(`library harness selects ${worker ? "worker" : "ordinary"} runtime and bootstraps UI imports`, async () => {
@@ -255,7 +537,7 @@ async function createFixture(options = {}) {
         }
     }
     const context = createContext({
-        AbortController, Atomics: options.threaded ? Atomics : atomics, Error, SharedArrayBuffer, setTimeout, clearTimeout,
+        AbortController, Atomics: options.threaded ? Atomics : atomics, Error, TypeError, Date, Promise, Uint8Array, Int32Array, Float32Array, Float64Array, SharedArrayBuffer, setTimeout, clearTimeout,
         self: {
             addEventListener: (type, listener) => {
                 if (type === "message") workerListeners.push(listener);
@@ -335,6 +617,13 @@ async function createFixture(options = {}) {
     };
 
     const load = createWorkerModuleLoader(context, stubs, (specifier, source) => {
+        if (!options.threaded && specifier === "./worker-imports") {
+            // The one-stack fixture cannot run a worker allocation while UI dispatch is on stack.
+            // Exercise the bounded allocation-failure path here; real threads cover exception identity.
+            const marker = "encoded = workerReferences(memory).encode(error, true);";
+            assert.ok(source.includes(marker));
+            return source.replace(marker, "throw new Error('Single-thread fixture cannot allocate an exception payload');");
+        }
         if (specifier === "./shared-signaling" && options.seedPromiseIds !== undefined) {
             const marker = "let nextPromiseId = 1;";
             assert.ok(source.includes(marker), "Completion ID seed must match the implementation");
@@ -382,7 +671,7 @@ test("worker exports return primitives synchronously and preserve aliases across
         assert.equal(scalar(-2147483648), -2147483647);
         assert.equal(scalar(2147483646), 2147483647);
         assert.throws(() => scalar(2147483648), /Int32/);
-        assert.throws(() => exports.Sample.Test.Async(1), /primitive.*String.*Task/);
+        assert.throws(() => exports.Sample.Test.Async(1), /supported arguments.*Task/);
         assert.equal(fixture.allocations.size, allocations);
         assert.equal(fixture.calls.filter(call => call[0] === "exports").length, 1);
     } finally {
@@ -1127,7 +1416,7 @@ test("oversized export errors are explicit and do not poison the next call", { t
     const api = await fixture.create();
     try {
         const { Scalar } = (await api.getAssemblyExports("Test")).Sample.Test;
-        assert.throws(() => Scalar(-1), /managed export error message exceeds/);
+        assert.throws(() => Scalar(-1), error => error.message === "x".repeat(5000));
         assert.equal(Scalar(42), 43);
     } finally {
         api.exit(0);

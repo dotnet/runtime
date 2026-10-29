@@ -8,11 +8,40 @@ import {
     ARGUMENT_ENTRY_TYPE, ARGUMENT_ENTRY_STRING, ARGUMENT_ENTRY_STRING_LENGTH,
 } from "./shared-signaling";
 import type { WorkerReturnType, WorkerValueType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
-import { isWorkerValueType, JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType, WorkerMaxArgumentCount } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+import { isWorkerBufferedType, isWorkerValueType, JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType, WorkerMaxArgumentCount } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+import { isWorkerNativePromise, workerReferences } from "./worker-references";
 export type { WorkerReturnType, WorkerValueType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 
-export type WorkerValue = number | bigint | boolean | string | null | undefined;
+export type WorkerValue = number | bigint | boolean | string | object | null | undefined;
 const ownedStrings = new Map<number, VoidPtr>();
+type PreparedArguments = { texts: Array<string | null>, types: WorkerValueType[] };
+const preparedValues = new WeakMap<MemoryViewManager, Map<number, PreparedArguments>>();
+
+export function discardWorkerArguments(memory: MemoryViewManager, entry: number): void {
+    const prepared = preparedValues.get(memory);
+    const pending = prepared?.get(entry);
+    if (pending) {
+        for (let index = 0; index < pending.texts.length; index++) {
+            const value = pending.texts[index];
+            if (pending.types[index] !== MarshalerType.String && value !== null) {
+                workerReferences(memory).cancelEncoding(value);
+            }
+        }
+    }
+    prepared?.delete(entry);
+}
+
+export function encodeWorkerValue(memory: MemoryViewManager, value: unknown, type: WorkerReturnType): string | null {
+    const result = validateWorkerValue(value, type);
+    return type === MarshalerType.String ? typeof result === "string" ? result : null
+        : workerReferences(memory).encode(result, type === MarshalerType.JSObject || type === MarshalerType.Exception
+            || type === MarshalerType.Span || type === MarshalerType.ArraySegment || type === MarshalerType.Action || type === MarshalerType.Function,
+        type === MarshalerType.Span || type === MarshalerType.ArraySegment);
+}
+
+export function decodeWorkerValue(memory: MemoryViewManager, value: string | null, type: WorkerReturnType): WorkerValue {
+    return type === MarshalerType.String ? value : validateWorkerValue(workerReferences(memory).decode(value ?? "null"), type);
+}
 
 function validateWorkerInteger(value: unknown, minimum: number, maximum: number, name: string): number {
     if (typeof value !== "number" || !Number.isSafeInteger(value) || value < minimum || value > maximum) {
@@ -38,14 +67,19 @@ export function prepareWorkerArguments(
     values: unknown[], types: WorkerValueType[], writePrimitives = true,
 ): void {
     if (types.length > WorkerMaxArgumentCount) throw new Error("withWorker(): too many arguments");
+    const texts: Array<string | null> = [];
+    let prepared = preparedValues.get(memory);
+    if (!prepared) preparedValues.set(memory, prepared = new Map());
+    prepared.set(entry, { texts, types });
     Atomics.store(signal, entry + RING_ENTRY_ARGUMENT_COUNT, types.length);
     for (let index = 0; index < types.length; index++) {
         const value = validateWorkerValue(values[index], types[index]);
+        texts.push(isWorkerBufferedType(types[index]) ? encodeWorkerValue(memory, value, types[index]) : null);
         const argument = argumentEntryOffset(entry, index);
         Atomics.store(signal, argument + ARGUMENT_ENTRY_TYPE, types[index]);
         Atomics.store(signal, argument + ARGUMENT_ENTRY_STRING, 0);
-        Atomics.store(signal, argument + ARGUMENT_ENTRY_STRING_LENGTH, typeof value === "string" ? value.length : -1);
-        if (writePrimitives && types[index] !== MarshalerType.String) {
+        Atomics.store(signal, argument + ARGUMENT_ENTRY_STRING_LENGTH, texts[index]?.length ?? -1);
+        if (writePrimitives && !isWorkerBufferedType(types[index])) {
             writeWorkerPrimitive(memory, pointer + (index + 2) * JavaScriptMarshalerArgSize, value, types[index]);
         }
     }
@@ -54,7 +88,7 @@ export function prepareWorkerArguments(
 export function allocateWorkerArgumentStrings(signal: Int32Array, entry: number, own: (pointer: number) => void): void {
     const types = readWorkerArgumentTypes(signal, entry);
     for (let index = 0; index < types.length; index++) {
-        if (types[index] !== MarshalerType.String) continue;
+        if (!isWorkerBufferedType(types[index])) continue;
         const argument = argumentEntryOffset(entry, index);
         const length = Atomics.load(signal, argument + ARGUMENT_ENTRY_STRING_LENGTH);
         if (length === -1) continue;
@@ -65,24 +99,25 @@ export function allocateWorkerArgumentStrings(signal: Int32Array, entry: number,
 }
 
 export function writeWorkerArgumentStrings(
-    signal: Int32Array, entry: number, memory: MemoryViewManager, values: unknown[],
+    signal: Int32Array, entry: number, memory: MemoryViewManager,
 ): void {
     const types = readWorkerArgumentTypes(signal, entry);
     for (let index = 0; index < types.length; index++) {
-        const value = values[index];
-        if (types[index] === MarshalerType.String && typeof value === "string") {
+        const value = preparedValues.get(memory)?.get(entry)?.texts[index];
+        if (isWorkerBufferedType(types[index]) && typeof value === "string") {
             writeWorkerString(memory, Atomics.load(signal, argumentEntryOffset(entry, index) + ARGUMENT_ENTRY_STRING) >>> 0, value);
         }
     }
+    preparedValues.get(memory)?.delete(entry);
 }
 
 export function readWorkerArguments(signal: Int32Array, entry: number, memory: MemoryViewManager, pointer: number): WorkerValue[] {
     const types = readWorkerArgumentTypes(signal, entry);
     return types.map((type, index) => {
         const argument = argumentEntryOffset(entry, index);
-        return type === MarshalerType.String
-            ? readWorkerString(memory, Atomics.load(signal, argument + ARGUMENT_ENTRY_STRING) >>> 0,
-                Atomics.load(signal, argument + ARGUMENT_ENTRY_STRING_LENGTH))
+        return isWorkerBufferedType(type)
+            ? decodeWorkerValue(memory, readWorkerString(memory, Atomics.load(signal, argument + ARGUMENT_ENTRY_STRING) >>> 0,
+                Atomics.load(signal, argument + ARGUMENT_ENTRY_STRING_LENGTH)), type)
             : readWorkerPrimitive(memory, pointer + (index + 2) * JavaScriptMarshalerArgSize, type);
     });
 }
@@ -103,6 +138,33 @@ export function validateWorkerValue(value: unknown, type: WorkerReturnType): Wor
         return value;
     }
     switch (type) {
+        case MarshalerType.IntPtr: return validateWorkerInteger(value, 0, 0xffff_ffff, "IntPtr");
+        case MarshalerType.DateTime:
+        case MarshalerType.DateTimeOffset:
+            if (!(value instanceof Date)) throw new Error("withWorker(): value must be a Date");
+            return value;
+        case MarshalerType.Nullable:
+        case MarshalerType.Object:
+            if (typeof value === "symbol") throw new Error("withWorker(): Symbol values are not supported");
+            return value;
+        case MarshalerType.JSObject:
+        case MarshalerType.Span:
+        case MarshalerType.ArraySegment:
+            if (typeof value !== "object" && typeof value !== "function") throw new Error("withWorker(): value must be an object");
+            return value;
+        case MarshalerType.Exception:
+            if (typeof value !== "object" && typeof value !== "string") throw new Error("withWorker(): value must be an Error");
+            return value;
+        case MarshalerType.Array:
+            if (!Array.isArray(value) && !ArrayBuffer.isView(value)) throw new Error("withWorker(): value must be an array");
+            return value;
+        case MarshalerType.Action:
+        case MarshalerType.Function:
+            if (typeof value !== "function") throw new Error("withWorker(): value must be a Function");
+            return value;
+        case MarshalerType.Task:
+            if (typeof value !== "object" || !isWorkerNativePromise(value)) throw new Error("withWorker(): value must be a native Promise");
+            return value;
         case MarshalerType.Byte: return validateWorkerInteger(value, 0, 0xff, "Byte");
         case MarshalerType.Char: return validateWorkerInteger(value, 0, 0xffff, "Char");
         case MarshalerType.Int16: return validateWorkerInteger(value, -0x8000, 0x7fff, "Int16");
@@ -146,6 +208,9 @@ export function writeWorkerPrimitive(memory: MemoryViewManager, pointer: number,
         case MarshalerType.Int32:
             views.i32[pointer / 4] = Number(result);
             break;
+        case MarshalerType.IntPtr:
+            views.u32[pointer / 4] = Number(result);
+            break;
         case MarshalerType.Single:
             views.f32[pointer / 4] = Number(result);
             break;
@@ -173,6 +238,7 @@ export function readWorkerPrimitive(memory: MemoryViewManager, pointer: number, 
         case MarshalerType.Char: return views.u16[pointer / 2];
         case MarshalerType.Int16: return views.i16[pointer / 2];
         case MarshalerType.Int32: return views.i32[pointer / 4];
+        case MarshalerType.IntPtr: return views.u32[pointer / 4];
         case MarshalerType.Single: return views.f32[pointer / 4];
         case MarshalerType.Double: return views.f64[pointer / 8];
         case MarshalerType.Int52: return views.f64[pointer / 8];

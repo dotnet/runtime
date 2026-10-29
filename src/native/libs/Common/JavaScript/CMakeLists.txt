@@ -50,6 +50,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/worker-imports.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/worker-promises.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/worker-proxy.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/worker-references.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/worker-runtime.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/worker-values.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/per-module/index.ts"

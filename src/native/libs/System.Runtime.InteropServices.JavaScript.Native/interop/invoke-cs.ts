@@ -13,7 +13,7 @@ import { allocStackFrame, getArg, getMarshalerToCsByType, getSig, getSignatureTy
 import { bindArgMarshalToCs } from "./marshal-to-cs";
 import { bindArgMarshalToJs, endMarshalTaskToJs, releaseEagerTaskHolder } from "./marshal-to-js";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, isRuntimeRunning, startMeasure } from "./utils";
-import { isWorkerValueType, isWorkerReturnType, MarshalerType, MeasuredBlock, WorkerMaxArgumentCount } from "./types";
+import { isWorkerBufferedType, isWorkerValueType, isWorkerReturnType, MarshalerType, MeasuredBlock, WorkerMaxArgumentCount } from "./types";
 import { boundCsFunctionSymbol, exportsByAssembly } from "./gc-handles";
 import { ManagedError } from "./marshaled-types";
 
@@ -58,26 +58,17 @@ export async function getWorkerAssemblyExports(assemblyName: string): Promise<Wo
 }
 
 export function invokeWorkerJSExport(handle: number, args: JSMarshalerArguments, values: unknown[]): unknown {
-    try {
-        const fn = workerExports.get(handle);
-        if (!fn) throw new Error("withWorker(): unknown or unsupported scalar export");
-        const closure: BindingClosureCS = Reflect.get(fn, boundCsFunctionSymbol);
-        if (values.length !== closure.argsCount) throw new Error("withWorker(): export argument count mismatch");
-        const result = fn(...values);
-        if (closure.isAsync) {
-            return result === null ? null : result.catch((error: unknown) => {
-                throw snapshotWorkerExportError(error);
-            });
-        }
-        if (closure.workerReturnType === MarshalerType.Void) return undefined;
-        if (closure.workerReturnType === MarshalerType.String) return result;
-        const converter = getMarshalerToCsByType(closure.workerReturnType);
-        if (!converter) throw new Error("Worker result marshaler is not initialized");
-        converter(getArg(args, 1), result);
-        return undefined;
-    } catch (error) {
-        throw snapshotWorkerExportError(error);
-    }
+    const fn = workerExports.get(handle);
+    if (!fn) throw new Error("withWorker(): unknown or unsupported export");
+    const closure: BindingClosureCS = Reflect.get(fn, boundCsFunctionSymbol);
+    if (values.length !== closure.argsCount) throw new Error("withWorker(): export argument count mismatch");
+    const result = fn(...values);
+    if (closure.isAsync || isWorkerBufferedType(closure.workerReturnType)) return result;
+    if (closure.workerReturnType === MarshalerType.Void) return undefined;
+    const converter = getMarshalerToCsByType(closure.workerReturnType);
+    if (!converter) throw new Error("Worker result marshaler is not initialized");
+    converter(getArg(args, 1), result);
+    return undefined;
 }
 
 export async function getAssemblyExports(assemblyName: string): Promise<any> {
@@ -124,7 +115,7 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
 
     const workerArgumentTypes = Array.from({ length: argsCount }, (_, index) => getSignatureType(getSig(signature, index + 2)));
     const rawWorkerReturnType = isAsync ? getSignatureResType(resSig) : resMarshalerType;
-    const workerReturnType = rawWorkerReturnType === MarshalerType.None || rawWorkerReturnType === MarshalerType.Discard
+    const workerReturnType = rawWorkerReturnType === MarshalerType.None || rawWorkerReturnType === MarshalerType.Discard || rawWorkerReturnType === MarshalerType.DiscardNoWait
         ? MarshalerType.Void : rawWorkerReturnType;
     const closure: BindingClosureCS = {
         methodHandle,

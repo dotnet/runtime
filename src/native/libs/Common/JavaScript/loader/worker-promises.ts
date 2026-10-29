@@ -5,15 +5,17 @@ import type { PromiseCompletionSource } from "./types";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { allocatePromiseId, WorkerResultKind } from "./shared-signaling";
 import type { WorkerValue, WorkerReturnType } from "./worker-values";
-import { validateWorkerValue } from "./worker-values";
+import { validateWorkerValue, decodeWorkerValue } from "./worker-values";
+import type { MemoryViewManager } from "./shared-signaling";
 import { MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+import { workerReferences } from "./worker-references";
 
 export type WorkerPromiseMessage = {
     type: "async-import" | "async-export";
     requestId: number;
-} & ({ result: WorkerValue } | { error: string });
+} & ({ result: WorkerValue } | { encodedResult: string | null } | { error: string } | { encodedError: string });
 
-export function createWorkerPromises() {
+export function createWorkerPromises(memory?: MemoryViewManager) {
     const reserved = new Set<number>();
     const pending = new Map<number, { completion: PromiseCompletionSource<WorkerValue>, type: WorkerReturnType }>();
     let stopped: Error | undefined;
@@ -47,10 +49,20 @@ export function createWorkerPromises() {
             const { completion, type } = request;
             pending.delete(message.requestId);
             reserved.delete(message.requestId);
-            if ("error" in message) completion.reject(new Error(message.error));
+            if ("encodedError" in message) {
+                try {
+                    if (!memory) throw new Error("withWorker(): exception transport is missing");
+                    completion.reject(workerReferences(memory).decode(message.encodedError));
+                } catch (error) {
+                    completion.reject(error);
+                }
+            } else if ("error" in message) completion.reject(new Error(message.error));
             else {
                 try {
-                    completion.resolve(validateWorkerValue(message.result, type));
+                    if ("encodedResult" in message) {
+                        if (!memory) throw new Error("withWorker(): value transport is missing");
+                        completion.resolve(decodeWorkerValue(memory, message.encodedResult, type));
+                    } else completion.resolve(validateWorkerValue(message.result, type));
                 } catch (error) {
                     completion.reject(error);
                 }
@@ -70,6 +82,8 @@ export function captureWorkerPromise(
     active: Set<number>, post: (message: WorkerPromiseMessage) => void,
     onFailure: (error: Error) => void,
     returnType: WorkerReturnType = MarshalerType.Int32,
+    encode?: (value: WorkerValue) => string | null,
+    encodeError?: (error: unknown) => string,
 ): WorkerResultKind {
     if (value === null || value === undefined) return WorkerResultKind.Null;
     if ((typeof value !== "object" && typeof value !== "function") || !("then" in value) || typeof value.then !== "function") {
@@ -84,16 +98,28 @@ export function captureWorkerPromise(
             onFailure(error instanceof Error ? error : new Error(String(error)));
         }
     }
+    function reject(error: unknown): void {
+        if (!active.has(requestId)) return;
+        try {
+            complete(encodeError ? { type, requestId, encodedError: encodeError(error) }
+                : { type, requestId, error: error instanceof Error ? error.message : String(error) });
+        } catch (error) {
+            active.delete(requestId);
+            onFailure(error instanceof Error ? error : new Error(String(error)));
+        }
+    }
     try {
         // Native Promise brand checking also accepts promises from another realm.
         // Arbitrary thenables may complete inline, before the native Task holder is safe.
         Reflect.apply(Promise.prototype.then, value, [(result: unknown) => {
+            if (!active.has(requestId)) return;
             try {
-                complete({ type, requestId, result: validateWorkerValue(result, returnType) });
+                const value = validateWorkerValue(result, returnType);
+                complete(encode ? { type, requestId, encodedResult: encode(value) } : { type, requestId, result: value });
             } catch (error) {
-                complete({ type, requestId, error: error instanceof Error ? error.message : String(error) });
+                reject(error);
             }
-        }, (error: unknown) => complete({ type, requestId, error: error instanceof Error ? error.message : String(error) })]);
+        }, reject]);
     } catch (error) {
         active.delete(requestId);
         throw error;
