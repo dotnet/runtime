@@ -39,7 +39,6 @@ set(COMMON_RUNTIME_SOURCES
     gcheaputilities.cpp
     GCMemoryHelpers.cpp
     gcenv.ee.cpp
-    GcStressControl.cpp
     HandleTableHelpers.cpp
     interoplibinterface_java.cpp
     MathHelpers.cpp
@@ -295,12 +294,18 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/DispatchResolve.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
+  ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/PInvoke.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
+
+if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_I386)
+  list(APPEND RUNTIME_SOURCES_ARCH_ASM
+    ${ARCH_SOURCES_DIR}/MathHelpers.asm
+  )
+endif()
 
 # Add architecture specific folder for looking up headers.
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
@@ -332,7 +337,6 @@ if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_WASM)
   add_definitions(-DFEATURE_64BIT_ALIGNMENT)
 endif()
 
-add_compile_definitions($<$<CONFIG:Debug,Checked>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DNATIVEAOT)

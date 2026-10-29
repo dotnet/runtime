@@ -944,11 +944,6 @@ BOOL VirtualCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     return FALSE;
 }
 
-/* for use by debugger.
-*/
-
-extern "C" void STDCALL StubDispatchFixupPatchLabel();
-
 BOOL VirtualCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *trace)
 {
     LIMITED_METHOD_CONTRACT;

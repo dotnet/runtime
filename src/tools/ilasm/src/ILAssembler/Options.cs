@@ -181,6 +181,12 @@ namespace ILAssembler
         public string? KeyFile { get; set; }
 
         /// <summary>
+        /// Gets or sets the name of the Win32 <c>.res</c> or COFF <c>.obj</c> resource file to embed.
+        /// </summary>
+        /// <remarks>The compiler loads this file through its resource locator, independently of managed manifest resources.</remarks>
+        public string? Win32ResourceFile { get; set; }
+
+        /// <summary>
         /// Gets or sets a value that indicates whether instruction encodings are optimized.
         /// </summary>
         /// <remarks>The default is <see langword="false"/>, preserving the instruction forms in the source.</remarks>

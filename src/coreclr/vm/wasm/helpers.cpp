@@ -353,9 +353,9 @@ EXTERN_C void JIT_CheckedWriteBarrier_End()
     PORTABILITY_ASSERT("JIT_CheckedWriteBarrier_End is not implemented on wasm");
 }
 
-EXTERN_C void JIT_StackProbe_End()
+EXTERN_C void RhpStackProbe_End()
 {
-    PORTABILITY_ASSERT("JIT_StackProbe_End is not implemented on wasm");
+    PORTABILITY_ASSERT("RhpStackProbe_End is not implemented on wasm");
 }
 
 EXTERN_C VOID STDCALL ResetCurrentContext()
@@ -447,9 +447,9 @@ extern "C" void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 }
 #endif
 
-extern "C" void STDCALL JIT_StackProbe()
+extern "C" void STDCALL RhpStackProbe()
 {
-    PORTABILITY_ASSERT("JIT_StackProbe is not implemented on wasm");
+    PORTABILITY_ASSERT("RhpStackProbe is not implemented on wasm");
 }
 
 EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
@@ -470,8 +470,8 @@ EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
     }
 }
 
-EXTERN_C FCDECL0(void, JIT_PollGC);
-EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
+EXTERN_C FCDECL0(void, RhpGcPoll);
+EXTERN_C __attribute__((naked)) void F_CALL_CONV RhpGcPoll(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
 {
     asm(
         "i32.const 0\n"
