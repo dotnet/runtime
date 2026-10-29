@@ -27,6 +27,7 @@ set(GC_WKS_SVR_SOURCES
 set(COMMON_RUNTIME_SOURCES
     AsmOffsetsVerify.cpp
     rhassert.cpp
+    ${RUNTIME_DIR}/MathHelpers.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
     MethodTable.cpp
@@ -41,7 +42,6 @@ set(COMMON_RUNTIME_SOURCES
     gcenv.ee.cpp
     HandleTableHelpers.cpp
     interoplibinterface_java.cpp
-    MathHelpers.cpp
     MiscHelpers.cpp
     TypeManager.cpp
     ObjectLayout.cpp

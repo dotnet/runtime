@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
-#include "CommonTypes.h"
-#include "CommonMacros.h"
+#include <math.h>
+
+#ifdef FEATURE_NATIVEAOT
 #include "rhassert.h"
+#endif
 
 //
 // Floating point and 64-bit integer math helpers.
@@ -11,7 +14,7 @@
 
 FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
 {
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
     return (val > 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val) : 0;
 #else
@@ -22,7 +25,7 @@ FCIMPLEND
 
 FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 {
-#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM)
     const double int64_min = -2147483648.0 * 4294967296.0;
     const double int64_max = 2147483648.0 * 4294967296.0;
     return (val != val) ? 0 : (val <= int64_min) ? INT64_MIN : (val >= int64_max) ? INT64_MAX : (int64_t)val;
@@ -32,31 +35,71 @@ FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 }
 FCIMPLEND
 
-#ifndef HOST_64BIT
+FCIMPL2_DD(double, Rhp_fmod, double x, double y)
+{
+    return fmod(x, y);
+}
+FCIMPLEND
+
+FCIMPL2_FF(float, Rhp_fmodf, float x, float y)
+{
+    return fmodf(x, y);
+}
+FCIMPLEND
+
+#ifdef TARGET_32BIT
 FCIMPL2_LL(int64_t, DivInt64Internal, int64_t i, int64_t j)
 {
-    ASSERT(j && "Divide by zero!");
+    _ASSERTE(j && "Divide by zero!");
     return i / j;
 }
 FCIMPLEND
 
 FCIMPL2_LL(uint64_t, DivUInt64Internal, uint64_t i, uint64_t j)
 {
-    ASSERT(j && "Divide by zero!");
+    _ASSERTE(j && "Divide by zero!");
     return i / j;
 }
 FCIMPLEND
 
 FCIMPL2_LL(int64_t, ModInt64Internal, int64_t i, int64_t j)
 {
-    ASSERT(j && "Divide by zero!");
+    _ASSERTE(j && "Divide by zero!");
     return i % j;
 }
 FCIMPLEND
 
 FCIMPL2_LL(uint64_t, ModUInt64Internal, uint64_t i, uint64_t j)
 {
-    ASSERT(j && "Divide by zero!");
+    _ASSERTE(j && "Divide by zero!");
+    return i % j;
+}
+FCIMPLEND
+
+FCIMPL2(int32_t, DivInt32Internal, int32_t i, int32_t j)
+{
+    _ASSERTE(j && "Divide by zero!");
+    return i / j;
+}
+FCIMPLEND
+
+FCIMPL2(uint32_t, DivUInt32Internal, uint32_t i, uint32_t j)
+{
+    _ASSERTE(j && "Divide by zero!");
+    return i / j;
+}
+FCIMPLEND
+
+FCIMPL2(int32_t, ModInt32Internal, int32_t i, int32_t j)
+{
+    _ASSERTE(j && "Divide by zero!");
+    return i % j;
+}
+FCIMPLEND
+
+FCIMPL2(uint32_t, ModUInt32Internal, uint32_t i, uint32_t j)
+{
+    _ASSERTE(j && "Divide by zero!");
     return i % j;
 }
 FCIMPLEND
@@ -85,39 +128,37 @@ FCIMPL1_L(float, RhpULng2Flt, uint64_t val)
 }
 FCIMPLEND
 
-#endif
-
-#ifndef HOST_64BIT
-FCIMPL2(int32_t, DivInt32Internal, int32_t i, int32_t j)
+FCIMPL2_LL(int64_t, RhpLMul, int64_t val1, int64_t val2)
 {
-    ASSERT(j && "Divide by zero!");
-    return i / j;
+    return val1 * val2;
 }
 FCIMPLEND
 
-FCIMPL2(uint32_t, DivUInt32Internal, uint32_t i, uint32_t j)
+// The x86 shift helpers take the value in EDX:EAX and the shift count in ECX, so they are implemented
+// in assembly (i386/MiscStubs).
+#ifndef TARGET_X86
+FCIMPL2(uint64_t, RhpLLsh, uint64_t num, int32_t shift)
 {
-    ASSERT(j && "Divide by zero!");
-    return i / j;
+    return num << (shift & 0x3F);
 }
 FCIMPLEND
 
-FCIMPL2(int32_t, ModInt32Internal, int32_t i, int32_t j)
+FCIMPL2(int64_t, RhpLRsh, int64_t num, int32_t shift)
 {
-    ASSERT(j && "Divide by zero!");
-    return i % j;
+    return num >> (shift & 0x3F);
 }
 FCIMPLEND
 
-FCIMPL2(uint32_t, ModUInt32Internal, uint32_t i, uint32_t j)
+FCIMPL2(uint64_t, RhpLRsz, uint64_t num, int32_t shift)
 {
-    ASSERT(j && "Divide by zero!");
-    return i % j;
+    return num >> (shift & 0x3F);
 }
 FCIMPLEND
-#endif
+#endif // !TARGET_X86
+#endif // TARGET_32BIT
 
-#if defined(HOST_X86) || defined(HOST_WASM)
+// CoreCLR implements Math and MathF with the COMDouble and COMSingle FCalls instead.
+#if defined(FEATURE_NATIVEAOT) && (defined(TARGET_X86) || defined(TARGET_WASM))
 
 #undef min
 #undef max
@@ -299,14 +340,6 @@ FCIMPL1_F(float, Rhp_tanhf, float x)
     return std::tanhf(x);
 FCIMPLEND
 
-FCIMPL2_DD(double, Rhp_fmod, double x, double y)
-    return std::fmod(x, y);
-FCIMPLEND
-
-FCIMPL2_FF(float, Rhp_fmodf, float x, float y)
-    return std::fmodf(x, y);
-FCIMPLEND
-
 FCIMPL3_DDD(double, Rhp_fma, double x, double y, double z)
     return std::fma(x, y, z);
 FCIMPLEND
@@ -323,4 +356,4 @@ FCIMPL2_FI(float, Rhp_modff, float x, float* intptr)
     return std::modff(x, intptr);
 FCIMPLEND
 
-#endif // HOST_X86 || HOST_WASM
+#endif // FEATURE_NATIVEAOT && (TARGET_X86 || TARGET_WASM)

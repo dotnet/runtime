@@ -70,7 +70,6 @@ using std::isnan;
 // divided into following categories:
 //
 //      INTEGER ARITHMETIC HELPERS
-//      FLOATING POINT HELPERS
 //      INSTANCE FIELD HELPERS
 //      STATIC FIELD HELPERS
 //      SHARED STATIC FIELD HELPERS
@@ -116,97 +115,6 @@ extern "C" FCDECL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor);
 extern "C" FCDECL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor);
 extern "C" FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor);
 extern "C" FCDECL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor);
-
-#include <optdefault.h>
-
-
-//========================================================================
-//
-//      FLOATING POINT HELPERS
-//
-//========================================================================
-
-#include <optsmallperfcritical.h>
-
-/*********************************************************************/
-HCIMPL1_V(float, JIT_ULng2Flt, uint64_t val)
-{
-    FCALL_CONTRACT;
-    return (float)val;
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(double, JIT_ULng2Dbl, uint64_t val)
-{
-    FCALL_CONTRACT;
-    return (double)val;
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(float, JIT_Lng2Flt, int64_t val)
-{
-    FCALL_CONTRACT;
-    return (float)val;
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(double, JIT_Lng2Dbl, int64_t val)
-{
-    FCALL_CONTRACT;
-    return (double)val;
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(int64_t, JIT_Dbl2Lng, double val)
-{
-    FCALL_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM)
-    const double int64_min = -2147483648.0 * 4294967296.0;
-    const double int64_max = 2147483648.0 * 4294967296.0;
-    return (val != val) ? 0 : (val <= int64_min) ? INT64_MIN : (val >= int64_max) ? INT64_MAX : (int64_t)val;
-#else
-    return (int64_t)val;
-#endif
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(uint64_t, JIT_Dbl2ULng, double val)
-{
-    FCALL_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
-    // Note that this expression also works properly for val = NaN case
-    return (val >= 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val) : 0;
-#else
-    return (uint64_t)val;
-#endif
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
-{
-    FCALL_CONTRACT;
-
-    return fmodf(dividend, divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
-{
-    FCALL_CONTRACT;
-
-    return fmod(dividend, divisor);
-}
-HCIMPLEND
 
 #include <optdefault.h>
 

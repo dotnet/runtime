@@ -195,6 +195,13 @@
 #define FCDECL2_RAW(rettype, funcname, a1, a2) FCDECL2(rettype, funcname, a1, a2)
 #endif
 
+// Variants for 64-bit and floating point arguments named after the NativeAOT FCDECL/FCIMPL macros.
+#define FCDECL1_D(rettype, funcname, a1) FCDECL1_V(rettype, funcname, a1)
+#define FCDECL1_L(rettype, funcname, a1) FCDECL1_V(rettype, funcname, a1)
+#define FCDECL2_DD(rettype, funcname, a1, a2) FCDECL2_VV(rettype, funcname, a1, a2)
+#define FCDECL2_FF(rettype, funcname, a1, a2) FCDECL2_VV(rettype, funcname, a1, a2)
+#define FCDECL2_LL(rettype, funcname, a1, a2) FCDECL2_VV(rettype, funcname, a1, a2)
+
 #if defined(ENABLE_CONTRACTS)
 #define FC_CAN_TRIGGER_GC()         FCallGCCanTrigger::Enter()
 #define FC_CAN_TRIGGER_GC_END()     FCallGCCanTrigger::Leave(__FUNCTION__, __FILE__, __LINE__)
@@ -458,6 +465,12 @@ public:
 #define FCIMPL8(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8) rettype funcname(a1, a2, a3, a4, a5, a6, a7, a8) {  FCIMPL_PROLOG(funcname)
 
 #endif // !SWIZZLE_STKARG_ORDER
+
+#define FCIMPL1_D(rettype, funcname, a1) FCIMPL1_V(rettype, funcname, a1)
+#define FCIMPL1_L(rettype, funcname, a1) FCIMPL1_V(rettype, funcname, a1)
+#define FCIMPL2_DD(rettype, funcname, a1, a2) FCIMPL2_VV(rettype, funcname, a1, a2)
+#define FCIMPL2_FF(rettype, funcname, a1, a2) FCIMPL2_VV(rettype, funcname, a1, a2)
+#define FCIMPL2_LL(rettype, funcname, a1, a2) FCIMPL2_VV(rettype, funcname, a1, a2)
 
 //==============================================================================================
 // Use this to terminte an FCIMPLEND.

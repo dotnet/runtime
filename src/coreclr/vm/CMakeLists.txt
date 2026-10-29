@@ -315,6 +315,7 @@ set(VM_SOURCES_WKS
     bundle.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Coreclr.cpp
+    ${RUNTIME_DIR}/MathHelpers.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     cachelinealloc.cpp
     callconvbuilder.cpp
@@ -332,7 +333,6 @@ set(VM_SOURCES_WKS
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
     custommarshalerinfo.cpp
-    divmodint.cpp
     dllimport.cpp
     dllimportcallback.cpp
     dynamicinterfacecastable.cpp
@@ -450,7 +450,6 @@ set(VM_HEADERS_WKS
     customattribute.h
     custommarshalerinfo.h
     diagnosticserveradapter.h
-    divmodint.h
     dllimport.h
     dllimportcallback.h
     eeconfig.h

@@ -165,17 +165,37 @@ extern "C" FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
 
 extern "C" FCDECL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 
+// Math helpers implemented in runtime/MathHelpers.cpp
+EXTERN_C FCDECL1_D(uint64_t, RhpDbl2ULng, double val);
+EXTERN_C FCDECL1_D(int64_t, RhpDbl2Lng, double val);
+EXTERN_C FCDECL2_DD(double, Rhp_fmod, double x, double y);
+EXTERN_C FCDECL2_FF(float, Rhp_fmodf, float x, float y);
+
 #ifdef TARGET_32BIT
-EXTERN_C FCDECL2_VV(INT64, RhpLMul, INT64 val1, INT64 val2);
+EXTERN_C FCDECL2_LL(int64_t, DivInt64Internal, int64_t i, int64_t j);
+EXTERN_C FCDECL2_LL(uint64_t, DivUInt64Internal, uint64_t i, uint64_t j);
+EXTERN_C FCDECL2_LL(int64_t, ModInt64Internal, int64_t i, int64_t j);
+EXTERN_C FCDECL2_LL(uint64_t, ModUInt64Internal, uint64_t i, uint64_t j);
+EXTERN_C FCDECL2(int32_t, DivInt32Internal, int32_t i, int32_t j);
+EXTERN_C FCDECL2(uint32_t, DivUInt32Internal, uint32_t i, uint32_t j);
+EXTERN_C FCDECL2(int32_t, ModInt32Internal, int32_t i, int32_t j);
+EXTERN_C FCDECL2(uint32_t, ModUInt32Internal, uint32_t i, uint32_t j);
+
+EXTERN_C FCDECL1_L(double, RhpLng2Dbl, int64_t val);
+EXTERN_C FCDECL1_L(double, RhpULng2Dbl, uint64_t val);
+EXTERN_C FCDECL1_L(float, RhpLng2Flt, int64_t val);
+EXTERN_C FCDECL1_L(float, RhpULng2Flt, uint64_t val);
+
+EXTERN_C FCDECL2_LL(int64_t, RhpLMul, int64_t val1, int64_t val2);
 
 #ifdef TARGET_X86
 EXTERN_C void STDCALL RhpLLsh();
 EXTERN_C void STDCALL RhpLRsh();
 EXTERN_C void STDCALL RhpLRsz();
 #else // TARGET_X86
-EXTERN_C FCDECL2_VV(UINT64, RhpLLsh, UINT64 num, int shift);
-EXTERN_C FCDECL2_VV(INT64, RhpLRsh, INT64 num, int shift);
-EXTERN_C FCDECL2_VV(UINT64, RhpLRsz, UINT64 num, int shift);
+EXTERN_C FCDECL2(uint64_t, RhpLLsh, uint64_t num, int32_t shift);
+EXTERN_C FCDECL2(int64_t, RhpLRsh, int64_t num, int32_t shift);
+EXTERN_C FCDECL2(uint64_t, RhpLRsz, uint64_t num, int32_t shift);
 #endif // !TARGET_X86
 #endif // TARGET_32BIT
 
