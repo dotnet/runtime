@@ -214,7 +214,7 @@ jobs:
 
 # Linux x64
 
-- ${{ if or(containsValue(parameters.platforms, 'linux_x64'), containsValue(parameters.platforms, 'CoreClrTestBuildHost'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'linux_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}

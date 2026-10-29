@@ -43,6 +43,26 @@ requesting specific test runs from pull requests.
 
 Please update this if the factoring changes.
 
+The Crossgen2, GC, and other runtime-test pipelines use
+`templates/runtime-test-pipeline.yml` for pipeline resources and the Build
+stage's Helix monitor. Their entrypoint files retain triggers, schedules, and
+platform coverage. They import `templates/runtime-test-variables.yml` at the
+entrypoint so common variables are available before the `jobs` parameter's
+templates expand. The pipeline template accepts a `jobs` list so specialized
+library-test and Crossgen2 comparison jobs can remain explicit.
+
+`templates/runtime-test-jobs.yml` defines a product-build matrix with an ordered
+`testRuns` list. Each entry supplies parameters to
+`common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml` relative
+to `eng/pipelines/`. The product and tests build in the same job. Additional runs
+can explicitly use `generatelayoutonly` to reuse the test build and
+`runAfterPreviousFailure` to allow independent submissions after a previous
+run fails. Keep run names unique within a job because they identify logs and
+test-build success variables.
+
+The JIT outerloop wrapper also uses `runtime-test-jobs.yml`, while retaining
+its own scenario selection and additional ISA library-test stages.
+
 This file defines the set of jobs in a platform-agnostic manner,
 using the `platform-matrix.yml` template. This will create one job
 for each platform from the passed-in jobTemplate (either a build

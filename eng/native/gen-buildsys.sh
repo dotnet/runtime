@@ -25,14 +25,15 @@ target_os="$4"
 compiler="$5"
 
 if [[ "$compiler" != "default" ]]; then
-    nativescriptroot="$( cd -P "$scriptroot/../common/native" && pwd )"
-    build_arch="$host_arch" compiler="$compiler" . "$nativescriptroot/init-compiler.sh"
+    build_arch="$host_arch" compiler="$compiler" . "$scriptroot/../common/native/init-compiler.sh"
 
     CCC_CC="$CC"
     CCC_CXX="$CXX"
 fi
 
 export CCC_CC CCC_CXX
+
+build_arch="$host_arch" target_os="$target_os" . "$scriptroot/init-cmake-toolchain.sh"
 
 buildtype=DEBUG
 code_coverage=OFF
@@ -93,51 +94,21 @@ if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
     cmake_command="$SCAN_BUILD_COMMAND $cmake_command"
 fi
 
-cmake_extra_defines_wasm=()
-if [[ "$host_arch" == "wasm" ]]; then
-    . "$scriptroot"/../wasm/wasm-tool-cache.sh
-    if [[ "$target_os" == "browser" ]]; then
-        if [[ -z "$EMSDK_PATH" ]]; then
-            if EMSDK_PATH="$(wasm_tool_cache_dir emscripten "$reporoot"/src/mono/browser/emscripten-version.txt "$reporoot")"; then
-                export EMSDK_PATH
-            else
-                echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
-                exit 1
-            fi
-        fi
-        export EMSDK_QUIET=1 && source "$EMSDK_PATH"/emsdk_env.sh
-        cmake_command="emcmake $cmake_command"
-        # Use WASM-specific tryrun cache to speed up CMake configure
-        # The -C flag must be early in the command line to be effective
-        cmake_extra_defines="-C $scriptroot/tryrun.browser.cmake $cmake_extra_defines"
-    elif [[ "$target_os" == "wasi" ]]; then
-        # Like eng/AcquireWasiSdk.targets, only use $WASI_SDK_PATH when it is the expected version,
-        # so native code built here links with the runtime built by MSBuild.
-        if [[ -n "$WASI_SDK_PATH" ]]; then
-            wasi_sdk_expected_version="$(tr -d '[:space:]' < "$reporoot"/eng/wasm/wasi-sdk-version.txt)"
-            wasi_sdk_actual_version=
-            if [[ -f "$WASI_SDK_PATH/VERSION" ]]; then
-                read -r wasi_sdk_actual_version _ < "$WASI_SDK_PATH/VERSION"
-            fi
-            if [[ "$wasi_sdk_actual_version" != "$wasi_sdk_expected_version" ]] && \
-                wasi_sdk_cache_path="$(wasm_tool_cache_dir wasi-sdk "$reporoot"/eng/wasm/wasi-sdk-version.txt "$reporoot")"; then
-                echo "WASI_SDK_PATH is version '$wasi_sdk_actual_version', not '$wasi_sdk_expected_version'; using $wasi_sdk_cache_path"
-                export WASI_SDK_PATH="$wasi_sdk_cache_path"
-            fi
-        fi
-        if [[ -z "$WASI_SDK_PATH" ]]; then
-            if WASI_SDK_PATH="$(wasm_tool_cache_dir wasi-sdk "$reporoot"/eng/wasm/wasi-sdk-version.txt "$reporoot")"; then
-                export WASI_SDK_PATH
-            else
-                echo "Error: You need to set the WASI_SDK_PATH environment variable pointing to the WASI SDK root."
-                exit 1
-            fi
-        fi
-        cmake_extra_defines_wasm=("-DCLR_CMAKE_TARGET_OS=wasi" "-DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p2.cmake")
-    else
-        echo "target_os was not specified"
-        exit 1
-    fi
+if [[ -n "$CMAKE_CONFIGURE_COMMAND_WRAPPER" ]]; then
+    cmake_command="$CMAKE_CONFIGURE_COMMAND_WRAPPER $cmake_command"
+fi
+
+cmake_initial_cache_args=()
+if [[ -n "$CMAKE_INITIAL_CACHE" ]]; then
+    cmake_initial_cache_args+=("-C" "$CMAKE_INITIAL_CACHE")
+fi
+
+cmake_toolchain_args=()
+if [[ -n "$CLR_CMAKE_TARGET_OS" ]]; then
+    cmake_toolchain_args+=("-DCLR_CMAKE_TARGET_OS=$CLR_CMAKE_TARGET_OS")
+fi
+if [[ -n "$CMAKE_TOOLCHAIN_FILE" ]]; then
+    cmake_toolchain_args+=("-DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE")
 fi
 
 # CMake detects the compiler only on a build directory's first configure. Later configures keep the
@@ -145,7 +116,7 @@ fi
 # different one, for example a new SDK version in the versioned wasm tool cache. Record those inputs
 # next to the cache and reconfigure from scratch when they change.
 compiler_inputs="CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE:-}"$'\n'"CC=${CC:-}"$'\n'"CXX=${CXX:-}"
-for arg in $cmake_extra_defines "${__UnprocessedCMakeArgs[@]}" "${cmake_extra_defines_wasm[@]}"; do
+for arg in $cmake_extra_defines "${__UnprocessedCMakeArgs[@]}" "${cmake_toolchain_args[@]}"; do
     case "$arg" in
         -DCMAKE_TOOLCHAIN_FILE=*|-DCMAKE_TOOLCHAIN_FILE:*=*) compiler_inputs+=$'\n'"$arg" ;;
     esac
@@ -175,12 +146,13 @@ fi
 $cmake_command \
   "${cmake_fresh[@]}" \
   --no-warn-unused-cli \
+  "${cmake_initial_cache_args[@]}" \
   -G "$generator" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
   "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
   $cmake_extra_defines \
   "${__UnprocessedCMakeArgs[@]}" \
-  "${cmake_extra_defines_wasm[@]}" \
+  "${cmake_toolchain_args[@]}" \
   -S "$1" \
   -B "$2" \
   && printf '%s\n' "$compiler_inputs" > "$compiler_inputs_file"

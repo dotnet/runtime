@@ -1,0 +1,65 @@
+parameters:
+  - name: platforms
+    type: object
+    default: []
+  - name: platformGroup
+    type: string
+    default: ''
+  - name: buildConfig
+    type: string
+    default: checked
+  - name: buildArgs
+    type: string
+    default: -s clr+libs -c $(_BuildConfig) -lc Release
+  - name: testGroup
+    type: string
+    default: outerloop
+  - name: liveLibrariesBuildConfig
+    type: string
+    default: Release
+  - name: helixQueueGroup
+    type: string
+    default: ci
+  - name: timeoutInMinutes
+    type: number
+    default: 900
+  - name: useHelixMonitor
+    type: boolean
+    default: true
+  - name: testRuns
+    type: object
+    default:
+    - {}
+  - name: variables
+    type: object
+    default: []
+  - name: jobParameters
+    type: object
+    default: {}
+
+jobs:
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    helixQueueGroup: ${{ parameters.helixQueueGroup }}
+    buildConfig: ${{ parameters.buildConfig }}
+    platforms: ${{ parameters.platforms }}
+    platformGroup: ${{ parameters.platformGroup }}
+    variables: ${{ parameters.variables }}
+    jobParameters:
+      buildArgs: ${{ parameters.buildArgs }}
+      testGroup: ${{ parameters.testGroup }}
+      liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      ${{ insert }}: ${{ parameters.jobParameters }}
+      postBuildSteps:
+        - ${{ each testRun in parameters.testRuns }}:
+          - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+            parameters:
+              testGroup: ${{ parameters.testGroup }}
+              useHelixMonitor: ${{ parameters.useHelixMonitor }}
+              ${{ insert }}: ${{ testRun }}
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          forwardedParameters: [testGroup, liveLibrariesBuildConfig]
