@@ -58,6 +58,7 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs" Link="IL\Stubs\UnsafeIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeILCodeStreams.cs" Link="IL\Stubs\PInvokeILCodeStreams.cs" />
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\LinkageMetadata.cs" Link="Interop\IL\LinkageMetadata.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\Marshaller.cs" Link="Interop\IL\Marshaller.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshallerKind.cs" Link="Interop\IL\MarshallerKind.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs" Link="Interop\IL\MarshalHelpers.cs" />
@@ -95,6 +96,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithFunclets.cs" Link="Compiler\DependencyAnalysis\INodeWithFunclets.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\FuncletKind.cs" Link="Compiler\DependencyAnalysis\FuncletKind.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" Link="Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithLinkageMetadata.cs" Link="Compiler\DependencyAnalysis\INodeWithLinkageMetadata.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectDumper.cs" Link="Compiler\DependencyAnalysis\IObjectDumper.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" Link="Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" />

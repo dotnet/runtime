@@ -34,6 +34,7 @@ namespace ILCompiler.ObjectWriter
         private const uint UndefinedSymbol = 0x10; // WASM_SYM_UNDEFINED
         private const uint LocalSymbol = 0x2; // WASM_SYM_BINDING_LOCAL
         private const uint ExportedSymbol = 0x20; // WASM_SYM_EXPORTED
+        private const uint ExplicitNameSymbol = 0x40; // WASM_SYM_EXPLICIT_NAME
         private const byte SegmentInfoSubsection = 5; // WASM_SEGMENT_INFO
         private const byte SymbolTableSubsection = 8; // WASM_SYMBOL_TABLE
         private const uint LinkingVersion = 2;
@@ -299,6 +300,10 @@ namespace ILCompiler.ObjectWriter
                 _ => throw new UnreachableException(),
             };
             uint flags = symbol.IsImport ? UndefinedSymbol : 0;
+            if (symbol.HasExplicitName)
+            {
+                flags |= ExplicitNameSymbol;
+            }
             if (!symbol.IsImport && _definedSymbols.TryGetValue(symbol.Name, out SymbolDefinition definition) && definition.Global)
             {
                 flags |= ExportedSymbol;
@@ -306,9 +311,9 @@ namespace ILCompiler.ObjectWriter
             entries.WriteByte((byte)kind); // kind: the symbol type.
             WriteULEB128(entries, flags); // flags: a bitfield containing flags for this symbol.
             WriteULEB128(entries, (ulong)symbol.Index); // index: the index of the Wasm object corresponding to the symbol.
-            if (!symbol.IsImport)
+            if (!symbol.IsImport || symbol.HasExplicitName)
             {
-                WriteName(entries, symbol.Name); // name_len/name_data: the optional UTF-8 symbol name, omitted for imports.
+                WriteName(entries, symbol.Name); // name_len/name_data: the UTF-8 symbol name, omitted for imports without an explicit name.
             }
         }
 
