@@ -71,7 +71,7 @@ namespace ILLink.Tasks
                 _lineNumber = lineNumber == 0 ? _lineNumber + 1 : lineNumber;
                 line = line.Trim();
                 int commentIndex = line.IndexOf('/');
-                if (line.StartsWith("#") && commentIndex >= 0)
+                if (commentIndex >= 0 && line[0] == '#')
                     line = line.Substring(0, commentIndex).TrimEnd();
 
                 int ifdefLength = 0;

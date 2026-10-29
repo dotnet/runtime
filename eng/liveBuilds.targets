@@ -307,7 +307,8 @@
         $(LibrariesSharedFrameworkDir)dotnet.native.wasm;"
         IsNative="true" />
 
-      <LibrariesRuntimeFiles Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'CoreCLR'"
+      <LibrariesRuntimeFiles Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'CoreCLR' and
+                                       '$(BuildNativeAOTRuntimePack)' != 'true' and '$(TestBuildMode)' != 'nativeaot'"
                              Include="$(CoreCLRSharedFrameworkDir)include\ecall-table.h"
                              NativeSubDirectory="include"
                              IsNative="true" />
