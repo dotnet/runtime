@@ -11,8 +11,15 @@ import type { WorkerReturnType, WorkerValueType } from "../../../System.Runtime.
 import { isWorkerValueType, JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType, WorkerMaxArgumentCount } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 export type { WorkerReturnType, WorkerValueType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 
-export type WorkerValue = number | boolean | string | null | undefined;
+export type WorkerValue = number | bigint | boolean | string | null | undefined;
 const ownedStrings = new Map<number, VoidPtr>();
+
+function validateWorkerInteger(value: unknown, minimum: number, maximum: number, name: string): number {
+    if (typeof value !== "number" || !Number.isSafeInteger(value) || value < minimum || value > maximum) {
+        throw new Error(`withWorker(): value must be a ${name} in range ${minimum}..${maximum}`);
+    }
+    return value;
+}
 
 export function readWorkerArgumentTypes(signal: Int32Array, entry: number): WorkerValueType[] {
     const count = Atomics.load(signal, entry + RING_ENTRY_ARGUMENT_COUNT);
@@ -95,10 +102,19 @@ export function validateWorkerValue(value: unknown, type: WorkerReturnType): Wor
         if (typeof value !== "string") throw new Error("withWorker(): value must be a String");
         return value;
     }
-    if (type !== MarshalerType.Int32 || typeof value !== "number" || !Number.isInteger(value) || value < -0x8000_0000 || value > 0x7fff_ffff) {
-        throw new Error("withWorker(): value must be an Int32");
+    switch (type) {
+        case MarshalerType.Byte: return validateWorkerInteger(value, 0, 0xff, "Byte");
+        case MarshalerType.Char: return validateWorkerInteger(value, 0, 0xffff, "Char");
+        case MarshalerType.Int16: return validateWorkerInteger(value, -0x8000, 0x7fff, "Int16");
+        case MarshalerType.Int32: return validateWorkerInteger(value, -0x8000_0000, 0x7fff_ffff, "Int32");
+        case MarshalerType.Int52: return validateWorkerInteger(value, -Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, "Int52");
+        case MarshalerType.BigInt64:
+            if (typeof value !== "bigint" || value < -0x8000_0000_0000_0000n || value > 0x7fff_ffff_ffff_ffffn) {
+                throw new Error("withWorker(): value must be a BigInt64 in the signed 64-bit range");
+            }
+            return value;
+        default: throw new Error("withWorker(): unsupported scalar value type");
     }
-    return value;
 }
 
 function primitiveViews(memory: MemoryViewManager, pointer: number) {
@@ -118,6 +134,15 @@ export function writeWorkerPrimitive(memory: MemoryViewManager, pointer: number,
         case MarshalerType.Boolean:
             views.u8[pointer] = result ? 1 : 0;
             break;
+        case MarshalerType.Byte:
+            views.u8[pointer] = Number(result);
+            break;
+        case MarshalerType.Char:
+            views.u16[pointer / 2] = Number(result);
+            break;
+        case MarshalerType.Int16:
+            views.i16[pointer / 2] = Number(result);
+            break;
         case MarshalerType.Int32:
             views.i32[pointer / 4] = Number(result);
             break;
@@ -125,23 +150,33 @@ export function writeWorkerPrimitive(memory: MemoryViewManager, pointer: number,
             views.f32[pointer / 4] = Number(result);
             break;
         case MarshalerType.Double:
+        case MarshalerType.Int52:
             views.f64[pointer / 8] = Number(result);
+            break;
+        case MarshalerType.BigInt64:
+            if (typeof result !== "bigint") throw new Error("withWorker(): invalid BigInt64 value");
+            views.i64[pointer / 8] = result;
             break;
         default:
             throw new Error("withWorker(): invalid primitive value type");
     }
 }
 
-export function readWorkerPrimitive(memory: MemoryViewManager, pointer: number, type: WorkerValueType): number | boolean | null {
+export function readWorkerPrimitive(memory: MemoryViewManager, pointer: number, type: WorkerValueType): number | bigint | boolean | null {
     const views = primitiveViews(memory, pointer);
     const actualType = views.u8[pointer + JSMarshalerArgumentOffsets.Type];
     if (actualType === MarshalerType.None) return null;
     if (actualType !== type) throw new Error("withWorker(): invalid primitive result type");
     switch (type) {
         case MarshalerType.Boolean: return views.u8[pointer] !== 0;
+        case MarshalerType.Byte: return views.u8[pointer];
+        case MarshalerType.Char: return views.u16[pointer / 2];
+        case MarshalerType.Int16: return views.i16[pointer / 2];
         case MarshalerType.Int32: return views.i32[pointer / 4];
         case MarshalerType.Single: return views.f32[pointer / 4];
         case MarshalerType.Double: return views.f64[pointer / 8];
+        case MarshalerType.Int52: return views.f64[pointer / 8];
+        case MarshalerType.BigInt64: return views.i64[pointer / 8];
         default: throw new Error("withWorker(): invalid primitive value type");
     }
 }

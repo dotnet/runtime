@@ -195,6 +195,112 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("overLimit", nameof(WorkerInteropTest))]
         private static partial int OverLimitOnUI(int a, int b, int c, int d, int e, int f, int g);
 
+        [JSImport("echoInteger", nameof(WorkerInteropTest))]
+        private static partial byte EchoByteOnUI(byte value);
+        [JSImport("invokeByte", nameof(WorkerInteropTest))]
+        private static partial byte InvokeByteOnUI(byte value);
+        [JSImport("echoIntegerAsync", nameof(WorkerInteropTest))]
+        private static partial Task<byte> EchoByteAsyncOnUI(byte value);
+        [JSImport("invokeByteAsync", nameof(WorkerInteropTest))]
+        private static partial Task<byte> InvokeByteAsyncOnUI(byte value);
+
+        [JSImport("echoInteger", nameof(WorkerInteropTest))]
+        private static partial char EchoCharOnUI(char value);
+        [JSImport("invokeChar", nameof(WorkerInteropTest))]
+        private static partial char InvokeCharOnUI(char value);
+        [JSImport("echoIntegerAsync", nameof(WorkerInteropTest))]
+        private static partial Task<char> EchoCharAsyncOnUI(char value);
+        [JSImport("invokeCharAsync", nameof(WorkerInteropTest))]
+        private static partial Task<char> InvokeCharAsyncOnUI(char value);
+
+        [JSImport("echoInteger", nameof(WorkerInteropTest))]
+        private static partial short EchoInt16OnUI(short value);
+        [JSImport("invokeInt16", nameof(WorkerInteropTest))]
+        private static partial short InvokeInt16OnUI(short value);
+        [JSImport("echoIntegerAsync", nameof(WorkerInteropTest))]
+        private static partial Task<short> EchoInt16AsyncOnUI(short value);
+        [JSImport("invokeInt16Async", nameof(WorkerInteropTest))]
+        private static partial Task<short> InvokeInt16AsyncOnUI(short value);
+
+        [JSImport("echoInteger", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Number>]
+        private static partial long EchoInt52OnUI([JSMarshalAs<JSType.Number>] long value);
+        [JSImport("invokeInt52", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Number>]
+        private static partial long InvokeInt52OnUI([JSMarshalAs<JSType.Number>] long value);
+        [JSImport("echoIntegerAsync", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
+        private static partial Task<long> EchoInt52AsyncOnUI([JSMarshalAs<JSType.Number>] long value);
+        [JSImport("invokeInt52Async", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
+        private static partial Task<long> InvokeInt52AsyncOnUI([JSMarshalAs<JSType.Number>] long value);
+
+        [JSImport("echoInteger", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.BigInt>]
+        private static partial long EchoBigInt64OnUI([JSMarshalAs<JSType.BigInt>] long value);
+        [JSImport("invokeBigInt64", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.BigInt>]
+        private static partial long InvokeBigInt64OnUI([JSMarshalAs<JSType.BigInt>] long value);
+        [JSImport("echoIntegerAsync", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Promise<JSType.BigInt>>]
+        private static partial Task<long> EchoBigInt64AsyncOnUI([JSMarshalAs<JSType.BigInt>] long value);
+        [JSImport("invokeBigInt64Async", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Promise<JSType.BigInt>>]
+        private static partial Task<long> InvokeBigInt64AsyncOnUI([JSMarshalAs<JSType.BigInt>] long value);
+
+        [JSImport("integerContracts", nameof(WorkerInteropTest))]
+        private static partial int CheckIntegerContractsOnUI(int value);
+        [JSImport("invalidInteger", nameof(WorkerInteropTest))]
+        private static partial byte InvalidByteOnUI(int value);
+        [JSImport("invalidInteger", nameof(WorkerInteropTest))]
+        private static partial char InvalidCharOnUI(int value);
+        [JSImport("invalidInteger", nameof(WorkerInteropTest))]
+        private static partial short InvalidInt16OnUI(int value);
+        [JSImport("invalidInteger", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.Number>]
+        private static partial long InvalidInt52OnUI(int value);
+        [JSImport("invalidInteger", nameof(WorkerInteropTest))]
+        [return: JSMarshalAs<JSType.BigInt>]
+        private static partial long InvalidBigInt64OnUI(int value);
+
+        [JSImport("mixedIntegers", nameof(WorkerInteropTest))]
+        private static partial string MixedIntegersOnUI(byte b, char c, short s,
+            [JSMarshalAs<JSType.Number>] long number, [JSMarshalAs<JSType.BigInt>] long big, string text);
+        [JSImport("mixedIntegersAsync", nameof(WorkerInteropTest))]
+        private static partial Task<string> MixedIntegersAsyncOnUI(byte b, char c, short s,
+            [JSMarshalAs<JSType.Number>] long number, [JSMarshalAs<JSType.BigInt>] long big, string text);
+
+        [JSExport]
+        internal static byte EchoByte(byte value) => value;
+        [JSExport]
+        internal static Task<byte> EchoByteAsync(byte value) => Task.FromResult(value);
+        [JSExport]
+        internal static char EchoChar(char value) => value;
+        [JSExport]
+        internal static Task<char> EchoCharAsync(char value) => Task.FromResult(value);
+        [JSExport]
+        internal static short EchoInt16(short value) => value;
+        [JSExport]
+        internal static Task<short> EchoInt16Async(short value) => Task.FromResult(value);
+
+        [JSExport]
+        [return: JSMarshalAs<JSType.Number>]
+        internal static long EchoInt52([JSMarshalAs<JSType.Number>] long value) => value;
+        [JSExport]
+        [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
+        internal static Task<long> EchoInt52Async([JSMarshalAs<JSType.Number>] long value) => Task.FromResult(value);
+        [JSExport]
+        [return: JSMarshalAs<JSType.BigInt>]
+        internal static long EchoBigInt64([JSMarshalAs<JSType.BigInt>] long value) => value;
+        [JSExport]
+        [return: JSMarshalAs<JSType.Promise<JSType.BigInt>>]
+        internal static Task<long> EchoBigInt64Async([JSMarshalAs<JSType.BigInt>] long value) => Task.FromResult(value);
+
+        [JSExport]
+        internal static string MixedIntegers(byte b, char c, short s,
+            [JSMarshalAs<JSType.Number>] long number, [JSMarshalAs<JSType.BigInt>] long big, string text)
+            => FormattableString.Invariant($"{b}|{(int)c}|{s}|{number}|{big}|{text}");
+
         private static string s_lastMixed;
 
         private static string FormatMixed(string first, int number, double fractional, bool flag, float single, string last)
@@ -699,6 +805,75 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public void NestedMultipleArguments(int depth)
         {
             Assert.Equal("a" + new string('L', depth) + "|" + new string('R', depth) + "z", NestedMultipleOnUI("a", depth, "z"));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        public async Task IntegerImportAndExport(int scenario)
+        {
+            byte b = new byte[] { 0, 1, 42, 255, 128, 254, 17, 127 }[scenario];
+            char c = new char[] { '\0', '\u0001', '\u0130', '\ud800', '\udfff', '\uffff', '\u1234', '\u7fff' }[scenario];
+            short s = new short[] { short.MinValue, -1, 0, 1, short.MaxValue, short.MinValue + 1, 1234, -1234 }[scenario];
+            long number = new long[] { -9007199254740991, -4294967419, -1, 0, 1, 4294967419, 9007199254740991, 2147483648 }[scenario];
+            long big = new long[] { long.MinValue, -9007199254740993, -1, 0, 1, 9007199254740993, long.MaxValue, long.MinValue + 1 }[scenario];
+            Assert.Equal(b, EchoByteOnUI(b));
+            Assert.Equal(b, InvokeByteOnUI(b));
+            Assert.Equal(b, await EchoByteAsyncOnUI(b));
+            Assert.Equal(b, await InvokeByteAsyncOnUI(b));
+            Assert.Equal(c, EchoCharOnUI(c));
+            Assert.Equal(c, InvokeCharOnUI(c));
+            Assert.Equal(c, await EchoCharAsyncOnUI(c));
+            Assert.Equal(c, await InvokeCharAsyncOnUI(c));
+            Assert.Equal(s, EchoInt16OnUI(s));
+            Assert.Equal(s, InvokeInt16OnUI(s));
+            Assert.Equal(s, await EchoInt16AsyncOnUI(s));
+            Assert.Equal(s, await InvokeInt16AsyncOnUI(s));
+            Assert.Equal(number, EchoInt52OnUI(number));
+            Assert.Equal(number, InvokeInt52OnUI(number));
+            Assert.Equal(number, await EchoInt52AsyncOnUI(number));
+            Assert.Equal(number, await InvokeInt52AsyncOnUI(number));
+            Assert.Equal(big, EchoBigInt64OnUI(big));
+            Assert.Equal(big, InvokeBigInt64OnUI(big));
+            Assert.Equal(big, await EchoBigInt64AsyncOnUI(big));
+            Assert.Equal(big, await InvokeBigInt64AsyncOnUI(big));
+            string expected = FormattableString.Invariant($"{b}|{(int)c}|{s}|{number}|{big}|mixed");
+            Assert.Equal(expected, MixedIntegersOnUI(b, c, s, number, big, "mixed"));
+            Assert.Equal(expected, await MixedIntegersAsyncOnUI(b, c, s, number, big, "mixed"));
+        }
+
+        [Fact]
+        public void IntegerValidationAndRecovery()
+        {
+            Assert.Equal(42, CheckIntegerContractsOnUI(42));
+            foreach (Action invoke in new Action[] {
+                () => InvalidByteOnUI(0), () => InvalidCharOnUI(1), () => InvalidInt16OnUI(2),
+                () => InvalidInt52OnUI(3), () => InvalidBigInt64OnUI(4)
+            })
+            {
+                JSException error = Assert.Throws<JSException>(invoke);
+                Assert.NotEmpty(error.Message);
+                Assert.NotEmpty(error.StackTrace);
+            }
+            Assert.Equal(byte.MaxValue, InvokeByteOnUI(byte.MaxValue));
+            Assert.Equal(long.MaxValue, InvokeBigInt64OnUI(long.MaxValue));
+        }
+
+        [Fact]
+        public async Task ConcurrentBigInt64Calls()
+        {
+            Task<long>[] tasks = new Task<long>[70];
+            for (int i = 0; i < tasks.Length; i++)
+                tasks[i] = InvokeBigInt64AsyncOnUI(long.MaxValue - i);
+            long[] results = await Task.WhenAll(tasks);
+            for (int i = 0; i < results.Length; i++)
+                Assert.Equal(long.MaxValue - i, results[i]);
         }
     }
 

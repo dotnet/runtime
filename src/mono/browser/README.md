@@ -62,13 +62,20 @@ application assets; do not patch files in the NuGet cache or published output.
 Browser ReadyToRun images must be produced by a compiler that includes a maximum
 in their memory imports. Older unbounded images fail shared staging explicitly.
 
-The current bridge supports up to six mixed Boolean, Int32, Single, Double, or String
+The current bridge supports up to six mixed Boolean, Byte, Char, Int16, Int32,
+Int52, BigInt64, Single, Double, or String
 arguments and a result of any of those types or void, synchronously or through a
 Task. Void exports return undefined; Task-without-result completion resolves
 to undefined, while a null Task remains null. Void UI imports ignore their return
 values. DiscardNoWait imports/exports are not supported. Floating-point
 transport preserves NaN, infinities and signed zero; Single follows native
 float32 rounding. Null and empty strings remain distinct.
+Byte, Char and Int16 use their exact native widths and ranges. Char values are
+numeric UTF-16 code units, not JavaScript strings. Int52 follows the existing
+`long`/`JSType.Number` converter and carries JavaScript safe integers through a
+double-valued marshaler slot. BigInt64 follows `long`/`JSType.BigInt`, uses a
+signed 64-bit slot and JavaScript `bigint` values, including Task completions;
+it never converts through a JavaScript Number.
 The worker owns temporary UTF-16 transport allocations and native marshaling;
 UI code only copies code units. Shared slots and string buffers are released
 after initial invocation, before asynchronous completion messages.

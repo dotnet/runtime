@@ -780,6 +780,56 @@ for (const name of ["Boolean", "Double", "Single"]) {
     });
 }
 
+for (const [name, values, invalid] of [
+    ["Byte", [0, 1, 42, 255], [-1, 256, 1.5, NaN, Infinity, "1", true, 1n]],
+    ["Char", [0, 1, 0x130, 0xd800, 0xdfff, 0xffff], [-1, 65536, 1.5, NaN, Infinity, "a", true, 1n]],
+    ["Int16", [-32768, -1, 0, 1, 32767], [-32769, 32768, 1.5, NaN, Infinity, "1", true, 1n]],
+    ["Int52", [-Number.MAX_SAFE_INTEGER, -(2 ** 32 + 123), -1, 0, 1, 2 ** 32 + 123, Number.MAX_SAFE_INTEGER],
+        [-(2 ** 53), 2 ** 53, 1.5, NaN, Infinity, "1", true, 1n]],
+    ["BigInt64", [-(1n << 63n), -(1n << 53n) - 1n, -1n, 0n, 1n, (1n << 53n) + 1n, (1n << 63n) - 1n],
+        [-(1n << 63n) - 1n, 1n << 63n, 0, Number.MAX_SAFE_INTEGER, "1", true]],
+]) {
+    test(`${name} retains exact integer values and rejects overflow in both directions`, { timeout: 30000 }, async () => {
+        const fixture = await createFixture({ threaded: true });
+        const api = await fixture.create();
+        let mode = "echo";
+        let response;
+        try {
+            api.setModuleImports("main.js", { update: value => {
+                if (mode === "invalid") return response;
+                if (mode === "asyncInvalid") return Promise.resolve(response);
+                return mode === "async" ? Promise.resolve(value) : value;
+            } });
+            const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+            for (const value of [...values, null, undefined]) {
+                const expected = value ?? (name === "BigInt64" ? 0n : 0);
+                mode = "echo";
+                assert.equal(exports[name](value), expected);
+                assert.equal(exports[name + "Import"](value), expected);
+                assert.equal(await exports[name + "Async"](value), expected);
+                mode = "async";
+                assert.equal(await exports[name + "AsyncImport"](value), expected);
+            }
+            const message = new RegExp(name);
+            for (const value of invalid) {
+                assert.throws(() => exports[name](value), message);
+                response = value;
+                mode = "invalid";
+                assert.throws(() => exports[name + "Import"](values[0]), message);
+                mode = "asyncInvalid";
+                await assert.rejects(exports[name + "AsyncImport"](values[0]), message);
+            }
+            mode = "async";
+            const pending = Array.from({ length: 70 }, (_, index) => exports[name + "AsyncImport"](values[index % values.length]));
+            assert.deepEqual(await Promise.all(pending), Array.from({ length: 70 }, (_, index) => values[index % values.length]));
+            assert.equal(exports.ActiveAllocations(0), 16);
+        } finally {
+            api.exit(0);
+            await fixture.termination;
+        }
+    });
+}
+
 test("zero-argument and void calls preserve argument count, prefix side effects and ignored results", { timeout: 30000 }, async () => {
     const fixture = await createFixture({ threaded: true });
     const api = await fixture.create();

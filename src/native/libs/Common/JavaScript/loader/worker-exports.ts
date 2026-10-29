@@ -158,7 +158,8 @@ export function createWorkerJSExportClient(
             }
             if (returnType === MarshalerType.Void) return undefined;
             const resultPointer = pointer + JavaScriptMarshalerArgSize;
-            return readWorkerPrimitive(memory, resultPointer, returnType) ?? (returnType === MarshalerType.Boolean ? false : 0);
+            return readWorkerPrimitive(memory, resultPointer, returnType)
+                ?? (returnType === MarshalerType.BigInt64 ? 0n : returnType === MarshalerType.Boolean ? false : 0);
         } catch (error) {
             if (published && Atomics.load(signal, entry + RING_ENTRY_SIGNAL) === SignalState.PENDING) {
                 onFailure(error instanceof Error ? error : new Error(String(error)));

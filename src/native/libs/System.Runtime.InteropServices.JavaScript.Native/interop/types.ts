@@ -114,13 +114,15 @@ export type BindingClosureCS = {
     workerReturnType: MarshalerType,
 }
 
-export type WorkerValueType = MarshalerType.Boolean | MarshalerType.Int32 | MarshalerType.Single | MarshalerType.Double | MarshalerType.String;
+export type WorkerValueType = MarshalerType.Boolean | MarshalerType.Byte | MarshalerType.Char | MarshalerType.Int16
+    | MarshalerType.Int32 | MarshalerType.Int52 | MarshalerType.BigInt64 | MarshalerType.Single | MarshalerType.Double | MarshalerType.String;
 export type WorkerReturnType = WorkerValueType | MarshalerType.Void;
 export const WorkerMaxArgumentCount = 6;
 
 export function isWorkerValueType(type: MarshalerType): type is WorkerValueType {
-    return type === MarshalerType.Boolean || type === MarshalerType.Int32 || type === MarshalerType.Single
-        || type === MarshalerType.Double || type === MarshalerType.String;
+    return type === MarshalerType.Boolean || type === MarshalerType.Byte || type === MarshalerType.Char || type === MarshalerType.Int16
+        || type === MarshalerType.Int32 || type === MarshalerType.Int52 || type === MarshalerType.BigInt64
+        || type === MarshalerType.Single || type === MarshalerType.Double || type === MarshalerType.String;
 }
 
 export function isWorkerReturnType(type: MarshalerType): type is WorkerReturnType {

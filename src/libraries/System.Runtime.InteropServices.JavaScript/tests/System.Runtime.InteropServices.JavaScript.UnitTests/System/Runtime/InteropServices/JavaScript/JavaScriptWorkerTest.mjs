@@ -163,6 +163,44 @@ export async function setup(runtime) {
         },
         sixStrings: (...args) => exports.SixStrings(...args),
         nestedMultiple: (first, depth, last) => exports.NestedMultiple(first, depth, last),
+        echoInteger: value => value,
+        echoIntegerAsync: async value => value,
+        invokeByte: value => exports.EchoByte(value),
+        invokeByteAsync: value => exports.EchoByteAsync(value),
+        invokeChar: value => exports.EchoChar(value),
+        invokeCharAsync: value => exports.EchoCharAsync(value),
+        invokeInt16: value => exports.EchoInt16(value),
+        invokeInt16Async: value => exports.EchoInt16Async(value),
+        invokeInt52: value => exports.EchoInt52(value),
+        invokeInt52Async: value => exports.EchoInt52Async(value),
+        invokeBigInt64: value => exports.EchoBigInt64(value),
+        invokeBigInt64Async: value => exports.EchoBigInt64Async(value),
+        mixedIntegers: (...args) => exports.MixedIntegers(...args),
+        mixedIntegersAsync: async (...args) => exports.MixedIntegers(...args),
+        invalidInteger: kind => [256, 65536, 32768, 2 ** 53, 1n << 63n][kind],
+        integerContracts: value => {
+            for (const [name, invalid, wrongType] of [
+                ["Byte", [-1, 256], "1"], ["Char", [-1, 65536], "a"],
+                ["Int16", [-32769, 32768], "1"], ["Int52", [-(2 ** 53), 2 ** 53], "1"],
+                ["BigInt64", [-(1n << 63n) - 1n, 1n << 63n], 1]
+            ]) {
+                const fn = exports["Echo" + name];
+                const defaultValue = name === "BigInt64" ? 0n : 0;
+                check(fn(null) === defaultValue && fn(undefined) === defaultValue, "Integer null/default conversion changed");
+                for (const input of [...invalid, wrongType]) {
+                    let error;
+                    try {
+                        fn(input);
+                    } catch (caught) {
+                        error = caught;
+                    }
+                    check(error?.message, "Invalid integer was not rejected");
+                    if (worker) check(error.message.includes(name), "Integer validation reported the wrong type");
+                    error.dispose?.();
+                }
+            }
+            return value;
+        },
         overLimit: (...args) => exports.OverLimit(...args),
         multiContracts: value => {
             check(exports.MixedSix() === "<null>|0|0|false|0|<null>", "Missing argument defaults changed");
