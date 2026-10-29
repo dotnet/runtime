@@ -112,6 +112,9 @@ async function until(predicate) {
 for (const first of ["app.entrypoints.wasm", "app.1.wasm"]) {
     test(`browser: independent activation, ${first} first`, async () => {
         const f = fixture();
+        // A primary-owned import can already be resolved before either sidecar arrives.
+        const primaryImport = f.payloadPtr + 192;
+        f.view.setUint32(primaryImport, 0x12345678, true);
         const pending = new Map();
         const completion = loadAuxiliaryModules(f.modules, f.memory, f.imports,
             name => new Promise(resolve => pending.set(name, resolve)), f.notify, error => f.errors.push(error));
@@ -121,13 +124,19 @@ for (const first of ["app.entrypoints.wasm", "app.1.wasm"]) {
         pending.get(first)(new Response(f.bytes[first]));
         await until(() => f.view.getUint32(f.payloadPtr + (first === "app.1.wasm" ? 28 : 0), true) === 1);
         assert.equal(f.view.getUint32(f.payloadPtr + (first === "app.1.wasm" ? 0 : 28), true), 0);
+        const resolvedImport = f.payloadPtr + (first === "app.1.wasm" ? 208 : 180);
+        assert.deepEqual([...new Uint8Array(f.memory.buffer, resolvedImport, 4)], [101, 102, 103, 104]);
+        f.view.setUint32(resolvedImport, 0x11223344, true);
         const second = first === "app.1.wasm" ? "app.entrypoints.wasm" : "app.1.wasm";
         pending.get(second)(new Response(f.bytes[second]));
         await completion;
         assert.equal(f.notifications(), 1);
         assert.equal(f.table.get(4)(), 42);
         assert.equal(f.table.length, 12);
-        assert.deepEqual([...new Uint8Array(f.memory.buffer, f.payloadPtr + 208, 4)], [101, 102, 103, 104]);
+        assert.equal(f.view.getUint32(primaryImport, true), 0x12345678);
+        assert.equal(f.view.getUint32(resolvedImport, true), 0x11223344);
+        if (first === "app.entrypoints.wasm")
+            assert.deepEqual([...new Uint8Array(f.memory.buffer, f.payloadPtr + 208, 4)], [101, 102, 103, 104]);
         await loadAuxiliaryModules(f.modules, f.memory, f.imports, () => assert.fail("duplicate download"), f.notify, error => f.errors.push(error));
         assert.equal(f.notifications(), 1);
         assert.deepEqual(f.errors, []);

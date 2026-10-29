@@ -163,7 +163,35 @@ public class DelayedR2RActivation
         Assert.Same(marker, PartitionedExceptionTarget(marker));
         Assert.Equal(5, CrossModuleGenericCaller());
         Assert.Equal(value * 9 + 65, PartitionedCompiledCaller(value));
+        Type[] primaryTypes = PartitionedPrimaryImports();
+        Type[] coldTypes = PartitionedColdImports();
+        Assert.Same(typeof(PartitionedBHot), primaryTypes[0]);
+        Assert.Same(typeof(PartitionedDHot), primaryTypes[1]);
+        Assert.Same(typeof(PartitionedShared), primaryTypes[2]);
+        Assert.Same(typeof(PartitionedACold), coldTypes[0]);
+        Assert.Same(typeof(PartitionedCCold), coldTypes[1]);
+        Assert.Same(typeof(PartitionedECold), coldTypes[2]);
+        Assert.Same(primaryTypes[2], coldTypes[3]);
+        Assert.Same(typeof(PartitionedShared), PartitionedImportGeneric<PartitionedShared>());
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type[] PartitionedPrimaryImports() =>
+        new[] { typeof(PartitionedBHot), typeof(PartitionedDHot), typeof(PartitionedShared) };
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    private static Type[] PartitionedColdImports() =>
+        new[] { typeof(PartitionedACold), typeof(PartitionedCCold), typeof(PartitionedECold), typeof(PartitionedShared) };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type PartitionedImportGeneric<T>() => typeof(T);
+
+    private sealed class PartitionedACold { }
+    private sealed class PartitionedBHot { }
+    private sealed class PartitionedCCold { }
+    private sealed class PartitionedDHot { }
+    private sealed class PartitionedECold { }
+    private sealed class PartitionedShared { }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int PartitionedColdTarget(int value) => value * 7 + 13;
