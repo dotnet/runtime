@@ -79,7 +79,13 @@ responses, verify the cache modes and bounded download attempts, and check that
 a repaired entry is reused on the next boot. These tests run against either
 runtime using the locally constructed workload SDK, and assert that the client
 uses the expected runtime pack rather than an SDK-default downloaded pack.
-The loader bytes are compared with the locally built package. Native Wasm
+The resolved-pack loader bytes are compared with the extracted SDK-installed
+pack when independently available, or with the local package if that runtime
+pack is absent or the application resolves the installed pack itself.
+The constructed SDK must be refreshed after rebuilding
+the runtime; comparison with an installed pack checks SDK agreement, not
+package freshness.
+The cache-seeding page is a static HTML file in the hosted test asset. Native Wasm
 recovery also runs with one download slot to exercise bootstrap dependencies.
 Cache-reuse assertions use the small client assembly; browser cache retention
 of large runtime binaries is discretionary.

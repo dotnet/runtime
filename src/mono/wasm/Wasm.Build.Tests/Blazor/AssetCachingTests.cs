@@ -64,16 +64,30 @@ public class AssetCachingTests : BlazorWasmTestBase
             : "Microsoft.NETCore.App.Runtime.Mono.browser-wasm";
         string packVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
         Assert.EndsWith(Path.Combine(packName, packVersion), runtimePack, StringComparison.OrdinalIgnoreCase);
-        using (var package = ZipFile.OpenRead(Path.Combine(s_buildEnv.BuiltNuGetsPath, $"{packName}.{packVersion}.nupkg")))
+        string expectedLoaderPath = Path.Combine(s_buildEnv.GetRuntimeNativeDir(DefaultTargetFramework), "dotnet.js");
+        string resolvedLoaderPath = Path.Combine(runtimePack, "runtimes", "browser-wasm", "native", "dotnet.js");
+        byte[] expectedLoaderHash;
+        if (File.Exists(expectedLoaderPath) && !string.Equals(
+            Path.GetFullPath(expectedLoaderPath), Path.GetFullPath(resolvedLoaderPath),
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
         {
+            using Stream expectedLoader = File.OpenRead(expectedLoaderPath);
+            expectedLoaderHash = SHA256.HashData(expectedLoader);
+        }
+        else
+        {
+            _testOutput.WriteLine($"No independent SDK-installed loader is available; verifying '{packName}' against the local package.");
+            using var package = ZipFile.OpenRead(Path.Combine(s_buildEnv.BuiltNuGetsPath, $"{packName}.{packVersion}.nupkg"));
             var loader = package.GetEntry("runtimes/browser-wasm/native/dotnet.js");
             Assert.NotNull(loader);
             using Stream expectedLoader = loader.Open();
-            using Stream actualLoader = File.OpenRead(Path.Combine(runtimePack, "runtimes", "browser-wasm", "native", "dotnet.js"));
-            Assert.Equal(SHA256.HashData(expectedLoader), SHA256.HashData(actualLoader));
+            expectedLoaderHash = SHA256.HashData(expectedLoader);
         }
+        using Stream resolvedLoader = File.OpenRead(resolvedLoaderPath);
+        Assert.Equal(expectedLoaderHash, SHA256.HashData(resolvedLoader));
         var buildPaths = GetBuildPaths(Configuration.Release, forPublish: true, projectDir: projectDir);
         string publishedAppPath = Path.Combine(buildPaths.BinDir, "publish");
+        string frameworkPath = Path.Combine(publishedAppPath, "wwwroot", "_framework");
         (string assetPrefix, string assetPattern) = assetKind switch
         {
             "assembly" => ("BlazorWebWasm.Client", $"BlazorWebWasm.Client*{ClientAssemblyExtension}"),
@@ -83,13 +97,13 @@ public class AssetCachingTests : BlazorWasmTestBase
         };
         bool nativeWasm = assetKind is "native" or "native-default";
         string assetName = Path.GetFileName(Assert.Single(Directory.EnumerateFiles(
-            Path.Combine(publishedAppPath, "wwwroot", "_framework"), assetPattern)));
+            frameworkPath, assetPattern)));
 
         var counterLoaded = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var startupFailed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var runOptions = new BlazorRunOptions(Configuration.Release)
         {
-            BrowserPath = $"cache-seed?asset={Uri.EscapeDataString(assetName)}",
+            BrowserPath = $"cache-seed.html?asset={Uri.EscapeDataString(assetName)}",
             DetectRuntimeFailures = expectSuccess,
             CheckCounter = false,
             ExpectedExitCode = expectSuccess ? 0 : null,

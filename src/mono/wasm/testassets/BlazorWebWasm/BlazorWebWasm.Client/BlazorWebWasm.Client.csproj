@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>net11.0</TargetFramework>
-    <UseMonoRuntime Condition="'$(RUNTIME_FLAVOR_FOR_TESTS)' == 'CoreCLR'">false</UseMonoRuntime>
     <UseMonoRuntime Condition="'$(RUNTIME_FLAVOR_FOR_TESTS)' == 'Mono'">true</UseMonoRuntime>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

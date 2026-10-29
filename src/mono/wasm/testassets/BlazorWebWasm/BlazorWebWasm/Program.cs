@@ -91,22 +91,4 @@ app.MapDelete("/request-logs", () =>
     }
 });
 
-app.MapGet("/cache-seed", () => Results.Content(
-    """
-    <!DOCTYPE html>
-    <html>
-    <body>
-    <main class="page">Seeding the HTTP cache</main>
-    <script>
-        (async () => {
-            const asset = new URLSearchParams(location.search).get("asset");
-            const response = await fetch(`/_framework/${asset}`, { cache: "reload" });
-            await response.arrayBuffer();
-            document.title = "cache-seeded";
-        })();
-    </script>
-    </body>
-    </html>
-    """, "text/html"));
-
 app.Run();
