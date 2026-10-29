@@ -144,6 +144,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCoreClrHasFinalAssemblies Condition="'@(WasmAssembliesFinal)' != ''">true</_WasmCoreClrHasFinalAssemblies>
     </PropertyGroup>
     <ItemGroup Condition="'$(_WasmCoreClrUnderPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and Exists('$(_WasmTrimmedClosureDir)')">
+      <!-- Limit trimmed references to build asset selection; publishing must process the original assemblies. -->
+      <_WasmCoreClrOriginalBuildReferences Include="@(ReferenceCopyLocalPaths)" Condition="'%(Extension)' == '.dll'" />
+      <_WasmCoreClrOriginalFinalAssemblies Include="@(WasmAssembliesFinal)" />
       <!-- Tag every copy-local item with trimmed-closure membership (default false so the metadata is always
            defined), then set true for managed assemblies the linker kept. -->
       <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)">
@@ -168,6 +171,20 @@ Copyright (c) .NET Foundation. All rights reserved.
            nested publish already supplied that set, or ComputeWasmBuildAssets sees two project assemblies. -->
       <WasmAssembliesFinal Include="@(IntermediateAssembly->'$(_WasmTrimmedClosureDir)%(FileName).dll')"
                            Condition="'$(_WasmCoreClrHasFinalAssemblies)' != 'true' and Exists('$(_WasmTrimmedClosureDir)%(IntermediateAssembly.FileName).dll')" />
+    </ItemGroup>
+    <PropertyGroup Condition="'$(_WasmCoreClrUnderPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and Exists('$(_WasmTrimmedClosureDir)')">
+      <_WasmCoreClrRestoreBuildReferences>true</_WasmCoreClrRestoreBuildReferences>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_WasmCoreClrRestoreBuildReferences"
+          AfterTargets="_ComputeWasmBuildCandidates"
+          Condition="'$(_WasmCoreClrRestoreBuildReferences)' == 'true'">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Extension)' == '.dll'" />
+      <ReferenceCopyLocalPaths Include="@(_WasmCoreClrOriginalBuildReferences)" />
+      <WasmAssembliesFinal Remove="@(WasmAssembliesFinal)" />
+      <WasmAssembliesFinal Include="@(_WasmCoreClrOriginalFinalAssemblies)" />
     </ItemGroup>
   </Target>
 
