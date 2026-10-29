@@ -513,9 +513,6 @@
     <Compile Include="$(RuntimeBasePath)System\Runtime\ExceptionHandling.cs">
       <Link>Runtime.Base\src\System\Runtime\ExceptionHandling.cs</Link>
     </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\ExceptionHandling.wasm.cs" Condition="'$(TargetsWasm)' == 'true'">
-      <Link>Runtime.Base\src\System\Runtime\ExceptionHandling.wasm.cs</Link>
-    </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\InternalCalls.cs">
       <Link>Runtime.Base\src\System\Runtime\InternalCalls.cs</Link>
     </Compile>
