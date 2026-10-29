@@ -16,10 +16,6 @@
     <OfficialBuildRID Include="linux-musl-arm" Platform="arm" />
     <OfficialBuildRID Include="linux-arm64" Platform="arm64" />
     <OfficialBuildRID Include="linux-musl-arm64" Platform="arm64" />
-    <OfficialBuildRID Include="linux-loongarch64" Platform="loongarch64" />
-    <OfficialBuildRID Include="linux-musl-loongarch64" Platform="loongarch64" />
-    <OfficialBuildRID Include="linux-riscv64" Platform="riscv64" />
-    <OfficialBuildRID Include="linux-musl-riscv64" Platform="riscv64" />
     <OfficialBuildRID Include="tizen.4.0.0-armel" Platform="armel" />
     <OfficialBuildRID Include="tizen.5.0.0-armel" Platform="armel" />
   </ItemGroup>
@@ -29,19 +25,9 @@
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';freebsd;'))">
     <OfficialBuildRID Include="freebsd-x64" Platform="x64" />
-    <OfficialBuildRID Include="freebsd-arm64" Platform="arm64" />
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';netbsd;'))">
     <OfficialBuildRID Include="netbsd-x64" Platform="x64" />
-  </ItemGroup>
-  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';openbsd;'))">
-    <OfficialBuildRID Include="openbsd-x64" Platform="x64" />
-    <OfficialBuildRID Include="openbsd-arm64" Platform="arm64" />
-  </ItemGroup>
-  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';openharmony;'))">
-    <OfficialBuildRID Include="openharmony-x64" Platform="x64" />
-    <OfficialBuildRID Include="openharmony-arm64" Platform="arm64" />
-    <OfficialBuildRID Include="openharmony-arm" Platform="arm" />
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';illumos;'))">
     <OfficialBuildRID Include="illumos-x64" Platform="x64" />
