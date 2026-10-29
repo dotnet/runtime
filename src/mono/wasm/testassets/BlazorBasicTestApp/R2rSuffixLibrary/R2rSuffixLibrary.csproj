@@ -2,7 +2,7 @@
 
   <!-- The .r2r assembly-name suffix must not be mistaken for a composite ReadyToRun owner image. -->
   <PropertyGroup>
-    <TargetFramework>net11.0</TargetFramework>
+    <TargetFramework>net$(WBT_NETCOREAPP_MAXIMUM_VERSION)</TargetFramework>
     <AssemblyName>R2rSuffixLibrary.r2r</AssemblyName>
   </PropertyGroup>
 

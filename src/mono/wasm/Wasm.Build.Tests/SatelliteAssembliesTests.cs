@@ -91,22 +91,11 @@ namespace Wasm.Build.Tests
                 Path.Combine(_projectDir, "..", "LibraryWithResources"));
             CreateProgramForCultureTest("LibraryWithResources.resx.words", "LibraryWithResources.Class1");
             // move src/mono/wasm/testassets/SatelliteAssemblyFromProjectRef/LibraryWithResources to the test project
-            // The root D.B.props should be empty and D.B.targets should only patch the bootstrap SDK's net12 support.
+            // The root D.B.props should be empty and D.B.targets should use the non-Wasm targeting-pack setup.
             File.WriteAllText(Path.Combine(_projectDir, "..", "Directory.Build.props"), "<Project />");
-            File.WriteAllText(
-                Path.Combine(_projectDir, "..", "Directory.Build.targets"),
-                """
-                <Project>
-                  <PropertyGroup>
-                    <NETCoreAppMaximumVersion Condition="'$(WBT_NETCOREAPP_MAXIMUM_VERSION)' != ''">$(WBT_NETCOREAPP_MAXIMUM_VERSION)</NETCoreAppMaximumVersion>
-                  </PropertyGroup>
-                  <ItemGroup Condition="'$(WORKLOAD_PACKS_VER)' != '' and '$(WBT_NETCOREAPP_MAXIMUM_VERSION)' != ''">
-                    <KnownFrameworkReference Update="Microsoft.NETCore.App">
-                      <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == 'net$(WBT_NETCOREAPP_MAXIMUM_VERSION)'">$(WORKLOAD_PACKS_VER)</TargetingPackVersion>
-                    </KnownFrameworkReference>
-                  </ItemGroup>
-                </Project>
-                """);
+            File.Copy(
+                Path.Combine(BuildEnvironment.TestDataPath, "Local.Directory.Build.targets"),
+                Path.Combine(_projectDir, "..", "Directory.Build.targets"));
             // NativeFilesType dotnetWasmFileType = nativeRelink ? NativeFilesType.Relinked : aot ? NativeFilesType.AOT : NativeFilesType.FromRuntimePack;
             
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: nativeRelink);
