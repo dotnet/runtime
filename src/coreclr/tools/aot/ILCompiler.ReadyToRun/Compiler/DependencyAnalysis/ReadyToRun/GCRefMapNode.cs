@@ -16,12 +16,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public const int GCREFMAP_LOOKUP_STRIDE = 1024;
 
         private readonly ImportSectionNode _importSection;
-        private readonly List<IMethodNode> _methods;
+        private readonly List<Import> _imports;
 
         public GCRefMapNode(ImportSectionNode importSection)
         {
             _importSection = importSection;
-            _methods = new List<IMethodNode>();
+            _imports = new List<Import>();
         }
 
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
@@ -34,13 +34,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int Offset => 0;
 
-        public bool IsEmpty => _methods.Count == 0;
+        public bool IsEmpty => _imports.Count == 0;
 
         public void AddImport(Import import)
         {
-            lock (_methods)
+            lock (_imports)
             {
-                _methods.Add(import as IMethodNode);
+                _imports.Add(import);
             }
         }
 
@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            if (_methods.Count == 0 || relocsOnly)
+            if (_imports.Count == 0 || relocsOnly)
             {
                 return new ObjectData(
                     data: Array.Empty<byte>(),
@@ -61,13 +61,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     definedSymbols: new ISymbolDefinitionNode[] { this });
             }
 
-            _methods.MergeSort(CompilerComparer.Instance);
+            // Preserve a record for every cell, including non-method cells, in physical import order.
+            _imports.MergeSort(new EmbeddedObjectNodeComparer(CompilerComparer.Instance));
             GCRefMapBuilder builder = new GCRefMapBuilder(factory.Target, relocsOnly);
             builder.Builder.RequireInitialAlignment(4);
             builder.Builder.AddSymbol(this);
 
             // First, emit the initial ref map offset and reserve the offset map entries
-            int offsetCount = _methods.Count / GCREFMAP_LOOKUP_STRIDE;
+            int offsetCount = _imports.Count / GCREFMAP_LOOKUP_STRIDE;
             builder.Builder.EmitInt((offsetCount + 1) * sizeof(int));
 
             ObjectDataBuilder.Reservation[] offsets = new ObjectDataBuilder.Reservation[offsetCount];
@@ -79,9 +80,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Next, generate the actual method GC ref maps and update the offset map
             int nextOffsetIndex = 0;
             int nextMethodIndex = GCREFMAP_LOOKUP_STRIDE - 1;
-            for (int methodIndex = 0; methodIndex < _methods.Count; methodIndex++)
+            for (int methodIndex = 0; methodIndex < _imports.Count; methodIndex++)
             {
-                IMethodNode methodNode = _methods[methodIndex];
+                IMethodNode methodNode = _imports[methodIndex] as IMethodNode;
                 if (methodNode == null)
                 {
                     // Flush an empty GC ref map block to prevent

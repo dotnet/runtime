@@ -24,6 +24,7 @@ internal sealed partial class WebCilObjectWriter
     private int[] _primaryFunctionIndices;
     private int _activationSignature;
     private List<AuxiliaryDataRange> _auxiliaryDataRanges;
+    private WasmImportLayout _importLayout;
 
     private readonly struct AuxiliaryDataRange
     {
@@ -41,8 +42,49 @@ internal sealed partial class WebCilObjectWriter
 
     public override void EmitObject(Stream stream, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
     {
+        if (_nodeFactory.UsesWasmAuxiliaryModules)
+        {
+            _importLayout = PrepareImportLayout(nodes);
+            nodes = _importLayout.OrderSignatureBlobs(nodes);
+        }
         _partitionNodes = nodes;
         base.EmitObject(stream, nodes, dumper, logger);
+    }
+
+    private WasmImportLayout PrepareImportLayout(IReadOnlyCollection<DependencyNode> nodes)
+    {
+        WasmImportLayout layout = new();
+        HashSet<ISymbolNode> signatureArrays = new();
+        foreach (DependencyNode dependency in nodes)
+        {
+            if (dependency is Import import)
+            {
+                layout.AddImport(import);
+                signatureArrays.Add(import.Table.SignatureArray);
+            }
+        }
+        foreach (DependencyNode dependency in nodes)
+        {
+            if (dependency is not ObjectNode node || node.ShouldSkipEmittingObjectNode(_nodeFactory))
+                continue;
+            bool cold = node is MethodWithGCInfo method && _nodeFactory.IsAuxiliaryMethod(method);
+            if (node is MethodWithGCInfo body)
+            {
+                foreach (ISymbolNode fixup in body.Fixups)
+                    layout.AddUse(fixup, cold);
+            }
+            // Signature-array references follow their owning import cells, not the resident container.
+            // Other resident data, including portable import-thunk records, must remain usable immediately.
+            if (node is ISymbolNode symbol && signatureArrays.Contains(symbol))
+                continue;
+            if (node.GetData(_nodeFactory, relocsOnly: true).Relocs is Relocation[] relocations)
+            {
+                foreach (Relocation relocation in relocations)
+                    layout.AddUse(relocation.Target, cold);
+            }
+        }
+        layout.Complete(symbol => _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbol));
+        return layout;
     }
 
     private List<AuxiliaryDataRange> GetAuxiliaryDataRanges()
@@ -129,48 +171,7 @@ internal sealed partial class WebCilObjectWriter
 
         void AddExclusiveImports()
         {
-            HashSet<Import> primaryImports = new();
-            HashSet<Import> coldImports = new();
-            List<Import> imports = new();
-            foreach (DependencyNode dependency in _partitionNodes)
-            {
-                if (dependency is Import import)
-                {
-                    imports.Add(import);
-                    if (import.Table.IsEager)
-                        primaryImports.Add(import);
-                }
-                if (dependency is not ObjectNode objectNode || objectNode.ShouldSkipEmittingObjectNode(_nodeFactory))
-                    continue;
-                bool cold = objectNode is MethodWithGCInfo method && _nodeFactory.IsAuxiliaryMethod(method);
-                HashSet<Import> usedImports = cold ? coldImports : primaryImports;
-                if (objectNode is MethodWithGCInfo body)
-                {
-                    foreach (ISymbolNode fixup in body.Fixups)
-                    {
-                        if (fixup is Import methodImport)
-                            usedImports.Add(methodImport);
-                    }
-                }
-                // Resident read-only and writable data can use import cells too.
-                if (objectNode.GetData(_nodeFactory, relocsOnly: true).Relocs is Relocation[] relocations)
-                {
-                    foreach (Relocation relocation in relocations)
-                    {
-                        if (relocation.Target is Import referencedImport)
-                            usedImports.Add(referencedImport);
-                    }
-                }
-            }
-            coldImports.ExceptWith(primaryImports);
-            HashSet<ISymbolNode> primarySignatures = new();
-            foreach (Import import in imports)
-            {
-                if (!coldImports.Contains(import))
-                    primarySignatures.Add(_nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, import.Signature));
-            }
-            HashSet<ISymbolNode> movedSignatures = new();
-            foreach (Import import in coldImports)
+            foreach (Import import in _importLayout.ColdImports)
             {
                 AddSymbolRange(import, import.Table.EntrySize);
                 if (_definedSymbols.TryGetValue(GetMangledName(import.Table.SignatureArray), out SymbolDefinition array))
@@ -179,10 +180,9 @@ internal sealed partial class WebCilObjectWriter
                     Add(checked((int)section.Header.VirtualAddress + (int)array.Value +
                         import.ImportSignature.OffsetFromBeginningOfArray), sizeof(uint), entryPoints: false);
                 }
-                ISymbolNode signature = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, import.Signature);
-                if (!primarySignatures.Contains(signature) && movedSignatures.Add(signature))
-                    AddSymbolRange(signature, length: 0);
             }
+            foreach (ISymbolNode signature in _importLayout.ColdSignatures)
+                AddSymbolRange(signature, length: 0);
         }
 
         void AddSymbolRange(ISymbolNode symbol, int length)
