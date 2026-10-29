@@ -7,8 +7,3 @@ public interface IData<TSelf> where TSelf : IData<TSelf>
 {
     static abstract TSelf Create(Target target, TargetPointer address);
 }
-
-public interface IReadableData
-{
-    void EnsureAllFieldsRead();
-}

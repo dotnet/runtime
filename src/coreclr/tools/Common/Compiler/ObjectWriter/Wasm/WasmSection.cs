@@ -312,7 +312,6 @@ namespace ILCompiler.ObjectWriter
 
         protected override void WriteEntryCore(SectionWriter writer, WasmImport entry)
         {
-            writer.EmitSymbolDefinition(new Utf8String(entry.Name));
             writer.WriteUtf8WithLength(entry.Module);
             writer.WriteUtf8WithLength(entry.Name);
             writer.WriteByte((byte)entry.Kind);

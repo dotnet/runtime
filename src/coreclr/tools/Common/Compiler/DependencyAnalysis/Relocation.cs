@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis
         WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB = 0x20B, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
         WASM_METHOD_RELATIVE_VIRTUAL_IP_I32 = 0x20C, // Wasm: a method virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
         WASM_ASYNC_RESUME_INFO_DELTA_ULEB = 0x20D, // Wasm: an image-relative delta to an async resume info fixup chunk, encoded as ULEB128.
-        WASM_METHOD_FRAME_IDENTITY_SLEB = 0x20E, // Wasm: negative odd CoreLib runtime-function identity, encoded as SLEB128.
+        WASM_METHOD_FRAME_IDENTITY_SLEB = 0x20E, // Wasm: the current method's runtime-specific shadow-frame identity, encoded as a 5-byte varint32.
 
         //
         // Relocation operators related to TLS access

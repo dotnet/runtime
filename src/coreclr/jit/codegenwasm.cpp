@@ -187,9 +187,10 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         assert(m_compiler->lvaWasmVirtualIP != BAD_VAR_NUM);
         assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
 
-        // Helpers may be called without a PEP, so their identity is independent of the caller.
+        // NativeAOT encodes the method start. CoreCLR helpers may be called without a PEP,
+        // so their identity is independent of the caller.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
+        if (m_compiler->IsNativeAot() || m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
         {
             GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
         }

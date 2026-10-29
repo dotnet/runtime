@@ -374,16 +374,16 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         // 1. All locals which can be modified indirectly are marked as address-exposed or with
         //    "lvHasLdAddrOp" -- we will rely on "impSpillSideEffects(spillGlobEffects: true)"
         //    below to spill them.
-        // 2. Trees that assign to unaliased locals are always top-level (this avoids having to
-        //    walk down the tree here), and are a subset of what is recognized here.
+        // 2. Trees that assign to unaliased locals are always top-level, possibly under COMMAs (this
+        //    avoids having to walk down the tree here), and are a subset of what is recognized here.
         //
         // If any of the above are violated (say for some temps), the relevant code must spill
         // things manually.
         //
         LclVarDsc* dstVarDsc = nullptr;
-        if (expr->OperIsLocalStore())
+        if (expr->gtEffectiveVal()->OperIsLocalStore())
         {
-            dstVarDsc = lvaGetDesc(expr->AsLclVarCommon());
+            dstVarDsc = lvaGetDesc(expr->gtEffectiveVal()->AsLclVarCommon());
         }
         else if (expr->OperIs(GT_CALL, GT_RET_EXPR)) // The special case of calls with return buffers.
         {
@@ -1277,7 +1277,6 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, unsigned curLevel)
 //
 GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     bool*                   pRuntimeLookup /* = NULL */,
-                                    bool                    mustRestoreHandle /* = false */,
                                     bool                    importParent /* = false */)
 {
     assert(!fgGlobalMorph);
@@ -1288,28 +1287,6 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     if (pRuntimeLookup)
     {
         *pRuntimeLookup = embedInfo.lookup.lookupKind.needsRuntimeLookup;
-    }
-
-    if (mustRestoreHandle && !embedInfo.lookup.lookupKind.needsRuntimeLookup)
-    {
-        switch (embedInfo.handleType)
-        {
-            case CORINFO_HANDLETYPE_CLASS:
-                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
-                break;
-
-            case CORINFO_HANDLETYPE_METHOD:
-                info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun((CORINFO_METHOD_HANDLE)embedInfo.compileTimeHandle);
-                break;
-
-            case CORINFO_HANDLETYPE_FIELD:
-                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(
-                    info.compCompHnd->getFieldClass((CORINFO_FIELD_HANDLE)embedInfo.compileTimeHandle));
-                break;
-
-            default:
-                break;
-        }
     }
 
     // Generate the full lookup tree. May be null if we're abandoning an inline attempt.
@@ -2718,19 +2695,50 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         GenTree* dispatchCell = impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
+        if (dispatchCell == nullptr)
+        {
+            assert(compDonotInline());
+            return nullptr;
+        }
+
         call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr,
                                                         dispatchCell);
     }
+#ifdef TARGET_WASM
+    else if (IsNativeAot() && isInterface)
+    {
+        GenTree* dispatchCell = impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_GLOBAL_PTR, nullptr);
+        if (dispatchCell == nullptr)
+        {
+            assert(compDonotInline());
+            return nullptr;
+        }
+
+        call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr,
+                                                        dispatchCell);
+        call->gtFlags |= GTF_CALL_NULLCHECK;
+    }
+#endif
 
     // Wasm R2R cannot use the CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR fast path because it
     // relies on DelayLoad_Helper_Obj dynamic-helper thunks, which are not implemented on wasm.
     // Fall through to the runtime CORINFO_HELP_VIRTUAL_FUNC_PTR helper instead.
-#if defined(FEATURE_READYTORUN) && !defined(TARGET_WASM)
+#ifdef FEATURE_READYTORUN
+#ifdef TARGET_WASM
+    else if (IsNativeAot())
+#else
     else if (IsAot())
+#endif
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
         {
+#ifdef TARGET_WASM
+            call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, TYP_I_IMPL);
+            call->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr).WellKnown(WellKnownArg::ThisPointer));
+            call->gtFlags |= GTF_CALL_NULLCHECK | (thisPtr->gtFlags & GTF_ALL_EFFECT);
+#else
             call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr);
+#endif
             call->setEntryPoint(pCallInfo->codePointerLookup.constLookup);
         }
         // We need a runtime lookup. NativeAOT has a ReadyToRun helper for that too.
@@ -2742,7 +2750,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
             call = gtNewRuntimeLookupHelperCallNode(&pCallInfo->codePointerLookup.runtimeLookup, ctxTree, nullptr);
         }
     }
-#endif // FEATURE_READYTORUN && !TARGET_WASM
+#endif // FEATURE_READYTORUN
 
     if (call == nullptr)
     {
@@ -3785,8 +3793,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // Don't optimize, just call the helper and be done with it.
         JITDUMP(" helper call because: %s\n", canExpandInline ? "optimizing for size" : "nullable");
 
-        // Ensure that the value class is restored
-        op2 = impTokenToHandle(pResolvedToken, nullptr, true /* mustRestoreHandle */);
+        op2 = impTokenToHandle(pResolvedToken);
         if (op2 == nullptr)
         {
             // We must be backing out of an inline.
@@ -4228,6 +4235,10 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             isHoistable = !s_helperCallProperties.MayRunCctor(pFieldInfo->helper) ||
                           (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT);
             op1 = gtNewHelperCallNode(pFieldInfo->helper, type, op1);
+            if (isHoistable)
+            {
+                op1->gtFlags |= GTF_CALL_HOISTABLE;
+            }
             if (IsStaticHelperEligibleForExpansion(op1))
             {
                 // Mark the helper call with the initClsHnd so that rewriting it for expansion can reliably fail
@@ -4244,6 +4255,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
 #endif // FEATURE_READYTORUN
             {
                 if ((pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+                    (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED) ||
                     (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2) ||
                     (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT))
                 {
@@ -4251,7 +4263,8 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                 }
                 else
                 {
-                    assert(pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
+                    assert((pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+                           (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED));
                     typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
                 }
             }
@@ -4511,16 +4524,12 @@ void Compiler::impInsertHelperCall(CORINFO_HELPER_DESC* helperInfo)
         switch (helperArg.argType)
         {
             case CORINFO_HELPER_ARG_TYPE_Field:
-                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(
-                    info.compCompHnd->getFieldClass(helperArg.fieldHandle));
                 currentArg = gtNewIconEmbFldHndNode(helperArg.fieldHandle);
                 break;
             case CORINFO_HELPER_ARG_TYPE_Method:
-                info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(helperArg.methodHandle);
                 currentArg = gtNewIconEmbMethHndNode(helperArg.methodHandle);
                 break;
             case CORINFO_HELPER_ARG_TYPE_Class:
-                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(helperArg.classHandle);
                 currentArg = gtNewIconEmbClsHndNode(helperArg.classHandle);
                 break;
             case CORINFO_HELPER_ARG_TYPE_Module:
@@ -9715,8 +9724,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_ADDRESS:
                     case CORINFO_FIELD_STATIC_RELOCATABLE:
-                        // Replace static read-only fields with constant if possible
-                        if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL))
+                        // Volatile reads must retain their acquire semantics even when the value is constant.
+                        if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL) &&
+                            ((indirFlags & GTF_IND_VOLATILE) == 0))
                         {
                             GenTree* newTree = impImportStaticReadOnlyField(resolvedToken.hField, resolvedToken.hClass);
 
@@ -10147,8 +10157,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (!IsAot())
                 {
-                    // Need to restore array classes before creating array objects on the heap
-                    op1 = impTokenToHandle(&resolvedToken, nullptr, true /*mustRestoreHandle*/);
+                    op1 = impTokenToHandle(&resolvedToken);
                     if (op1 == nullptr)
                     { // compDonotInline()
                         return;
@@ -10204,8 +10213,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef FEATURE_READYTORUN
                                 if (IsAot())
                                 {
-                                    // Need to restore array classes before creating array objects on the heap
-                                    op1 = impTokenToHandle(&resolvedToken, nullptr, true /*mustRestoreHandle*/);
+                                    op1 = impTokenToHandle(&resolvedToken);
                                 }
 #endif
                                 op1 = gtNewHelperCallNode(CORINFO_HELP_NEWARR_1_MAYBEFROZEN, TYP_REF, op1, op2);
@@ -10231,7 +10239,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         //      3) Allocate the new array
                         // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-                        op1 = impTokenToHandle(&resolvedToken, nullptr, true /*mustRestoreHandle*/);
+                        op1 = impTokenToHandle(&resolvedToken);
                         if (op1 == nullptr)
                         { // compDonotInline()
                             return;
@@ -10462,7 +10470,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (!IsAot())
                 {
-                    op2 = impTokenToHandle(&resolvedToken, nullptr, false);
+                    op2 = impTokenToHandle(&resolvedToken);
                     if (op2 == nullptr)
                     { // compDonotInline()
                         return;
@@ -10503,7 +10511,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             //      3) Perform the 'is instance' check on the input object
                             // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-                            op2 = impTokenToHandle(&resolvedToken, nullptr, false);
+                            op2 = impTokenToHandle(&resolvedToken);
                             if (op2 == nullptr)
                             { // compDonotInline()
                                 return;
@@ -10629,7 +10637,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 tokenType = info.compCompHnd->getTokenTypeAsHandle(&resolvedToken);
 
-                op1 = impTokenToHandle(&resolvedToken, nullptr, true);
+                op1 = impTokenToHandle(&resolvedToken);
                 if (op1 == nullptr)
                 { // compDonotInline()
                     return;
@@ -10982,7 +10990,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (!IsAot())
                 {
-                    op2 = impTokenToHandle(&resolvedToken, nullptr, false);
+                    op2 = impTokenToHandle(&resolvedToken);
                     if (op2 == nullptr)
                     { // compDonotInline()
                         return;
@@ -11028,7 +11036,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             //      3) Check the object on the stack for the type-cast
                             // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-                            op2 = impTokenToHandle(&resolvedToken, nullptr, false);
+                            op2 = impTokenToHandle(&resolvedToken);
                             if (op2 == nullptr)
                             { // compDonotInline()
                                 return;
@@ -11274,7 +11282,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                op2 = impTokenToHandle(&resolvedToken, nullptr, true);
+                op2 = impTokenToHandle(&resolvedToken);
                 if (op2 == nullptr)
                 { // compDonotInline()
                     return;
@@ -13596,6 +13604,11 @@ void Compiler::impFixPredLists()
                 bool profileConsistent = true;
                 for (BasicBlock* const callFinally : finallyBegBlock->PredBlocks())
                 {
+                    if (!callFinally->KindIs(BBJ_CALLFINALLY))
+                    {
+                        continue;
+                    }
+
                     BasicBlock* const callFinallyRet = callFinally->Next();
                     callFinallyRet->setBBProfileWeight(callFinallyRet->computeIncomingWeight());
                     profileConsistent &=

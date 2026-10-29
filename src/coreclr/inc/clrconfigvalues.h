@@ -640,11 +640,13 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_LTTngConfig, W("LTTngConfig"), "Configuration
 // Executable code
 //
 // TODO: https://github.com/dotnet/runtime/issues/103465
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64) || defined(TARGET_OPENHARMONY)
+// TARGET_OPENHARMONY: the sandbox denies PROT_EXEC on the file-backed mappings the W^X
+// allocator uses; anonymous executable memory is allowed, so default to the RWX allocator.
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableWriteXorExecute, W("EnableWriteXorExecute"), 0, "Enable W^X for executable memory.");
 #else
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableWriteXorExecute, W("EnableWriteXorExecute"), 1, "Enable W^X for executable memory.");
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_OPENHARMONY
 
 #ifdef FEATURE_GDBJIT
 ///
@@ -711,6 +713,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve2,              W("EnableArm64Sv
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha3,              W("EnableArm64Sha3"),           1, "Allows Arm64 Sha3+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sm4,               W("EnableArm64Sm4"),            1, "Allows Arm64 Sm4+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64SveAes,            W("EnableArm64SveAes"),         1, "Allows Arm64 SveAes+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64SvePmull128,       W("EnableArm64SvePmull128"),    1, "Allows Arm64 SvePmull128+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64SveSha3,           W("EnableArm64SveSha3"),        1, "Allows Arm64 SveSha3+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64SveSm4,            W("EnableArm64SveSm4"),         1, "Allows Arm64 SveSm4+ hardware intrinsics to be disabled")
 #elif defined(TARGET_RISCV64)

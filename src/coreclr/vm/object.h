@@ -1173,12 +1173,10 @@ private:
 #ifdef FEATURE_MULTITHREADING
     OBJECTREF     m_StartHelper;
 #endif // FEATURE_MULTITHREADING
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && defined(FEATURE_MULTITHREADING)
     OBJECTREF     m_WaitInfo;
-#ifdef FEATURE_MULTITHREADING
     OBJECTREF     m_joinEvent;
-#endif // FEATURE_MULTITHREADING
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && FEATURE_MULTITHREADING
 
     // The next field (m_InternalThread) is declared as IntPtr in the managed
     // definition of Thread.  The loader will sort it next.
@@ -1198,6 +1196,11 @@ private:
     bool          m_IsDead;
 
     bool          m_IsThreadPool;
+
+#ifndef FEATURE_MULTITHREADING
+    bool          m_IsBackground;
+    bool          m_IsPendingInterrupt;
+#endif // !FEATURE_MULTITHREADING
 
 protected:
     // the ctor and dtor can do no useful work.
