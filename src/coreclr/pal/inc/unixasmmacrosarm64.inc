@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <arm64/UnixAsmMacros.inc>
+#include <arm64/AsmMacros_Unix.inc>
 
 .macro PATCH_LABEL Name
 #if defined(__APPLE__)
@@ -11,18 +11,6 @@
         .global C_FUNC(\Name)
 #endif
 C_FUNC(\Name):
-.endm
-
-.macro LEAF_ENTRY Name, Section
-        .global C_FUNC(\Name)
-#if defined(__APPLE__)
-        .text
-        .p2align        2
-#else
-        .type \Name, %function
-#endif
-C_FUNC(\Name):
-        .cfi_startproc
 .endm
 
 .macro EMIT_BREAKPOINT

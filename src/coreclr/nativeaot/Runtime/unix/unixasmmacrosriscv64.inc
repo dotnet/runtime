@@ -3,7 +3,7 @@
 
 #include "AsmOffsets.inc"
 
-#include <riscv64/UnixAsmMacros.inc>
+#include <riscv64/AsmMacros_Unix.inc>
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
     la \HelperReg, C_FUNC(\Name) // Resolves the address in one step

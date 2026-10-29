@@ -3,16 +3,7 @@
 
 #include "AsmOffsets.inc"
 
-#include <loongarch64/UnixAsmMacros.inc>
-
-.macro LEAF_ENTRY Name, Section
-        .global C_FUNC(\Name)
-        .hidden C_FUNC(\Name)
-        .type \Name, %function
-C_FUNC(\Name):
-        .cfi_startproc
-.endm
-
+#include <loongarch64/AsmMacros_Unix.inc>
 
 .macro PROLOG_STACK_ALLOC Size
         addi.d  $sp, $sp, -\Size

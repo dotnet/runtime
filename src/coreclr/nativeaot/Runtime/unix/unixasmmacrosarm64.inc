@@ -3,24 +3,11 @@
 
 #include "AsmOffsets.inc"
 
-#include <arm64/UnixAsmMacros.inc>
+#include <arm64/AsmMacros_Unix.inc>
 
 .macro PATCH_LABEL Name
         .global C_FUNC(\Name)
 C_FUNC(\Name):
-.endm
-
-.macro LEAF_ENTRY Name, Section
-        .global C_FUNC(\Name)
-#if defined(__APPLE__)
-        .text
-        .p2align        2
-#else
-        .hidden C_FUNC(\Name)
-        .type \Name, %function
-#endif
-C_FUNC(\Name):
-        .cfi_startproc
 .endm
 
 .macro EMIT_BREAKPOINT

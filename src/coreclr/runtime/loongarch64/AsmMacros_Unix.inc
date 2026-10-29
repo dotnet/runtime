@@ -1,6 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+.macro LEAF_ENTRY Name, Section
+        .global C_FUNC(\Name)
+        .hidden C_FUNC(\Name)
+        .type \Name, %function
+C_FUNC(\Name):
+        .cfi_startproc
+.endm
+
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler

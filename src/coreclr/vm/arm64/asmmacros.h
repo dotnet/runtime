@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "arm64/AsmMacros_Common.h"
+#include "arm64/AsmMacros_Windows.h"
 
 ;-----------------------------------------------------------------------------
 ; The following group of macros assist in implementing prologs and epilogs for methods that set up some

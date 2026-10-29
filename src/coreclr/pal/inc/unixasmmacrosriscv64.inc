@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <riscv64/UnixAsmMacros.inc>
+#include <riscv64/AsmMacros_Unix.inc>
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
     lla  \HelperReg, \Name
