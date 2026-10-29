@@ -1668,7 +1668,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 break;
             }
-          
+
 #if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
             if ((oper == GT_AND) && TryLowerSvePredicateBitwiseClear(node, &intrinsicId, &oper))
             {
