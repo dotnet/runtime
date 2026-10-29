@@ -46,7 +46,7 @@ from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_n
     make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
     require_azure_storage_libraries, authenticate_using_azure, \
     create_unique_directory_name, create_unique_file_name, get_files_from_path, determine_jit_name, \
-    get_deepest_existing_directory, run_command
+    get_deepest_existing_directory, run_command, get_assembly_simple_name, is_managed_assembly
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
@@ -576,73 +576,6 @@ def decode_clrjit_build_string(clrjit_path):
 # Helper classes
 ################################################################################
 
-def get_assembly_simple_name(filename):
-    """ Get the assembly simple name crossgen2 will key a module by, i.e. the file name
-        without its directory or extension, lowercased for comparison.
-
-    Args:
-        filename (str) : path to the assembly
-
-    Returns:
-        The lowercased simple name.
-    """
-
-    return os.path.splitext(os.path.basename(filename))[0].lower()
-
-
-def is_managed_assembly(filename):
-    """ Determine if a file is a managed assembly by looking for a non-empty CLI header
-        in its PE data directory. Used to keep native binaries out of the crossgen2
-        composite input set, which crossgen2 refuses to load.
-
-    Args:
-        filename (str) : path to the file to check
-
-    Returns:
-        True if the file is a managed assembly, False otherwise (including if it
-        can't be read or isn't a PE file at all).
-    """
-
-    try:
-        with open(filename, "rb") as file_handle:
-            if file_handle.read(2) != b"MZ":
-                return False
-
-            file_handle.seek(0x3C)
-            pe_header_offset_bytes = file_handle.read(4)
-            if len(pe_header_offset_bytes) != 4:
-                return False
-            pe_header_offset = int.from_bytes(pe_header_offset_bytes, "little")
-
-            file_handle.seek(pe_header_offset)
-            if file_handle.read(4) != b"PE\0\0":
-                return False
-
-            # Skip the COFF header (20 bytes) to reach the optional header.
-            optional_header_offset = pe_header_offset + 4 + 20
-            file_handle.seek(optional_header_offset)
-            magic_bytes = file_handle.read(2)
-            if len(magic_bytes) != 2:
-                return False
-            magic = int.from_bytes(magic_bytes, "little")
-            if magic == 0x10B:      # PE32
-                data_directory_offset = optional_header_offset + 96
-            elif magic == 0x20B:    # PE32+
-                data_directory_offset = optional_header_offset + 112
-            else:
-                return False
-
-            # The CLI header is data directory entry 14; each entry is 8 bytes.
-            file_handle.seek(data_directory_offset + 14 * 8)
-            cli_header_entry = file_handle.read(8)
-            # Require a complete entry with a nonzero CLI header RVA (first 4 bytes) and size (last 4 bytes).
-            return len(cli_header_entry) == 8 and \
-                int.from_bytes(cli_header_entry[:4], "little") != 0 and \
-                int.from_bytes(cli_header_entry[4:], "little") != 0
-    except OSError:
-        return False
-
-
 def get_crossgen2_reference_assemblies(reference_directory):
     """ Get managed composite inputs, filtering out native binaries and rejecting an empty result. """
 
@@ -1171,6 +1104,8 @@ class SuperPMICollect:
                     # -r:<reference_dir>\Microsoft.*.dll
                     # -r:<reference_dir>\mscorlib.dll   /// System.*.dll above includes CoreLib
                     # -r:<reference_dir>\netstandard.dll
+                    # -r:<reference_dir>\*.dll          /// cross-target non-composite mode only
+                    # -r:<input_dir>\*.dll              /// cross-target non-composite mode only
                     # --jitpath:<self.collection_shim_name>
                     # --codegenopt:<option>=<value>   /// for each member of dotnet_env
                     #
@@ -1218,6 +1153,14 @@ class SuperPMICollect:
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "Microsoft.*.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "mscorlib.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "netstandard.dll") + "\n")
+                        if self.coreclr_args.crossgen2_reference_directory and not is_composite:
+                            # A cross-target reference directory is a staged set of target assemblies
+                            # (e.g. xunit and test infrastructure besides the framework), so reference
+                            # all of it. Then let an input such as a test resolve dependencies copied
+                            # next to it. crossgen2 binds a reference simple name to the first match,
+                            # so the staged set wins over stale copies in the input's directory.
+                            rsp_write_handle.write("-r:" + os.path.join(reference_directory, "*.dll") + "\n")
+                            rsp_write_handle.write("-r:" + os.path.join(os.path.dirname(input_assemblies[0]), "*.dll") + "\n")
                         rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
                         # If we are cross-compiling (target != host), tell crossgen2 explicitly which
