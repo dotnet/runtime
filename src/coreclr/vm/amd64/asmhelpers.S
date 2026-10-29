@@ -337,37 +337,7 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     jmp METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
-//
-// Prologue of all funclet calling helpers (CallXXXXFunclet)
-//
-.macro FUNCLET_CALL_PROLOGUE localsCount, alignStack
-        push_nonvol_reg r15     // save preserved regs for OS stackwalker
-        push_nonvol_reg r14     // ...
-        push_nonvol_reg r13     // ...
-        push_nonvol_reg r12     // ...
-        push_nonvol_reg rbx     // ...
-        push_nonvol_reg rbp     // ...
-
-        stack_alloc_size = \localsCount * 8 + \alignStack * 8
-
-        alloc_stack     stack_alloc_size
-
-        END_PROLOGUE
-.endm
-
-//
-// Epilogue of all funclet calling helpers (CallXXXXFunclet)
-//
-.macro FUNCLET_CALL_EPILOGUE
-        free_stack      stack_alloc_size
-
-        pop_nonvol_reg rbp
-        pop_nonvol_reg rbx
-        pop_nonvol_reg r12
-        pop_nonvol_reg r13
-        pop_nonvol_reg r14
-        pop_nonvol_reg r15
-.endm
+#include <amd64/FuncletCall.inc>
 
 // This helper enables us to call into a funclet after restoring Fp register
 NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
@@ -397,30 +367,6 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         FUNCLET_CALL_EPILOGUE
         ret
 NESTED_END CallEHFunclet, _TEXT
-
-// This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
-// frame pointer for accessing the locals in the parent method.
-NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
-        // On entry:
-        //
-        // RDI = throwable
-        // RSI = RBP of main function
-        // RDX = PC to invoke
-        // RCX = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-        //
-
-        FUNCLET_CALL_PROLOGUE 0, 1
-
-        // Restore RBP
-        mov     rbp, rsi
-        // Save the SP of this function
-        mov     [rcx], rsp
-        // Invoke the filter funclet
-        call    rdx
-
-        FUNCLET_CALL_EPILOGUE
-        ret
-NESTED_END CallEHFilterFunclet, _TEXT
 
 #ifdef FEATURE_INTERPRETER
 

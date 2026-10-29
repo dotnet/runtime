@@ -590,29 +590,6 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END CallEHFunclet, _TEXT
 
-// This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
-// frame pointer for accessing the locals in the parent method.
-NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16, 0
-
-    // On entry:
-    //
-    // a0 = throwable
-    // a1 = FP of main function
-    // a2 = PC to invoke
-    // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-    //
-    // Save the SP of this function
-    sd  sp, 0(a3)
-    // Restore frame pointer
-    mv  fp, a1
-    // Invoke the filter funclet
-    jalr a2
-
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
-    EPILOG_RETURN
-NESTED_END CallEHFilterFunclet, _TEXT
-
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler

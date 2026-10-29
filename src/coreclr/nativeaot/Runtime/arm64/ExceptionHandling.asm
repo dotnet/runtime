@@ -589,44 +589,4 @@ SetSuccess
 
     NESTED_END RhpCallFinallyFunclet
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
-;;
-;; INPUT:  X0:  exception object
-;;         X1:  filter funclet address
-;;         X2:  REGDISPLAY*
-;;
-;; OUTPUT:
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    NESTED_ENTRY RhpCallFilterFunclet
-        ALLOC_CALL_FUNCLET_FRAME 0x40
-        stp d8, d9,   [sp, #0x00]
-        stp d10, d11, [sp, #0x10]
-        stp d12, d13, [sp, #0x20]
-        stp d14, d15, [sp, #0x30]
-
-        ldr         x12, [x2, #OFFSETOF__REGDISPLAY__pFP]
-        ldr         fp, [x12]
-
-        ;;
-        ;; call the funclet
-        ;;
-        ;; x0 still contains the exception object
-        blr         x1
-
-    ALTERNATE_ENTRY RhpCallFilterFunclet2
-
-        ldp         d8, d9,   [sp, #0x00]
-        ldp         d10, d11, [sp, #0x10]
-        ldp         d12, d13, [sp, #0x20]
-        ldp         d14, d15, [sp, #0x30]
-
-        FREE_CALL_FUNCLET_FRAME 0x40
-        EPILOG_RETURN
-
-    NESTED_END RhpCallFilterFunclet
-
     end

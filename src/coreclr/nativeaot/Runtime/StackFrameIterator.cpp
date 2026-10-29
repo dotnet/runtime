@@ -39,7 +39,11 @@ EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionGuardedTailCall;
 
 EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
 EXTERN_C CODE_LOCATION RhpCallFinallyFunclet2;
+#if defined(TARGET_X86)
 EXTERN_C CODE_LOCATION RhpCallFilterFunclet2;
+#else
+EXTERN_C CODE_LOCATION CallEHFilterFunclet2;
+#endif
 EXTERN_C CODE_LOCATION RhpThrowImpl2;
 EXTERN_C CODE_LOCATION RhpThrowHwEx2;
 EXTERN_C CODE_LOCATION RhpRethrow2;
@@ -1065,7 +1069,11 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     PTR_uintptr_t SP;
 
+#if defined(TARGET_X86)
     bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
+#else
+    bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, CallEHFilterFunclet2);
+#endif
 
 #if defined(UNIX_AMD64_ABI)
     SP = (PTR_uintptr_t)(m_RegDisplay.SP);
@@ -1342,6 +1350,11 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pS9  = SP++;
     m_RegDisplay.pS10  = SP++;
     m_RegDisplay.pS11  = SP++;
+
+    if (isFilterInvoke)
+    {
+        SP++; // for alignment padding
+    }
 
 #else
     SP = (PTR_uintptr_t)(m_RegDisplay.SP);
@@ -2367,7 +2380,11 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
         return InFuncletInvokeThunk;
     }
 
+#if defined(TARGET_X86)
     if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFilterFunclet2))
+#else
+    if (EQUALS_RETURN_ADDRESS(returnAddress, CallEHFilterFunclet2))
+#endif
     {
         return InFilterFuncletInvokeThunk;
     }

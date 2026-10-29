@@ -255,38 +255,7 @@ ALTERNATE_ENTRY RhpRethrow2
 
 NESTED_END RhpRethrow, _TEXT
 
-//
-// Prologue of all funclet calling helpers (RhpCallXXXXFunclet)
-//
-.macro FUNCLET_CALL_PROLOGUE localsCount, alignStack
-
-    push_nonvol_reg r15     // save preserved regs for OS stackwalker
-    push_nonvol_reg r14     // ...
-    push_nonvol_reg r13     // ...
-    push_nonvol_reg r12     // ...
-    push_nonvol_reg rbx     // ...
-    push_nonvol_reg rbp     // ...
-
-    stack_alloc_size = \localsCount * 8 + \alignStack * 8
-
-    alloc_stack     stack_alloc_size
-
-    END_PROLOGUE
-.endm
-
-//
-// Epilogue of all funclet calling helpers (RhpCallXXXXFunclet)
-//
-.macro FUNCLET_CALL_EPILOGUE
-    free_stack      stack_alloc_size
-
-    pop_nonvol_reg rbp
-    pop_nonvol_reg rbx
-    pop_nonvol_reg r12
-    pop_nonvol_reg r13
-    pop_nonvol_reg r14
-    pop_nonvol_reg r15
-.endm
+#include <amd64/FuncletCall.inc>
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -488,37 +457,6 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
         ret
 
 NESTED_END RhpCallFinallyFunclet, _TEXT
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
-//
-// INPUT:  RDI:  exception object
-//         RSI:  filter funclet address
-//         RDX:  REGDISPLAY*
-//
-// OUTPUT:
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
-
-        FUNCLET_CALL_PROLOGUE 0, 1
-
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
-        mov     rbp, [rax]
-
-        call    rsi
-
-ALTERNATE_ENTRY RhpCallFilterFunclet2
-
-        // RAX contains the result of the filter execution
-
-        FUNCLET_CALL_EPILOGUE
-
-        ret
-
-NESTED_END RhpCallFilterFunclet, _TEXT
 
 
 #ifdef FEATURE_OBJCMARSHAL

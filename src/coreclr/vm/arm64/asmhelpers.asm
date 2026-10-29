@@ -323,31 +323,6 @@ OnHijackTripThreadReturn
 
         NESTED_END CallEHFunclet
 
-        ; This helper enables us to call into a filter funclet after restoring Fp register
-        NESTED_ENTRY CallEHFilterFunclet
-
-        PROLOG_SAVE_REG_PAIR_NO_FP   fp, lr, #-16!
-
-        ; On entry:
-        ;
-        ; X0 = throwable
-        ; X1 = FP of the main function
-        ; X2 = PC to invoke
-        ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-        ;
-        ; Save the SP of this function
-        mov fp, sp
-        str fp, [x3]
-        ; Restore frame pointer
-        mov fp, x1
-        ; Invoke the filter funclet
-        blr x2
-
-        EPILOG_RESTORE_REG_PAIR   fp, lr,   #16!
-        EPILOG_RETURN
-
-        NESTED_END CallEHFilterFunclet
-
 
         GBLA FaultingExceptionFrame_StackAlloc
         GBLA FaultingExceptionFrame_FrameOffset

@@ -184,3 +184,68 @@ Name label proc
 ;            sequence which is recognized by the unwinder as a valid epilogue terminator
 ;
 TAILJMP_RAX TEXTEQU <DB 048h, 0FFh, 0E0h>
+
+;
+; Prologue of all funclet calling helpers
+;
+FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
+
+        push_nonvol_reg r15     ; save preserved regs for OS stackwalker
+        push_nonvol_reg r14     ; ...
+        push_nonvol_reg r13     ; ...
+        push_nonvol_reg r12     ; ...
+        push_nonvol_reg rbx     ; ...
+        push_nonvol_reg rsi     ; ...
+        push_nonvol_reg rdi     ; ...
+        push_nonvol_reg rbp     ; ...
+
+        arguments_scratch_area_size = 20h
+        xmm_save_area_size = 10 * 10h ; xmm6..xmm15 save area
+        stack_alloc_size = arguments_scratch_area_size + localsCount * 8 + alignStack * 8 + xmm_save_area_size
+        rsp_offsetof_arguments = stack_alloc_size + 8*8h + 8h
+        rsp_offsetof_locals = arguments_scratch_area_size + xmm_save_area_size
+
+        alloc_stack     stack_alloc_size
+
+        save_xmm128_postrsp xmm6,  (arguments_scratch_area_size + 0 * 10h)
+        save_xmm128_postrsp xmm7,  (arguments_scratch_area_size + 1 * 10h)
+        save_xmm128_postrsp xmm8,  (arguments_scratch_area_size + 2 * 10h)
+        save_xmm128_postrsp xmm9,  (arguments_scratch_area_size + 3 * 10h)
+        save_xmm128_postrsp xmm10, (arguments_scratch_area_size + 4 * 10h)
+        save_xmm128_postrsp xmm11, (arguments_scratch_area_size + 5 * 10h)
+        save_xmm128_postrsp xmm12, (arguments_scratch_area_size + 6 * 10h)
+        save_xmm128_postrsp xmm13, (arguments_scratch_area_size + 7 * 10h)
+        save_xmm128_postrsp xmm14, (arguments_scratch_area_size + 8 * 10h)
+        save_xmm128_postrsp xmm15, (arguments_scratch_area_size + 9 * 10h)
+
+        END_PROLOGUE
+
+        endm
+
+;
+; Epilogue of all funclet calling helpers
+;
+FUNCLET_CALL_EPILOGUE macro
+
+        movdqa  xmm6,  [rsp + arguments_scratch_area_size + 0 * 10h]
+        movdqa  xmm7,  [rsp + arguments_scratch_area_size + 1 * 10h]
+        movdqa  xmm8,  [rsp + arguments_scratch_area_size + 2 * 10h]
+        movdqa  xmm9,  [rsp + arguments_scratch_area_size + 3 * 10h]
+        movdqa  xmm10, [rsp + arguments_scratch_area_size + 4 * 10h]
+        movdqa  xmm11, [rsp + arguments_scratch_area_size + 5 * 10h]
+        movdqa  xmm12, [rsp + arguments_scratch_area_size + 6 * 10h]
+        movdqa  xmm13, [rsp + arguments_scratch_area_size + 7 * 10h]
+        movdqa  xmm14, [rsp + arguments_scratch_area_size + 8 * 10h]
+        movdqa  xmm15, [rsp + arguments_scratch_area_size + 9 * 10h]
+
+        add     rsp, stack_alloc_size
+        pop     rbp
+        pop     rdi
+        pop     rsi
+        pop     rbx
+        pop     r12
+        pop     r13
+        pop     r14
+        pop     r15
+
+        endm
