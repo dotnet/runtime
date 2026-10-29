@@ -2706,6 +2706,7 @@ static bool CopyTypeSigWithSubstitution(
 
     case ELEMENT_TYPE_SZARRAY:
     case ELEMENT_TYPE_PTR:
+    case ELEMENT_TYPE_BYREF:
         pDst->AppendElementType((CorElementType)type);
         return CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs);
 
@@ -2795,8 +2796,49 @@ static bool CopyTypeSigWithSubstitution(
         return true;
     }
 
+    case ELEMENT_TYPE_FNPTR:
+    {
+        // ECMA-335 II.23.2.12: FNPTR is followed by a MethodDefSig or MethodRefSig.
+        BYTE callConv;
+        if (FAILED(pSrc->GetByte(&callConv)))
+            return false;
+
+        pDst->AppendElementType((CorElementType)type);
+        pDst->AppendByte(callConv);
+
+        if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+        {
+            uint32_t typeArgCnt;
+            if (FAILED(pSrc->GetData(&typeArgCnt)))
+                return false;
+            pDst->AppendData(typeArgCnt);
+        }
+
+        uint32_t argCnt;
+        if (FAILED(pSrc->GetData(&argCnt)))
+            return false;
+        pDst->AppendData(argCnt);
+
+        if (!CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs))
+            return false;
+
+        while (argCnt--)
+        {
+            if (pSrc->AtSentinel())
+            {
+                if (FAILED(pSrc->GetByte(nullptr)))
+                    return false;
+                pDst->AppendElementType(ELEMENT_TYPE_SENTINEL);
+            }
+
+            if (!CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs))
+                return false;
+        }
+
+        return true;
+    }
+
     default:
-        // Anything else (function pointers, ...) is not supported here.
         return false;
     }
 }
