@@ -289,7 +289,7 @@ namespace System.IO.Compression
                 }
             }
 
-            private unsafe void DeflateInit2_(CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
+            private void DeflateInit2_(CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
             {
                 Debug.Assert(InitializationState == State.NotInitialized);
 
@@ -299,7 +299,11 @@ namespace System.IO.Compression
                 {
                     fixed (ZStream* stream = &_zStream)
                     {
-                        errC = Interop.ZLib.DeflateInit2_(stream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy);
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            errC = Interop.ZLib.DeflateInit2_(stream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy);
+                        }
                     }
                 }
                 catch (Exception e) // Could not load the ZLib dll
@@ -311,7 +315,7 @@ namespace System.IO.Compression
                 _initializationState = State.InitializedForDeflate;
             }
 
-            public unsafe ErrorCode Deflate(FlushCode flush)
+            public ErrorCode Deflate(FlushCode flush)
             {
                 bool refAdded = false;
                 try
@@ -321,7 +325,11 @@ namespace System.IO.Compression
 
                     fixed (ZStream* stream = &_zStream)
                     {
-                        return Interop.ZLib.Deflate(stream, flush);
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            return Interop.ZLib.Deflate(stream, flush);
+                        }
                     }
                 }
                 finally
@@ -333,7 +341,7 @@ namespace System.IO.Compression
                 }
             }
 
-            public unsafe ErrorCode DeflateReset()
+            public ErrorCode DeflateReset()
             {
                 bool refAdded = false;
                 try
@@ -343,7 +351,11 @@ namespace System.IO.Compression
 
                     fixed (ZStream* stream = &_zStream)
                     {
-                        return Interop.ZLib.DeflateReset(stream);
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            return Interop.ZLib.DeflateReset(stream);
+                        }
                     }
                 }
                 finally
@@ -355,20 +367,25 @@ namespace System.IO.Compression
                 }
             }
 
-            private unsafe ErrorCode DeflateEnd()
+            private ErrorCode DeflateEnd()
             {
                 EnsureState(State.InitializedForDeflate);
 
                 fixed (ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.ZLib.DeflateEnd(stream);
+                    ErrorCode errC;
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        errC = Interop.ZLib.DeflateEnd(stream);
+                    }
                     _initializationState = State.Disposed;
 
                     return errC;
                 }
             }
 
-            private unsafe void InflateInit2_(int windowBits)
+            private void InflateInit2_(int windowBits)
             {
                 Debug.Assert(InitializationState == State.NotInitialized);
 
@@ -378,7 +395,11 @@ namespace System.IO.Compression
                 {
                     fixed (ZStream* stream = &_zStream)
                     {
-                        errC = Interop.ZLib.InflateInit2_(stream, windowBits);
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            errC = Interop.ZLib.InflateInit2_(stream, windowBits);
+                        }
                     }
                 }
                 catch (Exception e) // Could not load the ZLib dll
@@ -390,7 +411,7 @@ namespace System.IO.Compression
                 _initializationState = State.InitializedForInflate;
             }
 
-            public unsafe ErrorCode InflateReset2_(int windowBits)
+            public ErrorCode InflateReset2_(int windowBits)
             {
                 bool refAdded = false;
                 try
@@ -400,7 +421,11 @@ namespace System.IO.Compression
 
                     fixed (ZStream* stream = &_zStream)
                     {
-                        return Interop.ZLib.InflateReset2_(stream, windowBits);
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            return Interop.ZLib.InflateReset2_(stream, windowBits);
+                        }
                     }
                 }
                 finally
@@ -412,7 +437,7 @@ namespace System.IO.Compression
                 }
             }
 
-            public unsafe ErrorCode Inflate(FlushCode flush)
+            public ErrorCode Inflate(FlushCode flush)
             {
                 bool refAdded = false;
                 try
@@ -422,7 +447,11 @@ namespace System.IO.Compression
 
                     fixed (ZStream* stream = &_zStream)
                     {
-                        return Interop.ZLib.Inflate(stream, flush);
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            return Interop.ZLib.Inflate(stream, flush);
+                        }
                     }
                 }
                 finally
@@ -434,13 +463,18 @@ namespace System.IO.Compression
                 }
             }
 
-            private unsafe ErrorCode InflateEnd()
+            private ErrorCode InflateEnd()
             {
                 EnsureState(State.InitializedForInflate);
 
                 fixed (ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.ZLib.InflateEnd(stream);
+                    ErrorCode errC;
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        errC = Interop.ZLib.InflateEnd(stream);
+                    }
                     _initializationState = State.Disposed;
 
                     return errC;
@@ -448,7 +482,7 @@ namespace System.IO.Compression
             }
 
             // This can work even after XxflateEnd(). Gets the error message from the native library.
-            public unsafe string GetErrorMessage() => Utf8StringMarshaller.ConvertToManaged(_zStream.msg) ?? string.Empty;
+            public string GetErrorMessage() => Utf8StringMarshaller.ConvertToManaged(/* SAFETY: To be audited */ unsafe(_zStream.msg)) ?? string.Empty;
         }
     }
 }

@@ -27,9 +27,14 @@ namespace System.IO.Compression
         public ushort Size => _size;
         public byte[] Data => _data ??= [];
 
-        public unsafe void WriteBlock(Stream stream)
+        public void WriteBlock(Stream stream)
         {
-            Span<byte> extraFieldHeader = stackalloc byte[SizeOfHeader];
+            scoped Span<byte> extraFieldHeader;
+            // SAFETY: To be audited
+            unsafe
+            {
+                extraFieldHeader = stackalloc byte[SizeOfHeader];
+            }
             WriteBlockCore(extraFieldHeader);
             stream.Write(extraFieldHeader);
             stream.Write(Data);
@@ -440,9 +445,14 @@ namespace System.IO.Compression
             }
         }
 
-        public unsafe void WriteBlock(Stream stream)
+        public void WriteBlock(Stream stream)
         {
-            Span<byte> extraFieldData = stackalloc byte[TotalSize];
+            scoped Span<byte> extraFieldData;
+            // SAFETY: To be audited
+            unsafe
+            {
+                extraFieldData = stackalloc byte[TotalSize];
+            }
             WriteBlockCore(extraFieldData);
             stream.Write(extraFieldData);
         }
@@ -479,9 +489,14 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static unsafe Zip64EndOfCentralDirectoryLocator TryReadBlock(Stream stream)
+        public static Zip64EndOfCentralDirectoryLocator TryReadBlock(Stream stream)
         {
-            Span<byte> blockContents = stackalloc byte[TotalSize];
+            scoped Span<byte> blockContents;
+            // SAFETY: To be audited
+            unsafe
+            {
+                blockContents = stackalloc byte[TotalSize];
+            }
             int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
             bool zip64eocdLocatorProper = TryReadBlockCore(blockContents, bytesRead, out Zip64EndOfCentralDirectoryLocator? zip64EOCDLocator);
 
@@ -501,9 +516,14 @@ namespace System.IO.Compression
 
         }
 
-        public static unsafe void WriteBlock(Stream stream, long zip64EOCDRecordStart)
+        public static void WriteBlock(Stream stream, long zip64EOCDRecordStart)
         {
-            Span<byte> blockContents = stackalloc byte[TotalSize];
+            scoped Span<byte> blockContents;
+            // SAFETY: To be audited
+            unsafe
+            {
+                blockContents = stackalloc byte[TotalSize];
+            }
             WriteBlockCore(blockContents, zip64EOCDRecordStart);
             stream.Write(blockContents);
         }
@@ -558,9 +578,14 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static unsafe Zip64EndOfCentralDirectoryRecord TryReadBlock(Stream stream)
+        public static Zip64EndOfCentralDirectoryRecord TryReadBlock(Stream stream)
         {
-            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            scoped Span<byte> blockContents;
+            // SAFETY: To be audited
+            unsafe
+            {
+                blockContents = stackalloc byte[BlockConstantSectionSize];
+            }
             int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
             if (!TryReadBlockCore(blockContents, bytesRead, out Zip64EndOfCentralDirectoryRecord? zip64EOCDRecord))
             {
@@ -590,9 +615,14 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteInt64LittleEndian(blockContents[FieldLocations.OffsetOfCentralDirectory..], startOfCentralDirectory);
         }
 
-        public static unsafe void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory)
+        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory)
         {
-            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            scoped Span<byte> blockContents;
+            // SAFETY: To be audited
+            unsafe
+            {
+                blockContents = stackalloc byte[BlockConstantSectionSize];
+            }
             WriteBlockCore(blockContents, numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory);
             // write Zip 64 EOCD record
             stream.Write(blockContents);
@@ -628,11 +658,16 @@ namespace System.IO.Compression
             return list;
         }
 
-        public static unsafe List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData)
+        public static List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData)
         {
             // assumes that TrySkipBlock has already been called, so we don't have to validate twice
 
-            Span<byte> fixedHeaderBuffer = stackalloc byte[FieldLengths.FilenameLength + FieldLengths.ExtraFieldLength];
+            scoped Span<byte> fixedHeaderBuffer;
+            // SAFETY: To be audited
+            unsafe
+            {
+                fixedHeaderBuffer = stackalloc byte[FieldLengths.FilenameLength + FieldLengths.ExtraFieldLength];
+            }
             GetExtraFieldsInitialize(stream, out int relativeFilenameLengthLocation, out int relativeExtraFieldLengthLocation);
             stream.ReadExactly(fixedHeaderBuffer);
 
@@ -641,7 +676,12 @@ namespace System.IO.Compression
             const int StackAllocationThreshold = 512;
 
             byte[]? arrayPoolBuffer = extraFieldLength > StackAllocationThreshold ? ArrayPool<byte>.Shared.Rent(extraFieldLength) : null;
-            Span<byte> extraFieldBuffer = extraFieldLength <= StackAllocationThreshold ? stackalloc byte[StackAllocationThreshold].Slice(0, extraFieldLength) : arrayPoolBuffer.AsSpan(0, extraFieldLength);
+            scoped Span<byte> extraFieldBuffer;
+            // SAFETY: To be audited
+            unsafe
+            {
+                extraFieldBuffer = extraFieldLength <= StackAllocationThreshold ? stackalloc byte[StackAllocationThreshold].Slice(0, extraFieldLength) : arrayPoolBuffer.AsSpan(0, extraFieldLength);
+            }
             try
             {
                 stream.Seek(filenameLength, SeekOrigin.Current);
@@ -702,9 +742,14 @@ namespace System.IO.Compression
         }
 
         // will not throw end of stream exception
-        public static unsafe bool TrySkipBlock(Stream stream)
+        public static bool TrySkipBlock(Stream stream)
         {
-            Span<byte> blockBytes = stackalloc byte[FieldLengths.Signature];
+            scoped Span<byte> blockBytes;
+            // SAFETY: To be audited
+            unsafe
+            {
+                blockBytes = stackalloc byte[FieldLengths.Signature];
+            }
             int bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
             if (!TrySkipBlockCore(stream, blockBytes, bytesRead))
             {
@@ -827,9 +872,14 @@ namespace System.IO.Compression
             return true;
         }
 
-        public unsafe void WriteBlock(Stream stream)
+        public void WriteBlock(Stream stream)
         {
-            Span<byte> buffer = stackalloc byte[TotalSize];
+            scoped Span<byte> buffer;
+            // SAFETY: To be audited
+            unsafe
+            {
+                buffer = stackalloc byte[TotalSize];
+            }
             WriteBlockCore(buffer);
             stream.Write(buffer);
         }
@@ -1023,7 +1073,7 @@ namespace System.IO.Compression
                         arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(dynamicHeaderSize);
                     }
 
-                    Span<byte> collatedHeader = dynamicHeaderSize <= StackAllocationThreshold ? stackalloc byte[StackAllocationThreshold].Slice(0, dynamicHeaderSize) : arrayPoolBuffer.AsSpan(0, dynamicHeaderSize);
+                    Span<byte> collatedHeader = dynamicHeaderSize <= StackAllocationThreshold ? /* SAFETY: To be audited */ unsafe(stackalloc byte[StackAllocationThreshold]).Slice(0, dynamicHeaderSize) : arrayPoolBuffer.AsSpan(0, dynamicHeaderSize);
 
                     buffer[FieldLocations.DynamicData..].CopyTo(collatedHeader);
 
@@ -1105,9 +1155,14 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteUInt16LittleEndian(blockContents[FieldLocations.ArchiveCommentLength..], (ushort)archiveComment.Length);
         }
 
-        public static unsafe void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
+        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
         {
-            Span<byte> blockContents = stackalloc byte[TotalSize];
+            scoped Span<byte> blockContents;
+            // SAFETY: To be audited
+            unsafe
+            {
+                blockContents = stackalloc byte[TotalSize];
+            }
 
             WriteBlockInitialize(blockContents, numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory, archiveComment);
 
@@ -1164,9 +1219,14 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static unsafe ZipEndOfCentralDirectoryBlock ReadBlock(Stream stream)
+        public static ZipEndOfCentralDirectoryBlock ReadBlock(Stream stream)
         {
-            Span<byte> blockContents = stackalloc byte[TotalSize];
+            scoped Span<byte> blockContents;
+            // SAFETY: To be audited
+            unsafe
+            {
+                blockContents = stackalloc byte[TotalSize];
+            }
             int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
 
             if (!TryReadBlockInitialize(stream, blockContents, bytesRead, out ZipEndOfCentralDirectoryBlock? eocdBlock, out bool readComment))

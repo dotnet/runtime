@@ -17,12 +17,16 @@ internal static partial class Interop
 
     internal static unsafe void GetRandomBytes(byte* buffer, int length)
     {
-        Sys.GetNonCryptographicallySecureRandomBytes(buffer, length);
+        // SAFETY: To be audited
+        unsafe
+        {
+            Sys.GetNonCryptographicallySecureRandomBytes(buffer, length);
+        }
     }
 
     internal static unsafe void GetCryptographicallySecureRandomBytes(byte* buffer, int length)
     {
-        if (Sys.GetCryptographicallySecureRandomBytes(buffer, length) != 0)
+        if (/* SAFETY: To be audited */ unsafe(Sys.GetCryptographicallySecureRandomBytes(buffer, length)) != 0)
             throw new CryptographicException();
     }
 }
