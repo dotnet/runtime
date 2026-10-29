@@ -624,6 +624,7 @@ namespace ILCompiler.ObjectWriter
             {
                 FrameInfo frame = frames[i];
                 uint frameSize = checked((uint)DwarfHelper.ReadULEB128(frame.BlobData, out int bytesRead));
+                Debug.Assert(frameSize % _nodeFactory.Target.PointerSize == 0);
                 uint virtualSize = checked((uint)DwarfHelper.ReadULEB128(frame.BlobData.AsSpan(bytesRead)));
                 Debug.Assert(virtualSize != 0);
                 uint virtualStart = _nextVirtualIP;
@@ -635,7 +636,7 @@ namespace ILCompiler.ObjectWriter
                     .Append(currentSymbolName);
                 Utf8String unwindSymbolName = _utf8StringBuilder.ToUtf8String();
                 _xdataSectionWriter.EmitSymbolDefinition(unwindSymbolName);
-                _xdataSectionWriter.WriteUnsigned(frameSize);
+                _xdataSectionWriter.WriteUnsigned(frameSize / (uint)_nodeFactory.Target.PointerSize);
                 _xdataSectionWriter.WriteByte((byte)frame.Flags);
 
                 if (i == 0)

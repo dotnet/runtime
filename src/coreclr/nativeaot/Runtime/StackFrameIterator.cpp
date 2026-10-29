@@ -95,9 +95,11 @@ StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransition
     }
     else
     {
-        uint32_t flags = (pInitialTransitionFrame->m_Flags & PTFF_THREAD_HIJACK) == 0 ?
-            GcStackWalkFlags :
-            GcStackWalkFlags | ActiveStackFrame;
+        uint32_t flags = GcStackWalkFlags;
+#ifndef FEATURE_PORTABLE_HELPERS
+        if ((pInitialTransitionFrame->m_Flags & PTFF_THREAD_HIJACK) != 0)
+            flags |= ActiveStackFrame;
+#endif // !FEATURE_PORTABLE_HELPERS
 
         InternalInit(pThreadToWalk, pInitialTransitionFrame, flags);
     }

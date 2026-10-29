@@ -252,16 +252,15 @@ enum PInvokeTransitionFrameFlags
 class Thread;
 #if defined(FEATURE_PORTABLE_HELPERS)
 // Portable transitions have no saved machine registers. Record the managed shadow SP
-// separately from the native stack pointer so that the GC can walk managed frames.
+// so that the GC can walk managed frames.
 struct PInvokeTransitionFrame
 {
     void*       m_RIP;
     Thread*     m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
                             // can be an invalid pointer in universal transition cases (which never need to call GetThread)
-    uint32_t    m_Flags;    // PInvokeTransitionFrameFlags
     uintptr_t   m_ShadowSP;
 };
-static_assert(sizeof(PInvokeTransitionFrame) == 4 * sizeof(uintptr_t), "SizeOfPInvokeTransitionFrame assumes this");
+static_assert(sizeof(PInvokeTransitionFrame) == 3 * sizeof(uintptr_t), "SizeOfPInvokeTransitionFrame assumes this");
 #else // FEATURE_PORTABLE_HELPERS
 struct PInvokeTransitionFrame
 {

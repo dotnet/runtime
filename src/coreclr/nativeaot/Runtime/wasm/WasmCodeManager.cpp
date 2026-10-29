@@ -34,12 +34,12 @@ enum WasmFrameFlags
     ReversePInvoke = 0x08,
 };
 
-// xdata starts with a NativeFormat-encoded unsigned frame size and flags.
+// xdata starts with a NativeFormat-encoded unsigned frame size in pointer-sized slots and flags.
 // Root records then contain GCInfo.
 static uint8_t* GetUnwindData(const WasmRuntimeFunction* pFunction, uint32_t* pFrameSize)
 {
     uint8_t* p = pFunction->m_unwindData;
-    *pFrameSize = NativePrimitiveDecoder::ReadUnsigned(p);
+    *pFrameSize = NativePrimitiveDecoder::ReadUnsigned(p) * sizeof(uintptr_t);
     return p;
 }
 
@@ -151,7 +151,7 @@ void WasmCodeManager::EnumGcRefs(MethodInfo* pMethodInfo, PTR_VOID safePointAddr
     if (!decoder.EnumerateLiveSlots(pRegisterSet, isActiveStackFrame,
         static_cast<ICodeManagerFlags>(flags), hCallback->pCallback, hCallback))
     {
-        RhFailFast();
+        assert(false);
     }
 }
 
@@ -185,17 +185,8 @@ bool WasmCodeManager::UnwindStackFrame(MethodInfo* pMethodInfo, uint32_t flags,
 
 uintptr_t WasmCodeManager::GetConservativeUpperBoundForOutgoingArgs(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet)
 {
-    WasmMethodInfo* pWasmMethodInfo = reinterpret_cast<WasmMethodInfo*>(pMethodInfo);
-    if ((pWasmMethodInfo->m_flags & ReversePInvoke) != 0)
-    {
-        GcInfoDecoder decoder(GCInfoToken(pWasmMethodInfo->m_gcInfo), DECODE_REVERSE_PINVOKE_VAR);
-        int32_t slot = decoder.GetReversePInvokeFrameStackSlot();
-        ASSERT(slot != NO_REVERSE_PINVOKE_FRAME);
-        uintptr_t base = decoder.GetStackBaseRegister() == NO_STACK_BASE_REGISTER
-            ? pRegisterSet->GetSP() : pRegisterSet->GetFP();
-        return base + slot;
-    }
-    return GetPhysicalFramePointer(pRegisterSet->GetSP()) + pWasmMethodInfo->m_frameSize;
+    assert(false);
+    return 0;
 }
 
 bool WasmCodeManager::IsUnwindable(PTR_VOID address)
