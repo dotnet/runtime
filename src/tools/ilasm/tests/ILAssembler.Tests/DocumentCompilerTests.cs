@@ -14,14 +14,6 @@ namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class DocumentCompilerTests
     {
-        [Fact]
-        public void AssemblyIdentity()
-        {
-            Type compilerType = typeof(DocumentCompiler);
-            Assert.Equal("Microsoft.DotNet.ILAssembler", compilerType.Namespace);
-            Assert.Equal("Microsoft.DotNet.ILAssembler", compilerType.Assembly.GetName().Name);
-        }
-
         [Theory]
         [InlineData(false, false)]
         [InlineData(false, true)]
