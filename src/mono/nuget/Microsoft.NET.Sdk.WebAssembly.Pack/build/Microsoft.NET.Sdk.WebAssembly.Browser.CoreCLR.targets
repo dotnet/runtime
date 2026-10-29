@@ -121,7 +121,7 @@ Copyright (c) .NET Foundation. All rights reserved.
           BeforeTargets="_ComputeWasmBuildCandidates">
     <ItemGroup>
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
-        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and Exists('$(_WasmRuntimePackR2RDir)%(FileName).wasm')" />
+        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and '%(RootDir)%(Directory)' == '$(_WasmRuntimePackR2RDir)'" />
     </ItemGroup>
   </Target>
 
@@ -144,23 +144,28 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCoreClrHasFinalAssemblies Condition="'@(WasmAssembliesFinal)' != ''">true</_WasmCoreClrHasFinalAssemblies>
     </PropertyGroup>
     <ItemGroup Condition="'$(_WasmCoreClrUnderPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and Exists('$(_WasmTrimmedClosureDir)')">
+      <!-- Limit trimmed references to build asset selection; publishing must process the original assemblies. -->
+      <_WasmCoreClrOriginalBuildReferences Include="@(ReferenceCopyLocalPaths)" Condition="'%(Extension)' == '.dll'" />
+      <_WasmCoreClrOriginalFinalAssemblies Include="@(WasmAssembliesFinal)" />
       <!-- Tag every copy-local item with trimmed-closure membership (default false so the metadata is always
-           defined), then set true for managed assemblies the linker kept. -->
+           defined), then set true for managed assemblies and symbols the linker kept. -->
       <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)">
         <_WasmInTrimmedClosure>false</_WasmInTrimmedClosure>
       </ReferenceCopyLocalPaths>
       <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)"
-                               Condition="'%(Extension)' == '.dll' and Exists('$(_WasmTrimmedClosureDir)%(FileName).dll')">
+                               Condition="('%(Extension)' == '.dll' or '%(Extension)' == '.pdb') and
+                                          Exists('$(_WasmTrimmedClosureDir)%(FileName).dll') and
+                                          ('%(Extension)' == '.dll' or Exists('$(_WasmTrimmedClosureDir)%(FileName).pdb'))">
         <_WasmInTrimmedClosure>true</_WasmInTrimmedClosure>
       </ReferenceCopyLocalPaths>
-      <!-- Drop assemblies the linker trimmed out of the app closure. -->
+      <!-- Do not retain untrimmed symbols when an assembly or its PDB was removed by the linker. -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
-        Condition="'%(Extension)' == '.dll' and '%(_WasmInTrimmedClosure)' != 'true'" />
-      <!-- Repoint the kept closure assemblies at their trimmed IL so IL-only members share the trimmed MVIDs
-           the per-app R2R members were compiled against (the R2R members are still staged from obj/R2R). -->
+        Condition="('%(Extension)' == '.dll' or '%(Extension)' == '.pdb') and '%(_WasmInTrimmedClosure)' != 'true'" />
+      <!-- Repoint assemblies and their matching symbols together. IL-only members must share the trimmed
+           MVIDs the per-app R2R members were compiled against (R2R members are still staged from obj/R2R). -->
       <_WasmTrimmedClosureRedirect Include="@(ReferenceCopyLocalPaths)" Condition="'%(_WasmInTrimmedClosure)' == 'true'" />
       <ReferenceCopyLocalPaths Remove="@(_WasmTrimmedClosureRedirect)" />
-      <ReferenceCopyLocalPaths Include="@(_WasmTrimmedClosureRedirect->'$(_WasmTrimmedClosureDir)%(FileName).dll')"
+      <ReferenceCopyLocalPaths Include="@(_WasmTrimmedClosureRedirect->'$(_WasmTrimmedClosureDir)%(FileName)%(Extension)')"
                                RelativePath="%(FileName)%(Extension)" />
       <!-- The project's own assembly does not travel through ReferenceCopyLocalPaths: _ComputeWasmBuildCandidates
            serves it from @(IntermediateAssembly), i.e. the UNTRIMMED compile output, which then mismatches the
@@ -169,16 +174,30 @@ Copyright (c) .NET Foundation. All rights reserved.
       <WasmAssembliesFinal Include="@(IntermediateAssembly->'$(_WasmTrimmedClosureDir)%(FileName).dll')"
                            Condition="'$(_WasmCoreClrHasFinalAssemblies)' != 'true' and Exists('$(_WasmTrimmedClosureDir)%(IntermediateAssembly.FileName).dll')" />
     </ItemGroup>
+    <PropertyGroup Condition="'$(_WasmCoreClrUnderPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and Exists('$(_WasmTrimmedClosureDir)')">
+      <_WasmCoreClrRestoreBuildReferences>true</_WasmCoreClrRestoreBuildReferences>
+    </PropertyGroup>
   </Target>
 
-  <!-- Same prune for publish, before ProcessPublishFilesForWasm derives _WasmResolvedFilesToPublish. -->
+  <Target Name="_WasmCoreClrRestoreBuildReferences"
+          AfterTargets="_ComputeWasmBuildCandidates"
+          Condition="'$(_WasmCoreClrRestoreBuildReferences)' == 'true'">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Extension)' == '.dll'" />
+      <ReferenceCopyLocalPaths Include="@(_WasmCoreClrOriginalBuildReferences)" />
+      <WasmAssembliesFinal Remove="@(WasmAssembliesFinal)" />
+      <WasmAssembliesFinal Include="@(_WasmCoreClrOriginalFinalAssemblies)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Prune before the SDK checks duplicate publish paths, as well as before WebAssembly asset selection. -->
   <Target Name="_WasmCoreClrPruneR2RFromPublish"
           Condition="'$(_WasmEnableWebcil)' == 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
-          BeforeTargets="ProcessPublishFilesForWasm">
+          BeforeTargets="_HandleFileConflictsForPublish;ProcessPublishFilesForWasm">
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
-        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and Exists('$(_WasmRuntimePackR2RDir)%(FileName).wasm')" />
+        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and '%(RootDir)%(Directory)' == '$(_WasmRuntimePackR2RDir)'" />
     </ItemGroup>
   </Target>
 

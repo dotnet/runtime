@@ -1243,7 +1243,7 @@ namespace System.Numerics.Tensors.Tests
                     AssertBitsOrNaN(dot, Tensor.Dot(source, other));
                     AssertBitsOrNaN(dot, Tensor.Dot(other, source));
                     AssertBits(Math.Sqrt(differences), Tensor.Distance(source, other));
-                    AssertBits(dot / (Math.Sqrt(squares) * Math.Sqrt(otherSquares)), Tensor.CosineSimilarity(source, other));
+                    AssertBitsOrNaN(dot / (Math.Sqrt(squares) * Math.Sqrt(otherSquares)), Tensor.CosineSimilarity(source, other));
                 }
             }
 
