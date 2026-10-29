@@ -13,18 +13,6 @@
 C_FUNC(\Name):
 .endm
 
-.macro LEAF_ENTRY Name, Section
-        .global C_FUNC(\Name)
-#if defined(__APPLE__)
-        .text
-        .p2align        2
-#else
-        .type \Name, %function
-#endif
-C_FUNC(\Name):
-        .cfi_startproc
-.endm
-
 .macro EMIT_BREAKPOINT
         brk #0xf000
 .endm

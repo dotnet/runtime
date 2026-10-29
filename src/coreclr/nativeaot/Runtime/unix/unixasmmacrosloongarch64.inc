@@ -5,15 +5,6 @@
 
 #include <loongarch64/UnixAsmMacros.inc>
 
-.macro LEAF_ENTRY Name, Section
-        .global C_FUNC(\Name)
-        .hidden C_FUNC(\Name)
-        .type \Name, %function
-C_FUNC(\Name):
-        .cfi_startproc
-.endm
-
-
 .macro PROLOG_STACK_ALLOC Size
         addi.d  $sp, $sp, -\Size
 .endm

@@ -3,6 +3,29 @@
 
 #define C_VAR(Name) rip + C_FUNC(Name)
 
+.macro LEAF_ENTRY Name, Section
+        .global C_FUNC(\Name)
+#if defined(__APPLE__)
+        .text
+#else
+        .type \Name, %function
+#endif
+        .p2align 4
+C_FUNC(\Name):
+        .cfi_startproc
+.endm
+
+.macro NESTED_ENTRY Name, Section, Handler
+        LEAF_ENTRY \Name, \Section
+        .ifnc \Handler, NoHandler
+#if defined(__APPLE__)
+        .cfi_personality 0x9b, C_FUNC(\Handler) // 0x9b == DW_EH_PE_indirect | DW_EH_PE_pcrel | DW_EH_PE_sdata4
+#else
+        .cfi_personality 0x1b, C_FUNC(\Handler) // 0x1b == DW_EH_PE_pcrel | DW_EH_PE_sdata4
+#endif
+        .endif
+.endm
+
 .macro NESTED_END Name, Section
         LEAF_END \Name, \Section
 .endm

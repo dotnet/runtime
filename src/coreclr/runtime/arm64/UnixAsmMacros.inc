@@ -12,6 +12,19 @@
 #define FIXUP_LABEL(name) .L##name
 #endif
 
+.macro LEAF_ENTRY Name, Section
+        .global C_FUNC(\Name)
+#if defined(__APPLE__)
+        .text
+        .p2align        2
+#else
+        .hidden C_FUNC(\Name)
+        .type \Name, %function
+#endif
+C_FUNC(\Name):
+        .cfi_startproc
+.endm
+
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
