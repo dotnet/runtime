@@ -904,9 +904,21 @@ namespace System.IO.Compression
         {
             if (_mode == ZipArchiveMode.Update)
             {
-                foreach (ZipArchiveEntry entry in _entries)
+                try
                 {
-                    entry.ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting();
+                    foreach (ZipArchiveEntry entry in _entries)
+                    {
+                        entry.ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting();
+                    }
+                }
+                catch (NotSupportedException)
+                {
+                    foreach (ZipArchiveEntry entry in _entries)
+                    {
+                        entry.UnloadStreams();
+                    }
+
+                    throw;
                 }
             }
         }

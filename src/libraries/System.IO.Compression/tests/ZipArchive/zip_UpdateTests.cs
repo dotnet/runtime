@@ -1698,10 +1698,10 @@ namespace System.IO.Compression.Tests
             ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
             ZipArchiveEntry firstEntryToModify = updateArchive.GetEntry("first.txt");
             Assert.NotNull(firstEntryToModify);
-            using (Stream writeStream = async
+            using Stream writeStream = async
                 ? await firstEntryToModify.OpenAsync(FileAccess.Write)
-                : firstEntryToModify.Open(FileAccess.Write))
-            using (StreamWriter writer = new StreamWriter(writeStream))
+                : firstEntryToModify.Open(FileAccess.Write);
+            using (StreamWriter writer = new StreamWriter(writeStream, leaveOpen: true))
             {
                 writer.Write(new string('x', 1024));
             }
@@ -1711,6 +1711,8 @@ namespace System.IO.Compression.Tests
             encryptedEntryToModify.LastWriteTime = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero);
 
             await Assert.ThrowsAsync<NotSupportedException>(() => DisposeZipArchive(async, updateArchive));
+            Assert.False(writeStream.CanWrite);
+            Assert.Throws<NotSupportedException>(() => writeStream.WriteByte(0));
             Assert.Equal(originalArchive, ms.ToArray());
 
             ms.Position = 0;
