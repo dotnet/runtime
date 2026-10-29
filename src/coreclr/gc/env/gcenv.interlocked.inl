@@ -38,6 +38,19 @@ FORCEINLINE T Interlocked::Increment(T volatile *addend)
 #endif
 }
 
+template <typename T>
+FORCEINLINE T Interlocked::Increment64(T volatile* addend)
+{
+    static_assert(sizeof(int64_t) == sizeof(T), "Size of LONGLONG must be the same as size of T");
+#ifdef _MSC_VER
+    return _interlockedincrement64((int64_t*)addend);
+#else
+    T result = __sync_add_and_fetch(addend, 1);
+    InterlockedOperationBarrier();
+    return result;
+#endif
+}
+
 // Decrement the value of the specified 32-bit variable as an atomic operation.
 // Parameters:
 //  addend - variable to be decremented
@@ -96,6 +109,19 @@ FORCEINLINE T Interlocked::CompareExchange(T volatile *destination, T exchange, 
 #endif
 }
 
+template <typename T>
+FORCEINLINE T Interlocked::CompareExchange64(T volatile* destination, T exchange, T comparand)
+{
+    static_assert(sizeof(int64_t) == sizeof(T), "Size of LONGLONG must be the same as size of T");
+#ifdef _MSC_VER
+    return _InterlockedCompareExchange64((int64_t*)destination, exchange, comparand);
+#else
+    T result = __sync_val_compare_and_swap(destination, comparand, exchange);
+    InterlockedOperationBarrier();
+    return result;
+#endif
+}
+
 // Perform an atomic addition of two 32-bit values and return the original value of the addend.
 // Parameters:
 //  addend - variable to be added to
@@ -120,25 +146,7 @@ FORCEINLINE T Interlocked::ExchangeAdd64(T volatile* addend, T value)
 {
 #ifdef _MSC_VER
     static_assert(sizeof(int64_t) == sizeof(T), "Size of LONGLONG must be the same as size of T");
-#ifdef HOST_X86
-    T expected;
-    T result;
-    do
-    {
-        // Compare-exchange validates this read even if it tears on x86.
-        expected = *addend;
-        // Unsigned arithmetic preserves interlocked wraparound for signed inputs.
-        uint64_t exchange = static_cast<uint64_t>(expected) + static_cast<uint64_t>(value);
-        result = static_cast<T>(_InterlockedCompareExchange64(
-            reinterpret_cast<int64_t volatile*>(addend), static_cast<int64_t>(exchange),
-            static_cast<int64_t>(expected)));
-    }
-    while (result != expected);
-
-    return result;
-#else // HOST_X86
     return _InterlockedExchangeAdd64((int64_t*)addend, value);
-#endif // HOST_X86
 #else
     T result = __sync_fetch_and_add(addend, value);
     InterlockedOperationBarrier();

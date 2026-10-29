@@ -30,7 +30,7 @@ static uint64_t read_pause_record_counter(uint64_t* counter)
 #ifdef HOST_64BIT
     return VolatileLoad(counter);
 #else // HOST_64BIT
-    return Interlocked::ExchangeAdd64(counter, uint64_t(0));
+    return Interlocked::CompareExchange64(counter, uint64_t(0), uint64_t(0));
 #endif // HOST_64BIT
 }
 
@@ -73,11 +73,11 @@ void gc_heap::record_pause_record(uint64_t collection_index, size_t duration_mic
     uint32_t version = Interlocked::Increment(&pause_record_version);
     assert((version & 1) != 0);
     UNREFERENCED_PARAMETER(version);
-    uint64_t sequence = Interlocked::ExchangeAdd64(&pause_record_sequence, uint64_t(1)) + 1;
+    uint64_t sequence = Interlocked::Increment64(&pause_record_sequence);
     uint32_t write = pause_record_write;
     if (write - VolatileLoad(&pause_record_read) == pause_record_capacity)
     {
-        Interlocked::ExchangeAdd64(&pause_record_missed, uint64_t(1));
+        Interlocked::Increment64(&pause_record_missed);
     }
     else
     {
