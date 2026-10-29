@@ -29,26 +29,23 @@ struct ECFunc {
     LPCSTR              m_szMethodName;
     LPHARDCODEDMETASIG  m_pMethodSig;       // Optional field. It is valid only if HasSignature() is set.
 
-    bool                IsEndOfArray()  { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_EndOfArray); }
-    bool                HasSignature()  { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_HasSignature); }
-    bool                IsUnreferenced(){ LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_Unreferenced); }
-    int                 DynamicID()     { LIMITED_METHOD_CONTRACT; return (int)              ((INT8)(m_dwFlags >> 24)); }
+    bool                IsEndOfArray() const  { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_EndOfArray); }
+    bool                HasSignature() const  { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_HasSignature); }
+    bool                IsUnreferenced() const { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_Unreferenced); }
+    int                 DynamicID() const     { LIMITED_METHOD_CONTRACT; return (int)              ((INT8)(m_dwFlags >> 24)); }
 
-    ECFunc*             NextInArray()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (ECFunc*)((BYTE*)this +
-            (HasSignature() ? sizeof(ECFunc) : offsetof(ECFunc, m_pMethodSig)));
-    }
 };
 
+#ifdef TARGET_WASM
+#include "wasm/ecall-table.h"
+#else // TARGET_WASM
 struct ECClass
 {
     LPCSTR      m_szClassName;
     LPCSTR      m_szNameSpace;
     const LPVOID *  m_pECFunc;
 };
+#endif // TARGET_WASM
 
 //=======================================================================
 // Collects code and data pertaining to the ECall interface.

@@ -20,6 +20,7 @@ namespace ILCompiler.PortableCallHelpers
         public string OutputDirectory { get; init; }
         public IReadOnlyList<string> PInvokeModules { get; init; } = [];
         public string TargetOS { get; init; }
+        public string ECallManifestPath { get; init; }
     }
 
     /// <summary>
@@ -42,6 +43,7 @@ namespace ILCompiler.PortableCallHelpers
         public const string PInvokeFileName = "callhelpers-pinvoke.cpp";
         public const string ReversePInvokeFileName = "callhelpers-reverse.cpp";
         public const string InterpToNativeFileName = "callhelpers-interp-to-managed.cpp";
+        public const string ECallFileName = "callhelpers-ecalls.cpp";
 
         public static int Run(ReadyToRunCompilerContext context, PortableCallHelpersGeneratorOptions options, Logger logger)
         {
@@ -75,6 +77,9 @@ namespace ILCompiler.PortableCallHelpers
 
             var collector = new PInvokeCollector(log, options.TargetOS);
             var internalCallCollector = new InternalCallSignatureCollector(log);
+            ECallTableGenerator ecalls = options.ECallManifestPath is not null
+                ? new ECallTableGenerator(options.ECallManifestPath, options.TargetOS) : null;
+            bool scannedCoreLib = false;
 
             List<PInvokeInfo> pinvokes = [];
             List<PInvokeCallback> callbacks = [];
@@ -88,6 +93,7 @@ namespace ILCompiler.PortableCallHelpers
                 // are used are defined there, scanning everything is expensive, and doing so can hit
                 // failures on assemblies that are not tested for it.
                 bool scanInternalCalls = module == context.SystemModule;
+                scannedCoreLib |= scanInternalCalls;
 
                 log.Verbose($"Scanning {simpleName} for pinvokes{(scanInternalCalls ? " and InternalCall methods" : "")}");
 
@@ -101,7 +107,10 @@ namespace ILCompiler.PortableCallHelpers
                     collector.CollectPInvokes(pinvokes, callbacks, signatures, ecmaType);
 
                     if (scanInternalCalls)
+                    {
                         internalCallCollector.ScanType(ecmaType);
+                        ecalls?.ScanType(ecmaType);
+                    }
                 }
 
                 // WASM-TODO: The helpers describe every P/Invoke with the signature the type system
@@ -118,6 +127,13 @@ namespace ILCompiler.PortableCallHelpers
             }
 
             var generator = new PInvokeTableGenerator(log);
+
+            if (ecalls is not null)
+            {
+                if (!scannedCoreLib)
+                    throw new LogAsErrorException("Generating ECall tables requires System.Private.CoreLib in the input assemblies. Pass the post-trim CoreLib being bundled with the app.");
+                WriteIfDifferent(Path.Combine(options.OutputDirectory, ECallFileName), log, ecalls.Emit);
+            }
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, PInvokeFileName), log,
                 w => generator.EmitPInvokeTable(w, context.Target, options.PInvokeModules, pinvokes));

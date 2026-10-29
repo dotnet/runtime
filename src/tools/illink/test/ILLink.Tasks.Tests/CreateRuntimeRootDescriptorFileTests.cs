@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml.Linq;
 using Microsoft.Build.Utilities;
@@ -11,6 +12,36 @@ namespace ILLink.Tasks.Tests
 {
     public class CreateRuntimeRootDescriptorFileTests
     {
+        [Fact]
+        public void ReadsNestedNamespaceDefinitions()
+        {
+            Dictionary<string, string> namespaces = RuntimeHeaderParser.ReadNamespaces(new[] {
+                "#define g_SystemNS \"System\"",
+                "#define g_RuntimeNS g_SystemNS \".Runtime\"",
+                "#define g_LoaderNS g_RuntimeNS \".Loader\" // comment"
+            });
+            Assert.Equal("System.Runtime.Loader", namespaces["Loader"]);
+        }
+
+        [Theory]
+        [InlineData("#if defined(FEATURE_ON)")]
+        [InlineData("#if FEATURE_ON || FEATURE_OTHER")]
+        [InlineData("#elif FEATURE_OTHER")]
+        [InlineData("#else")]
+        [InlineData("#endif")]
+        [InlineData("#ifdef FEATURE_ON\n#else\n#else\n#endif")]
+        [InlineData("#ifdef FEATURE_ON")]
+        public void InvalidHeaderConditionsAreDiagnosed(string source)
+        {
+            var errors = new List<string>();
+            var tracker = new RuntimeHeaderParser.DefineTracker(new HashSet<string>(), errors.Add, "corelib.h");
+            foreach (string line in source.Split('\n'))
+                tracker.ProcessLine(line);
+            tracker.Complete();
+            Assert.NotEmpty(errors);
+            Assert.All(errors, error => Assert.Contains("corelib.h", error));
+        }
+
         [Fact]
         public void TestCoreLibClassGen()
         {

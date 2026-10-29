@@ -636,6 +636,7 @@
       <_EmccCFlagsGenerated Include="@(_EmccCFlags)" />
       <_EmccCFlagsGenerated Include="-include &quot;$(MSBuildThisFileDirectory)coreclr_compat.h&quot;" />
       <_EmccCFlagsGenerated Include="-I&quot;$(_VmWasmIncludeDir.TrimEnd('\/'))&quot;" />
+      <_EmccCFlagsGenerated Include="-I&quot;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include&quot;" />
       <_EmccCFlagsGenerated Include="-I&quot;$(_MinipalIncludeRoot.TrimEnd('\/'))&quot;" />
     </ItemGroup>
 
@@ -670,7 +671,14 @@
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)callhelpers-pinvoke.cpp</_WasmPInvokeTablePath>
       <_WasmReversePInvokeTablePath>$(_WasmIntermediateOutputPath)callhelpers-reverse.cpp</_WasmReversePInvokeTablePath>
       <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)callhelpers-interp-to-managed.cpp</_WasmInterpToNativeTablePath>
+      <_WasmECallTablePath>$(_WasmIntermediateOutputPath)callhelpers-ecalls.cpp</_WasmECallTablePath>
+      <_WasmECallManifest>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)ecall-manifest.json</_WasmECallManifest>
+      <_WasmECallHeader>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include\ecall-table.h</_WasmECallHeader>
     </PropertyGroup>
+    <Error Condition="!Exists('$(_WasmECallManifest)')"
+           Text="ECall manifest not found: '$(_WasmECallManifest)'. Use a matching CoreCLR runtime pack with app-specific ECall table support." />
+    <Error Condition="!Exists('$(_WasmECallHeader)')"
+           Text="ECall table header not found: '$(_WasmECallHeader)'. Use the header shipped with the native runtime being linked." />
 
     <!-- P/Invoke modules: user native libraries + system native libraries -->
     <ItemGroup>
@@ -704,15 +712,21 @@
     <FilterManagedAssemblies Assemblies="@(_WasmBundledFile)">
       <Output TaskParameter="ManagedAssemblies" ItemName="_WasmManagedAssemblies" />
     </FilterManagedAssemblies>
+    <ItemGroup>
+      <_WasmBundledCoreLib Include="@(_WasmBundledFile)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.dll'" />
+    </ItemGroup>
 
     <!-- Locate System.Private.CoreLib in runtime pack if not already bundled -->
     <PropertyGroup>
       <_HasCoreLib Condition="'%(_WasmManagedAssemblies.FileName)%(_WasmManagedAssemblies.Extension)' == 'System.Private.CoreLib.dll'">true</_HasCoreLib>
       <!-- CoreCLR WASM ships CoreLib in the native directory, not the lib directory -->
-      <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll</_CoreLibPath>
+      <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true' and '$(IntermediateLinkDir)' != '' and Exists('$(IntermediateLinkDir)System.Private.CoreLib.dll')">$(IntermediateLinkDir)System.Private.CoreLib.dll</_CoreLibPath>
+      <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true' and '$(_CoreLibPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll</_CoreLibPath>
       <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true' and !Exists('$(_CoreLibPath)')">$([System.IO.Path]::Combine($(MicrosoftNetCoreAppRuntimePackRidLibTfmDir), 'System.Private.CoreLib.dll'))</_CoreLibPath>
     </PropertyGroup>
 
+    <Error Condition="'$(_HasCoreLib)' != 'true' and '@(_WasmBundledCoreLib)' != '' and ('$(IntermediateLinkDir)' == '' or !Exists('$(IntermediateLinkDir)System.Private.CoreLib.dll'))"
+           Text="The bundled System.Private.CoreLib is not readable IL. Supply its post-trim IL through IntermediateLinkDir; ECall generation must not substitute the untrimmed runtime-pack CoreLib." />
     <Error Condition="'$(_HasCoreLib)' != 'true' and !Exists('$(_CoreLibPath)')"
            Text="Could not find 'System.Private.CoreLib.dll' in the runtime pack at $(_CoreLibPath)" />
 
@@ -743,6 +757,7 @@
       <_Crossgen2GeneratorArg Include="--targetos:browser" />
       <_Crossgen2GeneratorArg Include="--targetarch:wasm" />
       <_Crossgen2GeneratorArg Include="--generate-portable-callhelpers:$(_WasmIntermediateOutputPath)" />
+      <_Crossgen2GeneratorArg Include="--ecall-manifest:$(_WasmECallManifest)" />
       <_Crossgen2GeneratorArg Include="@(_WasmPInvokeModules->'--directpinvoke:%(Identity)')" />
       <_Crossgen2GeneratorArg Include="@(_WasmManagedAssemblies->'%(FullPath)')" />
     </ItemGroup>
@@ -752,11 +767,13 @@
     <Exec Command="&quot;$(Crossgen2Path)&quot; &quot;@$(_Crossgen2GeneratorRsp)&quot;" />
 
     <ItemGroup>
-      <FileWrites Include="$(_Crossgen2GeneratorRsp);$(_WasmPInvokeTablePath);$(_WasmReversePInvokeTablePath);$(_WasmInterpToNativeTablePath)" />
+      <FileWrites Include="$(_Crossgen2GeneratorRsp);$(_WasmPInvokeTablePath);$(_WasmReversePInvokeTablePath);$(_WasmInterpToNativeTablePath);$(_WasmECallTablePath)" />
     </ItemGroup>
 
     <ItemGroup>
       <_WasmSourceFileToCompileGenerated Remove="@(_WasmSourceFileToCompileGenerated)" />
+      <_WasmSourceFileToCompileGenerated Include="$(_WasmECallTablePath)" ObjectFile="$(_WasmIntermediateOutputPath)callhelpers-ecalls.o"
+                                         Dependencies="$(_WasmCompileRspGenerated);$(_WasmECallHeader);$(_WasmECallManifest)" />
       <_WasmSourceFileToCompileGenerated Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)callhelpers-pinvoke.o"
                                                                                      Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h;$(_VmWasmIncludeDir)callhelpers.hpp;$(_MinipalIncludeDir)entrypoints.h;$(_MinipalIncludeDir)utils.h" />
       <_WasmSourceFileToCompileGenerated Include="$(_WasmReversePInvokeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)callhelpers-reverse.o"

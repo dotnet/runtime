@@ -293,6 +293,7 @@ namespace ILCompiler
                 return PortableCallHelpers.PortableCallHelpersGenerator.Run(typeSystemContext, new PortableCallHelpers.PortableCallHelpersGeneratorOptions
                 {
                     OutputDirectory = _generatePortableCallHelpers,
+                    ECallManifestPath = Get(_command.ECallManifest),
                     PInvokeModules = Get(_command.DirectPInvoke),
                     // The normalized name, so that platform attributes match regardless of how
                     // --targetos was spelled on the command line.

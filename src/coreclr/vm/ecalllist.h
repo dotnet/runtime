@@ -22,10 +22,6 @@
 #define FCDynamicSig(name,sig,dynamicID)
 #endif
 
-#ifndef FCUnreferenced
-#define FCUnreferenced
-#endif
-
 #ifndef FCFuncStart
 #define FCFuncStart(name)
 #endif
@@ -418,7 +414,6 @@ FCClassElement("Thread", "System.Threading", gThreadFuncs)
 #undef FCFuncElementSig
 #undef FCDynamic
 #undef FCDynamicSig
-#undef FCUnreferenced
 #undef FCFuncStart
 #undef FCFuncEnd
 #undef FCClassElement

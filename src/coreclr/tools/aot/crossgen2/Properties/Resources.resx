@@ -291,6 +291,9 @@
   <data name="GeneratePortableCallHelpersOption" xml:space="preserve">
     <value>Generate the portable entry point call helper sources into the given directory instead of compiling</value>
   </data>
+  <data name="ECallManifestOption" xml:space="preserve">
+    <value>Native runtime ECall manifest used to generate app-specific ECall tables with --generate-portable-callhelpers</value>
+  </data>
   <data name="DirectPInvokeOption" xml:space="preserve">
     <value>Name of a statically linked native module P/Invokes may resolve against</value>
   </data>

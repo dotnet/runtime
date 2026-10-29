@@ -374,6 +374,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != ''">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)generate-ecalls.proj"
+                    Condition="'$(TargetArchitecture)' == 'wasm' and '$(ClrCrossComponentsBuild)' != 'true'"
+                    Category="clr" />
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets);$(TargetCxxLibraryProperties)"

@@ -989,7 +989,13 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
     else()
         set(WASM_THUNK_SUBDIR browser)
     endif()
+    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/wasm")
+    foreach(destination . sharedFramework)
+        install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/wasm/ecall-table.h"
+            DESTINATION "${destination}/include" COMPONENT runtime)
+    endforeach()
     set(VM_SOURCES_WKS_GEN
+        ${ARCH_SOURCES_DIR}/ecall-table.cpp
         ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-interp-to-managed.cpp
         ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-reverse.cpp
     )

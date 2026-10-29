@@ -12,8 +12,8 @@ with a generated table mapping each [DllImport] to the address of its target. Th
 file does, once per test that has a CMakeProjectReference:
 
   1. crossgen2, in its portable call-helpers generation mode, scans the test's managed assemblies
-     plus the whole framework closure and emits callhelpers-{pinvoke,reverse,interp-to-managed}.cpp.
-  2. Those three sources are compiled with em++ (browser) or the wasi-sdk clang++ (WASI) using the
+     plus the whole framework closure and emits callhelpers-{pinvoke,reverse,interp-to-managed,ecalls}.cpp.
+  2. Those four sources are compiled with em++ (browser) or the wasi-sdk clang++ (WASI) using the
      response file exported by the CoreCLR build (see src/coreclr/hosts/corerun/wasm/testkit.cmake).
   3. They are linked, together with the test's own static libraries, against the same archives
      that produce CORE_ROOT/corerun(.js), minus libcoreclr_gen_static.a, which holds the
@@ -229,6 +229,8 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            @(_WasmCorerunOutput) belongs in the output directory. -->
       <_WasmCorerunInputManifest>$(_WasmCorerunDir)inputs.txt</_WasmCorerunInputManifest>
       <_Crossgen2GeneratorRsp>$(_WasmCorerunDir)callhelpers-generator.rsp</_Crossgen2GeneratorRsp>
+      <_Crossgen2ExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_Crossgen2ExeSuffix>
+      <Crossgen2Path Condition="'$(Crossgen2Path)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_Crossgen2ExeSuffix)'))</Crossgen2Path>
 
       <!-- Consumed straight out of the kit: the paths in them are relative to the kit directory,
            which is why the compiler invocations below run from there. The generated call tables use
@@ -252,6 +254,8 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
                                    ObjectFile="$(_WasmCorerunDir)callhelpers-reverse.o" />
       <_WasmCorerunGeneratedSource Include="$(_WasmCorerunDir)callhelpers-interp-to-managed.cpp"
                                    ObjectFile="$(_WasmCorerunDir)callhelpers-interp-to-managed.o" />
+      <_WasmCorerunGeneratedSource Include="$(_WasmCorerunDir)callhelpers-ecalls.cpp"
+                                   ObjectFile="$(_WasmCorerunDir)callhelpers-ecalls.o" />
 
       <!-- Track the kit payload itself, not just its response files: those name their inputs
            relatively and so do not change when the runtime is rebuilt, and a coreclr native
@@ -261,6 +265,9 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*$(StaticLibSuffix)" />
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*.js" />
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*.wit" />
+      <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)ecall-manifest.json" />
+      <_WasmCorerunGeneratorInput Include="$(Crossgen2Path);$([System.IO.Path]::GetDirectoryName('$(Crossgen2Path)'))\*.dll"
+                                  Condition="'$(Crossgen2Path)' != ''" />
 
       <!-- src/tests/Common/Platform is the shared native helper library for tests, and several of
            the CMake projects that produce a test library link it (Interop, Runtime_101046,
@@ -321,7 +328,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <MakeDir Directories="$(_WasmCorerunDir)" />
 
     <WriteLinesToFile File="$(_WasmCorerunInputManifest)"
-                      Lines="@(_WasmCorerunAssembly);@(_WasmCorerunNativeSource);@(_WasmCorerunTestLib);@(_WasmCorerunCommonLib);@(_WasmCorerunKitInclude);@(_WasmCorerunKitLinkInput)"
+                      Lines="@(_WasmCorerunAssembly);@(_WasmCorerunNativeSource);@(_WasmCorerunTestLib);@(_WasmCorerunCommonLib);@(_WasmCorerunKitInclude);@(_WasmCorerunKitLinkInput);@(_WasmCorerunGeneratorInput)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
 
@@ -339,7 +346,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   <Target Name="_WasmGenerateTestCallHelpers"
           DependsOnTargets="_WasmResolveTestCorerunAssemblies;_WasmWriteTestCorerunInputManifest"
           Condition="'$(_WasmCorerunSkip)' != 'true'"
-          Inputs="@(_WasmCorerunAssembly);@(_WasmCorerunNativeSource);@(_WasmCorerunTestLib);$(_WasmCorerunInputManifest);$(WasmCoreClrFrameworkPInvokeModuleListFile)"
+          Inputs="@(_WasmCorerunAssembly);@(_WasmCorerunNativeSource);@(_WasmCorerunTestLib);$(_WasmCorerunInputManifest);$(WasmCoreClrFrameworkPInvokeModuleListFile);$(WasmCorerunKitDir)ecall-manifest.json;@(_WasmCorerunGeneratorInput)"
           Outputs="@(_WasmCorerunGeneratedSource)">
     <MakeDir Directories="$(_WasmCorerunDir)" />
 
@@ -368,11 +375,6 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <Output TaskParameter="ManagedAssemblies" ItemName="_WasmCorerunManagedAssembly" />
     </FilterManagedAssemblies>
 
-    <PropertyGroup>
-      <_Crossgen2ExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_Crossgen2ExeSuffix>
-      <Crossgen2Path Condition="'$(Crossgen2Path)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_Crossgen2ExeSuffix)'))</Crossgen2Path>
-    </PropertyGroup>
-
     <Error Condition="'$(Crossgen2Path)' == ''"
            Text="crossgen2 was not found. Build the 'clr' subset or set %24(Crossgen2Path) to a crossgen2 executable." />
     <Error Condition="!Exists('$(Crossgen2Path)')"
@@ -384,6 +386,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_Crossgen2GeneratorArg Include="--targetos:$(TargetOS)" />
       <_Crossgen2GeneratorArg Include="--targetarch:wasm" />
       <_Crossgen2GeneratorArg Include="--generate-portable-callhelpers:$(_WasmCorerunDir)" />
+      <_Crossgen2GeneratorArg Include="--ecall-manifest:$(WasmCorerunKitDir)ecall-manifest.json" />
       <_Crossgen2GeneratorArg Include="@(_WasmCorerunPInvokeModule->'--directpinvoke:%(Identity)')" />
       <_Crossgen2GeneratorArg Include="@(_WasmCorerunManagedAssembly->'%(FullPath)')" />
     </ItemGroup>

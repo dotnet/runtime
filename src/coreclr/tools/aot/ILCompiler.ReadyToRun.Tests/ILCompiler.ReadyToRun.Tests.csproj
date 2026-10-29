@@ -34,6 +34,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../../../scripts/ECallManifest.cs" Link="ECallManifest.cs" />
+    <Compile Include="../../../scripts/ECallManifestGenerator.cs" Link="ECallManifestGenerator.cs" />
+    <Compile Include="../../../../tools/illink/src/ILLink.Tasks/RuntimeHeaderParser.cs" Link="RuntimeHeaderParser.cs" />
+    <Content Include="$(CoreCLRArtifactsPath)ecall-manifest.json"
+             Condition="'$(TargetArchitecture)' == 'wasm'"
+             CopyToOutputDirectory="PreserveNewest"
+             TargetPath="ecall-manifest.json" />
     <Compile Remove="TestCases/*/**/*.cs" />
     <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
     <EmbeddedResource Include="$(LibrariesProjectRoot)System.Private.CoreLib/src/System/Runtime/SuppressReadyToRunCanonicalRootingAttribute.cs"

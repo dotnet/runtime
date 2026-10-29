@@ -14,6 +14,54 @@ Windows build [requirements](../../../docs/workflow/requirements/windows-require
 
 At this time no other build dependencies are necessary to start building for WebAssembly. If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Configurations) to understand configurations. Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`.
 
+### CoreCLR FCall table trimming
+
+CoreCLR browser and WASI native relinking generates `callhelpers-ecalls.cpp` from
+the surviving `InternalCall` declarations in the bundled, post-trim
+`System.Private.CoreLib.dll`. This replaces the full ECall aggregate in
+`libcoreclr_gen_static.a`, allowing the native linker to discard unused FCall
+descriptors and implementations. Independent native references still retain their
+implementations. Prebuilt runtimes retain the full table.
+
+The runtime build reads `src/coreclr/vm/ecalllist.h`, `metasig.h`, `corelib.h`,
+and `namespace.h` directly and ships `ecall-manifest.json` and
+`include/ecall-table.h` in the runtime pack. The `scripts/GenECalls.cs` file-based
+app shares conditional and namespace parsing with
+`CreateRuntimeRootILLinkDescriptorFile`, but generates mappings rather than
+additional trimming roots.
+For CoreCLR WASM native builds, `eng/Subsets.props` includes
+`src/coreclr/generate-ecalls.proj` before the native runtime project. The generator imports
+CoreLib's shared feature properties and defines. It produces the
+manifest without native intermediate outputs. Native C++ expands `ecalllist.h`
+directly to define descriptors and the default full table.
+The generation project also copies the manifest to the runtime output,
+`sharedFramework`, and `corerun-link` directories, including configure-only builds.
+Manifest generation uses CoreLib's feature definitions; the native build uses the
+corresponding CMake feature configuration.
+Use the repository's
+`build.cmd clr.native` or `build.sh clr.native` entrypoint to build both the
+runtime and its manifest.
+The manifest maps managed identities (including signatures for
+overloaded String constructors) to native descriptors. Use a manifest generated from
+matching runtime sources and target configuration: descriptor symbols use physical
+source lines in `ecalllist.h`, and version alignment is a build requirement.
+Declarations absent from the manifest are ignored, including
+signature-only helpers and delegate constructors. Ambiguous mappings fail during
+generation.
+
+The generator is available as
+`crossgen2 --generate-portable-callhelpers <output-dir> --ecall-manifest <manifest>
+--targetos browser --targetarch wasm <managed-assemblies>`.
+For WASI, use `--targetos wasi`. Include the actual bundled CoreLib, using its
+trimmed IL rather than a ReadyToRun/webcil image. Without `--ecall-manifest`, the
+generator emits only the existing interop helpers.
+
+ECall IDs remain positional within the active runtime table; they are not
+interchangeable between full and app-specific tables. Dynamic FCall IDs remain
+unchanged. Delegate constructors bypass the table, and the independent CoreLib
+binder roots for managed String constructor helpers are not trimmed by this
+mechanism.
+
 ## macOS
 
 * To build the whole repository, including libraries:

@@ -264,6 +264,26 @@ const USHORT c_nCoreLibFieldDescriptions = ARRAY_SIZE(c_rgCoreLibFieldDescriptio
 // ECalls
 //
 
+#ifdef TARGET_WASM
+
+#include "wasm/ecall-descriptor.h"
+
+#define FCFuncFlags(dynamicID) (static_cast<UINT_PTR>(static_cast<BYTE>(dynamicID)) << 24)
+
+#define FCDescriptor(flags, name, sig, impl) \
+    extern "C" const ECFunc ECALL_SYMBOL = { flags, impl, name, sig };
+#define FCFuncElement(name, impl) \
+    FCDescriptor(FCFuncFlags(ECall::InvalidDynamicFCallId), name, nullptr, reinterpret_cast<void*>(GetEEFuncEntryPoint(impl)))
+#define FCFuncElementSig(name, sig, impl) \
+    FCDescriptor(FCFuncFlags(ECall::InvalidDynamicFCallId) | FCFuncFlag_HasSignature, name, sig, reinterpret_cast<void*>(GetEEFuncEntryPoint(impl)))
+#define FCDynamic(name, dynamicID) FCDescriptor(FCFuncFlags(dynamicID), name, nullptr, nullptr)
+#define FCDynamicSig(name, sig, dynamicID) FCDescriptor(FCFuncFlags(dynamicID) | FCFuncFlag_HasSignature, name, sig, nullptr)
+#include "ecalllist.h"
+#undef FCDescriptor
+#undef FCFuncFlags
+
+#else // TARGET_WASM
+
 // When compiling crossgen, we only need the target version of the ecall tables
 
 #define FCFuncFlags(dynamicID) \
@@ -281,8 +301,6 @@ const USHORT c_nCoreLibFieldDescriptions = ARRAY_SIZE(c_rgCoreLibFieldDescriptio
 #define FCDynamicSig(name,sig,dynamicID) \
     FCFuncFlag_HasSignature + FCDynamic(name,dynamicID) (LPVOID)sig,
 
-#define FCUnreferenced FCFuncFlag_Unreferenced +
-
 #define FCFuncStart(name) static const LPVOID name[] = {
 #define FCFuncEnd() FCFuncFlag_EndOfArray + FCFuncFlags(ECall::InvalidDynamicFCallId) };
 
@@ -299,3 +317,5 @@ const ECClass c_rgECClasses[] =
 };  // c_rgECClasses[]
 
 const int c_nECClasses = ARRAY_SIZE(c_rgECClasses);
+
+#endif // TARGET_WASM

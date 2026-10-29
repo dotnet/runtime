@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <DefineConstants>TARGET_WASM</DefineConstants>
+    <DefineConstants Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(DefineConstants);DEBUG</DefineConstants>
+  </PropertyGroup>
+
+  <Import Project="clr.featuredefines.props" />
+  <Import Project="$(LibrariesProjectRoot)System.Private.CoreLib\src\System.Private.CoreLib.Shared.props" />
+
+  <PropertyGroup>
+    <ECallOutputDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'ecalls', '$(TargetOS).$(TargetArchitecture).$(Configuration)', '$(BuildSubdirectory)'))</ECallOutputDirectory>
+    <_ECallInputState>$(ECallOutputDirectory)ecall-build.inputs</_ECallInputState>
+    <_ECallRuntimeBinDir>$([MSBuild]::NormalizeDirectory('$(RuntimeBinDir)', '$(BuildSubdirectory)'))</_ECallRuntimeBinDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <_ECallDefine Include="$(DefineConstants)" />
+    <_ECallHeader Include="vm\ecalllist.h" />
+    <_ECallHeader Include="vm\metasig.h" />
+    <_ECallHeader Include="vm\corelib.h" />
+    <_ECallHeader Include="vm\namespace.h" />
+    <_ECallGeneratorSource Include="scripts\GenECalls.cs" />
+    <_ECallGeneratorSource Include="scripts\ECallManifestGenerator.cs" />
+    <_ECallGeneratorSource Include="scripts\ECallManifest.cs" />
+    <_ECallGeneratorSource Include="..\tools\illink\src\ILLink.Tasks\RuntimeHeaderParser.cs" />
+    <_ECallGeneratorSource Include="clr.featuredefines.props" />
+    <_ECallGeneratorSource Include="$(LibrariesProjectRoot)System.Private.CoreLib\src\System.Private.CoreLib.Shared.props" />
+    <_ECallOutput Include="$(ECallOutputDirectory)ecall-manifest.json" />
+    <_ECallManifestDestination Include="$(_ECallRuntimeBinDir)" />
+    <_ECallManifestDestination Include="$(_ECallRuntimeBinDir)sharedFramework\" />
+    <_ECallManifestDestination Include="$(_ECallRuntimeBinDir)corerun-link\" />
+    <FileWrites Include="$(_ECallInputState)" />
+    <FileWrites Include="@(_ECallOutput)" />
+    <FileWrites Include="@(_ECallManifestDestination->'%(Identity)ecall-manifest.json')" />
+  </ItemGroup>
+
+  <Target Name="PrepareECallManifest">
+    <Error Condition="'$(TargetArchitecture)' != 'wasm' or ('$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi')"
+           Text="ECall manifests require a browser-wasm or wasi-wasm target." />
+    <MakeDir Directories="$(ECallOutputDirectory)" />
+    <WriteLinesToFile File="$(_ECallInputState)"
+                      Lines="@(_ECallDefine);$(TargetOS)"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <Target Name="GenerateECallManifest"
+          BeforeTargets="Build"
+          DependsOnTargets="PrepareECallManifest"
+          Inputs="$(MSBuildProjectFullPath);$(_ECallInputState);@(_ECallHeader);@(_ECallGeneratorSource)"
+          Outputs="@(_ECallOutput)">
+    <Exec Command="&quot;$(DotNetTool)&quot; run --file &quot;$(MSBuildThisFileDirectory)scripts/GenECalls.cs&quot; -p:PublishAot=false -- --source &quot;$(MSBuildThisFileDirectory)vm&quot; --output &quot;$(ECallOutputDirectory.TrimEnd('\/'))&quot; --target-os $(TargetOS) --defines &quot;@(_ECallDefine, ',')&quot;" />
+    <Touch Files="@(_ECallOutput)" />
+  </Target>
+
+  <Target Name="CopyECallManifest" AfterTargets="GenerateECallManifest">
+    <Copy SourceFiles="@(_ECallOutput)"
+          DestinationFolder="%(_ECallManifestDestination.Identity)"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

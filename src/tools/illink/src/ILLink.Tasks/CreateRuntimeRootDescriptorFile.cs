@@ -151,41 +151,14 @@ namespace ILLink.Tasks
 
         void ProcessNamespaces(string namespaceFile)
         {
-            string[] namespaces = File.ReadAllLines(namespaceFile);
-
-            // Process definitions of the form
-            // #define g_SystemNS          "System"
-            // from namespace.h
-            foreach (string namespaceDef in namespaces)
-            {
-                if (namespaceDef.StartsWith("#define"))
-                {
-                    char[] separators = { '"', ' ', '\t' };
-                    string[] namespaceDefElements = namespaceDef.Split(separators, StringSplitOptions.RemoveEmptyEntries);
-                    int startIndex = "g_".Length;
-                    // E.g., if namespaceDefElements [1] is "g_RuntimeNS", lhs is "Runtime".
-                    string lhs = namespaceDefElements[1].Substring(startIndex, namespaceDefElements[1].LastIndexOf('N') - startIndex);
-                    if (namespaceDefElements.Length == 3)
-                    {
-                        // E.G., #define g_SystemNS          "System"
-                        // "System" --> "System"
-                        namespaceDictionary[lhs] = namespaceDefElements[2];
-                    }
-                    else
-                    {
-                        // E.g., #define g_RuntimeNS         g_SystemNS ".Runtime"
-                        // "Runtime" --> "System.Runtime"
-                        string prefix = namespaceDefElements[2].Substring(startIndex, namespaceDefElements[2].LastIndexOf('N') - startIndex);
-                        namespaceDictionary[lhs] = namespaceDictionary[prefix] + namespaceDefElements[3];
-                    }
-                }
-            }
+            foreach (KeyValuePair<string, string> ns in RuntimeHeaderParser.ReadNamespaces(File.ReadLines(namespaceFile)))
+                namespaceDictionary[ns.Key] = ns.Value;
         }
 
         void ProcessMscorlib(string typeFile)
         {
             string[] types = File.ReadAllLines(typeFile);
-            DefineTracker defineTracker = new DefineTracker(defineConstants, Log, typeFile);
+            var defineTracker = new RuntimeHeaderParser.DefineTracker(defineConstants, message => Log.LogError(message), typeFile);
             string classId;
             FeatureSwitchMembers? currentFeatureSwitch = null;
 
@@ -291,7 +264,7 @@ namespace ILLink.Tasks
         public void ProcessCoreTypes(string corTypeFile)
         {
             string[] corTypes = File.ReadAllLines(corTypeFile);
-            DefineTracker defineTracker = new DefineTracker(defineConstants, Log, corTypeFile);
+            var defineTracker = new RuntimeHeaderParser.DefineTracker(defineConstants, message => Log.LogError(message), corTypeFile);
 
             foreach (string def in corTypes)
             {
@@ -314,7 +287,7 @@ namespace ILLink.Tasks
         public void ProcessExceptionTypes(string excTypeFile)
         {
             string[] excTypes = File.ReadAllLines(excTypeFile);
-            DefineTracker defineTracker = new DefineTracker(defineConstants, Log, excTypeFile);
+            var defineTracker = new RuntimeHeaderParser.DefineTracker(defineConstants, message => Log.LogError(message), excTypeFile);
 
             foreach (string def in excTypes)
             {
@@ -556,99 +529,5 @@ namespace ILLink.Tasks
                 defineConstants.Add(item.ItemSpec.Trim());
         }
 
-        sealed class DefineTracker
-        {
-            readonly HashSet<string> defineConstants;
-            readonly TaskLoggingHelper log;
-            readonly string filePath;
-            readonly Stack<bool?> activeSections = new Stack<bool?>();
-            int linenum;
-
-            public DefineTracker(HashSet<string> defineConstants, TaskLoggingHelper log, string filePath)
-            {
-                this.defineConstants = defineConstants;
-                this.log = log;
-                this.filePath = filePath;
-            }
-
-            public bool ProcessLine(string line)
-            {
-                linenum++;
-
-                int ifdefLength = 0;
-                bool negativeIfDef = false;
-                if (line.StartsWith("#ifdef "))
-                {
-                    ifdefLength = 7;
-                }
-                else if (line.StartsWith("#ifndef "))
-                {
-                    ifdefLength = 8;
-                    negativeIfDef = true;
-                }
-                else if (line.StartsWith("#if "))
-                {
-                    ifdefLength = 4;
-                }
-
-                if (ifdefLength > 0)
-                {
-                    if (activeSections.Count > 0 && activeSections.Peek() != true)
-                    {
-                        activeSections.Push(null);
-                    }
-                    else
-                    {
-                        string defineName = line.Substring(ifdefLength);
-                        int commentIndex = defineName.IndexOf('/');
-                        if (commentIndex >= 0)
-                            defineName = defineName.Substring(0, commentIndex);
-
-                        defineName = defineName.Trim();
-                        if (defineConstants.Contains(defineName))
-                            activeSections.Push(!negativeIfDef);
-                        else
-                            activeSections.Push(negativeIfDef);
-                    }
-
-                    return true;
-                }
-
-                if (line.StartsWith("#else"))
-                {
-                    if (activeSections.Count == 0)
-                    {
-                        log.LogError($"Could not figure out ifdefs in '{filePath}' around line {linenum}.");
-                    }
-                    else
-                    {
-                        bool? activeSection = activeSections.Pop();
-                        if (activeSection == null)
-                            activeSections.Push(null);
-                        else
-                            activeSections.Push(!activeSection.Value);
-                    }
-
-                    return true;
-                }
-
-                if (line.StartsWith("#endif"))
-                {
-                    if (activeSections.Count == 0)
-                        log.LogError($"Could not figure out ifdefs in '{filePath}' around line {linenum}.");
-                    else
-                        activeSections.Pop();
-
-                    return true;
-                }
-
-                return false;
-            }
-
-            public bool IsActiveSection
-            {
-                get => activeSections.Count == 0 || activeSections.Peek() == true;
-            }
-        }
     }
 }

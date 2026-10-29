@@ -182,7 +182,28 @@ static INT FindImplsIndexForClass(MethodTable* pMT)
 /*******************************************************************************/
 /*  Finds the implementation for the given method desc.  */
 
-static INT FindECIndexForMethod(MethodDesc *pMD, const LPVOID* impls)
+static const ECFunc* GetECFunc(const ECClass* table, INT index)
+{
+    LIMITED_METHOD_CONTRACT;
+#ifdef TARGET_WASM
+    return table->m_pECFunc[index];
+#else // TARGET_WASM
+    const ECFunc* entry = reinterpret_cast<const ECFunc*>(table->m_pECFunc + index);
+    return entry->IsEndOfArray() ? nullptr : entry;
+#endif // TARGET_WASM
+}
+
+static INT NextECIndex(const ECFunc* entry, INT index)
+{
+    LIMITED_METHOD_CONTRACT;
+#ifdef TARGET_WASM
+    return index + 1;
+#else // TARGET_WASM
+    return index + (entry->HasSignature() ? sizeof(ECFunc) : offsetof(ECFunc, m_pMethodSig)) / sizeof(void*);
+#endif // TARGET_WASM
+}
+
+static INT FindECIndexForMethod(MethodDesc *pMD, const ECClass* table)
 {
     CONTRACTL
     {
@@ -199,8 +220,13 @@ static INT FindECIndexForMethod(MethodDesc *pMD, const LPVOID* impls)
     pMD->GetSig(&pMethodSig, &cbMethodSigLen);
     Module* pModule = pMD->GetModule();
 
-    for (ECFunc* cur = (ECFunc*)impls; !cur->IsEndOfArray(); cur = cur->NextInArray())
+    for (INT index = 0; ; )
     {
+        const ECFunc* cur = GetECFunc(table, index);
+        if (cur == nullptr)
+            break;
+        INT currentIndex = index;
+        index = NextECIndex(cur, index);
         if (strcmp(cur->m_szMethodName, szMethodName) != 0)
             continue;
 
@@ -217,7 +243,7 @@ static INT FindECIndexForMethod(MethodDesc *pMD, const LPVOID* impls)
         }
 
         // We have found a match!
-        return static_cast<INT>((LPVOID*)cur - impls);
+        return currentIndex;
     }
 
     return -1;
@@ -225,7 +251,7 @@ static INT FindECIndexForMethod(MethodDesc *pMD, const LPVOID* impls)
 
 /*******************************************************************************/
 /* ID is formed of 2 USHORTs - class index  in high word, method index in low word.  */
-/* class index starts at 1. id == 0 means no implementation.                    */
+/* method index starts at 1. id == 0 means no implementation.                   */
 
 DWORD ECall::GetIDForMethod(MethodDesc *pMD)
 {
@@ -240,14 +266,14 @@ DWORD ECall::GetIDForMethod(MethodDesc *pMD)
     INT ImplsIndex = FindImplsIndexForClass(pMD->GetMethodTable());
     if (ImplsIndex < 0)
         return 0;
-    INT ECIndex = FindECIndexForMethod(pMD, c_rgECClasses[ImplsIndex].m_pECFunc);
+    INT ECIndex = FindECIndexForMethod(pMD, &c_rgECClasses[ImplsIndex]);
     if (ECIndex < 0)
         return 0;
 
     return (ImplsIndex<<16) | (ECIndex + 1);
 }
 
-static ECFunc *FindECFuncForID(DWORD id)
+static const ECFunc* FindECFuncForID(DWORD id)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -257,10 +283,10 @@ static ECFunc *FindECFuncForID(DWORD id)
     INT ImplsIndex  = (id >> 16);
     INT ECIndex     = (id & 0xffff) - 1;
 
-    return (ECFunc*)(c_rgECClasses[ImplsIndex].m_pECFunc + ECIndex);
+    return GetECFunc(&c_rgECClasses[ImplsIndex], ECIndex);
 }
 
-static ECFunc* FindECFuncForMethod(MethodDesc* pMD)
+static const ECFunc* FindECFuncForMethod(MethodDesc* pMD)
 {
     CONTRACTL
     {
@@ -352,7 +378,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall, bool* pHa
         return (PCODE)NULL;
     }
 
-    ECFunc* ret = FindECFuncForMethod(pMD);
+    const ECFunc* ret = FindECFuncForMethod(pMD);
 
     // ECall is a set of tables to call functions within the EE from the classlibs.
     // First we use the class name & namespace to find an array of function pointers for
@@ -406,12 +432,15 @@ BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
         const ECClass * pECClass = c_rgECClasses + ImplsIndex;
 
         BOOL fUnreferencedType = TRUE;
-        for (ECFunc* ptr = (ECFunc*)pECClass->m_pECFunc; !ptr->IsEndOfArray(); ptr = ptr->NextInArray())
+        for (INT index = 0; ; )
         {
+            const ECFunc* ptr = GetECFunc(pECClass, index);
+            if (ptr == nullptr)
+                break;
+            INT ECIndex = index;
+            index = NextECIndex(ptr, index);
             if (ptr->DynamicID() == InvalidDynamicFCallId && !ptr->IsUnreferenced())
             {
-                INT ECIndex = static_cast<INT>((LPVOID*)ptr - pECClass->m_pECFunc);
-
                 DWORD id = (ImplsIndex<<16) | (ECIndex + 1);
 
                 if (!usedIDs.Contains(id))
