@@ -121,7 +121,7 @@ Copyright (c) .NET Foundation. All rights reserved.
           BeforeTargets="_ComputeWasmBuildCandidates">
     <ItemGroup>
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
-        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and Exists('$(_WasmRuntimePackR2RDir)%(FileName).wasm')" />
+        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and '%(RootDir)%(Directory)' == '$(_WasmRuntimePackR2RDir)'" />
     </ItemGroup>
   </Target>
 
@@ -171,14 +171,14 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <!-- Same prune for publish, before ProcessPublishFilesForWasm derives _WasmResolvedFilesToPublish. -->
+  <!-- Prune before the SDK checks duplicate publish paths, as well as before WebAssembly asset selection. -->
   <Target Name="_WasmCoreClrPruneR2RFromPublish"
           Condition="'$(_WasmEnableWebcil)' == 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
-          BeforeTargets="ProcessPublishFilesForWasm">
+          BeforeTargets="_HandleFileConflictsForPublish;ProcessPublishFilesForWasm">
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
-        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and Exists('$(_WasmRuntimePackR2RDir)%(FileName).wasm')" />
+        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and '%(RootDir)%(Directory)' == '$(_WasmRuntimePackR2RDir)'" />
     </ItemGroup>
   </Target>
 
