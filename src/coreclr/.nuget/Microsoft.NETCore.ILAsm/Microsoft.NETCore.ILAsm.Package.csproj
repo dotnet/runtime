@@ -10,15 +10,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <IsPackable Condition="'$(BuildIdentityPackage)' != 'false'">true</IsPackable>
-    <IsPackable Condition="'$(BuildIdentityPackage)' == 'false'">false</IsPackable>
+    <IsPackable>true</IsPackable>
     <PackageId>Microsoft.NETCore.ILAsm</PackageId>
     <PackageDescription>The .NET IL Assembler.</PackageDescription>
-    <MinClientVersion>2.12</MinClientVersion>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-    <IncludeDesignerMarker>false</IncludeDesignerMarker>
-    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
     <BeforePack>$(BeforePack);GenerateILAsmRuntimeDependencies</BeforePack>
   </PropertyGroup>
 
@@ -29,9 +25,7 @@
   </ItemGroup>
 
   <UsingTask TaskName="GenerateRuntimeDependencies"
-             AssemblyFile="$(InstallerTasksAssemblyPath)"
-             Runtime="NET"
-             Architecture="*" />
+             AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
   <Target Name="GenerateILAsmRuntimeDependencies">
     <MakeDir Directories="$(IntermediateOutputPath)" />
