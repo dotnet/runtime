@@ -122,3 +122,27 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
         EPILOG_POP   "{r4-r11, pc}"
 
         NESTED_END CallEHFunclet, _TEXT
+
+        // This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
+        // frame pointer for accessing the locals in the parent method.
+        NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
+
+        PROLOG_PUSH  "{r11, lr}"
+
+        // On entry:
+        //
+        // R0 = throwable
+        // R1 = FP of main method
+        // R2 = PC to invoke
+        // R3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        //
+        // Save the SP of this function
+        str sp, [r3]
+        // Restore frame pointer
+        mov r11, r1
+        // Invoke the filter funclet
+        blx r2
+
+        EPILOG_POP   "{r11, pc}"
+
+        NESTED_END CallEHFilterFunclet, _TEXT

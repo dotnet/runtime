@@ -1092,13 +1092,13 @@ namespace System.Runtime
 #if NATIVEAOT
                     try
                     {
-#if TARGET_X86
-                        shouldInvokeHandler =
-                            InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
-#else
+#if TARGET_AMD64
                         UIntPtr funcletCallerSP;
                         shouldInvokeHandler =
                             InternalCalls.CallEHFilterFunclet(exception, frameIter.FramePointerRegister, pFilterFunclet, &funcletCallerSP) != 0;
+#else
+                        shouldInvokeHandler =
+                            InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
 #endif
                     }
                     catch when (true)

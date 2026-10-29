@@ -641,6 +641,53 @@ LOCAL_LABEL(DonePopping):
 
     NESTED_END RhpCallFinallyFunclet, _Text
 
+
+//
+// void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+//
+// INPUT:  a0:  exception object
+//         a1:  filter funclet address
+//         a2:  REGDISPLAY*
+//
+// OUTPUT:
+//
+
+    NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
+        ALLOC_CALL_FUNCLET_FRAME 0x40
+        fst.d  $f24, $sp, 0x00
+        fst.d  $f25, $sp, 0x08
+        fst.d  $f26, $sp, 0x10
+        fst.d  $f27, $sp, 0x18
+        fst.d  $f28, $sp, 0x20
+        fst.d  $f29, $sp, 0x28
+        fst.d  $f30, $sp, 0x30
+        fst.d  $f31, $sp, 0x38
+
+        ld.d  $t3, $a2, OFFSETOF__REGDISPLAY__pFP
+        ld.d  $fp, $t3, 0
+
+        //
+        // call the funclet
+        //
+        // $a0 still contains the exception object
+        jirl  $ra, $a1, 0
+
+    ALTERNATE_ENTRY RhpCallFilterFunclet2
+
+        fld.d  $f24, $sp, 0x00
+        fld.d  $f25, $sp, 0x08
+        fld.d  $f26, $sp, 0x10
+        fld.d  $f27, $sp, 0x18
+        fld.d  $f28, $sp, 0x20
+        fld.d  $f29, $sp, 0x28
+        fld.d  $f30, $sp, 0x30
+        fld.d  $f31, $sp, 0x38
+
+        FREE_CALL_FUNCLET_FRAME 0x40
+        EPILOG_RETURN
+
+    NESTED_END RhpCallFilterFunclet, Text
+
 #ifdef FEATURE_OBJCMARSHAL
 
 //

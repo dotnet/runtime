@@ -491,3 +491,41 @@ LOCAL_LABEL(SetSuccess):
         EPILOG_POP  "{r1,r4-r11,pc}"
 
 NESTED_END RhpCallFinallyFunclet, _TEXT
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+//
+// INPUT:  R0:  exception object
+//         R1:  filter funclet address
+//         R2:  REGDISPLAY*
+//
+// OUTPUT:
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
+
+        PROLOG_PUSH "{r2,r4-r11,lr}"
+        PROLOG_VPUSH {d8-d15}
+
+        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR11]
+        ldr         r11, [r12]
+
+        mov         r12, r1                              // r12 <- handler funclet address
+        // r0 still contains the exception object
+        ldr         r1, [r2, #OFFSETOF__REGDISPLAY__SP]  // r1 <- establisher frame
+
+        //
+        // call the funclet
+        //    r0 = exception object
+        //    r1 = establisher frame
+        blx         r12
+
+GLOBAL_LABEL RhpCallFilterFunclet2
+
+        // R0 contains the result of the filter execution
+
+        EPILOG_VPOP {d8-d15}
+        EPILOG_POP  "{r2,r4-r11,pc}"
+
+NESTED_END RhpCallFilterFunclet, _TEXT

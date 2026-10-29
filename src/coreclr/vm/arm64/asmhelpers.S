@@ -223,6 +223,31 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
 
 NESTED_END CallEHFunclet, _TEXT
 
+// This helper enables us to call into a filter funclet after restoring Fp register
+NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
+
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+
+    // On entry:
+    //
+    // X0 = throwable
+    // X1 = FP of main function
+    // X2 = PC to invoke
+    // X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+    //
+    // Save the SP of this function
+    mov fp, sp
+    str fp, [x3]
+    // Restore frame pointer
+    mov fp, x1
+    // Invoke the filter funclet
+    blr x2
+
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+
+NESTED_END CallEHFilterFunclet, _TEXT
+
 #define FaultingExceptionFrame_StackAlloc (SIZEOF__FaultingExceptionFrame)
 #define FaultingExceptionFrame_FrameOffset 0
 

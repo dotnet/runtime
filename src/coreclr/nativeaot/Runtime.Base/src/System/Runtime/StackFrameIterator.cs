@@ -22,12 +22,6 @@ namespace System.Runtime
 #elif TARGET_AMD64
         [FieldOffset(AsmOffsets.OFFSETOF__REGDISPLAY__pRbp)]
         internal UIntPtr* pFP;
-#elif TARGET_ARM
-        [FieldOffset(AsmOffsets.OFFSETOF__REGDISPLAY__pR11)]
-        internal UIntPtr* pFP;
-#elif TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-        [FieldOffset(AsmOffsets.OFFSETOF__REGDISPLAY__pFP)]
-        internal UIntPtr* pFP;
 #endif
     }
 
@@ -64,7 +58,7 @@ namespace System.Runtime
         internal void* RegisterSet { get { fixed (void* pRegDisplay = &_regDisplay) { return pRegDisplay; } } }
         internal UIntPtr SP { get { return _regDisplay.SP; } }
         internal UIntPtr FramePointer { get { return _framePointer; } }
-#if !TARGET_X86
+#if TARGET_AMD64
         internal UIntPtr FramePointerRegister { get { return *_regDisplay.pFP; } }
 #endif
         internal IntPtr PreviousTransitionFrame { get { return _pPreviousTransitionFrame; } }
