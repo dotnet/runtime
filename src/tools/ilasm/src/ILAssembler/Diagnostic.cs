@@ -18,6 +18,7 @@ public record Diagnostic(string Id, DiagnosticSeverity Severity, string Message,
 /// </summary>
 public static class DiagnosticIds
 {
+    public const string Parser = "ILA0000";
     public const string LiteralOutOfRange = "ILA0001";
     public const string UnsealedValueType = "ILA0002";
     public const string ThisOutsideClass = "ILA0003";
@@ -51,7 +52,7 @@ public static class DiagnosticIds
     public const string MissingExportedTypeImplementation = "ILA0031";
     public const string KeyFileError = "ILA0032";
     public const string TooManyGenericParameters = "ILA0033";
-    public const string UnsupportedTlsData = "ILA0034";
+    public const string DuplicateField = "ILA0034";
     public const string GenericParameterConstraintOwnerOutOfRange = "ILA0035";
     public const string InvalidExportOrdinal = "ILA0036";
     public const string ExportOrdinalRangeTooLarge = "ILA0037";
@@ -66,6 +67,21 @@ public static class DiagnosticIds
     public const string InvalidOctalLiteral = "ILA0046";
     public const string BranchOffsetOutOfRange = "ILA0047";
     public const string InvalidExceptionRegion = "ILA0048";
+    public const string PseudoCustomAttributeInvalidTarget = "ILA0049";
+    public const string PseudoCustomAttributeInvalidValue = "ILA0050";
+    public const string PseudoCustomAttributeInvalidBlob = "ILA0051";
+    public const string PseudoCustomAttributeUnknownArgument = "ILA0052";
+    public const string PseudoCustomAttributeRepeatedArgument = "ILA0053";
+    public const string LocalSlotInUse = "ILA0054";
+    public const string LocalSlotTypeConflict = "ILA0055";
+    public const string UndefinedLocalSlotType = "ILA0056";
+    public const string LocalSlotOutOfRange = "ILA0057";
+    public const string LocalScopeWithoutInstructions = "ILA0058";
+    public const string LocalNameDeclaredTwiceInScope = "ILA0059";
+    public const string LocalSlotNamedTwiceInScope = "ILA0060";
+    public const string InvalidSequencePoint = "ILA0061";
+    public const string DuplicateEntryPoint = "ILA0063";
+    public const string InstanceEntryPoint = "ILA0064";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -102,7 +118,6 @@ internal static class DiagnosticMessageTemplates
     public const string DuplicateMethod = "Duplicate method definition";
     public const string MissingExportedTypeImplementation = "Undefined implementation in ExportedType '{0}' -- ExportedType not emitted";
     public const string TooManyGenericParameters = "Generic parameter count {0} exceeds the maximum of {1}";
-    public const string UnsupportedTlsData = "TLS RVA data declarations are not supported";
     public const string GenericParameterConstraintOwnerOutOfRange = "Generic parameter constraint owner index {0} exceeds the maximum encodable generic parameter index of {1}";
     public const string InvalidExportOrdinal = "Export ordinal {0} must be positive";
     public const string ExportOrdinalRangeTooLarge = "Export ordinal {0} is too far from base ordinal {1}; the export address table index must not exceed {2}";
@@ -119,4 +134,24 @@ internal static class DiagnosticMessageTemplates
     public const string BranchOffsetOutOfRange = "The offset {1} is too large for short branch instruction '{0}'; truncated";
     public const string InvalidExceptionRegion = "Exception region bounds (try {0} to {1}, handler {2} to {3}) are invalid for a method with {4} bytes of code";
     public const string InvalidFilterOffset = "Exception filter offset {0} is out of range for a method with {1} bytes of code";
+    public const string PseudoCustomAttributeInvalidTarget = "Custom attribute '{0}' cannot be applied to this target";
+    public const string PseudoCustomAttributeInvalidValue = "Custom attribute '{0}' has an invalid argument value";
+    public const string PseudoCustomAttributeInvalidBlob = "Custom attribute '{0}' has a malformed value blob";
+    public const string PseudoCustomAttributeUnknownArgument = "Custom attribute '{0}' does not have a field or property named '{1}'";
+    public const string PseudoCustomAttributeRepeatedArgument = "Custom attribute '{0}' specifies '{1}' more than once";
+    public const string LocalSlotInUse = "Local var slot {0} is in use";
+    public const string LocalSlotTypeConflict = "Local var slot {0}: type conflict";
+    public const string UndefinedLocalSlotType = "Undefined type of local var slot {0} in method {1}";
+    public const string LocalSlotOutOfRange = "Local var slot {0} is out of range; a slot index must be between 0 and {1}";
+    public const string LocalScopeWithoutInstructions = "Local var '{0}' is declared in a scope that has no instructions; a PDB local scope must not be empty";
+    public const string LocalNameDeclaredTwiceInScope = "Local var '{0}' is already declared in this scope";
+    public const string LocalSlotNamedTwiceInScope = "Local var '{0}': slot {1} is already named '{2}' in this scope";
+    public const string InvalidHiddenSequencePoint = "A hidden sequence point must have start and end lines 0xFEEFEE and columns 0,0";
+    public const string SequencePointLineOutOfRange = "Sequence point lines must be between 0 and 0x1fffffff";
+    public const string SequencePointColumnOutOfRange = "Sequence point columns must be between 0 and 0xffff";
+    public const string SequencePointReversedRange = "A sequence point must end after it starts";
+    public const string SequencePointLineDeltaOutOfRange = "The start line difference from the previous non-hidden sequence point must be between -0x10000000 and 0x0fffffff";
+    public const string DuplicateEntryPoint = "Multiple entry points declared";
+    public const string InstanceEntryPoint = "Entry point method must be static";
+    public const string DuplicateField = "Duplicate field definition '{0}'";
 }

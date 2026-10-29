@@ -5,7 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Options;
 
@@ -73,13 +72,7 @@ namespace Microsoft.Extensions.Logging.Console
                 return colorOverride;
             }
 
-            if (
-#if NETFRAMEWORK
-                Environment.OSVersion.Platform != PlatformID.Win32NT
-#else
-                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-#endif
-                )
+            if (!OperatingSystem.IsWindows())
             {
                 return true;
             }

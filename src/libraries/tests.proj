@@ -67,10 +67,11 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\Net8Tests\System.Numerics.Tensors.Net8.Tests.csproj" />
   </ItemGroup>
 
-  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <ProjectExclusions Include="$(MonoProjectRoot)sample/wasm/**/*.csproj" />
-    <ProjectExclusions Include="$(RepoRoot)src/tests/FunctionalTests/WebAssembly/Browser/HotReload/WebAssembly.Browser.HotReload.Test.csproj" />
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Mono -->
+    <ProjectExclusions Include="$(RepoRoot)src/tests/FunctionalTests/WebAssembly/Browser/HotReload/WebAssembly.Browser.HotReload.Test.csproj"
+                       Condition="'$(RuntimeFlavor)' == 'Mono'" />
   </ItemGroup>
 
   <!-- Samples that require a multi-threaded runtime -->
@@ -705,6 +706,15 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/FunctionalTests/System.Text.RegularExpressions.Tests.csproj" />
   </ItemGroup>
 
+  <!-- Focus ISA stress on vector APIs and algorithms without building the full test suite. -->
+  <ItemGroup Condition="'$(RunVectorTestsOnly)' == 'true'">
+    <VectorTestProject Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
+    <VectorTestProject Include="$(MSBuildThisFileDirectory)System.Memory\tests\System.Memory.Tests.csproj" />
+    <VectorTestProject Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
+    <VectorTestProject Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors\tests\System.Numerics.Vectors.Tests.csproj" />
+    <VectorTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Condition="'$(RunSmokeTestsOnly)' == 'true'"
                       Include="@(SmokeTestProject)" />
@@ -719,7 +729,12 @@
 
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(TestAssemblies)' == 'true'"
+                      Condition="'$(TestAssemblies)' == 'true' and '$(RunVectorTestsOnly)' != 'true'"
+                      BuildInParallel="$(BuildTestInParallel)" />
+
+    <ProjectReference Include="@(VectorTestProject)"
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(TestAssemblies)' == 'true' and '$(RunVectorTestsOnly)' == 'true'"
                       BuildInParallel="$(BuildTestInParallel)" />
 
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\InProcCrashReport\**\*.Test.csproj"

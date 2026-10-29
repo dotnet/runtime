@@ -94,6 +94,7 @@ namespace ILAssembler
             ModuleType = GetOrCreateTypeDefinition(null, "", "<Module>", moduleType =>
             {
                 moduleType.BaseType = null;
+                moduleType.IsDefined = true;
             });
         }
 
@@ -106,7 +107,7 @@ namespace ILAssembler
             return Array.Empty<EntityBase>();
         }
 
-        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames, bool deterministic, bool fold)
+        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, DataLocation> mappedFieldDataNames, out ImmutableArray<DataLocation> mappedFields, bool deterministic, bool fold)
         {
             // Set the assembly handle early since DeclarativeSecurityAttribute needs it
             // The assembly definition handle is always row 1 (there's only ever one assembly per module)
@@ -312,6 +313,7 @@ namespace ILAssembler
                 }
             }
 
+            var mappedFieldLocations = ImmutableArray.CreateBuilder<DataLocation>();
             foreach (FieldDefinitionEntity fieldDef in GetSeenEntities(TableIndex.Field))
             {
                 var fieldAttributes = fieldDef.Attributes;
@@ -339,9 +341,10 @@ namespace ILAssembler
                     builder.AddFieldLayout((FieldDefinitionHandle)fieldDef.Handle, fieldDef.Offset.Value);
                 }
 
-                if (fieldDef.DataDeclarationName is not null && mappedFieldDataNames.TryGetValue(fieldDef.DataDeclarationName, out int dataOffset))
+                if (fieldDef.DataDeclarationName is not null && mappedFieldDataNames.TryGetValue(fieldDef.DataDeclarationName, out DataLocation dataLocation))
                 {
-                    builder.AddFieldRelativeVirtualAddress((FieldDefinitionHandle)fieldDef.Handle, dataOffset);
+                    builder.AddFieldRelativeVirtualAddress((FieldDefinitionHandle)fieldDef.Handle, dataLocation.Offset);
+                    mappedFieldLocations.Add(dataLocation);
                 }
 
                 if (fieldDef.MarshallingDescriptor is { Count: > 0 })
@@ -355,6 +358,7 @@ namespace ILAssembler
                 }
             }
 
+            mappedFields = mappedFieldLocations.ToImmutable();
             var bodyStreamEncoder = new MethodBodyStreamEncoder(ilStream);
             Dictionary<byte[], int>? foldedBodies = fold ? new(new MethodBodyContentEqualityComparer()) : null;
 
@@ -363,13 +367,14 @@ namespace ILAssembler
                 MethodDefinitionEntity methodDef = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[i];
 
                 int bodyOffset = -1;
-                if (methodDef.MethodBody.CodeBuilder.Count != 0 || methodDef.ExceptionRegions.Count != 0)
+                if (methodDef.HasBody)
                 {
                     BlobBuilder? serializedBody = fold ? new BlobBuilder() : null;
                     MethodBodyStreamEncoder encoder = fold ? new(serializedBody!) : bodyStreamEncoder;
                     StandaloneSignatureHandle localsSigHandle = methodDef.LocalsSignature is not null
                         ? (StandaloneSignatureHandle)methodDef.LocalsSignature.Handle
                         : default;
+                    methodDef.DebugInfo.LocalSignature = localsSigHandle;
                     MethodBodyAttributes bodyAttributes = methodDef.BodyAttributes;
                     if (methodDef.MaxStack < 8
                         && methodDef.MethodBody.CodeBuilder.Count < 64
@@ -839,6 +844,34 @@ namespace ILAssembler
             return null;
         }
 
+        /// <summary>
+        /// Finds the local type definition that a type reference refers to, without assigning or
+        /// reading any handles. Passes that run before <see cref="WriteContentTo"/> resolves
+        /// references need this, because handles are not assigned until emission.
+        /// </summary>
+        public TypeDefinitionEntity? FindLocalTypeDefinition(TypeReferenceEntity typeReference)
+        {
+            switch (typeReference.ResolutionScope)
+            {
+                case TypeReferenceEntity enclosing:
+                    return FindLocalTypeDefinition(enclosing) is { } enclosingTypeDef
+                        ? FindTypeDefinition(enclosingTypeDef, typeReference.Namespace, typeReference.Name)
+                        : null;
+
+                case AssemblyReferenceEntity assemblyReference:
+                    return Assembly is not null
+                        && string.Equals(assemblyReference.Name, Assembly.Name, StringComparison.OrdinalIgnoreCase)
+                        ? FindTypeDefinition(null, typeReference.Namespace, typeReference.Name)
+                        : null;
+
+                case ModuleEntity:
+                    return FindTypeDefinition(null, typeReference.Namespace, typeReference.Name);
+
+                default:
+                    return null;
+            }
+        }
+
         public AssemblyReferenceEntity GetOrCreateAssemblyReference(string name, Action<AssemblyReferenceEntity> onCreateAssemblyReference)
         {
             return GetOrCreateEntity(name, TableIndex.AssemblyRef, _seenAssemblyRefs, _ => new(name), onCreateAssemblyReference);
@@ -986,9 +1019,14 @@ namespace ILAssembler
             return true;
         }
 
-        public static FieldDefinitionEntity? CreateUnrecordedFieldDefinition(FieldAttributes attributes, TypeDefinitionEntity containingType, string name, BlobBuilder signature)
+        public static FieldDefinitionEntity CreateUnrecordedFieldDefinition(FieldAttributes attributes, TypeDefinitionEntity containingType, string name, BlobBuilder signature)
         {
-            var field = new FieldDefinitionEntity(attributes, containingType, name, signature);
+            return new FieldDefinitionEntity(attributes, containingType, name, signature);
+        }
+
+        public static bool TryAddFieldDefinitionToContainingType(FieldDefinitionEntity field)
+        {
+            // ECMA-335 II.22.15: duplicate identity is owner+name+signature, excluding CompilerControlled fields.
             bool allowDuplicate = (field.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.PrivateScope;
             if (!allowDuplicate)
             {
@@ -998,12 +1036,12 @@ namespace ILAssembler
                         && fieldDef.Signature.ContentEquals(field.Signature!)
                         && (fieldDef.Attributes & FieldAttributes.FieldAccessMask) != FieldAttributes.PrivateScope)
                     {
-                        return null;
+                        return false;
                     }
                 }
             }
             field.ContainingType.Fields.Add(field);
-            return field;
+            return true;
         }
 
         public static InterfaceImplementationEntity CreateUnrecordedInterfaceImplementation(TypeDefinitionEntity implementingType, TypeEntity interfaceType)
@@ -1640,6 +1678,31 @@ namespace ILAssembler
             return entity;
         }
 
+        /// <summary>
+        /// Removes custom attributes that were lowered to metadata bits or auxiliary table rows
+        /// by the pseudo custom attribute pass, and renumbers the handles of the survivors.
+        /// </summary>
+        /// <remarks>
+        /// Nothing in metadata refers to a CustomAttribute handle (a CustomAttribute can never be
+        /// the parent of another custom attribute), so removing rows is safe. Handles are still
+        /// reassigned so that they stay consistent with the emitted row numbers.
+        /// </remarks>
+        public void RemoveCustomAttributes(IReadOnlyCollection<CustomAttributeEntity> toRemove)
+        {
+            if (toRemove.Count == 0 || !_seenEntities.TryGetValue(TableIndex.CustomAttribute, out List<EntityBase>? entities))
+            {
+                return;
+            }
+
+            var removeSet = new HashSet<CustomAttributeEntity>(toRemove);
+            entities.RemoveAll(entity => entity is CustomAttributeEntity customAttribute && removeSet.Contains(customAttribute));
+
+            for (int i = 0; i < entities.Count; i++)
+            {
+                ((IHasHandle)entities[i]).SetHandle(MetadataTokens.EntityHandle(TableIndex.CustomAttribute, i + 1));
+            }
+        }
+
         public static MethodImplementationEntity CreateUnrecordedMethodImplementation(MethodDefinitionEntity methodBody, MemberReferenceEntity methodDeclaration)
         {
             return new MethodImplementationEntity(methodBody.ContainingType, methodBody, methodDeclaration);
@@ -1811,6 +1874,7 @@ namespace ILAssembler
             public string Name { get; }
             public TypeAttributes Attributes { get; set; }
             public TypeEntity? BaseType { get; set; }
+            public bool IsDefined { get; set; }
 
             public NamedElementList<GenericParameterEntity> GenericParameters { get; } = new();
 
@@ -1834,6 +1898,8 @@ namespace ILAssembler
             // ClassLayout table fields
             public int? PackingSize { get; set; }
             public int? ClassSize { get; set; }
+            public bool HasExplicitPackingSize { get; set; }
+            public bool HasExplicitClassSize { get; set; }
         }
 
         public sealed class TypeReferenceEntity(EntityBase resolutionScope, string @namespace, string name) : TypeEntity, IHasReflectionNotation
@@ -1948,13 +2014,19 @@ namespace ILAssembler
             /// </summary>
             public List<ExceptionRegion> ExceptionRegions { get; } = new();
 
+            /// <summary>
+            /// Gets whether the method has an IL body to write: instructions or exception regions. A method without
+            /// one (abstract, <c>pinvokeimpl</c>, runtime-implemented, or declared with an empty body) has RVA 0.
+            /// </summary>
+            public bool HasBody => MethodBody.CodeBuilder.Count != 0 || ExceptionRegions.Count != 0;
+
             public int MaxStack { get; set; } = 8;
 
             public (ModuleReferenceEntity ModuleName, string? EntryPointName, MethodImportAttributes Attributes)? MethodImportInformation { get; set; }
             public MethodImplAttributes ImplementationAttributes { get; set; }
 
             /// <summary>
-            /// Debug information for this method (sequence points, document).
+            /// Debug information for this method (sequence points and their documents).
             /// </summary>
             public MethodDebugInfo DebugInfo { get; } = new();
 
@@ -1981,7 +2053,7 @@ namespace ILAssembler
 
         public sealed class ParameterEntity(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor, int sequence) : EntityBase
         {
-            public ParameterAttributes Attributes { get; } = attributes;
+            public ParameterAttributes Attributes { get; set; } = attributes;
             public string? Name { get; } = name;
             public BlobBuilder MarshallingDescriptor { get; set; } = marshallingDescriptor;
             public bool HasCustomAttributes { get; set; }
@@ -2046,6 +2118,12 @@ namespace ILAssembler
             public EntityBase? Owner { get; set; }
             public EntityBase Constructor { get; } = constructor;
             public BlobBuilder Value { get; } = value;
+
+            /// <summary>
+            /// Source location of the originating <c>.custom</c> directive, used to report
+            /// diagnostics from the pseudo custom attribute lowering pass, which runs after parsing.
+            /// </summary>
+            public Location? Location { get; set; }
         }
 
         public sealed class MethodImplementationEntity(TypeDefinitionEntity type, EntityBase methodBody, MemberReferenceEntity methodDeclaration) : EntityBase
@@ -2057,7 +2135,7 @@ namespace ILAssembler
 
         public sealed class FieldDefinitionEntity(FieldAttributes attributes, TypeDefinitionEntity type, string name, BlobBuilder signature) : EntityBase
         {
-            public FieldAttributes Attributes { get; } = attributes;
+            public FieldAttributes Attributes { get; set; } = attributes;
             public TypeDefinitionEntity ContainingType { get; } = type;
             public string Name { get; } = name;
             public BlobBuilder Signature { get; } = signature;
@@ -2067,6 +2145,7 @@ namespace ILAssembler
 
             // FieldLayout table field (explicit field offset)
             public int? Offset { get; set; }
+            public bool HasExplicitOffset { get; set; }
 
             // Constant table entry
             public bool HasConstant { get; set; }
@@ -2081,7 +2160,7 @@ namespace ILAssembler
 
         public sealed class EventEntity(EventAttributes attributes, TypeEntity? type, string name) : EntityBase
         {
-            public EventAttributes Attributes { get; } = attributes;
+            public EventAttributes Attributes { get; set; } = attributes;
             public TypeEntity? Type { get; } = type;
             public string Name { get; } = name;
 
@@ -2157,12 +2236,19 @@ namespace ILAssembler
         }
 
         /// <summary>
-        /// Represents a sequence point mapping IL offset to source location.
+        /// Represents a sequence point: an IL offset, the source document it belongs to and the source span
+        /// it maps to.
         /// </summary>
         public readonly struct SequencePoint
         {
-            public SequencePoint(int ilOffset, int startLine, int startColumn, int endLine, int endColumn)
+            /// <summary>
+            /// Creates a sequence point at <paramref name="ilOffset"/> in the document at
+            /// <paramref name="documentIndex"/> of the compilation's <see cref="PdbDocumentTable"/>, mapping to the
+            /// given start and end line and column. A start line of <c>0xFEEFEE</c> makes it hidden.
+            /// </summary>
+            public SequencePoint(int documentIndex, int ilOffset, int startLine, int startColumn, int endLine, int endColumn)
             {
+                DocumentIndex = documentIndex;
                 ILOffset = ilOffset;
                 StartLine = startLine;
                 StartColumn = startColumn;
@@ -2170,29 +2256,68 @@ namespace ILAssembler
                 EndColumn = endColumn;
             }
 
+            /// <summary>
+            /// Gets the index in the compilation's <see cref="PdbDocumentTable"/> of the point's document: the
+            /// <c>.il</c> source the instruction is in when no <c>.line</c> directive is in effect, otherwise the
+            /// current document of that source.
+            /// </summary>
+            public int DocumentIndex { get; }
             public int ILOffset { get; }
             public int StartLine { get; }
             public int StartColumn { get; }
             public int EndLine { get; }
             public int EndColumn { get; }
-
-            /// <summary>
-            /// Creates a hidden sequence point (used for compiler-generated code).
-            /// </summary>
-            public static SequencePoint Hidden(int ilOffset) => new(ilOffset, 0xFEEFEE, 0, 0xFEEFEE, 0);
-
-            public bool IsHidden => StartLine == 0xFEEFEE;
+            public bool IsHidden => StartLine == System.Reflection.Metadata.SequencePoint.HiddenLine;
         }
 
         /// <summary>
-        /// Debug information for a method, including sequence points and local scopes.
+        /// Debug information for a method: the sequence points recorded as its instructions were emitted, in
+        /// increasing IL offset order, with at most one point per offset, and the local signature of its body. The
+        /// points of one method may belong to different documents. Points are recorded only when a PDB is requested.
         /// </summary>
         public sealed class MethodDebugInfo
         {
-            public string? DocumentPath { get; set; }
-            public Guid LanguageGuid { get; set; }
             public List<SequencePoint> SequencePoints { get; } = new();
+
+            /// <summary>
+            /// Gets or sets the local signature that the method body references, or a nil handle when the method
+            /// has no locals or no body. <see cref="WriteContentTo"/> sets it when it writes the body, before the
+            /// PDB is built.
+            /// </summary>
+            public StandaloneSignatureHandle LocalSignature { get; set; }
+
+            /// <summary>
+            /// Gets the lexical scopes of the method body, in the order they closed: each <c>{ }</c> block, then the
+            /// root scope, which spans the whole body and holds the method-level <c>.locals</c>. The PDB gets a
+            /// LocalScope row for each scope that declares a named local, as declared, and an empty scope or a
+            /// repeated name or slot is reported (<c>AddLocalScopes</c>). Recorded only when a PDB is requested;
+            /// otherwise empty, so none of this is checked without a PDB.
+            /// </summary>
+            public List<LocalScopeRecord> LocalScopes { get; } = new();
         }
+
+        /// <summary>
+        /// A closed lexical scope of a method body: the root scope or a <c>{ }</c> block, including the bodies of
+        /// <c>.try</c>, <c>catch</c>, <c>filter</c>, <c>finally</c> and <c>fault</c>.
+        /// </summary>
+        /// <param name="StartOffset">The IL offset at which the scope starts: 0 for the root scope, the offset at <c>{</c> for a block.</param>
+        /// <param name="EndOffset">The IL offset at which the scope ends: the body's size for the root scope, the offset at <c>}</c> for a block.</param>
+        /// <param name="Order">
+        /// The position of the scope in source order, counting the root scope as 0 and each block as it opens, so an
+        /// enclosing scope comes before the scopes it contains.
+        /// </param>
+        /// <param name="Variables">The named locals declared directly in the scope, in declaration order.</param>
+        public sealed record LocalScopeRecord(int StartOffset, int EndOffset, int Order, ImmutableArray<LocalVariableRecord> Variables)
+        {
+            /// <summary>Gets the length of the scope in bytes of IL.</summary>
+            public int Length => EndOffset - StartOffset;
+        }
+
+        /// <summary>A named local declared in a lexical scope.</summary>
+        /// <param name="Name">The name of the local.</param>
+        /// <param name="Slot">Its slot in the method's local signature.</param>
+        /// <param name="Location">Where the local is declared: its name in the <c>.locals</c> directive.</param>
+        public readonly record struct LocalVariableRecord(string Name, int Slot, Location Location);
 
         /// <summary>
         /// A deferred exception region entry. Stored during parsing and applied to the

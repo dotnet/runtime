@@ -58,6 +58,7 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs" Link="IL\Stubs\UnsafeIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeILCodeStreams.cs" Link="IL\Stubs\PInvokeILCodeStreams.cs" />
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\LinkageMetadata.cs" Link="Interop\IL\LinkageMetadata.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\Marshaller.cs" Link="Interop\IL\Marshaller.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshallerKind.cs" Link="Interop\IL\MarshallerKind.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs" Link="Interop\IL\MarshalHelpers.cs" />
@@ -95,6 +96,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithFunclets.cs" Link="Compiler\DependencyAnalysis\INodeWithFunclets.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\FuncletKind.cs" Link="Compiler\DependencyAnalysis\FuncletKind.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" Link="Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithLinkageMetadata.cs" Link="Compiler\DependencyAnalysis\INodeWithLinkageMetadata.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectDumper.cs" Link="Compiler\DependencyAnalysis\IObjectDumper.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" Link="Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" />
@@ -206,6 +208,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmSection.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmSections.cs" Link="Compiler\ObjectWriter\Wasm\WasmSections.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WebcilSection.cs" Link="Compiler\ObjectWriter\Wasm\WebcilSection.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmFunctionBodyDeduplicator.cs" Link="Compiler\ObjectWriter\WasmFunctionBodyDeduplicator.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmObjectWriter.cs" Link="Compiler\ObjectWriter\WasmObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WebCilObjectWriter.cs" Link="Compiler\ObjectWriter\WebCilObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmSymbolManager.cs" Link="Compiler\ObjectWriter\WasmSymbolManager.cs" />
@@ -282,7 +285,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugInfoTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GCRefMapBuilder.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GCRefMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\GenericLookupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelegateCtorSignature.cs" />
@@ -341,6 +343,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunkPortableEntrypoint.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmInterpreterToR2RThunkNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmMethodFrameIdentityNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmMethodRelativeVirtualIPNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmR2RToInterpreterThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmThunkArgLayout.cs" />

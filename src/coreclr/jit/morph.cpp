@@ -3117,6 +3117,9 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     {
         groupArrayRefWithIndex = false;
     }
+#elif defined(TARGET_WASM)
+    // Keep the constant offset outermost so it can fold into the memory instruction's memarg.
+    groupArrayRefWithIndex = varTypeIsGC(arrRef) && !varTypeIsStruct(elemTyp);
 #endif
 
     // Note the array reference may now be TYP_I_IMPL, TYP_BYREF, or TYP_REF
@@ -6421,7 +6424,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // transition. Only mark the block for GC Poll insertion on the first morph.
     if (fgGlobalMorph && call->IsUnmanaged() && call->IsSuppressGCTransition())
     {
-        compCurBB->SetFlags(BBF_HAS_SUPPRESSGC_CALL | BBF_GC_SAFE_POINT);
+        compCurBB->SetFlags(BBF_GC_SAFE_POINT);
         optMethodFlags |= OMF_NEEDS_GCPOLLS;
     }
 
@@ -6546,6 +6549,21 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                 else
                 {
                     argSetup = new (this, GT_COMMA) GenTreeOp(GT_COMMA, TYP_VOID, argSetup, setupArgNode);
+                }
+            }
+
+            // Evaluate the value before the new array checks, but after the array and index.
+            if ((value->gtFlags & GTF_OBS_EFFECT) != 0)
+            {
+                GenTree** operands[] = {&arr, &index, &value};
+                for (GenTree** operand : operands)
+                {
+                    TempInfo temp = fgMakeTemp(*operand);
+                    *operand      = temp.load;
+                    // The operand is already morphed and may have generated assertions.
+                    fgMorphTreeDone(temp.store);
+                    argSetup =
+                        argSetup == nullptr ? temp.store : gtNewOperNode(GT_COMMA, TYP_VOID, argSetup, temp.store);
                 }
             }
 
@@ -6906,18 +6924,14 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
         return nullptr;
     }
 
-    auto foldedCns = folded->AsIntCon();
-
-    cns1->SetIconValue(foldedCns->IconValue());
-    cns1->SetVNsFromNode(foldedCns);
-    cns1->SetFieldSeq(foldedCns->GetFieldSeq());
+    op1->AsOp()->gtOp2 = folded;
 
     op1 = tree->gtGetOp1();
     op1->SetVNsFromNode(tree);
 
     DEBUG_DESTROY_NODE(tree);
+    DEBUG_DESTROY_NODE(cns1);
     DEBUG_DESTROY_NODE(cns2);
-    DEBUG_DESTROY_NODE(foldedCns);
 
     return op1->AsOp();
 }
@@ -8051,7 +8065,7 @@ DONE_MORPHING_CHILDREN:
                 if ((op1op2->IsCnsIntOrI() && !op1op2->IsIconHandle()) || op1op2->IsCnsFltOrDbl())
                 {
                     // NEG(MUL(a, C)) => MUL(a, NEG(C))
-                    // NEG(DIV(a, C)) => DIV(a, NEG(C)), except when C = {-1, 1} for integral
+                    // NEG(DIV(a, C)) => DIV(a, NEG(C)), except when C = {-1, 1, signed minimum} for integral
 
                     bool canTransform = true;
 
@@ -8059,8 +8073,9 @@ DONE_MORPHING_CHILDREN:
                     {
                         if (mulOrDiv->OperIs(GT_DIV))
                         {
-                            ssize_t constVal = op1op2->AsIntCon()->IconValue();
-                            canTransform     = (constVal != -1) && (constVal != 1);
+                            int64_t constVal = op1op2->AsIntConCommon()->IntegralValue();
+                            int64_t minValue = mulOrDiv->TypeIs(TYP_INT) ? INT32_MIN : INT64_MIN;
+                            canTransform     = (constVal != -1) && (constVal != 1) && (constVal != minValue);
                         }
                         else
                         {
@@ -9083,7 +9098,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
 {
     assert(cmp->OperIsCmpCompare());
 
-    if (gtTreeHasSideEffects(cmp, GTF_SIDE_EFFECT))
+    if (gtTreeHasSideEffects(cmp, GTF_OBS_EFFECT))
     {
         return cmp;
     }
@@ -14914,17 +14929,18 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt, bool onlyEa
         const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
 
         assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const thenEdge = fgAddRefPred(remainderBlock, condBlock);
-        FlowEdge* const elseEdge = condBlock->GetTargetEdge();
-        condBlock->SetCond(thenEdge, elseEdge);
+        FlowEdge* const skipEdge = fgAddRefPred(remainderBlock, condBlock);
+        FlowEdge* const thenEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(skipEdge, thenEdge);
 
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
         elseBlock = nullptr;
 
+        // The reversed condition skips the true expr when the original condition is false.
         thenBlock->inheritWeightPercentage(condBlock, thenLikelihood);
         thenEdge->setLikelihood(thenLikelihood / 100.0);
-        elseEdge->setLikelihood(elseLikelihood / 100.0);
+        skipEdge->setLikelihood(elseLikelihood / 100.0);
     }
     else if (hasFalseExpr)
     {

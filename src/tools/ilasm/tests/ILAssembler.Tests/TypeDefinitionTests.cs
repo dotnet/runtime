@@ -184,7 +184,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void ExtendedLayout_SetsExtendedLayoutFlag()
         {
-            // Test the 'extended' class attribute (exercises MetadataExtensions.ExtendedLayout)
+            // Test the 'extended' class attribute.
             string source = """
                 .assembly extern mscorlib { }
                 .assembly test { }
@@ -892,6 +892,118 @@ namespace ILAssembler.Tests
             Assert.Equal(
                 [0x01, 0x00, 0x00, 0x00],
                 reader.GetBlobBytes(attribute.Value));
+        }
+
+        [Fact]
+        public void ClassReferencedBeforeDeclaration_ExtendsObject()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public User extends [mscorlib]System.Object
+                {
+                    .field public class Later f
+                }
+                .class public Later { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var later = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "Later");
+
+            Assert.Equal("Object", GetBaseTypeName(reader, later));
+        }
+
+        [Fact]
+        public void ValueTypeReferencedBeforeDeclaration_ExtendsValueType()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public User extends [mscorlib]System.Object
+                {
+                    .field public valuetype Later f
+                }
+                .class public value sealed Later
+                {
+                    .field public int32 x
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var later = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "Later");
+
+            Assert.Equal("ValueType", GetBaseTypeName(reader, later));
+        }
+
+        [Fact]
+        public void UnsealedValueTypeReferencedBeforeDeclaration_IsReported()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly test { }
+                .class public User extends [System.Runtime]System.Object
+                {
+                    .field public valuetype Later f
+                }
+                .class public sequential ansi beforefieldinit Later
+                    extends [System.Runtime]System.ValueType
+                {
+                    .field public int32 x
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.UnsealedValueType, error.Id);
+        }
+
+        [Fact]
+        public void SecondDeclarationOfAGenericType_KeepsOneGenericParameter()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public Twice<T> extends [mscorlib]System.Object { }
+                .class public Twice<T>
+                {
+                    .field public !T f
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var twice = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "Twice");
+
+            Assert.Single(twice.GetGenericParameters());
+            Assert.Equal("Object", GetBaseTypeName(reader, twice));
+        }
+
+        [Fact]
+        public void ModuleTypeDeclaration_HasNoBaseType()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class '<Module>'
+                {
+                    .field static int32 g
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var module = reader.GetTypeDefinition(Assert.Single(reader.TypeDefinitions));
+
+            Assert.Equal("<Module>", reader.GetString(module.Name));
+            Assert.True(module.BaseType.IsNil);
         }
 
         private static string GetBaseTypeName(MetadataReader reader, TypeDefinition type)

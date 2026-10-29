@@ -5571,7 +5571,7 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
         // op1 has side efects that can't be reordered.
         // Check for some special cases where we still may be able to swap.
 
-        if (secondNode->gtFlags & strictEffects)
+        if (secondNode->gtFlags & (strictEffects | GTF_ORDER_SIDEEFF))
         {
             // op2 has also has non reorderable side effects - can't swap.
             canSwap = false;
@@ -8869,10 +8869,15 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
         case GT_INTRINSIC:
             // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
-            // Currently, this is the only intrinsic that can throw an exception.
             if (AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType)
             {
                 return ExceptionSetFlags::NullReferenceException;
+            }
+
+            // The signed Log2 fallback throws ArgumentOutOfRangeException for negative inputs.
+            if (AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_Log2)
+            {
+                return ExceptionSetFlags::UnknownException;
             }
 
             return ExceptionSetFlags::None;
@@ -8950,6 +8955,11 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
                 // We currently don't try to avoid setting these flags and GTF_EXCEPT when
                 // we know that the operation in fact cannot overflow/divide by zero.
                 assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
+                flags |= ExceptionSetFlags::OverflowException | ExceptionSetFlags::DivideByZeroException;
+            }
+            else if ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))
+            {
+                // div/idiv fault on a zero divisor and on a quotient that doesn't fit.
                 flags |= ExceptionSetFlags::OverflowException | ExceptionSetFlags::DivideByZeroException;
             }
 #endif
@@ -11128,11 +11138,9 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
                                              CORINFO_METHOD_HANDLE   callerHandle,
                                              bool                    useParent)
 {
-    const bool      mustRestoreHandle     = true;
-    bool* const     pRuntimeLookup        = nullptr;
     bool            usingReadyToRunHelper = false;
     CorInfoHelpFunc helper                = CORINFO_HELP_UNDEF;
-    GenTree*        opHandle = impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, useParent);
+    GenTree*        opHandle              = impTokenToHandle(pResolvedToken, nullptr, useParent);
 
 #ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP lookup = {};
@@ -20689,7 +20697,7 @@ ValueSize GenTreeIndir::ValueSize() const
 // Return Value:
 //    True if this immediate value requires us to record a relocation for it; false otherwise.
 
-bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
+bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp) const
 {
     return comp->opts.compReloc && IsIconHandle();
 }
@@ -21887,6 +21895,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             {
                 GenTree* valueArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
                 castHnd           = gtGetClassHandle(valueArg, pIsExact, pIsNonNull);
+
+                // A failed isinst returns null even for a non-null value, only cast helpers preserve non-nullness.
+                if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
+                    (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY))
+                {
+                    *pIsNonNull = false;
+                }
             }
 
             // We don't know at jit time if the cast will succeed or fail, but if it
@@ -32419,6 +32434,13 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
                 gtFlags |= GTF_EXCEPT;
                 break;
             }
+
+            case NI_X86Base_DivRem:
+            case NI_X86Base_X64_DivRem:
+            {
+                gtFlags |= GTF_EXCEPT;
+                break;
+            }
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)
@@ -35326,7 +35348,7 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
 
     if (IsIntegralConst())
     {
-        return AsIntConCommon()->IntegralValue() >= 0;
+        return !AsIntConCommon()->ImmedValNeedsReloc(comp) && (AsIntConCommon()->IntegralValue() >= 0);
     }
 
     if (OperIs(GT_LCL_VAR))
@@ -35443,6 +35465,18 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
     return true;
 }
 
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
+//------------------------------------------------------------------------
+// GenTree::IsSveMaskOperand:
+//   Return true if this node can be represented directly as an SVE predicate.
+//
+bool GenTree::IsSveMaskOperand() const
+{
+    return OperIsConvertMaskToVector() || varTypeIsMask(this) || IsVectorZero();
+}
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
+
 //------------------------------------------------------------------------
 // gtFoldExprHWIntrinsic: Attempt to fold a HWIntrinsic
 //
@@ -35452,7 +35486,6 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 // Return Value:
 //    folded expression if it could be folded, else the original tree
 //
-#if defined(FEATURE_HW_INTRINSICS)
 GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
     assert(!optValnumCSE_phase);
@@ -35733,8 +35766,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         for (size_t i = firstVectorOperand; (i <= opCount) && canFold; i++)
         {
             GenTree* operand = tree->Op(i);
-            canFold          = operand->OperIsConvertMaskToVector() &&
-                      (genTypeSize(operand->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType));
+            canFold          = operand->IsSveMaskOperand() &&
+                      (!operand->OperIsConvertMaskToVector() ||
+                       (genTypeSize(operand->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType)));
         }
 
         if (canFold)
@@ -37239,20 +37273,20 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     // op2 = op2 & op1
                     simdmask_t result = {};
-                    EvaluateBinaryMask<simd16_t>(GT_AND, false, simdBaseType, &result, op2->AsMskCon()->gtSimdMaskVal,
-                                                 op1->AsMskCon()->gtSimdMaskVal);
+                    EvaluateBinaryMask(GT_AND, false, simdBaseType, simdSize, &result, op2->AsMskCon()->gtSimdMaskVal,
+                                       op1->AsMskCon()->gtSimdMaskVal);
                     op2->AsMskCon()->gtSimdMaskVal = result;
 
                     // op3 = op3 & ~op1
                     result = {};
-                    EvaluateBinaryMask<simd16_t>(GT_AND_NOT, false, simdBaseType, &result,
-                                                 op3->AsMskCon()->gtSimdMaskVal, op1->AsMskCon()->gtSimdMaskVal);
+                    EvaluateBinaryMask(GT_AND_NOT, false, simdBaseType, simdSize, &result,
+                                       op3->AsMskCon()->gtSimdMaskVal, op1->AsMskCon()->gtSimdMaskVal);
                     op3->AsMskCon()->gtSimdMaskVal = result;
 
                     // op2 = op2 | op3
                     result = {};
-                    EvaluateBinaryMask<simd16_t>(GT_OR, false, simdBaseType, &result, op2->AsMskCon()->gtSimdMaskVal,
-                                                 op3->AsMskCon()->gtSimdMaskVal);
+                    EvaluateBinaryMask(GT_OR, false, simdBaseType, simdSize, &result, op2->AsMskCon()->gtSimdMaskVal,
+                                       op3->AsMskCon()->gtSimdMaskVal);
                     op2->AsMskCon()->gtSimdMaskVal = result;
 
                     resultNode = op2;

@@ -657,6 +657,7 @@ MethodDesc *EEDbgInterfaceImpl::LoadMethodDef(Module* pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -824,6 +825,7 @@ TypeHandle EEDbgInterfaceImpl::LoadClass(Module *pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -843,6 +845,7 @@ TypeHandle EEDbgInterfaceImpl::LoadInstantiation(Module *pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -858,6 +861,7 @@ TypeHandle EEDbgInterfaceImpl::LoadArrayType(CorElementType et,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -874,6 +878,7 @@ TypeHandle EEDbgInterfaceImpl::LoadPointerOrByrefType(CorElementType et,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -887,6 +892,7 @@ TypeHandle EEDbgInterfaceImpl::LoadFnptrType(TypeHandle *inst,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -900,6 +906,7 @@ TypeHandle EEDbgInterfaceImpl::LoadElementType(CorElementType et)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1249,6 +1256,7 @@ HRESULT EEDbgInterfaceImpl::SetIPFromSrcToDst(Thread *pThread,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

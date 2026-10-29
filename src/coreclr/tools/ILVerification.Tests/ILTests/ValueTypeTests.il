@@ -39,3 +39,58 @@
         ret
     }
 }
+
+.class public sequential ansi sealed beforefieldinit ByRefLikeType
+       extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+    .size 1
+}
+
+.class public auto ansi beforefieldinit ByRefLikeTests
+       extends [System.Runtime]System.Object
+{
+    .method public static void ByRefLike.Box_Invalid_BoxByRef(valuetype ByRefLikeType v) cil managed
+    {
+        ldarg.0
+        box        ByRefLikeType
+        pop
+        ret
+    }
+
+    .method public static void ByRefLike.BoxBrtrue_Invalid_BoxByRef(valuetype ByRefLikeType v) cil managed
+    {
+        ldarg.0
+        box        ByRefLikeType
+        brtrue.s   DONE
+    DONE:
+        ret
+    }
+
+    .method public static void ByRefLike.BoxIsinstBrfalse_Invalid_BoxByRef(valuetype ByRefLikeType v) cil managed
+    {
+        ldarg.0
+        box        ByRefLikeType
+        isinst     [System.Runtime]System.Object
+        brfalse.s  DONE
+    DONE:
+        ret
+    }
+
+    .method public static void ByRefLike.BoxUnboxAny_Invalid_BoxByRef(valuetype ByRefLikeType v) cil managed
+    {
+        ldarg.0
+        box        ByRefLikeType
+        unbox.any  ByRefLikeType
+        pop
+        ret
+    }
+
+    .method public static void ByRefLike.NewArray_Invalid_ArrayByRef() cil managed
+    {
+        ldc.i4.1
+        newarr     ByRefLikeType
+        pop
+        ret
+    }
+}

@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 31
+#define READYTORUN_MAJOR_VERSION 33
 #define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 26
+#define MINIMUM_READYTORUN_MAJOR_VERSION 33
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -80,6 +80,11 @@
 // R2R Version 30 requires implicit byref arguments to always be outside of the GC heap
 // R2R Version 31 adds READYTORUN_FIXUP_MethodEntry_ReadyToRun for initializing a
 // method's ReadyToRun entry point and fixups.
+// R2R Version 31.1 adds READYTORUN_FLAG_SINGLE_THREADED, which records that the image lays out [ThreadStatic] fields as regular statics
+// for a runtime built without FEATURE_MULTITHREADING.
+// R2R Version 33 requires contextual THIS_REF/THIS_BYREF tokens in instance-call
+// GCRefMaps, moves VASIG_COOKIE from 5 to 7, and prefixes map-bearing import
+// signatures with their GCRefMaps.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -121,6 +126,7 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_STRIPPED_INLINING_INFO      = 0x00000400,   // Inlining info has been stripped from the image
     READYTORUN_FLAG_STRIPPED_DEBUG_INFO         = 0x00000800,   // Debug info has been stripped from the image
     READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS  = 0x00001000,   // Code in this image verifies that GC mode transitions are legal. WebAssembly only; its catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
+    READYTORUN_FLAG_SINGLE_THREADED             = 0x00002000,   // The image targets a single-threaded runtime (no FEATURE_MULTITHREADING) and lays out [ThreadStatic] fields as regular statics.
 };
 
 enum class ReadyToRunSectionType : uint32_t
@@ -180,6 +186,7 @@ enum class ReadyToRunImportSectionFlags : uint16_t
     None  = 0x0000,
     Eager = 0x0001, // Fixups must be resolved at module load time before any code in the module runs.
     PCode = 0x0004, // Section contains pointers to code
+    GCRefMap = 0x0008, // Each signature is prefixed by its argument GC reference map.
 };
 
 // All values in this enum should within a nibble (4 bits).

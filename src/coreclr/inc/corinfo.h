@@ -465,6 +465,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE,
     CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE,
+    CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED,
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED,
     CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR,
     CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR,
     CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR,
@@ -923,6 +925,7 @@ enum class CorInfoReloc
                                            // e.g. in R2R scenarios as an offset from __image_base
     WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
     WASM_METHOD_RELATIVE_VIRTUAL_IP_I32, // Wasm: the current method's virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
+    WASM_METHOD_FRAME_IDENTITY_SLEB, // Wasm: the current method's runtime-specific shadow-frame identity, encoded as a 5-byte varint32.
 };
 
 enum CorInfoGCType

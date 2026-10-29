@@ -97,6 +97,9 @@
     <Compile Include="..\..\Common\Compiler\ProxyTypeMapObjectNode.cs" Link="Compiler\DependencyAnalysis\ProxyTypeMapObjectNode.cs" />
     <Compile Include="..\..\Common\Compiler\ExternalTypeMapObjectNode.cs" Link="Compiler\DependencyAnalysis\ExternalTypeMapObjectNode.cs" />
 
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\LinkageMetadata.cs">
+      <Link>Interop\IL\LinkageMetadata.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs">
       <Link>Interop\IL\MarshalHelpers.cs</Link>
     </Compile>
@@ -333,6 +336,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\WasmWellKnownGlobalSymbolNode.cs" Link="Compiler\DependencyAnalysis\WasmWellKnownGlobalSymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\NodeFactory.Wasm.cs" Link="Compiler\DependencyAnalysis\NodeFactory.Wasm.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" Link="Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithLinkageMetadata.cs" Link="Compiler\DependencyAnalysis\INodeWithLinkageMetadata.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\Register.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\Register.cs" />
@@ -378,6 +382,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeDataLayoutMode.cs" Link="Compiler\ObjectWriter\CodeDataLayoutMode.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmRelocatableObjectWriter.cs" Link="Compiler\ObjectWriter\WasmRelocatableObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmFunctionBodyDeduplicator.cs" Link="Compiler\ObjectWriter\WasmFunctionBodyDeduplicator.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmObjectWriter.cs" Link="Compiler\ObjectWriter\WasmObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmDataSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmDataSection.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmDataSegmentEmitter.cs" Link="Compiler\ObjectWriter\Wasm\WasmDataSegmentEmitter.cs" />
