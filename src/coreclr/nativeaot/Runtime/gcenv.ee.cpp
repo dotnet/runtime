@@ -28,7 +28,7 @@
 
 #include "daccess.h"
 
-GPTR_IMPL(MethodTable, g_pFreeObjectEEType);
+GPTR_IMPL(MethodTable, g_pFreeObjectMethodTable);
 
 #ifndef DACCESS_COMPILE
 
@@ -730,8 +730,8 @@ void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint
 
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
-    assert(g_pFreeObjectEEType != nullptr);
-    return (MethodTable*)g_pFreeObjectEEType;
+    assert(g_pFreeObjectMethodTable != nullptr);
+    return (MethodTable*)g_pFreeObjectMethodTable;
 }
 
 bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value)
