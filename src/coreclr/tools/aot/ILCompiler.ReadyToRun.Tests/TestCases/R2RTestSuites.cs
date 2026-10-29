@@ -13,6 +13,7 @@ using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCases;
 
@@ -89,6 +90,104 @@ public class R2RTestSuites
                 Assert.Contains(method.Fixups ?? Array.Empty<FixupCell>(),
                     fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle &&
                         fixup.Signature.ToString(formatting).Contains(expectedType, StringComparison.Ordinal));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ImportSignaturesContainGCRefMaps(bool composite)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(ImportSignaturesContainGCRefMaps),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ImportSignaturesContainGCRefMaps),
+            [
+                new(nameof(ImportSignaturesContainGCRefMaps), [new CrossgenAssembly(input)])
+                {
+                    Options = composite ? [Crossgen2Option.Composite] : [],
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            int mapCount = 0;
+            int multiByteMapCount = 0;
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                bool hasMaps = section.Type == ReadyToRunImportSectionType.StubDispatch;
+                Assert.Equal(hasMaps, (section.Flags & ReadyToRunImportSectionFlags.GCRefMap) != 0);
+                Assert.Equal(0, section.AuxiliaryDataRVA);
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    int start = reader.GetOffset((int)entry.SignatureRVA);
+                    int signature = entry.GetSignatureOffset(reader);
+                    if (hasMaps)
+                    {
+                        Assert.True(entry.GCRefMapSize > 0);
+                        for (int offset = start; offset < signature - 1; offset++)
+                        {
+                            Assert.NotEqual(0, reader.Image[offset] & 0x80);
+                        }
+                        Assert.Equal(0, reader.Image[signature - 1] & 0x80);
+                        mapCount++;
+                        if (entry.GCRefMapSize > 1)
+                            multiByteMapCount++;
+                    }
+                    else
+                    {
+                        Assert.Equal(0, entry.GCRefMapSize);
+                        Assert.Null(entry.GCRefMap);
+                    }
+                    Assert.Equal((byte)entry.Signature.FixupKind, (byte)(reader.Image[signature] & 0x7f));
+                }
+            }
+            Assert.True(mapCount > 0);
+            Assert.True(multiByteMapCount > 0);
+        }
+    }
+
+    [Fact]
+    public void CallSignaturesDoNotRequireTypeHandleFixups()
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(CallSignaturesDoNotRequireTypeHandleFixups),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CallSignaturesDoNotRequireTypeHandleFixups),
+            [
+                new(nameof(CallSignaturesDoNotRequireTypeHandleFixups), [new CrossgenAssembly(input)])
+                {
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Webcil.WasmWebcilModule", "CallSignatureOnlyValue",
+                out string diagnostic), diagnostic);
+
+            SignatureFormattingOptions formattingOptions = new();
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    if (entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle)
+                    {
+                        Assert.DoesNotContain("SignatureOnlyValue", entry.Signature.ToString(formattingOptions));
+                    }
+                }
             }
         }
     }
@@ -265,6 +364,93 @@ public class R2RTestSuites
                         signature.ToString(formatting) == $"{declaringType} (TYPE_HANDLE)");
                 }
             }
+        }
+    }
+
+    [Theory]
+    [InlineData(32, new byte[] { 0x57 }, 7)]
+    [InlineData(33, new byte[] { 0x57 }, 5)]
+    [InlineData(33, new byte[] { 0x5f }, 6)]
+    [InlineData(33, new byte[] { 0xe7, 0x08 }, 7)]
+    public void GCRefMapTokensFollowFormatVersion(ushort majorVersion, byte[] blob, int expectedToken)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(GCRefMapTokensFollowFormatVersion),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(GCRefMapTokensFollowFormatVersion),
+            [
+                new(nameof(GCRefMapTokensFollowFormatVersion), [new CrossgenAssembly(input)])
+                {
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            ReadyToRunImportSection.ImportSectionEntry entry = reader.ImportSections
+                .SelectMany(section => section.Entries).First(entry => entry.GCRefMapSize > 0);
+            int offset = reader.GetOffset((int)entry.SignatureRVA);
+            ushort originalVersion = reader.ReadyToRunHeader.MajorVersion;
+            byte[] originalBytes = reader.Image.AsSpan(offset, blob.Length).ToArray();
+            try
+            {
+                reader.ReadyToRunHeader.MajorVersion = majorVersion;
+                blob.CopyTo(reader.Image, offset);
+                GCRefMapDecoder decoder = new(reader, offset);
+                Assert.Equal((CORCOMPILE_GCREFMAP_TOKENS)expectedToken, decoder.ReadToken());
+                Assert.Equal(1, decoder.CurrentPos());
+                Assert.Equal(CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF, decoder.ReadToken());
+                Assert.Equal(2, decoder.CurrentPos());
+                Assert.True(decoder.AtEnd());
+            }
+            finally
+            {
+                reader.ReadyToRunHeader.MajorVersion = originalVersion;
+                originalBytes.CopyTo(reader.Image, offset);
+            }
+        }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsXArchTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ContextualReceiverMapsPreserveCallsiteKind(bool interior)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(ContextualReceiverMapsPreserveCallsiteKind),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ContextualReceiverMapsPreserveCallsiteKind),
+            [
+                new(nameof(ContextualReceiverMapsPreserveCallsiteKind), [new CrossgenAssembly(input)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            string typeName = interior ? "ReceiverMapValue.RoundTrip" : "IReceiverMap.RoundTrip";
+            ReadyToRunImportSection.ImportSectionEntry entry = Assert.Single(
+                reader.ImportSections.SelectMany(section => section.Entries),
+                entry => entry.Signature?.ToString(new SignatureFormattingOptions())
+                    .Contains(typeName, StringComparison.Ordinal) == true);
+            Assert.NotNull(entry.GCRefMap);
+            GCRefMapEntry receiver = Assert.Single(entry.GCRefMap.Entries,
+                entry => entry.Token is CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_REF or
+                    CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_BYREF);
+            Assert.Equal(interior ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_BYREF :
+                CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_REF, receiver.Token);
+            Assert.Equal(8, entry.GCRefMap.Entries.Count(entry => entry.Token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF));
+            Assert.Single(entry.GCRefMap.Entries, entry => entry.Token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR);
         }
     }
 
@@ -765,7 +951,7 @@ public class R2RTestSuites
                 importEntries,
                 entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.InjectStringThunks);
 
-            int offset = reader.GetOffset((int)injectStringThunks.SignatureRVA);
+            int offset = injectStringThunks.GetSignatureOffset(reader);
             Assert.Equal((byte)ReadyToRunFixupKind.InjectStringThunks, image[offset++]);
 
             ReadOnlySpan<byte> thunkKey = "Viiiii"u8;
@@ -1487,6 +1673,37 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasAsyncVariant(reader, "SyncTaskWithCompiledAsyncVariant", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "SyncTaskWithCompiledAsyncVariant", out diag), diag);
         }
+    }
+
+    /// <summary>
+    /// --strip-il-bodies only applies to composite component assemblies, so crossgen2 must
+    /// reject it for a non-composite compile instead of crashing.
+    /// </summary>
+    [Fact]
+    public void NonCompositeStripILBodiesIsRejected()
+    {
+        var stripILBodies = new CompiledAssembly
+        {
+            AssemblyName = nameof(NonCompositeStripILBodiesIsRejected),
+            SourceResourceNames =
+            [
+                "RuntimeAsync/StripILBodies.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        var ex = Assert.ThrowsAny<XunitException>(() => new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(NonCompositeStripILBodiesIsRejected),
+            [
+                new(nameof(NonCompositeStripILBodiesIsRejected), [new CrossgenAssembly(stripILBodies)])
+                {
+                    Options = [Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
+                },
+            ])));
+
+        Assert.Contains("--strip-il-bodies requires --composite", ex.Message);
+        Assert.DoesNotContain(nameof(NullReferenceException), ex.Message);
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsIosArm64Target))]

@@ -504,9 +504,6 @@
     <Compile Include="$(RuntimeBasePath)System\Runtime\DispatchResolve.cs">
       <Link>Runtime.Base\src\System\Runtime\DispatchResolve.cs</Link>
     </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\GCStress.cs">
-      <Link>Runtime.Base\src\System\Runtime\GCStress.cs</Link>
-    </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\__Finalizer.cs" Condition="'$(TargetsWasm)' != 'true'">
       <Link>Runtime.Base\src\System\Runtime\__Finalizer.cs</Link>
     </Compile>

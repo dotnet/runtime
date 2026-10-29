@@ -222,58 +222,6 @@ void * Thread::GetCurrentThreadPInvokeReturnAddress()
 }
 #endif // !DACCESS_COMPILE
 
-#if defined(FEATURE_GC_STRESS) & !defined(DACCESS_COMPILE)
-void Thread::SetRandomSeed(uint32_t seed)
-{
-    ASSERT(!IsStateSet(TSF_IsRandSeedSet));
-    m_uRand = seed;
-    SetState(TSF_IsRandSeedSet);
-}
-
-// Generates pseudo random numbers in the range [0, 2^31)
-// using only multiplication and addition
-uint32_t Thread::NextRand()
-{
-    // Uses Carta's algorithm for Park-Miller's PRNG:
-    // x_{k+1} = 16807 * x_{k} mod (2^31-1)
-
-    uint32_t hi,lo;
-
-    // (high word of seed) * 16807 - at most 31 bits
-    hi = 16807 * (m_uRand >> 16);
-    // (low word of seed) * 16807 - at most 31 bits
-    lo = 16807 * (m_uRand & 0xFFFF);
-
-    // Proof that below operations (multiplication and addition only)
-    // are equivalent to the original formula:
-    //    x_{k+1} = 16807 * x_{k} mod (2^31-1)
-    // We denote hi2 as the low 15 bits in hi,
-    //       and hi1 as the remaining 16 bits in hi:
-    // (hi                 * 2^16 + lo) mod (2^31-1) =
-    // ((hi1 * 2^15 + hi2) * 2^16 + lo) mod (2^31-1) =
-    // ( hi1 * 2^31 + hi2 * 2^16  + lo) mod (2^31-1) =
-    // ( hi1 * (2^31-1) + hi1 + hi2 * 2^16 + lo) mod (2^31-1) =
-    // ( hi2 * 2^16 + hi1 + lo ) mod (2^31-1)
-
-    // lo + (hi2 * 2^16)
-    lo += (hi & 0x7FFF) << 16;
-    // lo + (hi2 * 2^16) + hi1
-    lo += (hi >> 15);
-    // modulo (2^31-1)
-    if (lo > 0x7fffFFFF)
-        lo -= 0x7fffFFFF;
-
-    m_uRand = lo;
-
-    return m_uRand;
-}
-
-bool Thread::IsRandInited()
-{
-    return IsStateSet(TSF_IsRandSeedSet);
-}
-#endif // FEATURE_GC_STRESS & !DACCESS_COMPILE
-
 PTR_ExInfo Thread::GetCurExInfo()
 {
     ValidateExInfoStack();
@@ -589,18 +537,11 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 #ifdef FEATURE_HIJACK
 
 EXTERN_C void RhpGcProbeHijack();
-EXTERN_C void RhpGcStressHijack();
 
 // static
 bool Thread::IsHijackTarget(void* address)
 {
-    if (PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack) == address)
-        return true;
-#ifdef FEATURE_GC_STRESS
-    if (&RhpGcStressHijack == address)
-        return true;
-#endif // FEATURE_GC_STRESS
-    return false;
+    return PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack) == address;
 }
 
 void Thread::Hijack()
@@ -715,66 +656,6 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHij
     pThread->HijackReturnAddress(
         pThreadContext,
         PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack));
-}
-
-#ifdef FEATURE_GC_STRESS
-// This is a helper called from RhpHijackForGcStress which will place a GC Stress
-// hijack on this thread's call stack. This is never called from another thread.
-// static
-void Thread::HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx)
-{
-    Thread * pCurrentThread = ThreadStore::GetCurrentThread();
-
-    // don't hijack for GC stress if we're in a "no GC stress" region
-    if (pCurrentThread->IsSuppressGcStressSet())
-        return;
-
-    RuntimeInstance * pInstance = GetRuntimeInstance();
-
-    uintptr_t ip = pSuspendCtx->GetIp();
-
-    bool bForceGC = g_pRhConfig->GetGcStressThrottleMode() == 0;
-    // we enable collecting statistics by callsite even for stochastic-only
-    // stress mode. this will force a stack walk, but it's worthwhile for
-    // collecting data (we only actually need the IP when
-    // (g_pRhConfig->GetGcStressThrottleMode() & 1) != 0)
-    if (!bForceGC)
-    {
-        StackFrameIterator sfi(pCurrentThread, pSuspendCtx);
-        if (sfi.IsValid())
-        {
-            pCurrentThread->Unhijack();
-            sfi.CalculateCurrentMethodState();
-            // unwind to method below the one whose epilog set up the hijack
-            sfi.Next();
-            if (sfi.IsValid())
-            {
-                ip = sfi.GetRegisterSet()->GetIP();
-            }
-        }
-    }
-    if (bForceGC || pInstance->ShouldHijackCallsiteForGcStress(ip))
-    {
-        pCurrentThread->HijackReturnAddress(pSuspendCtx, &RhpGcStressHijack);
-    }
-}
-#endif // FEATURE_GC_STRESS
-
-// This function is called from a thread to place a return hijack onto its own stack for GC stress cases
-// via Thread::HijackForGcStress above. The only constraint on the suspension is that the
-// stack be crawlable enough to yield the location of the return address.
-void Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction)
-{
-    if (IsDoNotTriggerGcSet())
-        return;
-
-    StackFrameIterator frameIterator(this, pSuspendCtx);
-    if (!frameIterator.IsValid())
-    {
-        return;
-    }
-
-    HijackReturnAddressWorker(&frameIterator, pfnHijackFunction);
 }
 
 // This function is called in one of two scenarios:
@@ -1011,47 +892,6 @@ void Thread::ClearState(ThreadStateFlags flags)
 {
     PalInterlockedAnd(&m_ThreadStateFlags, ~flags);
 }
-
-bool Thread::IsSuppressGcStressSet()
-{
-    return IsStateSet(TSF_SuppressGcStress);
-}
-
-void Thread::SetSuppressGcStress()
-{
-    ASSERT(!IsStateSet(TSF_SuppressGcStress));
-    SetState(TSF_SuppressGcStress);
-}
-
-void Thread::ClearSuppressGcStress()
-{
-    ASSERT(IsStateSet(TSF_SuppressGcStress));
-    ClearState(TSF_SuppressGcStress);
-}
-
-#endif //!DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
-#ifdef FEATURE_GC_STRESS
-#ifdef HOST_X86 // the others are implemented in assembly code to avoid trashing the argument registers
-EXTERN_C void FASTCALL RhpSuppressGcStress()
-{
-    ThreadStore::GetCurrentThread()->SetSuppressGcStress();
-}
-#endif // HOST_X86
-
-EXTERN_C void FASTCALL RhpUnsuppressGcStress()
-{
-    ThreadStore::GetCurrentThread()->ClearSuppressGcStress();
-}
-#else
-EXTERN_C void FASTCALL RhpSuppressGcStress()
-{
-}
-EXTERN_C void FASTCALL RhpUnsuppressGcStress()
-{
-}
-#endif // FEATURE_GC_STRESS
 
 // Standard calling convention variant and actual implementation for RhpWaitForGC
 EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)

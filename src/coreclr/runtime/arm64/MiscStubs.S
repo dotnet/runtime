@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <unixasmmacros.inc>
-#include "AsmOffsets.inc"
+#include "AsmMacros_Shared.h"
 
 // void* PacStripPtr(void *);
 // This function strips the pointer of PAC info that is passed as an argument.
@@ -39,3 +38,11 @@
         mov x0, x17
         ret
     LEAF_END PacAuthPtr, _TEXT
+
+LEAF_ENTRY RhpGcPoll, _TEXT
+    PREPARE_EXTERNAL_VAR_INDIRECT_W G_TRAP_THREADS, 0
+    cbnz    w0, LOCAL_LABEL(RhpGcPoll_RarePath)
+    ret
+LOCAL_LABEL(RhpGcPoll_RarePath):
+    TAILCALL_GC_POLL_RARE
+LEAF_END RhpGcPoll, _TEXT
