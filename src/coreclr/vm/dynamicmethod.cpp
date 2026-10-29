@@ -213,9 +213,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     CONTRACTL
     {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(psig));
         PRECONDITION(sigSize > 0);
     }
@@ -259,6 +257,8 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
                     | DynamicMethodDesc::FlagStatic
                     | DynamicMethodDesc::FlagIsLCGMethod);
 
+    // LCG signatures contain only types supplied by the managed API, which are already loaded.
+    pNewMD->SetNativeImageDependenciesPrepared();
 
     // Note: Reset has THROWS contract since it may allocate jump stub and on WASM parses the signature
     // It will never throw here for jump stubs since it will always reuse the existing jump stub,

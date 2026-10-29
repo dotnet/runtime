@@ -95,7 +95,7 @@ namespace ILAssembler
         private static bool ParseIntegerValue(ReadOnlySpan<char> value, out long result)
             => ParseIntegerValue(value, out result, out _);
 
-        private static bool ParseIntegerValue(ReadOnlySpan<char> value, out long result, out bool invalidOctal)
+        private static bool ParseIntegerValue(ReadOnlySpan<char> value, out long result, out bool invalidOctal, bool restrictToInt32 = false)
         {
             NumberStyles parseStyle = NumberStyles.None;
             bool negate = false;
@@ -115,6 +115,8 @@ namespace ILAssembler
             {
                 // Octal support isn't built-in, so we'll do it manually.
                 result = 0;
+                long maximum = negate ? -(long)int.MinValue : uint.MaxValue;
+                bool overflow = false;
                 for (int i = 0; i < value.Length; i++)
                 {
                     int digitValue = value[i] - '0';
@@ -124,6 +126,13 @@ namespace ILAssembler
                         invalidOctal = true;
                         return false;
                     }
+                    if (restrictToInt32 && (overflow || result > (maximum - digitValue) / 8))
+                    {
+                        // Keep validating the remaining digits so invalid octal takes precedence.
+                        overflow = true;
+                        continue;
+                    }
+
                     if (i != 0)
                     {
                         result *= 8;
@@ -131,8 +140,16 @@ namespace ILAssembler
 
                     result += digitValue;
                 }
+
                 if (negate) result = -result;
-                return true;
+                return !overflow;
+            }
+
+            if (restrictToInt32)
+            {
+                bool parsed = uint.TryParse(value, parseStyle, CultureInfo.InvariantCulture, out uint magnitude);
+                result = negate ? -(long)magnitude : magnitude;
+                return parsed && result >= int.MinValue;
             }
 
             bool success = long.TryParse(value.ToString(), parseStyle, CultureInfo.InvariantCulture, out result);
@@ -185,13 +202,13 @@ namespace ILAssembler
         internal int ParseInt32(IToken token)
         {
             ReadOnlySpan<char> value = token.Text.AsSpan();
-            if (!ParseIntegerValue(value, out long num, out bool invalidOctal))
+            if (!ParseIntegerValue(value, out long num, out bool invalidOctal, restrictToInt32: true))
             {
                 ReportIntegerParseError(token, invalidOctal);
                 return 0;
             }
 
-            return (int)num;
+            return unchecked((int)num);
         }
 
 

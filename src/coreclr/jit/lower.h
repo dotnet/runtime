@@ -490,8 +490,10 @@ private:
     void     LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
     GenTree* LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
     GenTree* LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
-    GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
-    GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicCreateWithInserts(GenTreeHWIntrinsic* node, const simd_t* simdVal, simdmask_t cnsMask);
+    static unsigned NonZeroConstantElementCount(const simd_t* simdVal, simdmask_t cnsMask, var_types simdBaseType);
+    GenTree*        LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
+    GenTree*        LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
     void     LowerFusedMultiplyOp(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
@@ -507,8 +509,12 @@ private:
     void     LowerBswapOp(GenTreeOp* node);
     GenTree* LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node);
 #elif defined(TARGET_ARM64)
-    bool     IsValidConstForMovImm(GenTreeHWIntrinsic* node);
-    void     LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
+    bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
+    void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    GenTree* TryLowerSveConvertVectorToMask(GenTreeHWIntrinsic* node);
+    bool     TryLowerSvePredicateBitwiseClear(GenTreeHWIntrinsic* node, NamedIntrinsic* intrinsicId, genTreeOps* oper);
+#endif // FEATURE_MASKED_HW_INTRINSICS
     void     LowerModPow2(GenTree* node);
     GenTree* LowerCnsMask(GenTreeMskCon* mask);
     bool     TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);

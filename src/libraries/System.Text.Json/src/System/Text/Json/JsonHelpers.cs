@@ -336,11 +336,9 @@ namespace System.Text.Json
                 out ReadOnlySpan<byte> rightFractional,
                 out int rightExponent);
 
-            int nDigits;
             if (leftIsNegative != rightIsNegative ||
                 leftExponent != rightExponent ||
-                (nDigits = (leftIntegral.Length + leftFractional.Length)) !=
-                            rightIntegral.Length + rightFractional.Length)
+                leftIntegral.Length + leftFractional.Length != rightIntegral.Length + rightFractional.Length)
             {
                 return false;
             }
@@ -520,43 +518,14 @@ namespace System.Text.Json
 
                 static int IndexOfLastLeadingZero(ReadOnlySpan<byte> span)
                 {
-#if NET
                     int firstNonZero = span.IndexOfAnyExcept((byte)'0');
                     return firstNonZero < 0 ? span.Length - 1 : firstNonZero - 1;
-#else
-                    for (int i = 0; i < span.Length; i++)
-                    {
-                        if (span[i] != '0')
-                        {
-                            return i - 1;
-                        }
-                    }
-
-                    return span.Length - 1;
-#endif
                 }
 
                 static int IndexOfFirstTrailingZero(ReadOnlySpan<byte> span)
                 {
-#if NET
                     int lastNonZero = span.LastIndexOfAnyExcept((byte)'0');
                     return lastNonZero == span.Length - 1 ? -1 : lastNonZero + 1;
-#else
-                    if (span.IsEmpty)
-                    {
-                        return -1;
-                    }
-
-                    for (int i = span.Length - 1; i >= 0; i--)
-                    {
-                        if (span[i] != '0')
-                        {
-                            return i == span.Length - 1 ? -1 : i + 1;
-                        }
-                    }
-
-                    return 0;
-#endif
                 }
             }
         }

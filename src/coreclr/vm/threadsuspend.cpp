@@ -655,7 +655,13 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         // we can't use it to directly compare against the EH ranges because we
         // may be in an cloned finally which has a call as the last instruction.
 
-        offs--;
+#ifdef TARGET_WASM
+        // On Wasm, R2R code with virtual ips should not have its ip adjusted
+        if (!ExecutionManager::IsVirtualIP(GetControlPC(pCf->GetRegisterSet())))
+#endif
+        {
+            offs--;
+        }
     }
 
     if (pData->fWriteToStressLog)
@@ -1110,6 +1116,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     {
         THROWS;
         GC_TRIGGERS; // For GetXxxException
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -4810,9 +4817,11 @@ HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args 
 
 void STDCALL OnHijackWorker(HijackArgs * pArgs)
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -5354,10 +5363,13 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
 
     //
     // SyncClean::CleanUp reclaims resources that are safe to free only
-    // when no threads are running managed code. Since the EE is
-    // suspended at this point, we know it's safe to clean up here.
+    // when no threads are running managed code, so it can only run after
+    // the EE was successfully suspended.
     //
-    SyncClean::CleanUp();
+    if (SuspendSucceeded)
+    {
+        SyncClean::CleanUp();
+    }
 
 #ifdef PROFILING_SUPPORTED
     // If a profiler is keeping track suspend events, notify it.  This notification

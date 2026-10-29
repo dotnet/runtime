@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Diagnostics.SymbolStore.Tests
@@ -16,9 +17,41 @@ namespace System.Diagnostics.SymbolStore.Tests
             var asmPath = AssemblyPathHelper.GetAssemblyLocation(typeof(StackTraceSymbolsTests).Assembly);
             var pdbPath = Path.ChangeExtension(asmPath, ".pdb");
 
-            Assert.True(File.Exists(pdbPath));
+            bool fileBackedSymbols = !PlatformDetection.IsBrowser;
+            Assert.Equal(fileBackedSymbols, File.Exists(pdbPath));
             new StackTrace(true).GetFrames();
-            File.Move(pdbPath, pdbPath);
+            if (fileBackedSymbols)
+            {
+                File.Move(pdbPath, pdbPath);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public void StackTraceSymbolsFromMemory()
+        {
+            string assemblyPath = AssemblyPathHelper.GetAssemblyLocation(typeof(StackTraceSymbolsTests).Assembly);
+            Assert.False(File.Exists(Path.ChangeExtension(assemblyPath, ".pdb")));
+
+            StackFrame frameWithoutSymbols = CaptureFrame(needFileInfo: false);
+            Assert.Null(frameWithoutSymbols.GetFileName());
+            Assert.Equal(0, frameWithoutSymbols.GetFileLineNumber());
+
+            for (int i = 0; i < 2; i++)
+            {
+                StackFrame frame = CaptureFrame(needFileInfo: true);
+                Assert.Equal(nameof(CaptureFrame), frame.GetMethod().Name);
+                Assert.True(frame.GetILOffset() >= 0, $"Expected an IL offset for {frame}.");
+                Assert.Equal("InMemorySymbols.cs", Path.GetFileName(frame.GetFileName()?.Replace('\\', '/')));
+                Assert.Equal(123, frame.GetFileLineNumber());
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static StackFrame CaptureFrame(bool needFileInfo)
+        {
+#line 123 "InMemorySymbols.cs"
+            return new StackFrame(needFileInfo);
+#line default
         }
     }
 }
