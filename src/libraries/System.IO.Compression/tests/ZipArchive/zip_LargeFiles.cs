@@ -15,7 +15,12 @@ public class zip_LargeFiles : ZipFileTestBase
     [OuterLoop("It requires almost 12 GB of free disk space")]
     public static void UnzipOver4GBZipFile()
     {
-        byte[] buffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // 1 GB
+        byte[] buffer;
+        // SAFETY: To be audited
+        unsafe
+        {
+            buffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // 1 GB
+        }
 
         string zipArchivePath = Path.Combine(Path.GetTempPath(), "over4GB.zip");
         DirectoryInfo tempDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "over4GB"));
@@ -59,8 +64,14 @@ public class zip_LargeFiles : ZipFileTestBase
         // issue #94899
 
         CompressionLevel compressLevel = isCompressed ? CompressionLevel.Optimal : CompressionLevel.NoCompression;
-        byte[] smallBuffer = GC.AllocateUninitializedArray<byte>(1000);
-        byte[] largeBuffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // ~1 GB
+        byte[] smallBuffer;
+        byte[] largeBuffer;
+        // SAFETY: To be audited
+        unsafe
+        {
+            smallBuffer = GC.AllocateUninitializedArray<byte>(1000);
+            largeBuffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // ~1 GB
+        }
         string zipArchivePath = Path.Combine(Path.GetTempPath(), "over4GB.zip");
         string LargeFileName = "largefile";
         string SmallFileName = "smallfile";
@@ -139,7 +150,11 @@ public class zip_LargeFiles : ZipFileTestBase
         byte[] buffer;
         try
         {
-            buffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // 1 GB
+            // SAFETY: To be audited
+            unsafe
+            {
+                buffer = GC.AllocateUninitializedArray<byte>(1_000_000_000); // 1 GB
+            }
         }
         catch (OutOfMemoryException)
         {
