@@ -7,10 +7,10 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Antlr4.Runtime;
@@ -21,6 +21,7 @@ namespace ILAssembler.Tests
 {
     public class SyntaxTests
     {
+        private const string GrammarActionsTypeName = "ILAssembler.GrammarActions, ILAssembler";
 
         [Theory]
         [InlineData("\"hello\"", "hello")]
@@ -40,15 +41,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void StringCharStream_SeekPastEnd_ClampsToEnd()
         {
-            Type streamType = typeof(DocumentCompiler).Assembly.GetType(
-                "ILAssembler.StringCharStream",
-                throwOnError: true)!;
-            var stream = (ICharStream)Activator.CreateInstance(
-                streamType,
-                BindingFlags.Instance | BindingFlags.NonPublic,
-                binder: null,
-                args: ["abc", "test.il"],
-                culture: null)!;
+            var stream = (ICharStream)CreateStringCharStream("abc", "test.il");
 
             stream.Seek(10);
 
@@ -158,94 +151,6 @@ namespace ILAssembler.Tests
 
             Assert.Equal(8, type.GetLayout().PackingSize);
         }
-
-        [Theory]
-        [InlineData("not-a-number", double.MaxValue)]
-        [InlineData("-not-a-number", double.MinValue)]
-        public void InvalidFloatingLiteral_SaturatesWithOriginalSign(string text, double expected)
-        {
-            object actions = CreateGrammarActions();
-            Type grammarActionsType = actions.GetType();
-            MethodInfo parseFloatingLiteral = grammarActionsType.GetMethod(
-                "ParseFloatingLiteral",
-                BindingFlags.Instance | BindingFlags.NonPublic)!;
-            var token = new CommonToken(CILLexer.FLOAT64, text);
-
-            Assert.Equal(expected, (double)parseFloatingLiteral.Invoke(actions, [token])!);
-        }
-
-        [Theory]
-        [InlineData("ParseBoolean", 0)]
-        [InlineData("ParseFileAttribute", 1)]
-        [InlineData("ParseSecurityAction", 1)]
-        [InlineData("ParseVTableFixupAttribute", 0)]
-        [InlineData("ParseManifestResourceAttribute", 0)]
-        public void InvalidSingleTokenConversion_ReturnsSafeFallback(
-            string methodName,
-            int expected)
-        {
-            object actions = CreateGrammarActions();
-            MethodInfo conversion = actions.GetType().GetMethod(
-                methodName,
-                BindingFlags.Instance | BindingFlags.NonPublic)!;
-            var token = new CommonToken(CILLexer.ID, "invalid");
-
-            object result = conversion.Invoke(actions, [token])!;
-
-            Assert.Equal(expected, Convert.ToInt32(result));
-        }
-
-        [Fact]
-        public void InvalidContextSingleTokenConversions_ReturnSafeFallback()
-        {
-            object actions = CreateGrammarActions();
-            Type actionsType = actions.GetType();
-            var token = new CommonToken(CILLexer.ID, "invalid");
-            var parent = new ParserRuleContext();
-            var assemblyContext = new CILParser.AsmAttrAnyContext(parent, invokingState: 0)
-            {
-                Start = token,
-                Stop = token,
-            };
-            var exportedTypeContext = new CILParser.ExptAttrContext(parent, invokingState: 0)
-            {
-                Start = token,
-                Stop = token,
-            };
-
-            actionsType.GetMethod(
-                "SetAssemblyAttribute",
-                BindingFlags.Instance | BindingFlags.NonPublic)!
-                .Invoke(actions, [assemblyContext]);
-            actionsType.GetMethod(
-                "SetExportedTypeAttribute",
-                BindingFlags.Instance | BindingFlags.NonPublic)!
-                .Invoke(actions, [exportedTypeContext]);
-
-            Assert.Equal(0, (int)assemblyContext.Value);
-            Assert.Equal(0, (int)assemblyContext.Mask);
-            Assert.Equal(0, (int)exportedTypeContext.Value);
-            Assert.Equal(0, (int)exportedTypeContext.Mask);
-        }
-
-        [Fact]
-        public void SyntheticToken_SourceSpanIsClamped()
-        {
-            var token = new CommonToken(CILLexer.Eof)
-            {
-                StartIndex = -1,
-                StopIndex = -1,
-            };
-            MethodInfo getSourceSpan = typeof(Location).GetMethod(
-                "GetSourceSpan",
-                BindingFlags.Static | BindingFlags.NonPublic)!;
-
-            SourceSpan span = (SourceSpan)getSourceSpan.Invoke(obj: null, [token])!;
-
-            Assert.Equal(0, span.Start);
-            Assert.Equal(0, span.Length);
-        }
-
 
         [Fact]
         public void Diagnostic_FileNotFound()
@@ -503,6 +408,15 @@ namespace ILAssembler.Tests
         [InlineData(".class extern { }")]
         [InlineData(".class public auto ansi Test { .export public { } }")]
         [InlineData(".assembly extern Name { .ver : }")]
+        [InlineData(".method static void M() cil managed { ldc.r8 not-a-number ret }")]
+        [InlineData(".method static void M() cil managed { ldc.r8 -not-a-number ret }")]
+        [InlineData(".class public Test { .field public static literal bool F = bool(invalid) }")]
+        [InlineData(".file nometadata")]
+        [InlineData(".permission invalid class Test ()")]
+        [InlineData(".vtfixup [1] invalid at D")]
+        [InlineData(".mresource invalid Resource { }")]
+        [InlineData(".assembly invalid Test { }")]
+        [InlineData(".class extern invalid Test { .assembly extern Dependency }")]
         public void MalformedTypedGrammarValues_ReportParserDiagnosticsInsteadOfThrowing(string source)
         {
             var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
@@ -510,25 +424,33 @@ namespace ILAssembler.Tests
                 new Options { ErrorTolerant = true });
 
             Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.Parser);
+            AssertDiagnosticSpansInSource(diagnostics, source.Length);
         }
 
-        private static object CreateGrammarActions()
+        private static void AssertDiagnosticSpansInSource(ImmutableArray<Diagnostic> diagnostics, int sourceLength)
         {
-            Type grammarActionsType = typeof(DocumentCompiler).Assembly.GetType(
-                "ILAssembler.GrammarActions",
-                throwOnError: true)!;
-            return Activator.CreateInstance(
-                grammarActionsType,
-                BindingFlags.Instance | BindingFlags.NonPublic,
-                binder: null,
-                args:
-                [
-                    new Dictionary<string, SourceText>(),
-                    new Options(),
-                    (Func<string, byte[]?>)(_ => throw new InvalidOperationException("Unexpected resource")),
-                ],
-                culture: null)!;
+            Assert.All(diagnostics, diagnostic =>
+            {
+                Assert.InRange(diagnostic.Location.Span.Start, 0, sourceLength);
+                Assert.InRange(diagnostic.Location.Span.Length, 0, sourceLength - diagnostic.Location.Span.Start);
+            });
         }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType("ILAssembler.StringCharStream, ILAssembler")]
+        private static extern object CreateStringCharStream(string text, string? sourceName);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType(GrammarActionsTypeName)]
+        private static extern object CreateGrammarActions(
+            IReadOnlyDictionary<string, SourceText> documents,
+            Options options,
+            Func<string, byte[]?> resourceLocator);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_Actions")]
+        private static extern void SetGrammarActions(
+            CILParser parser,
+            [UnsafeAccessorType(GrammarActionsTypeName)] object actions);
 
         [Theory]
         [InlineData("[mscorlib]System.Object")]
@@ -604,8 +526,10 @@ namespace ILAssembler.Tests
         private static CILParser CreateParser(ITokenStream tokens)
         {
             var parser = new CILParser(tokens) { BuildParseTree = false };
-            typeof(CILParser).GetProperty("Actions", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .SetValue(parser, CreateGrammarActions());
+            SetGrammarActions(parser, CreateGrammarActions(
+                new Dictionary<string, SourceText>(),
+                new Options(),
+                _ => throw new InvalidOperationException("Unexpected resource")));
 
             return parser;
         }
@@ -684,6 +608,7 @@ namespace ILAssembler.Tests
             Assert.Contains(
                 diagnostics,
                 diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+            AssertDiagnosticSpansInSource(diagnostics, source.Length);
         }
 
         [Theory]
