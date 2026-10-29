@@ -224,14 +224,9 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(expectedValue, propertyGetter(configuredHandler));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         public void UseSocketsHttpHandler_ChainingActionAfterIConfiguration_Updates()
         {
-            if (!PlatformDetection.IsTlsSupported)
-            {
-                return;
-            }
-
             IConfiguration config = new ConfigurationBuilder()
                 .AddInMemoryCollection(s_configContent)
                 .Build();
@@ -265,14 +260,9 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(allowAllCertsSslOptions, configuredHandler.SslOptions); // from action
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         public void UseSocketsHttpHandler_ChainingIConfigurationAfterAction_Updates()
         {
-            if (!PlatformDetection.IsTlsSupported)
-            {
-                return;
-            }
-
             IConfiguration config = new ConfigurationBuilder()
                 .AddInMemoryCollection(s_configContent)
                 .Build();
@@ -306,16 +296,11 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(allowAllCertsSslOptions, configuredHandler.SslOptions); // from action
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsTlsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void UseSocketsHttpHandler_PresetSocketsHttpHandler_Updates(bool handlerSetByUseSocketsHttpHandler)
         {
-            if (!PlatformDetection.IsTlsSupported)
-            {
-                return;
-            }
-
             var serviceCollection = new ServiceCollection();
 
             var builder = serviceCollection.AddHttpClient("SocketsHttpHandler");

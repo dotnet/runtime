@@ -281,7 +281,15 @@ namespace System.Net.WebSockets
                 handler.PooledConnectionLifetime = TimeSpan.Zero;
                 handler.CookieContainer = options.Cookies;
                 handler.UseCookies = options.Cookies != null;
-                if (!OperatingSystem.IsWasi()) // System.Net.Security isn't supported on WASI
+                if (OperatingSystem.IsWasi())
+                {
+                    // System.Net.Security isn't supported on WASI.
+                    if (options.RemoteCertificateValidationCallback is not null || options._clientCertificates?.Count > 0)
+                    {
+                        throw new PlatformNotSupportedException();
+                    }
+                }
+                else
                 {
                     handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
                 }

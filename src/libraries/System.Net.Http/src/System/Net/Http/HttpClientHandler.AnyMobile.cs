@@ -440,12 +440,14 @@ namespace System.Net.Http
                             break;
 
                         case ClientCertificateOption.Automatic:
-#if !TARGET_WASI
+#if TARGET_WASI
+                            throw new PlatformNotSupportedException(); // System.Net.Security isn't supported on WASI
+#else
                             ThrowForModifiedManagedSslOptionsIfStarted();
                             _socketHandler!.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate()!;
-#endif
                             _clientCertificateOptions = value;
                             break;
+#endif
 
                         default:
                             throw new ArgumentOutOfRangeException(nameof(value));
