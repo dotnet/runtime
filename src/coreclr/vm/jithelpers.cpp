@@ -109,7 +109,7 @@ using std::isnan;
 
 #if !defined(TARGET_X86) || defined(TARGET_UNIX)
 /*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
+HCIMPL2_VV(INT64, RhpLMul, INT64 val1, INT64 val2)
 {
     FCALL_CONTRACT;
 
@@ -130,7 +130,7 @@ extern "C" FCDECL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor);
 
 #if !defined(HOST_64BIT) && !defined(TARGET_X86)
 /*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_LLsh, UINT64 num, int shift)
+HCIMPL2_VV(UINT64, RhpLLsh, UINT64 num, int shift)
 {
     FCALL_CONTRACT;
     return num << (shift & 0x3F);
@@ -138,7 +138,7 @@ HCIMPL2_VV(UINT64, JIT_LLsh, UINT64 num, int shift)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LRsh, INT64 num, int shift)
+HCIMPL2_VV(INT64, RhpLRsh, INT64 num, int shift)
 {
     FCALL_CONTRACT;
     return num >> (shift & 0x3F);
@@ -146,7 +146,7 @@ HCIMPL2_VV(INT64, JIT_LRsh, INT64 num, int shift)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift)
+HCIMPL2_VV(UINT64, RhpLRsz, UINT64 num, int shift)
 {
     FCALL_CONTRACT;
     return num >> (shift & 0x3F);

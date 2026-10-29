@@ -52,16 +52,16 @@
 #endif
 
 #ifdef TARGET_32BIT
-    JITHELPER(CORINFO_HELP_LLSH,                JIT_LLsh,           METHOD__NIL)
-    JITHELPER(CORINFO_HELP_LRSH,                JIT_LRsh,           METHOD__NIL)
-    JITHELPER(CORINFO_HELP_LRSZ,                JIT_LRsz,           METHOD__NIL)
+    JITHELPER(CORINFO_HELP_LLSH,                RhpLLsh,            METHOD__NIL)
+    JITHELPER(CORINFO_HELP_LRSH,                RhpLRsh,            METHOD__NIL)
+    JITHELPER(CORINFO_HELP_LRSZ,                RhpLRsz,            METHOD__NIL)
 #else // TARGET_32BIT
 
     JITHELPER(CORINFO_HELP_LLSH,                NULL,               METHOD__NIL)
     JITHELPER(CORINFO_HELP_LRSH,                NULL,               METHOD__NIL)
     JITHELPER(CORINFO_HELP_LRSZ,                NULL,               METHOD__NIL)
 #endif // TARGET_64BIT
-    JITHELPER(CORINFO_HELP_LMUL,                JIT_LMul,           METHOD__NIL)
+    JITHELPER(CORINFO_HELP_LMUL,                RhpLMul,            METHOD__NIL)
 #ifndef TARGET_64BIT
     DYNAMICJITHELPER(CORINFO_HELP_LMUL_OVF,     NULL,               METHOD__MATH__MULTIPLY_CHECKED_INT64)
     DYNAMICJITHELPER(CORINFO_HELP_ULMUL_OVF,    NULL,               METHOD__MATH__MULTIPLY_CHECKED_UINT64)
