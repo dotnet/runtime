@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -142,6 +143,77 @@ public class Crossgen2CacheTests
         Assert.Equal(image, File.ReadAllBytes(fixture.Input));
         Assert.False(Directory.Exists(fixture.Cache));
     }).Dispose();
+
+    public static IEnumerable<object[]> PdbOnlyCodeViewCases =>
+        from configuration in new[] { "enabled", "disabled", "bypassed" }
+        from stale in new[] { false, true }
+        from portable in new[] { false, true }
+        from collision in new[] { "none", "image", "reference", "il-only" }
+        select new object[] { configuration, stale, portable, collision };
+
+    [CachePlatformTheory]
+    [MemberData(nameof(PdbOnlyCodeViewCases))]
+    public void PdbOnlyCompilationDistinguishesNativeOutputFromIlSymbols(string configuration, bool stale, bool portable, string collision) =>
+        RemoteExecutor.Invoke((mode, existing, format, source) =>
+    {
+        using var fixture = new Fixture();
+        string output = Path.Combine(fixture.Root, "input.ni.pdb");
+        var debug = new DebugDirectoryBuilder();
+        var identity = new BlobContentId(Guid.Parse("034b11c0-23c6-4376-93c0-07fb07aa0fdc"), 1);
+        debug.AddCodeViewEntry(Path.GetFileName(output), identity, portablePdbVersion: 0);
+        debug.AddCodeViewEntry(source == "image" ? Path.GetFileName(output) : "input.pdb",
+            identity, portablePdbVersion: bool.Parse(format) ? (ushort)0x0100 : (ushort)0);
+        WriteImageWithDebugDirectory(fixture.Input, debug, readyToRun: source != "il-only");
+        if (source == "reference")
+        {
+            var referenceDebug = new DebugDirectoryBuilder();
+            referenceDebug.AddCodeViewEntry(Path.GetFileName(output), identity,
+                portablePdbVersion: bool.Parse(format) ? (ushort)0x0100 : (ushort)0);
+            WriteImageWithDebugDirectory(fixture.Reference, referenceDebug, readyToRun: true);
+        }
+        if (bool.Parse(existing))
+        {
+            File.WriteAllText(output, "stale native symbols");
+        }
+        byte[] image = File.ReadAllBytes(fixture.Input);
+        byte[] symbols = File.ReadAllBytes(Path.ChangeExtension(fixture.Input, ".pdb"));
+        byte[]? previousOutput = File.Exists(output) ? File.ReadAllBytes(output) : null;
+        Directory.CreateDirectory(Path.GetDirectoryName(fixture.Output)!);
+        MockCompiler task = fixture.Create();
+        task.CrossgenTool = new TaskItem(fixture.Tool);
+        task.CrossgenTool.SetMetadata("JitPath", fixture.Jit);
+        task.Crossgen2Tool.SetMetadata("IsVersion5", "true");
+        task.CompilationEntry.SetMetadata("CreatePDBCommand", $"/CreatePDB \"{fixture.Root}\"");
+        task.CompilationEntry.SetMetadata("OutputPDBImage", output);
+        task.BeforeExecute = () =>
+        {
+            Assert.Equal(image, File.ReadAllBytes(fixture.Input));
+            Assert.Equal(symbols, File.ReadAllBytes(Path.ChangeExtension(fixture.Input, ".pdb")));
+            Assert.False(File.Exists(output));
+        };
+        Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", mode == "disabled" ? "false" : "true");
+        task.ShowCompilerWarnings = mode == "bypassed";
+
+        Assert.Equal(source == "none", task.Execute());
+        Assert.Equal(source == "none" ? 1 : 0, task.Executions);
+        Assert.Equal(image, File.ReadAllBytes(fixture.Input));
+        Assert.Equal(symbols, File.ReadAllBytes(Path.ChangeExtension(fixture.Input, ".pdb")));
+        if (source == "none")
+        {
+            Assert.Empty(task.Engine.Errors);
+            Assert.Equal("map", File.ReadAllText(output));
+        }
+        else
+        {
+            Assert.Contains(task.Engine.Errors, message => message.Contains("overlaps compiler input", StringComparison.Ordinal));
+            Assert.Equal(previousOutput is not null, File.Exists(output));
+            if (previousOutput is not null)
+            {
+                Assert.Equal(previousOutput, File.ReadAllBytes(output));
+            }
+        }
+        Assert.False(Directory.Exists(fixture.Cache));
+    }, configuration, stale.ToString(), portable.ToString(), collision).Dispose();
 
     [CachePlatformTheory]
     [InlineData("")]
@@ -1494,6 +1566,37 @@ public class Crossgen2CacheTests
         using FileStream stream = File.OpenRead(path);
         using var pe = new PEReader(stream);
         return pe.HasMetadata;
+    }
+
+    private static void WriteImageWithDebugDirectory(string path, DebugDirectoryBuilder debug, bool readyToRun)
+    {
+        var nativeHeader = new BlobBuilder();
+        nativeHeader.WriteUInt32(0x00525452); // ReadyToRun signature, "RTR\0".
+        nativeHeader.WriteUInt16(2);
+        nativeHeader.WriteUInt16(0);
+        nativeHeader.WriteUInt32(0);
+        nativeHeader.WriteUInt16(0);
+        nativeHeader.WriteByte(0);
+        nativeHeader.WriteByte(0);
+        byte[] headerBytes = nativeHeader.ToArray();
+        var builder = new ManagedPEBuilder(PEHeaderBuilder.CreateLibraryHeader(),
+            new MetadataRootBuilder(new MetadataBuilder()), nativeHeader, debugDirectoryBuilder: debug);
+        var image = new BlobBuilder();
+        builder.Serialize(image);
+        byte[] bytes = image.ToArray();
+        if (readyToRun)
+        {
+            using var pe = new PEReader(new MemoryStream(bytes));
+            int offset = bytes.AsSpan().IndexOf(headerBytes);
+            SectionHeader section = pe.PEHeaders.SectionHeaders.Single(s =>
+                offset >= s.PointerToRawData && offset < s.PointerToRawData + s.SizeOfRawData);
+            using var writer = new BinaryWriter(new MemoryStream(bytes));
+            // IMAGE_COR20_HEADER.ManagedNativeHeader follows its first 64 bytes.
+            writer.BaseStream.Position = pe.PEHeaders.CorHeaderStartOffset + 64;
+            writer.Write(section.VirtualAddress + offset - section.PointerToRawData);
+            writer.Write(headerBytes.Length);
+        }
+        File.WriteAllBytes(path, bytes);
     }
 
     private sealed class Fixture : IDisposable

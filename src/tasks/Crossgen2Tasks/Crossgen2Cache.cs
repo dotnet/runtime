@@ -135,13 +135,22 @@ internal static class Crossgen2Cache
         }
     }
 
-    internal static IEnumerable<(string Path, BlobContentId Identity)> GetSymbolCandidates(PEReader pe, string assembly, string workingDirectory)
+    internal static IEnumerable<(string Path, BlobContentId Identity)> GetSymbolCandidates(PEReader pe, string assembly, string workingDirectory,
+        bool skipNativePdbOutput = false)
     {
         // The compiler tries rooted CodeView paths before candidates beside the PE.
         // Include absence too, so creating a previously missing PDB invalidates the key.
-        foreach (DebugDirectoryEntry entry in pe.ReadDebugDirectory())
+        var entries = pe.ReadDebugDirectory();
+        for (int i = 0; i < entries.Length; i++)
         {
+            DebugDirectoryEntry entry = entries[i];
             if (entry.Type != DebugDirectoryEntryType.CodeView)
+            {
+                continue;
+            }
+            // ReadyToRun prepends its native PDB output record before copying the IL debug records.
+            if (skipNativePdbOutput && i == 0 && !entry.IsPortableCodeView &&
+                pe.PEHeaders.CorHeader?.ManagedNativeHeaderDirectory.Size > 0)
             {
                 continue;
             }
