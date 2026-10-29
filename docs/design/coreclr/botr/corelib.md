@@ -38,6 +38,37 @@ The managed mechanism for calling into native code must also support the special
 
 The CLR provides a [`mscorlib` binder](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/binder.cpp) internally, providing a mapping between unmanaged types and fields to managed types and fields. The binder will look up and load classes and allows the calling of managed methods. It also performs simple verification to ensure the correctness of any layout information specified in both managed and native code. The binder ensures that the managed class attempting to load exists in mscorlib, has been loaded, and the field offsets are correct. It also needs the ability to differentiate between method overloads with different signatures.
 
+## Conditional binder declarations
+
+Declarations in `corelib.h` are mandatory trimming roots by default.
+`DEFINE_CLASS_OPTIONAL` and `DEFINE_CLASS_U_OPTIONAL` opt audited managed types into
+conditional preservation: native-required members and layout survive only when the
+managed type is otherwise reachable. They expand to the ordinary declarations for
+native consumers, preserving binder IDs, indexed caches, lookup behavior, and failure
+contracts. A native `GetClass`, `GetMethod`, or `GetField` still requires its target to exist.
+
+The descriptor generator merges aliases by managed type identity within each feature-switch
+group. A mandatory declaration dominates an optional alias, and layout obligations are
+combined regardless of declaration order. Groups remain separate so a disabled feature
+cannot turn an unconditional optional declaration into a mandatory root. Methods remain
+name-based, preserving all matching overloads. Optional field-bearing types use
+`required="false" preserve="fields"` without explicit field children: explicit fields
+would immediately root their declaring type under the linker's descriptor semantics.
+This intentionally preserves all fields of a surviving optional type.
+
+Checked/debug consistency checks consult metadata, not the already-loaded type cache,
+before accepting an absent optional type. Present optional types still undergo normal
+layout and member checks; mandatory entries remain mandatory.
+
+`HandleRef` is conditional because the marshaller reads its fields only for a reachable
+`HandleRef` signature. `GCMemoryInfoData` supplies conditional-layout coverage because
+managed code allocates it before the native GC fills it. Runtime counters, array-pool
+pressure handling, and thread-pool code can retain it; conditional layout is not a promise
+of a minimal-application size reduction. Startup types, independently created native
+objects, and incidental classification dependencies need separate semantic audits before
+using these annotations. In particular, WeakReference, SafeHandle, and CallConvSwift are
+not made conditional by this mechanism.
+
 # Calling from managed to native code
 
 Two techniques exist for calling into the CLR from managed code. FCall allows you to call directly into the CLR code, and provides a lot of flexibility in terms of manipulating objects, though it is easy to cause GC holes by not tracking object references correctly. QCall also allows you to call into the CLR via the P/Invoke, but is much harder to accidentally mis-use. FCalls are identified in managed code as extern methods with the [`MethodImplOptions.InternalCall`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.methodimploptions) bit set. QCalls are marked `static extern` methods similar to regular P/Invokes, but are directed toward a library called `"QCall"`.

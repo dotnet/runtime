@@ -564,6 +564,50 @@ namespace
             Configuration::GetKnobBooleanValue(featureSwitch, defaultValue) != enabledValue;
     }
 
+    bool IsOptionalTypeAbsent(LPCSTR nameSpace, LPCSTR className)
+    {
+        STANDARD_VM_CONTRACT;
+
+        bool disabled = false;
+        bool optional = false;
+        bool required = false;
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) disabled = FeatureSwitchDisabled(W(#s), e, d);
+        #define END_ILLINK_FEATURE_SWITCH() disabled = false;
+        #define MATCHES_TYPE(ns, n) (!disabled && strcmp(nameSpace, g_ ## ns ## NS) == 0 && strcmp(className, #n) == 0)
+        #define DEFINE_CLASS(i, ns, n) if (MATCHES_TYPE(ns, n)) required = true;
+        #define DEFINE_CLASS_U(ns, n, u) if (MATCHES_TYPE(ns, n)) required = true;
+        #define DEFINE_CLASS_OPTIONAL(i, ns, n) if (MATCHES_TYPE(ns, n)) optional = true;
+        #define DEFINE_CLASS_U_OPTIONAL(ns, n, u) if (MATCHES_TYPE(ns, n)) optional = true;
+        #include "corelib.h"
+        #undef MATCHES_TYPE
+
+        if (!optional || required)
+            return false;
+
+        // A cache miss only means "not loaded"; trimming must be checked against metadata.
+        IMDInternalImport* import = CoreLibBinder::GetModule()->GetMDImport();
+        mdTypeDef token;
+        LPCSTR nested = strchr(className, '+');
+        HRESULT hr;
+        if (nested == nullptr)
+        {
+            hr = import->FindTypeDef(nameSpace, className, mdTypeDefNil, &token);
+        }
+        else
+        {
+            SString enclosing(SString::Utf8, className, static_cast<COUNT_T>(nested - className));
+            hr = import->FindTypeDef(nameSpace, enclosing.GetUTF8(), mdTypeDefNil, &token);
+            if (SUCCEEDED(hr))
+                hr = import->FindTypeDef("", nested + 1, token, &token);
+        }
+
+        if (hr == CLDB_E_RECORD_NOTFOUND)
+            return true;
+
+        IfFailThrow(hr);
+        return false;
+    }
+
     bool IsTrimmed(LPCSTR nameSpace, LPCSTR className)
     {
         bool isInDisabledFeatureSwitch = false;
@@ -596,7 +640,8 @@ void CoreLibBinder::Check()
 
         if (p->className != NULL)
         {
-            currentTypeTrimmed = IsTrimmed(p->classNameSpace, p->className);
+            currentTypeTrimmed = IsTrimmed(p->classNameSpace, p->className) ||
+                IsOptionalTypeAbsent(p->classNameSpace, p->className);
             if (currentTypeTrimmed)
                 continue;
 
@@ -1031,7 +1076,9 @@ void CoreLibBinder::CheckExtended()
         {
             if (CoreLibBinder::GetClassName(cID) != NULL) // Allow for CorSigElement entries with no classes
             {
-                if (!IsTrimmed(cID) && NULL == CoreLibBinder::GetClass(cID))
+                if (!IsTrimmed(cID) &&
+                    !IsOptionalTypeAbsent(CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID)) &&
+                    NULL == CoreLibBinder::GetClass(cID))
                 {
                     fError = true;
                 }
@@ -1055,7 +1102,9 @@ void CoreLibBinder::CheckExtended()
         BinderClassID cID = m_methodDescriptions[mID-1].classID;
         EX_TRY
         {
-            if (!IsTrimmed(mID) &&  NULL == CoreLibBinder::GetMethod(mID))
+            if (!IsTrimmed(mID) &&
+                !IsOptionalTypeAbsent(CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID)) &&
+                NULL == CoreLibBinder::GetMethod(mID))
             {
                 fError = true;
             }
@@ -1078,7 +1127,9 @@ void CoreLibBinder::CheckExtended()
         BinderClassID cID = m_fieldDescriptions[fID-1].classID;
         EX_TRY
         {
-            if (!IsTrimmed(fID) && NULL == CoreLibBinder::GetField(fID))
+            if (!IsTrimmed(fID) &&
+                !IsOptionalTypeAbsent(CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID)) &&
+                NULL == CoreLibBinder::GetField(fID))
             {
                 fError = true;
             }

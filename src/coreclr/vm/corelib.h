@@ -29,6 +29,12 @@
 #define DEFINE_CLASS(id, nameSpace, stringName)
 #endif
 
+// Optional declarations preserve native-required members only when the managed type survives trimming.
+// Native callers must not demand the type independently of managed reachability.
+#ifndef DEFINE_CLASS_OPTIONAL
+#define DEFINE_CLASS_OPTIONAL(id, nameSpace, stringName) DEFINE_CLASS(id, nameSpace, stringName)
+#endif
+
 #ifndef DEFINE_METHOD
 #define DEFINE_METHOD(classId, id, stringName, gSign)
 #endif
@@ -62,6 +68,10 @@
 //
 #ifndef DEFINE_CLASS_U
 #define DEFINE_CLASS_U(nameSpace, stringName, unmanagedType)
+#endif
+
+#ifndef DEFINE_CLASS_U_OPTIONAL
+#define DEFINE_CLASS_U_OPTIONAL(nameSpace, stringName, unmanagedType) DEFINE_CLASS_U(nameSpace, stringName, unmanagedType)
 #endif
 
 #ifndef DEFINE_FIELD_U
@@ -188,7 +198,7 @@ END_ILLINK_FEATURE_SWITCH()
 DEFINE_CLASS(CRITICAL_HANDLE,       Interop,                CriticalHandle)
 DEFINE_FIELD(CRITICAL_HANDLE,       HANDLE,                 handle)
 
-DEFINE_CLASS(HANDLE_REF,            Interop,                HandleRef)
+DEFINE_CLASS_OPTIONAL(HANDLE_REF,   Interop,                HandleRef)
 DEFINE_FIELD(HANDLE_REF,            WRAPPER,                _wrapper)
 DEFINE_FIELD(HANDLE_REF,            HANDLE,                 _handle)
 
@@ -1390,7 +1400,7 @@ DEFINE_CLASS(STACKFRAMEITERATOR, Runtime, StackFrameIterator)
 
 DEFINE_CLASS(EXINFO, Runtime, EH+ExInfo)
 
-DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
+DEFINE_CLASS_U_OPTIONAL(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)
 DEFINE_FIELD_U(_totalAvailableMemoryBytes, GCMemoryInfoData, totalAvailableMemoryBytes)
 DEFINE_FIELD_U(_memoryLoadBytes, GCMemoryInfoData, lastRecordedMemLoadBytes)
@@ -1409,9 +1419,11 @@ DEFINE_FIELD_U(_pauseDurations, GCMemoryInfoData, pauseDurations)
 DEFINE_FIELD_U(_generationInfo, GCMemoryInfoData, generationInfo)
 
 #undef DEFINE_CLASS
+#undef DEFINE_CLASS_OPTIONAL
 #undef DEFINE_METHOD
 #undef DEFINE_FIELD
 #undef DEFINE_CLASS_U
+#undef DEFINE_CLASS_U_OPTIONAL
 #undef DEFINE_FIELD_U
 #undef BEGIN_ILLINK_FEATURE_SWITCH
 #undef END_ILLINK_FEATURE_SWITCH

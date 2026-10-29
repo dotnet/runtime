@@ -53,6 +53,7 @@ namespace ILLink.Tasks
 
         sealed class ClassMembers
         {
+            public bool required;
             public bool keepAllFields;
             public HashSet<string> methods;
             public HashSet<string> fields;
@@ -212,15 +213,17 @@ namespace ILLink.Tasks
                     defElements = def.Split(separators, StringSplitOptions.RemoveEmptyEntries);
                 }
 
-                if (def.StartsWith("DEFINE_CLASS(") || def.StartsWith("// DEFINE_CLASS("))
+                if (def.StartsWith("DEFINE_CLASS(") || def.StartsWith("// DEFINE_CLASS(") ||
+                    def.StartsWith("DEFINE_CLASS_OPTIONAL(") || def.StartsWith("// DEFINE_CLASS_OPTIONAL("))
                 {
                     // E.g., DEFINE_CLASS(APP_DOMAIN,            System,                 AppDomain)
                     classId = defElements[1];               // APP_DOMAIN
                     string classNamespace = defElements[2]; // System
                     string className = defElements[3];      // AppDomain
-                    AddClass(classNamespace, className, classId, false, currentFeatureSwitch);
+                    AddClass(classNamespace, className, classId, false, currentFeatureSwitch,
+                        optional: defElements[0] == "DEFINE_CLASS_OPTIONAL");
                 }
-                else if (def.StartsWith("DEFINE_CLASS_U("))
+                else if (def.StartsWith("DEFINE_CLASS_U(") || def.StartsWith("DEFINE_CLASS_U_OPTIONAL("))
                 {
                     // E.g., DEFINE_CLASS_U(System,                 AppDomain,      AppDomainBaseObject)
                     string classNamespace = defElements[1]; // System
@@ -229,7 +232,8 @@ namespace ILLink.Tasks
                                                             // For these classes the sizes of managed and unmanaged classes and field offsets
                                                             // are compared so we need to preserve all fields.
                     const bool keepAllFields = true;
-                    AddClass(classNamespace, className, classId, keepAllFields, currentFeatureSwitch);
+                    AddClass(classNamespace, className, classId, keepAllFields, currentFeatureSwitch,
+                        optional: defElements[0] == "DEFINE_CLASS_U_OPTIONAL");
                 }
                 else if (def.StartsWith("DEFINE_FIELD("))
                 {
@@ -377,12 +381,17 @@ namespace ILLink.Tasks
             typeFullName.Value = typeName;
             typeNode.Attributes.Append(typeFullName);
 
+            if (!members.required)
+                typeNode.SetAttribute("required", "false");
+
             // We need to keep everyting in System.Runtime.InteropServices.WindowsRuntime and
             // System.Threading.Volatile.
             if (!typeName.StartsWith("System.Runtime.InteropServices.WindowsRuntime") &&
                 !typeName.StartsWith("System.Threading.Volatile"))
             {
-                if (members.keepAllFields)
+                // Explicit field children root immediately, even on a required=false type.
+                bool keepAllFields = members.keepAllFields || (!members.required && members.fields != null);
+                if (keepAllFields)
                 {
                     XmlAttribute preserve = doc.CreateAttribute("preserve");
                     preserve.Value = "fields";
@@ -395,7 +404,7 @@ namespace ILLink.Tasks
                     typeNode.Attributes.Append(preserve);
                 }
 
-                if (!members.keepAllFields && (members.fields != null))
+                if (!keepAllFields && (members.fields != null))
                 {
                     foreach (string field in members.fields)
                     {
@@ -423,7 +432,7 @@ namespace ILLink.Tasks
         }
 
 
-        void AddClass(string classNamespace, string className, string classId, bool keepAllFields = false, FeatureSwitchMembers? featureSwitch = null)
+        void AddClass(string classNamespace, string className, string classId, bool keepAllFields = false, FeatureSwitchMembers? featureSwitch = null, bool optional = false)
         {
             string fullClassName = GetFullClassName(classNamespace, className);
             if (fullClassName != null)
@@ -451,6 +460,7 @@ namespace ILLink.Tasks
                         currentFeatureSwitchMembers[fullClassName] = members;
                     }
                 }
+                members.required |= !optional;
                 members.keepAllFields |= keepAllFields;
             }
         }

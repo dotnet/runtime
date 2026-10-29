@@ -4,14 +4,240 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Xml.Linq;
 using Microsoft.Build.Utilities;
+using Mono.Cecil;
+using Mono.Cecil.Cil;
+using Mono.Linker;
 using Xunit;
 
 namespace ILLink.Tasks.Tests
 {
     public class CreateRuntimeRootDescriptorFileTests
     {
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public void ConditionalAliasesMergeByManagedIdentity(bool mandatoryAlias, bool mandatoryLayout, bool layoutFirst)
+        {
+            using var test = new DescriptorTest();
+            string declaration = mandatoryAlias ? "DEFINE_CLASS" : "DEFINE_CLASS_OPTIONAL";
+            string layoutDeclaration = mandatoryLayout ? "DEFINE_CLASS_U" : "DEFINE_CLASS_U_OPTIONAL";
+            string layout = $"{layoutDeclaration}(TestNS, Candidate+Nested, NativeCandidate)";
+            string type = $"{declaration}(CANDIDATE, TestNS, Candidate+Nested)";
+            XDocument output = test.Generate(new[] {
+                layoutFirst ? layout : type,
+                layoutFirst ? type : layout,
+                "DEFINE_CLASS_OPTIONAL(ALIAS, TestNS, Candidate+Nested)",
+                "DEFINE_FIELD(ALIAS, VALUE, _value)",
+                "DEFINE_METHOD(CANDIDATE, CALLBACK, Callback, NoSig)",
+                "DEFINE_METHOD(ALIAS, CALLBACK_OVERLOAD, Callback, OtherSig)",
+                "DEFINE_CLASS(MANDATORY, TestNS, Mandatory)"
+            });
+
+            XElement candidate = output.Root.Element("assembly").Elements("type").Single(t => (string)t.Attribute("fullname") == "TestNS.Candidate/Nested");
+            Assert.Equal(mandatoryAlias || mandatoryLayout ? null : "false", (string)candidate.Attribute("required"));
+            Assert.Equal("fields", (string)candidate.Attribute("preserve"));
+            Assert.Empty(candidate.Elements("field"));
+            Assert.Equal("Callback", (string)Assert.Single(candidate.Elements("method")).Attribute("name"));
+            XElement mandatory = output.Root.Element("assembly").Elements("type").Single(t => (string)t.Attribute("fullname") == "TestNS.Mandatory");
+            Assert.Null(mandatory.Attribute("required"));
+            Assert.Equal("nothing", (string)mandatory.Attribute("preserve"));
+        }
+
+        [Fact]
+        public void ConditionalDeclarationsPreserveFeatureSwitchBoundaries()
+        {
+            using var test = new DescriptorTest();
+            XDocument output = test.Generate(new[] {
+                "DEFINE_CLASS_OPTIONAL(CANDIDATE, TestNS, Candidate)",
+                "DEFINE_FIELD(CANDIDATE, VALUE, _value)",
+                "BEGIN_ILLINK_FEATURE_SWITCH(TestFeature, true, true)",
+                "DEFINE_CLASS(ALIAS, TestNS, Candidate)",
+                "DEFINE_METHOD(ALIAS, CALLBACK, Callback, NoSig)",
+                "END_ILLINK_FEATURE_SWITCH()"
+            });
+
+            XElement unconditional = output.Root.Elements("assembly").Single(a => a.Attribute("feature") is null).Element("type");
+            Assert.Equal("false", (string)unconditional.Attribute("required"));
+            Assert.Equal("fields", (string)unconditional.Attribute("preserve"));
+            Assert.Empty(unconditional.Elements());
+            XElement feature = output.Root.Elements("assembly").Single(a => a.Attribute("feature") is not null);
+            Assert.Equal("TestFeature", (string)feature.Attribute("feature"));
+            Assert.Equal("true", (string)feature.Attribute("featuredefault"));
+            Assert.Null(feature.Element("type").Attribute("required"));
+            Assert.Equal("Callback", (string)feature.Element("type").Element("method").Attribute("name"));
+        }
+
+        [Fact]
+        public void CoreTypesAndExceptionsDominateConditionalAliases()
+        {
+            using var test = new DescriptorTest();
+            XDocument output = test.Generate(new[] {
+                "DEFINE_CLASS_OPTIONAL(CANDIDATE, TestNS, Candidate)",
+                "DEFINE_CLASS_OPTIONAL(EXCEPTION, TestNS, TestException)"
+            }, "TYPEINFO(ELEMENT_TYPE_OBJECT, \"TestNS\", \"Candidate\", 0)",
+                "DEFINE_EXCEPTION(g_TestNS, TestException, false, C)");
+
+            Assert.All(output.Root.Element("assembly").Elements("type"), t => Assert.Null(t.Attribute("required")));
+            Assert.Equal(".ctor", (string)output.Root.Element("assembly").Elements("type").Last().Element("method").Attribute("name"));
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public void ConditionalTypeAndMemberPolicy(bool optional, bool hasMembers)
+        {
+            using var test = new DescriptorTest();
+            string declaration = optional ? "DEFINE_CLASS_OPTIONAL" : "DEFINE_CLASS";
+            XDocument output = test.Generate(new[] {
+                $"{declaration}(CANDIDATE, TestNS, Candidate)",
+                "#ifdef INACTIVE",
+                "DEFINE_CLASS(INACTIVE_ALIAS, TestNS, Candidate)",
+                "#endif",
+                hasMembers ? "DEFINE_FIELD(CANDIDATE, VALUE, _value)" : "",
+                hasMembers ? "DEFINE_METHOD(CANDIDATE, CALLBACK, Callback, NoSig)" : ""
+            });
+
+            XElement candidate = Assert.Single(output.Root.Element("assembly").Elements("type"));
+            Assert.Equal(optional ? "false" : null, (string)candidate.Attribute("required"));
+            Assert.Equal(!hasMembers ? "nothing" : optional ? "fields" : null, (string)candidate.Attribute("preserve"));
+            Assert.Equal(hasMembers && !optional ? 1 : 0, candidate.Elements("field").Count());
+            Assert.Equal(hasMembers ? 1 : 0, candidate.Elements("method").Count());
+        }
+
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(true, false, false)]
+        [InlineData(false, true, false)]
+        [InlineData(true, true, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, true)]
+        public void LinkerDefersConditionalFieldsAndMethods(bool reachable, bool nested, bool featureEnabled)
+        {
+            using var test = new DescriptorTest();
+            string name = nested ? "Container+Candidate" : "Candidate";
+            XDocument descriptor = test.Generate(new[] {
+                $"DEFINE_CLASS_OPTIONAL(CANDIDATE, TestNS, {name})",
+                $"DEFINE_CLASS_U_OPTIONAL(TestNS, {name}, NativeCandidate)",
+                "DEFINE_FIELD(CANDIDATE, VALUE, _value)",
+                "DEFINE_METHOD(CANDIDATE, CALLBACK, Callback, NoSig)",
+                "BEGIN_ILLINK_FEATURE_SWITCH(TestFeature, true, true)",
+                $"DEFINE_CLASS(ALIAS, TestNS, {name})",
+                "END_ILLINK_FEATURE_SWITCH()"
+            });
+            // Feature groups target CoreLib in production; this fixture lives in Input.
+            descriptor.Root.Elements("assembly").Single(a => a.Attribute("feature") is not null).SetAttributeValue("fullname", "Input");
+            descriptor.Save(test.DescriptorPath);
+
+            string input = Path.Combine(test.DirectoryPath, "Input.dll");
+            using (AssemblyDefinition assembly = AssemblyDefinition.CreateAssembly(
+                new AssemblyNameDefinition("Input", new Version(1, 0)), "Input", ModuleKind.Console))
+            {
+                ModuleDefinition module = assembly.MainModule;
+                TypeReference objectType = module.ImportReference(typeof(object));
+                TypeReference voidType = module.ImportReference(typeof(void));
+                var candidate = new TypeDefinition("TestNS", "Candidate", TypeAttributes.Public, objectType);
+                if (nested)
+                {
+                    var container = new TypeDefinition("TestNS", "Container", TypeAttributes.Public, objectType);
+                    module.Types.Add(container);
+                    candidate.Namespace = "";
+                    candidate.Attributes = TypeAttributes.NestedPublic;
+                    container.NestedTypes.Add(candidate);
+                }
+                else
+                {
+                    module.Types.Add(candidate);
+                }
+                candidate.Fields.Add(new FieldDefinition("_value", FieldAttributes.Private, objectType));
+                candidate.Fields.Add(new FieldDefinition("_layoutOnly", FieldAttributes.Private, module.ImportReference(typeof(IntPtr))));
+                foreach (bool overload in new[] { false, true })
+                {
+                    var callback = new MethodDefinition("Callback", MethodAttributes.Public | MethodAttributes.Static, voidType);
+                    if (overload)
+                        callback.Parameters.Add(new ParameterDefinition(objectType));
+                    callback.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
+                    candidate.Methods.Add(callback);
+                }
+                var program = new TypeDefinition("TestNS", "Program", TypeAttributes.Public, objectType);
+                module.Types.Add(program);
+                var main = new MethodDefinition("Main", MethodAttributes.Public | MethodAttributes.Static, voidType);
+                if (reachable)
+                {
+                    main.Body.Instructions.Add(Instruction.Create(OpCodes.Ldtoken, candidate));
+                    main.Body.Instructions.Add(Instruction.Create(OpCodes.Pop));
+                }
+                main.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
+                program.Methods.Add(main);
+                module.EntryPoint = main;
+                assembly.Write(input);
+            }
+
+            string output = Path.Combine(test.DirectoryPath, "linked");
+            using var driver = new Driver(new Queue<string>(new[] {
+                "-a", "Input", "entrypoint", "-reference", input, "-x", test.DescriptorPath, "-out", output,
+                "-reference", typeof(object).Assembly.Location,
+                "--feature", "TestFeature", featureEnabled ? "true" : "false",
+                "--action", "skip", "System.Private.CoreLib"
+            }));
+            var logger = new MockDriver.CustomLogger();
+            Assert.True(driver.Run(logger) == 0, string.Join(Environment.NewLine, logger.Messages));
+            using AssemblyDefinition linked = AssemblyDefinition.ReadAssembly(Path.Combine(output, "Input.dll"));
+            TypeDefinition retained = nested
+                ? linked.MainModule.GetType("TestNS.Container")?.NestedTypes.SingleOrDefault(t => t.Name == "Candidate")
+                : linked.MainModule.GetType("TestNS.Candidate");
+            if (reachable || featureEnabled)
+            {
+                Assert.NotNull(retained);
+                Assert.Equal(new[] { "_value", "_layoutOnly" }, retained.Fields.Select(f => f.Name));
+                Assert.Equal(2, retained.Methods.Count(m => m.Name == "Callback"));
+            }
+            else
+            {
+                Assert.Null(retained);
+            }
+        }
+
+        sealed class DescriptorTest : IDisposable
+        {
+            public string DirectoryPath { get; } = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            public string DescriptorPath => Path.Combine(DirectoryPath, "descriptor.xml");
+
+            public DescriptorTest() => Directory.CreateDirectory(DirectoryPath);
+
+            public XDocument Generate(string[] declarations, string coreTypes = "", string exceptions = "")
+            {
+                File.WriteAllLines(Path.Combine(DirectoryPath, "corelib.h"), declarations);
+                File.WriteAllText(Path.Combine(DirectoryPath, "namespace.h"), "#define g_TestNS \"TestNS\"" + Environment.NewLine);
+                File.WriteAllText(Path.Combine(DirectoryPath, "cortypeinfo.h"), coreTypes);
+                File.WriteAllText(Path.Combine(DirectoryPath, "rexcep.h"), exceptions);
+                string template = Path.Combine(DirectoryPath, "template.xml");
+                File.WriteAllText(template, "<linker><assembly fullname=\"Input\" /></linker>");
+                var task = new CreateRuntimeRootILLinkDescriptorFile {
+                    NamespaceFilePath = new TaskItem(Path.Combine(DirectoryPath, "namespace.h")),
+                    MscorlibFilePath = new TaskItem(Path.Combine(DirectoryPath, "corelib.h")),
+                    CortypeFilePath = new TaskItem(Path.Combine(DirectoryPath, "cortypeinfo.h")),
+                    RexcepFilePath = new TaskItem(Path.Combine(DirectoryPath, "rexcep.h")),
+                    ILLinkTrimXmlFilePath = new TaskItem(template),
+                    RuntimeRootDescriptorFilePath = new TaskItem(DescriptorPath)
+                };
+                Assert.True(task.Execute());
+                return XDocument.Load(DescriptorPath);
+            }
+
+            public void Dispose() => Directory.Delete(DirectoryPath, recursive: true);
+        }
+
         [Fact]
         public void ReadsNestedNamespaceDefinitions()
         {
