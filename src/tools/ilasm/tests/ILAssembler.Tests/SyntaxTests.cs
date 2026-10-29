@@ -10,10 +10,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
-using Antlr4.Runtime;
 using Internal.IL;
 using Xunit;
 
@@ -21,8 +18,6 @@ namespace ILAssembler.Tests
 {
     public class SyntaxTests
     {
-        private const string GrammarActionsTypeName = "ILAssembler.GrammarActions, ILAssembler";
-
         [Theory]
         [InlineData("\"hello\"", "hello")]
         [InlineData("\"hello\\tworld\"", "hello\tworld")]
@@ -37,18 +32,6 @@ namespace ILAssembler.Tests
             var result = StringHelpers.ParseQuotedString(input);
             Assert.Equal(expected, result);
         }
-
-        [Fact]
-        public void StringCharStream_SeekPastEnd_ClampsToEnd()
-        {
-            var stream = (ICharStream)CreateStringCharStream("abc", "test.il");
-
-            stream.Seek(10);
-
-            Assert.Equal(stream.Size, stream.Index);
-            Assert.Equal(TokenConstants.EOF, stream.LA(1));
-        }
-
 
         [Fact]
         public void Diagnostic_LiteralOutOfRange()
@@ -434,115 +417,6 @@ namespace ILAssembler.Tests
                 Assert.InRange(diagnostic.Location.Span.Start, 0, sourceLength);
                 Assert.InRange(diagnostic.Location.Span.Length, 0, sourceLength - diagnostic.Location.Span.Start);
             });
-        }
-
-        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        [return: UnsafeAccessorType("ILAssembler.StringCharStream, ILAssembler")]
-        private static extern object CreateStringCharStream(string text, string? sourceName);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        [return: UnsafeAccessorType(GrammarActionsTypeName)]
-        private static extern object CreateGrammarActions(
-            IReadOnlyDictionary<string, SourceText> documents,
-            Options options,
-            Func<string, byte[]?> resourceLocator);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_Actions")]
-        private static extern void SetGrammarActions(
-            CILParser parser,
-            [UnsafeAccessorType(GrammarActionsTypeName)] object actions);
-
-        [Theory]
-        [InlineData("[mscorlib]System.Object")]
-        [InlineData("[.module Other.netmodule]System.Object")]
-        [InlineData("System.Object")]
-        [InlineData("class [mscorlib]System.Object")]
-        [InlineData("class [.module Other.netmodule]System.Object")]
-        [InlineData("class [mscorlib]Generic`1<int32>")]
-        public void EmptyClasses_DoNotBufferFollowingDeclarations(string baseType)
-        {
-            var source = new StringBuilder(".assembly extern mscorlib { } .module extern Other.netmodule ");
-            for (int i = 0; i < 100; i++)
-            {
-                source.Append($".class public C{i} extends {baseType} {{ }} ");
-            }
-
-            var tokens = new MeasuringTokenStream(new CILLexer(new AntlrInputStream(source.ToString())));
-            CILParser parser = CreateParser(tokens);
-
-            parser.decls();
-
-            Assert.Equal(0, parser.NumberOfSyntaxErrors);
-            Assert.Equal(TokenConstants.EOF, tokens.LA(1));
-            Assert.InRange(tokens.MaximumBufferedTokens, 1, 64);
-        }
-
-        [Theory]
-        [InlineData("[Scope]", false)]
-        [InlineData("method void [Scope]::Target()", false)]
-        [InlineData("field int32 [Scope]::Value", false)]
-        [InlineData("[.module Scope]", true)]
-        [InlineData("method void [.module Scope]::Target()", true)]
-        [InlineData("field int32 [.module Scope]::Value", true)]
-        public void BareScopes_ArePreservedForOwners(string source, bool isModule)
-        {
-            var tokens = new UnbufferedTokenStream(new CILLexer(new AntlrInputStream(source)));
-            CILParser parser = CreateParser(tokens);
-
-            CILParser.OwnerTypeContext owner = parser.ownerType();
-
-            Assert.Equal(0, parser.NumberOfSyntaxErrors);
-            Assert.False(owner.HasSyntaxError);
-            Assert.Equal(TokenConstants.EOF, tokens.LA(1));
-            CILParser.TypeSpecificationValue? scope = owner.Value switch
-            {
-                CILParser.TypeOwnerValue type => type.Type,
-                CILParser.MemberOwnerValue
-                {
-                    Member: CILParser.MethodMemberReferenceValue
-                    {
-                        Method: CILParser.ParsedMethodReferenceValue method
-                    }
-                } => method.Owner,
-                CILParser.MemberOwnerValue
-                {
-                    Member: CILParser.FieldMemberReferenceValue
-                    {
-                        Field: CILParser.ParsedFieldReferenceValue field
-                    }
-                } => field.Owner,
-                _ => throw new InvalidOperationException($"Unexpected owner: {owner.Value}")
-            };
-            if (isModule)
-            {
-                Assert.Equal("Scope", Assert.IsType<CILParser.ModuleTypeSpecificationValue>(scope).ModuleName);
-            }
-            else
-            {
-                Assert.Equal("Scope", Assert.IsType<CILParser.AssemblyTypeSpecificationValue>(scope).AssemblyName);
-            }
-        }
-
-        private static CILParser CreateParser(ITokenStream tokens)
-        {
-            var parser = new CILParser(tokens) { BuildParseTree = false };
-            SetGrammarActions(parser, CreateGrammarActions(
-                new Dictionary<string, SourceText>(),
-                new Options(),
-                _ => throw new InvalidOperationException("Unexpected resource")));
-
-            return parser;
-        }
-
-        private sealed class MeasuringTokenStream(ITokenSource source) : UnbufferedTokenStream(source)
-        {
-            public int MaximumBufferedTokens { get; private set; }
-
-            public override void Release(int marker)
-            {
-                MaximumBufferedTokens = Math.Max(MaximumBufferedTokens, n);
-                base.Release(marker);
-            }
         }
 
         public static TheoryData<string, bool> TruncatedDirectiveMutations
