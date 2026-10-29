@@ -12,17 +12,11 @@ namespace System.Text.Json
                 return name;
             }
 
-#if NET
             return string.Create(name.Length, name, (chars, name) =>
             {
-                name.CopyTo(chars);
+                name.AsSpan().CopyTo(chars);
                 FixCasing(chars);
             });
-#else
-            char[] chars = name.ToCharArray();
-            FixCasing(chars);
-            return new string(chars);
-#endif
         }
 
         private static void FixCasing(Span<char> chars)

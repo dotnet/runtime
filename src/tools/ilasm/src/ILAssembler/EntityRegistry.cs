@@ -94,6 +94,7 @@ namespace ILAssembler
             ModuleType = GetOrCreateTypeDefinition(null, "", "<Module>", moduleType =>
             {
                 moduleType.BaseType = null;
+                moduleType.IsDefined = true;
             });
         }
 
@@ -106,7 +107,7 @@ namespace ILAssembler
             return Array.Empty<EntityBase>();
         }
 
-        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames, bool deterministic, bool fold)
+        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, DataLocation> mappedFieldDataNames, out ImmutableArray<DataLocation> mappedFields, bool deterministic, bool fold)
         {
             // Set the assembly handle early since DeclarativeSecurityAttribute needs it
             // The assembly definition handle is always row 1 (there's only ever one assembly per module)
@@ -312,6 +313,7 @@ namespace ILAssembler
                 }
             }
 
+            var mappedFieldLocations = ImmutableArray.CreateBuilder<DataLocation>();
             foreach (FieldDefinitionEntity fieldDef in GetSeenEntities(TableIndex.Field))
             {
                 var fieldAttributes = fieldDef.Attributes;
@@ -339,9 +341,10 @@ namespace ILAssembler
                     builder.AddFieldLayout((FieldDefinitionHandle)fieldDef.Handle, fieldDef.Offset.Value);
                 }
 
-                if (fieldDef.DataDeclarationName is not null && mappedFieldDataNames.TryGetValue(fieldDef.DataDeclarationName, out int dataOffset))
+                if (fieldDef.DataDeclarationName is not null && mappedFieldDataNames.TryGetValue(fieldDef.DataDeclarationName, out DataLocation dataLocation))
                 {
-                    builder.AddFieldRelativeVirtualAddress((FieldDefinitionHandle)fieldDef.Handle, dataOffset);
+                    builder.AddFieldRelativeVirtualAddress((FieldDefinitionHandle)fieldDef.Handle, dataLocation.Offset);
+                    mappedFieldLocations.Add(dataLocation);
                 }
 
                 if (fieldDef.MarshallingDescriptor is { Count: > 0 })
@@ -355,6 +358,7 @@ namespace ILAssembler
                 }
             }
 
+            mappedFields = mappedFieldLocations.ToImmutable();
             var bodyStreamEncoder = new MethodBodyStreamEncoder(ilStream);
             Dictionary<byte[], int>? foldedBodies = fold ? new(new MethodBodyContentEqualityComparer()) : null;
 
@@ -1015,9 +1019,14 @@ namespace ILAssembler
             return true;
         }
 
-        public static FieldDefinitionEntity? CreateUnrecordedFieldDefinition(FieldAttributes attributes, TypeDefinitionEntity containingType, string name, BlobBuilder signature)
+        public static FieldDefinitionEntity CreateUnrecordedFieldDefinition(FieldAttributes attributes, TypeDefinitionEntity containingType, string name, BlobBuilder signature)
         {
-            var field = new FieldDefinitionEntity(attributes, containingType, name, signature);
+            return new FieldDefinitionEntity(attributes, containingType, name, signature);
+        }
+
+        public static bool TryAddFieldDefinitionToContainingType(FieldDefinitionEntity field)
+        {
+            // ECMA-335 II.22.15: duplicate identity is owner+name+signature, excluding CompilerControlled fields.
             bool allowDuplicate = (field.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.PrivateScope;
             if (!allowDuplicate)
             {
@@ -1027,12 +1036,12 @@ namespace ILAssembler
                         && fieldDef.Signature.ContentEquals(field.Signature!)
                         && (fieldDef.Attributes & FieldAttributes.FieldAccessMask) != FieldAttributes.PrivateScope)
                     {
-                        return null;
+                        return false;
                     }
                 }
             }
             field.ContainingType.Fields.Add(field);
-            return field;
+            return true;
         }
 
         public static InterfaceImplementationEntity CreateUnrecordedInterfaceImplementation(TypeDefinitionEntity implementingType, TypeEntity interfaceType)
@@ -1865,6 +1874,7 @@ namespace ILAssembler
             public string Name { get; }
             public TypeAttributes Attributes { get; set; }
             public TypeEntity? BaseType { get; set; }
+            public bool IsDefined { get; set; }
 
             public NamedElementList<GenericParameterEntity> GenericParameters { get; } = new();
 
@@ -2247,8 +2257,9 @@ namespace ILAssembler
             }
 
             /// <summary>
-            /// Gets the index in the compilation's <see cref="PdbDocumentTable"/> of the document that was current
-            /// when the directive that produced this point was applied.
+            /// Gets the index in the compilation's <see cref="PdbDocumentTable"/> of the point's document: the
+            /// <c>.il</c> source the instruction is in when no <c>.line</c> directive is in effect, otherwise the
+            /// current document of that source.
             /// </summary>
             public int DocumentIndex { get; }
             public int ILOffset { get; }
@@ -2256,19 +2267,13 @@ namespace ILAssembler
             public int StartColumn { get; }
             public int EndLine { get; }
             public int EndColumn { get; }
-
-            /// <summary>
-            /// Creates a hidden sequence point (used for compiler-generated code).
-            /// </summary>
-            public static SequencePoint Hidden(int documentIndex, int ilOffset) => new(documentIndex, ilOffset, 0xFEEFEE, 0, 0xFEEFEE, 0);
-
-            public bool IsHidden => StartLine == 0xFEEFEE;
+            public bool IsHidden => StartLine == System.Reflection.Metadata.SequencePoint.HiddenLine;
         }
 
         /// <summary>
-        /// Debug information for a method: the sequence points recorded from its <c>.line</c> and <c>#line</c>
-        /// directives, in increasing IL offset order, with at most one point per offset, and the local signature
-        /// of its body. The points of one method may belong to different documents.
+        /// Debug information for a method: the sequence points recorded as its instructions were emitted, in
+        /// increasing IL offset order, with at most one point per offset, and the local signature of its body. The
+        /// points of one method may belong to different documents. Points are recorded only when a PDB is requested.
         /// </summary>
         public sealed class MethodDebugInfo
         {
