@@ -2382,11 +2382,6 @@ public:
             CORINFO_METHOD_HANDLE       method
             ) = 0;
 
-    // load and restore the method
-    virtual void methodMustBeLoadedBeforeCodeIsRun(
-            CORINFO_METHOD_HANDLE       method
-            ) = 0;
-
     // Returns the global cookie for the /GS unsafe buffer checks
     // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
     virtual void getGSCookie(
@@ -2527,6 +2522,12 @@ public:
 
     // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_VALUECLASS, except faster.
     virtual bool isValueClass(CORINFO_CLASS_HANDLE cls) = 0;
+
+    // Quick check whether the type is byref-like. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_BYREF_LIKE, except faster.
+    virtual bool isByRefLike(CORINFO_CLASS_HANDLE cls) = 0;
+
+    // Quick check whether the type is shared by generic instantiations. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_SHAREDINST, except faster.
+    virtual bool isSharedInst(CORINFO_CLASS_HANDLE cls) = 0;
 
     // return flags (a bitfield of CorInfoFlags values)
     virtual uint32_t getClassAttribs (
@@ -2788,20 +2789,6 @@ public:
             CORINFO_METHOD_HANDLE   method,         // Method referencing the field or prolog
                                                     // NULL - method being compiled
             CORINFO_CONTEXT_HANDLE  context         // Exact context of method
-            ) = 0;
-
-    // This used to be called "loadClass".  This records the fact
-    // that the class must be loaded (including restored if necessary) before we execute the
-    // code that we are currently generating.  When jitting code
-    // the function loads the class immediately.  When zapping code
-    // the zapper will if necessary use the call to record the fact that we have
-    // to do a fixup/restore before running the method currently being generated.
-    //
-    // This is typically used to ensure value types are loaded before zapped
-    // code that manipulates them is executed, so that the GC can access information
-    // about those value types.
-    virtual void classMustBeLoadedBeforeCodeIsRun(
-            CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
     // returns the class handle for the special builtin classes

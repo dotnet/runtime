@@ -1734,17 +1734,14 @@ Thanks for contributing to CLR Stress!
         {
             if (_curTestSet.ReportResults && File.Exists(Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js")))
             {
-                string arguments;
-                if (test == null)
-                {
-                    arguments = String.Format("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a ADD_CUSTOM -s RUNNING -k FAIL{0:000} -v \"(non test failure)\"", _reportedFailCnt++);
-                }
-                else
-                {
-                    arguments = String.Format("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a ADD_CUSTOM -s RUNNING -k FAIL{0:000} -v \"{1} ({2} ReturnCode={3})\"", _reportedFailCnt++, test.RefOrID, test.TestOwner, returnCode);
-                }
-                ProcessStartInfo psi = new ProcessStartInfo("cscript.exe", Environment.ExpandEnvironmentVariables(arguments));
-                psi.UseShellExecute = false;
+                string value = test is null
+                    ? "(non test failure)"
+                    : $"{test.RefOrID} ({test.TestOwner} ReturnCode={returnCode})";
+                ProcessStartInfo psi = new ProcessStartInfo("cscript.exe",
+                    ["//b", "//nologo", Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js"),
+                     "-i", Environment.ExpandEnvironmentVariables("%STRESSID%"), "-a", "ADD_CUSTOM", "-s", "RUNNING",
+                     "-k", $"FAIL{_reportedFailCnt++:000}", "-v", Environment.ExpandEnvironmentVariables(value)]);
+                psi.InheritedHandles = [];
                 psi.RedirectStandardOutput = true;
                 psi.RedirectStandardError = true;
 
