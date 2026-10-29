@@ -190,13 +190,8 @@ namespace BinderTracingTests
         private static bool RunTestInSeparateProcess(MethodInfo method)
         {
             string subprocessName = Environment.ProcessPath;
-            var startInfo = new ProcessStartInfo(subprocessName, new[] { Assembly.GetExecutingAssembly().Location, method.Name })
-            {
-                InheritedHandles = []
-            };
-
             Console.WriteLine($"[{DateTime.Now:T}] Launching process for {method.Name}...");
-            ProcessExitStatus result = Process.Run(startInfo);
+            ProcessExitStatus result = Process.Run(subprocessName, [Assembly.GetExecutingAssembly().Location, method.Name]);
             return result.ExitCode == 100;
         }
 
