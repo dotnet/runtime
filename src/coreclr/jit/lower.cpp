@@ -5417,7 +5417,7 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
                 return false;
             }
 
-            // A pair of floats can be directly reconstructed in an 8-byte floating-point register.
+            // On xarch, a pair of floats can be rebuilt in an 8-byte floating-point register.
             if (varTypeUsesFloatReg(use->GetNode()) && varTypeUsesFloatReg(regType) && (fieldStart != regStart))
             {
                 if (!supportsFloatPairInsertion)

@@ -3427,13 +3427,13 @@ bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigne
         }
 #endif // FEATURE_SIMD
 
-#ifdef TARGET_ARM
-        // The scalar extraction in rationalization can require TYP_LONG nodes, which are not legal after decomposition.
+#if LOWER_DECOMPOSE_LONGS
+        // Extraction can require TYP_LONG bitcasts, which long decomposition does not support.
         if (genIsValidFloatReg(seg.GetRegister()) && (!varTypeUsesFloatReg(accessType) || (offset != seg.Offset)))
         {
             continue;
         }
-#endif // TARGET_ARM
+#endif // LOWER_DECOMPOSE_LONGS
 
         return true;
     }

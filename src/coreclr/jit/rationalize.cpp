@@ -2792,14 +2792,14 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
         }
 #endif // FEATURE_SIMD
 
-#ifdef TARGET_ARM
+#if LOWER_DECOMPOSE_LONGS
         // The scalar extraction below can require TYP_LONG bitcasts, which long decomposition does not support.
         if (genIsValidFloatReg(segment.GetRegister()) &&
             (!varTypeUsesFloatReg(fld) || (fld->GetLclOffs() != segment.Offset)))
         {
             continue;
         }
-#endif // TARGET_ARM
+#endif // LOWER_DECOMPOSE_LONGS
 
         // Found a register segment this field is contained in
         regSegment = &segment;
@@ -2883,6 +2883,7 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
 #ifdef FEATURE_SIMD
     useSimdGetElement = varTypeIsSIMD(value) && !varTypeIsSIMD(fld);
 
+    // Wasm cannot read an f64 local as v128, so it uses the bitcast path below.
 #ifndef TARGET_WASM
     if (!useSimdGetElement && varTypeIsFloating(value) && varTypeIsFloating(fld) &&
         (fld->GetLclOffs() != regSegment->Offset) &&
