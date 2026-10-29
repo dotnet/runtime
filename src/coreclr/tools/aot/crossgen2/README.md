@@ -74,3 +74,33 @@ Cold metadata never overwrites a fixup cell that primary code can resolve.
 Per-module WebAssembly name sections and primary symbol maps are supported.
 Single-image map, PDB, perfmap and call-chain profile output is rejected because
 its file-relative addresses cannot describe multiple physical modules.
+
+## Experimental worker preparation
+
+Browser hosts can opt into background auxiliary download and compilation:
+
+```javascript
+dotnet.withEnvironmentVariable("DOTNET_WasmAuxiliaryWorkerCompilation", "1");
+```
+
+The worker receives the resolved resource URL and the existing fetch options,
+including integrity, cache and credentials. Download retries and throttling still
+use the resource loader. Custom resource providers remain on the main thread;
+their response bodies are transferred to the worker for compilation. The worker
+returns a compiled `WebAssembly.Module`, not an instance or runtime memory.
+The main thread instantiates the compiled module after native image registration,
+then runs `ActivateModule` and entrypoint notification immediately in the
+instantiation continuation. It uses `WebAssembly.instantiate(module, imports)`,
+because Chromium rejects the synchronous `Instance` constructor for modules
+larger than 8 MB even when they are already compiled. This avoids starting
+compilation on the page but does not guarantee same-turn instantiation on every
+browser.
+
+This option is off by default and uses the separately published
+`dotnet.auxiliary.worker.js` module worker. It requires compiled-module cloning
+and transferable streams for custom responses. The worker script must be served
+from the application's origin and allowed by Content Security Policy; Blob URLs
+are not used. Failures are reported through the existing auxiliary-module error
+path rather than silently switching modes. Workers terminate when their pending
+operations settle. This does not allow activation during a long managed call:
+the main thread must still reach a scheduling opportunity.

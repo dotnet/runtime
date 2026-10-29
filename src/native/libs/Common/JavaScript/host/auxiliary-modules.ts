@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 type AuxiliaryModule = { name: string, statusAddress: number, entrypoints: boolean };
+export type AuxiliaryModuleSource = Response | WebAssembly.Module;
 
 export function readAuxiliaryModuleMetadata(instance: WebAssembly.Instance, memory: WebAssembly.Memory, payloadPtr: number, payloadSize: number, tableSize: number): AuxiliaryModule[] {
     const getMetadata = instance.exports.getAuxiliaryModuleMetadata;
@@ -64,17 +65,23 @@ export function readAuxiliaryModuleMetadata(instance: WebAssembly.Instance, memo
 
 // Each operation settles independently: EntryPoints must not wait for a cold body (or vice versa).
 // Settled errors are retained for test/host waiters and reported immediately, without unhandled rejections.
-export function loadAuxiliaryModules(modules: AuxiliaryModule[], memory: WebAssembly.Memory, imports: WebAssembly.Imports, load: (name: string) => Promise<Response>, notifyEntryPoints: () => void, reportError: (error: Error) => void): Promise<void> {
+export function loadAuxiliaryModules(modules: AuxiliaryModule[], memory: WebAssembly.Memory, imports: WebAssembly.Imports, prepare: (name: string) => Promise<AuxiliaryModuleSource>, notifyEntryPoints: () => void, reportError: (error: Error) => void): Promise<void> {
     const operations = modules.map(async module => {
         try {
             if (new DataView(memory.buffer).getUint32(module.statusAddress, true) === 1) {
                 return;
             }
-            const response = await load(module.name);
-            if (!response.ok) {
-                throw new Error(`HTTP status: ${response.status} ${response.statusText}`);
+            const source = await prepare(module.name);
+            let instance: WebAssembly.Instance;
+            if (source instanceof WebAssembly.Module) {
+                // Chromium limits the synchronous constructor to modules below 8 MB, even when compiled.
+                instance = await WebAssembly.instantiate(source, imports);
+            } else {
+                if (!source.ok) {
+                    throw new Error(`HTTP status: ${source.status} ${source.statusText}`);
+                }
+                instance = (await WebAssembly.instantiate(await source.arrayBuffer(), imports)).instance;
             }
-            const { instance } = await WebAssembly.instantiate(await response.arrayBuffer(), imports);
             const activate = instance.exports.ActivateModule;
             if (typeof activate !== "function") {
                 throw new Error("Missing ActivateModule export.");

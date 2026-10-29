@@ -232,6 +232,8 @@
     <PlatformManifestFileEntry Include="libmono-wasm-nosimd.a" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js.map" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.auxiliary.worker.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.auxiliary.worker.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.runtime.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.runtime.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.diagnostics.js" IsNative="true" />

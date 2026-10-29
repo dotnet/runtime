@@ -68,6 +68,7 @@ function mergeResources(target: Assets, source: Assets): Assets {
     source.corePdb = [...target.corePdb!, ...source.corePdb || []];
     source.pdb = [...target.pdb!, ...source.pdb || []];
     source.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative || []];
+    source.jsModuleAuxiliaryWorker = [...target.jsModuleAuxiliaryWorker!, ...source.jsModuleAuxiliaryWorker || []];
     source.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics || []];
     source.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime || []];
     source.wasmSymbols = [...target.wasmSymbols!, ...source.wasmSymbols || []];
@@ -120,6 +121,7 @@ function normalizeResources(target: Assets) {
     if (!target.corePdb) target.corePdb = [];
     if (!target.pdb) target.pdb = [];
     if (!target.jsModuleNative) target.jsModuleNative = [];
+    if (!target.jsModuleAuxiliaryWorker) target.jsModuleAuxiliaryWorker = [];
     if (!target.jsModuleDiagnostics) target.jsModuleDiagnostics = [];
     if (!target.jsModuleRuntime) target.jsModuleRuntime = [];
     if (!target.wasmSymbols) target.wasmSymbols = [];

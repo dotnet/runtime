@@ -191,6 +191,9 @@ public class ResourcesData
     public ResourceHashesByNameDictionary jsModuleDiagnostics { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleAuxiliaryWorker { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleNative { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
@@ -292,6 +295,9 @@ public class AssetsData
     public List<JsAsset> jsModuleDiagnostics { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> jsModuleAuxiliaryWorker { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
     public List<JsAsset> jsModuleNative { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
@@ -374,6 +380,7 @@ public class JsAsset
 {
     public string name { get; set; }
     public string moduleExports { get; set; }
+    public string resolvedUrl { get; set; }
 }
 
 [DataContract]

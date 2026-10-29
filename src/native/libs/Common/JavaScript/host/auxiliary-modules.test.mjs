@@ -12,6 +12,11 @@ const ts = require(process.env.TYPESCRIPT_PATH || "typescript");
 const source = readFileSync(new URL("./auxiliary-modules.ts", import.meta.url), "utf8");
 const javascript = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText;
 const { readAuxiliaryModuleMetadata, loadAuxiliaryModules } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString("base64")}`);
+const workerClientSource = readFileSync(new URL("../loader/auxiliary-module-worker-client.ts", import.meta.url), "utf8");
+const workerClientJavascript = ts.transpileModule(workerClientSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText;
+const { fetchAndCompileAuxiliaryModuleInWorker, compileAuxiliaryResponseInWorker } = await import(`data:text/javascript;base64,${Buffer.from(workerClientJavascript).toString("base64")}`);
+const workerSource = readFileSync(new URL("../loader/auxiliary-module-worker.ts", import.meta.url), "utf8");
+const workerJavascript = ts.transpileModule(workerSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
 const corerunSource = readFileSync(new URL("../../../../../coreclr/hosts/corerun/wasm/libCorerun.js", import.meta.url), "utf8");
 
 test("browser: auxiliary boot resources survive configuration merges", () => {
@@ -21,10 +26,12 @@ test("browser: auxiliary boot resources survive configuration merges", () => {
     vm.runInNewContext(javascript, context);
     const first = { name: "app.entrypoints.hash.wasm", virtualPath: "app.entrypoints.wasm" };
     const second = { name: "app.1.hash.wasm", virtualPath: "app.1.wasm" };
-    context.exports.mergeLoaderConfig({ resources: { auxiliaryAssembly: [first] } });
+    const worker = { name: "dotnet.auxiliary.worker.hash.js" };
+    context.exports.mergeLoaderConfig({ resources: { auxiliaryAssembly: [first], jsModuleAuxiliaryWorker: [worker] } });
     context.exports.mergeLoaderConfig({ environmentVariables: { CUSTOM: "1" } });
     context.exports.mergeLoaderConfig({ resources: { auxiliaryAssembly: [second] } });
     assert.deepEqual([...context.exports.loaderConfig.resources.auxiliaryAssembly], [first, second]);
+    assert.deepEqual([...context.exports.loaderConfig.resources.jsModuleAuxiliaryWorker], [worker]);
 });
 
 function uleb(value) {
@@ -128,6 +135,238 @@ for (const first of ["app.entrypoints.wasm", "app.1.wasm"]) {
         new Uint8Array(f.memory.buffer)[f.payloadPtr + 208] = 77;
         duplicate.instance.exports.ActivateModule();
         assert.equal(new Uint8Array(f.memory.buffer)[f.payloadPtr + 208], 77);
+    });
+}
+
+for (const first of ["app.entrypoints.wasm", "app.1.wasm"]) {
+    test(`browser: prepared-module overload activates in its continuation, ${first} first`, async () => {
+        const f = fixture();
+        const pending = new Map();
+        const completion = loadAuxiliaryModules(f.modules, f.memory, f.imports,
+            name => new Promise(resolve => pending.set(name, resolve)), f.notify, error => f.errors.push(error));
+        const originalInstantiate = WebAssembly.instantiate;
+        const observedStatuses = [];
+        WebAssembly.instantiate = (module, imports) => {
+            assert(module instanceof WebAssembly.Module);
+            const instance = new WebAssembly.Instance(module, imports);
+            queueMicrotask(() => queueMicrotask(() => observedStatuses.push([
+                f.view.getUint32(f.payloadPtr, true), f.view.getUint32(f.payloadPtr + 28, true),
+            ])));
+            return Promise.resolve(instance);
+        };
+        try {
+            const second = first === "app.1.wasm" ? "app.entrypoints.wasm" : "app.1.wasm";
+            const prepared = name => new WebAssembly.Module(f.bytes[name]);
+            pending.get(first)(prepared(first));
+            await until(() => observedStatuses.length === 1 || f.errors.length !== 0);
+            assert.deepEqual(f.errors, []);
+            assert.deepEqual(observedStatuses, [first === "app.1.wasm" ? [0, 1] : [1, 0]]);
+            pending.get(second)(prepared(second));
+            await completion;
+            assert.equal(f.notifications(), 1);
+            assert.equal(f.table.get(4)(), 42);
+            assert.deepEqual(observedStatuses.at(-1), [1, 1]);
+        } finally {
+            WebAssembly.instantiate = originalInstantiate;
+        }
+    });
+}
+
+test("browser: worker preparation preserves requests, custom bodies, failures and cleanup", async () => {
+    const originalWorker = globalThis.Worker;
+    const originalDocument = globalThis.document;
+    const originalLocation = globalThis.location;
+    const workers = [];
+    const requests = [];
+    const options = { cache: "no-cache", credentials: "include", integrity: "sha256-example" };
+    const workerUrl = "https://example.test/app/dotnet.auxiliary.worker.hash.js";
+    const bytes = auxiliaryWasm(0, false);
+    globalThis.document = { baseURI: "https://example.test/app/" };
+    globalThis.Worker = class {
+        constructor(url, options) {
+            assert.equal(url, workerUrl);
+            assert.deepEqual(options, { type: "module", name: "dotnet-auxiliary-compiler" });
+            workers.push(this);
+            this.ready = Promise.resolve().then(() => {
+                const context = {
+                    exports: {}, WebAssembly, Response, Error,
+                    fetch: async (url, options) => {
+                        requests.push({ url, options });
+                        if (url.endsWith("missing.wasm")) return new Response(null, { status: 404 });
+                        return new Response(url.endsWith("invalid.wasm") ? new Uint8Array([0]) : bytes,
+                            { headers: { "Content-Type": "application/wasm" } });
+                    },
+                    postMessage: result => {
+                        if (!this.terminated) this.onmessage({ data: result });
+                    },
+                };
+                vm.runInNewContext(workerJavascript, context);
+                return context;
+            });
+        }
+        postMessage(request, transfer) {
+            this.transfer = transfer;
+            void this.ready.then(context => {
+                if (!this.terminated) return context.onmessage({ data: request });
+            });
+        }
+        terminate() {
+            this.terminated = true;
+        }
+    };
+    try {
+        const [prepared, missing] = await Promise.all([
+            fetchAndCompileAuxiliaryModuleInWorker(workerUrl, "app.wasm", options),
+            fetchAndCompileAuxiliaryModuleInWorker(workerUrl, "missing.wasm", {}),
+        ]);
+        assert(prepared.module instanceof WebAssembly.Module);
+        assert.equal(prepared.ok, true);
+        assert.equal(missing.status, 404);
+        assert.equal(workers.length, 1);
+        assert.equal(workers[0].terminated, true);
+        assert.deepEqual(requests[0], { url: "https://example.test/app/app.wasm", options });
+        await assert.rejects(fetchAndCompileAuxiliaryModuleInWorker(workerUrl, "invalid.wasm", {}), WebAssembly.CompileError);
+        assert.equal(workers[1].terminated, true);
+        const custom = await compileAuxiliaryResponseInWorker(workerUrl, new Response(bytes));
+        assert(custom.module instanceof WebAssembly.Module);
+        assert.equal(requests.length, 3);
+        assert.equal(workers[2].transfer.length, 1);
+        assert.equal(workers[2].terminated, true);
+        await assert.rejects(compileAuxiliaryResponseInWorker(workerUrl, new Response(null)), /no body/);
+        const crashed = fetchAndCompileAuxiliaryModuleInWorker(workerUrl, "app.wasm", {});
+        const deserializeFailed = fetchAndCompileAuxiliaryModuleInWorker(workerUrl, "app.wasm", {});
+        workers[3].onerror({ message: "worker crashed", preventDefault() {} });
+        await assert.rejects(crashed, /worker crashed/);
+        await assert.rejects(deserializeFailed, /worker crashed/);
+        assert.equal(workers[3].terminated, true);
+        delete globalThis.document;
+        globalThis.location = { href: "https://example.test/app/worker.js" };
+        const workerHosted = await fetchAndCompileAuxiliaryModuleInWorker(workerUrl, "app.wasm", {});
+        assert(workerHosted.module instanceof WebAssembly.Module);
+        assert.equal(requests.at(-1).url, "https://example.test/app/app.wasm");
+        assert.equal(workers[4].terminated, true);
+    } finally {
+        if (originalWorker === undefined) delete globalThis.Worker;
+        else globalThis.Worker = originalWorker;
+        if (originalDocument === undefined) delete globalThis.document;
+        else globalThis.document = originalDocument;
+        if (originalLocation === undefined) delete globalThis.location;
+        else globalThis.location = originalLocation;
+    }
+});
+
+for (const provider of ["network", "custom", "preloaded", "pending", "redirect", "default", "disabled", "retry", "compile-error"]) {
+    test(`browser: auxiliary preparation preserves resource policy, ${provider}`, async () => {
+        const bytes = auxiliaryWasm(0, false);
+        const compiled = new WebAssembly.Module(bytes);
+        const asset = { name: "app.1.hash.wasm", virtualPath: "app.1.wasm", hash: "sha256-example", cache: "reload" };
+        if (provider === "preloaded") asset.buffer = bytes.buffer;
+        if (provider === "pending") asset.pendingDownload = { response: Promise.resolve(new Response(bytes)) };
+        const config = {
+            maxParallelDownloads: 16,
+            enableDownloadRetry: true,
+            environmentVariables: { DOTNET_WasmAuxiliaryWorkerCompilation: provider === "disabled" ? "0" : "1" },
+            resources: {
+                auxiliaryAssembly: [asset],
+                jsModuleAuxiliaryWorker: [{ name: "dotnet.auxiliary.worker.hash.js" }],
+            },
+        };
+        const fetched = [];
+        const prepared = [];
+        const compiledResponses = [];
+        const createPromiseCompletionSource = () => {
+            let resolve, reject;
+            const promise = new Promise((a, b) => {
+                resolve = a; reject = b;
+            });
+            return { promise, resolve, reject };
+        };
+        const dependencies = {
+            "./cross-module": {
+                dotnetAssert: { check: (condition, message) => assert(condition, message) },
+                dotnetLogger: { debug() {} },
+            },
+            "./per-module": { ENVIRONMENT_IS_WEB: true },
+            "./promise-completion-source": { createPromiseCompletionSource, delay: () => Promise.resolve() },
+            "./bootstrap": {
+                locateFile: name => `https://example.test/app/${name}`,
+                makeURLAbsoluteWithApplicationBase: name => new URL(name, "https://example.test/").href,
+            },
+            "./polyfills": {
+                fetchLike: async (url, options) => {
+                    fetched.push({ url, options });
+                    return new Response(bytes);
+                },
+                responseLike: (_url, body, options) => new Response(body, options),
+            },
+            "./config": { loaderConfig: config },
+            "./callbacks": {},
+            "./auxiliary-module-worker-client": {
+                fetchAndCompileAuxiliaryModuleInWorker: async (workerUrl, url, options) => {
+                    prepared.push({ workerUrl, url, options });
+                    if (provider === "compile-error") throw new WebAssembly.CompileError("Invalid auxiliary body");
+                    if (provider === "retry" && prepared.length === 1) return new Response(null, { status: 500 });
+                    return { ok: true, status: 200, statusText: "OK", module: compiled };
+                },
+                compileAuxiliaryResponseInWorker: async (workerUrl, response) => {
+                    assert.equal(workerUrl, "https://example.test/app/dotnet.auxiliary.worker.hash.js");
+                    compiledResponses.push(await response.arrayBuffer());
+                    return { ok: true, status: 200, statusText: "OK", module: compiled };
+                },
+            },
+        };
+        const loaderSource = readFileSync(new URL("../loader/assets.ts", import.meta.url), "utf8")
+            + "\nexport { prepareAuxiliaryModule, loadResource };\nexport const activeDownloads = () => currentParallelDownloads;\n";
+        const loaderJavascript = ts.transpileModule(loaderSource,
+            { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+        const context = {
+            exports: {}, WebAssembly, Error,
+            require: name => {
+                assert(name in dependencies, `Unexpected loader dependency '${name}'`);
+                return dependencies[name];
+            },
+        };
+        vm.runInNewContext(loaderJavascript, context);
+        context.exports.resolveAllDownloadsQueued();
+        context.exports.setLoadBootResourceCallback((type, name) => {
+            if (name.endsWith(".js")) return undefined;
+            if (provider === "custom") return Promise.resolve(new Response(bytes));
+            if (provider === "redirect") return "cdn/app.wasm";
+            return null;
+        });
+        if (provider === "compile-error") {
+            await assert.rejects(context.exports.prepareAuxiliaryModule(asset.virtualPath), WebAssembly.CompileError);
+            assert.equal(prepared.length, 1);
+        } else if (provider === "default") {
+            const response = await context.exports.loadResource({ ...asset, behavior: "webcil", resolvedUrl: "https://example.test/app/app.1.hash.wasm" });
+            assert(response instanceof Response);
+            assert.equal(prepared.length, 0);
+            assert.equal(fetched.length, 1);
+        } else if (provider === "disabled") {
+            const result = await context.exports.prepareAuxiliaryModule(asset.virtualPath);
+            assert(result instanceof Response);
+            assert.equal(prepared.length, 0);
+            assert.equal(fetched.length, 1);
+        } else {
+            const result = await context.exports.prepareAuxiliaryModule(asset.virtualPath);
+            assert.equal(result, compiled);
+            assert.equal(fetched.length, 0);
+            if (["custom", "preloaded", "pending"].includes(provider)) {
+                assert.equal(prepared.length, 0);
+                assert.equal(compiledResponses.length, 1);
+                assert.deepEqual(new Uint8Array(compiledResponses[0]), bytes);
+            } else {
+                assert.equal(prepared.length, provider === "retry" ? 2 : 1);
+                const request = prepared.at(-1);
+                assert.equal(request.workerUrl, "https://example.test/app/dotnet.auxiliary.worker.hash.js");
+                assert.equal(request.url, provider === "redirect" ? "https://example.test/cdn/app.wasm" : "https://example.test/app/app.1.hash.wasm");
+                assert.deepEqual({ ...request.options }, { cache: "reload", integrity: asset.hash });
+            }
+        }
+        if (provider !== "default") {
+            assert.equal(context.exports.activeDownloads(), 0);
+            assert.equal(asset.inprogress, false);
+        }
     });
 }
 

@@ -6,6 +6,7 @@ import { _ems_ } from "../ems-ambient";
 
 import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
 import { loadAuxiliaryModules, readAuxiliaryModuleMetadata } from "./auxiliary-modules";
+import type { AuxiliaryModuleSource } from "./auxiliary-modules";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
@@ -53,7 +54,7 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortNa
     }
 }
 
-export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number, loadAuxiliaryModule?: (name: string) => Promise<Response>): Promise<void> {
+export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number, prepareAuxiliaryModule?: (name: string) => Promise<AuxiliaryModuleSource>): Promise<void> {
     // Boot-config sizes let us reserve the payload and table ranges before streaming instantiation.
     // Assets without a tableSize are IL-only images.
     if (typeof payloadSize !== "number" || payloadSize === 0) {
@@ -76,13 +77,13 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
             instance = (await WebAssembly.instantiate(data, imports)).instance;
         }
         const modules = readAuxiliaryModuleMetadata(instance, memory, payloadPtr, payloadSize, tableEntries);
-        if (modules.length !== 0 && !loadAuxiliaryModule) {
+        if (modules.length !== 0 && !prepareAuxiliaryModule) {
             throw new Error(`Webcil asset '${virtualPath}' has auxiliary modules but no auxiliary resource loader.`);
         }
         finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath);
         if (modules.length !== 0) {
             pendingAuxiliaryModules.set(payloadPtr, () => {
-                auxiliaryModuleLoads.push(loadAuxiliaryModules(modules, memory, imports, loadAuxiliaryModule!, () => {
+                auxiliaryModuleLoads.push(loadAuxiliaryModules(modules, memory, imports, prepareAuxiliaryModule!, () => {
                     const notify = _ems_.wasmExports.dotnet_wasm_notify_auxiliary_entrypoints_activated;
                     if (typeof notify !== "function") throw new Error("Runtime does not support auxiliary R2R modules.");
                     notify();
