@@ -8,52 +8,51 @@
     <Left>net11.0/System.IO.Compression.dll</Left>
     <Right>net12.0/System.IO.Compression.dll</Right>
   </Suppression>
-  <!-- WASI support intentionally removes UnsupportedOSPlatform("wasi") while retaining "browser".
-       Change these CP0015 suppressions to CP0014 when ApiCompat includes dotnet/sdk#55448. -->
+  <!-- WASI support intentionally removes UnsupportedOSPlatform("wasi") while retaining "browser". -->
   <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>T:System.IO.Compression.ZstandardCompressionOptions:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net11.0/System.IO.Compression.dll</Left>
     <Right>net12.0/System.IO.Compression.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>T:System.IO.Compression.ZstandardDecoder:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net11.0/System.IO.Compression.dll</Left>
     <Right>net12.0/System.IO.Compression.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>T:System.IO.Compression.ZstandardDecompressionOptions:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net11.0/System.IO.Compression.dll</Left>
     <Right>net12.0/System.IO.Compression.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>T:System.IO.Compression.ZstandardDictionary:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net11.0/System.IO.Compression.dll</Left>
     <Right>net12.0/System.IO.Compression.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>T:System.IO.Compression.ZstandardEncoder:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net11.0/System.IO.Compression.dll</Left>
     <Right>net12.0/System.IO.Compression.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>T:System.IO.Compression.ZstandardStream:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net11.0/System.IO.Compression.dll</Left>
     <Right>net12.0/System.IO.Compression.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>T:System.Net.Http.BrotliCompressedContent:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net11.0/System.Net.Http.dll</Left>
     <Right>net12.0/System.Net.Http.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>T:System.Net.Http.ZstandardCompressedContent:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net11.0/System.Net.Http.dll</Left>
     <Right>net12.0/System.Net.Http.dll</Right>
