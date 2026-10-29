@@ -54,6 +54,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     defaultSeverity: DiagnosticSeverity.Warning,
                     isEnabledByDefault: true);
 
+                public static DiagnosticDescriptor PropertyTypeConverterRequiresReflection { get; } = DiagnosticDescriptorHelper.Create(
+                    id: "SYSLIB1105",
+                    title: new LocalizableResourceString(nameof(SR.PropertyTypeConverterRequiresReflectionTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
+                    messageFormat: new LocalizableResourceString(nameof(SR.PropertyTypeConverterRequiresReflectionMessageFormat), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
+                    category: ProjectName,
+                    defaultSeverity: DiagnosticSeverity.Warning,
+                    isEnabledByDefault: true);
+
                 private static DiagnosticDescriptor CreateTypeNotSupportedDescriptor(string nameofLocalizableMessageFormat) =>
                     DiagnosticDescriptorHelper.Create(
                     id: "SYSLIB1100",
