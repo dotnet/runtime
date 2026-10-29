@@ -50,6 +50,17 @@
 
     .method public hidebysig instance void 'special.CarrierConstructor..ctor_Valid'(int32& input) cil managed { ret }
 
+    .method public hidebysig instance void Return.TypedReferenceThisEscape_Invalid_Unverifiable() cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        mkrefany RefCarrier
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call void ReturnTestsType::Return.StoreTypedCarrier_Valid(typedref, valuetype RefCarrier)
+        ret
+    }
+
     .method public hidebysig newslot virtual final instance void Return.Capture_Valid(int32& input) cil managed
     {
         .override method instance void IRefMutator::Capture(int32&)
@@ -76,6 +87,20 @@
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
     .field public valuetype RefCarrier A
     .field public valuetype RefCarrier B
+
+    .method public hidebysig specialname rtspecialname instance void .ctor(valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stfld valuetype RefCarrier OuterCarrier::A
+        ldarg.0
+        ldarg.0
+        ldfld valuetype RefCarrier OuterCarrier::A
+        stfld valuetype RefCarrier OuterCarrier::B
+        ret
+    }
+
+    .method public hidebysig instance void 'special.CopyingConstructor..ctor_Valid'(valuetype RefCarrier input) cil managed { ret }
 }
 
 .class public sequential ansi sealed beforefieldinit UnscopedAccessor
@@ -114,6 +139,17 @@
         .param [2]
         .custom instance void [System.Runtime]System.Runtime.CompilerServices.ScopedRefAttribute::.ctor() = ( 01 00 00 00 )
     }
+}
+
+.class interface public abstract auto ansi ITypedReferenceConsumer
+{
+    .method public hidebysig newslot abstract virtual instance void Consume(typedref input) cil managed {}
+}
+
+.class public auto ansi sealed TypedReferenceDelegate extends [System.Runtime]System.MulticastDelegate
+{
+    .method public hidebysig specialname rtspecialname instance void .ctor(object target, native int fn) runtime managed {}
+    .method public hidebysig newslot virtual instance void Invoke(typedref input) runtime managed {}
 }
 
 .class public auto ansi beforefieldinit ReturnTestsType
@@ -270,7 +306,7 @@
         ret
     }
 
-    .method public hidebysig static valuetype RefCarrier Return.UntrackedFirstEscape_Invalid_ReturnPtrToStack(valuetype OuterCarrier input) cil managed
+    .method public hidebysig static valuetype RefCarrier Return.UntrackedFirstEscape_Invalid_Unverifiable.ReturnPtrToStack(valuetype OuterCarrier input) cil managed
     {
         .locals init ([0] int32, [1] valuetype RefCarrier)
         ldloca.s 1
@@ -285,7 +321,7 @@
         ret
     }
 
-    .method public hidebysig static valuetype RefCarrier Return.UntrackedSecondEscape_Invalid_ReturnPtrToStack(valuetype OuterCarrier input) cil managed
+    .method public hidebysig static valuetype RefCarrier Return.UntrackedSecondEscape_Invalid_Unverifiable.ReturnPtrToStack(valuetype OuterCarrier input) cil managed
     {
         .locals init ([0] int32, [1] valuetype RefCarrier)
         ldloca.s 1
@@ -442,6 +478,526 @@
         ldarg.0
         box !!T
         ret
+    }
+
+    .method public hidebysig static bool Return.GenericNullCheck_Valid<byreflike T>(!!T input) cil managed
+    {
+        ldarg.0
+        box !!T
+        brtrue.s not_null
+        ldc.i4.1
+        ret
+    not_null:
+        ldc.i4.0
+        ret
+    }
+
+    .method public hidebysig static bool Return.GenericTypeCheck_Valid<byreflike T>(!!T input) cil managed
+    {
+        ldarg.0
+        box !!T
+        isinst [System.Runtime]System.IDisposable
+        brfalse.s not_disposable
+        ldc.i4.1
+        ret
+    not_disposable:
+        ldc.i4.0
+        ret
+    }
+
+    .method public hidebysig static !!T Return.GenericBoxRoundTrip_Valid<byreflike T>(!!T input) cil managed
+    {
+        ldarg.0
+        box !!T
+        unbox.any !!T
+        ret
+    }
+
+    .method public hidebysig static !!T Return.GenericBoxTypeRoundTrip_Valid<byreflike T>(!!T input) cil managed
+    {
+        ldarg.0
+        box !!T
+        isinst !!T
+        unbox.any !!T
+        ret
+    }
+
+    .method public hidebysig static !!T Return.BoxRoundTripEscape_Invalid_ReturnPtrToStack<byreflike T>(!!T input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.ScopedRefAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        box !!T
+        unbox.any !!T
+        ret
+    }
+
+    .method public hidebysig static !!T Return.BoxTypeRoundTripEscape_Invalid_ReturnPtrToStack<byreflike T>(!!T input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.ScopedRefAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        box !!T
+        isinst !!T
+        unbox.any !!T
+        ret
+    }
+
+    .method public hidebysig static object Return.GenericBoxWrongUnbox_Invalid_BoxByRef<byreflike T>(!!T input) cil managed
+    {
+        ldarg.0
+        box !!T
+        unbox.any [System.Runtime]System.Object
+        ret
+    }
+
+    .method public hidebysig static !!T Return.GenericBoxWrongTypeTest_Invalid_BoxByRef<byreflike T>(!!T input) cil managed
+    {
+        ldarg.0
+        box !!T
+        isinst [System.Runtime]System.Object
+        unbox.any !!T
+        ret
+    }
+
+    .method public hidebysig static void Return.StoreTypedCarrier_Valid(typedref destination, valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        refanyval RefCarrier
+        ldarg.1
+        stobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.TypedReferenceParameterEscape_Invalid_Unverifiable(valuetype RefCarrier& destination) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        mkrefany RefCarrier
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call void ReturnTestsType::Return.StoreTypedCarrier_Valid(typedref, valuetype RefCarrier)
+        ret
+    }
+
+    .method public hidebysig static void Return.TypedReferenceDirectStoreControl_Invalid_Unverifiable(valuetype RefCarrier& destination) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        stobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.TypedReferenceValueParameter_Valid(valuetype RefCarrier destination) cil managed
+    {
+        .locals init ([0] int32)
+        ldarga.s 0
+        mkrefany RefCarrier
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call void ReturnTestsType::Return.StoreTypedCarrier_Valid(typedref, valuetype RefCarrier)
+        ret
+    }
+
+    .method public hidebysig static void Return.TypedReferenceLocal_Valid() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype RefCarrier)
+        ldloca.s 1
+        mkrefany RefCarrier
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call void ReturnTestsType::Return.StoreTypedCarrier_Valid(typedref, valuetype RefCarrier)
+        ret
+    }
+
+    .method public hidebysig static int32& Return.TypedReferenceSnapshotEscape_Invalid_Unverifiable() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype OuterCarrier)
+        ldloc.1
+        ldflda valuetype RefCarrier OuterCarrier::A
+        dup
+        mkrefany RefCarrier
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call void ReturnTestsType::Return.StoreTypedCarrier_Valid(typedref, valuetype RefCarrier)
+        ldfld int32& RefCarrier::Item
+        ret
+    }
+
+    .method public hidebysig static int32& Return.TypedReferenceTrackedAliasEscape_Invalid_Unverifiable.ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype OuterCarrier)
+        ldloca.s 1
+        ldflda valuetype RefCarrier OuterCarrier::A
+        dup
+        mkrefany RefCarrier
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call void ReturnTestsType::Return.StoreTypedCarrier_Valid(typedref, valuetype RefCarrier)
+        ldfld int32& RefCarrier::Item
+        ret
+    }
+
+    .method public hidebysig static valuetype RefCarrier Return.TypedReferenceDeferredEscape_Invalid_ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype RefCarrier, [2] typedref)
+        ldloca.s 1
+        mkrefany RefCarrier
+        stloc.2
+        ldloc.2
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call void ReturnTestsType::Return.StoreTypedCarrier_Valid(typedref, valuetype RefCarrier)
+        ldloc.1
+        ret
+    }
+
+    .method public hidebysig static void Return.StoreTypedCarrierByRef_Invalid_Unverifiable(typedref& destination, valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldobj [System.Runtime]System.TypedReference
+        refanyval RefCarrier
+        ldarg.1
+        stobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static valuetype RefCarrier Return.TypedReferenceByRefEscape_Invalid_Unverifiable.ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype RefCarrier, [2] typedref)
+        ldloca.s 1
+        mkrefany RefCarrier
+        stloc.2
+        ldloca.s 2
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call void ReturnTestsType::Return.StoreTypedCarrierByRef_Invalid_Unverifiable(typedref&, valuetype RefCarrier)
+        ldloc.1
+        ret
+    }
+
+    .method public hidebysig static object Return.VirtualTypedReference_Valid(class [System.Runtime]System.Reflection.FieldInfo info) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        ldloca.s 0
+        mkrefany [System.Runtime]System.Int32
+        callvirt instance object [System.Runtime]System.Reflection.FieldInfo::GetValueDirect(typedref)
+        ret
+    }
+
+    .method public hidebysig static void Return.InterfaceTypedReference_Valid(class ITypedReferenceConsumer consumer) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        ldloca.s 0
+        mkrefany [System.Runtime]System.Int32
+        callvirt instance void ITypedReferenceConsumer::Consume(typedref)
+        ret
+    }
+
+    .method public hidebysig static void Return.DelegateTypedReference_Valid(class TypedReferenceDelegate consumer) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        ldloca.s 0
+        mkrefany [System.Runtime]System.Int32
+        callvirt instance void TypedReferenceDelegate::Invoke(typedref)
+        ret
+    }
+
+    .method public hidebysig static valuetype RefCarrier Return.TypedReferenceEscape_Invalid_ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype RefCarrier)
+        ldloca.s 1
+        mkrefany RefCarrier
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call void ReturnTestsType::Return.StoreTypedCarrier_Valid(typedref, valuetype RefCarrier)
+        ldloc.1
+        ret
+    }
+
+    .method public hidebysig static valuetype RefCarrier Return.TypedReferenceAfterResetEscape_Invalid_ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype RefCarrier)
+        ldloca.s 1
+        mkrefany RefCarrier
+        ldloca.s 1
+        initobj RefCarrier
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call void ReturnTestsType::Return.StoreTypedCarrier_Valid(typedref, valuetype RefCarrier)
+        ldloc.1
+        ret
+    }
+
+    .method public hidebysig static void Return.StoreTypedSpan_Valid(typedref destination, valuetype [System.Runtime]System.Span`1<int32> input) cil managed
+    {
+        ldarg.0
+        refanyval valuetype [System.Runtime]System.Span`1<int32>
+        ldarg.1
+        stobj valuetype [System.Runtime]System.Span`1<int32>
+        ret
+    }
+
+    .method public hidebysig static valuetype [System.Runtime]System.Span`1<int32> Return.TypedReferenceSpanEscape_Invalid_ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype [System.Runtime]System.Span`1<int32>)
+        ldloca.s 1
+        mkrefany valuetype [System.Runtime]System.Span`1<int32>
+        ldloca.s 0
+        newobj instance void valuetype [System.Runtime]System.Span`1<int32>::.ctor(!0&)
+        call void ReturnTestsType::Return.StoreTypedSpan_Valid(typedref, valuetype [System.Runtime]System.Span`1<int32>)
+        ldloc.1
+        ret
+    }
+
+    .method public hidebysig static int32& Return.TemporaryAliasEscape_Invalid_Unverifiable() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype OuterCarrier)
+        ldloc.1
+        ldflda valuetype RefCarrier OuterCarrier::A
+        dup
+        ldloca.s 0
+        stfld int32& RefCarrier::Item
+        ldfld int32& RefCarrier::Item
+        ret
+    }
+
+    .method public hidebysig static int32& Return.TemporaryStoredAliasEscape_Invalid_Unverifiable() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype OuterCarrier, [2] valuetype RefCarrier&)
+        ldloc.1
+        ldflda valuetype RefCarrier OuterCarrier::A
+        dup
+        stloc.2
+        ldloca.s 0
+        stfld int32& RefCarrier::Item
+        ldloc.2
+        ldfld int32& RefCarrier::Item
+        ret
+    }
+
+    .method public hidebysig static int32& Return.TemporaryUnchangedAlias_Valid(valuetype OuterCarrier input) cil managed
+    {
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::A
+        ldfld int32& RefCarrier::Item
+        ret
+    }
+
+    .method public hidebysig static int32& Return.TemporaryIndirectAliasEscape_Invalid_Unverifiable() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype OuterCarrier)
+        ldloc.1
+        ldflda valuetype RefCarrier OuterCarrier::A
+        dup
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        stobj RefCarrier
+        ldfld int32& RefCarrier::Item
+        ret
+    }
+
+    .method public hidebysig static int32& Return.TemporaryCallAliasEscape_Invalid_Unverifiable() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype OuterCarrier)
+        ldloc.1
+        ldflda valuetype RefCarrier OuterCarrier::A
+        dup
+        ldloca.s 0
+        call void ReturnTestsType::Return.StoreCarrier_Valid(valuetype RefCarrier&, int32&)
+        ldfld int32& RefCarrier::Item
+        ret
+    }
+
+    .method public hidebysig static void Return.ReadAssignedOutputField_Valid([out] valuetype RefPairCarrier& output, int32& input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stfld int32& RefPairCarrier::First
+        ldarg.0
+        ldarg.0
+        ldfld int32& RefPairCarrier::First
+        stfld int32& RefPairCarrier::Second
+        ret
+    }
+
+    .method public hidebysig static void Return.ReadUnassignedOutputField_Invalid_Unverifiable([out] valuetype RefPairCarrier& output, int32& input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stfld int32& RefPairCarrier::First
+        ldarg.0
+        ldfld int32& RefPairCarrier::Second
+        pop
+        ldarg.0
+        initobj RefPairCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.ReadConditionalOutputField_Invalid_Unverifiable(bool choose, [out] valuetype RefPairCarrier& output, int32& input) cil managed
+    {
+        ldarg.0
+        brtrue.s first
+        ldarg.1
+        ldarg.2
+        stfld int32& RefPairCarrier::Second
+        br.s joined
+    first:
+        ldarg.1
+        ldarg.2
+        stfld int32& RefPairCarrier::First
+    joined:
+        ldarg.1
+        ldfld int32& RefPairCarrier::First
+        pop
+        ldarg.1
+        initobj RefPairCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.RevisitedDiagnostic_Invalid_InitLocals(bool repeat, valuetype RefCarrier input, int32 source) cil managed
+    {
+        .locals ([0] int32)
+    again:
+        ldarg.0
+        brtrue.s mutate
+        ldloc.0
+        pop
+        ret
+    mutate:
+        ldarga.s 1
+        ldarga.s 2
+        stfld int32& RefCarrier::Item
+        br.s again
+    }
+
+    .method public hidebysig static valuetype RefCarrier Return.RevisitedLifetimeDiagnostic_Invalid_InitLocals.ReturnPtrToStack(bool repeat, valuetype RefCarrier input, int32 source) cil managed
+    {
+        .locals ([0] int32)
+    again:
+        ldarg.0
+        brtrue.s mutate
+        ldloc.0
+        pop
+        ldarg.1
+        ret
+    mutate:
+        ldarga.s 1
+        ldarga.s 2
+        stfld int32& RefCarrier::Item
+        br.s again
+    }
+
+    .method public hidebysig static valuetype RefCarrier Return.RevisitedLifetimeControl_Invalid_ReturnPtrToStack(bool repeat, valuetype RefCarrier input, int32 source) cil managed
+    {
+        .locals init ([0] int32)
+    again:
+        ldarg.0
+        brtrue.s mutate
+        ldloc.0
+        pop
+        ldarg.1
+        ret
+    mutate:
+        ldarga.s 1
+        ldarga.s 2
+        stfld int32& RefCarrier::Item
+        br.s again
+    }
+
+    .method public hidebysig static valuetype RefCarrier Return.RevisitedExceptionalDiagnostic_Invalid_InitLocals.ReturnPtrToStack(valuetype RefCarrier input, int32 source) cil managed
+    {
+        .locals ([0] int32)
+        .try
+        {
+            leave.s done
+        }
+        catch [System.Runtime]System.Exception
+        {
+            pop
+            ldarga.s 0
+            ldarga.s 1
+            stfld int32& RefCarrier::Item
+            leave.s done
+        }
+    done:
+        ldloc.0
+        pop
+        ldarg.0
+        ret
+    }
+
+    .method public hidebysig static bool Return.GenericBoxBranchBoundary_Invalid_BoxByRef<byreflike T>(!!T input, bool choose) cil managed
+    {
+        ldarg.1
+        brfalse.s other
+        ldarg.0
+        box !!T
+    test:
+        brtrue.s yes
+        ldc.i4.0
+        ret
+    yes:
+        ldc.i4.1
+        ret
+    other:
+        ldnull
+        br.s test
+    }
+
+    .method public hidebysig static bool Return.GenericBoxTypeTestBoundary_Invalid_BoxByRef<byreflike T>(!!T input, bool choose) cil managed
+    {
+        ldarg.1
+        brfalse.s other
+        ldarg.0
+        box !!T
+    test:
+        isinst [System.Runtime]System.IDisposable
+        brfalse.s no
+        ldc.i4.1
+        ret
+    no:
+        ldc.i4.0
+        ret
+    other:
+        ldnull
+        br.s test
+    }
+
+    .method public hidebysig static void Return.GenericBoxUnboxBoundary_Invalid_BoxByRef<byreflike T>(!!T input, bool choose) cil managed
+    {
+        ldarg.1
+        brfalse.s other
+        ldarg.0
+        box !!T
+    test:
+        unbox.any !!T
+        pop
+        ret
+    other:
+        ldnull
+        br.s test
+    }
+
+    .method public hidebysig static void Return.GenericBoxTypeUnboxBoundary_Invalid_BoxByRef<byreflike T>(!!T input, bool choose) cil managed
+    {
+        ldarg.1
+        brfalse.s other
+        ldarg.0
+        box !!T
+        isinst !!T
+    test:
+        unbox.any !!T
+        pop
+        ret
+    other:
+        ldnull
+        br.s test
     }
 
     .method public hidebysig static valuetype RefCarrier Return.BuildCarrier_Valid(int32& input) cil managed

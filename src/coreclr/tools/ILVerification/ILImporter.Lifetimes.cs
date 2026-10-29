@@ -29,6 +29,7 @@ namespace Internal.IL
             public LifetimeScope[] Contents;
             public bool[] Outputs;
             public bool Valid;
+            public bool HasTypedReference;
         }
 
         StackValue[] _lifetimeMemory;
@@ -70,6 +71,14 @@ namespace Internal.IL
             return type.GetTypeDefinition() is MetadataType metadata && metadata.Namespace == "System"u8 &&
                 (metadata.Name == "TypedReference"u8 || metadata.Name == "ArgIterator"u8 ||
                  metadata.Name == "RuntimeArgumentHandle"u8);
+        }
+
+        static bool IsTypedReference(TypeDesc type)
+        {
+            if (type.IsByRef)
+                type = ((ByRefType)type).ParameterType;
+            return type.GetTypeDefinition() is MetadataType metadata &&
+                metadata.Namespace == "System"u8 && metadata.Name == "TypedReference"u8;
         }
 
         void LifetimeCheck(bool condition, VerifierError error = VerifierError.Unverifiable)
@@ -133,6 +142,7 @@ namespace Internal.IL
             {
                 bool receiver = i < firstParameter;
                 TypeDesc type = receiver ? method.OwningType : signature[i - firstParameter];
+                contract.HasTypedReference |= IsTypedReference(type);
                 bool byRef = receiver ? type.IsValueType : type.IsByRef;
                 contract.References[i] = !byRef || receiver ? LifetimeScope.Function :
                     modern ? LifetimeScope.ReturnOnly : LifetimeScope.Caller;
@@ -308,8 +318,7 @@ namespace Internal.IL
             _exceptionLifetimeChanged = false;
             foreach (BasicBlock candidate in _basicBlocks)
             {
-                if (candidate is not null && candidate.State == BasicBlock.ImportState.WasVerified &&
-                    candidate.ErrorCount == 0)
+                if (candidate is not null && candidate.State == BasicBlock.ImportState.WasVerified)
                 {
                     candidate.State = BasicBlock.ImportState.Unmarked;
                     MarkBasicBlock(candidate);
@@ -461,6 +470,21 @@ namespace Internal.IL
             StoreLifetimeCell(target, previous, true);
         }
 
+        LifetimeScope ReadFieldLifetime(StackValue address, FieldDesc field)
+        {
+            int target = address.LifetimeTarget - 1;
+            if (target >= 0 && address.IsWholeLifetimeTarget && HasLifetime(field.FieldType) &&
+                _lifetimeCellTypes[target] == field.OwningType)
+            {
+                StackValue cell = _lifetimeMemory[target];
+                if (cell.InitializedLifetimeFields != ulong.MaxValue &&
+                    GetLifetimeFieldMask(field.OwningType, field, out ulong bit) != ulong.MaxValue &&
+                    (cell.InitializedLifetimeFields & bit) != 0)
+                    return cell.ContentsScope;
+            }
+            return ReadLifetime(address);
+        }
+
         void StoreLifetime(StackValue address, StackValue value, TypeDesc type, bool whole = true)
         {
             if (!HasLifetime(type))
@@ -469,7 +493,11 @@ namespace Internal.IL
             LifetimeScope scope = ValueLifetime(value);
             LifetimeCheck(scope >= address.LifetimeCapacity);
             if (address.LifetimeTarget < 0)
+            {
+                // Other copies of an untracked address retain this contents snapshot.
+                LifetimeCheck(scope >= address.ContentsScope);
                 return;
+            }
             if (address.LifetimeTarget > 0)
             {
                 int target = address.LifetimeTarget - 1;
@@ -525,6 +553,18 @@ namespace Internal.IL
             return false;
         }
 
+        static bool HasTypedReferenceArguments(MethodDesc method)
+        {
+            if (!method.Signature.IsStatic && IsTypedReference(method.OwningType))
+                return true;
+            foreach (TypeDesc parameter in method.Signature)
+            {
+                if (IsTypedReference(parameter))
+                    return true;
+            }
+            return false;
+        }
+
         static MethodDesc ResolveLifetimeTarget(MethodDesc method, TypeDesc constrained)
         {
             if (constrained is not MetadataType || !constrained.IsValueType ||
@@ -545,16 +585,18 @@ namespace Internal.IL
             return target?.OwningType.IsValueType == true ? target : null;
         }
 
-        StackValue ApplyCallLifetimes(MethodDesc method, StackValue[] arguments, TypeDesc resultType, bool exactTarget)
+        StackValue ApplyCallLifetimes(MethodDesc method, StackValue[] arguments, TypeDesc resultType,
+            bool exactTarget, bool needsLifetimeContract)
         {
             StackValue result = StackValue.CreateFromType(resultType);
             if (arguments is null)
                 return result;
 
             LifetimeContract contract = GetLifetimeContract(method);
-            LifetimeCheck(contract.Valid && !method.OwningType.IsDelegate &&
-                (!method.IsVirtual || method.IsFinal || exactTarget));
-            LifetimeScope returned = contract.Valid ? LifetimeScope.Global : LifetimeScope.Unknown;
+            if (needsLifetimeContract)
+                LifetimeCheck(contract.Valid && !method.OwningType.IsDelegate &&
+                    (!method.IsVirtual || method.IsFinal || exactTarget));
+            LifetimeScope returned = contract.Valid && !contract.HasTypedReference ? LifetimeScope.Global : LifetimeScope.Unknown;
             LifetimeScope returnedContents = returned;
             int target = 0;
             bool hasTarget = false;
@@ -599,6 +641,9 @@ namespace Internal.IL
                     written = LifetimeScope.Unknown;
                 StoreLifetime(address, StackValue.CreateFromType(address.Type).WithLifetime(written), address.Type);
             }
+
+            if (contract.HasTypedReference)
+                InvalidateLifetimeMemory();
 
             wholeTarget &= target > 0 && resultType.IsByRef &&
                 _lifetimeCellTypes[target - 1] == ((ByRefType)resultType).ParameterType;

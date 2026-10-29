@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
@@ -92,6 +94,7 @@ namespace Internal.IL
         TypeDesc _constrained;
 
         int _currentInstructionOffset;
+        HashSet<(int Offset, VerifierError Error, string Found, string Expected)> _verificationErrors;
 
         class BasicBlock
         {
@@ -533,42 +536,27 @@ namespace Internal.IL
         }
 
         // If not, report verification error and continue verification.
-        void VerificationError(VerifierError error)
-        {
-            if (_currentBasicBlock != null)
-                _currentBasicBlock.IncrementErrorCount();
+        void VerificationError(VerifierError error) => VerificationError(error, null, null);
 
-            var args = new ErrorArgument[]
-            {
-                new ErrorArgument("Offset", _currentInstructionOffset)
-            };
-            ReportVerificationError(args, error);
-        }
-
-        void VerificationError(VerifierError error, object found)
-        {
-            if (_currentBasicBlock != null)
-                _currentBasicBlock.IncrementErrorCount();
-
-            var args = new ErrorArgument[]
-            {
-                new ErrorArgument("Offset", _currentInstructionOffset),
-                new ErrorArgument("Found", found.ToString())
-            };
-            ReportVerificationError(args, error);
-        }
+        void VerificationError(VerifierError error, object found) => VerificationError(error, found, null);
 
         void VerificationError(VerifierError error, object found, object expected)
         {
-            if (_currentBasicBlock != null)
-                _currentBasicBlock.IncrementErrorCount();
+            // Repeated errors must still prevent ordinary control-flow propagation.
+            _currentBasicBlock?.IncrementErrorCount();
 
-            var args = new ErrorArgument[]
-            {
-                new ErrorArgument("Offset", _currentInstructionOffset),
-                new ErrorArgument("Found", found.ToString()),
-                new ErrorArgument("Expected", expected.ToString())
-            };
+            string foundText = found?.ToString();
+            string expectedText = expected?.ToString();
+            if (_currentBasicBlock is not null &&
+                !(_verificationErrors ??= new()).Add((_currentInstructionOffset, error, foundText, expectedText)))
+                return;
+
+            var args = new ErrorArgument[expected is not null ? 3 : found is not null ? 2 : 1];
+            args[0] = new ErrorArgument("Offset", _currentInstructionOffset);
+            if (found is not null)
+                args[1] = new ErrorArgument("Found", foundText);
+            if (expected is not null)
+                args[2] = new ErrorArgument("Expected", expectedText);
             ReportVerificationError(args, error);
         }
 
@@ -1572,7 +1560,7 @@ namespace Internal.IL
 
             Check(_method.OwningType.CanAccess(type), VerifierError.TypeAccess);
 
-            Push(StackValue.CreateObjRef(type));
+            Push(StackValue.CreateObjRef(type).CopyLifetime(value));
         }
 
         void ImportCall(ILOpcode opcode, int token)
@@ -1613,7 +1601,8 @@ namespace Internal.IL
                 }
             }
 
-            StackValue[] lifetimeArguments = NeedsCallLifetimes(method, constrained) ?
+            bool needsLifetimeContract = NeedsCallLifetimes(method, constrained);
+            StackValue[] lifetimeArguments = needsLifetimeContract || HasTypedReferenceArguments(method) ?
                 new StackValue[sig.Length + firstLifetimeParameter] : null;
 
             // TODO: VarArgs
@@ -1803,7 +1792,7 @@ namespace Internal.IL
             MethodDesc lifetimeTarget = lifetimeArguments is null ? null : ResolveLifetimeTarget(method, constrained);
             StackValue lifetimeResult = ApplyCallLifetimes(lifetimeTarget ?? method, lifetimeArguments,
                 opcode == ILOpcode.newobj ? methodType : returnType,
-                lifetimeTarget is not null || opcode == ILOpcode.call && constrained is null);
+                lifetimeTarget is not null || opcode == ILOpcode.call && constrained is null, needsLifetimeContract);
 
             // now push on the result
             if (opcode == ILOpcode.newobj)
@@ -2321,7 +2310,7 @@ namespace Internal.IL
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
                 var actualThis = Pop(allowUninitThis: true);
-                contentsScope = ReadLifetime(actualThis);
+                contentsScope = ReadFieldLifetime(actualThis, field);
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
@@ -2555,7 +2544,8 @@ namespace Internal.IL
 
             var targetType = StackValue.CreateFromType(type);
 
-            Check(!IsByRefLike(targetType), VerifierError.BoxByRef, targetType);
+            Check(!IsByRefLike(targetType) ||
+                type is GenericParameterDesc && IsSupportedGenericBox(type), VerifierError.BoxByRef, targetType);
 
             Check(type.IsPrimitive || targetType.Kind == StackValueKind.ObjRef ||
                 type.IsGenericParameter || type.IsValueType, VerifierError.ExpectedValClassObjRefVariable);
@@ -2570,7 +2560,31 @@ namespace Internal.IL
             var typeForBox = type.IsNullable ? type.Instantiation[0] : type;
 
             // even if type is a value type we want the ref
-            Push(StackValue.CreateObjRef(typeForBox));
+            Push(StackValue.CreateObjRef(typeForBox).CopyLifetime(value));
+        }
+
+        bool IsSupportedGenericBox(TypeDesc type)
+        {
+            // See docs/design/features/byreflike-generics.md, "Special IL sequences".
+            int offset = _currentOffset;
+            if (offset >= _ilBytes.Length || _basicBlocks[offset] is not null)
+                return false;
+            TypeDesc testedType = null;
+            if (offset < _ilBytes.Length && (ILOpcode)_ilBytes[offset] == ILOpcode.isinst)
+            {
+                if (_ilBytes.Length - offset < 1 + sizeof(int))
+                    return false;
+                testedType = ResolveTypeToken(BinaryPrimitives.ReadInt32LittleEndian(_ilBytes.AsSpan(offset + 1)));
+                offset += 1 + sizeof(int);
+                if (offset >= _ilBytes.Length || _basicBlocks[offset] is not null)
+                    return false;
+            }
+            if (offset < _ilBytes.Length && (ILOpcode)_ilBytes[offset] == ILOpcode.unbox_any)
+                return _ilBytes.Length - offset >= 1 + sizeof(int) &&
+                    (testedType is null || testedType == type) &&
+                    ResolveTypeToken(BinaryPrimitives.ReadInt32LittleEndian(_ilBytes.AsSpan(offset + 1))) == type;
+            return offset < _ilBytes.Length && (ILOpcode)_ilBytes[offset] is
+                ILOpcode.brtrue or ILOpcode.brtrue_s or ILOpcode.brfalse or ILOpcode.brfalse_s;
         }
 
         static bool IsOffsetContained(int offset, int start, int length)
@@ -2778,11 +2792,13 @@ namespace Internal.IL
         {
             var type = ResolveTypeToken(token);
 
-            CheckIsObjRef(Pop());
+            StackValue value = Pop();
+            CheckIsObjRef(value);
 
             if (opCode == ILOpcode.unbox_any)
             {
-                Push(StackValue.CreateFromType(type));
+                StackValue result = StackValue.CreateFromType(type);
+                Push(HasLifetime(type) ? result.CopyLifetime(value) : result);
             }
             else
             {
@@ -3069,6 +3085,10 @@ namespace Internal.IL
             }
 
             Check(_method.OwningType.CanAccess(type), VerifierError.TypeAccess);
+
+            // Only tracked value cells can be invalidated after a callee writes through the typed reference.
+            if (HasLifetimeContents(type))
+                LifetimeCheck(ptr.LifetimeTarget > 0 && ptr.LifetimeTarget - 1 < _variableCount);
 
             Push(StackValue.CreateValueType(GetWellKnownType(WellKnownType.TypedReference)));
         }
