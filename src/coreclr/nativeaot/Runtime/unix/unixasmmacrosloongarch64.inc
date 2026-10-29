@@ -3,27 +3,7 @@
 
 #include "AsmOffsets.inc"
 
-.macro NESTED_ENTRY Name, Section, Handler
-        LEAF_ENTRY \Name, \Section
-        .ifnc \Handler, NoHandler
-        .cfi_personality 0x1c, C_FUNC(\Handler) // 0x1c == DW_EH_PE_pcrel | DW_EH_PE_sdata8
-        .endif
-.endm
-
-.macro NESTED_END Name, Section
-        LEAF_END \Name, \Section
-.endm
-
-.macro PATCH_LABEL Name
-        .global C_FUNC(\Name)
-C_FUNC(\Name):
-.endm
-
-.macro ALTERNATE_ENTRY Name
-        .global C_FUNC(\Name)
-        .hidden C_FUNC(\Name)
-C_FUNC(\Name):
-.endm
+#include <loongarch64/UnixAsmMacros.inc>
 
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
@@ -31,25 +11,6 @@ C_FUNC(\Name):
         .type \Name, %function
 C_FUNC(\Name):
         .cfi_startproc
-.endm
-
-.macro LEAF_END Name, Section
-        .size \Name, .-\Name
-        .cfi_endproc
-.endm
-
-.macro PREPARE_EXTERNAL_VAR Name, HelperReg
-        la.local  \HelperReg, \Name
-.endm
-
-.macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
-        la.local  \HelperReg, \Name
-        ld.d  \HelperReg, \HelperReg, 0
-.endm
-
-.macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
-        la.local  \HelperReg, \Name
-        ld.w  \HelperReg, \HelperReg, 0
 .endm
 
 
@@ -60,16 +21,6 @@ C_FUNC(\Name):
 .macro EPILOG_STACK_FREE Size
         addi.d  $sp, $sp, \Size
         .cfi_adjust_cfa_offset -\Size
-.endm
-
-.macro EPILOG_STACK_RESTORE
-        ori  $sp, $fp, 0
-        .cfi_restore  3
-.endm
-
-.macro PROLOG_SAVE_REG reg, ofs
-        st.d  $r\reg, $sp, \ofs
-        .cfi_rel_offset \reg, \ofs
 .endm
 
 .macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs
@@ -127,20 +78,6 @@ C_FUNC(\Name):
         .cfi_restore  \reg1
         .cfi_restore  \reg2
         .cfi_adjust_cfa_offset  -\ofs
-.endm
-
-.macro EPILOG_RETURN
-        jirl  $r0, $ra, 0
-.endm
-
-.macro EMIT_BREAKPOINT
-        break  0
-.endm
-
-.macro EPILOG_BRANCH_REG reg
-
-        jirl  $r0, \reg, 0
-
 .endm
 
 #include <loongarch64/InlineTls.inc>

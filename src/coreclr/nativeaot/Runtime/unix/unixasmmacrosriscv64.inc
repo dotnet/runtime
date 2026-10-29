@@ -3,44 +3,12 @@
 
 #include "AsmOffsets.inc"
 
-.macro NESTED_ENTRY Name, Section, Handler
-        LEAF_ENTRY \Name, \Section
-        .ifnc \Handler, NoHandler
-        .cfi_personality 0x1b, C_FUNC(\Handler) // 0x1b == DW_EH_PE_pcrel | DW_EH_PE_sdata4 (standard across most platforms)
-        .endif
-.endm
-
-.macro NESTED_END Name, Section
-        LEAF_END \Name, \Section
-.endm
-
-.macro PATCH_LABEL Name
-        .global C_FUNC(\Name)
-C_FUNC(\Name):
-.endm
-
-.macro ALTERNATE_ENTRY Name
-        .global C_FUNC(\Name)
-        .hidden C_FUNC(\Name)
-C_FUNC(\Name):
-.endm
+#include <riscv64/UnixAsmMacros.inc>
 
 .macro LABELED_RETURN_ADDRESS Name
         .global C_FUNC(\Name)
         .hidden C_FUNC(\Name)
 C_FUNC(\Name):
-.endm
-
-.macro LEAF_ENTRY Name, Section
-    .global C_FUNC(\Name)
-    .type \Name, %function
-C_FUNC(\Name):
-    .cfi_startproc
-.endm
-
-.macro LEAF_END Name, Section
-    .size \Name, .-\Name
-    .cfi_endproc
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
@@ -77,11 +45,6 @@ C_FUNC(\Name):
 .macro EPILOG_STACK_RESTORE
     mv  sp, fp
     .cfi_restore  fp
-.endm
-
-.macro PROLOG_SAVE_REG reg, ofs
-    sd  \reg, \ofs(sp)
-    .cfi_rel_offset \reg, \ofs
 .endm
 
 .macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs
@@ -121,11 +84,6 @@ C_FUNC(\Name):
     .cfi_rel_offset  \reg2, 8
 .endm
 
-.macro EPILOG_RESTORE_REG reg, ofs
-        ld \reg, \ofs(sp)
-        .cfi_restore \reg
-.endm
-
 .macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
         ld \reg1, \ofs(sp)
         ld \reg2, \ofs+8(sp)
@@ -140,14 +98,6 @@ C_FUNC(\Name):
         .cfi_restore \reg1
         .cfi_restore \reg2
         .cfi_adjust_cfa_offset -\ofs
-.endm
-
-.macro EPILOG_RETURN
-        ret
-.endm
-
-.macro EMIT_BREAKPOINT
-        ebreak
 .endm
 
 .macro EPILOG_BRANCH_REG reg
