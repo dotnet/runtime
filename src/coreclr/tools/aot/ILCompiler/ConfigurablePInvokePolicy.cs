@@ -7,6 +7,8 @@ using System.IO;
 using System.Runtime.InteropServices;
 
 using Internal.IL;
+using Internal.IL.Stubs;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
 
@@ -113,9 +115,17 @@ namespace ILCompiler
             }
         }
 
-        public override bool GenerateDirectCall(MethodDesc method, out string externName)
+        public override LinkageMetadata GetLinkageMetadata(MethodDesc method)
         {
             var pInvokeMetadata = method.GetPInvokeMethodMetadata();
+            MethodDesc target = method is PInvokeTargetNativeMethod nativeMethod ? nativeMethod.Target : method;
+            if (_target.IsWasm && target.HasCustomAttribute("System.Runtime.InteropServices", "WasmImportLinkageAttribute"))
+            {
+                Utf8String importName = pInvokeMetadata.Name is null
+                    ? new Utf8String(method.Name.AsSpan())
+                    : new Utf8String(pInvokeMetadata.Name);
+                return new WasmLinkageMetadata(importName, new Utf8String(pInvokeMetadata.Module));
+            }
 
             foreach (var moduleName in MarshalHelpers.GetPInvokeModuleNameVariations(_target, pInvokeMetadata.Module))
             {
@@ -125,23 +135,20 @@ namespace ILCompiler
 
                     if (entrypoints == null)
                     {
-                        externName = entryPointMetadataName;
-                        return true;
+                        return new LinkageMetadata(new Utf8String(entryPointMetadataName));
                     }
 
                     foreach (var entryPointName in EntryPointNameVariations(entryPointMetadataName, pInvokeMetadata.Flags))
                     {
                         if (entrypoints.Contains(entryPointName))
                         {
-                            externName = entryPointName;
-                            return true;
+                            return new LinkageMetadata(new Utf8String(entryPointName));
                         }
                     }
                 }
             }
 
-            externName = null;
-            return false;
+            return null;
         }
     }
 }

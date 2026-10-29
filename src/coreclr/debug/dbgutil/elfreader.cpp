@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if !defined(HOST_WASM) && (defined(HOST_WINDOWS) || defined(HOST_OSX) || defined(__linux__))
+#if !defined(HOST_WASM) && (defined(HOST_WINDOWS) || defined(HOST_APPLE) || defined(__linux__))
 
 #include <windows.h>
 #include <clrdata.h>

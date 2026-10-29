@@ -150,7 +150,7 @@ FCIMPLEND
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
 
-GPTR_DECL(MethodTable, g_pFreeObjectEEType);
+GPTR_DECL(MethodTable, g_pFreeObjectMethodTable);
 
 FCIMPL1(Object *, RhpNewFinalizableAlign8, MethodTable* pEEType)
 {
@@ -185,7 +185,7 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pEEType)
         if (requiresPadding)
         {
             Object* dummy = (Object*)alloc_ptr;
-            dummy->SetMethodTable(g_pFreeObjectEEType);
+            dummy->SetMethodTable(g_pFreeObjectMethodTable);
             alloc_ptr += 12;
         }
         Object* pObject = (Object *)alloc_ptr;
@@ -220,7 +220,7 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
         if (requiresPadding)
         {
             Object* dummy = (Object*)alloc_ptr;
-            dummy->SetMethodTable(g_pFreeObjectEEType);
+            dummy->SetMethodTable(g_pFreeObjectMethodTable);
             alloc_ptr += 12;
         }
         Object* pObject = (Object *)alloc_ptr;
@@ -270,7 +270,7 @@ FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, intptr_t numEl
         if (requiresAlignObject)
         {
             Object* dummy = (Object*)alloc_ptr;
-            dummy->SetMethodTable(g_pFreeObjectEEType);
+            dummy->SetMethodTable(g_pFreeObjectMethodTable);
             alloc_ptr += 12;
         }
         Array* pObject = (Array*)alloc_ptr;

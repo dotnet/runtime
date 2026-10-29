@@ -25,6 +25,10 @@ namespace System.IO.Compression
         private BitFlagValues _generalPurposeBitFlag;
         private ZipCompressionMethod _storedCompressionMethod;
         private DateTimeOffset _lastModified;
+        // The LastWriteTime baked into this entry's on-disk ZipCrypto ciphertext, captured from the
+        // central directory. Used to validate/decrypt the existing ciphertext and to detect LastWriteTime
+        // changes made without re-encrypting.
+        private readonly DateTimeOffset _originalLastModified;
         private long _compressedSize;
         private long _uncompressedSize;
         private long _offsetOfLocalHeader;
@@ -116,6 +120,10 @@ namespace System.IO.Compression
             }
 
             _lastModified = new DateTimeOffset(ZipHelper.DosTimeToDateTime(cd.LastModified));
+            // Remember the time this entry was originally encrypted with, so we can detect an attempt
+            // to change LastWriteTime on a ZipCrypto entry without re-encrypting its data (which would
+            // make the password verification bytes inconsistent with the rewritten header).
+            _originalLastModified = _lastModified;
             _compressedSize = cd.CompressedSize;
             _uncompressedSize = cd.UncompressedSize;
             _externalFileAttr = cd.ExternalFileAttributes;
@@ -351,6 +359,12 @@ namespace System.IO.Compression
         /// Zip timestamp format, which supports a resolution of two seconds. If the data in the last write time field is not a valid Zip timestamp,
         /// an indicator value of 1980 January 1 at midnight will be returned.
         /// </summary>
+        /// <remarks>
+        /// For a ZipCrypto-encrypted entry that uses a data descriptor and is read from an existing archive in <see cref="ZipArchiveMode.Update"/>,
+        /// changing this property in a way that changes the password verification byte without also reopening the entry with its password to
+        /// rewrite its data will cause a <see cref="NotSupportedException"/> when the archive is disposed, because the existing encrypted data
+        /// can't be kept consistent with the new timestamp without re-encrypting.
+        /// </remarks>
         /// <exception cref="NotSupportedException">An attempt to set this property was made, but the ZipArchive that this entry belongs to was
         /// opened in read-only mode.</exception>
         /// <exception cref="ArgumentOutOfRangeException">An attempt was made to set this property to a value that cannot be represented in the
@@ -1048,8 +1062,25 @@ namespace System.IO.Compression
                 return (byte)((_crc32 >> 24) & 0xFF);
             }
 
-            // If data descriptor IS used, the check byte is the MSB of the DOS time from the *local* header
-            return (byte)((ZipHelper.DateTimeToDosTime(_lastModified.DateTime) >> 8) & 0xFF);
+            // If data descriptor IS used, the check byte is the MSB of the DOS time from the *local* header.
+            // Use _originalLastModified (the time baked into the entry's on-disk ciphertext), not
+            // _lastModified, since LastWriteTime may have been changed since without re-encrypting.
+            return GetZipCryptoTimeCheckByte(_originalLastModified);
+        }
+
+        private static byte GetZipCryptoTimeCheckByte(DateTimeOffset timestamp) =>
+            (byte)(ZipHelper.DateTimeToDosTime(timestamp.DateTime) >> 8);
+
+        internal void ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting()
+        {
+            if (_originallyInArchive
+                && Encryption == ZipEncryptionMethod.ZipCrypto
+                && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0
+                && (Changes & ZipArchive.ChangeState.StoredData) == 0
+                && GetZipCryptoTimeCheckByte(_lastModified) != GetZipCryptoTimeCheckByte(_originalLastModified))
+            {
+                throw new NotSupportedException(SR.ZipCryptoLastWriteTimeChangeNotSupported);
+            }
         }
 
         private bool IsAesEncrypted => EncryptionMethod is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256;
