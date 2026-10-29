@@ -5,6 +5,10 @@
 {
 }
 
+.assembly extern System.Private.CoreLib
+{
+}
+
 .assembly ReturnTests
 {
 }
@@ -39,6 +43,14 @@
 {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
     .field public int32& Item
+
+    .method public hidebysig instance void Return.Followup5705ReadonlyReceiverToRefReadonly_Valid() cil managed
+    {
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        call void ReturnTestsType::Return.Followup5705RefReadonlyRead_Valid(valuetype RefCarrier&)
+        ret
+    }
 
     .method public hidebysig specialname rtspecialname instance void .ctor(int32& input) cil managed
     {
@@ -79,6 +91,34 @@
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
     .field public int32& First
     .field public int32& Second
+
+    .method public hidebysig instance void Return.Review5705CopySecondToFirst_Valid() cil managed
+    {
+        ldarg.0
+        ldarg.0
+        ldfld int32& RefPairCarrier::Second
+        stfld int32& RefPairCarrier::First
+        ret
+    }
+
+    .method public hidebysig instance void Return.Review5705ReadonlyReceiverWrite_Invalid_StackUnexpected(int32& input) cil managed
+    {
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        .param [1]
+        .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.UnscopedRefAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldarg.1
+        stfld int32& RefPairCarrier::First
+        ret
+    }
+
+    .method public hidebysig instance void Return.Review5705ReadonlyReceiverMutableCall_Invalid_ReadOnlyIllegalWrite() cil managed
+    {
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        call instance void RefPairCarrier::Return.Review5705CopySecondToFirst_Valid()
+        ret
+    }
 }
 
 .class public sequential ansi sealed beforefieldinit OuterCarrier
@@ -101,6 +141,54 @@
     }
 
     .method public hidebysig instance void 'special.CopyingConstructor..ctor_Valid'(valuetype RefCarrier input) cil managed { ret }
+
+    .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+    {
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::A
+        initobj RefCarrier
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::B
+        initobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig instance void 'special.Review5705FieldInitConstructor..ctor_Valid'() cil managed { ret }
+
+    .method public hidebysig specialname rtspecialname instance void .ctor(int32 mode) cil managed
+    {
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::A
+        initobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig instance void 'special.Review5705FieldInitConstructorSibling..ctor_Invalid_Unverifiable'(int32 mode) cil managed { ret }
+}
+
+.class public sequential ansi sealed beforefieldinit NestedOuterCarrier
+        extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+    .field public valuetype OuterCarrier Value
+}
+
+.class public sequential ansi sealed beforefieldinit ReadonlyCarrier
+        extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+    .field public int32& Item
+
+    .method public hidebysig instance void Return.Review5705ReadonlyOwnerWrite_Invalid_StackUnexpected(int32& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.UnscopedRefAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldarg.1
+        stfld int32& ReadonlyCarrier::Item
+        ret
+    }
 }
 
 .class public sequential ansi sealed beforefieldinit UnscopedAccessor
@@ -176,6 +264,169 @@
     .method public hidebysig newslot virtual instance void Invoke(typedref input) runtime managed {}
 }
 
+.class interface public abstract auto ansi IFollowupReader
+{
+    .method public hidebysig newslot abstract virtual instance void Read([in] valuetype RefCarrier& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequiresLocationAttribute::.ctor() = ( 01 00 00 00 )
+    }
+}
+
+.class public auto ansi sealed FollowupReader extends [System.Runtime]System.Object
+{
+    .method public hidebysig newslot virtual final instance void Read([in] valuetype RefCarrier& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) input) cil managed
+    {
+        .override method instance void IFollowupReader::Read(valuetype RefCarrier& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute))
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequiresLocationAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.1
+        call void ReturnTestsType::Return.Followup5705RefReadonlyRead_Valid(valuetype RefCarrier&)
+        ret
+    }
+
+    .method public hidebysig instance void 'special.Followup5705VirtualRefReadonlyForward.Read_Valid'([in] valuetype RefCarrier& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) input) cil managed { ret }
+}
+
+.class public sequential ansi sealed beforefieldinit FollowupSetterCarrier extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+    .field public valuetype RefCarrier A
+    .field public valuetype RefCarrier B
+    .field public bool Flag
+
+    .method public hidebysig instance void SetA(valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stfld valuetype RefCarrier FollowupSetterCarrier::A
+        ret
+    }
+
+    .method public hidebysig instance void SetB(valuetype RefCarrier input) cil managed
+    {
+        nop
+        ldarg.0
+        ldarg.1
+        stfld valuetype RefCarrier FollowupSetterCarrier::B
+        ret
+    }
+
+    .method public hidebysig instance void SetFlag(bool input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stfld bool FollowupSetterCarrier::Flag
+        ret
+    }
+
+    .method public hidebysig instance void SetWrongA(valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stfld valuetype RefCarrier FollowupSetterCarrier::B
+        ret
+    }
+
+    .method public hidebysig instance void SetNontrivial(valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stfld valuetype RefCarrier FollowupSetterCarrier::A
+        ldarg.0
+        ldfld valuetype RefCarrier FollowupSetterCarrier::B
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void SetReadingOther(valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldarg.0
+        ldfld valuetype RefCarrier FollowupSetterCarrier::B
+        stfld valuetype RefCarrier FollowupSetterCarrier::A
+        ret
+    }
+
+    .method public hidebysig specialname rtspecialname instance void .ctor(valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldc.i4.1
+        call instance void FollowupSetterCarrier::SetFlag(bool)
+        ldarg.0
+        ldarg.1
+        call instance void FollowupSetterCarrier::SetA(valuetype RefCarrier)
+        ldarg.0
+        ldarg.1
+        call instance void FollowupSetterCarrier::SetB(valuetype RefCarrier)
+        ret
+    }
+
+    .method public hidebysig instance void 'special.Followup5705SetterConstructor..ctor_Valid'(valuetype RefCarrier input) cil managed { ret }
+}
+
+.class public sequential ansi sealed beforefieldinit FollowupGenericSetterCarrier`1<byreflike T> extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+    .field public !T Value
+
+    .method public hidebysig instance void Set(!T input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stfld !T valuetype FollowupGenericSetterCarrier`1<!T>::Value
+        ret
+    }
+
+    .method public hidebysig specialname rtspecialname instance void .ctor(!T input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        call instance void valuetype FollowupGenericSetterCarrier`1<!T>::Set(!0)
+        ret
+    }
+
+    .method public hidebysig instance void 'special.Followup5705GenericSetterConstructor..ctor_Valid'(!T input) cil managed { ret }
+}
+
+.class public sequential ansi sealed beforefieldinit FollowupDisposableCarrier`1<byreflike T>
+        extends [System.Runtime]System.ValueType implements [System.Runtime]System.IDisposable
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+    .field public valuetype RefCarrier Item
+
+    .method public hidebysig newslot virtual final instance void Dispose() cil managed
+    {
+        .override method instance void [System.Runtime]System.IDisposable::Dispose()
+        ret
+    }
+}
+
+.class interface public abstract auto ansi IFollowupChoice`1<T>
+{
+    .method public hidebysig newslot abstract virtual instance void Clear() cil managed {}
+}
+
+.class public sequential ansi sealed beforefieldinit FollowupAmbiguousCarrier`2<T, U>
+        extends [System.Runtime]System.ValueType
+        implements class IFollowupChoice`1<!T>, class IFollowupChoice`1<!U>
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+    .field public valuetype RefCarrier Item
+
+    .method private hidebysig newslot virtual final instance void ClearFirst() cil managed
+    {
+        .override method instance void class IFollowupChoice`1<!T>::Clear()
+        ret
+    }
+
+    .method private hidebysig newslot virtual final instance void ClearSecond() cil managed
+    {
+        .override method instance void class IFollowupChoice`1<!U>::Clear()
+        ret
+    }
+}
+
 .class public auto ansi beforefieldinit ReturnTestsType
         extends [System.Runtime]System.Object
 {
@@ -184,6 +435,503 @@
     .field private static valuetype RefCarrier invalidStaticCarrier
 
     .field private valuetype Struct instanceStruct
+
+    .method public hidebysig static void Return.Followup5705RefReadonlyRead_Valid([in] valuetype RefCarrier& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequiresLocationAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldobj RefCarrier
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705InToRefReadonly_Valid([in] valuetype RefCarrier& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        call void ReturnTestsType::Return.Followup5705RefReadonlyRead_Valid(valuetype RefCarrier&)
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705RefReadonlyForward_Valid([in] valuetype RefCarrier& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequiresLocationAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        call void ReturnTestsType::Return.Followup5705RefReadonlyRead_Valid(valuetype RefCarrier&)
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705RefReadonlyVirtualCaller_Valid(class FollowupReader reader, [in] valuetype RefCarrier& input) cil managed
+    {
+        .param [2]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldarg.1
+        callvirt instance void FollowupReader::Read(valuetype RefCarrier& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute))
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705RefReadonlyWrite_Invalid_StackUnexpected([in] valuetype RefCarrier& destination, int32& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequiresLocationAttribute::.ctor() = ( 01 00 00 00 )
+        .param [2]
+        .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.UnscopedRefAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldarg.1
+        stfld int32& RefCarrier::Item
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705BareInWrite_Valid([in] valuetype RefCarrier& destination, int32& input) cil managed
+    {
+        .param [2]
+        .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.UnscopedRefAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldarg.1
+        stfld int32& RefCarrier::Item
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705BareInCaptureEscape_Invalid_Unverifiable(valuetype RefCarrier& destination) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        ldloca.s 0
+        call void ReturnTestsType::Return.Followup5705BareInWrite_Valid(valuetype RefCarrier&, int32&)
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705SetterOutput_Valid([out] valuetype FollowupSetterCarrier& output, valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        call instance void FollowupSetterCarrier::SetA(valuetype RefCarrier)
+        ldarg.0
+        ldarg.1
+        call instance void FollowupSetterCarrier::SetB(valuetype RefCarrier)
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705WrongFieldSetterOutput_Invalid_Unverifiable([out] valuetype FollowupSetterCarrier& output, valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        call instance void FollowupSetterCarrier::SetWrongA(valuetype RefCarrier)
+        ldarg.0
+        ldarg.1
+        stfld valuetype RefCarrier FollowupSetterCarrier::B
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705NontrivialSetterOutput_Invalid_Unverifiable.Unverifiable([out] valuetype FollowupSetterCarrier& output, valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        call instance void FollowupSetterCarrier::SetNontrivial(valuetype RefCarrier)
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705ReadingSetterOutput_Invalid_Unverifiable.Unverifiable([out] valuetype FollowupSetterCarrier& output, valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stfld valuetype RefCarrier FollowupSetterCarrier::B
+        ldarg.0
+        ldarg.1
+        call instance void FollowupSetterCarrier::SetReadingOther(valuetype RefCarrier)
+        ret
+    }
+
+    .method public hidebysig static valuetype FollowupSetterCarrier Return.Followup5705SetterLocalEscape_Invalid_ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype FollowupSetterCarrier)
+        ldloca.s 1
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call instance void FollowupSetterCarrier::SetA(valuetype RefCarrier)
+        ldloc.1
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705ConcreteConstrainedDispose_Valid(valuetype FollowupDisposableCarrier`1<int32>& input) cil managed
+    {
+        ldarg.0
+        constrained. valuetype FollowupDisposableCarrier`1<int32>
+        callvirt instance void [System.Runtime]System.IDisposable::Dispose()
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705GenericConstrainedDispose_Valid<byreflike T>(valuetype FollowupDisposableCarrier`1<!!T>& input) cil managed
+    {
+        ldarg.0
+        constrained. valuetype FollowupDisposableCarrier`1<!!T>
+        callvirt instance void [System.Runtime]System.IDisposable::Dispose()
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705SplitEnumeratorFinally_Valid() cil managed
+    {
+        .locals init ([0] valuetype [System.Private.CoreLib]System.MemoryExtensions/SpanSplitEnumerator`1<char>)
+        .try
+        {
+            leave.s done
+        }
+        finally
+        {
+            ldloca.s 0
+            constrained. valuetype [System.Private.CoreLib]System.MemoryExtensions/SpanSplitEnumerator`1<char>
+            callvirt instance void [System.Runtime]System.IDisposable::Dispose()
+            endfinally
+        }
+    done:
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705AmbiguousConstrained_Invalid_Unverifiable(valuetype FollowupAmbiguousCarrier`2<int32, int32>& input) cil managed
+    {
+        ldarg.0
+        constrained. valuetype FollowupAmbiguousCarrier`2<int32, int32>
+        callvirt instance void class IFollowupChoice`1<int32>::Clear()
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705AmbiguousOpenConstrained_Invalid_Unverifiable<T>(valuetype FollowupAmbiguousCarrier`2<!!T, int32>& input) cil managed
+    {
+        ldarg.0
+        constrained. valuetype FollowupAmbiguousCarrier`2<!!T, int32>
+        callvirt instance void class IFollowupChoice`1<!!T>::Clear()
+        ret
+    }
+
+    .method public hidebysig static void Return.Followup5705DistinctConstrained_Valid(valuetype FollowupAmbiguousCarrier`2<int32, string>& input) cil managed
+    {
+        ldarg.0
+        constrained. valuetype FollowupAmbiguousCarrier`2<int32, string>
+        callvirt instance void class IFollowupChoice`1<int32>::Clear()
+        ret
+    }
+
+    .method public hidebysig static valuetype RefPairCarrier Return.Review5705ReceiverOnlyPartialOutputEscape_Invalid_Unverifiable.Unverifiable.Unverifiable.Unverifiable.Unverifiable.ReturnPtrToStack([out] valuetype RefPairCarrier& output, int32& input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stfld int32& RefPairCarrier::First
+        ldarg.0
+        call instance void RefPairCarrier::Return.Review5705CopySecondToFirst_Valid()
+        ldarg.0
+        ldarg.0
+        ldfld int32& RefPairCarrier::First
+        stfld int32& RefPairCarrier::Second
+        ldarg.0
+        ldobj RefPairCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705ReceiverOnlyInitialized_Valid(valuetype RefPairCarrier input) cil managed
+    {
+        ldarga.s 0
+        call instance void RefPairCarrier::Return.Review5705CopySecondToFirst_Valid()
+        ret
+    }
+
+    .method public hidebysig static valuetype RefPairCarrier Return.Review5705ReceiverOnlyCallerLocalEscape_Invalid_ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype RefPairCarrier)
+        ldloca.s 1
+        ldloca.s 0
+        stfld int32& RefPairCarrier::Second
+        ldloca.s 1
+        call instance void RefPairCarrier::Return.Review5705CopySecondToFirst_Valid()
+        ldloca.s 1
+        ldloca.s 1
+        ldfld int32& RefPairCarrier::First
+        stfld int32& RefPairCarrier::Second
+        ldloc.1
+        ret
+    }
+
+    .method public hidebysig static int32 Return.Review5705SpanReceiverOnly_Valid(valuetype [System.Runtime]System.Span`1<int32> input) cil managed
+    {
+        ldarga.s 0
+        call instance void valuetype [System.Runtime]System.Span`1<int32>::Clear()
+        ldarga.s 0
+        call instance int32 valuetype [System.Runtime]System.Span`1<int32>::get_Length()
+        ret
+    }
+
+    .method public hidebysig static valuetype [System.Runtime]System.Span`1<int32> Return.Review5705RefLocalFinally_Valid(valuetype [System.Runtime]System.Span`1<int32> input) cil managed
+    {
+        .locals init ([0] valuetype [System.Runtime]System.Span`1<int32>, [1] valuetype [System.Runtime]System.Span`1<int32>&)
+        .try
+        {
+            ldarg.0
+            stloc.0
+            ldloca.s 0
+            stloc.1
+            ldloc.1
+            ldobj valuetype [System.Runtime]System.Span`1<int32>
+            stloc.0
+            leave.s done
+        }
+        finally
+        {
+            endfinally
+        }
+    done:
+        ldloc.0
+        ret
+    }
+
+    .method public hidebysig static valuetype [System.Runtime]System.Span`1<int32> Return.Review5705RefLocalFinallyEscape_Invalid_ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] valuetype [System.Runtime]System.Span`1<int32>, [1] valuetype [System.Runtime]System.Span`1<int32>&, [2] int32)
+        .try
+        {
+            ldloca.s 2
+            newobj instance void valuetype [System.Runtime]System.Span`1<int32>::.ctor(!0&)
+            stloc.0
+            ldloca.s 0
+            stloc.1
+            ldloc.1
+            ldobj valuetype [System.Runtime]System.Span`1<int32>
+            stloc.0
+            leave.s done
+        }
+        finally
+        {
+            endfinally
+        }
+    done:
+        ldloc.0
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705FieldInitOutput_Valid([out] valuetype OuterCarrier& output) cil managed
+    {
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::A
+        initobj RefCarrier
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::B
+        initobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705FieldStoreOutput_Valid([out] valuetype OuterCarrier& output, valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::A
+        ldarg.1
+        stobj RefCarrier
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::B
+        ldarg.1
+        stobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705FieldAddressLocalOutput_Valid([out] valuetype OuterCarrier& output) cil managed
+    {
+        .locals init ([0] valuetype RefCarrier&)
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::A
+        stloc.0
+        ldloc.0
+        initobj RefCarrier
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::B
+        initobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705FieldCopyOutput_Valid([out] valuetype OuterCarrier& output, valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::A
+        ldarga.s 1
+        cpobj RefCarrier
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::B
+        ldarga.s 1
+        cpobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705FieldConstructorOutput_Valid([out] valuetype OuterCarrier& output, int32& input) cil managed
+    {
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::A
+        ldarg.1
+        call instance void RefCarrier::.ctor(int32&)
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::B
+        ldarg.1
+        call instance void RefCarrier::.ctor(int32&)
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705FieldInitSiblingOutput_Invalid_Unverifiable([out] valuetype OuterCarrier& output) cil managed
+    {
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::A
+        initobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705NestedFieldInitOutput_Invalid_Unverifiable([out] valuetype NestedOuterCarrier& output) cil managed
+    {
+        ldarg.0
+        ldflda valuetype OuterCarrier NestedOuterCarrier::Value
+        ldflda valuetype RefCarrier OuterCarrier::A
+        initobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705MergedFieldInitOutput_Invalid_Unverifiable(bool choose, [out] valuetype OuterCarrier& output) cil managed
+    {
+        ldarg.1
+        ldarg.0
+        brtrue.s first
+        ldflda valuetype RefCarrier OuterCarrier::B
+        br.s joined
+    first:
+        ldflda valuetype RefCarrier OuterCarrier::A
+    joined:
+        initobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static int32& Return.Review5705TypedReferencePreservesRef_Valid(typedref input, int32& reference) cil managed
+    {
+        ldarga.s 0
+        call instance int32 [System.Runtime]System.TypedReference::GetHashCode()
+        pop
+        ldarg.1
+        ret
+    }
+
+    .method public hidebysig static int32& Return.Review5705CalliPreservesRef_Invalid_Unverifiable(method void *() target, int32& reference) cil managed
+    {
+        ldarg.0
+        calli void()
+        ldarg.1
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705SpanCopyTo_Valid(valuetype [System.Runtime]System.Span`1<int32>& source) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        ldloca.s 0
+        newobj instance void valuetype [System.Runtime]System.Span`1<int32>::.ctor(!0&)
+        call instance void valuetype [System.Runtime]System.Span`1<int32>::CopyTo(valuetype [System.Runtime]System.Span`1<!0>)
+        ret
+    }
+
+    .method public hidebysig static bool Return.Review5705SpanTryCopyTo_Valid(valuetype [System.Runtime]System.Span`1<int32>& source) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        ldloca.s 0
+        newobj instance void valuetype [System.Runtime]System.Span`1<int32>::.ctor(!0&)
+        call instance bool valuetype [System.Runtime]System.Span`1<int32>::TryCopyTo(valuetype [System.Runtime]System.Span`1<!0>)
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705InParameterWrite_Invalid_StackUnexpected([in] valuetype RefCarrier& destination, int32& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        .param [2]
+        .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.UnscopedRefAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldarg.1
+        stfld int32& RefCarrier::Item
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705InParameterIndirectWrite_Invalid_ReadOnlyIllegalWrite([in] valuetype RefCarrier& destination, valuetype RefCarrier input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldarg.1
+        stobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705InParameterAliasWrite_Invalid_StackUnexpected([in] valuetype RefCarrier& destination, int32& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        .param [2]
+        .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.UnscopedRefAttribute::.ctor() = ( 01 00 00 00 )
+        .locals init ([0] valuetype RefCarrier&)
+        ldarg.0
+        stloc.0
+        ldloc.0
+        ldarg.1
+        stfld int32& RefCarrier::Item
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705InParameterInteriorRead_Valid([in] valuetype OuterCarrier& source) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldflda valuetype RefCarrier OuterCarrier::A
+        ldobj RefCarrier
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705InParameterModifierWrite_Invalid_StackUnexpected([in] valuetype RefCarrier& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) destination, int32& input) cil managed
+    {
+        .param [2]
+        .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.UnscopedRefAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldarg.1
+        stfld int32& RefCarrier::Item
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705InParameterRead_Valid([in] valuetype RefCarrier& source, valuetype RefCarrier other) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldobj RefCarrier
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Return.Review5705InParameterCall_Valid(valuetype RefCarrier& source) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call void ReturnTestsType::Return.Review5705InParameterRead_Valid(valuetype RefCarrier&, valuetype RefCarrier)
+        ret
+    }
+
+    .method public hidebysig static int32& Return.Review5705FatalPreservesLifetime_Invalid_StackUnderflow.ReturnPtrToStack(bool choose) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        brtrue.s fatal
+        ldloca.s 0
+        ret
+    fatal:
+        pop
+        ldloca.s 0
+        ret
+    }
 
     .method public hidebysig static valuetype RefCarrier Return.InOutCarrier_Valid([in][out] valuetype RefCarrier& input) cil managed
     {

@@ -30,6 +30,8 @@ namespace Internal.IL
         // Packs the write floor and whole-target bit so the stack value keeps its original size.
         private byte _lifetimeBits;
         internal int LifetimeTarget;
+        // On byrefs, a singleton identifies an exact field of LifetimeTarget;
+        // all bits set means no field identity. Value cells use definite-assignment bits.
         internal ulong InitializedLifetimeFields;
 
         private const byte WholeLifetimeTargetBit = 0x80;
@@ -77,8 +79,11 @@ namespace Internal.IL
 
         internal StackValue CopyLifetime(StackValue value)
         {
-            return WithLifetime(value.EscapeScope, value.ContentsScope, value.LifetimeTarget,
+            StackValue result = WithLifetime(value.EscapeScope, value.ContentsScope, value.LifetimeTarget,
                 value.IsWholeLifetimeTarget, value.LifetimeCapacity, value.LifetimeWriteFloor);
+            result.InitializedLifetimeFields = value.InitializedLifetimeFields;
+            result.Flags |= value.Flags & StackValueFlags.ReadOnly;
+            return result;
         }
 
         internal bool HasSameLifetime(StackValue other)
@@ -86,7 +91,7 @@ namespace Internal.IL
             return EscapeScope == other.EscapeScope && ContentsScope == other.ContentsScope &&
                 LifetimeTarget == other.LifetimeTarget && IsWholeLifetimeTarget == other.IsWholeLifetimeTarget &&
                 LifetimeCapacity == other.LifetimeCapacity && LifetimeWriteFloor == other.LifetimeWriteFloor &&
-                InitializedLifetimeFields == other.InitializedLifetimeFields;
+                InitializedLifetimeFields == other.InitializedLifetimeFields && IsReadOnly == other.IsReadOnly;
         }
 
         internal StackValue MergeLifetime(StackValue other)
@@ -96,7 +101,11 @@ namespace Internal.IL
             value.ContentsScope = ContentsScope < other.ContentsScope ? ContentsScope : other.ContentsScope;
             value.LifetimeCapacity = LifetimeCapacity > other.LifetimeCapacity ? LifetimeCapacity : other.LifetimeCapacity;
             value.LifetimeWriteFloor = LifetimeWriteFloor > other.LifetimeWriteFloor ? LifetimeWriteFloor : other.LifetimeWriteFloor;
-            value.InitializedLifetimeFields &= other.InitializedLifetimeFields;
+            value.InitializedLifetimeFields = Kind == StackValueKind.ByRef ?
+                LifetimeTarget == other.LifetimeTarget && IsWholeLifetimeTarget == other.IsWholeLifetimeTarget &&
+                    InitializedLifetimeFields == other.InitializedLifetimeFields ? InitializedLifetimeFields : ulong.MaxValue :
+                InitializedLifetimeFields & other.InitializedLifetimeFields;
+            value.Flags |= other.Flags & StackValueFlags.ReadOnly;
             value.IsWholeLifetimeTarget &= other.IsWholeLifetimeTarget && LifetimeTarget == other.LifetimeTarget;
             if (LifetimeTarget != other.LifetimeTarget)
                 value.LifetimeTarget = 0;

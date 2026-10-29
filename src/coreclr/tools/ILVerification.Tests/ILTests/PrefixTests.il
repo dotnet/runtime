@@ -63,6 +63,19 @@
         ret
     }
 
+    .method private hidebysig static void GenericTarget<byreflike T>(!!T input) cil managed
+    {
+        ret
+    }
+
+    .method public hidebysig static void Tail.Review5705GenericArgument_Invalid_TailByRef<byreflike T>(!!T input) cil managed
+    {
+        ldarg.0
+        tail.
+        call void PrefixTestsType::GenericTarget<!!T>(!!0)
+        ret
+    }
+
     .method static public hidebysig void ConstrainedCall.StaticAbstractOnConstrainedTypeParam_Valid<(IStaticInterface) T>() cil managed
     {
         constrained. !!T

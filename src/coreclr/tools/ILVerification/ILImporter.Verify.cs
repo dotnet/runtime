@@ -237,9 +237,15 @@ namespace Internal.IL
             Check(!_basicBlocks[0].HandlerIndex.HasValue, VerifierError.FallthroughIntoHandler);
             Check(!_basicBlocks[0].FilterIndex.HasValue, VerifierError.FallthroughIntoFilter);
 
-            InitializeLifetimes();
-            ImportBasicBlocks();
-            ReportLifetimeErrors();
+            try
+            {
+                InitializeLifetimes();
+                ImportBasicBlocks();
+            }
+            finally
+            {
+                ReportLifetimeErrors();
+            }
         }
 
         private void FindEnclosingExceptionRegions()
@@ -1484,6 +1490,9 @@ namespace Internal.IL
             var stackValue = StackValue.CreateFromType(varType);
             if (_lifetimeMemory.Length != 0)
                 stackValue = stackValue.CopyLifetime(_lifetimeMemory[VariableCell(index, argument)]);
+            if (argument && stackValue.Kind == StackValueKind.ByRef && HasLifetimeContents(stackValue.Type) &&
+                _lifetimeContract?.ReadOnly[index] == true)
+                stackValue.SetIsReadOnly();
             if (index == 0 && argument && _thisType != null)
             {
                 Debug.Assert(varType == _thisType);
@@ -1502,7 +1511,10 @@ namespace Internal.IL
             if (_trackObjCtorState && !_isThisInitialized)
                 Check(index != 0 || !argument, VerifierError.ThisUninitStore);
 
-            CheckIsAssignable(value, StackValue.CreateFromType(varType));
+            StackValue declared = StackValue.CreateFromType(varType);
+            if (declared.Kind == StackValueKind.ByRef && value.IsReadOnly)
+                declared.SetIsReadOnly();
+            CheckIsAssignable(value, declared);
             StoreLifetimeCell(VariableCell(index, argument), value, true);
         }
 
@@ -1658,6 +1670,9 @@ namespace Internal.IL
                     if (lifetimeArguments is not null)
                         lifetimeArguments[firstLifetimeParameter + i] = actual;
                     var declared = StackValue.CreateFromType(sig[i]);
+                    if (declared.Kind == StackValueKind.ByRef && lifetimeArguments is not null &&
+                        GetLifetimeContract(method).ReadOnly[firstLifetimeParameter + i])
+                        declared.SetIsReadOnly();
 
                     CheckIsAssignable(actual, declared);
 
@@ -2368,11 +2383,17 @@ namespace Internal.IL
                         actualThis.LifetimeCapacity : actualThis.Kind == StackValueKind.ObjRef ?
                             LifetimeScope.Global : LifetimeScope.Function,
                     writeFloor: actualThis.Kind == StackValueKind.ValueType ? contents : actualThis.LifetimeWriteFloor);
+                if (HasLifetime(field.FieldType) && actualThis.Kind == StackValueKind.ByRef && actualThis.IsWholeLifetimeTarget &&
+                    actualThis.LifetimeTarget > 0 && _lifetimeCellTypes[actualThis.LifetimeTarget - 1] == owningType &&
+                    GetLifetimeFieldMask(owningType, field, out ulong fieldMask) != ulong.MaxValue && fieldMask != 0)
+                    lifetimeAddress.InitializedLifetimeFields = fieldMask;
+                if (actualThis.IsReadOnly)
+                    lifetimeAddress.SetIsReadOnly();
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
                 var declaredThis = owningType.IsValueType ?
-                    StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
+                    StackValue.CreateByRef(owningType, readOnly: true) : StackValue.CreateObjRef(owningType);
 
                 CheckIsAssignable(actualThis, declaredThis);
 
@@ -2386,7 +2407,7 @@ namespace Internal.IL
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
-            Push(StackValue.CreateByRef(field.FieldType, false, isPermanentHome).CopyLifetime(lifetimeAddress));
+            Push(StackValue.CreateByRef(field.FieldType, lifetimeAddress.IsReadOnly, isPermanentHome).CopyLifetime(lifetimeAddress));
         }
 
         void ImportStoreField(int token, bool isStatic)

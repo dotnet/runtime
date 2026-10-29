@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -28,6 +29,8 @@ namespace Internal.IL
             public LifetimeScope[] References;
             public LifetimeScope[] Contents;
             public bool[] Outputs;
+            public bool[] ReadOnly;
+            public FieldDesc StoredField;
             public bool Valid;
             public bool HasTypedReference;
         }
@@ -116,6 +119,7 @@ namespace Internal.IL
                 References = new LifetimeScope[count],
                 Contents = new LifetimeScope[count],
                 Outputs = new bool[count],
+                ReadOnly = new bool[count],
                 // Array methods have runtime-defined contracts, not method metadata.
                 Valid = ecma is not null || method is ArrayMethod,
             };
@@ -155,6 +159,18 @@ namespace Internal.IL
             if (ecma is not null)
             {
                 MetadataReader reader = ecma.MetadataReader;
+                // C# readonly references and readonly members encode the receiver contract
+                // on the value type or method, and in parameters on their metadata row.
+                // https://github.com/dotnet/csharplang/blob/392aec93f87e4d87f082c4c4fad3587140f36947/proposals/csharp-7.2/readonly-ref.md
+                if (firstParameter != 0 && method.OwningType.IsValueType && !method.IsConstructor)
+                {
+                    contract.ReadOnly[0] = HasLifetimeMarker(reader,
+                        reader.GetTypeDefinition(ecma.OwningType.Handle).GetCustomAttributes(),
+                        "System.Runtime.CompilerServices", "IsReadOnlyAttribute", contract);
+                    contract.ReadOnly[0] |= HasLifetimeMarker(reader,
+                        reader.GetMethodDefinition(ecma.Handle).GetCustomAttributes(),
+                        "System.Runtime.CompilerServices", "IsReadOnlyAttribute", contract);
+                }
                 if (firstParameter != 0 && HasUnscopedReceiver(ecma, contract))
                     contract.References[0] = LifetimeScope.ReturnOnly;
 
@@ -169,6 +185,7 @@ namespace Internal.IL
                     bool byRef = signature[index].IsByRef;
                     bool output = byRef && (parameter.Attributes & (ParameterAttributes.In | ParameterAttributes.Out)) ==
                         ParameterAttributes.Out;
+                    contract.ReadOnly[slot] = IsReadOnlyLifetimeParameter(signature, index, reader, parameter, contract);
                     bool scoped = HasLifetimeMarker(reader, parameter.GetCustomAttributes(),
                         "System.Runtime.CompilerServices", "ScopedRefAttribute", contract);
                     bool unscoped = HasLifetimeMarker(reader, parameter.GetCustomAttributes(),
@@ -191,8 +208,67 @@ namespace Internal.IL
                     if (unscoped)
                         contract.References[slot] = output ? LifetimeScope.ReturnOnly : LifetimeScope.Caller;
                 }
+                contract.StoredField = GetLifetimeFieldStore(method, ecma);
             }
             return contract;
+        }
+
+        // C# 12 uses RequiresLocationAttribute instead of IsReadOnlyAttribute for ref readonly.
+        // https://github.com/dotnet/csharplang/blob/392aec93f87e4d87f082c4c4fad3587140f36947/proposals/csharp-12.0/ref-readonly-parameters.md#metadata-encoding
+        static bool IsReadOnlyLifetimeParameter(MethodSignature signature, int index, MetadataReader reader,
+            Parameter parameter, LifetimeContract contract)
+        {
+            bool readOnly = HasLifetimeMarker(reader, parameter.GetCustomAttributes(),
+                "System.Runtime.CompilerServices", "IsReadOnlyAttribute", contract);
+            readOnly |= HasLifetimeMarker(reader, parameter.GetCustomAttributes(),
+                "System.Runtime.CompilerServices", "RequiresLocationAttribute", contract);
+            return signature[index].IsByRef &&
+                (parameter.Attributes & (ParameterAttributes.In | ParameterAttributes.Out)) == ParameterAttributes.In &&
+                (readOnly || HasReadOnlyParameterModifier(signature, index));
+        }
+
+        static FieldDesc GetLifetimeFieldStore(MethodDesc method, EcmaMethod definition)
+        {
+            MethodSignature signature = method.Signature;
+            if (signature.IsStatic || method.IsConstructor || !method.OwningType.IsValueType ||
+                !HasLifetimeContents(method.OwningType) || signature.Length != 1 || !signature.ReturnType.IsVoid)
+                return null;
+
+            MethodIL body = EcmaMethodIL.Create(definition);
+            if (body is null || body.GetExceptionRegions().Length != 0)
+                return null;
+
+            // Only a literal field assignment proves that the call does not read
+            // uninitialized receiver contents or write any sibling fields.
+            const int FieldStoreLength = 8;
+            ReadOnlySpan<byte> il = body.GetILBytes();
+            if (il.Length == FieldStoreLength + 1 && il[0] == (byte)ILOpcode.nop)
+                il = il.Slice(1);
+            if (il.Length != FieldStoreLength || il[0] != (byte)ILOpcode.ldarg_0 ||
+                il[1] != (byte)ILOpcode.ldarg_1 || il[2] != (byte)ILOpcode.stfld ||
+                il[^1] != (byte)ILOpcode.ret)
+                return null;
+
+            int token = BinaryPrimitives.ReadInt32LittleEndian(il.Slice(3));
+            if (method != definition)
+                body = new InstantiatedMethodIL(method, body);
+            return body.GetObject(token) is FieldDesc field && !field.IsStatic &&
+                field.OwningType == method.OwningType && field.FieldType == signature[0] ? field : null;
+        }
+
+        static bool HasReadOnlyParameterModifier(MethodSignature signature, int index)
+        {
+            if (!signature.HasEmbeddedSignatureData)
+                return false;
+            foreach (EmbeddedSignatureData modifier in signature.GetEmbeddedSignatureData())
+            {
+                if (modifier.kind == EmbeddedSignatureDataKind.RequiredCustomModifier &&
+                    modifier.type is MetadataType type && type.Namespace == "System.Runtime.InteropServices"u8 &&
+                    type.Name == "InAttribute"u8 &&
+                    modifier.index == MethodSignature.GetIndexOfCustomModifierOnTypeByParameterIndex(index + 1))
+                    return true;
+            }
+            return false;
         }
 
         static bool HasUnscopedReceiver(EcmaMethod method, LifetimeContract contract)
@@ -287,7 +363,11 @@ namespace Internal.IL
                 }
                 else
                 {
-                    value = value.WithLifetime(IsRestrictedLifetimeType(type) ? LifetimeScope.Unknown : scope);
+                    // A zero-initialized byref has no referent. These are neutral bounds
+                    // for the method-wide weak joins used in exception regions.
+                    value = !argument && type.IsByRef && _initLocals ?
+                        value.WithLifetime(scope, LifetimeScope.Global, capacity: LifetimeScope.Function) :
+                        value.WithLifetime(IsRestrictedLifetimeType(type) ? LifetimeScope.Unknown : scope);
                 }
                 _initialLifetimeMemory[i] = value;
             }
@@ -408,7 +488,12 @@ namespace Internal.IL
             {
                 StackValue cell = _lifetimeMemory[address.LifetimeTarget - 1];
                 if (!address.IsWholeLifetimeTarget && cell.InitializedLifetimeFields != ulong.MaxValue)
+                {
+                    if (address.InitializedLifetimeFields != ulong.MaxValue &&
+                        (cell.InitializedLifetimeFields & address.InitializedLifetimeFields) == address.InitializedLifetimeFields)
+                        return cell.ContentsScope;
                     return Narrower(address.ContentsScope, cell.ContentsScope);
+                }
                 return cell.EscapeScope;
             }
             if (address.LifetimeTarget < 0)
@@ -494,16 +579,23 @@ namespace Internal.IL
 
         void StoreFieldLifetime(StackValue address, StackValue value, FieldDesc field)
         {
-            int target = address.LifetimeTarget - 1;
-            StackValue previous = target >= 0 ? _lifetimeMemory[target] : default;
             StoreLifetime(address, value, field.FieldType, whole: false);
+            int target = address.LifetimeTarget - 1;
             if (!HasLifetime(field.FieldType) || target < 0 || !address.IsWholeLifetimeTarget ||
-                previous.InitializedLifetimeFields == ulong.MaxValue ||
+                _lifetimeMemory[target].InitializedLifetimeFields == ulong.MaxValue ||
                 _lifetimeCellTypes[target] != field.OwningType)
                 return;
 
             ulong required = GetLifetimeFieldMask(field.OwningType, field, out ulong bit);
             if (required == ulong.MaxValue || bit == 0)
+                return;
+            InitializeLifetimeField(target, value, required, bit);
+        }
+
+        void InitializeLifetimeField(int target, StackValue value, ulong required, ulong bit)
+        {
+            StackValue previous = _lifetimeMemory[target];
+            if (previous.InitializedLifetimeFields == ulong.MaxValue)
                 return;
             previous.InitializedLifetimeFields |= bit;
             previous.ContentsScope = Narrower(previous.ContentsScope, ValueLifetime(value));
@@ -552,6 +644,11 @@ namespace Internal.IL
                 bool initialize = _lifetimeMemory[target].InitializedLifetimeFields != ulong.MaxValue;
                 StoreLifetimeCell(target, contents, whole && address.IsWholeLifetimeTarget &&
                     (target < _variableCount || initialize));
+                if (whole && !address.IsWholeLifetimeTarget && initialize && address.InitializedLifetimeFields != ulong.MaxValue)
+                {
+                    ulong required = GetLifetimeFieldMask(_lifetimeCellTypes[target], null, out _);
+                    InitializeLifetimeField(target, value, required, address.InitializedLifetimeFields);
+                }
                 if (target < _variableCount)
                     return;
             }
@@ -582,15 +679,17 @@ namespace Internal.IL
         {
             for (int i = 0; i < _lifetimeMemory.Length; i++)
             {
-                if (_lifetimeCellTypes[i] is TypeDesc type && HasLifetime(type))
+                // A byref variable cannot be addressed by verifiable IL, so a call
+                // can mutate its referent but cannot rebind the variable itself.
+                if (HasLifetimeContents(_lifetimeCellTypes[i]))
                     StoreLifetimeCell(i, _lifetimeMemory[i].WithLifetime(LifetimeScope.Unknown), false);
             }
         }
 
         bool NeedsCallLifetimes(MethodDesc method, TypeDesc constrained)
         {
-            if (!method.Signature.IsStatic && HasLifetimeContents(constrained) || HasLifetime(method.Signature.ReturnType) ||
-                method.IsConstructor && HasLifetimeContents(method.OwningType))
+            if (!method.Signature.IsStatic && (HasLifetimeContents(constrained) || HasLifetimeContents(method.OwningType)) ||
+                HasLifetime(method.Signature.ReturnType))
                 return true;
             foreach (TypeDesc parameter in method.Signature)
             {
@@ -622,8 +721,18 @@ namespace Internal.IL
             MethodDesc slot = method;
             if (method.OwningType.IsInterface)
             {
-                if (constrained.HasInstantiation)
-                    return null;
+                // Generic interfaces can unify after substitution. A selected
+                // implementation's contract must not stand in for another candidate.
+                int matches = 0;
+                bool openInterface = method.OwningType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true);
+                foreach (DefType candidate in constrained.RuntimeInterfaces)
+                {
+                    if (candidate.HasSameTypeDefinition(method.OwningType) &&
+                        (candidate == method.OwningType || openInterface ||
+                         candidate.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true)) &&
+                        ++matches > 1)
+                        return null;
+                }
                 slot = constrained.ResolveInterfaceMethodTarget(method);
                 if (slot is null || slot.OwningType.IsInterface)
                     return null;
@@ -644,6 +753,12 @@ namespace Internal.IL
             if (needsLifetimeContract)
                 LifetimeCheck(contract.Valid && !method.OwningType.IsDelegate &&
                     (!method.IsVirtual || method.IsFinal || exactTarget));
+            if (exactTarget && contract.Valid && contract.StoredField is FieldDesc field)
+            {
+                LifetimeCheck(!contract.ReadOnly[0] && !arguments[0].IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
+                StoreFieldLifetime(arguments[0], arguments[1], field);
+                return result;
+            }
             LifetimeScope returned = contract.Valid && !contract.HasTypedReference ? LifetimeScope.Global : LifetimeScope.Unknown;
             LifetimeScope returnedContents = returned;
             int target = 0;
@@ -654,6 +769,11 @@ namespace Internal.IL
             for (int i = 0; i < arguments.Length; i++)
             {
                 StackValue argument = arguments[i];
+                if (!contract.Outputs[i] && argument.Kind == StackValueKind.ByRef && argument.LifetimeTarget > 0 &&
+                    _lifetimeMemory[argument.LifetimeTarget - 1].InitializedLifetimeFields != ulong.MaxValue)
+                    LifetimeCheck(ReadLifetime(argument) != LifetimeScope.Unknown);
+                if (!contract.ReadOnly[i] && argument.IsReadOnly && HasLifetimeContents(argument.Type))
+                    LifetimeCheck(false, VerifierError.ReadOnlyIllegalWrite);
                 if (!contract.Outputs[i] && contract.Contents[i] >= LifetimeScope.ReturnOnly)
                     returned = Narrower(returned, ReadLifetime(argument));
                 if (argument.Kind == StackValueKind.ByRef && contract.References[i] >= LifetimeScope.ReturnOnly)
@@ -675,7 +795,7 @@ namespace Internal.IL
             {
                 StackValue address = arguments[destination];
                 if (address.Kind != StackValueKind.ByRef || !HasLifetimeContents(address.Type) ||
-                    address.IsReadOnly || IsRestrictedLifetimeType(address.Type))
+                    contract.ReadOnly[destination] || IsRestrictedLifetimeType(address.Type))
                     continue;
 
                 LifetimeScope required = contract.Outputs[destination] ?
