@@ -393,6 +393,19 @@ namespace System.Web.Tests
                 new object[] {"", new string[] {}, new string[][] {}},
                 new object[] {"=", new[] {""}, new[] {new[] {""}}},
                 new object[] {"&", new string[] {null}, new[] {new[] {"", ""}}},
+                new object[] {"==", new[] {""}, new[] {new[] {"="}}},
+                new object[] {"&&", new string[] {null}, new[] {new[] {"", "", ""}}},
+                new object[] {"name=", new[] {"name"}, new[] {new[] {""}}},
+                new object[] {"=value", new[] {""}, new[] {new[] {"value"}}},
+                new object[] {"name=value&", new[] {"name", null}, new[] {new[] {"value"}, new[] {""}}},
+                new object[] {"&name=value&&", new[] {null, "name"}, new[] {new[] {"", "", ""}, new[] {"value"}}},
+                new object[] {"Name=first&name=second", new[] {"Name"}, new[] {new[] {"first", "second"}}},
+                new object[] {"keyless&name=value=more&&name=last&", new[] {null, "name"}, new[] {new[] {"keyless", "", ""}, new[] {"value=more", "last"}}},
+                new object[] {"name%3D%26=value%26%3D&name=a+b", new[] {"name=&", "name"}, new[] {new[] {"value&="}, new[] {"a b"}}},
+                new object[] {"name=%&other=%ZZ", new[] {"name", "other"}, new[] {new[] {"%"}, new[] {"%ZZ"}}},
+                new object[] {new string('n', 1024) + "=value&other=last", new[] {new string('n', 1024), "other"}, new[] {new[] {"value"}, new[] {"last"}}},
+                new object[] {"name=" + new string('v', 1024) + "=more&other=last", new[] {"name", "other"}, new[] {new[] {new string('v', 1024) + "=more"}, new[] {"last"}}},
+                new object[] {new string('v', 1024) + "&name=value", new[] {null, "name"}, new[] {new[] {new string('v', 1024)}, new[] {"value"}}},
                 new object[]
                 {
                     HttpUtility.UrlEncode(UnicodeStr) + "=" + HttpUtility.UrlEncode(UnicodeStr),
@@ -426,6 +439,25 @@ namespace System.Web.Tests
                 string[] actualValues = parsed.GetValues(i);
                 Assert.Equal<string>(values[i], actualValues);
             }
+        }
+
+        [Theory]
+        [InlineData("utf-8")]
+        [InlineData("utf-16")]
+        [InlineData("iso-8859-1")]
+        public void ParseQueryString_WithEncoding(string encodingName)
+        {
+            Encoding encoding = Encoding.GetEncoding(encodingName);
+            const string Name = "cl\u00e9&=";
+            const string Value = "valeur+\u00e9&=";
+            const string KeylessValue = "sans+cl\u00e9";
+            string query = HttpUtility.UrlEncode(Name, encoding) + "=" + HttpUtility.UrlEncode(Value, encoding) +
+                "&" + HttpUtility.UrlEncode(KeylessValue, encoding) + "&";
+
+            var parsed = HttpUtility.ParseQueryString(query, encoding);
+            Assert.Equal(new[] { Name, null }, parsed.AllKeys);
+            Assert.Equal(new[] { Value }, parsed.GetValues(0));
+            Assert.Equal(new[] { KeylessValue, "" }, parsed.GetValues(1));
         }
 
         [Fact]

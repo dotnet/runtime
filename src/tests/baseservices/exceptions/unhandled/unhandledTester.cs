@@ -17,9 +17,10 @@ namespace TestUnhandledExceptionTester
     {
         static void RunExternalProcess(string unhandledType, string assembly)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
-            startInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), assembly) + " " + unhandledType;
+            ProcessStartInfo startInfo = new ProcessStartInfo(
+                Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun"),
+                [Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), assembly), unhandledType]);
+            startInfo.InheritedHandles = [];
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
             // Disable crash diagnostics since the target process is expected to fail with an unhandled exception

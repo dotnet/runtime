@@ -13,7 +13,7 @@ namespace ILLink.CodeFix.UnsafeContext
 {
     /// <summary>
     /// Diagnostic IDs, audit markers and the unsafe-evolution compiler APIs. The fixer builds against a Roslyn that
-    /// predates <c>unsafe(...)</c> and <c>MemorySafetyRulesVersion</c>, so both are reached at run time.
+    /// predates <c>unsafe(...)</c>, so it is reached at run time.
     /// </summary>
     internal static class UnsafeContextFacts
     {
@@ -22,6 +22,7 @@ namespace ILLink.CodeFix.UnsafeContext
         internal const string UnsafeMemberOperationId = "CS9362";
         internal const string UnsafeMemberOperationCompatId = "CS9363";
         internal const string UnsafeConstructorConstraintId = "CS9376";
+        internal const string UnassignedAddressOfId = "CS9402";
 
         internal static readonly ImmutableArray<string> FixableDiagnosticIds =
         [
@@ -30,6 +31,7 @@ namespace ILLink.CodeFix.UnsafeContext
             UnsafeMemberOperationId,
             UnsafeMemberOperationCompatId,
             UnsafeConstructorConstraintId,
+            UnassignedAddressOfId,
         ];
 
         /// <summary>The placeholder audit comment on the line above every introduced <c>unsafe { }</c> block.</summary>
@@ -38,14 +40,8 @@ namespace ILLink.CodeFix.UnsafeContext
         /// <summary>The placeholder audit comment directly before every introduced <c>unsafe(...)</c> expression.</summary>
         internal const string ExpressionMarker = "/* SAFETY: To be audited */";
 
-        private const int MemorySafetyRulesVersion2 = 2;
-        private const string UpdatedMemorySafetyRulesFeature = "updated-memory-safety-rules";
-
         private static readonly SyntaxKind s_unsafeExpressionKind =
             Enum.TryParse("UnsafeExpression", out SyntaxKind kind) ? kind : SyntaxKind.None;
-
-        private static readonly Func<IModuleSymbol, object?>? s_getMemorySafetyRulesVersion =
-            typeof(IModuleSymbol).GetProperty("MemorySafetyRulesVersion") is { } property ? module => property.GetValue(module) : null;
 
         internal static bool IsFixableDiagnosticId(string id) => FixableDiagnosticIds.Contains(id);
 
@@ -75,22 +71,19 @@ namespace ILLink.CodeFix.UnsafeContext
         }
 
         /// <summary>
-        /// Whether the fixer may introduce contexts in a document: v2 memory-safety rules, unsafe code
-        /// allowed, a language version with <c>unsafe(...)</c>, and no generated code.
+        /// Whether the fixer may introduce contexts in a document: unsafe code allowed, a language version with
+        /// <c>unsafe(...)</c>, and no generated code.
         /// </summary>
+        /// <remarks>
+        /// The legacy memory safety rules are allowed too: they report the same diagnostics for pointer operations and
+        /// pointer signatures outside an unsafe context, e.g. in a file shared with an assembly that has been migrated.
+        /// </remarks>
         internal static bool IsEnabled(Document document, SyntaxNode root, Compilation compilation) =>
             document is not SourceGeneratedDocument
             && compilation.Options is CSharpCompilationOptions { AllowUnsafe: true }
             && root.SyntaxTree.Options is CSharpParseOptions parseOptions
-            && UsesUpdatedMemorySafetyRules(compilation, parseOptions)
             && SupportsUnsafeExpressions(parseOptions)
             && !IsGeneratedCode(root);
-
-        // Hosts that predate the public API, such as the SDK's dotnet-format, read the compiler's feature flag instead.
-        private static bool UsesUpdatedMemorySafetyRules(Compilation compilation, CSharpParseOptions parseOptions) =>
-            s_getMemorySafetyRulesVersion is null
-                ? parseOptions.Features.ContainsKey(UpdatedMemorySafetyRulesFeature)
-                : s_getMemorySafetyRulesVersion(compilation.SourceModule) is { } version && Convert.ToInt32(version) == MemorySafetyRulesVersion2;
 
         private static bool SupportsUnsafeExpressions(CSharpParseOptions options) =>
             SyntaxFactory.ParseExpression("unsafe(0)", options: options) is var expression
