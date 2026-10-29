@@ -70,6 +70,13 @@ handle marshalling still uses the strict binder field/class lookups. Mandatory
 `StubHelpers` and `HandleMarshaler` method signatures independently retain `SafeHandle`;
 its conditional declaration expresses intent rather than guaranteeing a size reduction.
 
+`DynamicMethod`, `DynamicResolver`, and `Resolver` are conditional together. The reflection
+caller stack walker checks `DynamicMethod` without loading it for unrelated frames.
+Managed code creates a resolver before passing it to native dynamic-method creation;
+the resolver's native callbacks and `DynamicResolver.m_method` field are preserved when
+their declaring types survive. DAC reads that field only after finding a live managed
+resolver for a dynamic method.
+
 `GCMemoryInfoData` supplies conditional-layout coverage because
 managed code allocates it before the native GC fills it. Runtime counters, array-pool
 pressure handling, and thread-pool code can retain it; conditional layout is not a promise

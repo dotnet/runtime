@@ -746,6 +746,24 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(System.Reflection.TestAssembly.ClassToInvoke).Assembly, System.Reflection.TestAssembly.ClassToInvoke.InvokeDelegate(del));
         }
 
+        [Theory]
+        [InlineData(nameof(Assembly.GetCallingAssembly))]
+        [InlineData(nameof(Assembly.GetExecutingAssembly))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51673", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        public void GetAssemblyThroughReflection(string methodName)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                Assert.Equal(typeof(AssemblyTests).Assembly, InvokeAssemblyGetter(methodName));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Assembly InvokeAssemblyGetter(string methodName)
+        {
+            return (Assembly)typeof(Assembly).GetMethod(methodName).Invoke(null, null);
+        }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51673", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void GetCallingAssemblyInCctor()

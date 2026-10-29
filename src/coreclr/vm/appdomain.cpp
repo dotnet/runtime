@@ -1214,7 +1214,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__ASSEMBLY,
         CLASS__TYPE_DELEGATOR,
         CLASS__RUNTIME_HELPERS,
-        CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
         CLASS__METHODBASEINVOKER,
         CLASS__INSTANCE_CALLI_HELPER,
@@ -1243,6 +1242,16 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
             if (CoreLibBinder::GetExistingClass(reflectionInvocationTypes[i]) == pCaller)
                 return true;
         }
+
+        // A DynamicMethod frame implies the optional type has already been loaded.
+        PTR_MethodTable pDynamicMethod;
+        {
+            // A non-loading lookup can still acquire loader locks.
+            GCX_PREEMP();
+            pDynamicMethod = CoreLibBinder::GetClassIfExist(CLASS__DYNAMICMETHOD);
+        }
+        if (pDynamicMethod == pCaller)
+            return true;
     }
 
     return false;

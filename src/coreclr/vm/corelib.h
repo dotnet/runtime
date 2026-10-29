@@ -281,9 +281,9 @@ DEFINE_METHOD(MATH,                 MOD_INT64,                   ModInt64,      
 DEFINE_METHOD(MATH,                 MOD_UINT64,                  ModUInt64,                NoSig)
 #endif // TARGET_32BIT
 
-DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
+DEFINE_CLASS_OPTIONAL(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 
-DEFINE_CLASS(DYNAMICRESOLVER,       ReflectionEmit,         DynamicResolver)
+DEFINE_CLASS_OPTIONAL(DYNAMICRESOLVER,       ReflectionEmit,         DynamicResolver)
 DEFINE_FIELD(DYNAMICRESOLVER,       DYNAMIC_METHOD,         m_method)
 
 DEFINE_CLASS(ENC_HELPER,            Diagnostics,            EditAndContinueHelper)
@@ -621,7 +621,7 @@ DEFINE_CLASS(PROPERTY,              Reflection,             RuntimePropertyInfo)
 
 DEFINE_CLASS(PROPERTY_INFO,         Reflection,             PropertyInfo)
 
-DEFINE_CLASS(RESOLVER,              System,                 Resolver)
+DEFINE_CLASS_OPTIONAL(RESOLVER,              System,                 Resolver)
 DEFINE_METHOD(RESOLVER,             GET_JIT_CONTEXT,        GetJitContext,              SM_PtrResolver_PtrInt_PtrClass_PtrException_RetVoid)
 DEFINE_METHOD(RESOLVER,             GET_CODE_INFO,          GetCodeInfo,                SM_PtrResolver_PtrInt_PtrInt_PtrInt_PtrArrByte_PtrException_RetVoid)
 DEFINE_METHOD(RESOLVER,             GET_LOCALS_SIGNATURE,   GetLocalsSignature,         SM_PtrResolver_PtrArrByte_PtrException_RetVoid)
