@@ -2132,7 +2132,7 @@ Range RangeCheck::ComputeRangeForLocalDef(GenTreeLclVarCommon* lcl, bool monIncr
 }
 
 // Get the limit's maximum possible value.
-bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
+bool RangeCheck::GetLimitMax(const Limit& limit, int* pMax)
 {
     int& max1 = *pMax;
     switch (limit.type)
@@ -2176,22 +2176,30 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
     return true;
 }
 
+// Get the limit's minimum possible value, or INT_MIN if it is not known.
+int RangeCheck::GetLimitMin(const Limit& limit)
+{
+    // $bnd is never negative, so "$bnd + cns" can't wrap and is at least cns when cns <= 0.
+    if (limit.IsConstant() || (limit.IsBinOpArray() && (limit.GetConstant() <= 0)))
+    {
+        return limit.GetConstant();
+    }
+    return INT_MIN;
+}
+
 // Check if the arithmetic overflows.
-bool RangeCheck::AddOverflows(Limit& limit1, Limit& limit2)
+bool RangeCheck::AddOverflows(const Range& range1, const Range& range2)
 {
     int max1;
-    if (!GetLimitMax(limit1, &max1))
-    {
-        return true;
-    }
-
     int max2;
-    if (!GetLimitMax(limit2, &max2))
+    if (!GetLimitMax(range1.UpperLimit(), &max1) || !GetLimitMax(range2.UpperLimit(), &max2) ||
+        IntAddOverflows(max1, max2))
     {
         return true;
     }
 
-    return IntAddOverflows(max1, max2);
+    // An underflow wraps to large values and invalidates the upper limit as well.
+    return IntAddOverflows(GetLimitMin(range1.LowerLimit()), GetLimitMin(range2.LowerLimit()));
 }
 
 // Check if the arithmetic overflows.
@@ -2218,16 +2226,6 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Ra
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
-    if (!GetSearchPath()->Lookup(op1) && ComputeDoesOverflow(block, op1, range))
-    {
-        return true;
-    }
-
-    if (!GetSearchPath()->Lookup(op2) && ComputeDoesOverflow(block, op2, range))
-    {
-        return true;
-    }
-
     // Get the cached ranges of op1
     Range* op1Range = nullptr;
     if (!GetRangeMap()->Lookup(op1, &op1Range))
@@ -2241,12 +2239,26 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Ra
         return true;
     }
 
+    // An overflow in an operand only matters for the range this binop used for it.
+    // A dependent range is passed as is: Widen assumes that nothing overflows.
+    const bool keepRange = range.LowerLimit().IsDependent() || range.UpperLimit().IsDependent();
+
+    if (!GetSearchPath()->Lookup(op1) && ComputeDoesOverflow(block, op1, keepRange ? range : *op1Range))
+    {
+        return true;
+    }
+
+    if (!GetSearchPath()->Lookup(op2) && ComputeDoesOverflow(block, op2, keepRange ? range : *op2Range))
+    {
+        return true;
+    }
+
     JITDUMP("Checking bin op overflow %s %s %s\n", GenTree::OpName(binop->OperGet()), op1Range->ToString(m_compiler),
             op2Range->ToString(m_compiler));
 
     if (binop->OperIs(GT_ADD))
     {
-        return AddOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
+        return AddOverflows(*op1Range, *op2Range);
     }
     if (binop->OperIs(GT_MUL))
     {
@@ -2291,9 +2303,9 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl,
     Range assertionRange = Range(Limit(Limit::keUnknown));
     MergeAssertion(block, lcl, &assertionRange DEBUGARG(0));
 
-    // But only if the range from the assertion is more strict than the global
-    // range computed; otherwise we might still have used the def's value to
-    // tighten the range of the global range. A dependent limit doesn't qualify:
+    // But only if the range from the assertion is at least as strict as the range
+    // assumed for the local by its user; otherwise we might still have used the def's
+    // value to tighten that range. A dependent limit doesn't qualify:
     // Widen resolves it later assuming the defs don't overflow.
     Range merged = RangeOps::Merge(range, assertionRange, false);
     if (!range.LowerLimit().IsDependent() && !range.UpperLimit().IsDependent() &&

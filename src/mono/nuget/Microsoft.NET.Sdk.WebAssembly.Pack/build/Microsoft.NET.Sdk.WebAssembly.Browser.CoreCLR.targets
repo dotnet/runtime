@@ -144,22 +144,24 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <ItemGroup Condition="'$(_WasmCoreClrUnderPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and Exists('$(_WasmTrimmedClosureDir)')">
       <!-- Tag every copy-local item with trimmed-closure membership (default false so the metadata is always
-           defined), then set true for managed assemblies the linker kept. -->
+           defined), then set true for managed assemblies and symbols the linker kept. -->
       <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)">
         <_WasmInTrimmedClosure>false</_WasmInTrimmedClosure>
       </ReferenceCopyLocalPaths>
       <ReferenceCopyLocalPaths Update="@(ReferenceCopyLocalPaths)"
-                               Condition="'%(Extension)' == '.dll' and Exists('$(_WasmTrimmedClosureDir)%(FileName).dll')">
+                               Condition="('%(Extension)' == '.dll' or '%(Extension)' == '.pdb') and
+                                          Exists('$(_WasmTrimmedClosureDir)%(FileName).dll') and
+                                          ('%(Extension)' == '.dll' or Exists('$(_WasmTrimmedClosureDir)%(FileName).pdb'))">
         <_WasmInTrimmedClosure>true</_WasmInTrimmedClosure>
       </ReferenceCopyLocalPaths>
-      <!-- Drop assemblies the linker trimmed out of the app closure. -->
+      <!-- Do not retain untrimmed symbols when an assembly or its PDB was removed by the linker. -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
-        Condition="'%(Extension)' == '.dll' and '%(_WasmInTrimmedClosure)' != 'true'" />
-      <!-- Repoint the kept closure assemblies at their trimmed IL so IL-only members share the trimmed MVIDs
-           the per-app R2R members were compiled against (the R2R members are still staged from obj/R2R). -->
+        Condition="('%(Extension)' == '.dll' or '%(Extension)' == '.pdb') and '%(_WasmInTrimmedClosure)' != 'true'" />
+      <!-- Repoint assemblies and their matching symbols together. IL-only members must share the trimmed
+           MVIDs the per-app R2R members were compiled against (R2R members are still staged from obj/R2R). -->
       <_WasmTrimmedClosureRedirect Include="@(ReferenceCopyLocalPaths)" Condition="'%(_WasmInTrimmedClosure)' == 'true'" />
       <ReferenceCopyLocalPaths Remove="@(_WasmTrimmedClosureRedirect)" />
-      <ReferenceCopyLocalPaths Include="@(_WasmTrimmedClosureRedirect->'$(_WasmTrimmedClosureDir)%(FileName).dll')"
+      <ReferenceCopyLocalPaths Include="@(_WasmTrimmedClosureRedirect->'$(_WasmTrimmedClosureDir)%(FileName)%(Extension)')"
                                RelativePath="%(FileName)%(Extension)" />
       <!-- The project's own assembly does not travel through ReferenceCopyLocalPaths: _ComputeWasmBuildCandidates
            serves it from @(IntermediateAssembly), i.e. the UNTRIMMED compile output, which then mismatches the

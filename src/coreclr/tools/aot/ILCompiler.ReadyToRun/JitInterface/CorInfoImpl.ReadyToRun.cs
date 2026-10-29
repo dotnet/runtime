@@ -2562,12 +2562,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-        {
-            TypeDesc type = HandleToObject(cls);
-            classMustBeLoadedBeforeCodeIsRun(type);
-        }
-
         private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
         {
             if (!type.IsPrimitive)

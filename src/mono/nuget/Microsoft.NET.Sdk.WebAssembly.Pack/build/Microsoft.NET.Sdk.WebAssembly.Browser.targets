@@ -312,6 +312,10 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- If we have @(WasmAssembliesFinal), prefer them over @(ReferenceCopyLocalPaths). They come from AOT during build. In that case @(ReferenceCopyLocalPaths) is already empty  -->
       <_WasmProjectAssemblyBuild Include="@(WasmAssembliesFinal)" Condition="$(_WasmIntermediateAssemblyFileNames.Contains(';%(FileName)%(Extension);'))" />
+      <!-- A final CoreCLR project assembly needs its own symbols, not the untrimmed compiler PDB. -->
+      <_WasmProjectDebugSymbolsBuild Include="@(_DebugSymbolsIntermediatePath)" Condition="'$(UseMonoRuntime)' != 'false' or '@(_WasmProjectAssemblyBuild)' == ''" />
+      <_WasmProjectDebugSymbolsBuild Include="@(_WasmProjectAssemblyBuild->'%(RootDir)%(Directory)%(FileName).pdb')"
+                                    Condition="'$(UseMonoRuntime)' == 'false' and '@(_DebugSymbolsIntermediatePath)' != '' and Exists('%(_WasmProjectAssemblyBuild.RootDir)%(_WasmProjectAssemblyBuild.Directory)%(_WasmProjectAssemblyBuild.FileName).pdb')" />
       <_WasmProjectAssemblyBuild Include="@(IntermediateAssembly)" Condition="@(_WasmProjectAssemblyBuild->Count()) == 0" />
       <_WasmBuildAssetCandidates Include="@(ReferenceCopyLocalPaths)" />
       <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" WasmNativeBuildOutput="true" />
@@ -333,7 +337,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       Candidates="@(_WasmBuildAssetCandidates->Distinct())"
       CustomIcuCandidate="$(_BlazorIcuDataFileName)"
       ProjectAssembly="@(_WasmProjectAssemblyBuild)"
-      ProjectDebugSymbols="@(_DebugSymbolsIntermediatePath)"
+      ProjectDebugSymbols="@(_WasmProjectDebugSymbolsBuild)"
       SatelliteAssemblies="@(ReferenceSatellitePaths)"
       ProjectSatelliteAssemblies="@(IntermediateSatelliteAssembliesWithTargetPath)"
       TimeZoneSupport="$(_BlazorEnableTimeZoneSupport)"
