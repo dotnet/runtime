@@ -69,7 +69,6 @@ using std::isnan;
 // This file contains implementation of all JIT helpers. The helpers are
 // divided into following categories:
 //
-//      INTEGER ARITHMETIC HELPERS
 //      INSTANCE FIELD HELPERS
 //      STATIC FIELD HELPERS
 //      SHARED STATIC FIELD HELPERS
@@ -87,36 +86,6 @@ using std::isnan;
 //========================================================================
 
 
-
-//========================================================================
-//
-//      INTEGER ARITHMETIC HELPERS
-//
-//========================================================================
-
-#include <optsmallperfcritical.h>
-
-//
-// helper macro to get high 32-bit of 64-bit int
-//
-#define Hi32Bits(a)         ((UINT32)((UINT64)(a) >> 32))
-
-//
-// helper macro to check whether 64-bit signed int fits into 32-bit signed (compiles into one 32-bit compare)
-//
-#define Is32BitSigned(a)    (Hi32Bits(a) == Hi32Bits((INT64)(INT32)(a)))
-
-/*********************************************************************/
-extern "C" FCDECL2(INT32, JIT_Div, INT32 dividend, INT32 divisor);
-extern "C" FCDECL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor);
-extern "C" FCDECL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor);
-extern "C" FCDECL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor);
-extern "C" FCDECL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor);
-extern "C" FCDECL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor);
-extern "C" FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor);
-extern "C" FCDECL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor);
-
-#include <optdefault.h>
 
 #ifdef FEATURE_IJW
 HCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField)

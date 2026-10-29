@@ -192,6 +192,12 @@ EXTERN_C FCDECL2_LL(int64_t, RhpLMul, int64_t val1, int64_t val2);
 EXTERN_C void STDCALL RhpLLsh();
 EXTERN_C void STDCALL RhpLRsh();
 EXTERN_C void STDCALL RhpLRsz();
+#ifdef TARGET_WINDOWS
+EXTERN_C FCDECL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor);
+EXTERN_C FCDECL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor);
+EXTERN_C FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor);
+EXTERN_C FCDECL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor);
+#endif // TARGET_WINDOWS
 #else // TARGET_X86
 EXTERN_C FCDECL2(uint64_t, RhpLLsh, uint64_t num, int32_t shift);
 EXTERN_C FCDECL2(int64_t, RhpLRsh, int64_t num, int32_t shift);
