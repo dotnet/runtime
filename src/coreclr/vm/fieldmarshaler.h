@@ -14,6 +14,7 @@
 
 VARTYPE GetVarTypeForTypeHandle(TypeHandle typeHnd);
 MethodTable* GetNativeMethodTableForVarType(VARTYPE vt, MethodTable* pManagedMT);
+bool IsSafeHandle(TypeHandle type);
 bool IsCriticalHandle(TypeHandle type);
 
 // Forward references

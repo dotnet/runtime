@@ -63,17 +63,19 @@ layout and member checks; mandatory entries remain mandatory.
 `HandleRef` and `ArrayWithOffset` are conditional because the marshaller reads their fields
 only for reachable signatures using those types. `ArrayWithOffset` can remain reachable
 through `UnmanagedType.AsAny`; the declaration expresses the native reachability contract
-regardless of whether it saves space. `CriticalHandle` is also conditional. Its marshalling
-classification checks use a non-loading lookup: a loaded subtype has already loaded its
-base, so unrelated signatures need not load `CriticalHandle`. Actual handle marshalling
-still uses the strict binder field/class lookups.
+regardless of whether it saves space. `CriticalHandle` and `SafeHandle` are also conditional.
+Their marshalling classification checks use a non-loading lookup: a loaded subtype has
+already loaded its base, so unrelated signatures need not load either base type. Actual
+handle marshalling still uses the strict binder field/class lookups. Mandatory
+`StubHelpers` and `HandleMarshaler` method signatures independently retain `SafeHandle`;
+its conditional declaration expresses intent rather than guaranteeing a size reduction.
 
 `GCMemoryInfoData` supplies conditional-layout coverage because
 managed code allocates it before the native GC fills it. Runtime counters, array-pool
 pressure handling, and thread-pool code can retain it; conditional layout is not a promise
 of a minimal-application size reduction. Startup types, independently created native
 objects, and incidental classification dependencies need separate semantic audits before
-using these annotations. In particular, WeakReference, SafeHandle, and CallConvSwift are
+using these annotations. In particular, WeakReference and CallConvSwift are
 not made conditional by this mechanism.
 
 Additional conditional declarations cover managed-created objects and values:

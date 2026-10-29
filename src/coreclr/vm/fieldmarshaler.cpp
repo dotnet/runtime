@@ -62,7 +62,7 @@ static VARTYPE GetVarTypeForCorElementType(CorElementType type)
     return vt;
 }
 
-bool IsCriticalHandle(TypeHandle type)
+static bool IsHandleType(TypeHandle type, BinderClassID classID)
 {
     CONTRACTL
     {
@@ -72,15 +72,27 @@ bool IsCriticalHandle(TypeHandle type)
     }
     CONTRACTL_END;
 
-    // A loaded CriticalHandle subtype has already loaded its base class.
-    // Classification must not load CriticalHandle for unrelated types.
-    PTR_MethodTable pCriticalHandleMT;
+    // A loaded handle subtype has already loaded its base class.
+    // Classification must not load the base for unrelated types.
+    PTR_MethodTable pHandleMT;
     {
         // A non-loading lookup can still acquire loader locks.
         GCX_PREEMP();
-        pCriticalHandleMT = CoreLibBinder::GetClassIfExist(CLASS__CRITICAL_HANDLE);
+        pHandleMT = CoreLibBinder::GetClassIfExist(classID);
     }
-    return pCriticalHandleMT != nullptr && type.CanCastTo(TypeHandle(pCriticalHandleMT));
+    return pHandleMT != nullptr && type.CanCastTo(TypeHandle(pHandleMT));
+}
+
+bool IsSafeHandle(TypeHandle type)
+{
+    WRAPPER_NO_CONTRACT;
+    return IsHandleType(type, CLASS__SAFE_HANDLE);
+}
+
+bool IsCriticalHandle(TypeHandle type)
+{
+    WRAPPER_NO_CONTRACT;
+    return IsHandleType(type, CLASS__CRITICAL_HANDLE);
 }
 
 VARTYPE GetVarTypeForTypeHandle(TypeHandle type)
@@ -161,7 +173,7 @@ VARTYPE GetVarTypeForTypeHandle(TypeHandle type)
 #ifdef FEATURE_COMINTEROP
     // There is no VT corresponding to SafeHandles as they cannot be stored in
     // VARIANTs or Arrays. The same applies to CriticalHandle.
-    if (type.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__SAFE_HANDLE))))
+    if (IsSafeHandle(type))
         COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
     if (IsCriticalHandle(type))
         COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);

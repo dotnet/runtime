@@ -838,7 +838,7 @@ DEFINE_CLASS(SWIFT_ERROR,                    Swift,                  SwiftError)
 DEFINE_CLASS(SWIFT_INDIRECT_RESULT,          Swift,                  SwiftIndirectResult)
 #endif // TARGET_APPLE
 
-DEFINE_CLASS(SAFE_HANDLE,         Interop,                SafeHandle)
+DEFINE_CLASS_OPTIONAL(SAFE_HANDLE,         Interop,                SafeHandle)
 DEFINE_FIELD(SAFE_HANDLE,           HANDLE,                 handle)
 
 DEFINE_CLASS_U_OPTIONAL(Diagnostics,                StackFrameHelper,   StackFrameHelper)

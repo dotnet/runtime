@@ -116,18 +116,20 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData(false, false, false, false)]
-        [InlineData(true, false, false, false)]
-        [InlineData(false, true, false, false)]
-        [InlineData(true, true, false, false)]
-        [InlineData(false, false, true, false)]
-        [InlineData(false, true, true, false)]
-        [InlineData(false, false, false, true)]
-        [InlineData(true, false, false, true)]
-        [InlineData(false, true, false, true)]
-        [InlineData(true, true, false, true)]
-        [InlineData(false, true, true, true)]
-        public void LinkerDefersConditionalFieldsAndMethods(bool reachable, bool nested, bool featureEnabled, bool generic)
+        [InlineData(false, false, false, false, false)]
+        [InlineData(true, false, false, false, false)]
+        [InlineData(false, true, false, false, false)]
+        [InlineData(true, true, false, false, false)]
+        [InlineData(false, false, true, false, false)]
+        [InlineData(false, true, true, false, false)]
+        [InlineData(false, false, false, true, false)]
+        [InlineData(true, false, false, true, false)]
+        [InlineData(false, true, false, true, false)]
+        [InlineData(true, true, false, true, false)]
+        [InlineData(false, true, true, true, false)]
+        [InlineData(false, false, false, false, true)]
+        [InlineData(false, true, false, false, true)]
+        public void LinkerDefersConditionalFieldsAndMethods(bool reachable, bool nested, bool featureEnabled, bool generic, bool requiredSignature)
         {
             using var test = new DescriptorTest();
             string containerName = generic ? "Container`1" : "Container";
@@ -138,6 +140,8 @@ namespace ILLink.Tasks.Tests
                 $"DEFINE_CLASS_U_OPTIONAL(TestNS, {name}, NativeCandidate)",
                 "DEFINE_FIELD(CANDIDATE, VALUE, _value)",
                 "DEFINE_METHOD(CANDIDATE, CALLBACK, Callback, NoSig)",
+                requiredSignature ? "DEFINE_CLASS(HELPERS, TestNS, Helpers)" : "",
+                requiredSignature ? "DEFINE_METHOD(HELPERS, USE, Use, NoSig)" : "",
                 "BEGIN_ILLINK_FEATURE_SWITCH(TestFeature, true, true)",
                 $"DEFINE_CLASS(ALIAS, TestNS, {name})",
                 "END_ILLINK_FEATURE_SWITCH()"
@@ -180,6 +184,15 @@ namespace ILLink.Tasks.Tests
                     callback.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
                     candidate.Methods.Add(callback);
                 }
+                if (requiredSignature)
+                {
+                    var helpers = new TypeDefinition("TestNS", "Helpers", TypeAttributes.Public, objectType);
+                    module.Types.Add(helpers);
+                    var use = new MethodDefinition("Use", MethodAttributes.Public | MethodAttributes.Static, voidType);
+                    use.Parameters.Add(new ParameterDefinition(candidate));
+                    use.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
+                    helpers.Methods.Add(use);
+                }
                 var program = new TypeDefinition("TestNS", "Program", TypeAttributes.Public, objectType);
                 module.Types.Add(program);
                 var main = new MethodDefinition("Main", MethodAttributes.Public | MethodAttributes.Static, voidType);
@@ -207,7 +220,7 @@ namespace ILLink.Tasks.Tests
             TypeDefinition retained = nested
                 ? linked.MainModule.GetType($"TestNS.{containerName}")?.NestedTypes.SingleOrDefault(t => t.Name == candidateName)
                 : linked.MainModule.GetType($"TestNS.{candidateName}");
-            if (reachable || featureEnabled)
+            if (reachable || featureEnabled || requiredSignature)
             {
                 Assert.NotNull(retained);
                 Assert.Equal(new[] { "_value", "_layoutOnly" }, retained.Fields.Select(f => f.Name));
