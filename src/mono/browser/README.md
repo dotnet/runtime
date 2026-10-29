@@ -39,6 +39,94 @@ At this time no other build dependencies are necessary to start building for Web
 
 # Running tests
 
+## Experimental CoreCLR dedicated worker hosting
+
+The dedicated-worker prototype requires both build-time and runtime opt-in:
+
+```xml
+<PropertyGroup>
+  <UseMonoRuntime>false</UseMonoRuntime>
+  <WasmEnableSharedMemory>true</WasmEnableSharedMemory>
+</PropertyGroup>
+```
+
+Start it with `dotnet.withWorker().create()` and serve the app with
+`Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp`.
+
+Shared native and ReadyToRun images are staged into the application's intermediate
+directory before asset fingerprinting and integrity computation. The runtime pack
+is not modified. Ordinary builds without this property retain non-shared memory
+and do not require these isolation headers. Changing the property restages the
+application assets; do not patch files in the NuGet cache or published output.
+Browser ReadyToRun images must be produced by a compiler that includes a maximum
+in their memory imports. Older unbounded images fail shared staging explicitly.
+
+The current bridge supports up to six mixed arguments using the native interop
+marshalers: Boolean, Byte, Char, Int16, Int32, Int52, BigInt64, Single, Double,
+String, IntPtr, DateTime/DateTimeOffset, nullable scalars, arrays, Span/ArraySegment,
+Action/Function, Task arguments, JSObject/Object and Exception values.
+Results use the same native-supported types or void, synchronously or through a
+Task. Native signature restrictions still apply; for example, asynchronous array
+values use Task<object>/JSType.Any, not unsupported direct Task<T[]> signatures.
+Void exports return undefined; Task-without-result completion resolves
+to undefined, while a null Task remains null. Void UI imports ignore their return
+values. Discard and DiscardNoWait use the existing ST void behavior. Floating-point
+transport preserves NaN, infinities and signed zero; Single follows native
+float32 rounding. Null and empty strings remain distinct.
+Byte, Char and Int16 use their exact native widths and ranges. Char values are
+numeric UTF-16 code units, not JavaScript strings. Int52 follows the existing
+`long`/`JSType.Number` converter and carries JavaScript safe integers through a
+double-valued marshaler slot. BigInt64 follows `long`/`JSType.BigInt`, uses a
+signed 64-bit slot and JavaScript `bigint` values, including Task completions;
+it never converts through a JavaScript Number.
+The worker owns temporary UTF-16 transport allocations and native marshaling;
+UI code only copies transport payloads and accesses live shared memory views.
+IntPtr preserves the native unsigned Wasm32 representation. Dates retain native
+millisecond precision. Arrays are copied; object, exception and callback values
+use bidirectional identity-preserving references with weak proxy caches and
+per-transmission leases. Reference operations use the reentrant synchronous
+rings; Promise arguments settle through messages. Span lifetime ends with its
+import (also on failure); ArraySegment disposal runs on the worker. Memory-view
+methods refresh shared memory after growth and reject disposed views.
+Thrown import/export failures and Task rejections preserve reference identity.
+If an exception payload cannot be allocated, the failure explicitly reports that
+exception transport failed and uses the bounded shared-error snapshot.
+Shared slots and transport buffers are released
+after initial invocation, before asynchronous completion messages.
+Synchronous calls block the UI and service interop requests, not arbitrary Promise
+continuations. Each direction has 16 active synchronous call slots; asynchronous
+calls release their slots after initial invocation. Async UI imports require native
+Promises, not custom thenables. Shutdown rejects pending proxy calls but does not
+cancel arbitrary user Promises. The full RuntimeAPI remains unsupported;
+this prototype still requires API/design review.
+Operations on worker-owned reference proxies fail after the worker exits;
+objects returned to their original UI owner retain their original identity.
+
+### Library tests in worker mode
+
+The JS interop test project supports an explicit `WasmTestWithWorker` mode.
+It registers its UI imports before managed execution and checks that managed
+code runs without a DOM while its registered imports execute on the UI thread.
+Run the dedicated-worker subset in Chrome:
+
+```powershell
+.\dotnet.cmd build -bl /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Debug /p:RuntimeFlavor=CoreCLR /t:Test /p:Scenario=WasmTestOnChrome /p:InstallChromeForTests=false /p:EnableHotReloadInRuntimeConfigDevFile=false /p:WasmTestWithWorker=true /p:XUnitClassName=System.Runtime.InteropServices.JavaScript.Tests.WorkerInteropTest .\src\libraries\System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj
+```
+
+Use `WasmTestWithWorker=false` for the same subset on the ordinary runtime.
+The subset includes scalar strings, Unicode and large payloads, native memory
+growth, nested calls, concurrent Tasks, dates/nullables, arrays, reference
+identity, callbacks, live memory views, errors and cleanup. It is not the full
+JS interop suite: the existing helper modules still need worker-aware setup
+and full-suite execution.
+When using the shared browser cache, set `CHROME_PATH_FOR_TESTS` and put its
+matching ChromeDriver on `PATH`; a cached driver cannot drive an unrelated
+system Chrome major version.
+Hot-reload browser tools are disabled for this test run: they are unrelated to
+the interop assertions and recent SDKs otherwise inject conflicting assets into
+the two referenced HTTP test servers.
+
 ## Installation of JavaScript engines
 
 The latest engines can be installed with jsvu (JavaScript engine Version Updater https://github.com/GoogleChromeLabs/jsvu)

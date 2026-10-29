@@ -30,9 +30,10 @@ public class WebcilConverter
         Log = logger;
     }
 
-    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath, LogAdapter logger, int webcilVersion = 0)
+    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath, LogAdapter logger, int webcilVersion = 0, bool wasmEnableSharedMemory = false)
     {
         var converter = NET.WebAssembly.Webcil.WebcilConverter.FromPortableExecutable(inputPath, outputPath, webcilVersion);
+        converter.WasmEnableSharedMemory = wasmEnableSharedMemory;
         return new WebcilConverter(converter, inputPath, outputPath, logger);
     }
 
@@ -41,5 +42,4 @@ public class WebcilConverter
         Log.LogMessage(MessageImportance.Low, $"Converting to Webcil: input {_inputPath} output: {_outputPath}");
         _converter.ConvertToWebcil();
     }
-
 }

@@ -13,9 +13,22 @@ export interface DotnetHostBuilder {
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
     /**
-     * @deprecated This method is no longer supported and will be removed in a future version.
+     * Configures the runtime to start on a dedicated web worker.
+     * The main thread gets a proxy supporting runMain, runMainAndExit, and exit.
+     * UI imports and exports support up to six arguments using the native interop marshalers.
+     * Supported scalars: Boolean, Byte, Char, Int16, Int32, Int52, BigInt64, Single, Double, String.
+     * Also supports IntPtr, dates, nullable scalars, arrays, memory views, callbacks and object/exception values.
+     * Results may be supported native types or void, synchronously or through a Task.
+     * Managed allocation and reference ownership remain on the runtime worker.
+     * Register each module once, before running managed code.
+     * Nested synchronous calls have 16 in-flight slots in each direction.
+     * Asynchronous calls release those slots after their synchronous prefix.
+     * Asynchronous UI imports require native Promise results; custom thenables are not supported.
+     * Heap access and diagnostics are not yet supported by the proxy.
+     * Build the application with WasmEnableSharedMemory=true to select app-owned shared assets.
+     * Requires COOP/COEP headers and SharedArrayBuffer support.
      */
-    withConfigSrc(configSrc: string): DotnetHostBuilder;
+    withWorker(options?: WorkerOptions): DotnetHostBuilder;
     /**
      * "command line" arguments for the Main() method.
      * @param args
@@ -206,6 +219,19 @@ export type LoaderConfig = {
      * Note: RuntimeAPI.runMain() and RuntimeAPI.runMainAndExit() will replace this value, if they provide it.
      */
     applicationArguments?: string[];
+    /**
+     * Configures the runtime to start on a dedicated web worker.
+     * Requires COOP/COEP headers and SharedArrayBuffer support.
+     */
+    workerOptions?: WorkerOptions;
+};
+export type WorkerOptions = {
+    /**
+     * Timeout in milliseconds for the worker to initialize and respond.
+     * If the worker doesn't post a "ready" message within this time, create() rejects and the worker is terminated.
+     * Default is 30000 (30 seconds).
+     */
+    timeoutMs?: number;
 };
 export type ResourceExtensions = {
     [extensionName: string]: ResourceList;

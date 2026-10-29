@@ -9,9 +9,9 @@ import GitHash from "consts:gitHash";
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import {
     bindJSImportST, dynamicImport, getDotnetInstance, getGlobalThis, getProperty, getTypeOfProperty, hasProperty,
-    invokeJSFunction, invokeJSImportST, setModuleImports, setProperty
+    invokeJSFunction, invokeJSImportST, registerWorkerJSImport, setModuleImports, setProperty
 } from "./invoke-js";
-import { bindCsFunction, getAssemblyExports } from "./invoke-cs";
+import { bindCsFunction, getAssemblyExports, getWorkerAssemblyExports, invokeWorkerJSExport } from "./invoke-cs";
 import { initializeMarshalersToJs, resolveOrRejectPromise } from "./marshal-to-js";
 import { initializeMarshalersToCs } from "./marshal-to-cs";
 import { forceDisposeProxies, getProxyCounts, releaseCSOwnedObject } from "./gc-handles";
@@ -53,6 +53,9 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         loadSatelliteAssemblies,
         loadLazyAssembly,
         getProxyCounts,
+        registerWorkerJSImport,
+        getWorkerAssemblyExports,
+        invokeWorkerJSExport,
 
         // WebSocket
         wsCreate,

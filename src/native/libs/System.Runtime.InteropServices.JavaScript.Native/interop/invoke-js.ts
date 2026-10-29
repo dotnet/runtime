@@ -7,8 +7,8 @@ import { dotnetBrowserUtilsExports, dotnetApi, dotnetAssert, dotnetLogger, VoidP
 
 import type { BindingClosureJS, BoundMarshalerToJs, JSFnHandle, JSFunctionSignature, JSHandle, JSMarshalerArguments, VoidPtr, WrappedJSFunction } from "./types";
 
-import { MarshalerType, MeasuredBlock } from "./types";
-import { getSig, getSignatureArgumentCount, getSignatureFunctionName, getSignatureHandle, getSignatureModuleName, getSignatureType, getSignatureVersion, isReceiverShouldFree, jsInteropState } from "./marshal";
+import { isWorkerValueType, isWorkerReturnType, MarshalerType, MeasuredBlock, WorkerMaxArgumentCount } from "./types";
+import { getSig, getSignatureArgumentCount, getSignatureFunctionName, getSignatureHandle, getSignatureModuleName, getSignatureType, getSignatureResType, getSignatureVersion, isReceiverShouldFree, jsInteropState } from "./marshal";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, fixupPointer, startMeasure } from "./utils";
 import { bindArgMarshalToJs } from "./marshal-to-js";
 import { boundJsFunctionSymbol, getJSObjectFromJSHandle, importedJsFunctionSymbol, jsImportWrapperByFnHandle } from "./gc-handles";
@@ -17,6 +17,17 @@ import { wrapAsCancelablePromise } from "./cancelable-promise";
 
 export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
+type WorkerImportInvoker = (args: JSMarshalerArguments, isAsync: boolean, values: unknown[], argumentTypes: MarshalerType[], returnType: MarshalerType) => unknown;
+const workerImports = new Map<string, Map<string, WorkerImportInvoker>>();
+
+export function registerWorkerJSImport(moduleName: string, functionName: string, invoke: WorkerImportInvoker): void {
+    let functions = workerImports.get(moduleName);
+    if (!functions) {
+        functions = new Map();
+        workerImports.set(moduleName, functions);
+    }
+    functions.set(functionName, invoke);
+}
 
 export function setModuleImports(moduleName: string, moduleImports: any): void {
     importedModules.set(moduleName, moduleImports);
@@ -54,8 +65,25 @@ function bindJsImport(signature: JSFunctionSignature): Function {
 
     dotnetLogger.debug(() => `Binding [JSImport] ${jsFunctionName} from ${jsModuleName} module`);
 
-    const fn = lookupJsImport(jsFunctionName, jsModuleName);
     const argsCount = getSignatureArgumentCount(signature);
+    const workerInvoke = workerImports.get(jsModuleName)?.get(jsFunctionName);
+    let currentWorkerArgs: JSMarshalerArguments | undefined;
+    const workerResSig = getSig(signature, 1);
+    const workerResType = getSignatureType(workerResSig);
+    const workerAsync = workerResType === MarshalerType.Task || workerResType === MarshalerType.TaskPreCreated;
+    const workerArgumentTypes = Array.from({ length: argsCount }, (_, index) => getSignatureType(getSig(signature, index + 2)));
+    const rawWorkerReturnType = workerAsync ? getSignatureResType(workerResSig) : workerResType;
+    const workerReturnType = rawWorkerReturnType === MarshalerType.None || rawWorkerReturnType === MarshalerType.Discard || rawWorkerReturnType === MarshalerType.DiscardNoWait
+        ? MarshalerType.Void : rawWorkerReturnType;
+    if (workerInvoke && (argsCount > WorkerMaxArgumentCount || !workerArgumentTypes.every(isWorkerValueType) || !isWorkerReturnType(workerReturnType))) {
+        throw new Error(`withWorker(): UI imports require at most ${WorkerMaxArgumentCount} supported arguments and a supported result or Task`);
+    }
+    const fn = workerInvoke
+        ? (...values: unknown[]) => {
+            if (currentWorkerArgs === undefined) throw new Error("withWorker(): UI import argument frame is missing");
+            return workerInvoke(currentWorkerArgs, workerAsync, values, workerArgumentTypes, workerReturnType);
+        }
+        : lookupJsImport(jsFunctionName, jsModuleName);
 
     const argMarshalers: (BoundMarshalerToJs)[] = new Array(argsCount);
     const argCleanup: (Function | undefined)[] = new Array(argsCount);
@@ -126,6 +154,19 @@ function bindJsImport(signature: JSFunctionSignature): Function {
         } catch (ex) {
             jsInteropState.cspPolicy = true;
         }
+    }
+
+    if (workerInvoke) {
+        const inner = wrappedFn;
+        wrappedFn = (args: JSMarshalerArguments): void => {
+            const previous = currentWorkerArgs;
+            currentWorkerArgs = args;
+            try {
+                inner(args);
+            } finally {
+                currentWorkerArgs = previous;
+            }
+        };
     }
 
     (<any>wrappedFn)[importedJsFunctionSymbol] = closure;
@@ -230,8 +271,8 @@ function bindFn(closure: BindingClosureJS) {
         // TODO-MT: always false until threads are enabled, nothing sets ReceiverShouldFree yet
         const receiverShouldFree = isReceiverShouldFree(args);
         const mark = startMeasure();
+        const jsArgs = new Array(argsCount);
         try {
-            const jsArgs = new Array(argsCount);
             for (let index = 0; index < argsCount; index++) {
                 const marshaler = argMarshalers[index]!;
                 const jsArg = marshaler(args);
@@ -245,20 +286,17 @@ function bindFn(closure: BindingClosureJS) {
                 resConverter(args, jsResult);
             }
 
-            if (hasCleanup) {
-                for (let index = 0; index < argsCount; index++) {
-                    const cleanup = argCleanup[index];
-                    if (cleanup) {
-                        cleanup(jsArgs[index]);
-                    }
-                }
-            }
         } catch (ex) {
             // TODO-MT: once threads are enabled, an async import posted to another thread leaves the
             // caller awaiting the pre-created Task and it never reads this slot, so the failure has
             // to be delivered through the Task instead. See bind_fn in src/mono/browser/runtime.
             marshalExceptionToCs(<any>args, ex);
         } finally {
+            if (hasCleanup) {
+                for (let index = 0; index < argsCount; index++) {
+                    argCleanup[index]?.(jsArgs[index]);
+                }
+            }
             if (receiverShouldFree) {
                 Module._free(args as any);
             }

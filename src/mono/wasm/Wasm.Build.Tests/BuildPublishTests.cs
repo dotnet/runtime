@@ -21,6 +21,94 @@ namespace Wasm.Build.Tests
         {
         }
 
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [TestCategory("no-workload")]
+        public async Task SharedMemoryIsAppOwnedAndOptIn(bool nativeRelink)
+        {
+            const Configuration Config = Configuration.Debug;
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, Config, aot: false, "shared_opt_in",
+                extraProperties: "<PublishReadyToRun>true</PublishReadyToRun><WasmFingerprintAssets>true</WasmFingerprintAssets>",
+                extraItems: $"""
+                    <PackageReference Include="Microsoft.NET.Runtime.WebAssembly.Sdk"
+                                      Version="{s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework)}"
+                                      GeneratePathProperty="true" PrivateAssets="all" />
+                    """,
+                insertAtEnd: """
+                    <Import Project="$(PkgMicrosoft_NET_Runtime_WebAssembly_Sdk)\Sdk\Sdk.targets"
+                            Condition="'$(WasmBuildNative)' == 'true' and '$(PkgMicrosoft_NET_Runtime_WebAssembly_Sdk)' != ''" />
+                    """);
+            UpdateFile("Program.cs", """
+                using System.Runtime.InteropServices.JavaScript;
+                using System.Threading.Tasks;
+
+                internal static partial class Program
+                {
+                    public static int Main() => 0;
+                    [JSImport("increment", "test")]
+                    internal static partial int Import(int value);
+                    [JSImport("delayed", "test")]
+                    internal static partial Task<int> Delayed(int value);
+                    [JSExport]
+                    internal static int Increment(int value) => value + 1;
+                    [JSExport]
+                    internal static int ThroughImport(int value) => Import(value);
+                    [JSExport]
+                    internal static Task<int> ThroughAsyncImport(int value) => Delayed(value);
+                }
+                """);
+            UpdateFile(Path.Combine("wwwroot", "main.js"), $$"""
+                import { dotnet, exit } from "./_framework/dotnet.js";
+                const shared = new URLSearchParams(location.search).get("shared") === "true";
+                const check = (value, message) => { if (!value) throw new Error(message); };
+                const builder = dotnet.withConfig({ logExitCode: true, exitOnUnhandledError: true });
+                if (shared) builder.withWorker();
+                const runtime = await builder.create();
+                check(crossOriginIsolated === shared, "Unexpected isolation mode");
+                const config = runtime.getConfig();
+                for (const asset of [config.resources.wasmNative[0], config.resources.coreAssembly[0]]) {
+                    const url = asset.resolvedUrl ?? new URL("_framework/" + asset.name, document.baseURI).href;
+                    const response = await fetch(url);
+                    check(response.ok, "Asset fetch failed");
+                    const bytes = await response.arrayBuffer();
+                    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+                    const hash = "sha256-" + btoa(String.fromCharCode(...digest));
+                    check(hash === asset.hash, "Integrity does not describe deployed bytes");
+                }
+                runtime.setModuleImports("test", {
+                    increment: value => value + 1,
+                    delayed: async value => value + 1
+                });
+                const exports = (await runtime.getAssemblyExports("{{info.ProjectName}}")).Program;
+                check(exports.Increment(41) === 42, "Scalar export failed");
+                check(exports.ThroughImport(41) === 42, "Scalar import failed");
+                const results = await Promise.all(Array.from({ length: 70 }, (_, value) => exports.ThroughAsyncImport(value)));
+                check(results.every((value, index) => value === index + 1), "Async import failed");
+                if (shared) {
+                    check(runtime.INTERNAL.workerMemoryViews.getViews().u8.buffer instanceof SharedArrayBuffer, "Memory is not shared");
+                } else {
+                    check(runtime.localHeapViewU8().buffer instanceof ArrayBuffer, "Ordinary memory is shared");
+                }
+                console.log("TestOutput -> Opt-in scalar worker interop passed");
+                const code = await runtime.runMainAndExit();
+                exit(code);
+                """);
+
+            foreach (bool shared in new[] { true, false, true })
+            {
+                string args = $"-p:WasmEnableSharedMemory={shared.ToString().ToLowerInvariant()} -p:WasmBuildNative={nativeRelink.ToString().ToLowerInvariant()} -p:UsingBrowserRuntimeWorkload=false";
+                // Shared copies intentionally differ from runtime-pack/relink bytes; verify the live memory below.
+                BuildProject(info, Config, new BuildOptions(UseCache: false, AssertAppBundle: !shared,
+                    ExtraMSBuildArgs: args + " -p:WasmBuildOnlyAfterPublish=false"), isNativeBuild: nativeRelink);
+                PublishProject(info, Config, new PublishOptions(UseCache: false, AssertAppBundle: !shared, ExtraMSBuildArgs: args), isNativeBuild: nativeRelink);
+                RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(Config,
+                    BrowserQueryString: new System.Collections.Specialized.NameValueCollection { ["shared"] = shared ? "true" : "false" },
+                    ExtraArgs: shared ? "--web-server-use-cop" : ""));
+                Assert.Contains("Opt-in scalar worker interop passed", result.TestOutput);
+            }
+        }
+
         [Theory]
         [BuildAndRun(config: Configuration.Debug, aot: true)]
         [TestCategory("native"), TestCategory("mono")]

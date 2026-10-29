@@ -73,11 +73,11 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             // This must happen before the native module loads so Emscripten picks them up.
             if (!Module.out) {
                 // eslint-disable-next-line no-console
-                Module.out = console.log.bind(console);
+                Module.out = loaderConfig.forwardConsole ? text => console.log(text) : console.log.bind(console);
             }
             if (!Module.err) {
                 // eslint-disable-next-line no-console
-                Module.err = console.error.bind(console);
+                Module.err = loaderConfig.forwardConsole ? text => console.error(text) : console.error.bind(console);
             }
             if (!Module.print) {
                 Module.print = Module.out;
