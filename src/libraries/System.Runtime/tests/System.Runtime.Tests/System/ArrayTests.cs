@@ -4631,6 +4631,51 @@ namespace System.Tests
             Assert.All(array2, Assert.Null);
         }
 
+        [Theory]
+        [InlineData(0, 10)]
+        [InlineData(5, 10)]
+        [InlineData(1000, 10)]
+        public void CreateFilled_Value_ValueType(int length, int value)
+        {
+            int[] array = Array.CreateFilled(length, value);
+            var expected = new int[length];
+            for (int i = 0; i < expected.Length; i++)
+                expected[i] = value;
+
+            Assert.Equal(length, array.Length);
+            Assert.Equal(expected, array);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        [InlineData(1000)]
+        public void CreateFilled_Value_ReferenceType(int length)
+        {
+            var value = new object();
+            object[] array = Array.CreateFilled(length, value);
+            var expected = new object[length];
+            for (int i = 0; i < expected.Length; i++)
+                expected[i] = value;
+
+            Assert.Equal(length, array.Length);
+            Assert.Equal(expected, array);
+        }
+
+        [Fact]
+        public void CreateFilled_Value_Empty()
+        {
+            int[] array = Array.CreateFilled(0, 0);
+            Assert.Empty(array);
+        }
+
+        [Fact]
+        public void CreateFilled_NegativeLength_Throws()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled<object>(-1, new object()));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled<int>(-1, 8));
+        }
+
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
         {
             VerifyArray(array, elementType, lengths, lowerBounds);
@@ -4923,6 +4968,7 @@ namespace System.Tests
 
         public abstract class AbstractClass { }
         public static class StaticClass { }
+        private record Foo2(int Value);
 
         public enum SByteEnum : sbyte
         {
@@ -5056,6 +5102,177 @@ namespace System.Tests
             }
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, exitCode);
+        }
+
+        [Fact]
+        public static void GetValue_ReadOnlySpan_1D()
+        {
+            int[] array = [10, 20, 30];
+            ReadOnlySpan<int> index0 = [0];
+            ReadOnlySpan<int> index1 = [1];
+            ReadOnlySpan<int> index2 = [2];
+
+            Assert.Equal(10, array.GetValue(index0));
+            Assert.Equal(20, array.GetValue(index1));
+            Assert.Equal(30, array.GetValue(index2));
+
+            // stackalloc
+            Span<int> stackSpan = stackalloc int[1];
+            stackSpan[0] = 1;
+            Assert.Equal(20, array.GetValue(stackSpan));
+
+            // Rank mismatch (rank 1 vs 0 or 2 indices)
+            AssertExtensions.Throws<ArgumentException>(null, () => array.GetValue(ReadOnlySpan<int>.Empty));
+            AssertExtensions.Throws<ArgumentException>(null, () => array.GetValue((ReadOnlySpan<int>)[0, 1]));
+
+            // Out of bounds
+            Assert.Throws<IndexOutOfRangeException>(() => array.GetValue((ReadOnlySpan<int>)[-1]));
+            Assert.Throws<IndexOutOfRangeException>(() => array.GetValue((ReadOnlySpan<int>)[3]));
+        }
+
+        [Fact]
+        public static void GetValue_ReadOnlySpan_MultiDimensional()
+        {
+            int[,] array2D = new int[2, 3]
+            {
+                { 1, 2, 3 },
+                { 4, 5, 6 }
+            };
+
+            for (int i = 0; i < 2; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    Assert.Equal(array2D[i, j], array2D.GetValue((ReadOnlySpan<int>)[i, j]));
+                    Span<int> indices = stackalloc int[2] { i, j };
+                    Assert.Equal(array2D[i, j], array2D.GetValue(indices));
+                }
+            }
+
+            // Rank mismatch (rank 2 vs 1 or 3 indices)
+            AssertExtensions.Throws<ArgumentException>(null, () => array2D.GetValue((ReadOnlySpan<int>)[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => array2D.GetValue((ReadOnlySpan<int>)[0, 1, 2]));
+
+            // Out of bounds
+            Assert.Throws<IndexOutOfRangeException>(() => array2D.GetValue((ReadOnlySpan<int>)[-1, 0]));
+            Assert.Throws<IndexOutOfRangeException>(() => array2D.GetValue((ReadOnlySpan<int>)[2, 0]));
+            Assert.Throws<IndexOutOfRangeException>(() => array2D.GetValue((ReadOnlySpan<int>)[0, -1]));
+            Assert.Throws<IndexOutOfRangeException>(() => array2D.GetValue((ReadOnlySpan<int>)[0, 3]));
+
+            // 3D array
+            int[,,] array3D = new int[2, 2, 2];
+            array3D[1, 0, 1] = 42;
+            Assert.Equal(42, array3D.GetValue((ReadOnlySpan<int>)[1, 0, 1]));
+            AssertExtensions.Throws<ArgumentException>(null, () => array3D.GetValue((ReadOnlySpan<int>)[1, 0]));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        public static void GetValue_ReadOnlySpan_NonZeroLowerBound()
+        {
+            Array array = Array.CreateInstance(typeof(int), [2, 3], [1, 5]);
+            array.SetValue(99, 1, 5);
+            array.SetValue(100, 2, 7);
+
+            Assert.Equal(99, array.GetValue((ReadOnlySpan<int>)[1, 5]));
+            Assert.Equal(100, array.GetValue((ReadOnlySpan<int>)[2, 7]));
+
+            Assert.Throws<IndexOutOfRangeException>(() => array.GetValue((ReadOnlySpan<int>)[0, 5]));
+            Assert.Throws<IndexOutOfRangeException>(() => array.GetValue((ReadOnlySpan<int>)[1, 4]));
+            Assert.Throws<IndexOutOfRangeException>(() => array.GetValue((ReadOnlySpan<int>)[3, 5]));
+            Assert.Throws<IndexOutOfRangeException>(() => array.GetValue((ReadOnlySpan<int>)[1, 8]));
+        }
+
+        [Fact]
+        public static void SetValue_ReadOnlySpan_1D()
+        {
+            int[] array = new int[3];
+            array.SetValue(10, (ReadOnlySpan<int>)[0]);
+            array.SetValue(20, (ReadOnlySpan<int>)[1]);
+            array.SetValue(30, (ReadOnlySpan<int>)[2]);
+
+            Assert.Equal(10, array[0]);
+            Assert.Equal(20, array[1]);
+            Assert.Equal(30, array[2]);
+
+            // stackalloc
+            Span<int> stackSpan = stackalloc int[1] { 1 };
+            array.SetValue(99, stackSpan);
+            Assert.Equal(99, array[1]);
+
+            // Null value to value type
+            array.SetValue(null, (ReadOnlySpan<int>)[1]);
+            Assert.Equal(0, array[1]);
+
+            // Reference type array
+            string?[] stringArray = new string?[2];
+            stringArray.SetValue("hello", (ReadOnlySpan<int>)[0]);
+            Assert.Equal("hello", stringArray[0]);
+            stringArray.SetValue(null, (ReadOnlySpan<int>)[0]);
+            Assert.Null(stringArray[0]);
+
+            // Incompatible type
+            Assert.Throws<InvalidCastException>(() => array.SetValue("invalid", (ReadOnlySpan<int>)[0]));
+
+            // Rank mismatch (rank 1 vs 0 or 2 indices)
+            AssertExtensions.Throws<ArgumentException>(null, () => array.SetValue(1, ReadOnlySpan<int>.Empty));
+            AssertExtensions.Throws<ArgumentException>(null, () => array.SetValue(1, (ReadOnlySpan<int>)[0, 1]));
+
+            // Out of bounds
+            Assert.Throws<IndexOutOfRangeException>(() => array.SetValue(1, (ReadOnlySpan<int>)[-1]));
+            Assert.Throws<IndexOutOfRangeException>(() => array.SetValue(1, (ReadOnlySpan<int>)[3]));
+        }
+
+        [Fact]
+        public static void SetValue_ReadOnlySpan_MultiDimensional()
+        {
+            int[,] array2D = new int[2, 3];
+            int counter = 1;
+            for (int i = 0; i < 2; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    array2D.SetValue(counter, (ReadOnlySpan<int>)[i, j]);
+                    Assert.Equal(counter, array2D[i, j]);
+                    counter++;
+                }
+            }
+
+            // stackalloc
+            Span<int> indices = stackalloc int[2] { 1, 2 };
+            array2D.SetValue(42, indices);
+            Assert.Equal(42, array2D[1, 2]);
+
+            // Rank mismatch (rank 2 vs 1 or 3 indices)
+            AssertExtensions.Throws<ArgumentException>(null, () => array2D.SetValue(1, (ReadOnlySpan<int>)[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => array2D.SetValue(1, (ReadOnlySpan<int>)[0, 1, 2]));
+
+            // Out of bounds
+            Assert.Throws<IndexOutOfRangeException>(() => array2D.SetValue(1, (ReadOnlySpan<int>)[-1, 0]));
+            Assert.Throws<IndexOutOfRangeException>(() => array2D.SetValue(1, (ReadOnlySpan<int>)[2, 0]));
+            Assert.Throws<IndexOutOfRangeException>(() => array2D.SetValue(1, (ReadOnlySpan<int>)[0, -1]));
+            Assert.Throws<IndexOutOfRangeException>(() => array2D.SetValue(1, (ReadOnlySpan<int>)[0, 3]));
+
+            // 3D array
+            int[,,] array3D = new int[2, 2, 2];
+            array3D.SetValue(88, (ReadOnlySpan<int>)[1, 0, 1]);
+            Assert.Equal(88, array3D[1, 0, 1]);
+            AssertExtensions.Throws<ArgumentException>(null, () => array3D.SetValue(88, (ReadOnlySpan<int>)[1, 0]));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        public static void SetValue_ReadOnlySpan_NonZeroLowerBound()
+        {
+            Array array = Array.CreateInstance(typeof(int), [2, 3], [1, 5]);
+            array.SetValue(99, (ReadOnlySpan<int>)[1, 5]);
+            array.SetValue(100, (ReadOnlySpan<int>)[2, 7]);
+
+            Assert.Equal(99, array.GetValue(1, 5));
+            Assert.Equal(100, array.GetValue(2, 7));
+
+            Assert.Throws<IndexOutOfRangeException>(() => array.SetValue(1, (ReadOnlySpan<int>)[0, 5]));
+            Assert.Throws<IndexOutOfRangeException>(() => array.SetValue(1, (ReadOnlySpan<int>)[1, 4]));
+            Assert.Throws<IndexOutOfRangeException>(() => array.SetValue(1, (ReadOnlySpan<int>)[3, 5]));
+            Assert.Throws<IndexOutOfRangeException>(() => array.SetValue(1, (ReadOnlySpan<int>)[1, 8]));
         }
     }
 }

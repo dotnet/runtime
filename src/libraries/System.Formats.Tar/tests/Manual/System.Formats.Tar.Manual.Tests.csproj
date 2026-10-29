@@ -7,6 +7,12 @@
     <Compile Include="ManualTests.cs" />
     <Compile Include="ManualTestsAsync.cs" />
     <Compile Include="..\TarTestsBase.cs" />
+    <Compile Include="..\TarTestsBase.Helpers.cs" />
+    <Compile Include="..\TarTestsBase.Gnu.cs" />
+    <Compile Include="..\TarTestsBase.Pax.cs" />
+    <Compile Include="..\TarTestsBase.Posix.cs" />
+    <Compile Include="..\TarTestsBase.Ustar.cs" />
+    <Compile Include="..\TarTestsBase.V7.cs" />
     <Compile Include="..\SimulatedDataStream.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />

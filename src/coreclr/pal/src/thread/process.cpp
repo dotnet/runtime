@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     process.cpp
 
 Abstract:
-
     Implementation of process object and functions related to processes.
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -222,11 +218,6 @@ struct UnambiguousProcessDescriptor
     DWORD m_processId;
 };
 #pragma pack(pop)
-
-static
-DWORD
-StartupHelperThread(
-    LPVOID p);
 
 static
 BOOL
@@ -1518,7 +1509,7 @@ PROCLaunchCreateDump(
         {
             fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
             close(child_write_pipe);
-            exit(-1);
+            _exit(EXIT_FAILURE);
         }
 
         // Only dup the child's stderr if there is error buffer
@@ -1550,7 +1541,7 @@ PROCLaunchCreateDump(
             if (execve(argv[0], (char**)argv, palEnvironment) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
-                exit(-1);
+                _exit(EXIT_FAILURE);
             }
         }
     }
@@ -2074,17 +2065,6 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     abort();
 }
 
-#define FATAL_ASSERT(e, msg) \
-    do \
-    { \
-        if (!(e)) \
-        { \
-            fprintf(stderr, "FATAL ERROR: " msg); \
-            PROCAbort(); \
-        } \
-    } \
-    while(0)
-
 /*++
 Function:
   CreateInitialProcessAndThreadObjects
@@ -2192,7 +2172,6 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
     if(locked && PALIsInitialized())
     {
         PROCNotifyProcessShutdown();
-        PALCommonCleanup();
     }
 }
 

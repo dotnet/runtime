@@ -453,13 +453,13 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native"), TestCategory("mono")]
+        [TestCategory("native")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native"), TestCategory("mono")]
+        [TestCategory("native")]
         public void UnsupportedOSPlatformPInvokeIsSkipped(Configuration config, bool aot)
         {
             // https://github.com/dotnet/runtime/issues/110870: a Windows-only pinvoke with
@@ -522,6 +522,19 @@ namespace Wasm.Build.Tests
             (string libraryDir, string output) = isPublish ?
                 PublishProject(info, config, new PublishOptions(AOT: aot)) :
                 BuildProject(info, config, new BuildOptions(AOT: aot));
+        }
+
+        [Theory]
+        [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native"), TestCategory("mono")]
+        public void EnsureUnmanagedCallConvCompilesInAOT(Configuration config, bool aot)
+        {
+            // Regression coverage for https://github.com/dotnet/runtime/issues/136351: decoding the
+            // CallConvs of [UnmanagedCallConv] allocated a managed Type[] inside the AOT compiler,
+            // which asserted in sgen while the native wrappers were built.
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "unmanaged_callconv");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallConv.cs"));
+            PublishProject(info, config, new PublishOptions(AOT: aot));
         }
 
         [Theory]

@@ -22,6 +22,11 @@
     IMPORT g_write_watch_table
 #endif
 
+    IMPORT g_TrapReturningThreads
+#define G_TRAP_THREADS g_TrapReturningThreads
+
+    IMPORT g_pPollGC
+
     IMPORT RhpGcAlloc
     IMPORT RhExceptionHandling_FailedAllocation
 
@@ -82,6 +87,14 @@ MovInstr SETS "movk"
         dmb         ish
     MEND
 
+    MACRO
+        TAILCALL_GC_POLL_RARE
+
+        ldr     x9, =g_pPollGC
+        ldr     x9, [x9]
+        br      x9
+    MEND
+
 #else
 #include "asmconstants.h"
 #include "unixasmmacros.inc"
@@ -106,6 +119,11 @@ MovInstr SETS "movk"
         adrp x\HelperReg, C_FUNC(\Name)
         ldr  w\HelperReg, [x\HelperReg, :lo12:C_FUNC(\Name)]
 #endif
+.endm
+
+.macro TAILCALL_GC_POLL_RARE
+        PREPARE_EXTERNAL_VAR_INDIRECT g_pPollGC, x9
+        br      x9
 .endm
 
 #endif

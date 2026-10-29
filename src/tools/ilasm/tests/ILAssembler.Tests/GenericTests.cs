@@ -126,6 +126,148 @@ namespace ILAssembler.Tests
             Assert.Equal(2, genericParams.Count);
         }
 
+        [Fact]
+        public void DuplicateGenericParameterNames_PreserveFirstNameBindingInFieldSignature()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit DuplicateName`2<T, T> extends [mscorlib]System.Object
+                {
+                    .field public !T Value
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeDef = reader.TypeDefinitions
+                .Select(h => reader.GetTypeDefinition(h))
+                .First(t => reader.GetString(t.Name) == "DuplicateName`2");
+
+            var genericParameters = typeDef.GetGenericParameters()
+                .Select(reader.GetGenericParameter)
+                .ToArray();
+            Assert.Equal(2, genericParameters.Length);
+            Assert.All(genericParameters, parameter => Assert.Equal("T", reader.GetString(parameter.Name)));
+
+            var field = reader.GetFieldDefinition(typeDef.GetFields().Single());
+            Assert.Equal("!0", field.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
+        }
+
+        [Fact]
+        public void GenericParameterAttributesAndBounds_EmitExpectedMetadata()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class interface public abstract auto ansi IVariant`5<+T, -U, class .ctor V, valuetype byreflike W, flags(0x0004) X>
+                {
+                }
+                .class public auto ansi Constrained`1<(class [mscorlib]System.IDisposable) T> extends [mscorlib]System.Object
+                {
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var variantType = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "IVariant`5");
+            var parameters = variantType.GetGenericParameters()
+                .Select(reader.GetGenericParameter)
+                .ToDictionary(parameter => reader.GetString(parameter.Name));
+
+            Assert.Equal(GenericParameterAttributes.Covariant, parameters["T"].Attributes & GenericParameterAttributes.VarianceMask);
+            Assert.Equal(GenericParameterAttributes.Contravariant, parameters["U"].Attributes & GenericParameterAttributes.VarianceMask);
+            Assert.True(parameters["V"].Attributes.HasFlag(GenericParameterAttributes.ReferenceTypeConstraint));
+            Assert.True(parameters["V"].Attributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint));
+            Assert.True(parameters["W"].Attributes.HasFlag(GenericParameterAttributes.NotNullableValueTypeConstraint));
+            Assert.True(((int)parameters["W"].Attributes & 0x20) != 0);
+            Assert.Equal((GenericParameterAttributes)0x0004, parameters["X"].Attributes);
+
+            var constrainedType = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "Constrained`1");
+            var constrainedParameter = reader.GetGenericParameter(Assert.Single(constrainedType.GetGenericParameters()));
+            var constraint = reader.GetGenericParameterConstraint(Assert.Single(constrainedParameter.GetConstraints()));
+
+            Assert.Equal(HandleKind.TypeSpecification, constraint.Type.Kind);
+            Assert.Equal(
+                "[mscorlib]System.IDisposable",
+                reader.GetTypeSpecification((TypeSpecificationHandle)constraint.Type)
+                    .DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
+        }
+
+        [Fact]
+        public void ClassGenericParameterAndConstraintDirectives_AttachCustomAttributes()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi ByName`1<([mscorlib]System.ICloneable) T> extends [mscorlib]System.Object
+                {
+                    .param type T
+                        .custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00)
+                        .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                    .param constraint T, [mscorlib]System.ICloneable
+                        .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                        .custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var types = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Where(definition => reader.GetString(definition.Name) == "ByName`1")
+                .ToDictionary(definition => reader.GetString(definition.Name));
+
+            AssertGenericParameterAnnotation(reader, types["ByName`1"], "ICloneable");
+        }
+
+        [Fact]
+        public void MethodGenericParameterAndConstraintDirectives_AttachCustomAttributes()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M<T>() cil managed
+                    {
+                        .param type [0]
+                            .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                        .param type T
+                            .custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00)
+                        .param constraint [0], [mscorlib]System.IDisposable
+                            .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                        .param constraint T, [mscorlib]System.ICloneable
+                            .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.GetMethodDefinition(Assert.Single(reader.MethodDefinitions));
+            var parameterHandle = Assert.Single(method.GetGenericParameters());
+            var parameter = reader.GetGenericParameter(parameterHandle);
+            var constraints = parameter.GetConstraints().ToArray();
+
+            Assert.Equal(2, reader.GetCustomAttributes(parameterHandle).Count);
+            Assert.Equal(2, constraints.Length);
+            Assert.All(constraints, constraint => Assert.Single(reader.GetCustomAttributes(constraint)));
+            Assert.Equal(
+                new[] { "ICloneable", "IDisposable" },
+                constraints
+                    .Select(reader.GetGenericParameterConstraint)
+                    .Select(constraint => reader.GetString(reader.GetTypeReference((TypeReferenceHandle)constraint.Type).Name))
+                    .OrderBy(name => name));
+        }
+
 
         [Fact]
         public void GenericMethod_UsesNamedElementList()
@@ -156,6 +298,179 @@ namespace ILAssembler.Tests
             Assert.Single(genericParams);
         }
 
+        [Fact]
+        public void GenericParameterCount_AtMetadataIndexLimit_IsAccepted()
+        {
+            const int MaximumGenericParameterCount = ushort.MaxValue + 1;
+            StringBuilder source = new("""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test<
+                """);
+            AppendGenericParameters(source, MaximumGenericParameterCount, constrainLast: false);
+            source.Append("> { }");
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source.ToString(), new Options());
+            var reader = pe.GetMetadataReader();
+            Assert.Equal(MaximumGenericParameterCount, reader.GetTableRowCount(TableIndex.GenericParam));
+        }
+
+        [Fact]
+        public void GenericParameterCount_OutsideMetadataIndexRange_RequiresErrorTolerant()
+        {
+            const int GenericParameterCount = ushort.MaxValue + 2;
+            StringBuilder source = new("""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test<
+                """);
+            AppendGenericParameters(source, GenericParameterCount, constrainLast: false);
+            source.Append("> { }");
+
+            DocumentCompiler compiler = new();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source.ToString(), "test.il"),
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options());
+
+            Diagnostic diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.TooManyGenericParameters, diagnostic.Id);
+            Assert.Null(result);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GenericParameterCountAndConstraintOwner_OutsideMetadataIndexRange_ReportErrors(bool isMethod)
+        {
+            const int MaximumGenericParameterCount = ushort.MaxValue + 1;
+            const int GenericParameterCount = MaximumGenericParameterCount + 2;
+            StringBuilder source = new();
+            if (isMethod)
+            {
+                source.Append("""
+                    .assembly extern mscorlib { }
+                    .assembly test { }
+                    .class public auto ansi Test
+                    {
+                        .method public static void GenericMethod<
+                    """);
+            }
+            else
+            {
+                source.Append("""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test<
+                """);
+            }
+
+            AppendGenericParameters(source, GenericParameterCount, constrainLast: true);
+            int secondOverflowIndex = GenericParameterCount - 1;
+            if (isMethod)
+            {
+                source.Append($$"""
+                    >() cil managed
+                    {
+                        .param type T{{secondOverflowIndex}}
+                            .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                        .param constraint T{{secondOverflowIndex}}, [mscorlib]System.IDisposable
+                            .custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00)
+                        ret
+                    }
+                    }
+                    """);
+            }
+            else
+            {
+                source.Append($$"""
+                    >
+                    {
+                        .param type T{{secondOverflowIndex}}
+                            .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                        .param constraint T{{secondOverflowIndex}}, [mscorlib]System.IDisposable
+                            .custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00)
+                    }
+                    """);
+            }
+
+            DocumentCompiler compiler = new();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source.ToString(), "test.il"),
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true });
+            Assert.Collection(
+                diagnostics,
+                diagnostic =>
+                {
+                    Assert.Equal(DiagnosticIds.TooManyGenericParameters, diagnostic.Id);
+                    Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+                    Assert.Equal(
+                        $"Generic parameter count {GenericParameterCount} exceeds the maximum of {MaximumGenericParameterCount}",
+                        diagnostic.Message);
+                },
+                diagnostic =>
+                {
+                    Assert.Equal(DiagnosticIds.GenericParameterConstraintOwnerOutOfRange, diagnostic.Id);
+                    Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+                    Assert.Equal(
+                        $"Generic parameter constraint owner index {GenericParameterCount - 1} exceeds the maximum encodable generic parameter index of {ushort.MaxValue}",
+                        diagnostic.Message);
+                });
+
+            Assert.NotNull(result);
+            BlobBuilder image = new();
+            result!.Serialize(image);
+            using PEReader pe = new(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            Assert.Equal(GenericParameterCount, reader.GetTableRowCount(TableIndex.GenericParam));
+
+            EntityHandle expectedOwner = isMethod
+                ? reader.MethodDefinitions.Single()
+                : reader.TypeDefinitions.Single(
+                    handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test");
+            GenericParameter firstOverflowParameter = reader.GetGenericParameter(
+                MetadataTokens.GenericParameterHandle(MaximumGenericParameterCount + 1));
+            GenericParameterHandle secondOverflowHandle =
+                MetadataTokens.GenericParameterHandle(MaximumGenericParameterCount + 2);
+            GenericParameter secondOverflowParameter = reader.GetGenericParameter(
+                secondOverflowHandle);
+
+            Assert.Equal(expectedOwner, firstOverflowParameter.Parent);
+            Assert.Equal(0, firstOverflowParameter.Index);
+            Assert.Equal($"T{MaximumGenericParameterCount}", reader.GetString(firstOverflowParameter.Name));
+            Assert.Equal(expectedOwner, secondOverflowParameter.Parent);
+            Assert.Equal(1, secondOverflowParameter.Index);
+            Assert.Equal($"T{MaximumGenericParameterCount + 1}", reader.GetString(secondOverflowParameter.Name));
+            GenericParameterConstraintHandle[] constraintHandles =
+                secondOverflowParameter.GetConstraints().ToArray();
+            Assert.Equal(2, constraintHandles.Length);
+            Assert.All(
+                constraintHandles,
+                handle => Assert.Equal(
+                    secondOverflowHandle,
+                    reader.GetGenericParameterConstraint(handle).Parameter));
+            string[] constraintTypes = constraintHandles
+                .Select(reader.GetGenericParameterConstraint)
+                .Select(constraint => constraint.Type.Kind switch
+                {
+                    HandleKind.TypeReference => reader.GetString(
+                        reader.GetTypeReference((TypeReferenceHandle)constraint.Type).Name),
+                    HandleKind.TypeSpecification => reader.GetTypeSpecification(
+                        (TypeSpecificationHandle)constraint.Type)
+                        .DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null),
+                    _ => throw new InvalidOperationException($"Unexpected constraint handle kind: {constraint.Type.Kind}")
+                })
+                .ToArray();
+            Assert.Contains("IDisposable", constraintTypes);
+            Assert.Contains("object", constraintTypes);
+            Assert.Single(reader.GetCustomAttributes(secondOverflowHandle));
+            Assert.Single(
+                constraintHandles,
+                handle => reader.GetCustomAttributes(handle).Count == 1);
+        }
 
         [Fact]
         public void GenericOverride_EmitsMethodImpl()
@@ -300,13 +615,31 @@ namespace ILAssembler.Tests
             // NOT a TypeRef to System.Object.
             Assert.Equal(HandleKind.TypeSpecification, constraintType.Kind);
 
-            // Decode the TypeSpec blob to verify it's a generic instantiation of IMinusT`1
             var typeSpec = reader.GetTypeSpecification((TypeSpecificationHandle)constraintType);
-            var sigBytes = reader.GetBlobBytes(typeSpec.Signature);
+            Assert.Equal(
+                "IMinusT`1<!1>",
+                typeSpec.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
+        }
 
-            // Expected: GENERICINST (0x15), CLASS (0x12), <TypeDef/Ref token for IMinusT`1>,
-            //           1 (generic arg count), VAR 1 (type parameter !U which is index 1)
-            Assert.Equal(0x15, sigBytes[0]); // ELEMENT_TYPE_GENERICINST
+        [Fact]
+        public void RepeatedSelfReferentialConstraint_IsNotDuplicated()
+        {
+            string source = """
+                .assembly test { }
+                .class interface public abstract auto ansi I`1<(class I`1<!TSelf>) TSelf>
+                {
+                    .param constraint TSelf, class I`1<!TSelf>
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var type = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "I`1");
+            var parameter = reader.GetGenericParameter(Assert.Single(type.GetGenericParameters()));
+
+            Assert.Single(parameter.GetConstraints());
         }
 
 
@@ -365,11 +698,116 @@ namespace ILAssembler.Tests
             Assert.Equal(HandleKind.TypeSpecification, constraintType.Kind);
 
             var typeSpec = reader.GetTypeSpecification((TypeSpecificationHandle)constraintType);
-            var sigBytes = reader.GetBlobBytes(typeSpec.Signature);
+            Assert.Equal(
+                "IMinusT`1<!0>",
+                typeSpec.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
+        }
 
-            // Expected: GENERICINST (0x15), CLASS (0x12), <token for IMinusT`1>,
-            //           1 (generic arg count), VAR 0 (type parameter !PlusT at index 0)
-            Assert.Equal(0x15, sigBytes[0]); // ELEMENT_TYPE_GENERICINST
+        [Fact]
+        public void VariantGenericParameters_EmitVarianceFlags()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+
+                .class interface public abstract auto ansi IVariant`2<+([mscorlib]System.Object) TOut, -([mscorlib]System.Object) TIn>
+                {
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var type = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .First(definition => reader.GetString(definition.Name) == "IVariant`2");
+            var parameters = type.GetGenericParameters()
+                .Select(reader.GetGenericParameter)
+                .ToArray();
+
+            Assert.Equal(2, parameters.Length);
+            Assert.Equal("TOut", reader.GetString(parameters[0].Name));
+            Assert.Equal("TIn", reader.GetString(parameters[1].Name));
+            Assert.True((parameters[0].Attributes & GenericParameterAttributes.Covariant) != 0);
+            Assert.True((parameters[1].Attributes & GenericParameterAttributes.Contravariant) != 0);
+        }
+
+        [Fact]
+        public void GenericFieldAndMethod_EmitVarAndMVarSignatures()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit GenericBox`1<T> extends [mscorlib]System.Object
+                {
+                    .field public !0 Value
+
+                    .method public static !!0 Identity<U>(!!0 arg) cil managed
+                    {
+                        ldarg.0
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var type = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .First(definition => reader.GetString(definition.Name) == "GenericBox`1");
+            var field = reader.GetFieldDefinition(type.GetFields().Single());
+            var method = type.GetMethods()
+                .Select(reader.GetMethodDefinition)
+                .First(definition => reader.GetString(definition.Name) == "Identity");
+
+            Assert.Equal("!0", field.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
+
+            var typeParameter = reader.GetGenericParameter(type.GetGenericParameters().Single());
+            var methodParameter = reader.GetGenericParameter(method.GetGenericParameters().Single());
+            Assert.Equal("T", reader.GetString(typeParameter.Name));
+            Assert.Equal("U", reader.GetString(methodParameter.Name));
+
+            MethodSignature<string> methodSignature =
+                method.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null);
+            Assert.True(methodSignature.Header.IsGeneric);
+            Assert.Equal(1, methodSignature.GenericParameterCount);
+            Assert.Equal("!!0", methodSignature.ReturnType);
+            Assert.Equal(new[] { "!!0" }, methodSignature.ParameterTypes);
+        }
+
+        private static void AssertGenericParameterAnnotation(
+            MetadataReader reader,
+            TypeDefinition type,
+            string expectedConstraint)
+        {
+            var parameterHandle = Assert.Single(type.GetGenericParameters());
+            var parameter = reader.GetGenericParameter(parameterHandle);
+            var constraintHandle = Assert.Single(parameter.GetConstraints());
+            var constraint = reader.GetGenericParameterConstraint(constraintHandle);
+
+            Assert.Equal(2, reader.GetCustomAttributes(parameterHandle).Count);
+            Assert.Equal(2, reader.GetCustomAttributes(constraintHandle).Count);
+            Assert.Equal(HandleKind.TypeReference, constraint.Type.Kind);
+            Assert.Equal(
+                expectedConstraint,
+                reader.GetString(reader.GetTypeReference((TypeReferenceHandle)constraint.Type).Name));
+        }
+
+        private static void AppendGenericParameters(StringBuilder source, int count, bool constrainLast)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (i != 0)
+                {
+                    source.Append(',');
+                }
+                if (constrainLast && i == count - 1)
+                {
+                    source.Append("(class [mscorlib]System.Object) ");
+                }
+                source.Append('T').Append(i);
+            }
         }
 
     }

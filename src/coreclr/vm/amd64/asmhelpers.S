@@ -8,6 +8,8 @@
 #define real4 dword
 #define real8 qword
 
+#ifdef PROFILING_SUPPORTED
+
 # On linux arguments can be passed in non-sequential registers. Integer arguments are
 # passed in sequential integer registers and floating point registers are passed in
 # sequential floating point registers. This presents a problem when we go to pass the
@@ -279,6 +281,8 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
   ret
 NESTED_END ProfileTailcallNaked, _TEXT
 
+#endif // PROFILING_SUPPORTED
+
 #ifdef TARGET_APPLE
 # EXTERN_C void* GetThreadVarsAddress()
 # <NOTE>
@@ -322,17 +326,6 @@ LEAF_ENTRY GetTlsIndexObjectDescOffset, _TEXT
 LEAF_END GetTlsIndexObjectDescOffset, _TEXT
 #endif // !FEATURE_EMULATED_TLS
 #endif // !TARGET_OSX
-
-LEAF_ENTRY  JIT_PollGC, _TEXT
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, rax
-        cmp     dword ptr [rax], 0
-        jnz     LOCAL_LABEL(JIT_PollGCRarePath)
-        ret
-LOCAL_LABEL(JIT_PollGCRarePath):
-        PREPARE_EXTERNAL_VAR g_pPollGC, rax
-        mov     rax, [rax]
-        jmp     rax
-LEAF_END  JIT_PollGC, _TEXT
 
 //rdi -This pointer
 //rsi -ReturnBuffer

@@ -87,8 +87,7 @@ namespace System.Reflection.Emit
             byte[]? body, int bodyLength,
             byte[] LocalSig, int sigLength,
             int maxStackSize,
-            ExceptionHandler[]? exceptions, int numExceptions,
-            int[]? tokenFixups, int numTokenFixups);
+            ExceptionHandler[]? exceptions, int numExceptions);
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineCustomAttribute")]
@@ -998,7 +997,7 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            return CustomAttribute.GetCustomAttributes(m_bakedRuntimeType, (typeof(object) as RuntimeType)!, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(m_bakedRuntimeType, (typeof(object) as RuntimeType)!, inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -1011,7 +1010,7 @@ namespace System.Reflection.Emit
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.GetCustomAttributes(m_bakedRuntimeType, attributeRuntimeType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(m_bakedRuntimeType, attributeRuntimeType, inherit);
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)
@@ -1024,7 +1023,7 @@ namespace System.Reflection.Emit
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.IsDefined(m_bakedRuntimeType, attributeRuntimeType, inherit);
+            return RuntimeCustomAttribute.IsDefined(m_bakedRuntimeType, attributeRuntimeType, inherit);
         }
 
         #endregion
@@ -1379,7 +1378,6 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                // This method will define an initialized Data in .sdata.
                 // We will create a fake TypeDef to represent the data with size. This TypeDef
                 // will be the signature for the Field.
 
@@ -1391,7 +1389,6 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                // This method will define an uninitialized Data in .sdata.
                 // We will create a fake TypeDef to represent the data with size. This TypeDef
                 // will be the signature for the Field.
                 return DefineDataHelper(name, null, size, attributes);
@@ -1636,13 +1633,11 @@ namespace System.Reflection.Emit
                 int maxStack = meth.GetMaxStack();
 
                 ExceptionHandler[]? exceptions = meth.GetExceptionHandlers();
-                int[]? tokenFixups = meth.GetTokenFixups();
 
                 SetMethodIL(new QCallModule(ref module), meth.MetadataToken, meth.InitLocals,
                     body, (body != null) ? body.Length : 0,
                     localSig, sigLength, maxStack,
-                    exceptions, (exceptions != null) ? exceptions.Length : 0,
-                    tokenFixups, (tokenFixups != null) ? tokenFixups.Length : 0);
+                    exceptions, (exceptions != null) ? exceptions.Length : 0);
 
                 if (m_module.ContainingAssemblyBuilder._access == AssemblyBuilderAccess.Run)
                 {

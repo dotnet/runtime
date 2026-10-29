@@ -1397,10 +1397,10 @@ void DacPatchCache::Populate()
     // Clear any stale entries from previous failed population attempts
     m_entries.Clear();
 
-    HASHFIND info;
+    ULONG patchIndex;
 
     DebuggerPatchTable *      pTable = DebuggerController::GetPatchTable();
-    DebuggerControllerPatch * pPatch = pTable->GetFirstPatch(&info);
+    DebuggerControllerPatch * pPatch = pTable->GetFirstPatch(&patchIndex);
 
     while (pPatch != NULL)
     {
@@ -1414,7 +1414,7 @@ void DacPatchCache::Populate()
             m_entries.Append(entry);
         }
 
-        pPatch = pTable->GetNextPatch(&info);
+        pPatch = pTable->GetNextPatch(&patchIndex);
     }
 
     m_isPopulated = true;

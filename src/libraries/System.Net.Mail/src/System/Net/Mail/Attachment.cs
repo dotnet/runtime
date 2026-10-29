@@ -219,7 +219,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    if (value.AsSpan().ContainsAny('<', '>')) // invalid chars
+                    if (value.AsSpan().ContainsAny("<>\r\n"))
                     {
                         throw new ArgumentException(SR.MailHeaderInvalidCID, nameof(value));
                     }
@@ -268,7 +268,20 @@ namespace System.Net.Mail
 
             set
             {
-                _part.ContentLocation = value == null ? null : value.IsAbsoluteUri ? value.AbsoluteUri : value.OriginalString;
+                if (value == null)
+                {
+                    _part.ContentLocation = null;
+                    return;
+                }
+
+                string valueCandidate = value.IsAbsoluteUri ? value.AbsoluteUri : value.OriginalString;
+
+                if (MailBnfHelper.HasCROrLF(valueCandidate))
+                {
+                    throw new ArgumentException(SR.MailHeaderInvalid, nameof(value));
+                }
+
+                _part.ContentLocation = valueCandidate;
             }
         }
 

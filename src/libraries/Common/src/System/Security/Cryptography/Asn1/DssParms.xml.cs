@@ -11,9 +11,9 @@ namespace System.Security.Cryptography.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal ref partial struct ValueDssParms
     {
-        internal System.Numerics.BigInteger P;
-        internal System.Numerics.BigInteger Q;
-        internal System.Numerics.BigInteger G;
+        internal ReadOnlySpan<byte> P;
+        internal ReadOnlySpan<byte> Q;
+        internal ReadOnlySpan<byte> G;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -72,9 +72,9 @@ namespace System.Security.Cryptography.Asn1
             decoded = default;
             ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
 
-            decoded.P = sequenceReader.ReadInteger();
-            decoded.Q = sequenceReader.ReadInteger();
-            decoded.G = sequenceReader.ReadInteger();
+            decoded.P = sequenceReader.ReadIntegerBytes();
+            decoded.Q = sequenceReader.ReadIntegerBytes();
+            decoded.G = sequenceReader.ReadIntegerBytes();
 
             sequenceReader.ThrowIfNotEmpty();
         }

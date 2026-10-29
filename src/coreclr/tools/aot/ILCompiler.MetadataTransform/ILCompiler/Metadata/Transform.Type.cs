@@ -200,11 +200,11 @@ namespace ILCompiler.Metadata
 
             if (containingType.ContainingType != null)
             {
-                parentReferenceRecord.ParentNamespaceOrType = GetNestedReferenceParent(containingType);
+                parentReferenceRecord.NamespaceOrEnclosingType = GetNestedReferenceParent(containingType);
             }
             else
             {
-                parentReferenceRecord.ParentNamespaceOrType = HandleNamespaceReference(containingType.Module, containingType.GetNamespace());
+                parentReferenceRecord.NamespaceOrEnclosingType = HandleNamespaceReference(containingType.Module, containingType.GetNamespace());
             }
 
             return parentReferenceRecord;
@@ -216,11 +216,11 @@ namespace ILCompiler.Metadata
 
             if (entity.ContainingType != null)
             {
-                record.ParentNamespaceOrType = GetNestedReferenceParent(entity);
+                record.NamespaceOrEnclosingType = GetNestedReferenceParent(entity);
             }
             else
             {
-                record.ParentNamespaceOrType = HandleNamespaceReference(entity.Module, entity.GetNamespace());
+                record.NamespaceOrEnclosingType = HandleNamespaceReference(entity.Module, entity.GetNamespace());
             }
 
             record.TypeName = HandleString(entity.GetName());
@@ -234,26 +234,22 @@ namespace ILCompiler.Metadata
             if (containingType != null)
             {
                 var enclosingType = (TypeDefinition)HandleType(containingType);
-                record.EnclosingType = enclosingType;
+                record.NamespaceOrEnclosingType = enclosingType;
                 enclosingType.NestedTypes.Add(record);
-
-                var namespaceDefinition =
-                    HandleNamespaceDefinition(containingType.Module, entity.ContainingType.GetNamespace());
-                record.NamespaceDefinition = namespaceDefinition;
             }
             else
             {
                 var namespaceDefinition = HandleNamespaceDefinition(entity.Module, entity.GetNamespace());
-                record.NamespaceDefinition = namespaceDefinition;
+                record.NamespaceOrEnclosingType = namespaceDefinition;
 
                 if (entity.IsModuleType)
                 {
-                    // These don't get added to the global namespace.
+                    // These don't get added to the scope's type definitions.
                     // Instead, they have a dedicated field on the scope record.
                 }
                 else
                 {
-                    namespaceDefinition.TypeDefinitions.Add(record);
+                    HandleScopeDefinition(entity.Module).TypeDefinitions.Add(record);
                 }
             }
 
