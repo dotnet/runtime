@@ -1214,5 +1214,82 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(RemotelyInvokable.SuccessExitCode, childHandle.Process.ExitCode);
             });
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void HandleCount_OtherProcess_MatchesFileDescriptorDirectory()
+        {
+            const string ChildReadyMessage = "Child ready";
+
+            var options = new RemoteInvokeOptions
+            {
+                StartInfo = new ProcessStartInfo { RedirectStandardOutput = true, RedirectStandardInput = true }
+            };
+
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () =>
+            {
+                // Open the standard streams before signaling readiness so that the child
+                // does not open or close any more file descriptors while it waits.
+                TextReader input = Console.In;
+                Console.WriteLine(ChildReadyMessage);
+                input.ReadToEnd();
+            }, options);
+
+            try
+            {
+                AssertRemoteProcessStandardOutputLine(handle, ChildReadyMessage, WaitInMS);
+
+                int expected = Directory.GetFileSystemEntries($"/proc/{handle.Process.Id}/fd").Length;
+                Assert.Equal(expected, handle.Process.HandleCount);
+            }
+            finally
+            {
+                handle.Process.StandardInput.Close();
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void HandleCount_CurrentProcess_IncreasesWhenFilesAreOpened()
+        {
+            // Run in a separate process as other tests open and close files in the test process.
+            RemoteExecutor.Invoke(static () =>
+            {
+                string path = Path.GetTempFileName();
+
+                try
+                {
+                    using Process p = Process.GetCurrentProcess();
+
+                    // Warm up the code paths so that nothing is lazily initialized between the measurements.
+                    OpenAndCloseTwoFiles(path);
+                    p.Refresh();
+                    _ = p.HandleCount;
+
+                    p.Refresh();
+                    int before = p.HandleCount;
+
+                    using (var one = new FileStream(path, FileMode.Open, FileAccess.Read))
+                    using (var two = new FileStream(path, FileMode.Open, FileAccess.Read))
+                    {
+                        p.Refresh();
+                        Assert.Equal(before + 2, p.HandleCount);
+                    }
+
+                    p.Refresh();
+                    Assert.Equal(before, p.HandleCount);
+                }
+                finally
+                {
+                    File.Delete(path);
+                }
+
+                static void OpenAndCloseTwoFiles(string path)
+                {
+                    using var one = new FileStream(path, FileMode.Open, FileAccess.Read);
+                    using var two = new FileStream(path, FileMode.Open, FileAccess.Read);
+                }
+            }).Dispose();
+        }
     }
 }
