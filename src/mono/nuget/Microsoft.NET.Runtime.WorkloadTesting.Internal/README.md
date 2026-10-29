@@ -13,6 +13,12 @@ Tasks, and targets to support workload testing in `dotnet` repositories.
 - `$(ExtraWorkloadInstallCommandArguments)` - optional
 - `$(WorkloadInstallCommandOutputImportance)` - optional, defaults to `Normal`
 
+SDK-version-dependent installer commands and stamp paths are initialized by
+`InitializeWorkloadTestingInputs` during execution. Targets that consume them
+directly should depend on that target. Use `InitializeWorkloadTestingInputsDependsOn`
+to select `SdkVersionForWorkloadTesting` during execution before initialization.
+The SDK directory paths remain available during evaluation.
+
 ## `$(PackageSourceNameForBuiltPackages)` - optional
 
 `<add key="<$sourceName>" value="file:///..." />`
