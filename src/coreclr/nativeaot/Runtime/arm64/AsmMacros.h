@@ -100,77 +100,12 @@ OFFSETOF__ee_alloc_context                   equ OFFSETOF__Thread__m_eeAllocCont
 
     EXTERN g_cpuFeatures
 
-;;-----------------------------------------------------------------------------
-;; Macro for loading a 64-bit constant by a minimal number of instructions
-;; Since the asssembles doesn't support 64 bit arithmetics in expressions,
-;; the value is passed in as lo, hi pair.
-    MACRO
-        MOVL64 $Reg, $ConstantLo, $ConstantHi
-
-        LCLS MovInstr
-MovInstr SETS "movz"
-
-         IF ((($ConstantHi):SHR:16):AND:0xffff) != 0
-         $MovInstr $Reg, #((($Constant):SHR:16):AND:0xffff), lsl #48
-MovInstr SETS "movk"
-         ENDIF
-
-         IF (($ConstantHi):AND:0xffff) != 0
-         $MovInstr $Reg, #(($ConstantHi):AND:0xffff), lsl #32
-MovInstr SETS "movk"
-         ENDIF
-
-        IF ((($ConstantLo):SHR:16):AND:0xffff) != 0
-        $MovInstr $Reg, #((($ConstantLo):SHR:16):AND:0xffff), lsl #16
-MovInstr SETS "movk"
-        ENDIF
-
-        $MovInstr $Reg, #(($ConstantLo):AND:0xffff)
-    MEND
-
-;;-----------------------------------------------------------------------------
-;; Macro for loading a 64bit value of a global variable into a register
-    MACRO
-        PREPARE_EXTERNAL_VAR_INDIRECT $Name, $Reg
-
-        adrp $Reg, $Name
-        ldr  $Reg, [$Reg, $Name]
-    MEND
-
-;; ---------------------------------------------------------------------------- -
-;; Macro for loading a 32bit value of a global variable into a register
-    MACRO
-        PREPARE_EXTERNAL_VAR_INDIRECT_W $Name, $RegNum
-
-        adrp x$RegNum, $Name
-        ldr  w$RegNum, [x$RegNum, $Name]
-    MEND
-
-;; -----------------------------------------------------------------------------
-;;
-;; Macro for indicating an alternate entry point into a function.
-;;
-
-    MACRO
-        LABELED_RETURN_ADDRESS $ReturnAddressName
-
-        ; export the return address name, but do not perturb the code by forcing alignment
-$ReturnAddressName
-        EXPORT $ReturnAddressName
-
-        ; flush any pending literal pool stuff
-        ROUT
-
-    MEND
-
 ;; -----------------------------------------------------------------------------
 ;;
 ;; Macro to get a pointer to the Thread* object for the currently executing thread
 ;;
     MACRO
         INLINE_GETTHREAD $destReg, $trashReg
-
-        EXTERN tls_CurrentThread
 
         INLINE_GET_TLS_VAR $destReg, $trashReg, tls_CurrentThread
     MEND
@@ -194,20 +129,7 @@ $ReturnAddressName
     MACRO
         INLINE_GET_ALLOC_CONTEXT_BASE $destReg, $trashReg
 
-        EXTERN tls_CurrentThread
-
         INLINE_GET_TLS_VAR $destReg, $trashReg, tls_CurrentThread
-    MEND
-
-;; ---------------------------------------------------------------------------- -
-;;
-;; Macro to add a memory barrier. Equal to __sync_synchronize().
-;;
-
-    MACRO
-        InterlockedOperationBarrier
-
-        dmb         ish
     MEND
 
 ;; -----------------------------------------------------------------------------

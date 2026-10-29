@@ -3,14 +3,6 @@
 
 #include <riscv64/UnixAsmMacros.inc>
 
-.macro LEAF_END_MARKED Name, Section
-C_FUNC(\Name\()_End):
-    .global C_FUNC(\Name\()_End)
-    LEAF_END \Name, \Section
-    // make sure this symbol gets its own address
-    nop
-.endm
-
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
     lla  \HelperReg, \Name
 .endm
@@ -73,49 +65,8 @@ C_FUNC(\Name\()_End):
     .cfi_adjust_cfa_offset -\ssize
 .endm
 
-.macro EPILOG_BRANCH Target
-    j \Target
-.endm
-
 .macro EPILOG_BRANCH_REG reg
     jr \reg
-.endm
-
-//-----------------------------------------------------------------------------
-// The Following sets of SAVE_*_REGISTERS expect the memory to be reserved and
-// base address to be passed in $reg
-//
-
-// Reserve 64 bytes of memory before calling  SAVE_CALLEESAVED_REGISTERS
-.macro SAVE_CALLEESAVED_REGISTERS reg, ofs
-    PROLOG_SAVE_REG_PAIR s1, s2, \ofs + 16
-    PROLOG_SAVE_REG_PAIR s3, s4, \ofs + 32
-    PROLOG_SAVE_REG_PAIR s5, s6, \ofs + 48
-    PROLOG_SAVE_REG_PAIR s7, s8, \ofs + 64
-    PROLOG_SAVE_REG_PAIR s9, s10, \ofs + 80
-    PROLOG_SAVE_REG_PAIR s11, tp  \ofs + 96
-    PROLOG_SAVE_REG      gp,  \ofs + 112
-.endm
-
-// Reserve 64 bytes of memory before calling  SAVE_FLOAT_CALLEESAVED_REGISTERS
-.macro SAVE_FLOAT_CALLEESAVED_REGISTERS reg, ofs
-// TODO RISCV NYI
-    sw  ra, 0(zero)
-.endm
-
-.macro RESTORE_CALLEESAVED_REGISTERS reg, ofs
-    EPILOG_RESTORE_REG      gp  \ofs + 112
-    EPILOG_RESTORE_REG_PAIR s11, tp  \ofs + 96
-    EPILOG_RESTORE_REG_PAIR s9, s10, \ofs + 80 
-    EPILOG_RESTORE_REG_PAIR s7, s8,  \ofs + 64
-    EPILOG_RESTORE_REG_PAIR s5, s6,  \ofs + 48
-    EPILOG_RESTORE_REG_PAIR s3, s4,  \ofs + 32
-    EPILOG_RESTORE_REG_PAIR s1, s2,  \ofs + 16
-.endm
-
-.macro RESTORE_FLOAT_CALLEESAVED_REGISTERS reg, ofs
-// TODO RISCV NYI
-    sw  ra, 0(zero)
 .endm
 
 //-----------------------------------------------------------------------------
@@ -336,22 +287,6 @@ C_FUNC(\Name\()_End):
 .macro GenerateRedirectedHandledJITCaseStub reason
 // TODO RISCV NYI
     sw  ra, 0(zero)
-.endm
-
-//-----------------------------------------------------------------------------
-// Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
-// out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
-// before a call (if you have a frame pointer and a dynamic stack). A breakpoint will be invoked if the stack
-// is misaligned.
-//
-.macro  CHECK_STACK_ALIGNMENT
-
-#ifdef _DEBUG
-        andi    t4, sp, 0xf
-        beq     t4, zero, 0f
-        EMIT_BREAKPOINT
-0:
-#endif
 .endm
 
 #include <riscv64/InlineTls.inc>

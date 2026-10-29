@@ -5,19 +5,8 @@
 
 #include <riscv64/UnixAsmMacros.inc>
 
-.macro LABELED_RETURN_ADDRESS Name
-        .global C_FUNC(\Name)
-        .hidden C_FUNC(\Name)
-C_FUNC(\Name):
-.endm
-
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
     la \HelperReg, C_FUNC(\Name) // Resolves the address in one step
-.endm
-
-.macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
-    la \HelperReg, C_FUNC(\Name)
-    lw \HelperReg, 0(\HelperReg)
 .endm
 
 .macro PROLOG_STACK_ALLOC Size
@@ -73,17 +62,6 @@ C_FUNC(\Name):
     .endif
 .endm
 
-.macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ssize
-    addi  sp, sp, -\ssize
-    .cfi_adjust_cfa_offset  \ssize
-
-    sd  \reg1, 0(sp)
-    sd  \reg2, 8(sp)
-
-    .cfi_rel_offset  \reg1, 0
-    .cfi_rel_offset  \reg2, 8
-.endm
-
 .macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
         ld \reg1, \ofs(sp)
         ld \reg2, \ofs+8(sp)
@@ -116,10 +94,6 @@ C_FUNC(\Name):
     // global dynamic TLS, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#global-dynamic
     la.tls.gd a0, C_FUNC(tls_CurrentThread)
     call C_FUNC(__tls_get_addr)
-.endm
-
-.macro InterlockedOperationBarrier
-    fence rw, rw
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2

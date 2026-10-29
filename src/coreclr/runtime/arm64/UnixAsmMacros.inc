@@ -1,6 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#define xip0 x16
+#define xip1 x17
+#define xpr x18
+
+// On MacOS, local labels cannot be used in arithmetic expressions.
+#if defined(__APPLE__)
+#define FIXUP_LABEL(name) name
+#else
+#define FIXUP_LABEL(name) .L##name
+#endif
+
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
@@ -34,6 +45,27 @@ C_FUNC(\Name):
         .cfi_endproc
 .endm
 
+.macro LEAF_END_MARKED Name, Section
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name\()_End)
+        .private_extern C_FUNC(\Name\()_End)
+#else
+        .global C_FUNC(\Name\()_End)
+#endif
+C_FUNC(\Name\()_End):
+        LEAF_END \Name, \Section
+        // make sure this symbol gets its own address
+        nop
+.endm
+
+.macro LABELED_RETURN_ADDRESS Name
+        .global C_FUNC(\Name)
+#if !defined(__APPLE__)
+        .hidden C_FUNC(\Name)
+#endif
+C_FUNC(\Name):
+.endm
+
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
 #if defined(__APPLE__)
         adrp    \HelperReg, C_FUNC(\Name)@GOTPAGE
@@ -41,6 +73,28 @@ C_FUNC(\Name):
 #else
         adrp    \HelperReg, C_FUNC(\Name)
         add     \HelperReg, \HelperReg, :lo12:C_FUNC(\Name)
+#endif
+.endm
+
+.macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
+#if defined(__APPLE__)
+        adrp \HelperReg, C_FUNC(\Name)@GOTPAGE
+        ldr  \HelperReg, [\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+        ldr  \HelperReg, [\HelperReg]
+#else
+        adrp \HelperReg, C_FUNC(\Name)
+        ldr  \HelperReg, [\HelperReg, :lo12:C_FUNC(\Name)]
+#endif
+.endm
+
+.macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
+#if defined(__APPLE__)
+        adrp x\HelperReg, C_FUNC(\Name)@GOTPAGE
+        ldr  x\HelperReg, [x\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
+        ldr  w\HelperReg, [x\HelperReg]
+#else
+        adrp x\HelperReg, C_FUNC(\Name)
+        ldr  w\HelperReg, [x\HelperReg, :lo12:C_FUNC(\Name)]
 #endif
 .endm
 
@@ -113,6 +167,36 @@ C_FUNC(\Name):
         ret
 .endm
 
+.macro EPILOG_BRANCH Target
+        b \Target
+.endm
+
+//-----------------------------------------------------------------------------
+// The Following sets of SAVE_*_REGISTERS expect the memory to be reserved and
+// base address to be passed in $reg
+//
+
+// Reserve 72 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
+.macro SAVE_ARGUMENT_REGISTERS reg, ofs
+
+        str                    x8, [\reg, #(\ofs)]
+        stp                    x0, x1, [\reg, #(\ofs + 8)]
+        stp                    x2, x3, [\reg, #(\ofs + 24)]
+        stp                    x4, x5, [\reg, #(\ofs + 40)]
+        stp                    x6, x7, [\reg, #(\ofs + 56)]
+
+.endm
+
+.macro RESTORE_ARGUMENT_REGISTERS reg, ofs
+
+        ldr                    x8, [\reg, #(\ofs)]
+        ldp                    x0, x1, [\reg, #(\ofs + 8)]
+        ldp                    x2, x3, [\reg, #(\ofs + 24)]
+        ldp                    x4, x5, [\reg, #(\ofs + 40)]
+        ldp                    x6, x7, [\reg, #(\ofs + 56)]
+
+.endm
+
 // Reserve 128 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
 .macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 
@@ -136,4 +220,25 @@ C_FUNC(\Name):
 
         br \reg
 
+.endm
+
+//-----------------------------------------------------------------------------
+// Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
+// out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
+// before a call (if you have a frame pointer and a dynamic stack). A breakpoint will be invoked if the stack
+// is misaligned.
+//
+.macro  CHECK_STACK_ALIGNMENT
+
+#ifdef _DEBUG
+        add     x9, sp, xzr
+        tst     x9, #15
+        beq     0f
+        EMIT_BREAKPOINT
+0:
+#endif
+.endm
+
+.macro  InterlockedOperationBarrier
+    dmb ish
 .endm

@@ -13,13 +13,6 @@
 C_FUNC(\Name):
 .endm
 
-// On MacOS, local labels cannot be used in arithmetic expressions.
-#if defined(__APPLE__)
-#define FIXUP_LABEL(name) name
-#else
-#define FIXUP_LABEL(name) .L##name
-#endif
-
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
 #if defined(__APPLE__)
@@ -30,19 +23,6 @@ C_FUNC(\Name):
 #endif
 C_FUNC(\Name):
         .cfi_startproc
-.endm
-
-.macro LEAF_END_MARKED Name, Section
-#if defined(__APPLE__)
-        .alt_entry C_FUNC(\Name\()_End)
-        .private_extern C_FUNC(\Name\()_End)
-#else
-        .global C_FUNC(\Name\()_End)
-#endif
-C_FUNC(\Name\()_End):
-        LEAF_END \Name, \Section
-        // make sure this symbol gets its own address
-        nop
 .endm
 
 .macro EMIT_BREAKPOINT
@@ -158,37 +138,6 @@ C_FUNC(\Name\()_End):
         .endif
 
 .endm
-
-//-----------------------------------------------------------------------------
-// The Following sets of SAVE_*_REGISTERS expect the memory to be reserved and
-// base address to be passed in $reg
-//
-
-// Reserve 72 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
-.macro SAVE_ARGUMENT_REGISTERS reg, ofs
-
-        str                    x8, [\reg, #(\ofs)]
-        stp                    x0, x1, [\reg, #(\ofs + 8)]
-        stp                    x2, x3, [\reg, #(\ofs + 24)]
-        stp                    x4, x5, [\reg, #(\ofs + 40)]
-        stp                    x6, x7, [\reg, #(\ofs + 56)]
-
-.endm
-
-.macro RESTORE_ARGUMENT_REGISTERS reg, ofs
-
-        ldr                    x8, [\reg, #(\ofs)]
-        ldp                    x0, x1, [\reg, #(\ofs + 8)]
-        ldp                    x2, x3, [\reg, #(\ofs + 24)]
-        ldp                    x4, x5, [\reg, #(\ofs + 40)]
-        ldp                    x6, x7, [\reg, #(\ofs + 56)]
-
-.endm
-
-.macro EPILOG_BRANCH Target
-        b \Target
-.endm
-
 
 .macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
@@ -442,27 +391,6 @@ $__RedirectionStubEndFuncName
 #endif
 
 .endm
-
-//-----------------------------------------------------------------------------
-// Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
-// out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
-// before a call (if you have a frame pointer and a dynamic stack). A breakpoint will be invoked if the stack
-// is misaligned.
-//
-.macro  CHECK_STACK_ALIGNMENT
-
-#ifdef _DEBUG
-        add     x9, sp, xzr
-        tst     x9, #15
-        beq     0f
-        EMIT_BREAKPOINT
-0:
-#endif
-.endm
-
-#define xip0 x16
-#define xip1 x17
-#define xpr x18
 
 // Inlined version of RhpGetThread. Target cannot be x0.
 .macro INLINE_GETTHREAD target

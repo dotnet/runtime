@@ -43,11 +43,6 @@
         push {r0-r3}
 .endm
 
-.macro PROLOG_STACK_ALLOC Size
-        sub sp, sp, #\Size
-        .pad #\Size
-.endm
-
 .macro EPILOG_STACK_FREE Size
         add sp, sp, #\Size
         .pad #-\Size

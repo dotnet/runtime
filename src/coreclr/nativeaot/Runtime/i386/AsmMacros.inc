@@ -20,8 +20,6 @@ FASTCALL_ENDFUNC macro
     FuncNameReal endp
 endm
 
-__tls_array     equ 2Ch     ;; offsetof(TEB, ThreadLocalStoragePointer)
-
 ;;
 ;; __declspec(thread) version
 ;;

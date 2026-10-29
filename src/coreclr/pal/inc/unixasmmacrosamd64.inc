@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#define C_VAR(Name) rip + C_FUNC(Name)
-
 #include <amd64/UnixAsmMacros.inc>
 
 .macro NESTED_ENTRY Name, Section, Handler
@@ -31,44 +29,6 @@
         .p2align 4
 C_FUNC(\Name):
         .cfi_startproc
-.endm
-
-.macro NOP_6_BYTE
-        .byte 0x66
-        .byte 0x0F
-        .byte 0x1F
-        .byte 0x44
-        .byte 0x00
-        .byte 0x00
-.endm
-
-.macro NOP_3_BYTE
-        nop dword ptr [rax]
-.endm
-
-.macro NOP_2_BYTE
-        xchg ax, ax
-.endm
-
-.macro REPRET
-        .byte 0xf3
-        .byte 0xc3
-.endm
-
-.macro TAILJMP_RAX
-        .byte 0x48
-        .byte 0xFF
-        .byte 0xE0
-.endm
-
-.macro PREPARE_EXTERNAL_VAR Name, HelperReg
-        mov \HelperReg, [rip + C_FUNC(\Name)@GOTPCREL]
-.endm
-
-.macro SKIP_ARGUMENT_REGISTERS
-
-        add rsp, 6 * 8
-
 .endm
 
 // Stack layout:

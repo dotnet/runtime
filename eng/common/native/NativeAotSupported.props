@@ -6,7 +6,8 @@
       '$(TargetOS)' != 'haiku' and
       '$(TargetOS)' != 'illumos' and
       '$(TargetOS)' != 'netbsd' and
-      '$(TargetOS)' != 'solaris'
+      '$(TargetOS)' != 'solaris' and
+      '$(TargetOS)' != 'openharmony'
     ">true</_NativeAotSupportedOS>
 
     <!-- Reject unsupported architectures via RID suffix match -->
