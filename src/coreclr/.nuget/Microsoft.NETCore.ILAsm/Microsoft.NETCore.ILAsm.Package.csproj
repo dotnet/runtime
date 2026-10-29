@@ -25,7 +25,9 @@
   </ItemGroup>
 
   <UsingTask TaskName="GenerateRuntimeDependencies"
-             AssemblyFile="$(InstallerTasksAssemblyPath)" />
+             AssemblyFile="$(InstallerTasksAssemblyPath)"
+             Runtime="NET"
+             TaskFactory="TaskHostFactory" />
 
   <Target Name="GenerateILAsmRuntimeDependencies">
     <MakeDir Directories="$(IntermediateOutputPath)" />
