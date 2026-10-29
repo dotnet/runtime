@@ -3,7 +3,10 @@
 
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
+#ifdef FEATURE_NATIVEAOT
+        // Not for CoreCLR: the DAC exports its LEAF_ENTRY stubs generated from libredefines.inc.
         .hidden C_FUNC(\Name)
+#endif
         .type \Name, %function
 C_FUNC(\Name):
         .cfi_startproc

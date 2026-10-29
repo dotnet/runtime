@@ -18,7 +18,10 @@
         .text
         .p2align        2
 #else
+#ifdef FEATURE_NATIVEAOT
+        // Not for CoreCLR: the DAC exports its LEAF_ENTRY stubs generated from libredefines.inc.
         .hidden C_FUNC(\Name)
+#endif
         .type \Name, %function
 #endif
 C_FUNC(\Name):
