@@ -1995,15 +1995,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         }
     }
 
-    if (!isUnsignedCompareCheckedBound && isUnsignedRelop && (op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) &&
-        !vnStore->IsVNConstant(op2VN) && vnStore->IsVNCheckedBoundIndex(op1VN) && optAssertionHasAssertionsForVN(op2VN))
-    {
-        AssertionDsc   dsc = AssertionDsc::CreateRelopVN(this, relopFunc, op1VN, op2VN);
-        AssertionIndex idx = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(idx);
-        return idx;
-    }
-
     // The remaining "(CheckedBnd + CNS) <relop> X" cases are only useful when the
     // comparison is ordered (LT/LE/GT/GE). For equality relops we don't produce
     // CheckedBoundAddConst-shaped assertions; the consumers (RangeCheck) only
@@ -2074,7 +2065,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     }
 
     // "X relop Y" where neither side is a constant nor a checked bound.
-    // For now, we only create such assertions for signed comparisons of int32 (and smaller, after promotion).
+    // For now, we only create such assertions for comparisons of int32 (and smaller, after promotion).
     // This widens what global assertion prop can reason about: e.g. "b > a" combined with "a > 10"
     // can be used to deduce "b > 10".
     //
@@ -2082,7 +2073,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // operands already has assertions registered. Otherwise the new assertion has no other facts
     // it can chain with and is unlikely to enable any deduction, while still consuming a slot
     // (and potentially crowding out useful ones).
-    if (!isUnsignedRelop && (op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) && !vnStore->IsVNConstant(op2VN) &&
+    if ((op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) && !vnStore->IsVNConstant(op2VN) &&
         (optAssertionHasAssertionsForVN(op1VN) || optAssertionHasAssertionsForVN(op2VN)))
     {
         AssertionDsc   dsc = AssertionDsc::CreateRelopVN(this, relopFunc, op1VN, op2VN);
@@ -4715,6 +4706,21 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                     (tree->IsUnsigned() == isUnsigned))
                 {
                     newTree = gtNewIconNode(tree->OperIs(assertionOper) ? 1 : 0);
+                }
+            }
+            // "X < Y" implies "(X + 1) <= Y" as "X + 1" can't overflow, e.g. "(uint)(i + 1) > (uint)len"
+            // is false when "(uint)i < (uint)len".
+            else if (curAssertion.KindIs(OAK_LT, OAK_LT_UN) && tree->OperIs(GT_LE, GT_GT) &&
+                     (tree->IsUnsigned() == curAssertion.KindIs(OAK_LT_UN)) &&
+                     (curAssertion.GetOp2().GetVN() == op2VN) &&
+                     (!curAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS) || (curAssertion.GetOp2().GetCns() == 0)))
+            {
+                ValueNum addOp;
+                int      addCns;
+                if (vnStore->IsVNBinFuncWithConst(op1VN, VNF_ADD, &addOp, &addCns) && (addCns == 1) &&
+                    (addOp == curAssertion.GetOp1().GetVN()))
+                {
+                    newTree = gtNewIconNode(tree->OperIs(GT_LE) ? 1 : 0);
                 }
             }
             // Look for an equality assertion involving the entire relop and zero.
