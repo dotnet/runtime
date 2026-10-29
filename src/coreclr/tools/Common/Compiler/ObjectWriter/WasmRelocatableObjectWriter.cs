@@ -19,6 +19,8 @@ namespace ILCompiler.ObjectWriter
     {
         private WasmDataSection _dataSection;
         private DwarfBuilder _dwarfBuilder;
+        private uint _nextVirtualIP = 1; // Zero marks an invalid stack frame.
+        private readonly Dictionary<Utf8String, uint> _methodStartVirtualIPs = new();
 
         // https://github.com/WebAssembly/tool-conventions/blob/main/Linking.md
         private enum SymbolKind : byte
@@ -34,6 +36,7 @@ namespace ILCompiler.ObjectWriter
         private const uint UndefinedSymbol = 0x10; // WASM_SYM_UNDEFINED
         private const uint LocalSymbol = 0x2; // WASM_SYM_BINDING_LOCAL
         private const uint ExportedSymbol = 0x20; // WASM_SYM_EXPORTED
+        private const uint ExplicitNameSymbol = 0x40; // WASM_SYM_EXPLICIT_NAME
         private const byte SegmentInfoSubsection = 5; // WASM_SEGMENT_INFO
         private const byte SymbolTableSubsection = 8; // WASM_SYMBOL_TABLE
         private const uint LinkingVersion = 2;
@@ -299,6 +302,10 @@ namespace ILCompiler.ObjectWriter
                 _ => throw new UnreachableException(),
             };
             uint flags = symbol.IsImport ? UndefinedSymbol : 0;
+            if (symbol.HasExplicitName)
+            {
+                flags |= ExplicitNameSymbol;
+            }
             if (!symbol.IsImport && _definedSymbols.TryGetValue(symbol.Name, out SymbolDefinition definition) && definition.Global)
             {
                 flags |= ExportedSymbol;
@@ -306,9 +313,9 @@ namespace ILCompiler.ObjectWriter
             entries.WriteByte((byte)kind); // kind: the symbol type.
             WriteULEB128(entries, flags); // flags: a bitfield containing flags for this symbol.
             WriteULEB128(entries, (ulong)symbol.Index); // index: the index of the Wasm object corresponding to the symbol.
-            if (!symbol.IsImport)
+            if (!symbol.IsImport || symbol.HasExplicitName)
             {
-                WriteName(entries, symbol.Name); // name_len/name_data: the optional UTF-8 symbol name, omitted for imports.
+                WriteName(entries, symbol.Name); // name_len/name_data: the UTF-8 symbol name, omitted for imports without an explicit name.
             }
         }
 
@@ -368,8 +375,11 @@ namespace ILCompiler.ObjectWriter
                 fixed (byte* pData = relocScratchBuffer)
                 {
                     long addend = reloc.Addend + Relocation.ReadValue(reloc.Type, pData);
-                    if (reloc.Type is RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32 or RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB)
+                    if (reloc.Type is RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB)
                     {
+                        Debug.Assert(addend == 0);
+                        // Check that the method start fits alongside the frame-identity tag, then encode its i32 bits.
+                        addend = unchecked((int)checked(_methodStartVirtualIPs[reloc.SymbolName] * 2 + 1));
                         Relocation.WriteValue(reloc.Type, pData, addend);
                         sectionStream.Position = reloc.Offset;
                         sectionStream.Write(relocScratchBuffer.AsSpan(0, size));
@@ -594,6 +604,20 @@ namespace ILCompiler.ObjectWriter
             INodeWithCodeInfo nodeWithCodeInfo,
             Utf8String currentSymbolName)
         {
+            if (nodeWithCodeInfo.FrameInfos is not FrameInfo[] frames || frames.Length == 0)
+            {
+                return;
+            }
+
+            _methodStartVirtualIPs.Add(currentSymbolName, _nextVirtualIP);
+            for (int i = 0; i < frames.Length; i++)
+            {
+                FrameInfo frame = frames[i];
+                DwarfHelper.ReadULEB128(frame.BlobData, out int bytesRead);
+                uint virtualSize = checked((uint)DwarfHelper.ReadULEB128(frame.BlobData.AsSpan(bytesRead)));
+                Debug.Assert(virtualSize != 0);
+                _nextVirtualIP = checked(_nextVirtualIP + virtualSize);
+            }
         }
 
         private protected override void CreateEhSections()

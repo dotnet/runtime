@@ -16,6 +16,7 @@ extern "C" {
     int32_t BrotliDecoderDecompressStream (void *, void *, void *, void *, void *, void *);
     void BrotliDecoderDestroyInstance (void *);
     int32_t BrotliDecoderIsFinished (void *);
+    int32_t BrotliDecoderSetParameter (void *, int32_t, uint32_t);
     int32_t BrotliEncoderCompress (int32_t, int32_t, int32_t, void *, void *, void *, void *);
     int32_t BrotliEncoderCompressStream (void *, int32_t, void *, void *, void *, void *, void *);
     void * BrotliEncoderCreateInstance (void *, void *, void *);
@@ -145,13 +146,6 @@ extern "C" {
     int32_t SystemNative_LockFileRegion (void *, int64_t, int64_t, int32_t);
     void SystemNative_Log (void *, int32_t);
     void SystemNative_LogError (void *, int32_t);
-    void SystemNative_LowLevelMonitor_Acquire (void *);
-    void * SystemNative_LowLevelMonitor_Create ();
-    void SystemNative_LowLevelMonitor_Destroy (void *);
-    void SystemNative_LowLevelMonitor_Release (void *);
-    void SystemNative_LowLevelMonitor_Signal_Release (void *);
-    int32_t SystemNative_LowLevelMonitor_TimedWait (void *, int32_t);
-    void SystemNative_LowLevelMonitor_Wait (void *);
     int32_t SystemNative_MAdvise (void *, uint64_t, int32_t);
     void * SystemNative_MMap (void *, uint64_t, int32_t, int32_t, void *, int64_t);
     int32_t SystemNative_MSync (void *, uint64_t, int32_t);
@@ -206,6 +200,7 @@ extern "C" {
     int32_t SystemNative_SymLink (void *, void *);
     int64_t SystemNative_SysConf (int32_t);
     void SystemNative_SysLog (int32_t, void *, void *);
+    int32_t SystemNative_ThreadSleep (int32_t);
     int32_t SystemNative_TryGetIPPacketInformation (void *, int32_t, void *);
     int32_t SystemNative_UTimensat (void *, void *);
     int32_t SystemNative_Unlink (void *);
@@ -336,6 +331,7 @@ static const Entry s_libSystem_IO_Compression_Native [] = {
     DllImportEntry(BrotliDecoderDecompressStream) // System.IO.Compression.Brotli
     DllImportEntry(BrotliDecoderDestroyInstance) // System.IO.Compression.Brotli
     DllImportEntry(BrotliDecoderIsFinished) // System.IO.Compression.Brotli
+    DllImportEntry(BrotliDecoderSetParameter) // System.IO.Compression.Brotli
     DllImportEntry(BrotliEncoderCompress) // System.IO.Compression.Brotli
     DllImportEntry(BrotliEncoderCompressStream) // System.IO.Compression.Brotli
     DllImportEntry(BrotliEncoderCreateInstance) // System.IO.Compression.Brotli
@@ -464,13 +460,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_LockFileRegion) // System.Private.CoreLib
     DllImportEntry(SystemNative_Log) // System.Private.CoreLib
     DllImportEntry(SystemNative_LogError) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_Acquire) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_Create) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_Destroy) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_Release) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_Signal_Release) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_TimedWait) // System.Private.CoreLib
-    DllImportEntry(SystemNative_LowLevelMonitor_Wait) // System.Private.CoreLib
     DllImportEntry(SystemNative_MAdvise) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_MMap) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_MSync) // System.IO.MemoryMappedFiles
@@ -525,6 +514,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_SymLink) // System.Private.CoreLib
     DllImportEntry(SystemNative_SysConf) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_SysLog) // System.Private.CoreLib
+    DllImportEntry(SystemNative_ThreadSleep) // System.Private.CoreLib
     DllImportEntry(SystemNative_TryGetIPPacketInformation) // System.Net.Sockets
     DllImportEntry(SystemNative_UTimensat) // System.Private.CoreLib
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
@@ -602,8 +592,8 @@ typedef struct PInvokeTable {
 
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
-    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 51},
-    {"libSystem.Native", s_libSystem_Native, 147},
+    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 52},
+    {"libSystem.Native", s_libSystem_Native, 141},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},

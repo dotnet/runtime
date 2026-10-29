@@ -2997,6 +2997,9 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(const TypeKey *pTypeKey,
     }
     CONTRACTL_END
 
+    // A missed signature dependency must fail before a stack walk enters the blocking loader.
+    _ASSERTE_ALL_BUILDS(!IsGCThread() && !IsStackWalkerThread());
+
     GCX_PREEMP();
 
 #ifdef _DEBUG
@@ -3053,6 +3056,8 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(const TypeKey *pTypeKey,
         PRECONDITION(targetLevel >= 0 && targetLevel <= CLASS_LOADED);
     }
     CONTRACTL_END
+
+    _ASSERTE_ALL_BUILDS(!IsGCThread() && !IsStackWalkerThread());
 
     GCX_PREEMP();
 
