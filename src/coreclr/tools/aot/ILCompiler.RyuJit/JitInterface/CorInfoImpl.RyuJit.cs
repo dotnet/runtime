@@ -1902,7 +1902,7 @@ namespace Internal.JitInterface
             }
 
             if (_compilation.NeedsSlotUseTracking(owningType))
-                (_additionalDependencies ??= new ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList()).Add(_compilation.NodeFactory.VirtualMethodUse(methodDesc), "Virtual method call");
+                _additionalDependencies.Add(_compilation.NodeFactory.VirtualMethodUse(methodDesc), "Virtual method call");
 
             offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
         }
@@ -2058,12 +2058,6 @@ namespace Internal.JitInterface
 
                 return size;
             }
-        }
-
-#pragma warning disable CA1822 // Mark members as static
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-#pragma warning restore CA1822 // Mark members as static
-        {
         }
 
         private void setEHcount(uint cEH)

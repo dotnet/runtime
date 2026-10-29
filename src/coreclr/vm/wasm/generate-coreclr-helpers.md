@@ -24,8 +24,8 @@ By default the scripts generate **both** WebAssembly variations; pass `--target-
 
 | Target OS | Output directory                | Default scan path (testhost) |
 |-----------|---------------------------------|------------------------------|
-| `browser` | `src/coreclr/vm/wasm/browser/`  | `artifacts/bin/testhost/net11.0-browser-<config>-wasm/shared/Microsoft.NETCore.App/11.0.0/` |
-| `wasi`    | `src/coreclr/vm/wasm/wasi/`     | `artifacts/bin/testhost/net11.0-wasi-<config>-wasm/shared/Microsoft.NETCore.App/11.0.0/` |
+| `browser` | `src/coreclr/vm/wasm/browser/`  | `artifacts/bin/testhost/net12.0-browser-<config>-wasm/shared/Microsoft.NETCore.App/12.0.0/` |
+| `wasi`    | `src/coreclr/vm/wasm/wasi/`     | `artifacts/bin/testhost/net12.0-wasi-<config>-wasm/shared/Microsoft.NETCore.App/12.0.0/` |
 
 Each run emits three files into the output directory:
 

@@ -41,28 +41,33 @@ namespace ILAssembler.Tests
             using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
             MetadataReader reader = pe.GetMetadataReader();
             FieldDefinition field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+            Assert.Equal(".sdata", pe.PEHeaders.SectionHeaders[
+                pe.PEHeaders.GetContainingSectionIndex(field.GetRelativeVirtualAddress())].Name);
             Assert.Equal(new byte[] { 42, 0, 0, 0 }, ReadData(pe, field, sizeof(int)));
         }
 
-        [Fact]
-        public void DataItems_EmitExpectedTypedBytesAndRepeatCounts()
+        [Theory]
+        [InlineData("")]
+        [InlineData("cil")]
+        [InlineData("tls")]
+        public void DataItems_EmitExpectedTypedBytesAndRepeatCounts(string section)
         {
-            string source = """
+            string source = $$"""
                 .assembly extern mscorlib { }
                 .assembly test { }
 
-                .data D_STRING = char*("Hi")
-                .data D_BYTES = bytearray(01 02 03 04)
-                .data D_BRACES = { int32(0x11223344), int16(0x5566), int8(0x77) }
-                .data D_REPEAT = int32(7)[3]
-                .data D_F32 = float32(1.5)
-                .data D_F64 = float64(2.25)
-                .data D_ZERO8 = int8[3]
-                .data D_ZERO16 = int16[2]
-                .data D_ZERO32 = int32[2]
-                .data D_ZERO64 = int64[2]
-                .data D_ZEROF32 = float32[2]
-                .data D_ZEROF64 = float64[2]
+                .data {{section}} D_STRING = char*("Hi")
+                .data {{section}} D_BYTES = bytearray(01 02 03 04)
+                .data {{section}} D_BRACES = { int32(0x11223344), int16(0x5566), int8(0x77) }
+                .data {{section}} D_REPEAT = int32(7)[3]
+                .data {{section}} D_F32 = float32(1.5)
+                .data {{section}} D_F64 = float64(2.25)
+                .data {{section}} D_ZERO8 = int8[3]
+                .data {{section}} D_ZERO16 = int16[2]
+                .data {{section}} D_ZERO32 = int32[2]
+                .data {{section}} D_ZERO64 = int64[2]
+                .data {{section}} D_ZEROF32 = float32[2]
+                .data {{section}} D_ZEROF64 = float64[2]
 
                 .class public explicit ansi sealed DataHolder extends [mscorlib]System.ValueType
                 {
@@ -198,19 +203,128 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
-        [Fact]
-        public void Diagnostic_UnsupportedTlsData()
+        [Theory]
+        [InlineData(Machine.I386, false)]
+        [InlineData(Machine.I386, true)]
+        [InlineData(Machine.Amd64, false)]
+        [InlineData(Machine.Amd64, true)]
+        [InlineData(Machine.Arm64, false)]
+        [InlineData(Machine.Arm64, true)]
+        public void TlsData_EmitsDirectoryAndFieldRvas(Machine machine, bool dll)
         {
             string source = """
                 .assembly test { }
-                .data tls T_00006000 = bytearray (02)
+                .data tls int8(0xAA)
+                .data tls First = int32(0x12345678)
+                .class public DataHolder
+                {
+                    .data tls Second = int16(0x1122)
+                    .field public static int16 SecondField at Second
+                    .field public static int32 FirstField at First
+                    .field public static int32 AliasField at First
+                }
                 """;
 
-            ImmutableArray<Diagnostic> diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
-            Diagnostic error = Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticIds.UnsupportedTlsData, error.Id);
-            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
-            Assert.Equal("TLS RVA data declarations are not supported", error.Message);
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                source, new Options { Machine = machine, Dll = dll });
+            SectionHeader tls = Assert.Single(pe.PEHeaders.SectionHeaders, section => section.Name == ".tls");
+            Assert.Equal(
+                SectionCharacteristics.MemRead | SectionCharacteristics.MemWrite |
+                SectionCharacteristics.ContainsInitializedData,
+                tls.SectionCharacteristics);
+            Assert.Equal(7, tls.VirtualSize);
+            Assert.Equal(
+                new byte[] { 0xAA, 0x78, 0x56, 0x34, 0x12, 0x22, 0x11 },
+                pe.GetSectionData(tls.VirtualAddress).GetContent(0, tls.VirtualSize));
+
+            MetadataReader reader = pe.GetMetadataReader();
+            Dictionary<string, FieldDefinition> fields = reader.FieldDefinitions
+                .Select(reader.GetFieldDefinition)
+                .ToDictionary(field => reader.GetString(field.Name));
+            Assert.Equal(tls.VirtualAddress + 5, fields["SecondField"].GetRelativeVirtualAddress());
+            Assert.Equal(tls.VirtualAddress + 1, fields["FirstField"].GetRelativeVirtualAddress());
+            Assert.Equal(tls.VirtualAddress + 1, fields["AliasField"].GetRelativeVirtualAddress());
+
+            PEHeader header = pe.PEHeaders.PEHeader!;
+            DirectoryEntry directory = header.ThreadLocalStorageTableDirectory;
+            int pointerSize = machine == Machine.I386 ? sizeof(uint) : sizeof(ulong);
+            Assert.Equal((4 * pointerSize) + (2 * sizeof(uint)), directory.Size);
+            Assert.Equal(".sdata", pe.PEHeaders.SectionHeaders[
+                pe.PEHeaders.GetContainingSectionIndex(directory.RelativeVirtualAddress)].Name);
+            ReadOnlySpan<byte> data = pe.GetSectionData(directory.RelativeVirtualAddress)
+                .GetContent(0, directory.Size).AsSpan();
+            Assert.Equal(header.ImageBase + (uint)tls.VirtualAddress, ReadPointer(0));
+            Assert.Equal(header.ImageBase + (uint)(tls.VirtualAddress + tls.VirtualSize), ReadPointer(pointerSize));
+            int indexRva = checked((int)(ReadPointer(2 * pointerSize) - header.ImageBase));
+            int callbacksRva = checked((int)(ReadPointer(3 * pointerSize) - header.ImageBase));
+            Assert.Equal(0U, BinaryPrimitives.ReadUInt32LittleEndian(pe.GetSectionData(indexRva).GetContent().AsSpan()));
+            Assert.All(pe.GetSectionData(callbacksRva).GetContent(0, pointerSize), value => Assert.Equal(0, value));
+            Assert.Equal(0U, BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(4 * pointerSize)));
+            Assert.Equal(0U, BinaryPrimitives.ReadUInt32LittleEndian(data.Slice((4 * pointerSize) + sizeof(uint))));
+            Assert.False(pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
+            Assert.Equal(machine == Machine.I386, pe.PEHeaders.CorHeader.Flags.HasFlag(CorFlags.Requires32Bit));
+
+            ulong ReadPointer(int offset) => pointerSize == sizeof(uint)
+                ? BinaryPrimitives.ReadUInt32LittleEndian(pe.GetSectionData(directory.RelativeVirtualAddress + offset).GetContent().AsSpan())
+                : BinaryPrimitives.ReadUInt64LittleEndian(pe.GetSectionData(directory.RelativeVirtualAddress + offset).GetContent().AsSpan());
+        }
+
+        [Theory]
+        [InlineData("", ".sdata")]
+        [InlineData("cil", ".text")]
+        [InlineData("tls", ".tls")]
+        public void DataSection_PreservesAnonymousAndMethodScopedData(string section, string expectedSection)
+        {
+            string source = $$"""
+                .assembly test { }
+                .data {{section}} int8(0xAA)
+                .data {{section}} Value = int32(42)
+                .field public static int32 ValueField at Value
+                .field public static int16 MethodField at MethodData
+                .method public static void M() cil managed
+                {
+                    .data {{section}} MethodData = int16(1234)
+                    ret
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            MetadataReader reader = pe.GetMetadataReader();
+            FieldDefinition[] fields = reader.FieldDefinitions.Select(reader.GetFieldDefinition).ToArray();
+            Assert.Equal(expectedSection, pe.PEHeaders.SectionHeaders[
+                pe.PEHeaders.GetContainingSectionIndex(fields[0].GetRelativeVirtualAddress())].Name);
+            Assert.Equal(fields[0].GetRelativeVirtualAddress() + sizeof(int), fields[1].GetRelativeVirtualAddress());
+            Assert.Equal(42, BitConverter.ToInt32(ReadData(pe, fields[0], sizeof(int))));
+            Assert.Equal(1234, BitConverter.ToInt16(ReadData(pe, fields[1], sizeof(short))));
+            Assert.Equal(section != "tls", pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
+            if (section == "cil")
+            {
+                Assert.DoesNotContain(pe.PEHeaders.SectionHeaders, header => header.Name is ".sdata" or ".tls");
+            }
+        }
+
+        [Theory]
+        [InlineData("", 0)]
+        [InlineData("", 1)]
+        [InlineData("cil", 0)]
+        [InlineData("cil", 1)]
+        [InlineData("tls", 0)]
+        [InlineData("tls", 1)]
+        public void AnonymousData_EmitsSectionsOnlyForNonemptyNonCilData(string section, int count)
+        {
+            string source = $$"""
+                .assembly test { }
+                .data {{section}} int32[{{count}}]
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            bool hasTlsData = section == "tls" && count != 0;
+            Assert.Equal(hasTlsData, pe.PEHeaders.SectionHeaders.Any(header => header.Name == ".tls"));
+            Assert.Equal(hasTlsData, pe.PEHeaders.PEHeader!.ThreadLocalStorageTableDirectory.Size != 0);
+            Assert.Equal(!hasTlsData, pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
+            Assert.Equal(
+                section != "cil" && count != 0,
+                pe.PEHeaders.SectionHeaders.Any(header => header.Name == ".sdata"));
         }
 
         [Fact]
@@ -268,8 +382,11 @@ namespace ILAssembler.Tests
             Assert.Equal(4503599627370496d, BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(data)));
         }
 
-        [Fact]
-        public void LargeByteArray_StreamsIntoDataSectionWithoutLosingBytes()
+        [Theory]
+        [InlineData("")]
+        [InlineData("cil")]
+        [InlineData("tls")]
+        public void LargeByteArray_StreamsIntoDataSectionWithoutLosingBytes(string section)
         {
             const int Length = 64 * 1024;
             byte[] expected = new byte[Length];
@@ -293,7 +410,7 @@ namespace ILAssembler.Tests
                 .assembly extern mscorlib { }
                 .assembly test { }
 
-                .data D_LARGE = bytearray ({{literal}})
+                .data {{section}} D_LARGE = bytearray ({{literal}})
 
                 .class public explicit ansi sealed DataHolder extends [mscorlib]System.ValueType
                 {
@@ -339,7 +456,10 @@ namespace ILAssembler.Tests
             int targetRva = fields["TargetValue"].GetRelativeVirtualAddress();
             int parenthesizedRva = fields["ParenthesizedValue"].GetRelativeVirtualAddress();
 
-            Assert.Equal(cilRva + 1, targetRva);
+            Assert.Equal(".text", pe.PEHeaders.SectionHeaders[
+                pe.PEHeaders.GetContainingSectionIndex(cilRva)].Name);
+            Assert.Equal(".sdata", pe.PEHeaders.SectionHeaders[
+                pe.PEHeaders.GetContainingSectionIndex(targetRva)].Name);
             Assert.Equal(targetRva + sizeof(int), parenthesizedRva);
             Assert.Equal(0x22, Assert.Single(ReadData(pe, fields["CilValue"], 1)));
             Assert.Equal(0x12345678, BitConverter.ToInt32(ReadData(pe, fields["TargetValue"], sizeof(int))));
@@ -348,14 +468,17 @@ namespace ILAssembler.Tests
                 BitConverter.ToUInt32(ReadData(pe, fields["ParenthesizedValue"], sizeof(int))));
         }
 
-        [Fact]
-        public void MalformedDataDeclaration_DoesNotLeakBytesOrLabelIntoNextDocument()
+        [Theory]
+        [InlineData("")]
+        [InlineData("cil")]
+        [InlineData("tls")]
+        public void MalformedDataDeclaration_DoesNotLeakBytesOrLabelIntoNextDocument(string section)
         {
             ImmutableArray<SourceText> documents =
             [
-                new SourceText("""
+                new SourceText($$"""
                     .assembly test { }
-                    .data Broken = { int8(0xAA), }
+                    .data {{section}} Broken = { int8(0xAA), }
                     """, "broken.il"),
                 new SourceText("""
                     .data Good = int32(0x12345678)

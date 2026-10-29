@@ -148,7 +148,7 @@
     <!-- Respect the DotNetBuildTests product flag when building the product. -->
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildTests)' == 'true'">$(DefaultLibrariesSubsets)+libs.tests</DefaultLibrariesSubsets>
 
-    <DefaultToolsSubsets>tools.illink+tools.cdac</DefaultToolsSubsets>
+    <DefaultToolsSubsets>tools.buildcache+tools.illink+tools.cdac</DefaultToolsSubsets>
 
     <DefaultHostSubsets>host.native+host.tools+host.pkg</DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(DefaultHostSubsets)+host.pretest+host.tests</DefaultHostSubsets>
@@ -173,7 +173,7 @@
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+clr.paltests+clr.paltestlist+clr.hosts+clr.jit+clr.alljits+clr.alljitscommunity+clr.spmi+clr.corelib+clr.nativecorelib+clr.tools+clr.toolstests+clr.r2rtests+clr.packages</AllSubsetsExpansion>
     <AllSubsetsExpansion Condition="$([MSBuild]::IsOsPlatform(Windows))">$(AllSubsetsExpansion)+linuxdac+alpinedac</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+mono.runtime+provision.emsdk+mono.aotcross+mono.corelib+mono.manifests+mono.packages+mono.tools+mono.wasmruntime+mono.wasiruntime+mono.wasmworkload+mono.mscordbi</AllSubsetsExpansion>
-    <AllSubsetsExpansion>$(AllSubsetsExpansion)+tools.illink+tools.cdac+tools.illinktests+tools.cdactests+tools.cdacdumptests</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+tools.buildcache+tools.illink+tools.cdac+tools.buildcachetests+tools.illinktests+tools.cdactests+tools.cdacdumptests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+host.native+host.pkg+host.tools+host.pretest+host.tests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+libs.native+libs.sfx+libs.oob+libs.pretest+libs.tests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+packs.product+packs.installers+packs.tests</AllSubsetsExpansion>
@@ -258,6 +258,8 @@
 
     <!-- Tools -->
     <SubsetName Include="Tools" Description="Additional runtime tools projects. Equivalent to: $(DefaultToolsSubsets)" />
+    <SubsetName Include="Tools.BuildCache" Description="Experimental build invocation cache maintenance tool." />
+    <SubsetName Include="Tools.BuildCacheTests" OnDemand="true" Description="Unit tests for the build invocation cache maintenance tool." />
     <SubsetName Include="Tools.ILLink" Description="The projects that produce illink and analyzer tools for trimming." />
     <SubsetName Include="Tools.Cdac" Description="Diagnostic data contract reader and related projects." />
     <SubsetName Include="Tools.ILLinkTests" OnDemand="true" Description="Unit tests for the tools.illink subset." />
@@ -567,8 +569,15 @@
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\StressTests\Microsoft.Diagnostics.DataContractReader.StressTests.csproj" Test="true" Category="tools"/>
   </ItemGroup>
 
+  <ItemGroup Condition="$(_subset.Contains('+tools.buildcache+')) or $(_subset.Contains('+tools.illink+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)BuildCache\src\BuildCache.csproj" Category="tools" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+tools.buildcachetests+')) or $(_subset.Contains('+tools.illinktests+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)BuildCache\tests\BuildCache.Tests.csproj" Test="true" Category="tools" />
+  </ItemGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+tools.illink+'))">
-    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.CacheTool\ILLink.CacheTool.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\linker\Mono.Linker.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" Category="tools" />
@@ -577,8 +586,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.illinktests+'))">
-    <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\ILLink.CacheTool.Tests\ILLink.CacheTool.Tests.csproj"
-      Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\Mono.Linker.Tests\Mono.Linker.Tests.csproj"
       Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj"

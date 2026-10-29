@@ -306,6 +306,8 @@
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.Unix.cs" />
+    <Compile Include="System\Threading\Thread.NativeAot.Unix.MultiThreading.cs" Condition="'$(FeatureMultithreading)' == 'true'" />
+    <Compile Include="System\Threading\Thread.NativeAot.Unix.SingleThreading.cs" Condition="'$(FeatureMultithreading)' != 'true'" />
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Abort.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Abort.cs</Link>
     </Compile>
@@ -501,9 +503,6 @@
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\DispatchResolve.cs">
       <Link>Runtime.Base\src\System\Runtime\DispatchResolve.cs</Link>
-    </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\GCStress.cs">
-      <Link>Runtime.Base\src\System\Runtime\GCStress.cs</Link>
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\__Finalizer.cs" Condition="'$(TargetsWasm)' != 'true'">
       <Link>Runtime.Base\src\System\Runtime\__Finalizer.cs</Link>

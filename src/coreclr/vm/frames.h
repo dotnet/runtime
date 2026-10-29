@@ -908,6 +908,8 @@ public:
 #endif //defined (_DEBUG) && defined (DACCESS_COMPILE)
 
     // For use by classes deriving from FramedMethodFrame.
+    PTR_BYTE GetGCRefMapFromMethodDesc(ScanContext* sc);
+
     void PromoteCallerStack(promote_func* fn, ScanContext* sc);
 
     void PromoteCallerStackHelper(promote_func* fn, ScanContext* sc,
@@ -1225,10 +1227,15 @@ class FramedMethodFrame : public TransitionFrame
 protected:
     PTR_MethodDesc m_pMD;
 
+private:
+    // nullptr means unexamined; -1 means the lookup found no map.
+    PTR_BYTE m_pCachedGCRefMap;
+
 public:
 #ifndef DACCESS_COMPILE
     FramedMethodFrame(FrameIdentifier frameIdentifier, TransitionBlock * pTransitionBlock, MethodDesc * pMD)
-        : TransitionFrame(frameIdentifier), m_pTransitionBlock(dac_cast<TADDR>(pTransitionBlock)), m_pMD(pMD)
+        : TransitionFrame(frameIdentifier), m_pTransitionBlock(dac_cast<TADDR>(pTransitionBlock)), m_pMD(pMD),
+          m_pCachedGCRefMap(nullptr)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -1268,6 +1275,7 @@ public:
         }
         CONTRACTL_END;
 
+        m_pCachedGCRefMap = nullptr;
         m_pMD = pMD;
     }
 #endif
@@ -1292,6 +1300,7 @@ public:
     }
 #endif // DACCESS_COMPILE
 
+    friend class TransitionFrame;
     friend struct cdac_data<FramedMethodFrame>;
 };
 
@@ -1300,6 +1309,7 @@ struct cdac_data<FramedMethodFrame>
 {
     static constexpr size_t TransitionBlockPtr = offsetof(FramedMethodFrame, m_pTransitionBlock);
     static constexpr size_t MethodDescPtr = offsetof(FramedMethodFrame, m_pMD);
+    static constexpr size_t CachedGCRefMap = offsetof(FramedMethodFrame, m_pCachedGCRefMap);
 };
 
 // Some context-related forwards.
@@ -1508,6 +1518,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
+        SetFunction(nullptr);
         m_pRepresentativeMT = pMT;
         m_representativeSlot = representativeSlot;
     }

@@ -16,6 +16,13 @@
     <TargetingpacksTargetsImported>true</TargetingpacksTargetsImported>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                            $([MSBuild]::VersionGreaterThan('$(TargetFrameworkVersion)', '$(BundledNETCoreAppTargetFrameworkVersion)'))">
+    <!-- When targeting beyond the SDK's bundled framework, use the nearest available prune data.
+         These targets also support projects that do not import Arcade's targeting-pack logic. -->
+    <LoadPrunePackageDataFromNearestFramework>true</LoadPrunePackageDataFromNearestFramework>
+  </PropertyGroup>
+
   <PropertyGroup Condition="('$(DisableImplicitFrameworkReferences)' != 'true' and
                              '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                              '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)')

@@ -126,9 +126,15 @@ namespace ILCompiler.DependencyAnalysis
             return factory.PreinitializationManager.HasLazyStaticConstructor(type.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
-        public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation)
+#nullable enable
+        public void AddDependencies(
+            DependencySink sink,
+            NodeFactory factory,
+            Instantiation typeInstantiation,
+            Instantiation methodInstantiation,
+            bool isConcreteInstantiation,
+            DependencyNodeCore<NodeFactory>? otherReasonNode)
         {
-            DependencyList result = new DependencyList();
             var lookupContext = new GenericLookupResultContext(_dictionaryOwner, typeInstantiation, methodInstantiation);
 
             switch (_id)
@@ -143,7 +149,7 @@ namespace ILCompiler.DependencyAnalysis
                             var lookupTarget = factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target).GetTarget(factory, lookupContext, isConcreteInstantiation);
                             if (lookupTarget != null)
                             {
-                                result.Add(new DependencyListEntry(lookupTarget, "Dictionary dependency"));
+                                AddDependency(sink, lookupTarget, "Dictionary dependency", otherReasonNode);
                             }
                         }
                     }
@@ -157,13 +163,14 @@ namespace ILCompiler.DependencyAnalysis
                             MethodDesc instantiatedTargetMethod = createInfo.TargetMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
                             if (!factory.VTable(instantiatedTargetMethod.OwningType).HasKnownVirtualMethodUse)
                             {
-                                result.Add(
-                                    new DependencyListEntry(
-                                        factory.VirtualMethodUse(instantiatedTargetMethod),
-                                        "Dictionary dependency"));
+                                AddDependency(
+                                    sink,
+                                    factory.VirtualMethodUse(instantiatedTargetMethod),
+                                    "Dictionary dependency",
+                                    otherReasonNode);
                             }
 
-                            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, instantiatedTargetMethod);
+                            factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(sink, factory, instantiatedTargetMethod, otherReasonNode);
                         }
                     }
                     break;
@@ -175,7 +182,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (lookupTarget != null)
                 {
                     // All generic lookups depend on the thing they point to
-                    result.Add(new DependencyListEntry(lookupTarget, "Dictionary dependency"));
+                    AddDependency(sink, lookupTarget, "Dictionary dependency", otherReasonNode);
                 }
             }
             catch (TypeSystemException)
@@ -184,11 +191,26 @@ namespace ILCompiler.DependencyAnalysis
                 // dictionary. The helper needs to be able to handle a null slot and tailcall
                 // and exception throwing helper instead of returning a result.
                 _hasInvalidEntries = true;
-                result.Add(GetBadSlotHelper(factory), "Failure to build dictionary slot");
+                AddDependency(sink, GetBadSlotHelper(factory), "Failure to build dictionary slot", otherReasonNode);
             }
-
-            return result.ToArray();
         }
+
+        private static void AddDependency(
+            DependencySink sink,
+            object dependency,
+            string reason,
+            DependencyNodeCore<NodeFactory>? otherReasonNode)
+        {
+            if (otherReasonNode is null)
+            {
+                sink.Add(dependency, reason);
+            }
+            else
+            {
+                sink.AddConditional(dependency, otherReasonNode, reason);
+            }
+        }
+#nullable restore
 
         private static IMethodNode GetBadSlotHelper(NodeFactory factory)
         {
@@ -207,50 +229,45 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
-
             if (_dictionaryOwner is TypeDesc type)
             {
                 // The generic lookup will need to consult the vtable of the owning type to find the
                 // vtable slot where the generic dictionary is placed - report the dependency.
-                dependencies.Add(factory.VTable(type), "Owning type vtable");
+                sink.Add(factory.VTable(type), "Owning type vtable");
             }
 
-            dependencies.Add(factory.GenericDictionaryLayout(_dictionaryOwner), "Layout");
+            sink.Add(factory.GenericDictionaryLayout(_dictionaryOwner), "Layout");
 
             foreach (DependencyNodeCore<NodeFactory> dependency in _lookupSignature.NonRelocDependenciesFromUsage(factory))
             {
-                dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
+                sink.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
             }
 
             if (_id == ReadyToRunHelperId.DelegateCtor)
             {
                 var delegateCreationInfo = (DelegateCreationInfo)_target;
                 MethodDesc targetMethod = delegateCreationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, delegateCreationInfo.DelegateType, targetMethod);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(sink, factory, delegateCreationInfo.DelegateType, targetMethod);
             }
-
-            return dependencies;
         }
 
         public override bool HasConditionalStaticDependencies => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
-            List<CombinedDependencyListEntry> conditionalDependencies = new List<CombinedDependencyListEntry>();
             NativeLayoutSavedVertexNode templateLayout;
             if (_dictionaryOwner is MethodDesc)
             {
                 templateLayout = factory.NativeLayout.TemplateMethodLayout((MethodDesc)_dictionaryOwner);
-                conditionalDependencies.Add(new CombinedDependencyListEntry(_lookupSignature.TemplateDictionaryNode(factory),
+                sink.Add(new CombinedDependencyListEntry(_lookupSignature.TemplateDictionaryNode(factory),
                                                                 templateLayout,
                                                                 "Type loader template"));
             }
             else
             {
                 templateLayout = factory.NativeLayout.TemplateTypeLayout((TypeDesc)_dictionaryOwner);
-                conditionalDependencies.Add(new CombinedDependencyListEntry(_lookupSignature.TemplateDictionaryNode(factory),
+                sink.Add(new CombinedDependencyListEntry(_lookupSignature.TemplateDictionaryNode(factory),
                                                                 templateLayout,
                                                                 "Type loader template"));
             }
@@ -264,7 +281,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (TriggersLazyStaticConstructor(factory))
                 {
                     GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(type);
-                    conditionalDependencies.Add(new CombinedDependencyListEntry(nonGcRegionLookup.TemplateDictionaryNode(factory),
+                    sink.Add(new CombinedDependencyListEntry(nonGcRegionLookup.TemplateDictionaryNode(factory),
                                                                 templateLayout,
                                                                 "Type loader template"));
                 }
@@ -274,10 +291,9 @@ namespace ILCompiler.DependencyAnalysis
             {
                 var delegateCreationInfo = (DelegateCreationInfo)_target;
                 MethodDesc targetMethod = delegateCreationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref conditionalDependencies, factory, delegateCreationInfo.DelegateType, targetMethod);
+                factory.MetadataManager.GetConditionalDependenciesDueToDelegateCreation(sink, factory, delegateCreationInfo.DelegateType, targetMethod);
             }
 
-            return conditionalDependencies;
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
