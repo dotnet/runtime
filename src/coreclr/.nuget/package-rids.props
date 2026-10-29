@@ -46,7 +46,7 @@
   <ItemGroup>
     <!-- Include custom build RIDs without advertising unsupported OS families. -->
     <BuildRID Include="@(OfficialBuildRID)" Exclude="$(TargetRid)" />
-    <BuildRID Include="$(TargetRid)" Condition="'$(_isSupportedOSGroup)' == 'true'">
+    <BuildRID Include="$(TargetRid)" Condition="'$(_isSupportedOSGroup)' == 'true' and '$(SdkToolsSupported)' == 'true'">
       <Platform Condition="'$(TargetArchitecture)' == 'x64'">amd64</Platform>
       <Platform Condition="'$(TargetArchitecture)' != 'x64'">$(TargetArchitecture)</Platform>
     </BuildRID>
