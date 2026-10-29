@@ -506,7 +506,7 @@ bool SimdConstantContains(var_types simdBaseType, const simd_t& simdValue, unsig
 {
     assert(varTypeIsIntegral(simdBaseType));
 
-    unsigned elementCount = simdSize / genTypeSize(simdBaseType);
+    unsigned elementCount = Compiler::getSIMDVectorLength(simdSize, simdBaseType);
 
     for (unsigned index = 0; index < elementCount; index++)
     {
