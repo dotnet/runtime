@@ -710,7 +710,7 @@ void Compiler::unwindSetFrameRegV3(regNumber reg, unsigned offset)
     // V3 has no FrameRegister or FrameOffset in its header; both are carried by WOD_SET_FPREG,
     // in 4 bits each. There is no V3 counterpart to the Unix-only UWOP_SET_FPREG_LARGE.
     assert(genIsValidIntReg(reg) && (reg <= REG_R15)); // WOD_SET_FPREG.Register is 4 bits
-    assert(offset <= 240);                             // largest WOD_SET_FPREG, 15 * 16
+    assert(offset <= UNWIND_INFO_V3_MAX_SET_FPREG);
     assert(offset % 16 == 0);
 
     WOD_SET_FPREG* wod = (WOD_SET_FPREG*)unwindAllocWodV3(func, sizeof(WOD_SET_FPREG));
