@@ -42,6 +42,7 @@ namespace Internal.IL
         TypeDesc[] _lifetimeCellTypes;
         int _argumentCount;
         int _variableCount;
+        bool _hasLifetimeOutputs;
         bool _exceptionLifetimeChanged;
         bool _lifetimeSelfChanged;
         LifetimeContract _lifetimeContract;
@@ -166,7 +167,8 @@ namespace Internal.IL
 
                     int slot = index + firstParameter;
                     bool byRef = signature[index].IsByRef;
-                    bool output = byRef && (parameter.Attributes & ParameterAttributes.Out) != 0;
+                    bool output = byRef && (parameter.Attributes & (ParameterAttributes.In | ParameterAttributes.Out)) ==
+                        ParameterAttributes.Out;
                     bool scoped = HasLifetimeMarker(reader, parameter.GetCustomAttributes(),
                         "System.Runtime.CompilerServices", "ScopedRefAttribute", contract);
                     bool unscoped = HasLifetimeMarker(reader, parameter.GetCustomAttributes(),
@@ -291,11 +293,25 @@ namespace Internal.IL
             }
 
             if (_exceptionRegions.Length != 0)
+            {
                 // A method-wide may-state includes partial writes and finally continuations.
                 _exceptionLifetimeMemory = (StackValue[])_initialLifetimeMemory.Clone();
-            else
+                for (int i = _variableCount; i < _exceptionLifetimeMemory.Length; i++)
+                {
+                    if (IsLifetimeOutputCell(i))
+                    {
+                        _hasLifetimeOutputs = true;
+                        _exceptionLifetimeMemory[i] = StackValue.CreateFromType(_lifetimeCellTypes[i])
+                            .WithLifetime(LifetimeScope.Global, LifetimeScope.Global);
+                    }
+                }
+            }
+            if (_exceptionLifetimeMemory is null || _hasLifetimeOutputs)
                 _basicBlocks[0].EntryLifetimeMemory = (StackValue[])_initialLifetimeMemory.Clone();
         }
+
+        bool IsLifetimeOutputCell(int index) => index >= _variableCount &&
+            _lifetimeContract.Outputs[index - _variableCount] && HasLifetimeContents(_lifetimeCellTypes[index]);
 
         void StartLifetimeBlock(BasicBlock block)
         {
@@ -303,6 +319,18 @@ namespace Internal.IL
             _lifetimeMemory = _exceptionLifetimeMemory ?? block.EntryLifetimeMemory ?? _initialLifetimeMemory;
             _lifetimeMemoryIsShared = true;
             _unknownLifetimeCacheIsValid = false;
+            if (_hasLifetimeOutputs)
+            {
+                _lifetimeMemory = (StackValue[])_lifetimeMemory.Clone();
+                _lifetimeMemoryIsShared = false;
+                StackValue[] entry = block.EntryLifetimeMemory ?? _initialLifetimeMemory;
+                for (int i = _variableCount; i < _lifetimeMemory.Length; i++)
+                {
+                    if (IsLifetimeOutputCell(i))
+                        // Definite assignment follows normal edges; handler effects can only narrow it.
+                        _lifetimeMemory[i] = entry[i].MergeLifetime(_exceptionLifetimeMemory[i]);
+                }
+            }
         }
 
         void EndLifetimeBlock(BasicBlock block)
@@ -328,7 +356,7 @@ namespace Internal.IL
 
         void PropagateLifetimeMemory(BasicBlock next)
         {
-            if (_exceptionLifetimeMemory is not null || _lifetimeMemory.Length == 0)
+            if (_exceptionLifetimeMemory is not null && !_hasLifetimeOutputs || _lifetimeMemory.Length == 0)
                 return;
 
             bool changed = false;
@@ -338,6 +366,8 @@ namespace Internal.IL
             {
                 for (int i = 0; i < _lifetimeMemory.Length; i++)
                 {
+                    if (_exceptionLifetimeMemory is not null && !IsLifetimeOutputCell(i))
+                        continue;
                     StackValue merged = next.EntryLifetimeMemory[i].MergeLifetime(_lifetimeMemory[i]);
                     if (!merged.HasSameLifetime(next.EntryLifetimeMemory[i]))
                     {
@@ -375,7 +405,12 @@ namespace Internal.IL
                 return LifetimeScope.Global;
 
             if (address.LifetimeTarget > 0)
-                return _lifetimeMemory[address.LifetimeTarget - 1].EscapeScope;
+            {
+                StackValue cell = _lifetimeMemory[address.LifetimeTarget - 1];
+                if (!address.IsWholeLifetimeTarget && cell.InitializedLifetimeFields != ulong.MaxValue)
+                    return Narrower(address.ContentsScope, cell.ContentsScope);
+                return cell.EscapeScope;
+            }
             if (address.LifetimeTarget < 0)
                 return address.ContentsScope;
 
@@ -402,7 +437,8 @@ namespace Internal.IL
         {
             if (_lifetimeMemory.Length == 0 || !HasLifetime(_lifetimeCellTypes[index]))
                 return;
-            if (_exceptionLifetimeMemory is not null)
+            bool output = IsLifetimeOutputCell(index);
+            if (_exceptionLifetimeMemory is not null && !output)
                 replace = false;
             if (_lifetimeMemoryIsShared)
             {
@@ -413,7 +449,16 @@ namespace Internal.IL
             _unknownLifetimeCacheIsValid = false;
             if (_exceptionLifetimeMemory is not null)
             {
-                StackValue joined = _exceptionLifetimeMemory[index].MergeLifetime(_lifetimeMemory[index]);
+                StackValue written = _lifetimeMemory[index];
+                if (output)
+                {
+                    // Unassigned fields are not writes and must not poison the may-write summary.
+                    written = value;
+                    if (written.InitializedLifetimeFields != ulong.MaxValue)
+                        written.EscapeScope = written.ContentsScope;
+                    written.InitializedLifetimeFields = ulong.MaxValue;
+                }
+                StackValue joined = _exceptionLifetimeMemory[index].MergeLifetime(written);
                 if (!joined.HasSameLifetime(_exceptionLifetimeMemory[index]))
                 {
                     _exceptionLifetimeMemory[index] = joined;
@@ -492,6 +537,7 @@ namespace Internal.IL
 
             LifetimeScope scope = ValueLifetime(value);
             LifetimeCheck(scope >= address.LifetimeCapacity);
+            LifetimeCheck(scope >= address.LifetimeWriteFloor);
             if (address.LifetimeTarget < 0)
             {
                 // Other copies of an untracked address retain this contents snapshot.
@@ -501,7 +547,8 @@ namespace Internal.IL
             if (address.LifetimeTarget > 0)
             {
                 int target = address.LifetimeTarget - 1;
-                StackValue contents = whole ? value : _lifetimeMemory[target].WithLifetime(scope);
+                StackValue contents = whole && address.IsWholeLifetimeTarget ? value : _lifetimeMemory[target].WithLifetime(scope,
+                    Narrower(_lifetimeMemory[target].ContentsScope, scope));
                 bool initialize = _lifetimeMemory[target].InitializedLifetimeFields != ulong.MaxValue;
                 StoreLifetimeCell(target, contents, whole && address.IsWholeLifetimeTarget &&
                     (target < _variableCount || initialize));
@@ -514,7 +561,8 @@ namespace Internal.IL
             {
                 if (HasLifetimeContents(_lifetimeCellTypes[i]) &&
                     (i < _variableCount || address.LifetimeCapacity > LifetimeScope.Function))
-                    StoreLifetimeCell(i, _lifetimeMemory[i].WithLifetime(scope), false);
+                    StoreLifetimeCell(i, _lifetimeMemory[i].WithLifetime(scope,
+                        Narrower(_lifetimeMemory[i].ContentsScope, scope)), false);
             }
         }
 
@@ -541,7 +589,7 @@ namespace Internal.IL
 
         bool NeedsCallLifetimes(MethodDesc method, TypeDesc constrained)
         {
-            if (HasLifetimeContents(constrained) || HasLifetime(method.Signature.ReturnType) ||
+            if (!method.Signature.IsStatic && HasLifetimeContents(constrained) || HasLifetime(method.Signature.ReturnType) ||
                 method.IsConstructor && HasLifetimeContents(method.OwningType))
                 return true;
             foreach (TypeDesc parameter in method.Signature)
@@ -602,6 +650,7 @@ namespace Internal.IL
             bool hasTarget = false;
             bool wholeTarget = true;
             LifetimeScope capacity = LifetimeScope.Function;
+            LifetimeScope writeFloor = LifetimeScope.Unknown;
             for (int i = 0; i < arguments.Length; i++)
             {
                 StackValue argument = arguments[i];
@@ -617,6 +666,7 @@ namespace Internal.IL
                         hasTarget = true;
                         wholeTarget &= argument.IsWholeLifetimeTarget;
                         capacity = capacity > argument.LifetimeCapacity ? capacity : argument.LifetimeCapacity;
+                        writeFloor = writeFloor > argument.LifetimeWriteFloor ? writeFloor : argument.LifetimeWriteFloor;
                     }
                 }
             }
@@ -624,7 +674,8 @@ namespace Internal.IL
             for (int destination = 0; destination < arguments.Length; destination++)
             {
                 StackValue address = arguments[destination];
-                if (address.Kind != StackValueKind.ByRef || !HasLifetimeContents(address.Type) || address.IsReadOnly)
+                if (address.Kind != StackValueKind.ByRef || !HasLifetimeContents(address.Type) ||
+                    address.IsReadOnly || IsRestrictedLifetimeType(address.Type))
                     continue;
 
                 LifetimeScope required = contract.Outputs[destination] ?
@@ -648,7 +699,7 @@ namespace Internal.IL
             wholeTarget &= target > 0 && resultType.IsByRef &&
                 _lifetimeCellTypes[target - 1] == ((ByRefType)resultType).ParameterType;
             return result.WithLifetime(returned, returnedContents, target < 0 ? 0 : target,
-                wholeTarget, hasTarget ? capacity : LifetimeScope.Caller);
+                wholeTarget, hasTarget ? capacity : LifetimeScope.Caller, writeFloor);
         }
     }
 }

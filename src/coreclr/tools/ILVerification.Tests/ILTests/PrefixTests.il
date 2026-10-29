@@ -42,6 +42,19 @@
     .size 1
 }
 
+.class public sequential ansi sealed beforefieldinit RefImplStruct
+       extends [System.Runtime]System.ValueType
+       implements IStaticInterface
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+
+    .method public hidebysig static void StaticAbstractMethod() cil managed
+    {
+        .override method void IStaticInterface::StaticAbstractMethod()
+        ret
+    }
+}
+
 .class public auto ansi beforefieldinit PrefixTestsType
        extends [System.Runtime]System.Object
 {
@@ -61,6 +74,20 @@
     {
         constrained. ImplStruct
         call    void IStaticInterface::StaticAbstractMethod()
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedCall.StaticAbstractOnRefStruct_Valid() cil managed
+    {
+        constrained. RefImplStruct
+        call void IStaticInterface::StaticAbstractMethod()
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedCall.StaticAbstractOnByRefLikeTypeParam_Valid<byreflike (IStaticInterface) T>() cil managed
+    {
+        constrained. !!T
+        call void IStaticInterface::StaticAbstractMethod()
         ret
     }
 

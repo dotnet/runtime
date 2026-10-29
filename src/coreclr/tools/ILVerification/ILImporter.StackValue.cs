@@ -27,9 +27,25 @@ namespace Internal.IL
         internal LifetimeScope EscapeScope;
         internal LifetimeScope ContentsScope;
         internal LifetimeScope LifetimeCapacity;
+        // Packs the write floor and whole-target bit so the stack value keeps its original size.
+        private byte _lifetimeBits;
         internal int LifetimeTarget;
-        internal bool IsWholeLifetimeTarget;
         internal ulong InitializedLifetimeFields;
+
+        private const byte WholeLifetimeTargetBit = 0x80;
+
+        // Losing a target must not allow writes to narrow another alias's contents snapshot.
+        internal LifetimeScope LifetimeWriteFloor
+        {
+            readonly get => (LifetimeScope)(_lifetimeBits & ~WholeLifetimeTargetBit);
+            set => _lifetimeBits = (byte)((_lifetimeBits & WholeLifetimeTargetBit) | (byte)value);
+        }
+
+        internal bool IsWholeLifetimeTarget
+        {
+            readonly get => (_lifetimeBits & WholeLifetimeTargetBit) != 0;
+            set => _lifetimeBits = (byte)(value ? _lifetimeBits | WholeLifetimeTargetBit : _lifetimeBits & ~WholeLifetimeTargetBit);
+        }
 
         private StackValue(StackValueKind kind, TypeDesc type = null, MethodDesc method = null, StackValueFlags flags = StackValueFlags.None)
         {
@@ -40,13 +56,14 @@ namespace Internal.IL
             EscapeScope = (flags & StackValueFlags.PermanentHome) != 0 ? LifetimeScope.Global : LifetimeScope.Unknown;
             ContentsScope = LifetimeScope.Unknown;
             LifetimeCapacity = (flags & StackValueFlags.PermanentHome) != 0 ? LifetimeScope.Global : LifetimeScope.Caller;
+            _lifetimeBits = 0;
             LifetimeTarget = 0;
-            IsWholeLifetimeTarget = false;
             InitializedLifetimeFields = ulong.MaxValue;
         }
 
         internal StackValue WithLifetime(LifetimeScope scope, LifetimeScope contents = LifetimeScope.Unknown,
-            int target = 0, bool whole = false, LifetimeScope capacity = LifetimeScope.Caller)
+            int target = 0, bool whole = false, LifetimeScope capacity = LifetimeScope.Caller,
+            LifetimeScope writeFloor = LifetimeScope.Unknown)
         {
             StackValue value = this;
             value.EscapeScope = scope;
@@ -54,20 +71,22 @@ namespace Internal.IL
             value.LifetimeTarget = target;
             value.IsWholeLifetimeTarget = whole;
             value.LifetimeCapacity = capacity;
+            value.LifetimeWriteFloor = writeFloor;
             return value;
         }
 
         internal StackValue CopyLifetime(StackValue value)
         {
             return WithLifetime(value.EscapeScope, value.ContentsScope, value.LifetimeTarget,
-                value.IsWholeLifetimeTarget, value.LifetimeCapacity);
+                value.IsWholeLifetimeTarget, value.LifetimeCapacity, value.LifetimeWriteFloor);
         }
 
         internal bool HasSameLifetime(StackValue other)
         {
             return EscapeScope == other.EscapeScope && ContentsScope == other.ContentsScope &&
                 LifetimeTarget == other.LifetimeTarget && IsWholeLifetimeTarget == other.IsWholeLifetimeTarget &&
-                LifetimeCapacity == other.LifetimeCapacity && InitializedLifetimeFields == other.InitializedLifetimeFields;
+                LifetimeCapacity == other.LifetimeCapacity && LifetimeWriteFloor == other.LifetimeWriteFloor &&
+                InitializedLifetimeFields == other.InitializedLifetimeFields;
         }
 
         internal StackValue MergeLifetime(StackValue other)
@@ -76,6 +95,7 @@ namespace Internal.IL
             value.EscapeScope = EscapeScope < other.EscapeScope ? EscapeScope : other.EscapeScope;
             value.ContentsScope = ContentsScope < other.ContentsScope ? ContentsScope : other.ContentsScope;
             value.LifetimeCapacity = LifetimeCapacity > other.LifetimeCapacity ? LifetimeCapacity : other.LifetimeCapacity;
+            value.LifetimeWriteFloor = LifetimeWriteFloor > other.LifetimeWriteFloor ? LifetimeWriteFloor : other.LifetimeWriteFloor;
             value.InitializedLifetimeFields &= other.InitializedLifetimeFields;
             value.IsWholeLifetimeTarget &= other.IsWholeLifetimeTarget && LifetimeTarget == other.LifetimeTarget;
             if (LifetimeTarget != other.LifetimeTarget)
