@@ -454,7 +454,6 @@ namespace System.Diagnostics
 
                 object? thisArg = _objects[0];
 
-                
                 if (thisArg is null)
                 {
                     throw new NullReferenceException(SR.NullReference_This);
