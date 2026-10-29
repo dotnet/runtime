@@ -828,6 +828,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     if ((helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) &&
         (helper != CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) &&
+        (helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED) &&
+        (helper != CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED) &&
         (helper != CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
     {
         return false;
@@ -2151,7 +2153,6 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // 2) If VM can tell us the exact class for this "cast to" class - use it.
-    //    Just make sure the class is truly exact.
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Let's re-use GDV's threshold on how many guesses we can make (can be 3 by default).
@@ -2159,26 +2160,8 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 
     CORINFO_CLASS_HANDLE exactClasses[MAX_GDV_TYPE_CHECKS] = {};
     const int numExactClasses = comp->info.compCompHnd->getExactClasses(castToCls, maxTypeChecks, exactClasses);
-    bool      allTrulyExact   = true;
-    for (int i = 0; i < numExactClasses; i++)
-    {
-        // TODO-InlineCast: we shouldn't need isExactType check, otherwise we skip cases like this:
-        //
-        // if (obj is IMyInterface) { ... }
-        //
-        // class MyClass : IMyInterface
-        // class MySubClass : MyClass
-        //
-        // (and both classes are the only ones implementing the interface)
-        //
-        if (!comp->info.compCompHnd->isExactType(exactClasses[i]))
-        {
-            allTrulyExact = false;
-            break;
-        }
-    }
 
-    if ((numExactClasses > 0) && allTrulyExact)
+    if (numExactClasses > 0)
     {
         // We know all exact classes, but we don't know the likelihoods
         // TODO-InlineCast: check if we also have PGO data around (a rare case for getExactClasses,

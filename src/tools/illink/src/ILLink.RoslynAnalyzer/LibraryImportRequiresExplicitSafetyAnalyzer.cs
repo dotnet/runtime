@@ -1,13 +1,16 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if DEBUG
+#if UNSAFE_MIGRATION
 using System.Collections.Immutable;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+
+// IModuleSymbol.MemorySafetyRulesVersion is experimental
+#pragma warning disable RSEXPERIMENTAL006
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -72,7 +75,7 @@ namespace ILLink.RoslynAnalyzer
                     || attributeReference.GetSyntax(context.CancellationToken).FirstAncestorOrSelf<MethodDeclarationSyntax>() is not { } declaration
                     // Once the assembly is on the updated rules the generator reports SYSLIB1064 for the same
                     // methods, and this analyzer has nothing left to add.
-                    || UnsafeMigrationSyntaxHelpers.UsesUpdatedMemorySafetyRules(declaration.SyntaxTree)
+                    || (int)context.Compilation.SourceModule.MemorySafetyRulesVersion >= 2
                     || UnsafeMigrationSyntaxHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword)
                     || UnsafeMigrationSyntaxHelpers.HasSafeModifier(declaration))
                 {
