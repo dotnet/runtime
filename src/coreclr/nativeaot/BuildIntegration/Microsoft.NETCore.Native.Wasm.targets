@@ -6,7 +6,6 @@
     <Error Condition="'$(NativeLib)' == 'Shared'" Text="NativeAOT WebAssembly shared libraries are not supported." />
     <Error Condition="'$(IlcMultiModule)' == 'true'" Text="NativeAOT WebAssembly multi-module compilation is not supported." />
     <Error Condition="'$(IlcDehydrate)' == 'true'" Text="NativeAOT WebAssembly data dehydration is not supported." />
-    <Error Condition="'$(StackTraceSupport)' == 'true'" Text="NativeAOT WebAssembly managed stack traces are not supported." />
     <Error Condition="'$(WASI_SDK_PATH)' == ''" Text="Set WASI_SDK_PATH to the WASI SDK root to link NativeAOT WASI applications." />
 
     <PropertyGroup>
