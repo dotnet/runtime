@@ -1060,7 +1060,9 @@ DEFINE_METHOD(VALUE_TYPE,           GET_HASH_CODE,          GetHashCode,        
 DEFINE_METHOD(VALUE_TYPE,           EQUALS,                 Equals,                 IM_Obj_RetBool)
 
 DEFINE_CLASS(GC,                    System,                 GC)
+DEFINE_METHOD(GC,                   ADD_MEMORY_PRESSURE,    AddMemoryPressureFromNative, NoSig)
 DEFINE_METHOD(GC,                   KEEP_ALIVE,             KeepAlive,                  SM_Obj_RetVoid)
+DEFINE_METHOD(GC,                   REMOVE_MEMORY_PRESSURE, RemoveMemoryPressureFromNative, NoSig)
 DEFINE_METHOD(GC,                   RUN_FINALIZERS,         RunFinalizers,              SM_RetUInt)
 
 DEFINE_CLASS_U(System,              WeakReference,          WeakReferenceObject)
@@ -1335,6 +1337,7 @@ DEFINE_METHOD(LOADERALLOCATOR,          CREATE,                 Create,         
 
 DEFINE_CLASS_U(Reflection,             LoaderAllocatorScout,     LoaderAllocatorScoutObject)
 DEFINE_FIELD_U(m_nativeLoaderAllocator,  LoaderAllocatorScoutObject,      m_nativeLoaderAllocator)
+DEFINE_FIELD_U(_memoryPressureAdded,     LoaderAllocatorScoutObject,      m_memoryPressureAdded)
 DEFINE_CLASS(LOADERALLOCATORSCOUT,      Reflection,             LoaderAllocatorScout)
 
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)

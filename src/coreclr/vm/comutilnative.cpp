@@ -13,6 +13,7 @@
 #include "excep.h"
 #include "vars.hpp"
 #include "comutilnative.h"
+#include "callhelpers.h"
 
 #include "utilcode.h"
 #include "frames.h"
@@ -473,13 +474,37 @@ FCIMPLEND
 //
 // GCInterface
 //
-INT32    GCInterface::m_gc_counts[3] = {0,0,0};
-UINT64   GCInterface::m_addPressure[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // history of memory pressure additions
-UINT64   GCInterface::m_remPressure[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // history of memory pressure removals
+FCIMPL0(INT64, GCInterface::GetCurrentObjSize)
+{
+    FCALL_CONTRACT;
 
-// incremented after a gen2 GC has been detected,
-// (m_iteration % MEM_PRESSURE_COUNT) is used as an index into m_addPressure and m_remPressure
-UINT     GCInterface::m_iteration = 0;
+    return static_cast<INT64>(GCHeapUtilities::GetGCHeap()->GetCurrentObjSize());
+}
+FCIMPLEND
+
+FCIMPL0(INT64, GCInterface::GetGCNow)
+{
+    FCALL_CONTRACT;
+
+    return static_cast<INT64>(GCHeapUtilities::GetGCHeap()->GetNow());
+}
+FCIMPLEND
+
+FCIMPL0(INT64, GCInterface::GetLastGCStartTime)
+{
+    FCALL_CONTRACT;
+
+    return static_cast<INT64>(GCHeapUtilities::GetGCHeap()->GetLastGCStartTime(2));
+}
+FCIMPLEND
+
+FCIMPL0(INT64, GCInterface::GetLastGCDuration)
+{
+    FCALL_CONTRACT;
+
+    return static_cast<INT64>(GCHeapUtilities::GetGCHeap()->GetLastGCDuration(2));
+}
+FCIMPLEND
 
 FCIMPL0(INT64, GCInterface::GetTotalPauseDuration)
 {
@@ -1045,32 +1070,23 @@ extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleO
     END_QCALL;
 }
 
-FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) {
-    WRAPPER_NO_CONTRACT;
-
-    UINT64 oldMemValue;
-    UINT64 newMemValue;
-
-    do {
-        oldMemValue = *pAugend;
-        newMemValue = oldMemValue + addend;
-
-        // check for overflow
-        if (newMemValue < oldMemValue)
-        {
-            newMemValue = UINT64_MAX;
-        }
-    } while (InterlockedCompareExchange64((LONGLONG*) pAugend, (LONGLONG) newMemValue, (LONGLONG) oldMemValue) != (LONGLONG) oldMemValue);
-
-    return newMemValue;
-}
-
 extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    GCInterface::AddMemoryPressure(bytesAllocated);
+    GCInterface::SendEtwAddMemoryPressureEvent(bytesAllocated);
+    STRESS_LOG1(LF_GCINFO, LL_INFO10000, "AMP Add: %llu", static_cast<unsigned long long>(bytesAllocated));
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    GCInterface::SendEtwRemoveMemoryPressureEvent(bytesAllocated);
+    STRESS_LOG1(LF_GCINFO, LL_INFO10000, "AMP Remove: %llu", static_cast<unsigned long long>(bytesAllocated));
     END_QCALL;
 }
 
@@ -1160,54 +1176,6 @@ uint64_t GCInterface::GetGenerationBudget(int generation)
     return GCHeapUtilities::GetGCHeap()->GetGenerationBudget(generation);
 }
 
-#ifdef HOST_64BIT
-const unsigned MIN_MEMORYPRESSURE_BUDGET = 4 * 1024 * 1024;        // 4 MB
-#else // HOST_64BIT
-const unsigned MIN_MEMORYPRESSURE_BUDGET = 3 * 1024 * 1024;        // 3 MB
-#endif // HOST_64BIT
-
-const unsigned MAX_MEMORYPRESSURE_RATIO = 10;                      // 40 MB or 30 MB
-
-
-// Resets pressure accounting after a gen2 GC has occurred.
-void GCInterface::CheckCollectionCount()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    IGCHeap * pHeap = GCHeapUtilities::GetGCHeap();
-
-    if (m_gc_counts[2] != pHeap->CollectionCount(2))
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            m_gc_counts[i] = pHeap->CollectionCount(i);
-        }
-
-        m_iteration++;
-
-        UINT p = m_iteration % MEM_PRESSURE_COUNT;
-
-        m_addPressure[p] = 0;   // new pressure will be accumulated here
-        m_remPressure[p] = 0;
-    }
-}
-
-// AddMemoryPressure implementation
-//
-//   1. Start budget - MIN_MEMORYPRESSURE_BUDGET
-//   2. Focuses more on newly added memory pressure
-//   3. Budget adjusted by effectiveness of last 3 triggered GC (add / remove ratio, max 10x)
-//   4. Budget maxed with 30% of current managed GC size
-//   5. If Gen2 GC is happening naturally, ignore past pressure
-//
-// Here's a brief description of the ideal algorithm for Add/Remove memory pressure:
-// Do a GC when (HeapStart < X * MemPressureGrowth) where
-// - HeapStart is GC Heap size after doing the last GC
-// - MemPressureGrowth is the net of Add and Remove since the last GC
-// - X is proportional to our guess of the ummanaged memory death rate per GC interval,
-//   and would be calculated based on historic data using standard exponential approximation:
-//   Xnew = UMDeath/UMTotal * 0.5 + Xprev
-//
 void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
 {
     CONTRACTL
@@ -1218,101 +1186,24 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
     }
     CONTRACTL_END;
 
-    CheckCollectionCount();
-
-    UINT p = m_iteration % MEM_PRESSURE_COUNT;
-
-    UINT64 newMemValue = InterlockedAdd(&m_addPressure[p], bytesAllocated);
-
-    static_assert(MEM_PRESSURE_COUNT == 4, "AddMemoryPressure contains unrolled loops which depend on MEM_PRESSURE_COUNT");
-
-    UINT64 add = m_addPressure[0] + m_addPressure[1] + m_addPressure[2] + m_addPressure[3] - m_addPressure[p];
-    UINT64 rem = m_remPressure[0] + m_remPressure[1] + m_remPressure[2] + m_remPressure[3] - m_remPressure[p];
-
-    STRESS_LOG4(LF_GCINFO, LL_INFO10000, "AMP Add: %llu => added=%llu total_added=%llu total_removed=%llu",
-        (unsigned long long)bytesAllocated, (unsigned long long)newMemValue, (unsigned long long)add, (unsigned long long)rem);
-
-    SendEtwAddMemoryPressureEvent(bytesAllocated);
-
-    if (newMemValue >= MIN_MEMORYPRESSURE_BUDGET)
-    {
-        UINT64 budget = MIN_MEMORYPRESSURE_BUDGET;
-
-        if (m_iteration >= MEM_PRESSURE_COUNT) // wait until we have enough data points
-        {
-            // Adjust according to effectiveness of GC
-            // Scale budget according to past m_addPressure / m_remPressure ratio
-            if (add >= rem * MAX_MEMORYPRESSURE_RATIO)
-            {
-                budget = MIN_MEMORYPRESSURE_BUDGET * MAX_MEMORYPRESSURE_RATIO;
-            }
-            else if (add > rem)
-            {
-                CONSISTENCY_CHECK(rem != 0);
-
-                // Avoid overflow by calculating addPressure / remPressure as fixed point (1 = 1024)
-                budget = (add * 1024 / rem) * budget / 1024;
-            }
-        }
-
-        // If still over budget, check current managed heap size
-        if (newMemValue >= budget)
-        {
-            IGCHeap *pGCHeap = GCHeapUtilities::GetGCHeap();
-            UINT64 heapOver3 = pGCHeap->GetCurrentObjSize() / 3;
-
-            if (budget < heapOver3) // Max
-            {
-                budget = heapOver3;
-            }
-
-            if (newMemValue >= budget)
-            {
-                // last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
-                if ((size_t)(pGCHeap->GetNow() - pGCHeap->GetLastGCStartTime(2)) > (pGCHeap->GetLastGCDuration(2) * 5))
-                {
-                    STRESS_LOG6(LF_GCINFO, LL_INFO10000, "AMP Budget: pressure=%llu ? budget=%llu (total_added=%llu, total_removed=%llu, mng_heap=%llu) pos=%d",
-                        (unsigned long long)newMemValue, (unsigned long long)budget, (unsigned long long)add, (unsigned long long)rem,
-                        (unsigned long long)(heapOver3 * 3), m_iteration);
-
-                    GarbageCollectModeAny(2);
-
-                    CheckCollectionCount();
-                }
-            }
-        }
-    }
-}
-
-extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    GCInterface::RemoveMemoryPressure(bytesAllocated);
-    END_QCALL;
+    GCX_COOP();
+    UnmanagedCallersOnlyCaller caller(METHOD__GC__ADD_MEMORY_PRESSURE);
+    caller.InvokeThrowing(static_cast<INT64>(bytesAllocated));
 }
 
 void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
 
-    CheckCollectionCount();
-
-    UINT p = m_iteration % MEM_PRESSURE_COUNT;
-
-    SendEtwRemoveMemoryPressureEvent(bytesAllocated);
-
-    InterlockedAdd(&m_remPressure[p], bytesAllocated);
-
-    STRESS_LOG2(LF_GCINFO, LL_INFO10000, "AMP Remove: %llu => removed=%llu",
-        (unsigned long long)bytesAllocated, (unsigned long long)m_remPressure[p]);
+    GCX_COOP();
+    UnmanagedCallersOnlyCaller caller(METHOD__GC__REMOVE_MEMORY_PRESSURE);
+    caller.InvokeThrowing(static_cast<INT64>(bytesAllocated));
 }
 
 inline void GCInterface::SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated)
@@ -1348,21 +1239,6 @@ NOINLINE void GCInterface::SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocate
         // Ignore failures
     }
     EX_END_CATCH
-}
-
-// Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
-NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-    GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, false, collection_non_blocking);
 }
 
 //

@@ -33,10 +33,17 @@ namespace System.Threading
         private static partial void PollGCInternal();
 
         /// <summary>Clean up the thread when it goes away.</summary>
-        ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
+        ~Thread()
+        {
+            uint memoryPressure = InternalFinalize();
+            if (memoryPressure != 0)
+            {
+                GC.RemoveMemoryPressure(memoryPressure);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void InternalFinalize();
+        private extern uint InternalFinalize();
 
         private void Initialize()
         {

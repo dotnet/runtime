@@ -147,36 +147,56 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe ulong GetGenerationSize(int gen);
 
-        /// <safety>QCall that records added memory pressure from a scalar byte count; it accesses no caller-supplied memory.</safety>
+        /// <safety>QCall that emits added-memory-pressure diagnostics; it accesses no caller-supplied memory.</safety>
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AddMemoryPressure")]
         private static safe partial void _AddMemoryPressure(ulong bytesAllocated);
 
-        /// <safety>QCall that records removed memory pressure from a scalar byte count; it accesses no caller-supplied memory.</safety>
+        /// <safety>QCall that emits removed-memory-pressure diagnostics; it accesses no caller-supplied memory.</safety>
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RemoveMemoryPressure")]
         private static safe partial void _RemoveMemoryPressure(ulong bytesAllocated);
 
-        public static void AddMemoryPressure(long bytesAllocated)
-        {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesAllocated);
-            if (IntPtr.Size == 4)
-            {
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
-            }
+        /// <safety>FCall that returns a scalar heap-size estimate without accessing caller-supplied memory.</safety>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern safe long GetCurrentObjSize();
 
-            _AddMemoryPressure((ulong)bytesAllocated);
+        /// <safety>FCall that returns a scalar GC clock value without accessing caller-supplied memory.</safety>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern safe long GetGCNow();
+
+        /// <safety>FCall that returns the gen2 GC start time without accessing caller-supplied memory.</safety>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern safe long GetLastGCStartTime();
+
+        /// <safety>FCall that returns the gen2 GC duration without accessing caller-supplied memory.</safety>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern safe long GetLastGCDuration();
+
+        [UnmanagedCallersOnly]
+        private static unsafe void AddMemoryPressureFromNative(long bytesAllocated, Exception* pException)
+        {
+            try
+            {
+                AddMemoryPressure(bytesAllocated);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
-        public static void RemoveMemoryPressure(long bytesAllocated)
+        [UnmanagedCallersOnly]
+        private static unsafe void RemoveMemoryPressureFromNative(long bytesAllocated, Exception* pException)
         {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesAllocated);
-            if (IntPtr.Size == 4)
+            try
             {
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
+                RemoveMemoryPressure(bytesAllocated);
             }
-
-            _RemoveMemoryPressure((ulong)bytesAllocated);
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
         // Returns the generation that obj is currently in.

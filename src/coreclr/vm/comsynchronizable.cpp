@@ -572,12 +572,13 @@ void ThreadBaseObject::InitExisting()
 }
 
 #ifdef FEATURE_MULTITHREADING
-FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
+FCIMPL1(UINT32, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 {
     FCALL_CONTRACT;
 
     THREADBASEREF   refThis = (THREADBASEREF)pThisUNSAFE;
     Thread*         thread  = refThis->GetInternal();
+    UINT32 memoryPressure = 0;
 
     // Prevent multiple calls to Finalize
     // Objects can be resurrected after being finalized.  However, there is no
@@ -590,11 +591,14 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
         if (GetThreadNULLOk() != thread)
         {
             refThis->ClearInternal();
+            memoryPressure = static_cast<UINT32>(sizeof(Thread));
         }
 
         thread->SetThreadState(Thread::TS_Finalized);
         Thread::SetCleanupNeededForFinalizedThread();
     }
+
+    return memoryPressure;
 }
 FCIMPLEND
 
