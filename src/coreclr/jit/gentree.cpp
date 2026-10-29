@@ -4842,6 +4842,12 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_AVX512_ConvertToVector256UInt32WithTruncation:
                     case NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation:
                     case NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVector128Int32WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVector128UInt32WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVector256Int32WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVector256UInt32WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVector512Int32WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVector512UInt32WithTruncatedSaturation:
                     {
                         if (varTypeIsIntegral(simdBaseType))
                         {
@@ -4870,6 +4876,12 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_AVX512_ConvertToVector512UInt64WithTruncation:
                     case NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation:
                     case NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVector128Int64WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVector128UInt64WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVector256Int64WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVector256UInt64WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVector512Int64WithTruncatedSaturation:
+                    case NI_AVX10v2_ConvertToVector512UInt64WithTruncatedSaturation:
                     {
                         if (simdBaseType == TYP_FLOAT)
                         {
