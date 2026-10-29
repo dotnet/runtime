@@ -74,9 +74,8 @@
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
 
     <!-- WebAssembly tool-conventions custom sections (https://github.com/WebAssembly/tool-conventions).
-         See BrowserWasmApp.targets for details. Setting $(WasmNativeBuildId) forces a native build. -->
+         See BrowserWasmApp.targets for details. -->
     <WasmEmitProducersSection Condition="'$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
-    <_WasmNormalizedBuildId Condition="'$(WasmNativeBuildId)' != ''">$(WasmNativeBuildId.Replace('0x', '').Replace('0X', '').ToLowerInvariant())</_WasmNormalizedBuildId>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
@@ -296,7 +295,7 @@
        served binary would be the original (runtime pack) dotnet.native.wasm. -->
   <Target Name="_CoreCLRWasmNativeForBuild"
           DependsOnTargets="WasmBuildApp"
-          BeforeTargets="_ComputeWasmBuildCandidates;_ResolveWasmOutputs"
+          BeforeTargets="_StampWasmBuildIdForBuild;_ComputeWasmBuildCandidates;_ResolveWasmOutputs"
           Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(WasmBuildOnlyAfterPublish)' != 'true' and
@@ -310,7 +309,7 @@
        completes — too late for ComputeWasmPublishAssets to pick up @(WasmNativeAsset). -->
   <Target Name="_CoreCLRWasmNative"
           DependsOnTargets="WasmTriggerPublishApp"
-          BeforeTargets="ProcessPublishFilesForWasm"
+          BeforeTargets="_StampWasmBuildIdForPublish;ProcessPublishFilesForWasm"
           Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(UsingBrowserRuntimeWorkload)' != 'true'" />
@@ -942,10 +941,6 @@
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />
 
-      <!-- build_id: only emitted when $(WasmNativeBuildId) is set to a hex value; wasm-ld writes the
-           'build_id' custom section carrying these raw bytes. -->
-      <_EmccLinkStepArgs Condition="'$(_WasmNormalizedBuildId)' != ''" Include="-Wl,--build-id=0x$(_WasmNormalizedBuildId)" />
-
       <!-- Emscripten strips producers by default. Preserve the section that wasm-ld merges from this object. -->
       <_EmccLinkStepArgs Condition="'$(WasmEmitProducersSection)' == 'true'" Include="-sEMIT_PRODUCERS_SECTION=1" />
       <_EmccLinkStepArgs Condition="'$(WasmEmitProducersSection)' == 'true'" Include="&quot;$(_WasmIntermediateOutputPath)dotnet-producers.o&quot;" />
@@ -991,8 +986,7 @@
   </Target>
 
   <!-- Emit a linkable object carrying the WebAssembly 'producers' custom section, so wasm-ld merges
-       .NET toolchain info into dotnet.native.wasm. The 'build_id' section is emitted by wasm-ld's
-       build-id linker flag (only when $(WasmNativeBuildId) is set). -->
+       .NET toolchain info into dotnet.native.wasm. -->
   <Target Name="_CoreCLREmitProducersObject"
           BeforeTargets="_CoreCLRWriteLinkRsp"
           Condition="'$(WasmEmitProducersSection)' == 'true'">
@@ -1000,6 +994,9 @@
         OutputPath="$(_WasmIntermediateOutputPath)dotnet-producers.o"
         RuntimeName="CoreCLR"
         ProductVersion="$(ProductVersion)" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet-producers.o" />
+    </ItemGroup>
   </Target>
 
   <!-- ======================== Complete Native Build ======================== -->

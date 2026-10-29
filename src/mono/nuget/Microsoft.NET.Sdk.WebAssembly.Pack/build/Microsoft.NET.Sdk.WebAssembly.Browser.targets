@@ -63,9 +63,11 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebcil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.AttachWebcilSizes" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.WasmStampBuildId" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <_WasmNormalizedBuildId Condition="'$(WasmNativeBuildId)' != ''">$(WasmNativeBuildId.Replace('0x', '').Replace('0X', '').ToLowerInvariant())</_WasmNormalizedBuildId>
 
     <!-- Runtime feature defaults to trim unnecessary code -->
     <InvariantTimezone Condition="'$(BlazorEnableTimeZoneSupport)' == 'false'">true</InvariantTimezone>
@@ -148,6 +150,39 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
 
   <Target Name="_WasmNativeForBuild" DependsOnTargets="_GatherWasmFilesToBuild;WasmBuildApp" Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'" />
+
+  <Target Name="_StampWasmBuildIdForBuild"
+          DependsOnTargets="ResolveReferences;_WasmNativeForBuild"
+          BeforeTargets="_ComputeWasmBuildCandidates"
+          Condition="'$(_WasmNormalizedBuildId)' != '' and '$(WasmBuildingForNestedPublish)' != 'true'">
+    <ItemGroup>
+      <_WasmBuildIdBuildSource Remove="@(_WasmBuildIdBuildSource)" />
+      <_WasmBuildIdRuntimePackBuildSource Remove="@(_WasmBuildIdRuntimePackBuildSource)" />
+      <_WasmStampedBuildWasm Remove="@(_WasmStampedBuildWasm)" />
+      <_WasmBuildIdBuildSource Include="@(WasmNativeAsset)"
+                               Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'" />
+      <_WasmBuildIdRuntimePackBuildSource Include="@(ReferenceCopyLocalPaths)"
+                                          Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'dotnet.native.wasm'" />
+      <_WasmBuildIdBuildSource Include="@(_WasmBuildIdRuntimePackBuildSource)"
+                               Condition="@(_WasmBuildIdBuildSource->Count()) == 0" />
+    </ItemGroup>
+
+    <Error Condition="@(_WasmBuildIdBuildSource->Count()) != 1"
+           Text="Expected exactly one dotnet.native.wasm input for WasmNativeBuildId, but found @(_WasmBuildIdBuildSource->Count())." />
+
+    <WasmStampBuildId InputWasm="@(_WasmBuildIdBuildSource)"
+                      OutputPath="$([MSBuild]::NormalizePath($(IntermediateOutputPath), 'wasm-build-id', 'for-build', 'dotnet.native.wasm'))"
+                      BuildId="$(_WasmNormalizedBuildId)">
+      <Output TaskParameter="StampedWasm" ItemName="_WasmStampedBuildWasm" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </WasmStampBuildId>
+
+    <ItemGroup>
+      <WasmNativeAsset Remove="@(WasmNativeAsset)"
+                       Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'" />
+      <WasmNativeAsset Include="@(_WasmStampedBuildWasm)" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="_GatherWasmFilesToBuild">
     <ItemGroup>
@@ -765,7 +800,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmBootJsonBuildPropertyStamp"
     DependsOnTargets="_ResolveBuildWasmBootJsonEndpoints">
     <PropertyGroup>
-      <_WasmBootJsonBuildStampContent>$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonBuildStampContent>
+      <_WasmBootJsonBuildStampContent>$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(_WasmNormalizedBuildId)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonBuildStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-build.stamp"
@@ -819,6 +854,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       UseMonoRuntime="$(UseMonoRuntime)"
+      BuildId="$(_WasmNormalizedBuildId)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
@@ -1347,7 +1383,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmPublishBootJsonPropertyStamp"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
     <PropertyGroup>
-      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(PublishReadyToRunComposite)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonPublishStampContent>
+      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(_WasmNormalizedBuildId)|$(PublishReadyToRunComposite)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonPublishStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
@@ -1395,6 +1431,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       UseMonoRuntime="$(UseMonoRuntime)"
+      BuildId="$(_WasmNormalizedBuildId)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
@@ -1419,6 +1456,44 @@ Copyright (c) .NET Foundation. All rights reserved.
       DependsOnTargets="_EnsureWasmRuntimeWorkload;WasmTriggerPublishApp"
       BeforeTargets="ProcessPublishFilesForWasm"
       Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'" />
+
+  <Target Name="_StampWasmBuildIdForPublish"
+          DependsOnTargets="ResolveReferences;_WasmNative"
+          BeforeTargets="ProcessPublishFilesForWasm"
+          Condition="'$(_WasmNormalizedBuildId)' != '' and '$(WasmBuildingForNestedPublish)' != 'true'">
+    <ItemGroup>
+      <_WasmBuildIdPublishSource Remove="@(_WasmBuildIdPublishSource)" />
+      <_WasmBuildIdRuntimePackPublishSource Remove="@(_WasmBuildIdRuntimePackPublishSource)" />
+      <_WasmBuildIdReferencePublishSource Remove="@(_WasmBuildIdReferencePublishSource)" />
+      <_WasmStampedPublishWasm Remove="@(_WasmStampedPublishWasm)" />
+      <_WasmBuildIdPublishSource Include="@(WasmNativeAsset)"
+                                 Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'" />
+      <_WasmBuildIdRuntimePackPublishSource Include="@(ResolvedFileToPublish)"
+                                            Condition="'%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)' == 'dotnet.native.wasm'" />
+      <_WasmBuildIdPublishSource Include="@(_WasmBuildIdRuntimePackPublishSource)"
+                                 Condition="@(_WasmBuildIdPublishSource->Count()) == 0" />
+      <_WasmBuildIdReferencePublishSource Include="@(ReferenceCopyLocalPaths)"
+                                          Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'dotnet.native.wasm'" />
+      <_WasmBuildIdPublishSource Include="@(_WasmBuildIdReferencePublishSource)"
+                                 Condition="@(_WasmBuildIdPublishSource->Count()) == 0" />
+    </ItemGroup>
+
+    <Error Condition="@(_WasmBuildIdPublishSource->Count()) != 1"
+           Text="Expected exactly one dotnet.native.wasm input for WasmNativeBuildId, but found @(_WasmBuildIdPublishSource->Count())." />
+
+    <WasmStampBuildId InputWasm="@(_WasmBuildIdPublishSource)"
+                      OutputPath="$([MSBuild]::NormalizePath($(IntermediateOutputPath), 'wasm-build-id', 'for-publish', 'dotnet.native.wasm'))"
+                      BuildId="$(_WasmNormalizedBuildId)">
+      <Output TaskParameter="StampedWasm" ItemName="_WasmStampedPublishWasm" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </WasmStampBuildId>
+
+    <ItemGroup>
+      <WasmNativeAsset Remove="@(WasmNativeAsset)"
+                       Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'" />
+      <WasmNativeAsset Include="@(_WasmStampedPublishWasm)" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="_EnsureWasmRuntimeWorkload" Condition="'$(UsingBlazorAOTWorkloadManifest)' != 'true'">
     <Error

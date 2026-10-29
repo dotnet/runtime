@@ -77,6 +77,7 @@ export function coerceNull<T extends ManagedPointer | NativePointer> (ptr: T | n
 // when adding new fields, please consider if it should be impacting the config hash. If not, please drop it in the getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
     assets?: AssetEntryInternal[],
+    buildId?: string,
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     logProfilerOptions?: LogProfilerOptions, // dictionary-style Object. If omitted, log profiler will not be initialized.

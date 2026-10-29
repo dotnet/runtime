@@ -47,11 +47,9 @@
     <!-- WebAssembly tool-conventions custom sections (https://github.com/WebAssembly/tool-conventions).
          producers: a linkable object carrying the .NET toolchain info is passed to wasm-ld, which
                     merges it into the relinked dotnet.native.wasm 'producers' section.
-         build_id:  emitted by wasm-ld via its build-id linker flag, but only when $(WasmNativeBuildId)
-                    is set to a hex value (which also forces a native build). The same value is baked into
-                    the native footer (WASM_BUILD_ID) so it can be surfaced on runtimeBuildInfo.buildId. -->
+         build_id:  stamped into a project-local dotnet.native.wasm after selecting the runtime-pack
+                    or relinked binary. -->
     <WasmEmitProducersSection Condition="'$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
-    <_WasmNormalizedBuildId Condition="'$(WasmNativeBuildId)' != ''">$(WasmNativeBuildId.Replace('0x', '').Replace('0X', '').ToLowerInvariant())</_WasmNormalizedBuildId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -341,9 +339,6 @@
       <_EmccIncomingModuleJSAPIs>"[@(_EmccIncomingModuleJSAPI -> '%27%(Identity)%27', ',')]"</_EmccIncomingModuleJSAPIs>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
 
-      <!-- build_id: only emitted when $(WasmNativeBuildId) is set to a hex value; wasm-ld writes the
-           'build_id' custom section carrying these raw bytes. -->
-      <_WasmBuildIdLinkArg Condition="'$(_WasmNormalizedBuildId)' != ''">-Wl,--build-id=0x$(_WasmNormalizedBuildId)</_WasmBuildIdLinkArg>
     </PropertyGroup>
 
     <ItemGroup>
@@ -381,7 +376,6 @@
       <_EmccLinkStepArgs Include="@(_EmccLDFlags)" />
       <_EmccLinkStepArgs Include="@(_EmccLDSFlags)" />
       <_EmccLinkStepArgs Include="--emit-symbol-map" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
-      <_EmccLinkStepArgs Condition="'$(_WasmBuildIdLinkArg)' != ''" Include="$(_WasmBuildIdLinkArg)" />
 
       <_EmccLinkStepArgs Include="--%(_WasmExtraJSFile.Kind) &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' != ''" />
       <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" />
@@ -436,8 +430,7 @@
   </Target>
 
   <!-- Emit a linkable object carrying the WebAssembly 'producers' custom section, so wasm-ld merges
-       .NET toolchain info into dotnet.native.wasm. The 'build_id' section is emitted by wasm-ld's
-       build-id linker flag (only when $(WasmNativeBuildId) is set). -->
+       .NET toolchain info into dotnet.native.wasm. -->
   <Target Name="_BrowserWasmEmitProducersObject"
           BeforeTargets="_BrowserWasmWriteRspForLinking"
           Condition="'$(WasmEmitProducersSection)' == 'true'">
@@ -445,6 +438,9 @@
         OutputPath="$(_WasmIntermediateOutputPath)dotnet-producers.o"
         RuntimeName="Mono"
         ProductVersion="$(ProductVersion)" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet-producers.o" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_CheckEmccIsExpectedVersion" BeforeTargets="_CheckToolchainIsExpectedVersion" Condition="'$(_WasmStrictVersionMatch)' == 'true'">

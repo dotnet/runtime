@@ -40,8 +40,9 @@ export function passEmscriptenInternals (internals: EmscriptenInternals, emscrip
 
     // For an application re-link, the build_id comes from the (re)linked native module via the
     // WASM_BUILD_ID env var and overrides the default rollup constant baked into dotnet.runtime.js.
-    if (emscriptenBuildOptions.buildId) {
-        exportedRuntimeAPI.runtimeBuildInfo.buildId = emscriptenBuildOptions.buildId;
+    const buildId = emscriptenBuildOptions.buildId || loaderHelpers.config.buildId;
+    if (buildId) {
+        exportedRuntimeAPI.runtimeBuildInfo.buildId = buildId;
     }
 
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
