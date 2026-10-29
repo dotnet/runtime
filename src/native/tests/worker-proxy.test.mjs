@@ -9,6 +9,38 @@ import { Worker as NodeWorker } from "node:worker_threads";
 import ts from "typescript";
 import { createWorkerModuleLoader } from "./worker-transport-worker.mjs";
 
+test("application globals, dynamic modules and binding execute on UI rather than runtime worker", async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    try {
+        const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        assert.equal(exports.UIGlobal(), 42);
+        assert.throws(() => exports.WorkerOnlyGlobal(), /workerOnly not found/);
+        const module = "import {isMainThread} from 'node:worker_threads'; export const scope={offset:1,echo(value){if(!isMainThread)throw new Error('module ran on worker');return value+this.offset;}};";
+        const url = "data:text/javascript," + encodeURIComponent(module);
+        assert.equal(await exports.UIDynamicImport(url), 42);
+        assert.equal(await exports.UIDynamicImport("data:text/javascript,throw new Error('must use module cache')"), 42);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("UI module import rejection stays cached and never falls back to runtime worker", async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    try {
+        const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        const failure = "data:text/javascript,throw new Error('UI import rejected')";
+        await assert.rejects(exports.UIDynamicImport(failure), /UI import rejected/);
+        await assert.rejects(exports.UIDynamicImport("data:text/javascript,export const scope={echo:()=>42}"), /UI import rejected/);
+        assert.equal(exports.UIGlobal(), 42);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
 for (const stage of ["argument", "import", "result", "success"]) {
     test(`native Span cleanup runs after ${stage} conversion/invocation`, async () => {
         const source = await readFile(new URL("../libs/System.Runtime.InteropServices.JavaScript.Native/interop/invoke-js.ts", import.meta.url), "utf8");
@@ -381,7 +413,7 @@ for (const worker of [false, true]) {
         });
         await harness.evaluate();
         assert.equal(environment.DOTNET_TEST_WITH_WORKER, worker ? "1" : "0");
-        assert.equal(environment.IsBrowserDomSupported, worker ? "false" : "true");
+        assert.equal(environment.IsBrowserDomSupported, "true");
         assert.deepEqual(calls, [
             ...(worker ? [["withWorker"]] : []), ["create"], ["setup"],
             [worker ? "runMainAndExit" : "runMain", "WasmTestRunner.dll", ["Test.dll"]],
@@ -441,6 +473,7 @@ async function createFixture(options = {}) {
     const runtime = {
         runtimeBuildInfo: {},
         INTERNAL: {
+            configureWorkerInterop() {},
             getWorkerAssemblyExports: async assemblyName => {
                 calls.push(["exports", assemblyName]);
                 if (options.getExports) await options.getExports();
@@ -538,6 +571,7 @@ async function createFixture(options = {}) {
     }
     const context = createContext({
         AbortController, Atomics: options.threaded ? Atomics : atomics, Error, TypeError, Date, Promise, Uint8Array, Int32Array, Float32Array, Float64Array, SharedArrayBuffer, setTimeout, clearTimeout,
+        routingTest: { value: 42 },
         self: {
             addEventListener: (type, listener) => {
                 if (type === "message") workerListeners.push(listener);
@@ -670,7 +704,7 @@ test("worker exports return primitives synchronously and preserve aliases across
         assert.equal(scalar(undefined), 1);
         assert.equal(scalar(-2147483648), -2147483647);
         assert.equal(scalar(2147483646), 2147483647);
-        assert.throws(() => scalar(2147483648), /Int32/);
+        assert.throws(() => scalar(2147483648), /Assert failed: Overflow: value 2147483648 is out of -2147483648 2147483647 range/);
         assert.throws(() => exports.Sample.Test.Async(1), /supported arguments.*Task/);
         assert.equal(fixture.allocations.size, allocations);
         assert.equal(fixture.calls.filter(call => call[0] === "exports").length, 1);
@@ -1099,7 +1133,7 @@ for (const [name, values, invalid] of [
                 mode = "async";
                 assert.equal(await exports[name + "AsyncImport"](value), expected);
             }
-            const message = new RegExp(name);
+            const message = name === "BigInt64" ? /BigInt64/ : /Assert failed: (Value is not an integer|Overflow: value)/;
             for (const value of invalid) {
                 assert.throws(() => exports[name](value), message);
                 response = value;
@@ -1260,7 +1294,7 @@ test("six mixed arguments retain order, declared arity, null defaults and Task o
         mode = "sync";
         assert.equal(exports.MixedVoid(...args), undefined);
         assert.equal(exports.Mixed(), JSON.stringify(Array(6).fill(null)));
-        assert.throws(() => exports.Mixed("first", "invalid", 2, true, 3, "last"), /Int32/);
+        assert.throws(() => exports.Mixed("first", "invalid", 2, true, 3, "last"), /Assert failed: Value is not an integer: invalid \(string\)/);
         assert.throws(() => exports.UnsupportedSeven(1, 2, 3, 4, 5, 6, 7), /supported/);
         mode = "async";
         const pending = Array.from({ length: 70 }, (_, index) => exports.MixedAsyncImport("left", index, 2.5, false, 1.25, "right"));
@@ -1476,7 +1510,7 @@ for (const failure of ["exception", "long-exception", "async-result"]) {
                 try {
                     const expected = failure === "exception" ? /UI import failed \u03bb/
                         : failure === "long-exception" ? /error message exceeds/
-                        : /Int32/;
+                        : /Assert failed: Value is not an integer/;
                     assert.throws(() => invoke(pointer), expected);
                     shouldFail = false;
                     assert.equal(invoke(pointer), 42);
@@ -1696,7 +1730,7 @@ test("scalar Task exports preserve their synchronous prefix, nulls, throws and a
         assert.equal(await exports.Async(17), 18);
         assert.equal(exports.Async(-2), null);
         assert.throws(() => exports.Async(-1), /Synchronous Task export failure/);
-        assert.throws(() => exports.Async("1"), /Int32/);
+        assert.throws(() => exports.Async("1"), /Assert failed: Value is not an integer: 1 \(string\)/);
         await assert.rejects(exports.Async(-3), /Asynchronous Task export failure/);
         assert.equal(exports.Scalar(9), 10);
         assert.equal(exports.ActiveAllocations(0), 16);
@@ -1764,7 +1798,7 @@ test("asynchronous UI imports preserve nulls and errors and reject unsupported t
         assert.throws(() => exports.AsyncImport(3), /Immediate UI failure/);
         assert.throws(() => exports.AsyncImport(4), /Promise/);
         assert.throws(() => exports.AsyncImport(5), /Promise/);
-        await assert.rejects(exports.AsyncImport(6), /Int32/);
+        await assert.rejects(exports.AsyncImport(6), /Assert failed: Overflow: value 2147483648 is out of -2147483648 2147483647 range/);
         assert.throws(() => exports.AsyncImport(7), /Promise/);
         assert.equal(exports.ActiveAllocations(0), 16);
     } finally {

@@ -36,6 +36,7 @@ class WorkerReferenceTransport {
     private side?: Side;
     private invoke?: (request: string) => string;
     private post?: (message: WorkerReferenceMessage) => void;
+    private host?: (operation: string, args: unknown[]) => unknown;
     private stopped?: Error;
     private nextId = 1;
     private nextLease = 1;
@@ -59,6 +60,14 @@ class WorkerReferenceTransport {
         this.side = side;
         this.invoke = invoke;
         this.post = post;
+    }
+
+    configureHost(host: (operation: string, args: unknown[]) => unknown): void {
+        this.host = host;
+    }
+
+    invokeHost(operation: string, args: unknown[] = []): unknown {
+        return this.call(["host", 0, operation, this.encode(args)]);
     }
 
     private send(message: WorkerReferenceMessage): void {
@@ -348,6 +357,13 @@ class WorkerReferenceTransport {
     dispatch(request: string): string {
         try {
             const [operation, id, key, payload] = JSON.parse(request);
+            if (operation === "host") {
+                if (!this.host) throw new Error("withWorker(): UI host is not configured");
+                const args = this.decode(payload);
+                if (!Array.isArray(args)) throw new Error("withWorker(): invalid UI host arguments");
+                const result = this.host(key, args);
+                return JSON.stringify([true, this.encode(result, key !== "import")]);
+            }
             const target = this.owned.get(id)?.value;
             if (!target) throw new Error("withWorker(): reference has been released");
             let result: unknown;

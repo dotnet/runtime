@@ -56,6 +56,8 @@ interface DotnetHostBuilder {
      * Also supports IntPtr, dates, nullable scalars, arrays, memory views, callbacks and object/exception values.
      * Results may be supported native types or void, synchronously or through a Task.
      * Managed allocation and reference ownership remain on the runtime worker.
+     * Application modules, global imports and JSHost.GlobalThis execute against the UI/main thread.
+     * JSHost.ImportAsync loads modules on the UI; there is no worker-local application import fallback.
      * Register each module once, before running managed code.
      * Nested synchronous calls have 16 in-flight slots in each direction.
      * Asynchronous calls release those slots after their synchronous prefix.

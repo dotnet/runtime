@@ -43,9 +43,11 @@ export function decodeWorkerValue(memory: MemoryViewManager, value: string | nul
     return type === MarshalerType.String ? value : validateWorkerValue(workerReferences(memory).decode(value ?? "null"), type);
 }
 
-function validateWorkerInteger(value: unknown, minimum: number, maximum: number, name: string): number {
+function validateWorkerInteger(value: unknown, minimum: number, maximum: number): number {
     if (typeof value !== "number" || !Number.isSafeInteger(value) || value < minimum || value > maximum) {
-        throw new Error(`withWorker(): value must be a ${name} in range ${minimum}..${maximum}`);
+        const detail = !Number.isSafeInteger(value) ? `Value is not an integer: ${String(value)} (${typeof value})`
+            : `Overflow: value ${String(value)} is out of ${minimum} ${maximum} range`;
+        throw new Error(`Assert failed: ${detail}`);
     }
     return value;
 }
@@ -138,7 +140,7 @@ export function validateWorkerValue(value: unknown, type: WorkerReturnType): Wor
         return value;
     }
     switch (type) {
-        case MarshalerType.IntPtr: return validateWorkerInteger(value, 0, 0xffff_ffff, "IntPtr");
+        case MarshalerType.IntPtr: return validateWorkerInteger(value, 0, 0xffff_ffff);
         case MarshalerType.DateTime:
         case MarshalerType.DateTimeOffset:
             if (!(value instanceof Date)) throw new Error("withWorker(): value must be a Date");
@@ -165,11 +167,11 @@ export function validateWorkerValue(value: unknown, type: WorkerReturnType): Wor
         case MarshalerType.Task:
             if (typeof value !== "object" || !isWorkerNativePromise(value)) throw new Error("withWorker(): value must be a native Promise");
             return value;
-        case MarshalerType.Byte: return validateWorkerInteger(value, 0, 0xff, "Byte");
-        case MarshalerType.Char: return validateWorkerInteger(value, 0, 0xffff, "Char");
-        case MarshalerType.Int16: return validateWorkerInteger(value, -0x8000, 0x7fff, "Int16");
-        case MarshalerType.Int32: return validateWorkerInteger(value, -0x8000_0000, 0x7fff_ffff, "Int32");
-        case MarshalerType.Int52: return validateWorkerInteger(value, -Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, "Int52");
+        case MarshalerType.Byte: return validateWorkerInteger(value, 0, 0xff);
+        case MarshalerType.Char: return validateWorkerInteger(value, 0, 0xffff);
+        case MarshalerType.Int16: return validateWorkerInteger(value, -0x8000, 0x7fff);
+        case MarshalerType.Int32: return validateWorkerInteger(value, -0x8000_0000, 0x7fff_ffff);
+        case MarshalerType.Int52: return validateWorkerInteger(value, -Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
         case MarshalerType.BigInt64:
             if (typeof value !== "bigint" || value < -0x8000_0000_0000_0000n || value > 0x7fff_ffff_ffff_ffffn) {
                 throw new Error("withWorker(): value must be a BigInt64 in the signed 64-bit range");

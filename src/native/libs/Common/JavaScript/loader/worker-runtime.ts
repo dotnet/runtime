@@ -200,6 +200,20 @@ function runWorkerEventLoop(signalView: Int32Array, runtime: RuntimeAPI, memoryV
             Module._free(pointer);
         }
     }, message => self.postMessage(message));
+    runtime.INTERNAL.configureWorkerInterop({
+        bind: (moduleName: string | null, functionName: string) => {
+            const handle = references.invokeHost("bind", [moduleName, functionName]);
+            if (typeof handle !== "number") throw new Error("withWorker(): invalid UI import handle");
+            return createWorkerJSImportInvoker(signalView, memoryViews, handle, pumpExports, promises);
+        },
+        importModule: async (moduleName: string, moduleUrl: string) => {
+            const module = await references.invokeHost("import", [moduleName, moduleUrl]);
+            if (!module || typeof module !== "object") throw new Error("withWorker(): invalid UI module");
+            return module;
+        },
+        globalThis: () => references.invokeHost("global"),
+        runtime: () => references.invokeHost("runtime"),
+    });
     function reportFailure(error: unknown): void {
         references.stop(error instanceof Error ? error : new Error(String(error)));
         promises.stop(error instanceof Error ? error : new Error(String(error)));

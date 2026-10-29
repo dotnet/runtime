@@ -15,6 +15,29 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     [ConditionalClass(typeof(WorkerInteropTest), nameof(IsBrowserDomSupportedOrWorker))]
     public partial class WorkerInteropTest
     {
+        [JSImport("globalThis.document.hasFocus")]
+        private static partial bool DocumentHasFocus();
+
+        [JSImport("increment", "UIRoutingProbe")]
+        private static partial int IncrementOnUI(int value);
+
+        [Fact]
+        public async Task ApplicationInteropUsesUI()
+        {
+            Assert.True(JSHost.GlobalThis.HasProperty("document"));
+            using JSObject document = JSHost.GlobalThis.GetPropertyAsJSObject("document");
+            Assert.Equal(9, document.GetPropertyAsInt32("nodeType"));
+            _ = DocumentHasFocus();
+            using JSObject runtimeInfo = JSHost.DotnetInstance.GetPropertyAsJSObject("runtimeBuildInfo");
+            Assert.False(string.IsNullOrEmpty(runtimeInfo.GetPropertyAsString("productVersion")));
+            const string moduleUrl = "data:text/javascript,if(typeof document!=='object')throw new Error('module executed on worker');export const ui=true;export function increment(value){return document.nodeType+value;}";
+            using JSObject module = await JSHost.ImportAsync("UIRoutingProbe", moduleUrl);
+            Assert.True(module.GetPropertyAsBoolean("ui"));
+            Assert.Equal(42, IncrementOnUI(33));
+            using JSObject cached = await JSHost.ImportAsync("UIRoutingProbe", "data:text/javascript,throw new Error('module cache not reused')");
+            Assert.True(cached.GetPropertyAsBoolean("ui"));
+        }
+
         [JSImport("echo", nameof(WorkerInteropTest))]
         private static partial nint EchoPointerOnUI(nint value);
         [JSImport("echo", nameof(WorkerInteropTest))]

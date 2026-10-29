@@ -9,7 +9,7 @@ import GitHash from "consts:gitHash";
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import {
     bindJSImportST, dynamicImport, getDotnetInstance, getGlobalThis, getProperty, getTypeOfProperty, hasProperty,
-    invokeJSFunction, invokeJSImportST, registerWorkerJSImport, setModuleImports, setProperty
+    invokeJSFunction, invokeJSImportST, registerWorkerJSImport, configureWorkerInterop, setModuleImports, setProperty
 } from "./invoke-js";
 import { bindCsFunction, getAssemblyExports, getWorkerAssemblyExports, invokeWorkerJSExport } from "./invoke-cs";
 import { initializeMarshalersToJs, resolveOrRejectPromise } from "./marshal-to-js";
@@ -54,6 +54,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         loadLazyAssembly,
         getProxyCounts,
         registerWorkerJSImport,
+        configureWorkerInterop,
         getWorkerAssemblyExports,
         invokeWorkerJSExport,
 

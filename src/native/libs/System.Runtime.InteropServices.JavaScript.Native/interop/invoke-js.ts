@@ -19,6 +19,18 @@ export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
 type WorkerImportInvoker = (args: JSMarshalerArguments, isAsync: boolean, values: unknown[], argumentTypes: MarshalerType[], returnType: MarshalerType) => unknown;
 const workerImports = new Map<string, Map<string, WorkerImportInvoker>>();
+type WorkerInterop = {
+    bind: (moduleName: string | null, functionName: string) => WorkerImportInvoker,
+    importModule: (moduleName: string, moduleUrl: string) => Promise<object>,
+    globalThis: () => object,
+    runtime: () => object,
+};
+let workerInterop: WorkerInterop | undefined;
+
+export function configureWorkerInterop(interop: WorkerInterop): void {
+    if (workerInterop) throw new Error("withWorker(): interop routing is already configured");
+    workerInterop = interop;
+}
 
 export function registerWorkerJSImport(moduleName: string, functionName: string, invoke: WorkerImportInvoker): void {
     let functions = workerImports.get(moduleName);
@@ -66,7 +78,10 @@ function bindJsImport(signature: JSFunctionSignature): Function {
     dotnetLogger.debug(() => `Binding [JSImport] ${jsFunctionName} from ${jsModuleName} module`);
 
     const argsCount = getSignatureArgumentCount(signature);
-    const workerInvoke = workerImports.get(jsModuleName)?.get(jsFunctionName);
+    // INTERNAL bindings implement runtime services over worker-owned native state.
+    const runtimeService = !jsModuleName && jsFunctionName.startsWith("INTERNAL.");
+    const workerInvoke = workerImports.get(jsModuleName)?.get(jsFunctionName)
+        ?? (workerInterop && !runtimeService ? workerInterop.bind(jsModuleName || null, jsFunctionName) : undefined);
     let currentWorkerArgs: JSMarshalerArguments | undefined;
     const workerResSig = getSig(signature, 1);
     const workerResType = getSignatureType(workerResSig);
@@ -370,11 +385,11 @@ export function getTypeOfProperty(self: any, name: string): string {
 }
 
 export function getGlobalThis(): any {
-    return globalThis;
+    return workerInterop ? workerInterop.globalThis() : globalThis;
 }
 
 export function getDotnetInstance(): any {
-    return dotnetApi;
+    return workerInterop ? workerInterop.runtime() : dotnetApi;
 }
 
 export function dynamicImport(module_name: string, module_url: string): Promise<any> {
@@ -385,7 +400,8 @@ export function dynamicImport(module_name: string, module_url: string): Promise<
     const newPromise = !promise;
     if (newPromise) {
         dotnetLogger.debug(() => `importing ES6 module '${module_name}' from '${module_url}'`);
-        promise = import(/*! webpackIgnore: true */module_url);
+        promise = workerInterop ? workerInterop.importModule(module_name, new URL(module_url, import.meta.url).href)
+            : import(/*! webpackIgnore: true */module_url);
         importedModulesPromises.set(module_name, promise);
     }
 

@@ -40,6 +40,8 @@ export function createWorkerJSImportDispatcher(
 ) {
     const functions = new Map<number, UIImportFunction>();
     const modules = new Set<string>();
+    const moduleScopes = new Map<string, object>();
+    const modulePromises = new Map<string, Promise<object>>();
     const active = new Set<number>();
     let nextHandle = 1;
     let stopped = false;
@@ -69,6 +71,40 @@ export function createWorkerJSImportDispatcher(
         postImports({ type: "imports", moduleName, functions: entries.map(({ name, handle }) => ({ name, handle })) });
         for (const entry of entries) functions.set(entry.handle, entry.invoke);
         modules.add(moduleName);
+        moduleScopes.set(moduleName, moduleImports);
+    }
+
+    function bindImport(moduleName: string | null, functionName: string): number {
+        if (stopped) throw new Error("withWorker(): runtime has exited");
+        const parts = functionName.split(".");
+        let scope: object | undefined = moduleName ? moduleScopes.get(moduleName) : globalThis;
+        if (!scope) throw new Error(`ES6 module ${moduleName} was not imported yet, please call JSHost.ImportAsync() first in order to invoke ${functionName}.`);
+        if (!moduleName && parts[0] === "globalThis") parts.shift();
+        for (const part of parts.slice(0, -1)) {
+            const next: unknown = Reflect.get(scope, part);
+            if (!next || (typeof next !== "object" && typeof next !== "function")) throw new Error(`${part} not found while looking up ${functionName}`);
+            scope = next;
+        }
+        const fn: unknown = Reflect.get(scope, parts[parts.length - 1]);
+        if (typeof fn !== "function") throw new Error(`${functionName} must be a Function but was ${typeof fn}`);
+        const receiver = scope;
+        const handle = nextHandle++;
+        functions.set(handle, (...args) => Reflect.apply(fn, receiver, args));
+        return handle;
+    }
+
+    function importModule(moduleName: string, moduleUrl: string): Promise<object> {
+        if (stopped) throw new Error("withWorker(): runtime has exited");
+        let promise = modulePromises.get(moduleName);
+        if (!promise) {
+            promise = import(/*! webpackIgnore: true */moduleUrl).then((module: object) => {
+                if (stopped) throw new Error("withWorker(): runtime has exited");
+                moduleScopes.set(moduleName, module);
+                return module;
+            });
+            modulePromises.set(moduleName, promise);
+        }
+        return promise;
     }
 
     function processPending(): void {
@@ -193,12 +229,14 @@ export function createWorkerJSImportDispatcher(
         stopped = true;
         functions.clear();
         modules.clear();
+        moduleScopes.clear();
+        modulePromises.clear();
         active.clear();
         wakeMain(signal);
     }
 
     listen();
-    return { setModuleImports, processPending, stop, isDispatching: () => dispatchDepth !== 0 };
+    return { setModuleImports, bindImport, importModule, processPending, stop, isDispatching: () => dispatchDepth !== 0 };
 }
 
 export function createWorkerJSImportInvoker(

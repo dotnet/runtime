@@ -184,7 +184,7 @@ function processArguments(incomingArguments, runArgs) {
 
     runArgs.applicationArguments = incomingArguments;
     // cheap way to let the testing infrastructure know we're running in a browser context (or not)
-    runArgs.environmentVariables["IsBrowserDomSupported"] = (ENVIRONMENT_IS_WEB && !runArgs.withWorker).toString().toLowerCase();
+    runArgs.environmentVariables["IsBrowserDomSupported"] = ENVIRONMENT_IS_WEB.toString().toLowerCase();
     runArgs.environmentVariables["DOTNET_TEST_WITH_WORKER"] = runArgs.withWorker ? "1" : "0";
     runArgs.environmentVariables["IsNodeJS"] = ENVIRONMENT_IS_NODE.toString().toLowerCase();
     runArgs.environmentVariables["IsFirefox"] = isFirefox.toString().toLowerCase();

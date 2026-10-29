@@ -28,7 +28,10 @@ export function createWorkerModuleLoader(context, stubs, transform = (_specifier
             const output = ts.transpileModule(transform(specifier, source), {
                 compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
             }).outputText;
-            module = new SourceTextModule(output, { context, identifier: specifier });
+            module = new SourceTextModule(output, {
+                context, identifier: specifier,
+                importModuleDynamically: specifier => import(specifier),
+            });
         }
         return module;
     }
@@ -85,6 +88,7 @@ async function runWorker() {
     let primitiveTypes;
     let bufferedTypes;
     let taskType;
+    let interop;
     let voidCalls = 0;
     let lastVoidValue;
     function readPrimitive(pointer, type) {
@@ -137,11 +141,15 @@ async function runWorker() {
     const runtime = {
         runtimeBuildInfo: {},
         INTERNAL: {
+            configureWorkerInterop: value => interop = value,
             registerWorkerJSImport: (moduleName, name, invoke) => {
                 if (!imports.has(moduleName)) imports.set(moduleName, new Map());
                 imports.get(moduleName).set(name, invoke);
             },
             getWorkerAssemblyExports: async () => [
+                { path: ["Sample", "Test", "UIGlobal"], handle: 210, supported: true, argumentTypes: [], returnType: int32Type },
+                { path: ["Sample", "Test", "UIDynamicImport"], handle: 211, supported: true, isAsync: true, argumentTypes: [stringType], returnType: int32Type },
+                { path: ["Sample", "Test", "WorkerOnlyGlobal"], handle: 212, supported: true, argumentTypes: [], returnType: int32Type },
                 { path: ["Sample", "Test", "Scalar"], handle: 1, supported: true },
                 { path: ["Sample", "Test", "ThroughImport"], handle: 2, supported: true },
                 { path: ["Sample", "Test", "ActiveAllocations"], handle: 3, supported: true },
@@ -207,6 +215,29 @@ async function runWorker() {
                 })),
             ].map(descriptor => ({ argumentTypes: [int32Type], returnType: int32Type, ...descriptor })),
             invokeWorkerJSExport: (handle, pointer, values) => {
+                if (handle === 212) {
+                    interop.bind(null, "globalThis.workerOnly.echo");
+                    throw new Error("Worker-local application binding must not succeed");
+                }
+                if (handle === 210) {
+                    const global = interop.globalThis();
+                    const result = global.routingTest.value;
+                    new Int32Array(memory.buffer)[(pointer + argumentSize) / 4] = result;
+                    new Uint8Array(memory.buffer)[pointer + argumentSize + typeOffset] = int32Type;
+                    return;
+                }
+                if (handle === 211) {
+                    return interop.importModule("routing", values[0]).then(() => {
+                        const invoke = interop.bind("routing", "scope.echo");
+                        const pointer = module._malloc(3 * argumentSize);
+                        try {
+                            writePrimitive(pointer + 2 * argumentSize, int32Type, 41);
+                            return invoke(pointer, false, [41], [int32Type], int32Type);
+                        } finally {
+                            module._free(pointer);
+                        }
+                    });
+                }
                 if (handle === 200) return Promise.resolve(values[0]);
                 if (handle === 201) return invokeImports(values, true, [taskType], int32Type);
                 if (handle >= 120 && handle < 152) {
@@ -317,6 +348,7 @@ async function runWorker() {
     };
     const context = createContext({
         AbortController, Atomics, Error, TypeError, Date, Promise, Uint8Array, Int32Array, Float32Array, Float64Array, SharedArrayBuffer, setTimeout, clearTimeout,
+        workerOnly: { echo: () => 99 },
         self: {
             addEventListener: (type, listener) => {
                 if (type === "message") parentPort.on("message", data => listener({ data }));

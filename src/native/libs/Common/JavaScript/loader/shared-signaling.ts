@@ -28,7 +28,7 @@ export const enum CommandId {
 }
 
 // Layout version — bump when the signaling buffer layout changes
-export const SIGNALING_VERSION = 8;
+export const SIGNALING_VERSION = 9;
 
 // Number of entries in the JSImport ring buffer (worker → main)
 export const JSIMPORT_RING_CAPACITY = 16;

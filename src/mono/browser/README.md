@@ -105,9 +105,15 @@ objects returned to their original UI owner retain their original identity.
 
 ### Library tests in worker mode
 
+Application JavaScript always runs on the UI/main thread. `JSHost.ImportAsync`
+loads modules there, global imports bind there, and `JSHost.GlobalThis` and
+`JSHost.DotnetInstance` expose UI-owned objects. Unregistered application imports
+never fall back to worker-local lookup. Runtime-owned `INTERNAL` service bindings
+still implement native marshaling and runtime state on the runtime worker.
+
 The JS interop test project supports an explicit `WasmTestWithWorker` mode.
-It registers its UI imports before managed execution and checks that managed
-code runs without a DOM while its registered imports execute on the UI thread.
+It registers its UI imports before managed execution and checks UI-backed
+module loading, global binding, object access and nested calls from managed code.
 Run the dedicated-worker subset in Chrome:
 
 ```powershell
@@ -117,9 +123,16 @@ Run the dedicated-worker subset in Chrome:
 Use `WasmTestWithWorker=false` for the same subset on the ordinary runtime.
 The subset includes scalar strings, Unicode and large payloads, native memory
 growth, nested calls, concurrent Tasks, dates/nullables, arrays, reference
-identity, callbacks, live memory views, errors and cleanup. It is not the full
-JS interop suite: the existing helper modules still need worker-aware setup
-and full-suite execution.
+identity, callbacks, live memory views, errors and cleanup.
+Remove `XUnitClassName` to run the full default suite, including the original
+helper modules and global bindings. Normal OuterLoop/failing-trait exclusions
+and platform-specific skips still apply.
+
+The UI event loop runs independently from managed execution on the worker.
+`Task.Delay(0)` completes synchronously without yielding managed execution, but
+does not prevent UI timers or Promise continuations from running between calls.
+Within a single synchronous export, the UI spin loop still services only interop
+requests and does not pump arbitrary microtasks.
 When using the shared browser cache, set `CHROME_PATH_FOR_TESTS` and put its
 matching ChromeDriver on `PATH`; a cached driver cannot drive an unrelated
 system Chrome major version.

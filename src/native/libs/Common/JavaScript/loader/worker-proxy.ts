@@ -221,7 +221,8 @@ function buildProxyRuntimeAPI(
         runtimeBuildInfo,
 
         // Stubs — not yet supported in proxy mode
-        INTERNAL: { workerMemoryViews: memoryViews, workerImports },
+        INTERNAL: { workerMemoryViews: memoryViews, workerImports,
+            getGlobalThis: () => globalThis, getDotnetInstance: () => api },
         Module,
         runtimeId: 0,
         getAssemblyExports: workerExports.getAssemblyExports,
@@ -277,6 +278,23 @@ function buildProxyRuntimeAPI(
         connectDSRouter: notSupported("connectDSRouter"),
     };
 
+    references.configureHost((operation, args) => {
+        switch (operation) {
+            case "global": return globalThis;
+            case "runtime": return api;
+            case "bind": {
+                const [moduleName, functionName] = args;
+                if ((moduleName !== null && typeof moduleName !== "string") || typeof functionName !== "string") throw new Error("withWorker(): invalid UI import binding");
+                return workerImports.bindImport(moduleName, functionName);
+            }
+            case "import": {
+                const [moduleName, moduleUrl] = args;
+                if (typeof moduleName !== "string" || typeof moduleUrl !== "string") throw new Error("withWorker(): invalid UI module request");
+                return workerImports.importModule(moduleName, moduleUrl);
+            }
+            default: throw new Error(`withWorker(): unknown UI host operation ${operation}`);
+        }
+    });
     return api;
 }
 

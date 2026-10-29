@@ -328,7 +328,8 @@ export async function setup(runtime) {
                         error = caught;
                     }
                     check(error?.message, "Invalid integer was not rejected");
-                    if (worker) check(error.message.includes(name), "Integer validation reported the wrong type");
+                    if (worker) check(name === "BigInt64" ? error.message.includes(name) : error.message.startsWith("Assert failed: "),
+                        "Integer validation did not preserve the native error contract");
                     error.dispose?.();
                 }
             }
@@ -339,7 +340,7 @@ export async function setup(runtime) {
             check(exports.MixedSix() === "<null>|0|0|false|0|<null>", "Missing argument defaults changed");
             check(exports.MixedSix("a", 1, 2.5, true, 1.25, "z", "ignored") === "a|1|2.5|true|1.25|z", "Extra arguments changed signature");
             for (const [args, message] of [
-                [["a", "wrong", 2.5, true, 1.25, "z"], worker ? "Int32" : "Value is not an integer"],
+                [["a", "wrong", 2.5, true, 1.25, "z"], "Value is not an integer"],
                 [["a", 1, 2.5, "wrong", 1.25, "z"], "Boolean"],
                 [["a", 1, 2.5, true, 1.25, 42], "String"],
             ]) {
@@ -392,8 +393,8 @@ export async function setup(runtime) {
                 throw new Error("The registered import must execute on the UI thread");
             }
             const documentPresent = exports.HasDocument(0);
-            if (documentPresent !== (worker ? 0 : 1)) {
-                throw new Error("Managed execution is on the wrong thread");
+            if (documentPresent !== 1) {
+                throw new Error("JSHost.GlobalThis must expose the UI document in both runtime modes");
             }
             return worker ? 1 : 0;
         },
