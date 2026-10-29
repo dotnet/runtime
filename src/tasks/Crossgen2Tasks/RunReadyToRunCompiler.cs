@@ -244,7 +244,7 @@ namespace Microsoft.NET.Build.Tasks
                 IEnumerable<string> assemblies = new[]
                 {
                     _createCompositeImage ? null : CompilationEntry.ItemSpec,
-                    ActuallyUseCrossgen2 && !_createCompositeImage ? CompilationEntry.ItemSpec.TrimEnd() : null
+                    ActuallyUseCrossgen2 && !_createCompositeImage ? CompilationEntry.ItemSpec.Trim() : null
                 };
                 IEnumerable<string> inputs = new[]
                 {
@@ -265,7 +265,7 @@ namespace Microsoft.NET.Build.Tasks
                     inputs = inputs.Concat((Crossgen2PgoFiles ?? Array.Empty<ITaskItem>()).Select(item => item.ItemSpec));
                     if (_createCompositeImage)
                     {
-                        assemblies = assemblies.Concat((ReadyToRunCompositeBuildInput ?? Array.Empty<ITaskItem>()).SelectMany(item => new[] { item.ItemSpec, item.ItemSpec.TrimEnd() }))
+                        assemblies = assemblies.Concat((ReadyToRunCompositeBuildInput ?? Array.Empty<ITaskItem>()).SelectMany(item => new[] { item.ItemSpec, item.ItemSpec.Trim() }))
                             .Concat((ReadyToRunCompositeUnrootedBuildInput ?? Array.Empty<ITaskItem>()).Select(item => item.ItemSpec));
                     }
                     string directory = Path.GetDirectoryName(Path.GetFullPath(tool.ItemSpec));
