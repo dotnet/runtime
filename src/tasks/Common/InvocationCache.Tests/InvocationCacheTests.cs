@@ -237,14 +237,14 @@ public class InvocationCacheTests
         foreach (var file in files)
             test.WriteSource(file.Key, file.Value);
 
-        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
         Assert.False(Directory.Exists(test.Cache.CacheDirectory));
         test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs);
 
         Directory.CreateDirectory(test.Output);
         File.WriteAllText(Path.Combine(test.Output, "app.dll"), "old assembly");
         File.WriteAllText(Path.Combine(test.Output, "Link.semaphore"), "existing semaphore");
-        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
 
         foreach (var file in files)
         {
@@ -265,7 +265,7 @@ public class InvocationCacheTests
     {
         using var test = new CacheTestDirectory();
         test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs);
-        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
         Assert.True(Directory.Exists(test.Output));
         Assert.Empty(Directory.GetFileSystemEntries(test.Output));
     }
@@ -283,7 +283,7 @@ public class InvocationCacheTests
         File.WriteAllText(marker, DateTimeOffset.MinValue.ToString("O", CultureInfo.InvariantCulture));
 
         DateTimeOffset beforeRestore = DateTimeOffset.UtcNow;
-        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
 
         Assert.InRange(DateTimeOffset.ParseExact(File.ReadAllText(marker), "O", CultureInfo.InvariantCulture),
             beforeRestore, DateTimeOffset.UtcNow);
@@ -301,7 +301,7 @@ public class InvocationCacheTests
         File.Delete(marker);
         Directory.CreateDirectory(marker);
 
-        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
 
         Assert.Equal("assembly", File.ReadAllText(Path.Combine(test.Output, "app.dll")));
         Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("last-used update failed") is true);
@@ -320,7 +320,7 @@ public class InvocationCacheTests
         File.WriteAllText(marker, oldTimestamp);
         File.WriteAllText(Path.Combine(test.Entry, "outputs", "app.dll"), "corrupt");
 
-        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
 
         Assert.Equal(oldTimestamp, File.ReadAllText(marker));
     }
@@ -353,7 +353,7 @@ public class InvocationCacheTests
                 File.WriteAllText(output + ".ready", "");
                 Assert.True(SpinWait.SpinUntil(() => File.Exists(start), TimeSpan.FromSeconds(30)));
                 for (int attempt = 0; attempt < 20; attempt++)
-                    Assert.True(cache.TryRestore(CacheTestDirectory.Key, InvocationOutputs.FromDirectory(output), CacheTestDirectory.Timestamp));
+                    Assert.True(cache.TryRestore(CacheTestDirectory.Key, InvocationOutputs.FromDirectory(output), CacheTestDirectory.Timestamp, out _));
                 Assert.Empty(engine.Errors);
             }, test.Cache.CacheDirectory, Path.Combine(test.Root, "reader-" + index), Path.Combine(test.Root, "start"));
     }
@@ -366,7 +366,7 @@ public class InvocationCacheTests
         test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs);
         test.WriteSource("app.dll", "second");
         test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs);
-        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
         Assert.Equal("first", File.ReadAllText(Path.Combine(test.Output, "app.dll")));
         Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("already exists") is true);
         Assert.Empty(Directory.GetDirectories(test.Entries, "*.tmp"));
@@ -438,7 +438,7 @@ public class InvocationCacheTests
         Directory.CreateDirectory(test.Output);
         string existingOutput = Path.Combine(test.Output, "a.dll");
         File.WriteAllText(existingOutput, "unchanged");
-        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
         Assert.Equal("unchanged", File.ReadAllText(existingOutput));
         Assert.False(File.Exists(Path.Combine(test.Output, "b.dll")));
         Assert.False(File.Exists(Path.Combine(test.Root, "escaped.dll")));
@@ -446,40 +446,59 @@ public class InvocationCacheTests
         Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("restore failed") is true);
     }
 
-    [Fact]
-    public void CacheDoesNotTreatLoggingFailureAsRestoreFailure()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CacheReturnsDiagnosticsWithoutLoggingThem(bool standardError)
     {
         using var test = new CacheTestDirectory();
         test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs,
-            new[] { ("warning IL2026: warning", true) });
-        var exception = new IOException("Logging failed.");
+            standardOutput: standardError ? null : new[] { "warning IL2026: warning" },
+            standardError: standardError ? new[] { "warning IL2026: warning" } : null);
+        InvocationResult result = InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp,
+            new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs),
+            () => throw new InvalidOperationException("The tool must not run on a hit."), out bool cacheHit);
 
-        Assert.Same(exception, Assert.Throws<IOException>(() =>
-            InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp,
-                new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs),
-                () => throw new InvalidOperationException("The tool must not run after replay starts."),
-                logOutput: (_, _) => throw exception)));
-        Assert.DoesNotContain(test.BuildEngine.Messages, message => message.Message?.Contains("restore failed") is true);
+        Assert.True(cacheHit);
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(standardError ? Array.Empty<string>() : new[] { "warning IL2026: warning" }, result.StandardOutput);
+        Assert.Equal(standardError ? new[] { "warning IL2026: warning" } : Array.Empty<string>(), result.StandardError);
+        Assert.Empty(test.BuildEngine.Warnings);
+        Assert.Empty(test.BuildEngine.Errors);
     }
 
     [Theory]
-    [InlineData("truncated")]
-    [InlineData("negative-count")]
-    [InlineData("invalid-stream")]
-    [InlineData("trailing-data")]
-    public void CacheRejectsMalformedDiagnosticsBeforeCopying(string damage)
+    [InlineData("truncated", false)]
+    [InlineData("truncated", true)]
+    [InlineData("negative-count", false)]
+    [InlineData("negative-count", true)]
+    [InlineData("trailing-data", false)]
+    [InlineData("trailing-data", true)]
+    public void CacheRejectsMalformedDiagnosticsBeforeCopying(string damage, bool standardError)
     {
         using var test = new CacheTestDirectory();
         test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs);
         string diagnosticsPath = Path.Combine(test.Entry, "diagnostics");
         using (var diagnostics = new BinaryWriter(File.Create(diagnosticsPath)))
         {
+            if (standardError)
+            {
+                diagnostics.Write(1);
+                diagnostics.Write("stdout before malformed stderr");
+            }
             diagnostics.Write(damage == "negative-count" ? -1 : 1);
-            diagnostics.Write("warning IL2026: warning");
-            if (damage != "truncated")
-                diagnostics.Write((byte)(damage == "invalid-stream" ? 2 : 0));
-            if (damage == "trailing-data")
-                diagnostics.Write(0);
+            if (damage == "truncated")
+            {
+                diagnostics.Write((byte)0x80);
+            }
+            else
+            {
+                diagnostics.Write("warning IL2026: warning");
+                if (!standardError)
+                    diagnostics.Write(0);
+                if (damage == "trailing-data")
+                    diagnostics.Write(0);
+            }
         }
         // Keep the integrity record valid to exercise diagnostic-format validation.
         string manifestPath = Path.Combine(test.Entry, "manifest");
@@ -497,7 +516,9 @@ public class InvocationCacheTests
         File.WriteAllText(existingOutput, "unchanged");
 
         Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp,
-            (_, _) => Assert.Fail("Diagnostics must not be replayed from an invalid entry.")));
+            out InvocationResult result));
+        Assert.Empty(result.StandardOutput);
+        Assert.Empty(result.StandardError);
         Assert.Equal("unchanged", File.ReadAllText(existingOutput));
         Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("restore failed") is true);
     }
@@ -507,29 +528,82 @@ public class InvocationCacheTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void CacheReplaysToolOutputOnlyAfterSuccessfulRestore(bool ownedDirectory, bool failCopy)
+    public void CacheReturnsToolOutputOnlyAfterSuccessfulRestore(bool ownedDirectory, bool failCopy)
     {
         using var test = new CacheTestDirectory();
         test.WriteSource("app.dll", "output");
-        var output = new List<(string Line, bool IsStandardError)>
-        {
-            ("source.cs(4,2,4,8): Trim analysis warning IL2026: text {0}", true),
-            ("ILLink : warning IL2104: more text", false),
-            ("compiler message", true),
-            ("", false)
-        };
+        string[] standardOutput = { "ILLink : warning IL2104: more text", "" };
+        string[] standardError = { "source.cs(4,2,4,8): Trim analysis warning IL2026: text {0}", "compiler message" };
         InvocationOutputs source = ownedDirectory ? test.SourceOutputs
             : InvocationOutputs.FromFiles(Path.Combine(test.Source, "app.dll"));
         InvocationOutputs destination = ownedDirectory ? test.OutputOutputs
             : InvocationOutputs.FromFiles(Path.Combine(test.Output, "app.dll"));
-        test.Cache.Store(CacheTestDirectory.Key, source, output);
+        test.Cache.Store(CacheTestDirectory.Key, source, standardOutput, standardError);
         if (failCopy)
             File.WriteAllText(test.Output, "blocks directory creation");
-        var replayed = new List<(string Line, bool IsStandardError)>();
-
         Assert.Equal(!failCopy, test.Cache.TryRestore(CacheTestDirectory.Key, destination, CacheTestDirectory.Timestamp,
-            (line, isStandardError) => replayed.Add((line, isStandardError))));
-        Assert.Equal(failCopy ? new List<(string Line, bool IsStandardError)>() : output, replayed);
+            out InvocationResult result));
+        Assert.Equal(failCopy ? Array.Empty<string>() : standardOutput, result.StandardOutput);
+        Assert.Equal(failCopy ? Array.Empty<string>() : standardError, result.StandardError);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CacheDiagnosticSerializationIgnoresStreamInterleaving(bool ownedDirectory)
+    {
+        using var test = new CacheTestDirectory();
+        test.WriteSource("app.dll", "output");
+        InvocationOutputs source = ownedDirectory ? test.SourceOutputs
+            : InvocationOutputs.FromFiles(Path.Combine(test.Source, "app.dll"));
+        InvocationOutputs destination = ownedDirectory ? test.OutputOutputs
+            : InvocationOutputs.FromFiles(Path.Combine(test.Output, "app.dll"));
+        var expected = new (string Line, bool IsStandardError)[]
+        {
+            ("stdout second", false),
+            ("", false),
+            ("same text", false),
+            ("stderr second", true),
+            ("", true),
+            ("same text", true)
+        };
+        string[] expectedStandardOutput = { expected[0].Line, expected[1].Line, expected[2].Line };
+        string[] expectedStandardError = { expected[3].Line, expected[4].Line, expected[5].Line };
+        test.Cache.Store(CacheTestDirectory.Key, source, expectedStandardOutput, expectedStandardError);
+
+        var interleavings = new[]
+        {
+            new[] { expected[3], expected[0], expected[4], expected[1], expected[5], expected[2] },
+            new[] { expected[3], expected[4], expected[5], expected[0], expected[1], expected[2] }
+        };
+        for (int i = 0; i < interleavings.Length; i++)
+        {
+            string key = new string((char)('b' + i), 64);
+            Assert.Equal(0, InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp,
+                new InvocationCacheRequest(key, source),
+                execute: () =>
+                {
+                    var standardOutput = new List<string>();
+                    var standardError = new List<string>();
+                    foreach (var line in interleavings[i])
+                    {
+                        if (line.IsStandardError)
+                            standardError.Add(line.Line);
+                        else
+                            standardOutput.Add(line.Line);
+                    }
+                    return new InvocationResult(0, standardOutput, standardError);
+                }, out bool cacheHit).ExitCode);
+            Assert.False(cacheHit);
+            string entry = Path.Combine(test.Entries, key);
+            foreach (string file in new[] { "diagnostics", "manifest", "manifest.sha256" })
+                Assert.Equal(File.ReadAllBytes(Path.Combine(test.Entry, file)), File.ReadAllBytes(Path.Combine(entry, file)));
+
+            Assert.True(test.Cache.TryRestore(key, destination, CacheTestDirectory.Timestamp,
+                out InvocationResult restored));
+            Assert.Equal(expectedStandardOutput, restored.StandardOutput);
+            Assert.Equal(expectedStandardError, restored.StandardError);
+        }
     }
 
     [Fact]
@@ -542,7 +616,7 @@ public class InvocationCacheTests
         Directory.CreateDirectory(Path.Combine(test.Output, "b.dll"));
         File.WriteAllText(Path.Combine(test.Output, "a.dll"), "old assembly");
 
-        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
         Assert.Equal("new assembly", File.ReadAllText(Path.Combine(test.Output, "a.dll")));
         Assert.Equal("other assembly", File.ReadAllText(Path.Combine(test.Output, "b.dll")));
     }
@@ -591,7 +665,7 @@ public class InvocationCacheTests
 
             string otherKey = new string('b', 64);
             RunOnOtherThread(() => test.Cache.Store(otherKey, test.SourceOutputs));
-            Assert.True(test.Cache.TryRestore(otherKey, test.OutputOutputs, CacheTestDirectory.Timestamp));
+            Assert.True(test.Cache.TryRestore(otherKey, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
         }
         finally
         {
@@ -613,7 +687,7 @@ public class InvocationCacheTests
         try
         {
             RunOnOtherThread(() =>
-                Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp)));
+                Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _)));
         }
         finally
         {
@@ -638,7 +712,7 @@ public class InvocationCacheTests
             cache.Store(CacheTestDirectory.Key, InvocationOutputs.FromDirectory(source));
         });
 
-        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
         Assert.Equal(contents, File.ReadAllText(Path.Combine(test.Output, "app.dll")));
         Assert.Equal("symbols", File.ReadAllText(Path.Combine(test.Output, "app.pdb")));
         Assert.Single(Directory.GetDirectories(test.Entries));
@@ -653,11 +727,11 @@ public class InvocationCacheTests
         string marker = Path.Combine(stagingDirectory, "partial");
         File.WriteAllText(marker, "other attempt");
 
-        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
         test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs);
 
         Assert.Equal("other attempt", File.ReadAllText(marker));
-        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
     }
 
     [Theory]
@@ -669,7 +743,7 @@ public class InvocationCacheTests
         string output = cacheContainsOutput ? Path.Combine(test.Cache.CacheDirectory, "output") : test.Root;
 
         Assert.Throws<ArgumentException>(() => test.Cache.Store(CacheTestDirectory.Key, InvocationOutputs.FromDirectory(output)));
-        Assert.Throws<ArgumentException>(() => test.Cache.TryRestore(CacheTestDirectory.Key, InvocationOutputs.FromDirectory(output), CacheTestDirectory.Timestamp));
+        Assert.Throws<ArgumentException>(() => test.Cache.TryRestore(CacheTestDirectory.Key, InvocationOutputs.FromDirectory(output), CacheTestDirectory.Timestamp, out _));
         Assert.False(Directory.Exists(test.Cache.CacheDirectory));
     }
 
@@ -685,7 +759,7 @@ public class InvocationCacheTests
 
         test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs);
 
-        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
         Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("abandoned") is true);
     }
 
@@ -697,40 +771,56 @@ public class InvocationCacheTests
     {
         using var test = new CacheTestDirectory();
         Assert.Throws<ArgumentException>(() => test.Cache.Store(inputHash, test.SourceOutputs));
-        Assert.Throws<ArgumentException>(() => test.Cache.TryRestore(inputHash, test.OutputOutputs, CacheTestDirectory.Timestamp));
+        Assert.Throws<ArgumentException>(() => test.Cache.TryRestore(inputHash, test.OutputOutputs, CacheTestDirectory.Timestamp, out _));
         Assert.False(Directory.Exists(test.Cache.CacheDirectory));
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void SharedTaskAdapterGatesDescriptionAndUsesCapturedArguments(bool configured, bool eligible)
-        => RemoteExecutor.Invoke(static (enabled, supported) =>
+    [InlineData(false, false, true)]
+    [InlineData(false, true, true)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, true)]
+    [InlineData(true, true, false)]
+    public void SharedTaskAdapterGatesDescriptionAndUsesCapturedArguments(bool configured, bool eligible, bool cached)
+        => RemoteExecutor.Invoke(static (enabled, supported, stored) =>
     {
         bool isConfigured = bool.Parse(enabled);
         bool isEligible = bool.Parse(supported);
+        bool hasEntry = bool.Parse(stored);
         using var test = new CacheTestDirectory();
         Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, enabled);
         Environment.SetEnvironmentVariable(PathEnvironmentVariable, test.Cache.CacheDirectory);
         test.WriteSource("image.dll", "cached");
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(),
             new[] { "compiler path", "response contents", "command contents" }, test.OutputOutputs);
-        test.Cache.Store(InvocationCache.ComputeKey(invocation), test.SourceOutputs);
+        if (hasEntry)
+            test.Cache.Store(InvocationCache.ComputeKey(invocation), test.SourceOutputs);
         var events = new List<string>();
         DateTime preparedAt = default;
 
-        int result = InvocationCache.ExecuteCached(test.Log, s_cacheConfiguration,
+        bool handled = InvocationCache.TryExecuteCached(test.Log, s_cacheConfiguration,
             describeInvocation: () => DescribeInvocation("compiler path", "response contents", "command contents"),
-            executeNormally: () => ExecuteNormally("compiler path", "response contents", "command contents"));
+            execute: () =>
+            {
+                events.Add("capture");
+                var standardOutput = new List<string>();
+                var standardError = new List<string>();
+                return new InvocationResult(ExecuteNormally("compiler path", "response contents", "command contents"),
+                    standardOutput, standardError);
+            },
+            out InvocationResult result, out bool cacheHit);
+        int exitCode = handled ? result.ExitCode : ExecuteNormally("compiler path", "response contents", "command contents");
         DateTime completedAt = DateTime.UtcNow;
 
-        Assert.Equal(isConfigured && isEligible ? 0 : 42, result);
+        Assert.Equal(isConfigured && isEligible, handled);
+        Assert.Equal(isConfigured && isEligible && hasEntry ? 0 : 42, exitCode);
+        Assert.Equal(isConfigured && isEligible && hasEntry, cacheHit);
         Assert.Equal(isConfigured
-            ? isEligible ? new[] { "describe" } : new[] { "describe", "execute" }
+            ? isEligible
+                ? hasEntry ? new[] { "describe" } : new[] { "describe", "capture", "execute" }
+                : new[] { "describe", "execute" }
             : new[] { "execute" }, events);
-        if (isConfigured && isEligible)
+        if (cacheHit)
         {
             Assert.InRange(File.GetLastWriteTimeUtc(Path.Combine(test.Output, "image.dll")), preparedAt, completedAt);
             Assert.Equal("cached", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
@@ -757,7 +847,7 @@ public class InvocationCacheTests
             Assert.Equal("response contents", response);
             Assert.Equal("command contents", command);
         }
-    }, configured.ToString(), eligible.ToString()).Dispose();
+    }, configured.ToString(), eligible.ToString(), cached.ToString()).Dispose();
 
     [Fact]
     public void SharedTaskAdapterPropagatesPreparationExceptions() => RemoteExecutor.Invoke(static () =>
@@ -766,9 +856,9 @@ public class InvocationCacheTests
         Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
         Environment.SetEnvironmentVariable(PathEnvironmentVariable, test.Cache.CacheDirectory);
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
-            InvocationCache.ExecuteCached(test.Log, s_cacheConfiguration,
+            InvocationCache.TryExecuteCached(test.Log, s_cacheConfiguration,
                 describeInvocation: () => throw new InvalidOperationException("description"),
-                executeNormally: () => throw new InvalidOperationException("unexpected execution")));
+                execute: () => throw new InvalidOperationException("unexpected execution"), out _, out _));
 
         Assert.Equal("description", exception.Message);
         Assert.False(Directory.Exists(test.Entry));
@@ -808,13 +898,13 @@ public class InvocationCacheTests
         int executions = 0;
 
         ArgumentException exception = Assert.Throws<ArgumentException>(() =>
-            InvocationCache.ExecuteCached(test.Log, s_cacheConfiguration,
+            InvocationCache.TryExecuteCached(test.Log, s_cacheConfiguration,
                 describeInvocation: () => invocation,
-                executeNormally: () =>
+                execute: () =>
                 {
                     executions++;
-                    return 42;
-                }));
+                    return new InvocationResult(42);
+                }, out _, out _));
 
         Assert.Equal(nameof(outputs), exception.ParamName);
         Assert.Equal(0, executions);
@@ -834,17 +924,18 @@ public class InvocationCacheTests
         var invocation = new InvocationDescription(InvocationInputs.FromFiles(test.Source), Array.Empty<string>(), test.OutputOutputs);
         int executions = 0;
 
-        int result = InvocationCache.ExecuteCached(test.Log, s_cacheConfiguration,
+        bool handled = InvocationCache.TryExecuteCached(test.Log, s_cacheConfiguration,
             describeInvocation: () => invocation,
-            executeNormally: () =>
+            execute: () =>
             {
                 executions++;
-                Assert.Equal("untouched", File.ReadAllText(stale));
-                return 42;
-            });
+                return new InvocationResult(42);
+            }, out _, out bool cacheHit);
 
-        Assert.Equal(42, result);
-        Assert.Equal(1, executions);
+        Assert.False(handled);
+        Assert.False(cacheHit);
+        Assert.Equal(0, executions);
+        Assert.Equal("untouched", File.ReadAllText(stale));
         Assert.False(Directory.Exists(test.Cache.CacheDirectory));
         Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("input identity could not be computed") is true);
     }).Dispose();
@@ -868,7 +959,7 @@ public class InvocationCacheTests
         File.WriteAllText(stale, "keep unless the whole directory is owned");
         File.WriteAllText(Path.Combine(test.Output, "symbols", "image.pdb"), "stale symbols");
 
-        Assert.True(cache.TryRestore(CacheTestDirectory.Key, Contract(test.Output), CacheTestDirectory.Timestamp));
+        Assert.True(cache.TryRestore(CacheTestDirectory.Key, Contract(test.Output), CacheTestDirectory.Timestamp, out _));
         Assert.Equal("image", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
         Assert.Equal(includeOptional, File.Exists(Path.Combine(test.Output, "symbols", "image.pdb")));
         if (includeOptional)
@@ -894,7 +985,7 @@ public class InvocationCacheTests
         Assert.True(Directory.Exists(test.Entry));
         Directory.CreateDirectory(test.Output);
         File.WriteAllText(Path.Combine(test.Output, "missing.dll"), "stale");
-        Assert.True(cache.TryRestore(CacheTestDirectory.Key, outputs, CacheTestDirectory.Timestamp));
+        Assert.True(cache.TryRestore(CacheTestDirectory.Key, outputs, CacheTestDirectory.Timestamp, out _));
         Assert.False(File.Exists(Path.Combine(test.Output, "missing.dll")));
         Assert.Empty(Directory.GetDirectories(Path.Combine(cache.CacheDirectory, InvocationCacheEntry.VersionDirectory), "*.tmp"));
     }
@@ -952,21 +1043,21 @@ public class InvocationCacheTests
         var request = new InvocationCacheRequest(CacheTestDirectory.Key, InvocationOutputs.FromFiles(image, symbols));
         int executions = 0;
 
-        int Run() => InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp, request, () =>
+        InvocationResult Run() => InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp, request, () =>
         {
             executions++;
             Assert.Equal("stale image", File.ReadAllText(image));
             Assert.Equal("stale symbols", File.ReadAllText(symbols));
             File.Delete(image);
             File.Delete(symbols);
-            return 0;
-        });
+            return new InvocationResult(0);
+        }, out _);
 
-        Assert.Equal(0, Run());
+        Assert.Equal(0, Run().ExitCode);
         Assert.True(Directory.Exists(test.Entry));
         File.WriteAllText(image, "new stale image");
         File.WriteAllText(symbols, "new stale symbols");
-        Assert.Equal(0, Run());
+        Assert.Equal(0, Run().ExitCode);
         Assert.Equal(1, executions);
         Assert.False(File.Exists(image));
         Assert.False(File.Exists(symbols));
@@ -1001,6 +1092,7 @@ public class InvocationCacheTests
         Assert.Equal(manifest.BaseStream.Length, manifest.BaseStream.Position);
         using var diagnostics = new BinaryReader(new MemoryStream(diagnosticsBytes));
         Assert.Equal(0, diagnostics.ReadInt32());
+        Assert.Equal(0, diagnostics.ReadInt32());
         Assert.Equal(diagnostics.BaseStream.Length, diagnostics.BaseStream.Position);
     }
 
@@ -1021,7 +1113,7 @@ public class InvocationCacheTests
             ? InvocationOutputs.FromFiles(image)
             : test.OutputOutputs;
 
-        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, destination, CacheTestDirectory.Timestamp));
+        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, destination, CacheTestDirectory.Timestamp, out _));
 
         Assert.Equal("untouched", File.ReadAllText(image));
     }
@@ -1059,7 +1151,7 @@ public class InvocationCacheTests
         InvocationOutputs destination = ownedDirectory ? test.OutputOutputs
             : InvocationOutputs.FromFiles(image);
 
-        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, destination, CacheTestDirectory.Timestamp));
+        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, destination, CacheTestDirectory.Timestamp, out _));
 
         Assert.Equal("untouched", File.ReadAllText(image));
     }
@@ -1085,7 +1177,7 @@ public class InvocationCacheTests
         InvocationOutputs outputs = InvocationOutputs.FromFiles(
             first, second);
         Assert.Throws<ArgumentException>(() => cache.Store(CacheTestDirectory.Key, outputs));
-        Assert.Throws<ArgumentException>(() => cache.TryRestore(CacheTestDirectory.Key, outputs, CacheTestDirectory.Timestamp));
+        Assert.Throws<ArgumentException>(() => cache.TryRestore(CacheTestDirectory.Key, outputs, CacheTestDirectory.Timestamp, out _));
         Assert.False(Directory.Exists(cache.CacheDirectory));
     }
 
@@ -1094,29 +1186,38 @@ public class InvocationCacheTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     public void SharedExecutionBypassesWithoutSkippingTaskPreparation(bool configured, bool eligible)
+        => RemoteExecutor.Invoke(static (enabled, supported) =>
     {
+        bool isEligible = bool.Parse(supported);
         using var test = new CacheTestDirectory();
+        Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, enabled);
+        Environment.SetEnvironmentVariable(PathEnvironmentVariable, test.Cache.CacheDirectory);
         Directory.CreateDirectory(test.Output);
         string stale = Path.Combine(test.Output, "stale.dll");
         File.WriteAllText(stale, "stale");
         int executions = 0;
 
-        int exitCode = InvocationCache.ExecutePrepared(configured ? test.Cache : null, CacheTestDirectory.Timestamp,
-            eligible ? new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs) : null,
-            () =>
-            {
-                executions++;
-                Directory.Delete(test.Output, recursive: true);
-                Directory.CreateDirectory(test.Output);
-                return 42;
-            },
-            captureOutput: () => throw new InvalidOperationException("Bypassed invocations must not capture output."));
+        var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), test.OutputOutputs);
+        int exitCode = InvocationCache.TryExecuteCached(test.Log, s_cacheConfiguration,
+            describeInvocation: () => isEligible ? invocation : null,
+            execute: () => throw new InvalidOperationException("Bypassed invocations must not capture output."),
+            out InvocationResult result, out bool cacheHit)
+            ? result.ExitCode : ExecuteNormally();
 
         Assert.Equal(42, exitCode);
+        Assert.False(cacheHit);
         Assert.Equal(1, executions);
         Assert.False(File.Exists(stale));
         Assert.False(Directory.Exists(test.Cache.CacheDirectory));
-    }
+
+        int ExecuteNormally()
+        {
+            executions++;
+            Directory.Delete(test.Output, recursive: true);
+            Directory.CreateDirectory(test.Output);
+            return 42;
+        }
+    }, configured.ToString(), eligible.ToString()).Dispose();
 
     [Theory]
     [InlineData(false)]
@@ -1134,7 +1235,7 @@ public class InvocationCacheTests
         File.WriteAllText(image, "stale image");
         File.WriteAllText(symbols, "stale symbols");
 
-        int Run() => InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp, request,
+        InvocationResult Run(out bool cacheHit) => InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp, request,
             () =>
             {
                 events.Add("execute");
@@ -1151,10 +1252,12 @@ public class InvocationCacheTests
                 }
                 Directory.CreateDirectory(test.Output);
                 File.WriteAllText(image, "computed");
-                return 0;
-            });
+                return new InvocationResult(0);
+            }, out cacheHit);
 
-        Assert.Equal(0, Run());
+        InvocationResult cold = Run(out bool coldCacheHit);
+        Assert.Equal(0, cold.ExitCode);
+        Assert.False(coldCacheHit);
         Assert.Equal(new[] { "execute" }, events);
         Assert.True(Directory.Exists(test.Entry));
         events.Clear();
@@ -1163,7 +1266,9 @@ public class InvocationCacheTests
         string neighbor = Path.Combine(test.Output, "unrelated.txt");
         File.WriteAllText(neighbor, "neighbor");
 
-        Assert.Equal(0, Run());
+        InvocationResult warm = Run(out bool warmCacheHit);
+        Assert.Equal(0, warm.ExitCode);
+        Assert.True(warmCacheHit);
 
         Assert.Empty(events);
         Assert.Equal("computed", File.ReadAllText(image));
@@ -1174,50 +1279,40 @@ public class InvocationCacheTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void SharedExecutionCapturesOutputOnMissAndReplaysUnderCurrentPolicy(bool ownedDirectory)
+    public void SharedExecutionReturnsCapturedOutputOnMissAndHit(bool ownedDirectory)
     {
         using var test = new CacheTestDirectory();
         string image = Path.Combine(test.Output, "image.dll");
         InvocationOutputs outputs = ownedDirectory ? test.OutputOutputs : InvocationOutputs.FromFiles(image);
         var request = new InvocationCacheRequest(CacheTestDirectory.Key, outputs);
-        var captured = new List<(string Line, bool IsStandardError)>();
         var events = new List<string>();
-        bool escalate = false;
 
-        int Run() => InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp, request,
+        InvocationResult Run(out bool cacheHit) => InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp, request,
             execute: () =>
             {
                 events.Add("execute");
                 Directory.CreateDirectory(test.Output);
                 File.WriteAllText(image, "computed");
-                captured.Add(("warning IL2026: warning", false));
-                return 0;
-            },
-            captureOutput: () =>
-            {
-                events.Add("capture");
-                return captured;
-            },
-            logOutput: (line, isStandardError) =>
-            {
-                Assert.Equal("computed", File.ReadAllText(image));
-                Assert.Equal("warning IL2026: warning", line);
-                Assert.False(isStandardError);
-                events.Add("replay");
-                if (escalate)
-                    test.Log.LogError("Promoted compiler warning.");
-            });
+                return new InvocationResult(0,
+                    new List<string> { "warning IL2026: warning", "" },
+                    new List<string> { "stderr text", "" });
+            }, out cacheHit);
 
-        Assert.Equal(0, Run());
-        Assert.Equal(new[] { "capture", "execute" }, events);
+        InvocationResult cold = Run(out bool coldCacheHit);
+        Assert.False(coldCacheHit);
+        Assert.Equal(0, cold.ExitCode);
+        Assert.Equal(new[] { "warning IL2026: warning", "" }, cold.StandardOutput);
+        Assert.Equal(new[] { "stderr text", "" }, cold.StandardError);
+        Assert.Equal(new[] { "execute" }, events);
         events.Clear();
-        Assert.Equal(0, Run());
-        Assert.Equal(new[] { "replay" }, events);
-        events.Clear();
-        escalate = true;
-        Assert.Equal(-1, Run());
-        Assert.Equal(new[] { "replay" }, events);
-        Assert.Single(test.BuildEngine.Errors);
+        InvocationResult warm = Run(out bool warmCacheHit);
+        Assert.True(warmCacheHit);
+        Assert.Equal(0, warm.ExitCode);
+        Assert.Equal(cold.StandardOutput, warm.StandardOutput);
+        Assert.Equal(cold.StandardError, warm.StandardError);
+        Assert.Empty(events);
+        Assert.Empty(test.BuildEngine.Warnings);
+        Assert.Empty(test.BuildEngine.Errors);
         Assert.Equal("computed", File.ReadAllText(image));
     }
 
@@ -1230,7 +1325,7 @@ public class InvocationCacheTests
     {
         using var test = new CacheTestDirectory();
         int executions = 0;
-        int result = InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp,
+        InvocationResult result = InvocationCache.ExecutePrepared(test.Cache, CacheTestDirectory.Timestamp,
             new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs),
             () =>
             {
@@ -1239,10 +1334,13 @@ public class InvocationCacheTests
                 File.WriteAllText(Path.Combine(test.Output, "image.dll"), "produced");
                 if (logError)
                     test.Log.LogError("Expected compiler error.");
-                return exitCode;
-            });
+                return new InvocationResult(exitCode, new[] { "tool stdout" }, new[] { "tool stderr" });
+            }, out bool cacheHit);
 
-        Assert.Equal(exitCode, result);
+        Assert.Equal(exitCode, result.ExitCode);
+        Assert.False(cacheHit);
+        Assert.Equal(new[] { "tool stdout" }, result.StandardOutput);
+        Assert.Equal(new[] { "tool stderr" }, result.StandardError);
         Assert.Equal(1, executions);
         Assert.False(Directory.Exists(test.Entry));
     }
@@ -1259,7 +1357,7 @@ public class InvocationCacheTests
                 {
                     executions++;
                     throw new InvalidOperationException("execute");
-                }));
+                }, out _));
 
         Assert.Equal("execute", exception.Message);
         Assert.Equal(1, executions);
@@ -1287,9 +1385,10 @@ public class InvocationCacheTests
                 Directory.Delete(test.Output, recursive: true);
                 Directory.CreateDirectory(test.Output);
                 File.WriteAllText(Path.Combine(test.Output, "image.dll"), "recomputed");
-                return 0;
-            }));
+                return new InvocationResult(0);
+            }, out bool cacheHit).ExitCode);
 
+        Assert.False(cacheHit);
         Assert.Equal(1, executions);
         Assert.False(File.Exists(stale));
         Assert.Equal("recomputed", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
@@ -1360,10 +1459,11 @@ public class InvocationCacheTests
     private sealed class CacheBuildEngine : IBuildEngine
     {
         internal List<BuildErrorEventArgs> Errors { get; } = new();
+        internal List<BuildWarningEventArgs> Warnings { get; } = new();
         internal List<BuildMessageEventArgs> Messages { get; } = new();
 
         public void LogErrorEvent(BuildErrorEventArgs e) => Errors.Add(e);
-        public void LogWarningEvent(BuildWarningEventArgs e) { }
+        public void LogWarningEvent(BuildWarningEventArgs e) => Warnings.Add(e);
         public void LogMessageEvent(BuildMessageEventArgs e) => Messages.Add(e);
         public void LogCustomEvent(CustomBuildEventArgs e) { }
         public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs) => false;

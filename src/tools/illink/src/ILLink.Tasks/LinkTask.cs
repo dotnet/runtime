@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -246,7 +245,8 @@ namespace ILLink.Tasks
         private const string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
 
         private string _dotnetPath;
-        private ConcurrentQueue<(string Line, bool IsStandardError)> _cachedOutput;
+        private List<string> _cachedStandardOutput;
+        private List<string> _cachedStandardError;
 
         private string DotNetPath
         {
@@ -273,20 +273,26 @@ namespace ILLink.Tasks
         protected override string GenerateFullPathToTool() => DotNetPath;
 
         protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
-        {
-            try
-            {
-                return InvocationCache.ExecuteCached(Log, s_cacheConfiguration,
-                    () => DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands),
-                    () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands),
-                    () => _cachedOutput = new ConcurrentQueue<(string Line, bool IsStandardError)>(),
-                    LogCachedOutput);
-            }
-            finally
-            {
-                _cachedOutput = null;
-            }
-        }
+            => InvocationCache.TryExecuteCached(Log, s_cacheConfiguration,
+                () => DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands),
+                () =>
+                {
+                    _cachedStandardOutput = new List<string>();
+                    _cachedStandardError = new List<string>();
+                    try
+                    {
+                        int exitCode = ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands);
+                        return new InvocationResult(exitCode, _cachedStandardOutput, _cachedStandardError);
+                    }
+                    finally
+                    {
+                        _cachedStandardOutput = null;
+                        _cachedStandardError = null;
+                    }
+                },
+                out InvocationResult result, out bool cacheHit)
+                ? ReplayCachedOutput(result, cacheHit)
+                : ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands);
 
         private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
@@ -308,30 +314,41 @@ namespace ILLink.Tasks
 
         protected override Process StartToolProcess(Process process)
         {
-            if (_cachedOutput is { } output)
+            if (_cachedStandardOutput is { } standardOutput && _cachedStandardError is { } standardError)
             {
                 // Capture before ToolTask applies stream logging policy, including LogStandardErrorAsError.
+                // Each stream has one reader; ToolTask drains both before execution returns.
                 process.OutputDataReceived += (_, args) =>
                 {
                     if (args.Data is not null)
-                        output.Enqueue((args.Data, false));
+                        standardOutput.Add(args.Data);
                 };
                 process.ErrorDataReceived += (_, args) =>
                 {
                     if (args.Data is not null)
-                        output.Enqueue((args.Data, true));
+                        standardError.Add(args.Data);
                 };
             }
 
             return base.StartToolProcess(process);
         }
 
-        private void LogCachedOutput(string line, bool isStandardError)
+        private int ReplayCachedOutput(InvocationResult result, bool cacheHit)
         {
-            if (isStandardError && LogStandardErrorAsError)
-                Log.LogError(line);
-            else
-                LogEventsFromTextOutput(line, isStandardError ? StandardErrorImportanceToUse : StandardOutputImportanceToUse);
+            if (!cacheHit)
+                return result.ExitCode;
+
+            foreach (string line in result.StandardOutput)
+                LogEventsFromTextOutput(line, StandardOutputImportanceToUse);
+            foreach (string line in result.StandardError)
+            {
+                if (LogStandardErrorAsError)
+                    Log.LogError(line);
+                else
+                    LogEventsFromTextOutput(line, StandardErrorImportanceToUse);
+            }
+
+            return Log.HasLoggedErrors ? -1 : result.ExitCode;
         }
 
 #nullable enable annotations

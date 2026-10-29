@@ -29,6 +29,21 @@ internal readonly struct InvocationCacheRequest
     }
 }
 
+internal readonly struct InvocationResult
+{
+    internal int ExitCode { get; }
+    internal IReadOnlyList<string> StandardOutput { get; }
+    internal IReadOnlyList<string> StandardError { get; }
+
+    internal InvocationResult(int exitCode, IReadOnlyList<string>? standardOutput = null,
+        IReadOnlyList<string>? standardError = null)
+    {
+        ExitCode = exitCode;
+        StandardOutput = standardOutput ?? Array.Empty<string>();
+        StandardError = standardError ?? Array.Empty<string>();
+    }
+}
+
 internal sealed partial class InvocationCache
 {
     private readonly TaskLoggingHelper _log;
@@ -46,19 +61,12 @@ internal sealed partial class InvocationCache
         _importance = importance;
     }
 
-    internal static int ExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
-        Func<InvocationDescription?> describeInvocation, Func<int> executeNormally,
-        Func<IReadOnlyCollection<(string Line, bool IsStandardError)>>? captureOutput = null,
-        Action<string, bool>? logOutput = null)
-        => TryExecuteCached(log, configuration, describeInvocation, executeNormally, captureOutput, logOutput, out int exitCode)
-            ? exitCode : executeNormally();
-
-    private static bool TryExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
-        Func<InvocationDescription?> describeInvocation, Func<int> executeNormally,
-        Func<IReadOnlyCollection<(string Line, bool IsStandardError)>>? captureOutput,
-        Action<string, bool>? logOutput, out int exitCode)
+    internal static bool TryExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
+        Func<InvocationDescription?> describeInvocation, Func<InvocationResult> execute,
+        out InvocationResult result, out bool cacheHit)
     {
-        exitCode = 0;
+        result = default;
+        cacheHit = false;
         InvocationCache? cache = TryCreateFromEnvironment(log, configuration);
         if (cache is null)
             return false;
@@ -73,36 +81,31 @@ internal sealed partial class InvocationCache
         if (!TryComputeKey(log, configuration.ToolName, invocation, out string key))
             return false;
 
-        exitCode = ExecutePrepared(cache, outputTimestampUtc,
-            new InvocationCacheRequest(key, invocation.Outputs), executeNormally, captureOutput, logOutput);
+        result = ExecutePrepared(cache, outputTimestampUtc,
+            new InvocationCacheRequest(key, invocation.Outputs), execute, out cacheHit);
         return true;
     }
 
-    internal static int ExecutePrepared(InvocationCache? cache, DateTime outputTimestampUtc,
-        InvocationCacheRequest? request,
-        Func<int> execute,
-        Func<IReadOnlyCollection<(string Line, bool IsStandardError)>>? captureOutput = null,
-        Action<string, bool>? logOutput = null)
+    internal static InvocationResult ExecutePrepared(InvocationCache cache, DateTime outputTimestampUtc,
+        InvocationCacheRequest request, Func<InvocationResult> execute, out bool cacheHit)
     {
-        if (cache is null || request is null)
-            return execute();
+        string key = request.Key;
+        InvocationOutputs outputs = request.Outputs;
+        cacheHit = cache.TryRestore(key, outputs, outputTimestampUtc, out InvocationResult result);
+        if (cacheHit)
+            return result;
 
-        string key = request.Value.Key;
-        InvocationOutputs outputs = request.Value.Outputs;
-        if (cache.TryRestore(key, outputs, outputTimestampUtc, logOutput))
-            return cache._log.HasLoggedErrors ? -1 : 0;
+        result = execute();
+        if (result.ExitCode == 0 && !cache._log.HasLoggedErrors)
+            cache.Store(key, outputs, result.StandardOutput, result.StandardError);
 
-        IReadOnlyCollection<(string Line, bool IsStandardError)>? output = captureOutput?.Invoke();
-        int exitCode = execute();
-        if (exitCode == 0 && !cache._log.HasLoggedErrors)
-            cache.Store(key, outputs, output);
-
-        return exitCode;
+        return result;
     }
 
     internal bool TryRestore(string inputHash, InvocationOutputs outputs, DateTime outputTimestampUtc,
-        Action<string, bool>? logOutput = null)
+        out InvocationResult result)
     {
+        result = new InvocationResult(-1);
         string entryDirectory = GetEntryDirectory(inputHash);
         ValidateOutputs(outputs);
         if (outputTimestampUtc.Kind != DateTimeKind.Utc)
@@ -114,10 +117,11 @@ internal sealed partial class InvocationCache
             return false;
         }
 
-        List<(string Line, bool IsStandardError)> output;
+        List<string> standardOutput;
+        List<string> standardError;
         try
         {
-            List<(string Name, bool Present)> files = ReadManifest(entryDirectory, outputs, out output);
+            List<(string Name, bool Present)> files = ReadManifest(entryDirectory, outputs, out standardOutput, out standardError);
 
             // Check the entire entry before modifying outputs. Copies can still fail if the cache is wiped concurrently.
             if (outputs.DirectoryPath is not null)
@@ -150,17 +154,12 @@ internal sealed partial class InvocationCache
             return false;
         }
 
-        // Logging is not a cache operation: retrying after partial replay would duplicate diagnostics.
-        if (logOutput is not null)
-        {
-            foreach (var line in output)
-                logOutput(line.Line, line.IsStandardError);
-        }
+        result = new InvocationResult(0, standardOutput, standardError);
         return true;
     }
 
     internal void Store(string inputHash, InvocationOutputs outputs,
-        IReadOnlyCollection<(string Line, bool IsStandardError)>? output = null)
+        IReadOnlyCollection<string>? standardOutput = null, IReadOnlyCollection<string>? standardError = null)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
         ValidateOutputs(outputs);
@@ -205,15 +204,8 @@ internal sealed partial class InvocationCache
                 string diagnosticsPath = Path.Combine(stagingDirectory, "diagnostics");
                 using (var diagnostics = new BinaryWriter(File.Create(diagnosticsPath)))
                 {
-                    diagnostics.Write(output?.Count ?? 0);
-                    if (output is not null)
-                    {
-                        foreach (var line in output)
-                        {
-                            diagnostics.Write(line.Line);
-                            diagnostics.Write(line.IsStandardError);
-                        }
-                    }
+                    WriteLines(diagnostics, standardOutput);
+                    WriteLines(diagnostics, standardError);
                 }
 
                 using (var manifest = new BinaryWriter(File.Create(Path.Combine(stagingDirectory, "manifest"))))
@@ -277,6 +269,16 @@ internal sealed partial class InvocationCache
                 }
             }
         }
+
+        static void WriteLines(BinaryWriter writer, IReadOnlyCollection<string>? lines)
+        {
+            writer.Write(lines?.Count ?? 0);
+            if (lines is not null)
+            {
+                foreach (string line in lines)
+                    writer.Write(line);
+            }
+        }
     }
 
     private void UpdateLastUsed(string entryDirectory)
@@ -316,7 +318,7 @@ internal sealed partial class InvocationCache
     }
 
     private List<(string Name, bool Present)> ReadManifest(string entryDirectory, InvocationOutputs outputs,
-        out List<(string Line, bool IsStandardError)> output)
+        out List<string> standardOutput, out List<string> standardError)
     {
         bool fileSet = outputs.DirectoryPath is null;
         if (!File.ReadAllBytes(Path.Combine(entryDirectory, "manifest.sha256")).SequenceEqual(HashFile(Path.Combine(entryDirectory, "manifest"))))
@@ -369,24 +371,25 @@ internal sealed partial class InvocationCache
             throw new InvalidDataException($"Unexpected data in {_toolName} cache manifest.");
 
         using var diagnostics = new BinaryReader(File.OpenRead(diagnosticsPath));
-        int count = diagnostics.ReadInt32();
-        if (count < 0 || count > diagnostics.BaseStream.Length - diagnostics.BaseStream.Position)
-            throw new InvalidDataException($"Invalid {_toolName} cache diagnostic count.");
-
-        output = new List<(string Line, bool IsStandardError)>();
-        for (int i = 0; i < count; i++)
-        {
-            string line = diagnostics.ReadString();
-            byte stream = diagnostics.ReadByte();
-            if (stream is not (0 or 1))
-                throw new InvalidDataException($"Invalid {_toolName} cache diagnostic stream.");
-
-            output.Add((line, stream == 1));
-        }
+        standardOutput = ReadLines();
+        standardError = ReadLines();
         if (diagnostics.BaseStream.Position != diagnostics.BaseStream.Length)
             throw new InvalidDataException($"Unexpected data in {_toolName} cache diagnostics.");
 
         return files;
+
+        List<string> ReadLines()
+        {
+            int count = diagnostics.ReadInt32();
+            if (count < 0 || count > diagnostics.BaseStream.Length - diagnostics.BaseStream.Position)
+                throw new InvalidDataException($"Invalid {_toolName} cache diagnostic count.");
+
+            var lines = new List<string>();
+            for (int i = 0; i < count; i++)
+                lines.Add(diagnostics.ReadString());
+
+            return lines;
+        }
     }
 
     private void ValidateRelativePath(string path)

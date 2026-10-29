@@ -19,12 +19,15 @@ platform cache location; a path alone never enables caching. See
 [task usage](../../../tools/illink/illink-tasks.md#experimental-task-cache) for configuration and
 maintenance commands.
 
-`ExecuteTool` calls `InvocationCache.ExecuteCached` with parameterless callbacks for the task's
-`DescribeInvocation` and `ExecuteNormally` methods. The description supplies input paths, effective
+`ExecuteTool` calls `InvocationCache.TryExecuteCached` with a `DescribeInvocation` callback and an
+execution callback. The description supplies input paths, effective
 arguments/context, and one `InvocationOutputs.FromDirectory` declaration. Eligibility and metadata
 inspection stay in ILLink; content hashing and cache operations stay in the shared layer.
-ILLink also supplies output-capture and replay callbacks; the shared layer owns transcript storage
-and integrity validation, while ILLink owns process capture and logging policy.
+The execution callback runs only on eligible misses and returns an `InvocationResult` containing the
+exit code and separate stdout/stderr lists. The cache returns that result or restores one, reporting
+hits through a separate `cacheHit` output. ILLink replays only restored results; the shared layer owns
+transcript storage and integrity validation, while ILLink owns process capture and logging policy.
+If the cache declines an invocation, `ExecuteTool` calls `ExecuteNormally` directly without capture.
 
 ## Input discovery and eligibility
 
@@ -95,8 +98,11 @@ and MSBuild warning promotion, exceptions, and warning-as-message policy apply w
 key. Compiler-owned warning settings remain part of the arguments and key. A warning promoted by
 MSBuild fails the cached invocation; a cold promoted failure is not stored.
 
-Capture is thread-safe, preserves per-stream order, and does not promise relative ordering across
-stdout and stderr. Task reuse, misses, and restore failures start with fresh capture state.
+The cache-miss callback allocates capture lists before calling `ExecuteNormally`.
+Each stream is captured into its own ordered list by its reader, and `ToolTask` drains both readers
+before execution returns the lists. Storage and replay use separate stdout and stderr sequences in
+that order, so callback scheduling does not affect the cached transcript. Uncached logging retains `ToolTask`'s
+ordinary interleaving. Task reuse, misses, and restore failures start with fresh capture state.
 Normal tool execution retains `ToolTask` subprocess cancellation behavior; shared cache operations
 do not observe cancellation.
 
