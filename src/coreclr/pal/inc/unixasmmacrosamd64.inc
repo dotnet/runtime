@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <amd64/UnixAsmMacros.inc>
+#include <amd64/AsmMacros_Unix.inc>
 
 .macro PATCH_LABEL Name
         .global C_FUNC(\Name)

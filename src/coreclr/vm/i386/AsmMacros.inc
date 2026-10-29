@@ -5,7 +5,7 @@
 ; Define macros to build unwind data for prologues.
 ;
 
-include i386\AsmMacros_Common.inc
+include i386\AsmMacros_Windows.inc
 
 t_CurrentThreadInfo  TEXTEQU <?t_CurrentThreadInfo@@3UThreadLocalInfo@@A>
 

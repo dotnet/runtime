@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <loongarch64/UnixAsmMacros.inc>
+#include <loongarch64/AsmMacros_Unix.inc>
 
 .macro PROLOG_STACK_ALLOC Size
         addi.d $sp, $sp, -\Size

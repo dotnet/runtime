@@ -3,7 +3,7 @@
 
 #include "AsmOffsets.inc"
 
-#include <arm64/UnixAsmMacros.inc>
+#include <arm64/AsmMacros_Unix.inc>
 
 .macro PATCH_LABEL Name
         .global C_FUNC(\Name)
