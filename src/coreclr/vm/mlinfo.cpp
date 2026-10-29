@@ -1467,7 +1467,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     m_args.m_pMT = m_pMT;
                     m_type = MARSHAL_TYPE_SAFEHANDLE;
                 }
-                else if (sigTH.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
+                else if (IsCriticalHandle(sigTH))
                 {
                     if (nativeType != NATIVE_TYPE_DEFAULT)
                     {
@@ -3513,7 +3513,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
             // Array's of SAFEHANDLEs are not supported.
             ReportInvalidArrayMarshalInfo(IDS_EE_BADMARSHAL_SAFEHANDLEARRAY);
         }
-        else if (m_thElement.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
+        else if (IsCriticalHandle(m_thElement))
         {
             // Array's of CRITICALHANDLEs are not supported.
             ReportInvalidArrayMarshalInfo(IDS_EE_BADMARSHAL_CRITICALHANDLEARRAY);

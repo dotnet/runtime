@@ -60,14 +60,42 @@ Checked/debug consistency checks consult metadata, not the already-loaded type c
 before accepting an absent optional type. Present optional types still undergo normal
 layout and member checks; mandatory entries remain mandatory.
 
-`HandleRef` is conditional because the marshaller reads its fields only for a reachable
-`HandleRef` signature. `GCMemoryInfoData` supplies conditional-layout coverage because
+`HandleRef` and `ArrayWithOffset` are conditional because the marshaller reads their fields
+only for reachable signatures using those types. `ArrayWithOffset` can remain reachable
+through `UnmanagedType.AsAny`; the declaration expresses the native reachability contract
+regardless of whether it saves space. `CriticalHandle` is also conditional. Its marshalling
+classification checks use a non-loading lookup: a loaded subtype has already loaded its
+base, so unrelated signatures need not load `CriticalHandle`. Actual handle marshalling
+still uses the strict binder field/class lookups.
+
+`GCMemoryInfoData` supplies conditional-layout coverage because
 managed code allocates it before the native GC fills it. Runtime counters, array-pool
 pressure handling, and thread-pool code can retain it; conditional layout is not a promise
 of a minimal-application size reduction. Startup types, independently created native
 objects, and incidental classification dependencies need separate semantic audits before
 using these annotations. In particular, WeakReference, SafeHandle, and CallConvSwift are
 not made conditional by this mechanism.
+
+Additional conditional declarations cover managed-created objects and values:
+
+- `Delegate.Wrapper`: the multicast invocation stub consumes the array created by managed
+  delegate combination.
+- `ConditionalWeakTable<TKey, TValue>`, its `Container` and `Entry`, and `List<T>`:
+  native diagnostic/interop readers inspect existing managed collections rather than
+  constructing them.
+- `ExecutionContext`: native context capture inspects an existing managed context before
+  accessing the flow-suppressed default. Both its binder and layout aliases are conditional.
+- `StackFrameHelper`: managed stack-trace capture allocates the helper passed to the QCall.
+- `ComWrappers.ReferenceTrackerNativeObjectWrapper`, `GCHandleSet` and its `Entry`,
+  `ObjectiveCMarshal.ObjcTrackingInformation`, and `TypeMapLazyDictionary.CallbackContext`:
+  native consumers receive managed-created tracking objects or a managed stack context.
+
+These are reachability contracts, not guaranteed removals. For example, a rooted method
+signature can keep its parameter type reachable even when the application never calls its
+constructor. `ComWrappers` itself remains mandatory because DAC resolves its table fields
+before checking for live wrappers. Native-created reflection results and unconditional
+classification dependencies likewise cannot be made conditional solely because their
+constructors are implemented in managed code.
 
 # Calling from managed to native code
 

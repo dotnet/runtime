@@ -14,6 +14,7 @@
 
 VARTYPE GetVarTypeForTypeHandle(TypeHandle typeHnd);
 MethodTable* GetNativeMethodTableForVarType(VARTYPE vt, MethodTable* pManagedMT);
+bool IsCriticalHandle(TypeHandle type);
 
 // Forward references
 class EEClassLayoutInfo;

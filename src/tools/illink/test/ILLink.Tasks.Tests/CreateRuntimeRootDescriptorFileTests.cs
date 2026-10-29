@@ -116,16 +116,23 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData(false, false, false)]
-        [InlineData(true, false, false)]
-        [InlineData(false, true, false)]
-        [InlineData(true, true, false)]
-        [InlineData(false, false, true)]
-        [InlineData(false, true, true)]
-        public void LinkerDefersConditionalFieldsAndMethods(bool reachable, bool nested, bool featureEnabled)
+        [InlineData(false, false, false, false)]
+        [InlineData(true, false, false, false)]
+        [InlineData(false, true, false, false)]
+        [InlineData(true, true, false, false)]
+        [InlineData(false, false, true, false)]
+        [InlineData(false, true, true, false)]
+        [InlineData(false, false, false, true)]
+        [InlineData(true, false, false, true)]
+        [InlineData(false, true, false, true)]
+        [InlineData(true, true, false, true)]
+        [InlineData(false, true, true, true)]
+        public void LinkerDefersConditionalFieldsAndMethods(bool reachable, bool nested, bool featureEnabled, bool generic)
         {
             using var test = new DescriptorTest();
-            string name = nested ? "Container+Candidate" : "Candidate";
+            string containerName = generic ? "Container`1" : "Container";
+            string candidateName = generic && !nested ? "Candidate`1" : "Candidate";
+            string name = nested ? $"{containerName}+{candidateName}" : candidateName;
             XDocument descriptor = test.Generate(new[] {
                 $"DEFINE_CLASS_OPTIONAL(CANDIDATE, TestNS, {name})",
                 $"DEFINE_CLASS_U_OPTIONAL(TestNS, {name}, NativeCandidate)",
@@ -146,10 +153,14 @@ namespace ILLink.Tasks.Tests
                 ModuleDefinition module = assembly.MainModule;
                 TypeReference objectType = module.ImportReference(typeof(object));
                 TypeReference voidType = module.ImportReference(typeof(void));
-                var candidate = new TypeDefinition("TestNS", "Candidate", TypeAttributes.Public, objectType);
+                var candidate = new TypeDefinition("TestNS", candidateName, TypeAttributes.Public, objectType);
+                if (generic)
+                    candidate.GenericParameters.Add(new GenericParameter("T", candidate));
                 if (nested)
                 {
-                    var container = new TypeDefinition("TestNS", "Container", TypeAttributes.Public, objectType);
+                    var container = new TypeDefinition("TestNS", containerName, TypeAttributes.Public, objectType);
+                    if (generic)
+                        container.GenericParameters.Add(new GenericParameter("T", container));
                     module.Types.Add(container);
                     candidate.Namespace = "";
                     candidate.Attributes = TypeAttributes.NestedPublic;
@@ -194,8 +205,8 @@ namespace ILLink.Tasks.Tests
             Assert.True(driver.Run(logger) == 0, string.Join(Environment.NewLine, logger.Messages));
             using AssemblyDefinition linked = AssemblyDefinition.ReadAssembly(Path.Combine(output, "Input.dll"));
             TypeDefinition retained = nested
-                ? linked.MainModule.GetType("TestNS.Container")?.NestedTypes.SingleOrDefault(t => t.Name == "Candidate")
-                : linked.MainModule.GetType("TestNS.Candidate");
+                ? linked.MainModule.GetType($"TestNS.{containerName}")?.NestedTypes.SingleOrDefault(t => t.Name == candidateName)
+                : linked.MainModule.GetType($"TestNS.{candidateName}");
             if (reachable || featureEnabled)
             {
                 Assert.NotNull(retained);

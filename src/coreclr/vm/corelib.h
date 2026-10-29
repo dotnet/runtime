@@ -122,7 +122,7 @@ DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandl
 DEFINE_CLASS(ARRAY,                 System,                 Array)
 DEFINE_METHOD(ARRAY,                CTOR,                   Ctor,                       NoSig)
 
-DEFINE_CLASS(ARRAY_WITH_OFFSET,     Interop,                ArrayWithOffset)
+DEFINE_CLASS_OPTIONAL(ARRAY_WITH_OFFSET,     Interop,                ArrayWithOffset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_OFFSET,               m_offset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_COUNT,                m_count)
@@ -195,7 +195,7 @@ DEFINE_METHOD(LICENSE_INTEROP_PROXY, SAVEKEYINCURRENTCONTEXT,           SaveKeyI
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
 
-DEFINE_CLASS(CRITICAL_HANDLE,       Interop,                CriticalHandle)
+DEFINE_CLASS_OPTIONAL(CRITICAL_HANDLE,       Interop,                CriticalHandle)
 DEFINE_FIELD(CRITICAL_HANDLE,       HANDLE,                 handle)
 
 DEFINE_CLASS_OPTIONAL(HANDLE_REF,   Interop,                HandleRef)
@@ -254,7 +254,7 @@ DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_CLOSED_STATIC,     CtorCollectibl
 DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_OPEN,              CtorCollectibleOpen,                   NoSig)
 DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_VIRTUAL_DISPATCH,  CtorCollectibleVirtualDispatch,        NoSig)
 
-DEFINE_CLASS(DELEGATEWRAPPER, System,             Delegate+Wrapper)
+DEFINE_CLASS_OPTIONAL(DELEGATEWRAPPER, System,             Delegate+Wrapper)
 DEFINE_FIELD(DELEGATEWRAPPER, VALUE,              Value)
 
 DEFINE_CLASS(INT128,               System,                 Int128)
@@ -441,25 +441,25 @@ DEFINE_FIELD_U(_aggregatedManagedObjectWrapper, NativeObjectWrapperObject, _aggr
 DEFINE_FIELD_U(_uniqueInstance, NativeObjectWrapperObject, _uniqueInstance)
 DEFINE_FIELD_U(_proxyHandle, NativeObjectWrapperObject, _proxyHandle)
 DEFINE_FIELD_U(_proxyHandleTrackingResurrection, NativeObjectWrapperObject, _proxyHandleTrackingResurrection)
-DEFINE_CLASS_U(Interop, ComWrappers+ReferenceTrackerNativeObjectWrapper, ReferenceTrackerNativeObjectWrapperObject)
+DEFINE_CLASS_U_OPTIONAL(Interop, ComWrappers+ReferenceTrackerNativeObjectWrapper, ReferenceTrackerNativeObjectWrapperObject)
 DEFINE_FIELD_U(_trackerObject, ReferenceTrackerNativeObjectWrapperObject, _trackerObject)
 DEFINE_FIELD_U(_contextToken, ReferenceTrackerNativeObjectWrapperObject, _contextToken)
 DEFINE_FIELD_U(_trackerObjectDisconnected, ReferenceTrackerNativeObjectWrapperObject, _trackerObjectDisconnected)
-DEFINE_CLASS_U(Interop, GCHandleSet+Entry, GCHandleSetEntryObject)
+DEFINE_CLASS_U_OPTIONAL(Interop, GCHandleSet+Entry, GCHandleSetEntryObject)
 DEFINE_FIELD_U(_next, GCHandleSetEntryObject, _next)
 DEFINE_FIELD_U(_value, GCHandleSetEntryObject, _value)
-DEFINE_CLASS_U(Interop, GCHandleSet, NoClass)
+DEFINE_CLASS_U_OPTIONAL(Interop, GCHandleSet, NoClass)
 DEFINE_FIELD_U(_buckets, GCHandleSetObject, _buckets)
 #endif //FEATURE_COMWRAPPERS
 
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(OBJCMARSHAL,    ObjectiveC, ObjectiveCMarshal)
 DEFINE_METHOD(OBJCMARSHAL,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,    InvokeUnhandledExceptionPropagation,    SM_PtrException_IntPtr_PtrIntPtr_PtrException_RetVoidPtr)
-DEFINE_CLASS_U(ObjectiveC, ObjectiveCMarshal+ObjcTrackingInformation, ObjcTrackingInformationObject)
+DEFINE_CLASS_U_OPTIONAL(ObjectiveC, ObjectiveCMarshal+ObjcTrackingInformation, ObjcTrackingInformationObject)
 DEFINE_FIELD_U(_memory, ObjcTrackingInformationObject, _memory)
 #endif // FEATURE_OBJCMARSHAL
 
-DEFINE_CLASS_U(Interop, TypeMapLazyDictionary+CallbackContext, CallbackContext)
+DEFINE_CLASS_U_OPTIONAL(Interop, TypeMapLazyDictionary+CallbackContext, CallbackContext)
 DEFINE_FIELD_U(_currAssembly, CallbackContext, _currAssembly)
 
 DEFINE_CLASS(IENUMERATOR,           Collections,            IEnumerator)
@@ -776,16 +776,16 @@ DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_USHRT, CompareExchange, SM_
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_INT,   CompareExchange, SM_RefInt_Int_Int_RetInt)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_LONG,  CompareExchange, SM_RefLong_Long_Long_RetLong)
 
-DEFINE_CLASS_U(CompilerServices,    ConditionalWeakTable`2,   NoClass)
+DEFINE_CLASS_U_OPTIONAL(CompilerServices,    ConditionalWeakTable`2,   NoClass)
 DEFINE_FIELD_U(_lock,               ConditionalWeakTableObject, _lock)
 DEFINE_FIELD_U(_container,          ConditionalWeakTableObject, _container)
 
-DEFINE_CLASS_U(CompilerServices,    ConditionalWeakTable`2+Container, NoClass)
+DEFINE_CLASS_U_OPTIONAL(CompilerServices,    ConditionalWeakTable`2+Container, NoClass)
 DEFINE_FIELD_U(_parent,             ConditionalWeakTableContainerObject, _parent)
 DEFINE_FIELD_U(_buckets,            ConditionalWeakTableContainerObject, _buckets)
 DEFINE_FIELD_U(_entries,            ConditionalWeakTableContainerObject, _entries)
 
-DEFINE_CLASS_U(CompilerServices,    ConditionalWeakTable`2+Entry, ConditionalWeakTableContainerObject::Entry)
+DEFINE_CLASS_U_OPTIONAL(CompilerServices,    ConditionalWeakTable`2+Entry, ConditionalWeakTableContainerObject::Entry)
 DEFINE_FIELD_U(depHnd,              ConditionalWeakTableContainerObject::Entry, depHnd)
 DEFINE_FIELD_U(HashCode,            ConditionalWeakTableContainerObject::Entry, HashCode)
 DEFINE_FIELD_U(Next,                ConditionalWeakTableContainerObject::Entry, Next)
@@ -841,7 +841,7 @@ DEFINE_CLASS(SWIFT_INDIRECT_RESULT,          Swift,                  SwiftIndire
 DEFINE_CLASS(SAFE_HANDLE,         Interop,                SafeHandle)
 DEFINE_FIELD(SAFE_HANDLE,           HANDLE,                 handle)
 
-DEFINE_CLASS_U(Diagnostics,                StackFrameHelper,   StackFrameHelper)
+DEFINE_CLASS_U_OPTIONAL(Diagnostics,                StackFrameHelper,   StackFrameHelper)
 DEFINE_FIELD_U(rgiOffset,                  StackFrameHelper,   rgiOffset)
 DEFINE_FIELD_U(rgiILOffset,                StackFrameHelper,   rgiILOffset)
 DEFINE_FIELD_U(dynamicMethods,             StackFrameHelper,   dynamicMethods)
@@ -926,10 +926,10 @@ DEFINE_FIELD_U(_isThreadPool,             ThreadBaseObject,   m_IsThreadPool)
 DEFINE_FIELD_U(_executionContext,         ThreadBaseObject,   m_ExecutionContext)
 
 
-DEFINE_CLASS_U(Threading,             ExecutionContext,            ExecutionContextObject)
+DEFINE_CLASS_U_OPTIONAL(Threading,             ExecutionContext,            ExecutionContextObject)
 DEFINE_FIELD_U(m_isFlowSuppressed,    ExecutionContextObject,      m_isFlowSuppressed)
 
-DEFINE_CLASS(EXECUTIONCONTEXT,        Threading,                   ExecutionContext)
+DEFINE_CLASS_OPTIONAL(EXECUTIONCONTEXT,        Threading,                   ExecutionContext)
 DEFINE_FIELD(EXECUTIONCONTEXT,        DEFAULT_FLOW_SUPPRESSED,     DefaultFlowSuppressed)
 
 #ifdef FEATURE_MULTITHREADING
@@ -1267,7 +1267,7 @@ DEFINE_CLASS(ILISTGENERIC,          CollectionsGeneric,     IList`1)
 DEFINE_CLASS(IREADONLYCOLLECTIONGENERIC,CollectionsGeneric, IReadOnlyCollection`1)
 DEFINE_CLASS(IREADONLYLISTGENERIC,  CollectionsGeneric,     IReadOnlyList`1)
 
-DEFINE_CLASS(LISTGENERIC,          CollectionsGeneric,      List`1)
+DEFINE_CLASS_OPTIONAL(LISTGENERIC,          CollectionsGeneric,      List`1)
 DEFINE_FIELD(LISTGENERIC,          ITEMS,                   _items)
 DEFINE_FIELD(LISTGENERIC,          SIZE,                    _size)
 

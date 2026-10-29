@@ -62,6 +62,27 @@ static VARTYPE GetVarTypeForCorElementType(CorElementType type)
     return vt;
 }
 
+bool IsCriticalHandle(TypeHandle type)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // A loaded CriticalHandle subtype has already loaded its base class.
+    // Classification must not load CriticalHandle for unrelated types.
+    PTR_MethodTable pCriticalHandleMT;
+    {
+        // A non-loading lookup can still acquire loader locks.
+        GCX_PREEMP();
+        pCriticalHandleMT = CoreLibBinder::GetClassIfExist(CLASS__CRITICAL_HANDLE);
+    }
+    return pCriticalHandleMT != nullptr && type.CanCastTo(TypeHandle(pCriticalHandleMT));
+}
+
 VARTYPE GetVarTypeForTypeHandle(TypeHandle type)
 {
     CONTRACTL
@@ -142,7 +163,7 @@ VARTYPE GetVarTypeForTypeHandle(TypeHandle type)
     // VARIANTs or Arrays. The same applies to CriticalHandle.
     if (type.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__SAFE_HANDLE))))
         COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
-    if (type.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
+    if (IsCriticalHandle(type))
         COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
 
     if (pMT->IsInterface())
