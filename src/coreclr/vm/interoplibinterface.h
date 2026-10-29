@@ -150,6 +150,10 @@ public:
 
     static bool IsGCBridgeActive();
 
+    static bool TryGetObjectFromHandleWithoutBridgeWait(
+        _In_ OBJECTHANDLE handle,
+        _Out_ Object** result);
+
     static void WaitForGCBridgeFinish();
 
     static void TriggerClientBridgeProcessing(

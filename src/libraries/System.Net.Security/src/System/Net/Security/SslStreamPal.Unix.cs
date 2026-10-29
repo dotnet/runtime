@@ -161,6 +161,10 @@ namespace System.Net.Security
             {
                 return new ProtocolToken { Status = status };
             }
+
+            // Renegotiation resets peer verification. Require a certificate unless a callback can accept its absence.
+            Interop.Ssl.SslSetVerifyPeer((SafeSslHandle)context, failIfNoPeerCert: sslAuthenticationOptions.CertValidationDelegate is null);
+
             return HandshakeInternal(ref context!, null, out _, sslAuthenticationOptions);
         }
 

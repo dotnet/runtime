@@ -6,12 +6,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Text;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
@@ -34,14 +34,10 @@ namespace System.Reflection.Runtime.MethodInfos
         /// Return an array of the types of the return value and parameter types.
         /// </summary>
         QSignatureTypeHandle[] QualifiedMethodSignature { get; }
-        IEnumerable<CustomAttributeData> TrueCustomAttributes { get; }
+        MetadataReader GetMetadataReader();
+        CustomAttributeHandleCollection GetCustomAttributeHandles();
 
-        /// <summary>
-        /// Parse the metadata that describes parameters, and for each parameter for which there is specific metadata
-        /// construct a RuntimeParameterInfo and fill in the VirtualRuntimeParameterInfoArray. Do remember to use contextMethod
-        /// instead of using the one internal to the RuntimeMethodCommon, as the runtime may pass in a subtly different context.
-        /// </summary>
-        void FillInMetadataDescribedParameters(ref VirtualRuntimeParameterInfoArray result, QSignatureTypeHandle[] parameterTypes, MethodBase contextMethod, TypeContext typeContext);
+        ParameterHandleCollection ParameterHandles { get; }
 
         string Name { get; }
 

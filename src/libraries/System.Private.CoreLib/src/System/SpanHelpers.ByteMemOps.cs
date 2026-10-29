@@ -20,6 +20,8 @@ namespace System
         private const ulong MemmoveNativeThreshold = ulong.MaxValue;
 #elif TARGET_ARM
         private const nuint MemmoveNativeThreshold = 512;
+#elif TARGET_WASM && !MONO
+        private const nuint MemmoveNativeThreshold = 1024;
 #else
         private const nuint MemmoveNativeThreshold = 2048;
 #endif

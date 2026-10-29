@@ -18,7 +18,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Parses the string '<paramref name="name"/>' and returns the type corresponding to the parsed type name.
         /// The type name string should be in the 'SerString' format as defined by the ECMA-335 standard.
-        /// This is the inverse of what <see cref="CustomAttributeTypeNameFormatter"/> does.
+        /// This is the inverse of what <c>CustomAttributeTypeNameFormatter</c> does.
         /// </summary>
         public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name, bool throwIfNotFound = true,
             Func<ModuleDesc, string, TypeDesc> canonGenericResolver = null)
@@ -34,6 +34,16 @@ namespace Internal.TypeSystem
                 _fallbackToCoreLib = true,
                 _canonGenericResolver = canonGenericResolver
             }.Resolve(parsed);
+        }
+
+        /// <summary>
+        /// Determines whether <paramref name="name"/> is a valid assembly-qualified type name,
+        /// including assembly qualification for constructed generic arguments.
+        /// </summary>
+        public static bool IsAssemblyQualifiedTypeName(string name)
+        {
+            return TypeName.TryParse(name.AsSpan(), out TypeName parsed, s_typeNameParseOptions)
+                && IsFullyQualified(parsed);
         }
 
         public static TypeDesc GetTypeByCustomAttributeTypeNameForDataFlow(string name, ModuleDesc callingModule,
@@ -65,32 +75,32 @@ namespace Internal.TypeSystem
             TypeDesc type = resolver.Resolve(parsed);
 
             return type;
+        }
 
-            static bool IsFullyQualified(TypeName typeName)
+        private static bool IsFullyQualified(TypeName typeName)
+        {
+            if (typeName.AssemblyName is null)
             {
-                if (typeName.AssemblyName is null)
-                {
-                    return false;
-                }
+                return false;
+            }
 
-                if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
-                {
-                    return IsFullyQualified(typeName.GetElementType());
-                }
+            if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
+            {
+                return IsFullyQualified(typeName.GetElementType());
+            }
 
-                if (typeName.IsConstructedGenericType)
+            if (typeName.IsConstructedGenericType)
+            {
+                foreach (TypeName typeArgument in typeName.GetGenericArguments())
                 {
-                    foreach (var typeArgument in typeName.GetGenericArguments())
+                    if (!IsFullyQualified(typeArgument))
                     {
-                        if (!IsFullyQualified(typeArgument))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
                 }
-
-                return true;
             }
+
+            return true;
         }
 
         private struct TypeNameResolver

@@ -4,6 +4,8 @@
 #ifndef __FX_RESOLVER_H__
 #define __FX_RESOLVER_H__
 
+#include <optional>
+
 #include "error_codes.h"
 #include "fx_reference.h"
 #include "fx_definition.h"
@@ -24,14 +26,14 @@ public:
 public:
     static StatusCode resolve_frameworks(
         const pal::string_t& dotnet_root,
-        const runtime_config_t::settings_t& override_settings,
+        const std::optional<roll_forward_option>& override_roll_forward,
         const runtime_config_t& app_config,
         /*in_out*/ fx_definition_vector_t& fx_definitions,
         resolution_failure_info& resolution_failure);
 
     static StatusCode resolve_frameworks_for_app(
         const pal::string_t& dotnet_root,
-        const runtime_config_t::settings_t& override_settings,
+        const std::optional<roll_forward_option>& override_roll_forward,
         const runtime_config_t& app_config,
         /*in_out*/ fx_definition_vector_t& fx_definitions,
         const pal::char_t* app_display_name);
@@ -43,7 +45,7 @@ public:
     static std::vector<pal::string_t> get_disabled_versions();
 
 private:
-    fx_resolver_t(const runtime_config_t::settings_t& override_settings);
+    fx_resolver_t(const std::optional<roll_forward_option>& override_roll_forward);
 
     void update_newest_references(
         const runtime_config_t& config);
@@ -93,7 +95,7 @@ private:
     // of the algorithm.
     fx_name_to_fx_reference_map_t m_oldest_fx_references;
 
-    const runtime_config_t::settings_t& m_override_settings;
+    const std::optional<roll_forward_option>& m_override_roll_forward;
 
     // Disabled runtime versions
     std::vector<pal::string_t> m_disabled_versions;

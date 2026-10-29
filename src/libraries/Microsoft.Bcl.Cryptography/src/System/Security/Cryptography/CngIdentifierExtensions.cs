@@ -8,6 +8,7 @@ namespace System.Security.Cryptography
         private static CngAlgorithm? _mlDsaCngAlgorithm;
         private static CngAlgorithm? _mlKemCngAlgorithm;
         private static CngAlgorithm? _compositeMldsaCngAlgorithm;
+        private static CngAlgorithm? _compositeMlkemCngAlgorithm;
 
         extension(CngAlgorithm)
         {
@@ -19,6 +20,9 @@ namespace System.Security.Cryptography
 
             internal static CngAlgorithm CompositeMLDsa =>
                 _compositeMldsaCngAlgorithm ??= new CngAlgorithm("Composite-ML-DSA"); // BCRYPT_COMPOSITE_MLDSA_ALGORITHM
+
+            internal static CngAlgorithm CompositeMLKem =>
+                _compositeMlkemCngAlgorithm ??= new CngAlgorithm("Composite-ML-KEM"); // BCRYPT_COMPOSITE_MLKEM_ALGORITHM
         }
     }
 
@@ -27,6 +31,7 @@ namespace System.Security.Cryptography
         private static CngAlgorithmGroup? _mlDsaCngAlgorithmGroup;
         private static CngAlgorithmGroup? _mlKemCngAlgorithmGroup;
         private static CngAlgorithmGroup? _compositeMLDsaCngAlgorithmGroup;
+        private static CngAlgorithmGroup? _compositeMLKemCngAlgorithmGroup;
 
         extension(CngAlgorithmGroup)
         {
@@ -38,6 +43,9 @@ namespace System.Security.Cryptography
 
             internal static CngAlgorithmGroup CompositeMLDsa =>
                 _compositeMLDsaCngAlgorithmGroup ??= new CngAlgorithmGroup("CompositeMLDSA"); // NCRYPT_COMPOSITE_MLDSA_ALGORITHM_GROUP
+
+            internal static CngAlgorithmGroup CompositeMLKem =>
+                _compositeMLKemCngAlgorithmGroup ??= new CngAlgorithmGroup("CompositeMLKEM"); // NCRYPT_COMPOSITE_MLKEM_ALGORITHM_GROUP
         }
     }
 
@@ -49,6 +57,9 @@ namespace System.Security.Cryptography
         private static CngKeyBlobFormat? _pqDsaPublicBlob;
         private static CngKeyBlobFormat? _pqDsaPrivateBlob;
         private static CngKeyBlobFormat? _pqDsaPrivateSeedBlob;
+        private static CngKeyBlobFormat? _compositeMLKemPublicBlob;
+        private static CngKeyBlobFormat? _compositeMLKemPrivateBlob;
+        private static CngKeyBlobFormat? _compositeMLKemPrivateIrtfSeedBlob;
 
         extension(CngKeyBlobFormat)
         {
@@ -69,6 +80,15 @@ namespace System.Security.Cryptography
 
             internal static CngKeyBlobFormat PQDsaPrivateSeedBlob =>
                 _pqDsaPrivateSeedBlob ??= new CngKeyBlobFormat("PQDSAPRIVATESEEDBLOB"); // BCRYPT_PQDSA_PRIVATE_SEED_BLOB
+
+            internal static CngKeyBlobFormat CompositeMLKemPublicBlob =>
+                _compositeMLKemPublicBlob ??= new CngKeyBlobFormat("COMPMLKEMPUBLICBLOB"); // BCRYPT_COMPOSITE_MLKEM_PUBLIC_BLOB
+
+            internal static CngKeyBlobFormat CompositeMLKemPrivateBlob =>
+                _compositeMLKemPrivateBlob ??= new CngKeyBlobFormat("COMPMLKEMPRIVATELAMPSBLOB"); // BCRYPT_COMPOSITE_MLKEM_PRIVATE_BLOB
+
+            internal static CngKeyBlobFormat CompositeMLKemPrivateIrtfSeedBlob =>
+                _compositeMLKemPrivateIrtfSeedBlob ??= new CngKeyBlobFormat("COMPMLKEMPRIVATEIRTFSEEDBLOB"); // BCRYPT_COMPOSITE_MLKEM_PRIVATE_IRTF_SEED_BLOB
         }
     }
 }

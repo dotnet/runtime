@@ -3,6 +3,7 @@
 
 
 #include "dbgtransportsession.h"
+#include "CLREventBase.h"
 
 #ifdef RIGHT_SIDE_COMPILE
 #include <minipal/time.h>
@@ -1336,7 +1337,7 @@ void DbgTransportSession::TransportWorker()
         {
             DbgTransportLog(LC_Proxy, "AllocateConnection() failed with %u\n", eStatus);
             DBG_TRANSPORT_INC_STAT(MiscErrors);
-            Sleep(1000);
+            minipal_sleep(1000);
             continue;
         }
 #else // RIGHT_SIDE_COMPILE
@@ -1370,7 +1371,7 @@ void DbgTransportSession::TransportWorker()
         {
             DbgTransportLog(LC_Proxy, "Accept() failed with %u\n", eStatus);
             DBG_TRANSPORT_INC_STAT(MiscErrors);
-            Sleep(1000);
+            minipal_sleep(1000);
             continue;
         }
 
@@ -2190,6 +2191,7 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_DISABLE_OPTS_RESULT:
     case DB_IPCE_CATCH_HANDLER_FOUND_RESULT:
     case DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT:
+    case DB_IPCE_RESOLVE_UPDATE_METADATA_2_RESULT:
         cbAdditionalSize = 0;
         break;
 
@@ -2369,6 +2371,12 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         cbAdditionalSize = sizeof(pEvent->ApplyChanges);
         break;
 
+    case DB_IPCE_RESOLVE_UPDATE_METADATA_1:
+    case DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT:
+    case DB_IPCE_RESOLVE_UPDATE_METADATA_2:
+        cbAdditionalSize = sizeof(pEvent->MetadataUpdateRequest);
+        break;
+
     case DB_IPCE_IS_TRANSITION_STUB:
         cbAdditionalSize = sizeof(pEvent->IsTransitionStub);
         break;
@@ -2427,6 +2435,10 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     case DB_IPCE_DISPOSE_HANDLE:
         cbAdditionalSize = sizeof(pEvent->DisposeHandle);
+        break;
+
+    case DB_IPCE_DISPOSE_EXTERNAL_MEMORY_OWNER:
+        cbAdditionalSize = sizeof(pEvent->DisposeExternalMemoryOwner);
         break;
 
     case DB_IPCE_INTERCEPT_EXCEPTION:

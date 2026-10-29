@@ -347,32 +347,54 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged, string? bootConfigDir = null)
     {
-        List<string> files = new()
-        {
+        List<string> files =
+        [
             Path.Combine(paths.BinDir, "publish", BundleDirName, "_framework", $"{projectName}{WasmAssemblyExtension}"),
-            Path.Combine(paths.ObjWasmDir, "driver.o"),
-            Path.Combine(paths.ObjWasmDir, "runtime.o"),
-            Path.Combine(paths.ObjWasmDir, "corebindings.o"),
-            Path.Combine(paths.ObjWasmDir, "pinvoke.o"),
-
-            Path.Combine(paths.ObjWasmDir, "icall-table.h"),
-            Path.Combine(paths.ObjWasmDir, "pinvoke-table.h"),
-            Path.Combine(paths.ObjWasmDir, "driver-gen.c"),
-
             Path.Combine(paths.BinFrameworkDir, "dotnet.native.wasm"),
             Path.Combine(paths.BinFrameworkDir, "dotnet.native.js"),
-        };
+        ];
 
-        if (isAOT)
+        if (BuildTestBase.IsCoreClrRuntime)
+        {
+            string[] generatedFiles =
+            [
+                "callhelpers-generator.rsp",
+                "callhelpers-interp-to-managed.cpp",
+                "callhelpers-interp-to-managed.o",
+                "callhelpers-pinvoke.cpp",
+                "callhelpers-pinvoke.o",
+                "callhelpers-reverse.cpp",
+                "callhelpers-reverse.o",
+                "dotnet.native.js.symbols",
+                "emcc-compile-generated.rsp",
+                "emcc-link.rsp",
+            ];
+            TestUtils.AssertFilesExist(paths.ObjWasmDir, generatedFiles);
+            files.AddRange(generatedFiles.Select(file => Path.Combine(paths.ObjWasmDir, file)));
+        }
+        else
         {
             files.AddRange(new[]
             {
-                Path.Combine(paths.ObjWasmDir, $"{projectName}.dll.bc"),
-                Path.Combine(paths.ObjWasmDir, $"{projectName}.dll.o"),
-
-                Path.Combine(paths.ObjWasmDir, $"System.Private.CoreLib.dll.bc"),
-                Path.Combine(paths.ObjWasmDir, $"System.Private.CoreLib.dll.o"),
+                Path.Combine(paths.ObjWasmDir, "driver.o"),
+                Path.Combine(paths.ObjWasmDir, "runtime.o"),
+                Path.Combine(paths.ObjWasmDir, "corebindings.o"),
+                Path.Combine(paths.ObjWasmDir, "pinvoke.o"),
+                Path.Combine(paths.ObjWasmDir, "icall-table.h"),
+                Path.Combine(paths.ObjWasmDir, "pinvoke-table.h"),
+                Path.Combine(paths.ObjWasmDir, "driver-gen.c"),
             });
+
+            if (isAOT)
+            {
+                files.AddRange(new[]
+                {
+                    Path.Combine(paths.ObjWasmDir, $"{projectName}.dll.bc"),
+                    Path.Combine(paths.ObjWasmDir, $"{projectName}.dll.o"),
+                    Path.Combine(paths.ObjWasmDir, $"System.Private.CoreLib.dll.bc"),
+                    Path.Combine(paths.ObjWasmDir, $"System.Private.CoreLib.dll.o"),
+                });
+            }
         }
 
         var dict = new Dictionary<string, (string fullPath, bool unchanged)>();

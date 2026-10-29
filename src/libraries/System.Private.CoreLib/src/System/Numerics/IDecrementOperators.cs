@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime;
+
 namespace System.Numerics
 {
     /// <summary>Defines a mechanism for decrementing a given value.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
+    [SuppressReadyToRunCanonicalRooting]
     public interface IDecrementOperators<TSelf>
         where TSelf : IDecrementOperators<TSelf>?
     {

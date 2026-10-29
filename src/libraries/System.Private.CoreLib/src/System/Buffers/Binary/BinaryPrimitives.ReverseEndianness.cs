@@ -383,9 +383,8 @@ namespace System.Buffers.Binary
                 ThrowDestinationTooSmall();
             }
 
-            if (Unsafe.AreSame(ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination)) ||
-                !source.Overlaps(destination, out int elementOffset) ||
-                elementOffset < 0)
+            if (!source.Overlaps(destination, out int elementOffset) ||
+                elementOffset <= 0)
             {
                 // Iterate from beginning to end
                 for (int i = 0; i < source.Length; i++)

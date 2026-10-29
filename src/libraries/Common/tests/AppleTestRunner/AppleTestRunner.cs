@@ -21,10 +21,10 @@ public partial class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 {
     // to be wired once https://github.com/dotnet/xharness/pull/46 is merged
     [LibraryImport("__Internal", EntryPoint = "mono_ios_append_output", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial void mono_ios_append_output (string value);
+    private static safe partial void mono_ios_append_output (string value);
 
     [LibraryImport("__Internal", EntryPoint = "mono_ios_set_summary", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial void mono_ios_set_summary (string value);
+    private static safe partial void mono_ios_set_summary (string value);
 
     private static List<string> s_testLibs = new List<string>();
     private static List<Assembly>? s_testAssemblies;

@@ -89,6 +89,8 @@ namespace ILCompiler
             }
             bool targetAllowsRuntimeCodeGeneration = Get(_command.TargetAllowsRuntimeCodeGeneration)
                 ?? GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
+            bool targetIsSingleThreaded = Get(_command.TargetSingleThreaded)
+                ?? GetTargetIsSingleThreaded(targetArchitecture);
 
             // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
             // they mismatch in required ISAs or computed layouts of structs. On targets that allow
@@ -158,6 +160,7 @@ namespace ILCompiler
             //
             _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib,
                 targetAllowsRuntimeCodeGeneration,
+                targetIsSingleThreaded,
                 instructionSetSupport,
                 oldTypeSystemContext: null);
 
@@ -315,6 +318,7 @@ namespace ILCompiler
 
                         typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib,
                             targetAllowsRuntimeCodeGeneration,
+                            targetIsSingleThreaded,
                             _typeSystemContext.InstructionSetSupport,
                             _typeSystemContext);
                         typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
@@ -378,7 +382,7 @@ namespace ILCompiler
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
-                ICompilation compilation;
+                ReadyToRunCodegenCompilation compilation;
                 using (PerfEventSource.StartStopEvents.LoadingEvents())
                 {
                     List<EcmaModule> inputModules = new List<EcmaModule>();
@@ -470,6 +474,11 @@ namespace ILCompiler
                         }
                     }
 
+                    if (!composite && Get(_command.StripILBodies))
+                    {
+                        throw new Exception(SR.ErrorStripILBodiesRequiresComposite);
+                    }
+
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
@@ -485,6 +494,7 @@ namespace ILCompiler
                     groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
                     groupConfig.CompileAllPossibleCrossModuleCode = false;
                     groupConfig.InstructionSetSupport = instructionSetSupport;
+                    groupConfig.DirectPInvokeModules = Get(_command.DirectPInvoke);
 
                     // Handle non-local generics command line option
                     ModuleDesc nonLocalGenericsHome = compileBubbleGenerics ? inputModules[0] : null;
@@ -692,6 +702,7 @@ namespace ILCompiler
                         .UseMapCsvFile(Get(_command.MapCsv))
                         .UsePdbFile(Get(_command.Pdb), Get(_command.PdbPath))
                         .UsePerfMapFile(Get(_command.PerfMap), Get(_command.PerfMapPath), Get(_command.PerfMapFormatVersion))
+                        .UseWasmDebugInfo(Get(_command.WasmDebugInfoOption))
                         .UseProfileFile(jsonProfile != null)
                         .UseProfileData(profileDataManager)
                         .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)
@@ -702,6 +713,7 @@ namespace ILCompiler
                         .UseCustomPESectionAlignment(Get(_command.CustomPESectionAlignment))
                         .UseVerifyTypeAndFieldLayout(Get(_command.VerifyTypeAndFieldLayout))
                         .UseHotColdSplitting(Get(_command.HotColdSplitting))
+                        .UseVerifyGCModeTransitions(Get(_command.VerifyGCModeTransitions))
                         .GenerateOutputFile(outFile)
                         .UseImageBase(_imageBase)
                         .UseContainerFormat(format)
@@ -720,18 +732,19 @@ namespace ILCompiler
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
-                    compilation = builder.ToCompilation();
+                    compilation = (ReadyToRunCodegenCompilation)builder.ToCompilation();
 
                 }
-                compilation.Compile(outFile);
+                using (compilation)
+                {
+                    compilation.Compile(outFile);
 
-                if (dgmlLogFileName != null)
-                    compilation.WriteDependencyLog(dgmlLogFileName);
+                    if (dgmlLogFileName != null)
+                        compilation.WriteDependencyLog(dgmlLogFileName);
 
-                compilation.Dispose();
-
-                if (((ReadyToRunCodegenCompilation)compilation).DeterminismCheckFailed)
-                    throw new Exception("Determinism Check Failed");
+                    if (compilation.DeterminismCheckFailed)
+                        throw new Exception("Determinism Check Failed");
+                }
             }
         }
 
@@ -739,6 +752,12 @@ namespace ILCompiler
         {
             return operatingSystem is not (TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator or TargetOS.Browser or TargetOS.Wasi)
                 && architecture is not TargetArchitecture.Wasm32;
+        }
+
+        // CoreCLR on WebAssembly is built without FEATURE_MULTITHREADING by default.
+        private static bool GetTargetIsSingleThreaded(TargetArchitecture architecture)
+        {
+            return architecture is TargetArchitecture.Wasm32;
         }
 
         private void CheckManagedCppInputFiles(IEnumerable<string> inputPaths)

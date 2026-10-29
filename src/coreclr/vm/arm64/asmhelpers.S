@@ -157,42 +157,6 @@ NESTED_END OnHijackTripThread, _TEXT
 
 #endif // FEATURE_HIJACK
 
-// void* PacStripPtr(void *);
-// This function strips the pointer of PAC info that is passed as an argument.
-// We prefer to strip a pointer where it's not going to be used to branch execution to.
-// It is a no-op on non-PAC enabled machines.
-.arch_extension pauth
-    NESTED_ENTRY PacStripPtr, _TEXT, NoHandler
-        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -16
-        mov lr, x0
-        xpaclri
-        mov x0, lr
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
-        EPILOG_RETURN
-    NESTED_END PacStripPtr, _TEXT
-
-// void* PacSignPtr(void *, void *);
-// This function signs the input pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
-.arch_extension pauth
-    LEAF_ENTRY PacSignPtr, _TEXT
-        mov x17, x0
-        mov x16, x1
-        pacia1716
-        mov x0, x17
-        ret
-    LEAF_END PacSignPtr, _TEXT
-
-// void* PacAuthPtr(void *, void *);
-// This function authenticates the input signed-pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
-.arch_extension pauth
-    LEAF_ENTRY PacAuthPtr, _TEXT
-        mov x17, x0
-        mov x16, x1
-        autia1716
-        mov x0, x17
-        ret
-    LEAF_END PacAuthPtr, _TEXT
-
 // ------------------------------------------------------------------
 // Redirection Stub for GC in fully interruptible method
 //GenerateRedirectedHandledJITCaseStub GCThreadControl
@@ -645,17 +609,6 @@ LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------
 #endif // TARGET_ANDROID
 #endif // !TARGET_APPLE
-
-LEAF_ENTRY  JIT_PollGC, _TEXT
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, x9
-        ldr     w9, [x9]
-        cbnz    w9, LOCAL_LABEL(JIT_PollGCRarePath)
-        ret
-LOCAL_LABEL(JIT_PollGCRarePath):
-        PREPARE_EXTERNAL_VAR g_pPollGC, x9
-        ldr     x9, [x9]
-        br x9
-LEAF_END  JIT_PollGC, _TEXT
 
 //x0 -This pointer
 //x1 -ReturnBuffer
