@@ -1106,7 +1106,7 @@ public unsafe partial interface IDacDbiInterface
     int FillReadWriteMetadata(ulong vmModule, byte* pBuffer, uint cbBuffer);
 
     [PreserveSig]
-    int GetTargetContextSize(uint contextFlags, uint* pSize);
+    int GetTargetContextSize(Interop.BOOL hasExtendedRegisters, uint* pSize);
 
     [PreserveSig]
     int WriteRegistersToContext(ContextBuffer contextBuffer, CorDebugRegister* regs, uint nRegs, nuint* values);
@@ -1136,6 +1136,9 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetRuntimeVersion(COR_VERSION* pVersion);
+
+    [PreserveSig]
+    int GetFullContextFlags(uint* pFlags);
 }
 
 public enum TargetArchitecture

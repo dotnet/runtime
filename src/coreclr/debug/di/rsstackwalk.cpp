@@ -255,7 +255,9 @@ HRESULT CordbStackWalk::GetContext(ULONG32   contextFlags,
         if ((pContextSize != NULL) || ((contextBufSize != 0) && (pbContextBuf != NULL)))
         {
             pDAC = GetProcess()->GetDAC();
-            IfFailThrow(pDAC->GetTargetContextSize(contextFlags, &requiredContextSize));
+            constexpr ULONG32 x86ContextExtendedRegisters = 0x00010020;
+            BOOL hasExtendedRegisters = (contextFlags & x86ContextExtendedRegisters) == x86ContextExtendedRegisters;
+            IfFailThrow(pDAC->GetTargetContextSize(hasExtendedRegisters, &requiredContextSize));
         }
 
         // set the required size for the CONTEXT buffer

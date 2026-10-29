@@ -985,6 +985,22 @@ public unsafe class DacDbiImplTests
     }
 
     [Theory]
+    [InlineData("x86", 0xccu)]
+    [InlineData("x64", 0x4d0u)]
+    public void GetTargetContextSize_OptionalExtendedRegisters(string targetArch, uint expectedBaseSize)
+    {
+        Target target = RuntimeInfoTests.CreateTarget(new() { IsLittleEndian = true, Is64Bit = targetArch != "x86" },
+            [(Constants.Globals.Architecture, targetArch)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        uint size;
+
+        Assert.Equal(System.HResults.S_OK, dacDbi.GetTargetContextSize(Interop.BOOL.FALSE, &size));
+        Assert.Equal(expectedBaseSize, size);
+        Assert.Equal(System.HResults.S_OK, dacDbi.GetTargetContextSize(Interop.BOOL.TRUE, &size));
+        Assert.Equal(IPlatformAgnosticContext.GetContextForPlatform(target).Size, size);
+    }
+
+    [Theory]
     [InlineData("x64", 16u, 31u, CorDebugRegister.REGISTER_AMD64_XMM0)]
     [InlineData("arm64", 33u, 64u, CorDebugRegister.REGISTER_ARM64_V0)]
     public void ConvertJitRegNumToCorDebugRegister_FloatingPointRegisters(

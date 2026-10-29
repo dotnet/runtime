@@ -2166,7 +2166,7 @@ public:
     //    serialized metadata size.
     virtual HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetTargetContextSize(ULONG32 contextFlags, OUT ULONG32 * pSize) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetTargetContextSize(BOOL hasExtendedRegisters, OUT ULONG32 * pSize) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE WriteRegistersToContext(
         IN ContextBuffer contextBuffer,
@@ -2255,6 +2255,8 @@ public:
 
     // Returns the target's product major, minor, and patch versions, with dwSubBuild set to zero.
     virtual HRESULT STDMETHODCALLTYPE GetRuntimeVersion(OUT COR_VERSION * pVersion) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE GetFullContextFlags(OUT ULONG32 * pFlags) = 0;
 
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL

@@ -1149,33 +1149,8 @@ HRESULT CordbThread::GetRegisterSet(ICorDebugRegisterSet ** ppRegisters)
                 ULONG32 contextSize = GetProcess()->GetTargetContextSize();
                 NewArrayHolder<BYTE> pContextBuffer(new BYTE[contextSize]);
 
-                // CONTEXT_FULL is host-specific; use the target architecture's flag values.
-                IDacDbiInterface::TargetInfo targetInfo;
-                IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
                 ULONG32 contextFlags;
-                switch (targetInfo.arch)
-                {
-                    case IDacDbiInterface::kArchX86:
-                        contextFlags = 0x00010007;
-                        break;
-                    case IDacDbiInterface::kArchAMD64:
-                        contextFlags = 0x0010000B;
-                        break;
-                    case IDacDbiInterface::kArchArm:
-                        contextFlags = 0x00200007;
-                        break;
-                    case IDacDbiInterface::kArchArm64:
-                        contextFlags = 0x00400007;
-                        break;
-                    case IDacDbiInterface::kArchLoongArch64:
-                        contextFlags = 0x00800007;
-                        break;
-                    case IDacDbiInterface::kArchRiscV64:
-                        contextFlags = 0x01000007;
-                        break;
-                    default:
-                        ThrowHR(E_NOTIMPL);
-                }
+                IfFailThrow(GetProcess()->GetDAC()->GetFullContextFlags(&contextFlags));
                 IfFailThrow(pSW->GetContext(contextFlags, contextSize, NULL, pContextBuffer));
 
                 // create the CordbRegisterSet

@@ -6618,7 +6618,35 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetTargetContextSize(uint contextFlags, uint* pSize)
+    public int GetFullContextFlags(uint* pFlags)
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pFlags is null)
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pFlags));
+
+            *pFlags = IPlatformAgnosticContext.GetContextForPlatform(_target).FullContextFlags;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint flagsLocal;
+            int hrLocal = _legacy.GetFullContextFlags(pFlags is null ? null : &flagsLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pFlags == flagsLocal, $"cDAC: {*pFlags}, DAC: {flagsLocal}");
+        }
+#endif
+        return hr;
+    }
+
+    public int GetTargetContextSize(Interop.BOOL hasExtendedRegisters, uint* pSize)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
@@ -6629,11 +6657,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
 
-            // The CONTEXT size varies with the flags only on platforms that support variable-sized
-            // CONTEXTs (currently just x86's extended registers). On every other platform
-            // ExtendedRegistersFlag is 0 and SizeWithoutExtendedRegisters == Size, so the full size
-            // is always returned. This mirrors the native DAC's TARGET_X86 build-time gate.
-            *pSize = ctx.ExtendedRegistersFlag != 0 && (contextFlags & ctx.ExtendedRegistersFlag) != ctx.ExtendedRegistersFlag
+            // Only x86 has optional extended registers; other platforms always return the full size.
+            *pSize = hasExtendedRegisters == Interop.BOOL.FALSE
                 ? ctx.SizeWithoutExtendedRegisters
                 : ctx.Size;
         }
@@ -6645,7 +6670,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null)
         {
             uint sizeLocal;
-            int hrLocal = _legacy.GetTargetContextSize(contextFlags, &sizeLocal);
+            int hrLocal = _legacy.GetTargetContextSize(hasExtendedRegisters, &sizeLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*pSize == sizeLocal, $"cDAC: {*pSize}, DAC: {sizeLocal}");

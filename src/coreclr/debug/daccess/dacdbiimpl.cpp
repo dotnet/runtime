@@ -5958,7 +5958,18 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread,
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetContextSize(ULONG32 contextFlags, OUT ULONG32 * pSize)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetFullContextFlags(OUT ULONG32 * pFlags)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pFlags == NULL)
+        return E_INVALIDARG;
+
+    *pFlags = DT_CONTEXT_FULL;
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetContextSize(BOOL hasExtendedRegisters, OUT ULONG32 * pSize)
 {
     DD_ENTER_MAY_THROW;
 
@@ -5966,7 +5977,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetContextSize(ULONG32 cont
         return E_INVALIDARG;
 
 #if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-    if ((contextFlags & DT_CONTEXT_EXTENDED_REGISTERS) != DT_CONTEXT_EXTENDED_REGISTERS)
+    if (!hasExtendedRegisters)
     {
         *pSize = offsetof(DT_CONTEXT, ExtendedRegisters);
     }
