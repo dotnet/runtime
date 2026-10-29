@@ -117,29 +117,6 @@ FCIMPL2(uint32_t, ModUInt32Internal, uint32_t i, uint32_t j)
 FCIMPLEND
 #endif
 
-#ifdef HOST_ARM
-EXTERN_C int64_t F_CALL_CONV RhpLMul(int64_t i, int64_t j)
-{
-    return i * j;
-}
-
-EXTERN_C uint64_t F_CALL_CONV RhpLRsz(uint64_t i, int32_t j)
-{
-    return i >> (j & 0x3f);
-}
-
-EXTERN_C int64_t F_CALL_CONV RhpLRsh(int64_t i, int32_t j)
-{
-    return i >> (j & 0x3f);
-}
-
-EXTERN_C int64_t F_CALL_CONV RhpLLsh(int64_t i, int32_t j)
-{
-    return i << (j & 0x3f);
-}
-
-#endif // HOST_ARM
-
 #if defined(HOST_X86) || defined(HOST_WASM)
 
 #undef min

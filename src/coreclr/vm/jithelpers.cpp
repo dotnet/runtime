@@ -107,17 +107,6 @@ using std::isnan;
 //
 #define Is32BitSigned(a)    (Hi32Bits(a) == Hi32Bits((INT64)(INT32)(a)))
 
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
-/*********************************************************************/
-HCIMPL2_VV(INT64, RhpLMul, INT64 val1, INT64 val2)
-{
-    FCALL_CONTRACT;
-
-    return (val1 * val2);
-}
-HCIMPLEND
-#endif // !TARGET_X86 || TARGET_UNIX
-
 /*********************************************************************/
 extern "C" FCDECL2(INT32, JIT_Div, INT32 dividend, INT32 divisor);
 extern "C" FCDECL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor);
@@ -127,32 +116,6 @@ extern "C" FCDECL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor);
 extern "C" FCDECL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor);
 extern "C" FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor);
 extern "C" FCDECL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor);
-
-#if !defined(HOST_64BIT) && !defined(TARGET_X86)
-/*********************************************************************/
-HCIMPL2_VV(UINT64, RhpLLsh, UINT64 num, int shift)
-{
-    FCALL_CONTRACT;
-    return num << (shift & 0x3F);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, RhpLRsh, INT64 num, int shift)
-{
-    FCALL_CONTRACT;
-    return num >> (shift & 0x3F);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, RhpLRsz, UINT64 num, int shift)
-{
-    FCALL_CONTRACT;
-    return num >> (shift & 0x3F);
-}
-HCIMPLEND
-#endif // !HOST_64BIT && !TARGET_X86
 
 #include <optdefault.h>
 
