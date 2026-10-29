@@ -170,6 +170,11 @@ namespace System.PrivateUri.Tests
             var absoluteRawSameAuthority = new Uri(AbsoluteUri + ":80" + Path, new UriCreationOptions { DangerousDisablePathAndQueryCanonicalization = true });
             Equal(absoluteRaw, absoluteRawSameAuthority);
 
+            var rawOptions = new UriCreationOptions { DangerousDisablePathAndQueryCanonicalization = true };
+            var scoped = new Uri("http://[fe80::1%1]/foo", rawOptions);
+            NotEqual(scoped, new Uri("http://[fe80::1%2]/foo", rawOptions));
+            Equal(scoped, new Uri("http://[FE80:0:0:0:0:0:0:1%1]:80/foo", rawOptions));
+
             static void Equal(Uri left, Uri right)
             {
                 Assert.True(left.Equals(right));
