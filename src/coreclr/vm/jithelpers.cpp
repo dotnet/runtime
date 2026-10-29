@@ -748,18 +748,22 @@ extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
     // This can happen if the method was converted from virtual to non-virtual after the R2R image was created.
     // While this is not a common scenario and is documented as a breaking change, we should still handle it
     // as we have no good scheme for reporting an actionable error here.
-    if (!pStaticMD->IsVtableMethod())
-    {
-        addr = pStaticMD->GetMultiCallableAddrOfCode();
-        _ASSERTE(addr);
-    }
-    else
+    MethodDesc* pTargetMD = pStaticMD;
+    if (pStaticMD->IsVtableMethod())
     {
         MethodTable *pMTObjRef = objRef->GetMethodTable();
         GCX_PREEMP();
         // This is the new way of resolving a virtual call, including generic virtual methods.
         // The code is now also used by reflection, remoting etc.
-        addr = pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, pMTObjRef, staticTH);
+        pTargetMD = pStaticMD->GetMethodDescOfVirtualizedCode(&objRef, pMTObjRef, staticTH);
+    }
+
+    {
+        GCX_PREEMP();
+        // ReadyToRun callers do not load the target's signature types. A newly resolved target,
+        // such as a generic virtual method instantiation, can be scanned by its prestub frame.
+        pTargetMD->PrepareForUseAsACallTargetOfANativeImage();
+        addr = pTargetMD->GetMultiCallableAddrOfCode();
         _ASSERTE(addr);
     }
 
