@@ -48,6 +48,8 @@ static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_SveSha3_Arm64;
         case InstructionSet_SveSm4:
             return InstructionSet_SveSm4_Arm64;
+        case InstructionSet_SvePmull128:
+            return InstructionSet_SvePmull128_Arm64;
         default:
             return InstructionSet_NONE;
     }
@@ -130,6 +132,10 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
         if (strcmp(className, "SveAes") == 0)
         {
             return InstructionSet_SveAes;
+        }
+        if (strcmp(className, "SvePmull128") == 0)
+        {
+            return InstructionSet_SvePmull128;
         }
         if (strcmp(className, "SveSha3") == 0)
         {
@@ -735,14 +741,22 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
 
             // We don't want to support creating AND_NOT nodes prior to LIR
-            // as it can break important optimizations. We'll produces this
+            // as it can break important optimizations. We'll produce this
             // in lowering instead so decompose into the individual operations
             // on import
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            op2     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseType, simdSize));
+            op2 = gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseType, simdSize);
+
+            // Keep the SVE NOT explicit so lowering can recognize mask-shaped operands
+            // and recover the predicate BIC form.
+            if (intrinsic == NI_AdvSimd_BitwiseClear)
+            {
+                op2 = gtFoldExpr(op2);
+            }
+
             retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseType, simdSize);
             break;
         }

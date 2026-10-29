@@ -53,6 +53,19 @@ C_FUNC(\Name):
         .cfi_endproc
 .endm
 
+.macro LEAF_END_MARKED Name, Section
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name\()_End)
+        .private_extern C_FUNC(\Name\()_End)
+#else
+        .global C_FUNC(\Name\()_End)
+#endif
+C_FUNC(\Name\()_End):
+        LEAF_END \Name, \Section
+        // make sure this symbol gets its own address
+        nop
+.endm
+
 .macro push_nonvol_reg Register
         push \Register
         .cfi_adjust_cfa_offset 8
@@ -231,7 +244,6 @@ C_FUNC(\Name):
 // CONSTANTS -- INTEGER
 //
 #define TSF_Attached                    0x01
-#define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags

@@ -44,26 +44,16 @@ namespace
     struct DisableTriggerGcWhileCallingManagedCode
     {
         Thread * m_pThread;
-        bool m_fGcStressWasSuppressed;
 
         DisableTriggerGcWhileCallingManagedCode()
         {
             // It is illegal for any of the callouts to trigger a GC.
             m_pThread = ThreadStore::GetCurrentThread();
             m_pThread->SetDoNotTriggerGc();
-
-            // Due to the above we have better suppress GC stress.
-            m_fGcStressWasSuppressed = m_pThread->IsSuppressGcStressSet();
-            if (!m_fGcStressWasSuppressed)
-                m_pThread->SetSuppressGcStress();
         }
 
         ~DisableTriggerGcWhileCallingManagedCode()
         {
-            // Revert GC stress mode if we changed it.
-            if (!m_fGcStressWasSuppressed)
-                m_pThread->ClearSuppressGcStress();
-
             m_pThread->ClearDoNotTriggerGc();
         }
     };

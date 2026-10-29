@@ -609,28 +609,23 @@ internal static partial class CrossgenComparison
         {
             FileName = executable,
             RedirectStandardError = true,
-            RedirectStandardInput = true,
             RedirectStandardOutput = true,
-            UseShellExecute = false,
+            InheritedHandles = [],
         };
+        using Microsoft.Win32.SafeHandles.SafeFileHandle nullHandle = File.OpenNullHandle();
+        startInfo.StandardInputHandle = nullHandle;
 
         foreach (string argument in arguments)
         {
             startInfo.ArgumentList.Add(argument);
         }
 
-        using Process process = new() { StartInfo = startInfo };
-        process.Start();
-        process.StandardInput.Close();
-
-        Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
-        Task<string> standardError = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+        ProcessTextOutput result = await Process.RunAndCaptureTextAsync(startInfo);
 
         return new ProcessResult(
-            process.ExitCode,
-            await standardOutput,
-            await standardError,
+            result.ExitStatus.ExitCode,
+            result.StandardOutput,
+            result.StandardError,
             FormatCommand(executable, arguments));
     }
 
