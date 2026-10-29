@@ -4,7 +4,7 @@
 import type { PromiseCompletionSource } from "./types";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { allocatePromiseId, WorkerResultKind } from "./shared-signaling";
-import type { WorkerValue, WorkerValueType } from "./worker-values";
+import type { WorkerValue, WorkerReturnType } from "./worker-values";
 import { validateWorkerValue } from "./worker-values";
 import { MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 
@@ -15,7 +15,7 @@ export type WorkerPromiseMessage = {
 
 export function createWorkerPromises() {
     const reserved = new Set<number>();
-    const pending = new Map<number, { completion: PromiseCompletionSource<WorkerValue>, type: WorkerValueType }>();
+    const pending = new Map<number, { completion: PromiseCompletionSource<WorkerValue>, type: WorkerReturnType }>();
     let stopped: Error | undefined;
     return {
         reserve(): number {
@@ -27,7 +27,7 @@ export function createWorkerPromises() {
             reserved.add(id);
             return id;
         },
-        promise(id: number, type: WorkerValueType = MarshalerType.Int32): Promise<WorkerValue> {
+        promise(id: number, type: WorkerReturnType = MarshalerType.Int32): Promise<WorkerValue> {
             if (stopped) throw stopped;
             if (!reserved.has(id) || pending.has(id)) throw new Error("withWorker(): invalid asynchronous request");
             const release = (): void => {
@@ -69,7 +69,7 @@ export function captureWorkerPromise(
     value: unknown, requestId: number, type: WorkerPromiseMessage["type"],
     active: Set<number>, post: (message: WorkerPromiseMessage) => void,
     onFailure: (error: Error) => void,
-    returnType: WorkerValueType = MarshalerType.Int32,
+    returnType: WorkerReturnType = MarshalerType.Int32,
 ): WorkerResultKind {
     if (value === null || value === undefined) return WorkerResultKind.Null;
     if ((typeof value !== "object" && typeof value !== "function") || !("then" in value) || typeof value.then !== "function") {

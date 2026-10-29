@@ -62,8 +62,11 @@ application assets; do not patch files in the NuGet cache or published output.
 Browser ReadyToRun images must be produced by a compiler that includes a maximum
 in their memory imports. Older unbounded images fail shared staging explicitly.
 
-The current bridge supports one Boolean, Int32, Single, Double, or String argument
-and a result of any of those types, synchronously or through a Task. Floating-point
+The current bridge supports zero or one Boolean, Int32, Single, Double, or String
+argument and a result of any of those types or void, synchronously or through a
+Task. Void exports return undefined; Task-without-result completion resolves
+to undefined, while a null Task remains null. Void UI imports ignore their return
+values. DiscardNoWait imports/exports are not supported. Floating-point
 transport preserves NaN, infinities and signed zero; Single follows native
 float32 rounding. Null and empty strings remain distinct.
 The worker owns temporary UTF-16 transport allocations and native marshaling;

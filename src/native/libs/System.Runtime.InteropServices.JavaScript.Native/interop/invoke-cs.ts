@@ -13,7 +13,7 @@ import { allocStackFrame, getArg, getMarshalerToCsByType, getMarshalerToJsByType
 import { bindArgMarshalToCs } from "./marshal-to-cs";
 import { bindArgMarshalToJs, endMarshalTaskToJs, releaseEagerTaskHolder } from "./marshal-to-js";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, isRuntimeRunning, startMeasure } from "./utils";
-import { isWorkerValueType, MarshalerType, MeasuredBlock } from "./types";
+import { isWorkerArgumentType, isWorkerReturnType, MarshalerType, MeasuredBlock } from "./types";
 import { boundCsFunctionSymbol, exportsByAssembly } from "./gc-handles";
 import { ManagedError } from "./marshaled-types";
 
@@ -62,14 +62,20 @@ export function invokeWorkerJSExport(handle: number, args: JSMarshalerArguments,
         const fn = workerExports.get(handle);
         if (!fn) throw new Error("withWorker(): unknown or unsupported scalar export");
         const closure: BindingClosureCS = Reflect.get(fn, boundCsFunctionSymbol);
-        const argumentConverter = getMarshalerToJsByType(closure.workerArgumentType);
-        if (!argumentConverter) throw new Error("Worker argument marshaler is not initialized");
-        const result = fn(closure.workerArgumentType === MarshalerType.String ? stringArgument : argumentConverter(getArg(args, 2)));
+        let result;
+        if (closure.argsCount === 0) {
+            result = fn();
+        } else {
+            const argumentConverter = getMarshalerToJsByType(closure.workerArgumentType);
+            if (!argumentConverter) throw new Error("Worker argument marshaler is not initialized");
+            result = fn(closure.workerArgumentType === MarshalerType.String ? stringArgument : argumentConverter(getArg(args, 2)));
+        }
         if (closure.isAsync) {
             return result === null ? null : result.catch((error: unknown) => {
                 throw snapshotWorkerExportError(error);
             });
         }
+        if (closure.workerReturnType === MarshalerType.Void) return undefined;
         if (closure.workerReturnType === MarshalerType.String) return result;
         const converter = getMarshalerToCsByType(closure.workerReturnType);
         if (!converter) throw new Error("Worker result marshaler is not initialized");
@@ -123,7 +129,9 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
     const resConverter = bindArgMarshalToJs(resSig, resMarshalerType, 1);
 
     const workerArgumentType = argsCount === 1 ? getSignatureType(getSig(signature, 2)) : MarshalerType.None;
-    const workerReturnType = isAsync ? getSignatureResType(resSig) : resMarshalerType;
+    const rawWorkerReturnType = isAsync ? getSignatureResType(resSig) : resMarshalerType;
+    const workerReturnType = rawWorkerReturnType === MarshalerType.None || rawWorkerReturnType === MarshalerType.Discard
+        ? MarshalerType.Void : rawWorkerReturnType;
     const closure: BindingClosureCS = {
         methodHandle,
         fullyQualifiedName,
@@ -133,7 +141,7 @@ export function bindCsFunction(methodHandle: CSFnHandle, assemblyName: string, n
         isAsync,
         isDiscardNoWait,
         isDisposed: false,
-        isWorkerScalar: argsCount === 1 && isWorkerValueType(workerReturnType) && isWorkerValueType(workerArgumentType),
+        isWorkerScalar: argsCount <= 1 && isWorkerReturnType(workerReturnType) && isWorkerArgumentType(workerArgumentType),
         workerArgumentType,
         workerReturnType,
     };

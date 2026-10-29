@@ -4,14 +4,15 @@
 import { Module } from "./cross-module";
 import type { VoidPtr } from "./types";
 import { MemoryViewManager } from "./shared-signaling";
-import type { WorkerValueType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+import type { WorkerReturnType, WorkerValueType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 import { JavaScriptMarshalerArgSize, JSMarshalerArgumentOffsets, MarshalerType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
-export type { WorkerValueType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
+export type { WorkerArgumentType, WorkerReturnType, WorkerValueType } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/types";
 
-export type WorkerValue = number | boolean | string | null;
+export type WorkerValue = number | boolean | string | null | undefined;
 const ownedStrings = new Map<number, VoidPtr>();
 
-export function validateWorkerValue(value: unknown, type: WorkerValueType): WorkerValue {
+export function validateWorkerValue(value: unknown, type: WorkerReturnType): WorkerValue {
+    if (type === MarshalerType.Void) return undefined;
     if (value === null || value === undefined) return null;
     if (type === MarshalerType.Boolean) {
         if (typeof value !== "boolean") throw new Error("withWorker(): value must be a Boolean");

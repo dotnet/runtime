@@ -780,6 +780,118 @@ for (const name of ["Boolean", "Double", "Single"]) {
     });
 }
 
+test("zero-argument and void calls preserve argument count, prefix side effects and ignored results", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    const calls = [];
+    let mode = "value";
+    let exports;
+    try {
+        api.setModuleImports("main.js", {
+            receiver: 42,
+            update(...args) {
+                assert.equal(this.receiver, 42);
+                calls.push(args);
+                if (mode === "void") return { ignored: "non-primitive result" };
+                if (mode === "asyncVoid") return Promise.resolve({ ignored: true });
+                if (mode === "async") return Promise.resolve(43);
+                return 42;
+            },
+        });
+        exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        assert.equal(exports.NoArgument("ignored"), 42);
+        assert.deepEqual(calls.pop(), []);
+        mode = "async";
+        assert.equal(await exports.NoArgumentAsync(), 43);
+        assert.deepEqual(calls.pop(), []);
+        mode = "void";
+        assert.equal(exports.Void(), undefined);
+        assert.deepEqual(calls.pop(), []);
+        assert.equal(exports.VoidArgument("text\0\ud800"), undefined);
+        assert.deepEqual(calls.pop(), ["text\0\ud800"]);
+        assert.equal(exports.VoidLastValue(), "text\0\ud800");
+        mode = "asyncVoid";
+        const before = exports.VoidCalls();
+        const task = exports.VoidAsync();
+        assert.equal(exports.VoidCalls(), before + 1);
+        assert.deepEqual(calls.pop(), []);
+        assert.equal(await task, undefined);
+        assert.equal(await exports.VoidAsyncArgument("async"), undefined);
+        assert.equal(exports.VoidLastValue(), "async");
+        assert.throws(() => exports.VoidThrow(), /Synchronous void failure/);
+        await assert.rejects(exports.VoidAsyncFault(), /Asynchronous void failure/);
+        assert.equal(exports.VoidAsyncNull(), null);
+        assert.equal(exports.ActiveAllocations(0), 16);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("zero-argument imports accept a two-slot native frame at the end of memory", async () => {
+    const fixture = await createFixture();
+    const api = await fixture.create();
+    try {
+        api.setModuleImports("main.js", { update(...args) {
+            assert.deepEqual(args, []);
+            return 42;
+        } });
+        const pointer = fixture.memory.buffer.byteLength - 64;
+        const invoke = fixture.importTransport.createWorkerJSImportInvoker(
+            fixture.workers[0].signal, api.INTERNAL.workerMemoryViews, 1, () => {});
+        assert.equal(invoke(pointer, false, undefined, 0, 7), 42);
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
+test("Task-without-result imports preserve null tasks, synchronous throws, rejection and shutdown", { timeout: 30000 }, async () => {
+    const fixture = await createFixture({ threaded: true });
+    const api = await fixture.create();
+    let mode = "null";
+    let resolve;
+    try {
+        api.setModuleImports("main.js", { update: () => {
+            if (mode === "null") return null;
+            if (mode === "undefined") return undefined;
+            if (mode === "throw") throw new Error("Void UI prefix failure");
+            if (mode === "invalid") return 42;
+            if (mode === "reject") return Promise.reject(new Error("Void UI promise failure"));
+            return new Promise(done => resolve = done);
+        } });
+        const exports = (await api.getAssemblyExports("Test")).Sample.Test;
+        assert.equal(exports.VoidAsync(), null);
+        mode = "undefined";
+        assert.equal(exports.VoidAsync(), null);
+        mode = "throw";
+        assert.throws(() => exports.VoidAsync(), /Void UI prefix failure/);
+        mode = "invalid";
+        assert.throws(() => exports.VoidAsync(), /not a Promise/);
+        mode = "reject";
+        await assert.rejects(exports.VoidAsync(), /Void UI promise failure/);
+        mode = "pending";
+        const tasks = [];
+        const completions = [];
+        for (let i = 0; i < 70; i++) {
+            tasks.push(exports.VoidAsyncArgument("task:" + i));
+            completions.push(resolve);
+        }
+        assert.equal(exports.ActiveAllocations(0), 16);
+        completions.reverse().forEach(done => done({ ignored: true }));
+        assert.deepEqual(await Promise.all(tasks), Array(70).fill(undefined));
+        const pending = exports.VoidAsync();
+        const rejected = assert.rejects(pending, /exit/i);
+        api.exit(0);
+        await rejected;
+        await fixture.termination;
+        resolve("late");
+    } finally {
+        api.exit(0);
+        await fixture.termination;
+    }
+});
+
 for (const [seed, expected] of [
     [2147483646, [2147483646, 2147483647, -2147483648, -2147483647]],
     [-2, [-2, -1, 0, 1]],

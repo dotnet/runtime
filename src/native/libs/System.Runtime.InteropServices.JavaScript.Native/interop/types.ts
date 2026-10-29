@@ -115,10 +115,20 @@ export type BindingClosureCS = {
 }
 
 export type WorkerValueType = MarshalerType.Boolean | MarshalerType.Int32 | MarshalerType.Single | MarshalerType.Double | MarshalerType.String;
+export type WorkerArgumentType = WorkerValueType | MarshalerType.None;
+export type WorkerReturnType = WorkerValueType | MarshalerType.Void;
 
 export function isWorkerValueType(type: MarshalerType): type is WorkerValueType {
     return type === MarshalerType.Boolean || type === MarshalerType.Int32 || type === MarshalerType.Single
         || type === MarshalerType.Double || type === MarshalerType.String;
+}
+
+export function isWorkerArgumentType(type: MarshalerType): type is WorkerArgumentType {
+    return type === MarshalerType.None || isWorkerValueType(type);
+}
+
+export function isWorkerReturnType(type: MarshalerType): type is WorkerReturnType {
+    return type === MarshalerType.Void || isWorkerValueType(type);
 }
 
 export const enum MeasuredBlock {

@@ -5,6 +5,10 @@ export async function setup(runtime) {
     const exports = (await runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests"))
         .System.Runtime.InteropServices.JavaScript.Tests.WorkerInteropTest;
     const worker = runtime.getConfig().workerOptions !== undefined;
+    const voidEvents = [];
+    function check(condition, message) {
+        if (!condition) throw new Error(message);
+    }
     runtime.setModuleImports("WorkerInteropTest", {
         echo: value => value,
         invokeEcho: value => {
@@ -56,6 +60,97 @@ export async function setup(runtime) {
         nullPrimitive: () => null,
         nullPrimitiveAsync: async () => null,
         invalidPrimitive: () => ({}),
+        noArgumentValue() {
+            check(arguments.length === 0, "Zero-argument import received arguments");
+            return 42;
+        },
+        noArgumentString() {
+            check(arguments.length === 0, "Zero-argument String import received arguments");
+            return "zero\0argument";
+        },
+        async noArgumentValueAsync() {
+            check(arguments.length === 0, "Zero-argument Task import received arguments");
+            return 43;
+        },
+        async noArgumentStringAsync() {
+            check(arguments.length === 0, "Zero-argument String Task import received arguments");
+            return "zero\0async";
+        },
+        void() {
+            check(arguments.length === 0, "Void import received arguments");
+            voidEvents.push("sync");
+            queueMicrotask(() => voidEvents.push("microtask"));
+            return 123;
+        },
+        voidArgument(value) {
+            check(arguments.length === 1, "One-argument void import arity changed");
+            if (value === "throw") throw new Error("Synchronous UI void failure");
+            voidEvents.push(value);
+            return 123;
+        },
+        async voidAsync() {
+            check(arguments.length === 0, "Async void import received arguments");
+            voidEvents.push("async-prefix");
+            await new Promise(resolve => setTimeout(resolve, 0));
+            voidEvents.push("async-done");
+            return 123;
+        },
+        async voidAsyncArgument(value) {
+            check(arguments.length === 1, "Async void import arity changed");
+            await new Promise(resolve => setTimeout(resolve, 0));
+            voidEvents.push(value);
+            return 123;
+        },
+        voidTaskMode: value => {
+            if (value === 0) return null;
+            if (value === 1) return undefined;
+            if (value === 2) throw new Error("UI void prefix fault");
+            if (value === 3) return 42;
+            if (value === 4) return Promise.reject(new Error("UI void Task fault"));
+            return Promise.resolve(123);
+        },
+        voidContracts: value => {
+            check(exports.NoArgumentValue("ignored extra") === 42, "Zero-argument export failed");
+            check(exports.NoArgumentString() === "zero\0argument", "Zero-argument String export failed");
+            const before = exports.VoidCallCount();
+            voidEvents.length = 0;
+            check(exports.VoidExport("ignored extra") === undefined, "Void export returned a value");
+            check(voidEvents.join(",") === "sync", "Void prefix ordering changed");
+            check(exports.VoidCallCount() === before + 1, "Void managed prefix did not run");
+            check(exports.VoidStringExport("text\0argument") === undefined, "String-to-void export returned a value");
+            check(voidEvents[1] === "text\0argument", "String-to-void input changed");
+            return value;
+        },
+        voidAsyncContracts: async value => {
+            check(await exports.NoArgumentValueAsync() === 43, "Zero-argument Task value export failed");
+            check(await exports.NoArgumentStringAsync() === "zero\0async", "Zero-argument Task String export failed");
+            voidEvents.length = 0;
+            const before = exports.VoidCallCount();
+            const task = exports.VoidAsyncExport();
+            check(task instanceof Promise, "Task export must return a Promise");
+            check(exports.VoidCallCount() === before + 1, "Task managed prefix did not run");
+            check(voidEvents.join(",") === "async-prefix", "Task UI prefix ordering changed");
+            check(await task === undefined, "Task-without-result completion must be undefined");
+            check(voidEvents.join(",") === "async-prefix,async-done", "Task completion ordering changed");
+            const tasks = Array.from({ length: 70 }, (_, index) => exports.VoidStringAsyncExport("task:" + index));
+            check((await Promise.all(tasks)).every(result => result === undefined), "Task result was not ignored");
+            check(exports.VoidTaskModeExport(0) === null, "Null Task changed");
+            check(await exports.VoidTaskModeExport(1) === undefined, "Completed Task changed");
+            for (const [mode, message, asynchronous] of [
+                [2, "Managed void Task fault", true], [3, "Managed void prefix fault", false]
+            ]) {
+                let error;
+                try {
+                    if (asynchronous) await exports.VoidTaskModeExport(mode);
+                    else exports.VoidTaskModeExport(mode);
+                } catch (caught) {
+                    error = caught;
+                }
+                check(error?.message.includes(message), "Expected Task failure was not propagated");
+                error.dispose?.();
+            }
+            return value;
+        },
         primitiveContracts: value => {
             for (const [name, defaultValue, message] of [
                 ["EchoBoolean", false, "Boolean"], ["EchoDouble", 0, "Number"], ["EchoSingle", 0, "Number"]

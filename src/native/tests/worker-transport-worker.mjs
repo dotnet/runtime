@@ -73,6 +73,8 @@ async function runWorker() {
     let int32Type;
     let stringType;
     let primitiveTypes;
+    let voidCalls = 0;
+    let lastVoidValue;
     function readPrimitive(pointer, type) {
         if (new Uint8Array(memory.buffer)[pointer + typeOffset] === 0) return null;
         if (type === primitiveTypes[0]) return new Uint8Array(memory.buffer)[pointer] !== 0;
@@ -132,6 +134,21 @@ async function runWorker() {
                     path: ["Sample", "Test", name + suffix], handle: 20 + index * 4 + mode,
                     supported: true, isAsync: mode >= 2, argumentType: primitiveTypes[index], returnType: primitiveTypes[index],
                 }))),
+                ...[
+                    ["NoArgument", 40, false, 0, int32Type],
+                    ["NoArgumentAsync", 41, true, 0, int32Type],
+                    ["Void", 42, false, 0, 1],
+                    ["VoidArgument", 43, false, stringType, 1],
+                    ["VoidAsync", 44, true, 0, 1],
+                    ["VoidAsyncArgument", 45, true, stringType, 1],
+                    ["VoidCalls", 46, false, 0, int32Type],
+                    ["VoidLastValue", 47, false, 0, stringType],
+                    ["VoidThrow", 48, false, 0, 1],
+                    ["VoidAsyncFault", 49, true, 0, 1],
+                    ["VoidAsyncNull", 50, true, 0, 1],
+                ].map(([name, handle, isAsync, argumentType, returnType]) => ({
+                    path: ["Sample", "Test", name], handle, supported: true, isAsync, argumentType, returnType,
+                })),
             ],
             invokeWorkerJSExport: (handle, pointer, stringArgument) => {
                 if (handle >= 20 && handle <= 31) {
@@ -180,6 +197,24 @@ async function runWorker() {
                 } else if (handle === 14) {
                     failNextAllocation = true;
                     result = 0;
+                } else if (handle === 40 || handle === 41) {
+                    const response = invokeImport(undefined, handle === 41, 0, int32Type);
+                    if (handle === 41) return response;
+                    result = response;
+                } else if (handle >= 42 && handle <= 45) {
+                    voidCalls++;
+                    lastVoidValue = handle % 2 ? stringArgument : "zero arguments";
+                    return invokeImport(stringArgument, handle >= 44, handle % 2 ? stringType : 0, 1);
+                } else if (handle === 46) {
+                    result = voidCalls;
+                } else if (handle === 47) {
+                    return lastVoidValue;
+                } else if (handle === 48) {
+                    throw new Error("Synchronous void failure");
+                } else if (handle === 49) {
+                    return Promise.reject(new Error("Asynchronous void failure"));
+                } else if (handle === 50) {
+                    return null;
                 } else {
                     throw new Error("Unknown test export");
                 }

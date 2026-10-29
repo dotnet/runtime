@@ -135,6 +135,97 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invalidPrimitive", nameof(WorkerInteropTest))]
         private static partial float InvalidSingleOnUI(int value);
 
+        [JSImport("noArgumentValue", nameof(WorkerInteropTest))]
+        private static partial int NoArgumentValueOnUI();
+
+        [JSImport("noArgumentString", nameof(WorkerInteropTest))]
+        private static partial string NoArgumentStringOnUI();
+
+        [JSImport("noArgumentValueAsync", nameof(WorkerInteropTest))]
+        private static partial Task<int> NoArgumentValueAsyncOnUI();
+
+        [JSImport("noArgumentStringAsync", nameof(WorkerInteropTest))]
+        private static partial Task<string> NoArgumentStringAsyncOnUI();
+
+        [JSImport("void", nameof(WorkerInteropTest))]
+        private static partial void VoidOnUI();
+
+        [JSImport("voidArgument", nameof(WorkerInteropTest))]
+        private static partial void VoidArgumentOnUI(string value);
+
+        [JSImport("voidAsync", nameof(WorkerInteropTest))]
+        private static partial Task VoidAsyncOnUI();
+
+        [JSImport("voidAsyncArgument", nameof(WorkerInteropTest))]
+        private static partial Task VoidAsyncArgumentOnUI(string value);
+
+        [JSImport("voidTaskMode", nameof(WorkerInteropTest))]
+        private static partial Task VoidTaskModeOnUI(int value);
+
+        [JSImport("voidContracts", nameof(WorkerInteropTest))]
+        private static partial int VoidContractsOnUI(int value);
+
+        [JSImport("voidAsyncContracts", nameof(WorkerInteropTest))]
+        private static partial Task<int> VoidAsyncContractsOnUI(int value);
+
+        private static int s_voidCalls;
+
+        [JSExport]
+        internal static int NoArgumentValue() => NoArgumentValueOnUI();
+
+        [JSExport]
+        internal static string NoArgumentString() => NoArgumentStringOnUI();
+
+        [JSExport]
+        internal static Task<int> NoArgumentValueAsync() => NoArgumentValueAsyncOnUI();
+
+        [JSExport]
+        internal static Task<string> NoArgumentStringAsync() => NoArgumentStringAsyncOnUI();
+
+        [JSExport]
+        internal static void VoidExport()
+        {
+            s_voidCalls++;
+            VoidOnUI();
+        }
+
+        [JSExport]
+        internal static void VoidStringExport(string value)
+        {
+            s_voidCalls++;
+            VoidArgumentOnUI(value);
+        }
+
+        [JSExport]
+        internal static int VoidCallCount() => s_voidCalls;
+
+        [JSExport]
+        internal static async Task VoidAsyncExport()
+        {
+            s_voidCalls++;
+            await VoidAsyncOnUI();
+        }
+
+        [JSExport]
+        internal static async Task VoidStringAsyncExport(string value)
+        {
+            s_voidCalls++;
+            await VoidAsyncArgumentOnUI(value);
+        }
+
+        [JSExport]
+        internal static Task VoidTaskModeExport(int value)
+        {
+            return value switch
+            {
+                0 => null,
+                1 => Task.CompletedTask,
+                2 => Task.FromException(new InvalidOperationException("Managed void Task fault")),
+                3 => throw new InvalidOperationException("Managed void prefix fault"),
+                _ => VoidTaskModeOnUI(value),
+            };
+        }
+
         [JSExport]
         internal static bool EchoBoolean(bool value) => value;
 
@@ -416,6 +507,63 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.NotEmpty(singleError.StackTrace);
             Assert.True(InvokeBooleanOnUI(true));
             Assert.Equal(42.5, InvokeDoubleOnUI(42.5));
+        }
+
+        [Fact]
+        public async Task ZeroArgumentValues()
+        {
+            Assert.Equal(42, NoArgumentValueOnUI());
+            Assert.Equal("zero\0argument", NoArgumentStringOnUI());
+            Assert.Equal(43, await NoArgumentValueAsyncOnUI());
+            Assert.Equal("zero\0async", await NoArgumentStringAsyncOnUI());
+        }
+
+        [Fact]
+        public void SynchronousVoidCalls()
+        {
+            VoidOnUI();
+            VoidArgumentOnUI("direct");
+            Assert.Equal(42, VoidContractsOnUI(42));
+            JSException error = Assert.Throws<JSException>(() => VoidArgumentOnUI("throw"));
+            Assert.Contains("Synchronous UI void failure", error.Message);
+            Assert.NotEmpty(error.StackTrace);
+            VoidArgumentOnUI("recovered");
+        }
+
+        [Fact]
+        public async Task AsynchronousVoidCalls()
+        {
+            await VoidAsyncOnUI();
+            await VoidAsyncArgumentOnUI("direct async");
+            Assert.Equal(42, await VoidAsyncContractsOnUI(42));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void NullTaskImports(int mode)
+        {
+            Assert.Null(VoidTaskModeOnUI(mode));
+        }
+
+        [Theory]
+        [InlineData(2, "UI void prefix fault")]
+        [InlineData(3, "Value is not a Promise")]
+        public void TaskImportPrefixFailures(int mode, string message)
+        {
+            JSException error = Assert.Throws<JSException>(() => { _ = VoidTaskModeOnUI(mode); });
+            Assert.Contains(message, error.Message);
+            Assert.NotEmpty(error.StackTrace);
+            Assert.Equal(42, NoArgumentValueOnUI());
+        }
+
+        [Fact]
+        public async Task TaskImportRejection()
+        {
+            JSException error = await Assert.ThrowsAsync<JSException>(() => VoidTaskModeOnUI(4));
+            Assert.Contains("UI void Task fault", error.Message);
+            Assert.NotEmpty(error.StackTrace);
+            await VoidTaskModeOnUI(5);
         }
     }
 
