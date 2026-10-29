@@ -21,7 +21,7 @@ public class AssetCachingTests : BlazorWasmTestBase
     private static string ClientAssemblyExtension => UseWebcil ? ".wasm" : ".dll";
 
     public AssetCachingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-        : base(output, buildContext)
+        : base(output, buildContext, DefaultTargetFrameworkForBlazorTemplate)
     {
     }
 
@@ -51,6 +51,7 @@ public class AssetCachingTests : BlazorWasmTestBase
             "CacheRecovery", appendUnicodeToPath: false);
         ConfigureClientRuntime();
         var publishOptions = new PublishOptions(
+            TargetFramework: DefaultTargetFrameworkForBlazorTemplate,
             AssertAppBundle: false,
             ExtraMSBuildArgs: CacheTestPublishArgs,
             ExtraBuildEnvironmentVariables: new Dictionary<string, string>
@@ -227,8 +228,13 @@ public class AssetCachingTests : BlazorWasmTestBase
         );
 
         ConfigureClientRuntime();
-        (string projectDir, string output) = BlazorPublish(project, Configuration.Release,
-            new PublishOptions(AssertAppBundle: false, ExtraMSBuildArgs: CacheTestPublishArgs));
+        (string projectDir, string output) = BlazorPublish(
+            project,
+            Configuration.Release,
+            new PublishOptions(
+                TargetFramework: DefaultTargetFrameworkForBlazorTemplate,
+                AssertAppBundle: false,
+                ExtraMSBuildArgs: CacheTestPublishArgs));
 
         var counterLoaded = new TaskCompletionSource();
 

@@ -46,8 +46,14 @@
     <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs" Link="HelperExtensions.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' != 'true' or '$(DotNetBuildFromVMR)' != 'true'">
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(DotNetBuildFromVMR)' == 'true'">
+    <!-- ILCompiler runs on the bootstrap SDK's bundled framework. In the VMR, use the previous-input package
+         for bootstrap compatibility; its version advances with the source-built inputs. -->
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLinePreviousVersion)" />
   </ItemGroup>
 
   <ItemGroup>
