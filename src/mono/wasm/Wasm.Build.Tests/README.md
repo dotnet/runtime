@@ -76,13 +76,32 @@ on both CoreCLR and Mono:
 - `INTERNAL.getAppSettingsFiles()` returns the manifest-listed VFS filenames for
   the resolved application environment, with base settings before
   environment-specific settings and no duplicates.
-- `INTERNAL.getAppSettingsBytes(fileName)` reads the current VFS contents as a
-  `Uint8Array`, or returns `undefined` for a missing file. Empty files return an
-  empty array; other filesystem errors propagate.
+- On CoreCLR, `INTERNAL.getAppSettingsBytes(fileName)` returns the downloaded
+  `Uint8Array` retained in JavaScript memory, or `undefined` for an unloaded file.
+  The returned array must be treated as read-only. Managed interop copies it into
+  a managed byte array. Later VFS writes do not change the retained bytes.
+- On Mono, byte access continues to read the current VFS contents.
 
-These APIs do not change downloading or VFS placement. `Blazor.AppsettingsTests`
-checks that existing managed VFS access and the internal APIs both work in a
-Blazor application. Managed JSON parsing remains the consumer's responsibility.
+For CoreCLR applications targeting .NET 11 or later, the manifest contains
+`resources.appsettings` assets with a `loadIntoVfs` flag.
+`_WasmFilesystemUsageDetected` defaults to `true`, preserving existing VFS
+placement, including Blazor versions that read configuration through managed file
+APIs. Explicitly setting it to `false` makes settings available only through the
+internal APIs, unless `WasmFilesToIncludeInFileSystem` items exist: those force the
+flag to `true`. The default can become `false` once IL trimming provides better
+filesystem usage detection. This does not disable filesystem support for other uses.
+
+Older target frameworks and Mono retain the top-level appsettings list.
+CoreCLR also accepts legacy manifests and continues installing those settings
+into VFS while retaining their downloaded bytes.
+
+`AppSettingsWithoutFilesystem` covers both placement modes, explicit overrides,
+legacy manifests, custom resource loaders, and download-before-create. It runs in
+the CoreCLR no-workload lane. Its flag-only incremental publish case disables
+trimming to isolate manifest invalidation from incremental trimmed assembly
+staging; the fresh-publish cases retain trimming. `Blazor.AppsettingsTests` checks
+that default settings remain available through managed VFS access. Managed JSON
+parsing remains the consumer's responsibility.
 
 ## How to add tests
 

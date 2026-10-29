@@ -10,7 +10,7 @@ using System.Runtime.InteropServices.JavaScript;
 public partial class AppSettingsTest
 {
     [JSExport]
-    public static void Run()
+    public static void Run(bool expectVfs, bool inMemory)
     {
         const string browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
 
@@ -24,29 +24,42 @@ public partial class AppSettingsTest
         foreach (string file in files)
         {
             byte[]? bytes = GetAppSettingsBytes(file);
-            if (bytes is null || !bytes.AsSpan().SequenceEqual(File.ReadAllBytes(file)))
-                throw new InvalidOperationException($"Appsettings bytes do not match VFS for '{file}'.");
-
+            if (bytes is null || (expectVfs && !bytes.AsSpan().SequenceEqual(File.ReadAllBytes(file))))
+                throw new InvalidOperationException($"Unexpected appsettings bytes for '{file}'.");
+            if (file == "appsettings.Empty.json" && bytes.Length != 0)
+                throw new InvalidOperationException("Downloaded empty settings should return an empty array.");
         }
 
         if (GetAppSettingsBytes("appsettings.Missing.json") is not null)
             throw new InvalidOperationException("Missing appsettings should not return bytes.");
 
-        File.WriteAllBytes("appsettings.Empty.json", Array.Empty<byte>());
-        if (GetAppSettingsBytes("appsettings.Empty.json") is not { Length: 0 })
+        File.WriteAllBytes("appsettings.VfsOnly.json", Array.Empty<byte>());
+        if (!inMemory && GetAppSettingsBytes("appsettings.VfsOnly.json") is not { Length: 0 })
             throw new InvalidOperationException("Empty appsettings should return an empty array.");
+        if (inMemory && GetAppSettingsBytes("appsettings.VfsOnly.json") is not null)
+            throw new InvalidOperationException("The appsettings map should not read arbitrary VFS files.");
 
+        byte[]? originalBytes = GetAppSettingsBytes("appsettings.json");
         File.WriteAllBytes("appsettings.json", new byte[] { 1, 2, 3 });
-        if (!GetAppSettingsBytes("appsettings.json").AsSpan().SequenceEqual(new byte[] { 1, 2, 3 }))
-            throw new InvalidOperationException("Appsettings bytes do not reflect VFS updates.");
+        byte[]? expectedBytes = inMemory ? originalBytes : new byte[] { 1, 2, 3 };
+        if (!GetAppSettingsBytes("appsettings.json").AsSpan().SequenceEqual(expectedBytes))
+            throw new InvalidOperationException("Unexpected appsettings bytes after a VFS update.");
 
-        try
+        if (inMemory)
         {
-            GetAppSettingsBytes("/");
-            throw new InvalidOperationException("Reading a directory should fail.");
+            if (GetAppSettingsBytes("/") is not null)
+                throw new InvalidOperationException("Unknown appsettings should not return bytes.");
         }
-        catch (JSException)
+        else
         {
+            try
+            {
+                GetAppSettingsBytes("/");
+                throw new InvalidOperationException("Reading a directory should fail.");
+            }
+            catch (JSException)
+            {
+            }
         }
 
         TestOutput.WriteLine("Appsettings byte API passed");

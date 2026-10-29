@@ -1,29 +1,30 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-type AppSettingsConfig = {
-    appsettings?: string[];
-    applicationEnvironment?: string;
-};
+import type { AppSettings, LoaderConfig } from "./types";
 
-export type AppSettingsFileSystem = {
-    readFile(path: string): Uint8Array;
-};
+const appSettingsBytes = new Map<string, Uint8Array>();
 
-export function getAppSettingsFiles(config: AppSettingsConfig): string[] {
-    const files = config.appsettings?.map(url => url.substring(url.lastIndexOf("/") + 1));
-    return ["appsettings.json", `appsettings.${config.applicationEnvironment}.json`]
-        .filter(file => files?.includes(file));
+export function getAppSettingsAssets(config: LoaderConfig): AppSettings[] {
+    const assets = config.resources?.appsettings?.length
+        ? config.resources.appsettings
+        : (config.appsettings || []).map(name => ({
+            name,
+            virtualPath: name.substring(name.lastIndexOf("/") + 1),
+            loadIntoVfs: true,
+        }));
+    return assets.filter(asset => asset.virtualPath === "appsettings.json"
+        || asset.virtualPath === `appsettings.${config.applicationEnvironment}.json`);
 }
 
-export function getAppSettingsBytes(fs: AppSettingsFileSystem, fileName: string): Uint8Array | undefined {
-    try {
-        return fs.readFile(fileName);
-    } catch (error) {
-        const errnoNoEntry = 44; // ENOENT in Emscripten's errno ABI.
-        if (typeof error === "object" && error !== null && "errno" in error && error.errno === errnoNoEntry) {
-            return undefined;
-        }
-        throw error;
-    }
+export function storeAppSettingsBytes(fileName: string, bytes: Uint8Array): void {
+    appSettingsBytes.set(fileName, bytes);
+}
+
+export function getAppSettingsFiles(): string[] {
+    return [...appSettingsBytes.keys()].sort((a, b) => a === b ? 0 : a === "appsettings.json" ? -1 : b === "appsettings.json" ? 1 : a.localeCompare(b));
+}
+
+export function getAppSettingsBytes(fileName: string): Uint8Array | undefined {
+    return appSettingsBytes.get(fileName);
 }

@@ -54,6 +54,8 @@ public class GenerateWasmBootJson : Task
 
     public ITaskItem[] ConfigurationFiles { get; set; }
 
+    public bool FilesystemUsageDetected { get; set; }
+
     public ITaskItem[] EnvVariables { get; set; }
 
     public ITaskItem[] Extensions { get; set; }
@@ -525,7 +527,7 @@ public class GenerateWasmBootJson : Task
 
         string? imports = null;
         if (IsTargeting100OrLater())
-            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes, compositeImages);
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes, compositeImages, !isMonoRuntime && IsTargeting110OrLater(), FilesystemUsageDetected);
 
         helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 
