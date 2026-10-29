@@ -2037,11 +2037,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         // with a value that is validated later. Rely on it only if it's known to be never negative at
         // this compare (the assertion is live only after it and the VN's value doesn't change).
         auto isNeverNegativeLen = [this, lenVN](GenTree* op) {
-            while (op->OperIs(GT_CAST))
-            {
-                op = op->AsCast()->CastOp();
-            }
-            return varTypeIsIntegral(op) && (optConservativeNormalVN(op) == lenVN) && op->IsNeverNegative(this);
+            return (optConservativeNormalVN(op) == lenVN) && op->IsNeverNegative(this);
         };
         bool isLenNeverNegative = vnStore->IsVNNeverNegative(lenVN) || isNeverNegativeLen(relop->gtGetOp1()) ||
                                   isNeverNegativeLen(relop->gtGetOp2());
