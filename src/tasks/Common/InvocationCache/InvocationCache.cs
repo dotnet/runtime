@@ -63,10 +63,9 @@ internal sealed partial class InvocationCache
 
     internal static bool TryExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
         Func<InvocationDescription?> describeInvocation, Func<InvocationResult> execute,
-        out InvocationResult result, out bool cacheHit)
+        Func<InvocationResult, InvocationResult> replayOutput, out InvocationResult result)
     {
         result = default;
-        cacheHit = false;
         InvocationCache? cache = TryCreateFromEnvironment(log, configuration);
         if (cache is null)
             return false;
@@ -82,7 +81,9 @@ internal sealed partial class InvocationCache
             return false;
 
         result = ExecutePrepared(cache, outputTimestampUtc,
-            new InvocationCacheRequest(key, invocation.Outputs), execute, out cacheHit);
+            new InvocationCacheRequest(key, invocation.Outputs), execute, out bool cacheHit);
+        if (cacheHit)
+            result = replayOutput(result);
         return true;
     }
 

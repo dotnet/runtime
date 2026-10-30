@@ -5,23 +5,25 @@ and storage format are experimental, without compatibility guarantees.
 
 ## Integrating a task
 
-Call `InvocationCache.TryExecuteCached` with:
+Derive from `CachedToolTask` and compile the shared sources into the task assembly. Override:
 
-- An `InvocationCacheConfiguration` naming the tool and its enable/path environment variables. Only
-  `true` enables caching; a path alone does not. Without an override, storage uses the platform's user
-  cache directory.
-- A description callback returning ordered input paths, effective arguments/context, and an owned
+- `CacheConfiguration` with an `InvocationCacheConfiguration` naming the tool and its enable/path
+  environment variables. Only `true` enables caching; a path alone does not. Without an override,
+  storage uses the platform's user cache directory.
+- `DescribeInvocation` to return ordered input paths, effective arguments/context, and an owned
   directory or file set through `InvocationDescription`. Return null for unsupported invocations.
-- An execution callback invoked only on eligible misses. It allocates capture buffers, prepares
-  outputs, and runs the tool, returning an `InvocationResult` containing the exit code and separate
-  ordered stdout and stderr lists. These lists must be stable when execution returns, and per-stream
-  output must be deterministic for the same key.
+- `ExecuteToolCore` when the task needs tool-specific output preparation before calling the base
+  implementation. It runs only on misses and bypasses.
 
-`TryExecuteCached` returns false when caching is disabled or bypassed; the task then executes
-normally without capture. Otherwise, its `result` output contains the execution result on misses or
-a restored result on hits. Its separate `cacheHit` output identifies restored results. The task
-replays only those results through its ordinary logging path, using current policy rather than
-policy cached from execution. Normal execution has already logged its output and must not be replayed.
+The base class calls `InvocationCache.TryExecuteCached` with lazy description and execution callbacks
+and a replay callback. Disabled or bypassed invocations execute normally without capture. Eligible
+misses allocate capture buffers and return an `InvocationResult` containing the exit code and separate
+ordered stdout and stderr lists. Per-stream output must be deterministic for the same key.
+
+The cache invokes the replay callback only after successfully restoring an entry. `CachedToolTask`
+replays through its ordinary `ToolTask` logging path, using current importance and stderr-as-error
+policy rather than policy cached from execution. These settings are not passed to the cache. Normal
+execution logs its output as the tool runs and must not be replayed.
 
 The task must inventory all relevant inputs and toolchain files, including its own assembly. The
 shared layer hashes declared files with SHA-256; it does not interpret arguments or discover
@@ -57,9 +59,10 @@ does not affect the stored diagnostics or their integrity records; uncached logg
 tool task's ordinary interleaving. Validate all records and files before modifying outputs; replay
 begins only after restoration succeeds.
 
-Replay and its error handling belong to the task, outside cache operations: logging failures must
-not rerun the tool, since partial replay cannot be undone, and replay that logs errors must fail the
-cached invocation. Cold executions that log errors are not stored, even if the tool exits zero.
+The cache invokes replay only after cache operations succeed; `CachedToolTask` owns how the lines are
+logged. Logging failures must not rerun the tool, since partial replay cannot be undone, and replay
+that logs errors returns a failing exit code. Cold executions that log errors are not stored, even
+if the tool exits zero.
 
 The experimental format remains version 1. Consumers include their task assembly contents in the
 key, invalidating entries when these compiled-in sources change. Entries missing diagnostics or

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -11,12 +10,11 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using Microsoft.Build.Framework;
-using Microsoft.Build.Utilities;
 using Microsoft.NET.Build.Tasks;
 
 namespace ILLink.Tasks
 {
-    public class ILLink : ToolTask
+    public class ILLink : CachedToolTask
     {
         private static readonly InvocationCacheConfiguration s_cacheConfiguration =
             new("ILLink", "ILLINK_EXPERIMENTAL_CACHE", "ILLINK_EXPERIMENTAL_CACHE_PATH");
@@ -245,8 +243,6 @@ namespace ILLink.Tasks
         private const string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
 
         private string _dotnetPath;
-        private List<string> _cachedStandardOutput;
-        private List<string> _cachedStandardError;
 
         private string DotNetPath
         {
@@ -272,29 +268,9 @@ namespace ILLink.Tasks
 
         protected override string GenerateFullPathToTool() => DotNetPath;
 
-        protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
-            => InvocationCache.TryExecuteCached(Log, s_cacheConfiguration,
-                () => DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands),
-                () =>
-                {
-                    _cachedStandardOutput = new List<string>();
-                    _cachedStandardError = new List<string>();
-                    try
-                    {
-                        int exitCode = ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands);
-                        return new InvocationResult(exitCode, _cachedStandardOutput, _cachedStandardError);
-                    }
-                    finally
-                    {
-                        _cachedStandardOutput = null;
-                        _cachedStandardError = null;
-                    }
-                },
-                out InvocationResult result, out bool cacheHit)
-                ? ReplayCachedOutput(result, cacheHit)
-                : ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands);
+        private protected override InvocationCacheConfiguration CacheConfiguration => s_cacheConfiguration;
 
-        private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands)
+        protected override int ExecuteToolCore(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             try
             {
@@ -309,50 +285,11 @@ namespace ILLink.Tasks
                 return -1;
             }
 
-            return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
-        }
-
-        protected override Process StartToolProcess(Process process)
-        {
-            if (_cachedStandardOutput is { } standardOutput && _cachedStandardError is { } standardError)
-            {
-                // Capture before ToolTask applies stream logging policy, including LogStandardErrorAsError.
-                // Each stream has one reader; ToolTask drains both before execution returns.
-                process.OutputDataReceived += (_, args) =>
-                {
-                    if (args.Data is not null)
-                        standardOutput.Add(args.Data);
-                };
-                process.ErrorDataReceived += (_, args) =>
-                {
-                    if (args.Data is not null)
-                        standardError.Add(args.Data);
-                };
-            }
-
-            return base.StartToolProcess(process);
-        }
-
-        private int ReplayCachedOutput(InvocationResult result, bool cacheHit)
-        {
-            if (!cacheHit)
-                return result.ExitCode;
-
-            foreach (string line in result.StandardOutput)
-                LogEventsFromTextOutput(line, StandardOutputImportanceToUse);
-            foreach (string line in result.StandardError)
-            {
-                if (LogStandardErrorAsError)
-                    Log.LogError(line);
-                else
-                    LogEventsFromTextOutput(line, StandardErrorImportanceToUse);
-            }
-
-            return Log.HasLoggedErrors ? -1 : result.ExitCode;
+            return base.ExecuteToolCore(pathToTool, responseFileCommands, commandLineCommands);
         }
 
 #nullable enable annotations
-        private InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
+        private protected override InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
                 !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)

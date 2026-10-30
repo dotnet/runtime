@@ -808,19 +808,18 @@ public class InvocationCacheTests
                 return new InvocationResult(ExecuteNormally("compiler path", "response contents", "command contents"),
                     standardOutput, standardError);
             },
-            out InvocationResult result, out bool cacheHit);
+            replayOutput: static restored => restored, out InvocationResult result);
         int exitCode = handled ? result.ExitCode : ExecuteNormally("compiler path", "response contents", "command contents");
         DateTime completedAt = DateTime.UtcNow;
 
         Assert.Equal(isConfigured && isEligible, handled);
         Assert.Equal(isConfigured && isEligible && hasEntry ? 0 : 42, exitCode);
-        Assert.Equal(isConfigured && isEligible && hasEntry, cacheHit);
         Assert.Equal(isConfigured
             ? isEligible
                 ? hasEntry ? new[] { "describe" } : new[] { "describe", "capture", "execute" }
                 : new[] { "describe", "execute" }
             : new[] { "execute" }, events);
-        if (cacheHit)
+        if (isConfigured && isEligible && hasEntry)
         {
             Assert.InRange(File.GetLastWriteTimeUtc(Path.Combine(test.Output, "image.dll")), preparedAt, completedAt);
             Assert.Equal("cached", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
@@ -849,6 +848,82 @@ public class InvocationCacheTests
         }
     }, configured.ToString(), eligible.ToString(), cached.ToString()).Dispose();
 
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(true, 0)]
+    [InlineData(true, -1)]
+    public void SharedTaskAdapterReplaysOnlyRestoredResults(bool cached, int replayExitCode)
+        => RemoteExecutor.Invoke(static (stored, replayStatus) =>
+    {
+        bool hasEntry = bool.Parse(stored);
+        int replayedExitCode = int.Parse(replayStatus, CultureInfo.InvariantCulture);
+        using var test = new CacheTestDirectory();
+        Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
+        Environment.SetEnvironmentVariable(PathEnvironmentVariable, test.Cache.CacheDirectory);
+        test.WriteSource("image.dll", "computed");
+        var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), test.OutputOutputs);
+        string[] standardOutput = { "stdout {0}", "" };
+        string[] standardError = { "stderr {0}" };
+        if (hasEntry)
+            test.Cache.Store(InvocationCache.ComputeKey(invocation), test.SourceOutputs, standardOutput, standardError);
+        int executions = 0;
+        int replays = 0;
+
+        Assert.True(InvocationCache.TryExecuteCached(test.Log, s_cacheConfiguration,
+            describeInvocation: () => invocation,
+            execute: () =>
+            {
+                executions++;
+                Directory.CreateDirectory(test.Output);
+                File.WriteAllText(Path.Combine(test.Output, "image.dll"), "computed");
+                return new InvocationResult(0, standardOutput, standardError);
+            },
+            replayOutput: restored =>
+            {
+                replays++;
+                Assert.Equal("computed", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
+                Assert.Equal(0, restored.ExitCode);
+                Assert.Equal(standardOutput, restored.StandardOutput);
+                Assert.Equal(standardError, restored.StandardError);
+                return new InvocationResult(replayedExitCode, restored.StandardOutput, restored.StandardError);
+            }, out InvocationResult result));
+
+        Assert.Equal(hasEntry ? 0 : 1, executions);
+        Assert.Equal(hasEntry ? 1 : 0, replays);
+        Assert.Equal(hasEntry ? replayedExitCode : 0, result.ExitCode);
+        Assert.Equal(standardOutput, result.StandardOutput);
+        Assert.Equal(standardError, result.StandardError);
+    }, cached.ToString(), replayExitCode.ToString(CultureInfo.InvariantCulture)).Dispose();
+
+    [Fact]
+    public void SharedTaskAdapterPropagatesReplayExceptionsWithoutExecuting() => RemoteExecutor.Invoke(static () =>
+    {
+        using var test = new CacheTestDirectory();
+        Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
+        Environment.SetEnvironmentVariable(PathEnvironmentVariable, test.Cache.CacheDirectory);
+        test.WriteSource("image.dll", "cached");
+        var invocation = new InvocationDescription(InvocationInputs.FromFiles(), Array.Empty<string>(), test.OutputOutputs);
+        test.Cache.Store(InvocationCache.ComputeKey(invocation), test.SourceOutputs, new[] { "stdout" });
+        int executions = 0;
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            InvocationCache.TryExecuteCached(test.Log, s_cacheConfiguration,
+                describeInvocation: () => invocation,
+                execute: () =>
+                {
+                    executions++;
+                    return new InvocationResult(0);
+                },
+                replayOutput: restored =>
+                {
+                    Assert.Equal("cached", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
+                    throw new InvalidOperationException("replay");
+                }, out _));
+
+        Assert.Equal("replay", exception.Message);
+        Assert.Equal(0, executions);
+    }).Dispose();
+
     [Fact]
     public void SharedTaskAdapterPropagatesPreparationExceptions() => RemoteExecutor.Invoke(static () =>
     {
@@ -858,7 +933,8 @@ public class InvocationCacheTests
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
             InvocationCache.TryExecuteCached(test.Log, s_cacheConfiguration,
                 describeInvocation: () => throw new InvalidOperationException("description"),
-                execute: () => throw new InvalidOperationException("unexpected execution"), out _, out _));
+                execute: () => throw new InvalidOperationException("unexpected execution"),
+                replayOutput: static restored => restored, out _));
 
         Assert.Equal("description", exception.Message);
         Assert.False(Directory.Exists(test.Entry));
@@ -904,7 +980,7 @@ public class InvocationCacheTests
                 {
                     executions++;
                     return new InvocationResult(42);
-                }, out _, out _));
+                }, replayOutput: static restored => restored, out _));
 
         Assert.Equal(nameof(outputs), exception.ParamName);
         Assert.Equal(0, executions);
@@ -930,10 +1006,9 @@ public class InvocationCacheTests
             {
                 executions++;
                 return new InvocationResult(42);
-            }, out _, out bool cacheHit);
+            }, replayOutput: static restored => restored, out _);
 
         Assert.False(handled);
-        Assert.False(cacheHit);
         Assert.Equal(0, executions);
         Assert.Equal("untouched", File.ReadAllText(stale));
         Assert.False(Directory.Exists(test.Cache.CacheDirectory));
@@ -1201,11 +1276,10 @@ public class InvocationCacheTests
         int exitCode = InvocationCache.TryExecuteCached(test.Log, s_cacheConfiguration,
             describeInvocation: () => isEligible ? invocation : null,
             execute: () => throw new InvalidOperationException("Bypassed invocations must not capture output."),
-            out InvocationResult result, out bool cacheHit)
+            replayOutput: static restored => restored, out InvocationResult result)
             ? result.ExitCode : ExecuteNormally();
 
         Assert.Equal(42, exitCode);
-        Assert.False(cacheHit);
         Assert.Equal(1, executions);
         Assert.False(File.Exists(stale));
         Assert.False(Directory.Exists(test.Cache.CacheDirectory));
