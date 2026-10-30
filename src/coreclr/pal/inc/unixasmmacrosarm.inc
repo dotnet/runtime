@@ -3,19 +3,6 @@
 
 #include <arm/AsmMacros_Unix.inc>
 
-.macro PREPARE_EXTERNAL_VAR Name, HelperReg
-        ldr \HelperReg, [pc, #C_FUNC(\Name)@GOTPCREL]
-.endm
-
-.macro free_stack Size
-        add sp, sp, (\Size)
-.endm
-
-.macro PUSH_ARGUMENT_REGISTERS
-        push {r0-r3}
-        .save {r0-r3}
-.endm
-
 // Stack layout:
 //
 // (stack parameters)
@@ -138,10 +125,6 @@
 
 .endm
 
-.macro EPILOG_STACK_FREE Size
-        add sp, sp, \Size
-.endm
-
 .macro INLINE_GET_ALLOC_CONTEXT_BASE
         bl      C_FUNC(GetThreadEEAllocContext)
 .endm
@@ -201,24 +184,3 @@
         POP_CALLEE_SAVED_REGISTERS
         free_stack 16
 .endm
-
-
-// thumb with PIC version
-.macro INLINE_GET_TLS_VAR var
-        ldr     r0, 2f
-1:
-        add     r0, pc, r0
-        bl      __tls_get_addr
-        b       3f
-
-        // Inline data
-        // LLVM assembler has no concept of subsections and this is not expressible as
-        // cross-section relocation.
-        .p2align 2
-2:
-        .extern \var
-        .type \var, tls_object
-        .long  \var(TLSGD) + (2b - 1b - 4)
-3:
-.endm
-

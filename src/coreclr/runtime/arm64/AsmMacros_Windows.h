@@ -1,8 +1,6 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
 
-;; Windows ARM64 assembler macros shared between CoreCLR and NativeAOT.
-
 ;; -----------------------------------------------------------------------------
 ;; Macro used to assign an alternate name to a symbol containing characters normally disallowed in a symbol
 ;; name (e.g. C++ decorated names).
@@ -252,3 +250,8 @@ __PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA 0
         ldp                    q4, q5, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 64)]
         ldp                    q6, q7, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 96)]
     MEND
+
+;; GC type flags
+GC_ALLOC_FINALIZE               equ 1
+GC_ALLOC_ALIGN8_BIAS            equ 4
+GC_ALLOC_ALIGN8                 equ 8

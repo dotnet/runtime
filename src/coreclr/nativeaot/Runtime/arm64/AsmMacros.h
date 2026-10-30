@@ -16,11 +16,6 @@ TSF_DoNotTriggerGc              equ 0x10
 ;; Bit position for the flags above, to be used with tbz/tbnz instructions
 TSF_DoNotTriggerGc_Bit          equ 4
 
-;; GC type flags
-GC_ALLOC_FINALIZE               equ 1
-GC_ALLOC_ALIGN8_BIAS            equ 4
-GC_ALLOC_ALIGN8                 equ 8
-
 ;; Note: these must match the defs in PInvokeTransitionFrameFlags defined in rhbinder.h
 PTFF_SAVE_X19           equ 0x00000001
 PTFF_SAVE_X20           equ 0x00000002

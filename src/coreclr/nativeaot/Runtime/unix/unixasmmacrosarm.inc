@@ -28,26 +28,6 @@
 // GC minimal sized object. We use this to switch between 4 and 8 byte alignment in the GC heap (see AllocFast.asm).
 #define ASM_MIN_OBJECT_SIZE 12
 
-.macro PREPARE_EXTERNAL_VAR Name, HelperReg
-        movw \HelperReg, #:lower16:C_FUNC(\Name) - (. + 12)
-        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 8)
-        add \HelperReg, pc
-.endm
-
-.macro free_stack Size
-        add sp, sp, (\Size)
-        .pad #-(\Size)
-.endm
-
-.macro PUSH_ARGUMENT_REGISTERS
-        push {r0-r3}
-.endm
-
-.macro EPILOG_STACK_FREE Size
-        add sp, sp, #\Size
-        .pad #-\Size
-.endm
-
 //
 // Macro used from unmanaged helpers called from managed code where the helper does not transition immediately
 // into pre-emptive mode but may cause a GC and thus requires the stack is crawlable. This is typically the
@@ -90,25 +70,6 @@
         EPILOG_STACK_FREE 8           // Discard flags and Thread*
         EPILOG_POP  "{r4-r10}"        // Restore preserved registers
         EPILOG_STACK_FREE 4           // Discard caller's SP
-.endm
-
-// thumb with PIC version
-.macro INLINE_GET_TLS_VAR Var
-        ldr     r0, 2f
-1:
-        add     r0, pc, r0
-        bl      __tls_get_addr
-        b       3f
-
-        // Inline data
-        // LLVM assembler has no concept of subsections and this is not expressible as
-        // cross-section relocation.
-        .p2align 2
-2:
-        .extern \Var
-        .type \Var, tls_object
-        .long  \Var(TLSGD) + (2b - 1b - 4)
-3:
 .endm
 
 .macro INLINE_GETTHREAD

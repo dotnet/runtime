@@ -224,8 +224,6 @@ OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
         add     $Target, sp, #192
     MEND
 
-#define GC_ALLOC_FINALIZE 1
-
 ; ------------------------------------------------------------------
 ; Macro to generate Redirection Stubs
 ;

@@ -5,63 +5,6 @@
 
 #include <loongarch64/AsmMacros_Unix.inc>
 
-.macro PROLOG_STACK_ALLOC Size
-        addi.d  $sp, $sp, -\Size
-.endm
-
-.macro EPILOG_STACK_FREE Size
-        addi.d  $sp, $sp, \Size
-        .cfi_adjust_cfa_offset -\Size
-.endm
-
-.macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs
-        st.d  $r\reg1, $sp, \ofs
-        st.d  $r\reg2, $sp, \ofs + 8
-        .cfi_rel_offset  \reg1, \ofs
-        .cfi_rel_offset  \reg2, \ofs + 8
-        .ifc  \reg1, $fp
-        ori  $fp, $sp, 0
-        .cfi_def_cfa_register  22
-        .endif
-.endm
-
-.macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize
-        addi.d  $sp, $sp, -\ssize
-        .cfi_adjust_cfa_offset  \ssize
-
-        st.d  $r\reg1, $sp, 0
-        st.d  $r\reg2, $sp, 8
-
-        .cfi_rel_offset  \reg1, 0
-        .cfi_rel_offset  \reg2, 8
-
-        ori  $fp, $sp, 0
-        .cfi_def_cfa_register  22
-.endm
-
-.macro EPILOG_RESTORE_REG reg, ofs
-        ld.d  $r\reg, $sp, \ofs
-        .cfi_restore  \reg
-.endm
-
-.macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
-        ld.d  $r\reg1, $sp, \ofs
-        ld.d  $r\reg2, $sp, \ofs + 8
-        .cfi_restore  \reg1
-        .cfi_restore  \reg2
-.endm
-
-.macro EPILOG_RESTORE_REG_PAIR_INDEXED reg1, reg2, ofs
-        ld.d  $r\reg1, $sp, 0
-        ld.d  $r\reg2, $sp, 8
-        addi.d  $sp, $sp, \ofs
-        .cfi_restore  \reg1
-        .cfi_restore  \reg2
-        .cfi_adjust_cfa_offset  -\ofs
-.endm
-
-#include <loongarch64/InlineTls.inc>
-
 // Inlined version of RhpGetThread. Target cannot be a0.
 .macro INLINE_GETTHREAD target
     INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)

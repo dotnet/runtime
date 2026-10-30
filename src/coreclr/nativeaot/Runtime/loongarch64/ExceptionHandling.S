@@ -26,7 +26,6 @@
             st.d  $a1, $sp, 8
         .else
             PROLOG_STACK_ALLOC  0x58
-            .cfi_adjust_cfa_offset  0x58
             st.d  $a3, $sp, 0      // a3 is the SP and ra is the IP of the fault site
             st.d  $ra, $sp, 8
         .endif
@@ -50,7 +49,8 @@
         PROLOG_SAVE_REG       31,     0x60
         // } end PAL_LIMITED_CONTEXT
 
-        PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
+        // The CFA is $fp-based here, so no CFA adjustment
+        addi.d  $sp, $sp, -STACKSIZEOF_ExInfo
     .endm
 
 // -----------------------------------------------------------------------------
@@ -74,7 +74,8 @@
         .cfi_def_cfa_register  22 //fp
 
         .if \extraStackSize != 0
-            PROLOG_STACK_ALLOC \extraStackSize
+            // The CFA is $fp-based here, so no CFA adjustment
+            addi.d  $sp, $sp, -\extraStackSize
         .endif
     .endm
 
@@ -87,7 +88,8 @@
     .macro FREE_CALL_FUNCLET_FRAME extraStackSize
 
         .if \extraStackSize != 0
-            EPILOG_STACK_FREE \extraStackSize
+            // The CFA is $fp-based here, so no CFA adjustment
+            addi.d  $sp, $sp, \extraStackSize
         .endif
 
         EPILOG_RESTORE_REG_PAIR  23, 24, 0x10

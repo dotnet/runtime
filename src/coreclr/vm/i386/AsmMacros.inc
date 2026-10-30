@@ -74,8 +74,3 @@ POP_COOP_PINVOKE_FRAME macro
     pop         ebx
     pop         ebp
 endm
-
-;; GC type flags
-GC_ALLOC_FINALIZE               equ 1
-GC_ALLOC_ALIGN8_BIAS            equ 4
-GC_ALLOC_ALIGN8                 equ 8

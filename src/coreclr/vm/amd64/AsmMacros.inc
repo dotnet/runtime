@@ -3,21 +3,6 @@
 
 include amd64\AsmMacros_Windows.inc
 
-LEAF_END_MARKED macro Name, section
-        public Name&_End
-Name&_End label qword
-
-Name    endp
-
-        ; this nop is important to keep the label in
-        ; the right place in the face of BBT
-        nop
-
-Section ends
-
-        endm
-
-
 ;
 ; Inlined version of GetThread
 ; Trashes rax and r11
@@ -275,6 +260,3 @@ PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
         lea     target, [rsp + 296]
 
         endm
-
-;; GC type flags
-GC_ALLOC_FINALIZE               equ 1

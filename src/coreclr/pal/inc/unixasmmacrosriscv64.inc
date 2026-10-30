@@ -3,72 +3,6 @@
 
 #include <riscv64/AsmMacros_Unix.inc>
 
-.macro PREPARE_EXTERNAL_VAR Name, HelperReg
-    lla  \HelperReg, \Name
-.endm
-
-.macro PROLOG_STACK_ALLOC Size
-    addi sp, sp, -\Size
-    .cfi_adjust_cfa_offset \Size
-.endm
-
-.macro EPILOG_STACK_FREE Size
-    addi sp, sp, \Size
-    .cfi_adjust_cfa_offset -\Size
-.endm
-
-.macro EPILOG_STACK_RESTORE
-    ori  sp, fp, 0
-    .cfi_restore sp
-.endm
-
-.macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs, __def_cfa_save=0
-    sd \reg1, \ofs(sp)
-    sd \reg2, (\ofs+8)(sp)
-    .cfi_rel_offset \reg1, \ofs
-    .cfi_rel_offset \reg2, \ofs + 8
-    .if (\__def_cfa_save ==  1)
-        addi fp, sp, 0
-        .cfi_def_cfa_register fp
-    .endif
-.endm
-
-.macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
-    addi sp, sp, -\ssize
-    .cfi_adjust_cfa_offset \ssize
-
-    sd \reg1, 0(sp)
-    sd \reg2, 8(sp)
-
-    .cfi_rel_offset \reg1, 0
-    .cfi_rel_offset \reg2, 8
-    .if (\__def_cfa_save ==  1)
-        addi fp, sp, 0
-        .cfi_def_cfa_register fp
-    .endif
-.endm
-
-.macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
-    ld  \reg2, (\ofs+8)(sp)
-    ld  \reg1, (\ofs)(sp)
-    .cfi_restore \reg2
-    .cfi_restore \reg1
-.endm
-
-.macro EPILOG_RESTORE_REG_PAIR_INDEXED reg1, reg2, ssize
-    ld  \reg2, 8(sp)
-    ld  \reg1, 0(sp)
-    .cfi_restore \reg2
-    .cfi_restore \reg1
-
-    addi  sp, sp, \ssize
-    .cfi_adjust_cfa_offset -\ssize
-.endm
-
-.macro EPILOG_BRANCH_REG reg
-    jr \reg
-.endm
-
 //-----------------------------------------------------------------------------
 // Define the prolog for a TransitionBlock-based method. This macro should be called first in the method and
 // comprises the entire prolog.The locals must be 8 byte aligned
@@ -288,8 +222,6 @@
 // TODO RISCV NYI
     sw  ra, 0(zero)
 .endm
-
-#include <riscv64/InlineTls.inc>
 
 // Inlined version of RhpGetThread
 .macro INLINE_GETTHREAD target

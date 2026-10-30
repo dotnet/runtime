@@ -3,13 +3,6 @@
 
 #include <amd64/AsmMacros_Unix.inc>
 
-.macro PATCH_LABEL Name
-        .global C_FUNC(\Name)
-C_FUNC(\Name):
-.endm
-
-#define SIZEOF_FP_REGS 0x80
-
 //
 // CONSTANTS -- INTEGER
 //
@@ -37,23 +30,6 @@ C_FUNC(\Name):
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
 #define TrapThreadsFlags_TrapThreads     1
-
-.macro INLINE_GET_TLS_VAR Var
-       .att_syntax
-#if defined(__APPLE__)
-        movq    _\Var@TLVP(%rip), %rdi
-        callq   *(%rdi)
-#else
-        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
-        leaq    \Var@TLSGD(%rip), %rdi
-        .byte 0x66  //
-        .byte 0x66  //
-        .byte 0x48  // rex.W prefix, also for padding
-        callq   __tls_get_addr@PLT
-#endif
-       .intel_syntax noprefix
-.endm
-
 
 .macro INLINE_GETTHREAD
 #ifdef FEATURE_EMULATED_TLS

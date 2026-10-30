@@ -3,11 +3,6 @@
 
 #include <amd64/AsmMacros_Unix.inc>
 
-.macro PATCH_LABEL Name
-        .global C_FUNC(\Name)
-        C_FUNC(\Name) = .
-.endm
-
 // Stack layout:
 //
 // (stack parameters)
@@ -119,23 +114,6 @@
         POP_CALLEE_SAVED_REGISTERS
 
 .endm
-
-.macro INLINE_GET_TLS_VAR Var
-       .att_syntax
-#if defined(__APPLE__)
-        movq    _\Var@TLVP(%rip), %rdi
-        callq   *(%rdi)
-#else
-        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
-        leaq    \Var@TLSGD(%rip), %rdi
-        .byte 0x66  //
-        .byte 0x66  //
-        .byte 0x48  // rex.W prefix, also for padding
-        callq   __tls_get_addr@PLT
-#endif
-       .intel_syntax noprefix
-.endm
-
 
 // Inlined version of GetThreadEEAllocContext. Trashes volatile registers.
 .macro INLINE_GET_ALLOC_CONTEXT_BASE

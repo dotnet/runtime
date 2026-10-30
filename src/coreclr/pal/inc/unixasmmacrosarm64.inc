@@ -3,20 +3,6 @@
 
 #include <arm64/AsmMacros_Unix.inc>
 
-.macro PATCH_LABEL Name
-#if defined(__APPLE__)
-        .alt_entry C_FUNC(\Name)
-        .private_extern C_FUNC(\Name)
-#else
-        .global C_FUNC(\Name)
-#endif
-C_FUNC(\Name):
-.endm
-
-.macro EMIT_BREAKPOINT
-        brk #0xf000
-.endm
-
 //-----------------------------------------------------------------------------
 // Define the prolog for a TransitionFrame-based method. This macro should be called first in the method and
 // comprises the entire prolog (i.e. don't modify SP after calling this).The locals must be 8 byte aligned

@@ -54,6 +54,16 @@ C_FUNC(\Name):
 C_FUNC(\Name):
 .endm
 
+.macro PATCH_LABEL Name
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name)
+        .private_extern C_FUNC(\Name)
+#else
+        .global C_FUNC(\Name)
+#endif
+C_FUNC(\Name):
+.endm
+
 .macro LEAF_END Name, Section
 #if !defined(__APPLE__)
         .size \Name, .-\Name
@@ -72,6 +82,10 @@ C_FUNC(\Name\()_End):
         LEAF_END \Name, \Section
         // make sure this symbol gets its own address
         nop
+.endm
+
+.macro EMIT_BREAKPOINT
+        brk #0xf000
 .endm
 
 .macro LABELED_RETURN_ADDRESS Name
