@@ -205,11 +205,11 @@ namespace Microsoft.Extensions.Internal
         }
 
         [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
-        private static extern int Kill(int pid, int sig);
+        private static extern unsafe int Kill(int pid, int sig);
 
 #if NET
         [DllImport("libSystem.Native", EntryPoint = "SystemNative_GetPlatformSignalNumber")]
-        private static extern int GetPlatformSignalNumber(PosixSignal signal);
+        private static extern unsafe int GetPlatformSignalNumber(PosixSignal signal);
 #endif
     }
 }
