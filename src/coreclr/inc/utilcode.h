@@ -475,16 +475,6 @@ inline BOOL RunningInWow64()
 BOOL RunningInWow64();
 #endif
 
-//
-// Allocate free memory within the range [pMinAddr..pMaxAddr] using
-// ClrVirtualQuery to find free memory and ClrVirtualAlloc to allocate it.
-//
-BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
-                                   const BYTE *pMaxAddr,
-                                   SIZE_T dwSize,
-                                   DWORD flAllocationType,
-                                   DWORD flProtect);
-
 #ifdef HOST_WINDOWS
 
 struct CPU_Group_Info

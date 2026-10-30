@@ -103,23 +103,13 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
         pFlat = (FlatImageLayout*)pOwner->GetFlatLayout();
         pFlat->AddRef();
     }
-    else if (AllowR2RForImage(pOwner))
+    else
     {
-        // We only expect to be converting images that aren't already opened in the R2R composite case
         pFlat = new FlatImageLayout(pOwner);
-        _ASSERTE(pFlat->HasReadyToRunHeader());
     }
 
     if (pFlat == NULL || !pFlat->CheckILOnlyFormat())
         EEFileLoadException::Throw(pOwner->GetPathForErrorMessages(), COR_E_BADIMAGEFORMAT);
-
-#if defined(TARGET_UNIX)
-    // We should not see R2R files here on Unix when R2R is expected/allowed for the image.
-    // ConvertedImageLayout may be able to handle them, but the fact that we were unable to
-    // load directly implies that MAPMapPEFile could not consume what crossgen produced.
-    // That is suspicious; one or another might have a bug.
-    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || !AllowR2RForImage(pOwner) || pOwner->IsCompressed() || disableMapping);
-#endif
 
     // If the image is R2R with native code (that is, not a component assembly of composite R2R) or has writeable sections,
     // we need to actually load/map it into virtual addresses
@@ -137,35 +127,21 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
 {
     STANDARD_VM_CONTRACT;
 
-    bool disableMapping = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PELoader_DisableMapping);
-
-    if (pOwner->IsFile())
+#ifdef TARGET_WINDOWS
+    if (pOwner->IsFile() && !pOwner->IsInBundle())
     {
-        if (!pOwner->IsInBundle()
-#if defined(TARGET_UNIX)
-            || !pOwner->IsCompressed()
-#endif
-            )
-        {
-#if defined(TARGET_UNIX)
-            if (!disableMapping)
-#endif
-            {
+        PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner, loadFailure));
+        if (pAlloc->GetBase() != NULL)
+            return pAlloc.Detach();
 
-                PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner, loadFailure));
-                if (pAlloc->GetBase() != NULL)
-                    return pAlloc.Detach();
-
-#if TARGET_WINDOWS
-                // For regular PE files always use OS loader on Windows.
-                // If a file cannot be loaded, do not try any further.
-                // Even if we may be able to load it, we do not want to support such files.
-                return NULL;
-#endif
-            }
-        }
+        // For regular PE files always use OS loader on Windows.
+        // If a file cannot be loaded, do not try any further.
+        // Even if we may be able to load it, we do not want to support such files.
+        return NULL;
     }
+#endif // TARGET_WINDOWS
 
+    bool disableMapping = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PELoader_DisableMapping);
     return PEImageLayout::LoadConverted(pOwner, disableMapping);
 }
 
@@ -178,41 +154,64 @@ PEImageLayout* PEImageLayout::LoadFlat(PEImage* pOwner)
 PEImageLayout *PEImageLayout::LoadNative(LPCWSTR fullPath)
 {
     STANDARD_VM_CONTRACT;
+#ifdef TARGET_WINDOWS
     return new NativeImageLayout(fullPath);
+#else
+    PEImageHolder pOwner(PEImage::OpenImage(fullPath, MDInternalImport_NoCache));
+    FlatImageLayout* pFlat = static_cast<FlatImageLayout*>(pOwner->GetOrCreateLayout(LAYOUT_FLAT));
+    if (!pFlat->CheckNTFormat() || !pFlat->IsNativeMachineFormat())
+        EEFileLoadException::Throw(fullPath, COR_E_BADIMAGEFORMAT);
+
+    bool disableMapping = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PELoader_DisableMapping);
+    PEImageLayoutHolder pLayout(new ConvertedImageLayout(pFlat, disableMapping));
+    pLayout->m_pOwner = nullptr;
+    return pLayout.Detach();
+#endif // TARGET_WINDOWS
 }
 
-#ifdef TARGET_UNIX
-DWORD SectionCharacteristicsToPageProtection(UINT characteristics)
+static VMToOSInterface::MemoryProtection GetSectionMemoryProtection(const IMAGE_SECTION_HEADER& section)
 {
+    UINT characteristics = VAL32(section.Characteristics);
     _ASSERTE((characteristics & VAL32(IMAGE_SCN_MEM_READ)) != 0);
-    DWORD pageProtection;
 
     if ((characteristics & VAL32(IMAGE_SCN_MEM_WRITE)) != 0)
     {
         if ((characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0)
         {
-            pageProtection = PAGE_EXECUTE_READWRITE;
+            return VMToOSInterface::MemoryProtection::ExecuteReadWrite;
         }
         else
         {
-            pageProtection = PAGE_READWRITE;
+            return VMToOSInterface::MemoryProtection::ReadWrite;
         }
     }
     else
     {
         if ((characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0)
         {
-            pageProtection = PAGE_EXECUTE_READ;
+            return VMToOSInterface::MemoryProtection::ExecuteRead;
         }
         else
         {
-            pageProtection = PAGE_READONLY;
+            return VMToOSInterface::MemoryProtection::ReadOnly;
         }
     }
-
-    return pageProtection;
 }
-#endif // TARGET_UNIX
+
+// Whether the given protection grants execute access, used to decide whether a region of
+// relocated code needs an instruction cache flush.
+static bool IsExecutableProtection(VMToOSInterface::MemoryProtection protection)
+{
+    switch (protection)
+    {
+    case VMToOSInterface::MemoryProtection::Execute:
+    case VMToOSInterface::MemoryProtection::ExecuteRead:
+    case VMToOSInterface::MemoryProtection::ExecuteReadWrite:
+        return true;
+    default:
+        return false;
+    }
+}
 
 void PEImageLayout::InitDecoders(void* data, COUNT_T size)
 {
@@ -305,10 +304,13 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     COUNT_T dirSize;
     TADDR dir = GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_BASERELOC, &dirSize);
 
-    // Minimize number of calls to VirtualProtect by keeping a whole section unprotected at a time.
+#ifndef TARGET_WASM
+    // Minimize protection changes by keeping a whole section unprotected at a time.
     BYTE * pWriteableRegion = NULL;
     SIZE_T cbWriteableRegion = 0;
-    DWORD dwOldProtection = 0;
+    bool hasOldProtection = false;
+    VMToOSInterface::MemoryProtection oldProtection = VMToOSInterface::MemoryProtection::NoAccess;
+#endif // !TARGET_WASM
 
     BYTE * pFlushRegion = NULL;
     SIZE_T cbFlushRegion = 0;
@@ -351,26 +353,24 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
         // VirtualAddress, so GetBase() + rva is the correct address (equivalent to GetRvaData(rva)).
         BYTE * pageAddress = (BYTE *)GetBase() + rva;
 
+#ifndef TARGET_WASM
         // Check whether the page is outside the unprotected region.
         // Webcil data is already writable, so skip memory protection management.
         if (IsPEFormat() && (SIZE_T)(pageAddress - pWriteableRegion) >= cbWriteableRegion)
         {
             // Restore the protection
-            if (dwOldProtection != 0)
+            if (hasOldProtection)
             {
 #if defined(__APPLE__) && defined(HOST_ARM64)
-                BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
-                    PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
-
                 // Disable writing on Apple Silicon
-                if (bExecRegion)
-                    PAL_JitWriteProtect(false);
+                if (IsExecutableProtection(oldProtection))
+                    VMToOSInterface::JitWriteProtect(false);
 #else
-                if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
-                                       dwOldProtection, &dwOldProtection))
-                    ThrowLastError();
+                if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, oldProtection))
+                    ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 #endif // __APPLE__ && HOST_ARM64
-                dwOldProtection = 0;
+                hasOldProtection = false;
+                oldProtection = VMToOSInterface::MemoryProtection::NoAccess;
             }
 
             USHORT fixup = VAL16(fixups[0]);
@@ -384,30 +384,32 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             // Unprotect the section if it is not writable
             if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_WRITE)) == 0))
             {
-                DWORD dwNewProtection = relocationMustWriteCopy ? PAGE_WRITECOPY : PAGE_READWRITE;
+                VMToOSInterface::MemoryProtection newProtection = relocationMustWriteCopy ?
+                    VMToOSInterface::MemoryProtection::WriteCopy : VMToOSInterface::MemoryProtection::ReadWrite;
 #if defined(TARGET_UNIX)
                 if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0))
                 {
 #if defined(__APPLE__) && defined(HOST_ARM64)
                     // Enable writing on Apple Silicon
-                    PAL_JitWriteProtect(true);
+                    VMToOSInterface::JitWriteProtect(true);
 #else
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
-                    dwNewProtection = PAGE_EXECUTE_READWRITE;
+                    newProtection = VMToOSInterface::MemoryProtection::ExecuteReadWrite;
 #endif
                 }
 #endif // TARGET_UNIX
-#if !(defined(__APPLE__) && defined(HOST_ARM64))
-                if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
-                                       dwNewProtection, &dwOldProtection))
-                    ThrowLastError();
+#if defined(__APPLE__) && defined(HOST_ARM64)
+                // Writing was already enabled above via VMToOSInterface::JitWriteProtect.
+#else
+                if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, newProtection))
+                    ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 #endif // __APPLE__ && HOST_ARM64
-#ifdef TARGET_UNIX
-                dwOldProtection = SectionCharacteristicsToPageProtection(pSection->Characteristics);
-#endif // TARGET_UNIX
+                oldProtection = GetSectionMemoryProtection(*pSection);
+                hasOldProtection = true;
             }
         }
+#endif // !TARGET_WASM
 
         BYTE* pEndAddressToFlush = NULL;
         for (COUNT_T fixupIndex = 0; fixupIndex < fixupsCount; fixupIndex++)
@@ -449,12 +451,10 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             }
         }
 
+#ifndef TARGET_WASM
         if (IsPEFormat())
         {
-            BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
-                PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
-
-            if (bExecRegion && pEndAddressToFlush != NULL)
+            if (IsExecutableProtection(oldProtection) && pEndAddressToFlush != NULL)
             {
                 // If the current page is not next to the pending region to flush, flush the current pending region and start a new one
                 if (pageAddress >= pFlushRegion + cbFlushRegion + cbPageSize || pageAddress < pFlushRegion)
@@ -469,29 +469,36 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 cbFlushRegion = pEndAddressToFlush - pFlushRegion;
             }
         }
+#endif // !TARGET_WASM
 
         dirPos += fixupsSize;
     }
     _ASSERTE(dirSize == dirPos || !IsPEFormat());
 
-    if (dwOldProtection != 0)
+#ifndef TARGET_WASM
+    if (hasOldProtection)
     {
 #if defined(__APPLE__) && defined(HOST_ARM64)
-        BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
-            PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
-
         // Disable writing on Apple Silicon
-        if (bExecRegion)
-            PAL_JitWriteProtect(false);
+        if (IsExecutableProtection(oldProtection))
+            VMToOSInterface::JitWriteProtect(false);
 #else
         // Restore the protection
-        if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
-                               dwOldProtection, &dwOldProtection))
-            ThrowLastError();
+        if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, oldProtection))
+            ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 #endif // __APPLE__ && HOST_ARM64
     }
+#endif // !TARGET_WASM
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
-    PAL_LOADMarkSectionAsNotNeeded((void*)dir);
+    // Relocations are not needed after they have been applied.
+    if (dirSize != 0)
+    {
+        TADDR discardStart = ALIGN_DOWN(dir, minipal_getpagesize());
+        SIZE_T discardSize = ALIGN_UP(dir + dirSize, minipal_getpagesize()) - discardStart;
+        int error = VMToOSInterface::MarkMemoryAsNotNeeded(reinterpret_cast<void*>(discardStart), discardSize);
+        if (error != 0)
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not mark base relocations as not needed (%d)\n", error));
+    }
 #endif // TARGET_UNIX && !TARGET_WASM
 
     if (pFlushRegion != NULL)
@@ -500,47 +507,58 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     }
 }
 
-static SIZE_T AllocatedPart(PVOID part)
-{
-    return (SIZE_T)part + 1;
-}
-
-static SIZE_T MappedPart(PVOID part)
-{
-    return (SIZE_T)part;
-}
-
-static PVOID PtrFromPart(SIZE_T part)
-{
-    return (PVOID)(part & ~1);
-}
-
-static SIZE_T IsAllocatedPart(SIZE_T part)
-{
-    return part & 1;
-}
-
 void ConvertedImageLayout::FreeImageParts()
 {
+    LIMITED_METHOD_CONTRACT;
     for (int i = 0; i < ConvertedImageLayout::MAX_PARTS; i++)
     {
-        SIZE_T imagePart = this->m_imageParts[i];
-        if (imagePart == 0)
+        PEImagePart imagePart = m_imageParts[i];
+        if (imagePart.IsEmpty())
             break;
 
-        // memory projected into placeholders is page-aligned.
-        // we are using "+1" to distinguish committed memory from mapped views, so that we know how to free them
-        if (IsAllocatedPart(imagePart))
+        PEImagePart nextPart = i + 1 < ConvertedImageLayout::MAX_PARTS ? m_imageParts[i + 1] : PEImagePart{};
+        m_imageParts[i].Clear();
+        // A final untagged pointer marks the end of the reservation, not a mapped view.
+        if (nextPart.IsEmpty())
         {
-            ClrVirtualFree(PtrFromPart(imagePart), 0, MEM_RELEASE);
+            _ASSERTE(!imagePart.IsAllocated());
+            break;
+        }
+
+        SIZE_T partSize = reinterpret_cast<SIZE_T>(nextPart.GetAddress()) -
+            reinterpret_cast<SIZE_T>(imagePart.GetAddress());
+#ifdef TARGET_WASM
+        _ASSERTE(imagePart.IsAllocated());
+        if (!VMToOSInterface::ReleaseMemoryReservation(imagePart.GetAddress(), partSize))
+        {
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not release image reservation (0x%08x)\n",
+                static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
+        }
+#else
+        if (imagePart.IsAllocated())
+        {
+            if (!VMToOSInterface::ReleaseMemoryReservation(imagePart.GetAddress(), partSize))
+            {
+                LOG((LF_LOADER, LL_INFO100, "PEImage: Could not release image reservation (0x%08x)\n",
+                    static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
+            }
         }
         else
         {
-            CLRUnmapViewOfFile(PtrFromPart(imagePart));
+            if (VMToOSInterface::UnmapMemory(imagePart.GetAddress(), partSize) != 0)
+            {
+                LOG((LF_LOADER, LL_INFO100, "PEImage: Could not unmap image part (0x%08x)\n",
+                    static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
+            }
         }
-
-        this->m_imageParts[i] = 0;
+#endif // TARGET_WASM
     }
+}
+
+static void ReleaseImageParts(ConvertedImageLayout* layout)
+{
+    WRAPPER_NO_CONTRACT;
+    layout->FreeImageParts();
 }
 
 ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disableMapping)
@@ -551,18 +569,19 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
     }
     CONTRACTL_END;
 
-    _ASSERTE(source->CheckILOnlyFormat());
+    _ASSERTE(source->CheckNTFormat());
 
     m_pOwner = source->m_pOwner;
     m_pExceptionDir = NULL;
     memset(m_imageParts, 0, sizeof(m_imageParts));
+    Holder<ConvertedImageLayout*, DoNothing, ReleaseImageParts> imagePartsHolder(this);
 
     bool relocationMustWriteCopy = false;
     void* loadedImage = NULL;
 
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening manually mapped stream\n"));
 
-#ifdef TARGET_WINDOWS
+#ifndef TARGET_WASM
     // LoadImageByMappingParts assumes the source has a file mapping handle created/managed by the runtime.
     // This is not the case for non-file images (for example, external data). Only try to load by mapping for files.
     if (!disableMapping && m_pOwner->IsFile())
@@ -572,12 +591,14 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
         {
             FreeImageParts();
         }
+#ifdef TARGET_WINDOWS
         else
         {
             relocationMustWriteCopy = true;
         }
+#endif // TARGET_WINDOWS
     }
-#endif //TARGET_WINDOWS
+#endif // !TARGET_WASM
 
     if (loadedImage == NULL)
     {
@@ -611,6 +632,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
         }
 #endif //TARGET_X86
     }
+    imagePartsHolder.SuppressRelease();
 }
 
 ConvertedImageLayout::~ConvertedImageLayout()
@@ -633,6 +655,7 @@ ConvertedImageLayout::~ConvertedImageLayout()
 #endif
 }
 
+#ifdef TARGET_WINDOWS
 LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 {
     CONTRACTL
@@ -645,7 +668,6 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
     m_pOwner = pOwner;
     _ASSERTE(!pOwner->IsCompressed());
 
-#ifndef TARGET_UNIX
     _ASSERTE(!pOwner->IsInBundle());
     m_Module = CLRLoadLibraryEx(pOwner->GetPath(), NULL, GetLoadWithAlteredSearchPathFlag());
     if (m_Module == NULL)
@@ -662,57 +684,13 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
     LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %s\n", ownerPath.GetUTF8()));
 #endif // LOGGING
 
-#else
-    HANDLE hFile = pOwner->GetFileHandle();
-    INT64 offset = pOwner->GetOffset();
-
-    m_LoadedFile = PAL_LOADLoadPEFile(hFile, offset);
-    if (m_LoadedFile == NULL)
-    {
-        // Fetch the HRESULT upfront before anybody gets a chance to corrupt it
-        *loadFailure = HRESULT_FROM_GetLastError();
-        return;
-    }
-
-#ifdef LOGGING
-    SString ownerPath{ pOwner->GetPath() };
-    LOG((LF_LOADER, LL_INFO1000, "PEImage: image %s (hFile %p) mapped @ %p\n",
-        ownerPath.GetUTF8(), hFile, (void*)m_LoadedFile));
-#endif // LOGGING
-
-    IfFailThrow(m_peDecoder.Init((void*)m_LoadedFile));
-
-    if (!HasCorHeader())
-    {
-        *loadFailure = COR_E_BADIMAGEFORMAT;
-        m_peDecoder.Reset();
-        return;
-    }
-
-    if (HasReadyToRunHeader())
-    {
-        //Do base relocation for PE, if necessary.
-        if (!IsNativeMachineFormat())
-        {
-            *loadFailure = COR_E_BADIMAGEFORMAT;
-            m_peDecoder.Reset();
-            return;
-        }
-
-        // Unix specifies write sharing at map time (i.e. MAP_PRIVATE implies writecopy).
-        ApplyBaseRelocations(/* relocationMustWriteCopy*/ false);
-        SetRelocated();
-    }
-#endif
 }
 
-#if !defined(TARGET_UNIX)
 LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HMODULE hModule)
 {
     m_pOwner = pOwner;
     m_peDecoder.Init((void*)hModule, /* relocated */ true);
 }
-#endif // !TARGET_UNIX
 
 LoadedImageLayout::~LoadedImageLayout()
 {
@@ -724,11 +702,10 @@ LoadedImageLayout::~LoadedImageLayout()
     }
     CONTRACTL_END;
 
-#if !defined(TARGET_UNIX)
     if (m_Module)
         CLRFreeLibrary(m_Module);
-#endif // !TARGET_UNIX
 }
+#endif // TARGET_WINDOWS
 
 FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 {
@@ -756,19 +733,18 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         return;
     }
 
-    HANDLE hFile = pOwner->GetFileHandle();
+    VMToOSInterface::MemoryMapHandle hFile = pOwner->GetFileHandle();
     INT64 offset = pOwner->GetOffset();
     INT64 size = pOwner->GetSize();
-
-    // If a size is not specified, load the whole file
+    uint64_t fileSize;
+    if (!VMToOSInterface::GetFileSize(hFile, &fileSize))
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+    if (offset < 0 || size < 0 || fileSize < static_cast<UINT64>(offset))
+        EEFileLoadException::Throw(pOwner->GetPathForErrorMessages(), COR_E_BADIMAGEFORMAT);
     if (size == 0)
-    {
-        size = SafeGetFileSize(hFile, NULL);
-        if (size == 0xffffffff && GetLastError() != NOERROR)
-        {
-            ThrowLastError();
-        }
-    }
+        size = static_cast<INT64>(fileSize - offset);
+    if (static_cast<UINT64>(size) > fileSize - offset || static_cast<UINT64>(size) > COUNT_T_MAX)
+        EEFileLoadException::Throw(pOwner->GetPathForErrorMessages(), COR_E_BADIMAGEFORMAT);
 
     LPVOID addr = 0;
 
@@ -778,17 +754,19 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         INT64 uncompressedSize;
         BOOL isCompressed = pOwner->IsCompressed(&uncompressedSize);
 
-        DWORD mapAccess = PAGE_READONLY;
-#if !defined(TARGET_UNIX)
-        // to map sections into executable views on Windows the mapping must have EXECUTE permissions
-        if (!isCompressed)
-        {
-            mapAccess = PAGE_EXECUTE_READ;
-        }
-#endif
-        m_FileMap = CreateFileMapping(hFile, NULL, mapAccess, 0, 0, NULL);
-        if (m_FileMap == NULL)
-            ThrowLastError();
+#ifdef TARGET_WASM
+        m_wasmData = new BYTE[static_cast<COUNT_T>(size)];
+        if (!VMToOSInterface::ReadFile(hFile, static_cast<uint64_t>(offset), m_wasmData.GetValue(),
+                static_cast<size_t>(size)))
+            ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+        addr = m_wasmData.GetValue();
+#else
+        VMToOSInterface::MemoryProtection mapProtection = isCompressed
+            ? VMToOSInterface::MemoryProtection::ReadOnly
+            : VMToOSInterface::MemoryProtection::ExecuteRead;
+        m_fileMapping.Assign(VMToOSInterface::CreateMemoryMapping(hFile, 0, mapProtection));
+        if (m_fileMapping.GetValue() == VMToOSInterface::InvalidMemoryMapHandle)
+            ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
         // - Windows - MapViewOfFileEx requires offset to be allocation granularity aligned (typically 64KB)
         // - Linux/OSX - mmap requires offset to be page aligned (PAL sets allocation granularity to page size)
@@ -800,34 +778,41 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         _ASSERTE((offset - mapBegin) < mapSize);
         _ASSERTE(mapSize >= (UINT64)size);
 
-        LPVOID view = CLRMapViewOfFile(m_FileMap, FILE_MAP_READ, mapBegin >> 32, (DWORD)mapBegin, (DWORD)mapSize);
-        if (view == NULL)
-            ThrowLastError();
-
-        m_FileView = view;
+        if (mapSize > SIZE_MAX)
+            ThrowOutOfMemory();
+        void* view = VMToOSInterface::MapMemory(m_fileMapping.GetValue(), mapBegin, nullptr, static_cast<SIZE_T>(mapSize),
+            VMToOSInterface::MemoryProtection::ReadOnly, true);
+        if (view == nullptr)
+            ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+        m_fileView.Assign(view, static_cast<SIZE_T>(mapSize));
         addr = (LPVOID)((size_t)view + offset - mapBegin);
+#endif // TARGET_WASM
 
         if (isCompressed)
         {
 #if defined(CORECLR_EMBEDDED)
-            // The mapping we have just created refers to the region in the bundle that contains compressed data.
-            // We will create another anonymous memory-only mapping and uncompress file there.
-            // The flat image will refer to the anonymous mapping instead and we will release the original mapping.
+            // Decompress into owned storage and release the compressed image storage after success.
 
-            HandleHolder anonMap{ CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL) };
-            if (anonMap == NULL)
-                ThrowLastError();
-
-            CLRMapViewHolder anonView{ CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0) };
-            if (anonView == NULL)
-                ThrowLastError();
+            if (uncompressedSize <= 0 || static_cast<UINT64>(uncompressedSize) > COUNT_T_MAX)
+                EEFileLoadException::Throw(pOwner->GetPathForErrorMessages(), COR_E_BADIMAGEFORMAT);
+#ifdef TARGET_WASM
+            NewArrayHolder<BYTE> anonView(new BYTE[static_cast<COUNT_T>(uncompressedSize)]);
+            void* uncompressed = anonView.GetValue();
+#else
+            void* uncompressed = VMToOSInterface::MapAnonymousMemory(static_cast<SIZE_T>(uncompressedSize),
+                VMToOSInterface::MemoryProtection::ReadWrite);
+            if (uncompressed == nullptr)
+                ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+            VMToOSInterface::MemoryMappedViewHolder anonView;
+            anonView.Assign(uncompressed, static_cast<SIZE_T>(uncompressedSize));
+#endif // TARGET_WASM
 
             //NB: PE cannot be larger than 4GB and we are decompressing a managed assembly, which is a PE image,
             //    thus converting sizes to uint32 is ok.
             PAL_ZStream zStream;
             zStream.nextIn = (uint8_t*)addr;
             zStream.availIn = (uint32_t)size;
-            zStream.nextOut = (uint8_t*)(void*)anonView;
+            zStream.nextOut = static_cast<uint8_t*>(uncompressed);
             zStream.availOut = (uint32_t)uncompressedSize;
 
             // we match the compression side here. 15 is the window sise, negative means no zlib header.
@@ -848,11 +833,14 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 
             CompressionNative_InflateEnd(&zStream);
 
-            addr = anonView;
+            addr = uncompressed;
+#ifdef TARGET_WASM
+            m_wasmData = anonView.Extract();
+#else
+            m_fileView = std::move(anonView);
+            m_fileMapping.Reset();
+#endif // TARGET_WASM
             size = uncompressedSize;
-            // Replace file handles with the handles to anonymous map. This will release the handles to the original view and map.
-            m_FileView = std::move(anonView);
-            m_FileMap = std::move(anonMap);
 #else
             _ASSERTE(!"Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost.");
             ThrowHR(E_FAIL); // we don't have any indication of what kind of failure. Possibly a corrupt image.
@@ -880,37 +868,31 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
     }
     else
     {
-        DWORD mapAccess = PAGE_READWRITE;
-
-#if defined(TARGET_WINDOWS)
+#ifdef TARGET_WINDOWS
         if (Amsi::IsBlockedByAmsiScan((void*)array, size))
         {
-            // This is required to throw a BadImageFormatException for compatibility, but
-            // use the message from ERROR_VIRUS_INFECTED to give better insight on what's wrong
             SString virusHrString;
             GetHRMsg(HRESULT_FROM_WIN32(ERROR_VIRUS_INFECTED), virusHrString);
             ThrowHR(COR_E_BADIMAGEFORMAT, virusHrString);
         }
-
-        // to map sections into executable views on Windows the mapping must have EXECUTE permissions
-        mapAccess = PAGE_EXECUTE_READWRITE;
-
-#endif // defined(TARGET_WINDOWS)
-
-        m_FileMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, mapAccess, 0, size, NULL);
-        if (m_FileMap == NULL)
-            ThrowLastError();
-
-        m_FileView = CLRMapViewOfFile(m_FileMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
-        if (m_FileView == NULL)
-            ThrowLastError();
-
-        memcpy(m_FileView, array, size);
-        InitDecoders((void*)m_FileView, size);
+#endif // TARGET_WINDOWS
+#ifdef TARGET_WASM
+        m_wasmData = new BYTE[size];
+        memcpy(m_wasmData.GetValue(), array, size);
+        InitDecoders(m_wasmData.GetValue(), size);
+#else
+        void* view = VMToOSInterface::MapAnonymousMemory(size, VMToOSInterface::MemoryProtection::ReadWrite,
+            /* executableBacking */ true);
+        if (view == nullptr)
+            ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+        m_fileView.Assign(view, size);
+        memcpy(view, array, size);
+        InitDecoders(view, size);
+#endif // TARGET_WASM
     }
 }
 
-void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
+void* FlatImageLayout::LoadImageByCopyingParts(PEImagePart* imageParts) const
 {
     CONTRACTL
     {
@@ -920,6 +902,11 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     }
     CONTRACTL_END;
 
+    S_SIZE_T allocSize(GetVirtualSize());
+    allocSize.AlignUp(g_SystemInfo.dwAllocationGranularity);
+    if (allocSize.IsOverflow())
+        ThrowOutOfMemory();
+
     void* preferredBase = NULL;
 #ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
     if (g_useDefaultBaseAddr)
@@ -928,14 +915,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
-    DWORD allocationType = MEM_RESERVE | MEM_COMMIT;
-    DWORD initialProtection = PAGE_READWRITE;
-#if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
-    // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
-    // This is required on MacOS and otherwise will allow us to place native R2R code close to the
-    // coreclr library and thus improve performance by avoiding jump stubs in managed code.
-    allocationType |= MEM_RESERVE_EXECUTABLE;
-#endif
+    VMToOSInterface::MemoryProtection initialProtection = VMToOSInterface::MemoryProtection::ReadWrite;
 #if defined(HOST_OSX) && defined(HOST_ARM64)
     // On Apple Silicon, allocating the image region as plain PAGE_READWRITE and then promoting
     // executable sections to PAGE_EXECUTE_READ via mprotect has been observed to
@@ -944,39 +924,36 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     //
     // Avoid the unreliable transition - reserve the whole region as PAGE_NOACCESS first, then
     // commit each section directly with its final protection.
-    allocationType &= ~MEM_COMMIT;
-    initialProtection = PAGE_NOACCESS;
+    initialProtection = VMToOSInterface::MemoryProtection::NoAccess;
 #endif
 
-    COUNT_T allocSize = ALIGN_UP(this->GetVirtualSize(), g_SystemInfo.dwAllocationGranularity);
-    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, allocationType, initialProtection);
+    void* base = VMToOSInterface::AllocateMemory(preferredBase, allocSize.Value(), initialProtection, true);
     if (base == NULL && preferredBase != NULL)
-        base = ClrVirtualAlloc(NULL, allocSize, allocationType, initialProtection);
+        base = VMToOSInterface::AllocateMemory(nullptr, allocSize.Value(), initialProtection, true);
 
     if (base == NULL)
-        ThrowLastError();
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
-    // when loading by copying we have only one part to free.
-    m_imageParts[0] = AllocatedPart(base);
+    // Copying creates one allocation; the next entry records its end for cleanup.
+    imageParts[0] = PEImagePart::Allocated(base);
+    imageParts[1] = PEImagePart::Mapped(static_cast<BYTE*>(base) + allocSize.Value());
 
     IMAGE_SECTION_HEADER* sectionStart = IMAGE_FIRST_SECTION(FindNTHeaders());
     IMAGE_SECTION_HEADER* sectionEnd = sectionStart + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-    _ASSERTE((allocationType & MEM_COMMIT) == 0);
-    _ASSERTE(initialProtection != PAGE_READWRITE);
+    _ASSERTE(initialProtection == VMToOSInterface::MemoryProtection::NoAccess);
 
     DWORD sizeOfHeaders = VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders);
 
     // Commit and copy headers, then apply read-only protection.
-    if (ClrVirtualAlloc(base, sizeOfHeaders, MEM_COMMIT, PAGE_READWRITE) == NULL)
-        ThrowLastError();
+    if (!VMToOSInterface::ProtectMemory(base, sizeOfHeaders, VMToOSInterface::MemoryProtection::ReadWrite))
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
     CopyMemory(base, (void*)GetBase(), sizeOfHeaders);
 
-    DWORD oldProtection; // PAL layer doesn't properly set the previous protection, so we don't try to validate it here.
-    if (!ClrVirtualProtect((void*)base, sizeOfHeaders, PAGE_READONLY, &oldProtection))
-        ThrowLastError();
+    if (!VMToOSInterface::ProtectMemory(base, sizeOfHeaders, VMToOSInterface::MemoryProtection::ReadOnly))
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
     // Commit and copy each section with its desired protection.
     for (IMAGE_SECTION_HEADER* section = sectionStart; section < sectionEnd; section++)
@@ -989,23 +966,24 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
         BYTE* sectionBase = (BYTE*)base + VAL32(section->VirtualAddress);
         DWORD copySize = min(VAL32(section->SizeOfRawData), virtualSize);
 
-        if (ClrVirtualAlloc(sectionBase, virtualSize, MEM_COMMIT, isExec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE) == NULL)
-            ThrowLastError();
+        VMToOSInterface::MemoryProtection protection = isExec
+            ? VMToOSInterface::MemoryProtection::ExecuteReadWrite : VMToOSInterface::MemoryProtection::ReadWrite;
+        if (!VMToOSInterface::ProtectMemory(sectionBase, virtualSize, protection))
+            ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
         if (isExec)
-            PAL_JitWriteProtect(true);
+            VMToOSInterface::JitWriteProtect(true);
 
         CopyMemory(sectionBase, (BYTE*)GetBase() + VAL32(section->PointerToRawData), copySize);
 
         if (isExec)
         {
-            PAL_JitWriteProtect(false);
+            VMToOSInterface::JitWriteProtect(false);
         }
         else if ((section->Characteristics & IMAGE_SCN_MEM_WRITE) == 0)
         {
-            DWORD oldProt;
-            if (!ClrVirtualProtect(sectionBase, virtualSize, PAGE_READONLY, &oldProt))
-                ThrowLastError();
+            if (!VMToOSInterface::ProtectMemory(sectionBase, virtualSize, VMToOSInterface::MemoryProtection::ReadOnly))
+                ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
         }
     }
 #else
@@ -1030,381 +1008,214 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
         section++;
     }
 
+#ifndef TARGET_WASM
     // Apply write protection to copied headers
-    DWORD oldProtection;
-    if (!ClrVirtualProtect((void*)base, VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders),
-        PAGE_READONLY, &oldProtection))
-        ThrowLastError();
+    if (!VMToOSInterface::ProtectMemory(base, VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders),
+        VMToOSInterface::MemoryProtection::ReadOnly))
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
     // Finally, apply proper protection to copied sections
     for (section = sectionStart; section < sectionEnd; section++)
     {
         // Add appropriate page protection.
-        DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-            PAGE_EXECUTE_READ :
-            section->Characteristics & IMAGE_SCN_MEM_WRITE ?
-            PAGE_READWRITE :
-            PAGE_READONLY;
+        DWORD virtualSize = VAL32(section->Misc.VirtualSize);
+        if (virtualSize == 0)
+            continue;
 
-        if (!ClrVirtualProtect((void*)((BYTE*)base + VAL32(section->VirtualAddress)),
-            VAL32(section->Misc.VirtualSize),
-            newProtection, &oldProtection))
+        VMToOSInterface::MemoryProtection newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
+            VMToOSInterface::MemoryProtection::ExecuteRead :
+            section->Characteristics & IMAGE_SCN_MEM_WRITE ?
+            VMToOSInterface::MemoryProtection::ReadWrite :
+            VMToOSInterface::MemoryProtection::ReadOnly;
+
+        if (!VMToOSInterface::ProtectMemory((BYTE*)base + VAL32(section->VirtualAddress), virtualSize, newProtection))
         {
-            ThrowLastError();
+            ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
         }
     }
+#endif // !TARGET_WASM
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     return base;
 }
 
-#ifdef TARGET_WINDOWS
+#ifndef TARGET_WASM
 
-// VirtualAlloc2
-typedef PVOID(WINAPI* VirtualAlloc2Fn)(
-    HANDLE                 Process,
-    PVOID                  BaseAddress,
-    SIZE_T                 Size,
-    ULONG                  AllocationType,
-    ULONG                  PageProtection,
-    MEM_EXTENDED_PARAMETER* ExtendedParameters,
-    ULONG                  ParameterCount);
-
-VirtualAlloc2Fn pVirtualAlloc2 = NULL;
-
-// MapViewOfFile3
-typedef PVOID(WINAPI* MapViewOfFile3Fn)(
-    HANDLE                 FileMapping,
-    HANDLE                 Process,
-    PVOID                  BaseAddress,
-    ULONG64                Offset,
-    SIZE_T                 ViewSize,
-    ULONG                  AllocationType,
-    ULONG                  PageProtection,
-    MEM_EXTENDED_PARAMETER* ExtendedParameters,
-    ULONG                  ParameterCount);
-
-MapViewOfFile3Fn pMapViewOfFile3 = NULL;
-
-static bool HavePlaceholderAPI()
-{
-    const MapViewOfFile3Fn INVALID_ADDRESS_SENTINEL = (MapViewOfFile3Fn)1;
-    if (pMapViewOfFile3 == INVALID_ADDRESS_SENTINEL)
-    {
-        return false;
-    }
-
-    if (pMapViewOfFile3 == NULL)
-    {
-        HMODULE hm = WszLoadLibrary(W("kernelbase.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-        if (hm != NULL)
-        {
-            pVirtualAlloc2 = (VirtualAlloc2Fn)GetProcAddress(hm, "VirtualAlloc2");
-            pMapViewOfFile3 = (MapViewOfFile3Fn)GetProcAddress(hm, "MapViewOfFile3");
-
-            FreeLibrary(hm);
-        }
-
-        if (pMapViewOfFile3 == NULL || pVirtualAlloc2 == NULL)
-        {
-            pMapViewOfFile3 = INVALID_ADDRESS_SENTINEL;
-            return false;
-        }
-    }
-
-    return true;
-}
-
-static PVOID AllocPlaceholder(PVOID BaseAddress, SIZE_T Size)
-{
-    return pVirtualAlloc2(
-        ::GetCurrentProcess(),
-        BaseAddress,
-        Size,
-        MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
-        PAGE_NOACCESS,
-        NULL,
-        0);
-}
-
-static PVOID MapIntoPlaceholder(
-    HANDLE                 FileMapping,
-    ULONG64                FromOffset,
-    PVOID                  ToAddress,
-    SIZE_T                 ViewSize,
-    ULONG                  PageProtection
-)
-{
-    return pMapViewOfFile3(FileMapping, ::GetCurrentProcess(), ToAddress, FromOffset, ViewSize, MEM_REPLACE_PLACEHOLDER, PageProtection, NULL, 0);
-}
-
-static PVOID CommitIntoPlaceholder(
-    PVOID                  ToAddress,
-    SIZE_T                 Size,
-    ULONG                  PageProtection
-)
-{
-    return pVirtualAlloc2(::GetCurrentProcess(), ToAddress, Size, MEM_COMMIT | MEM_RESERVE | MEM_REPLACE_PLACEHOLDER, PageProtection, NULL, 0);
-}
-
-static PVOID SplitPlaceholder(
-    PVOID& placeholderStart,
-    PVOID   placeholderEnd,
-    SIZE_T  size
-)
-{
-    _ASSERTE((char*)placeholderStart + size <= placeholderEnd);
-
-    if ((char*)placeholderStart + size < placeholderEnd)
-    {
-        if (!VirtualFree(placeholderStart, size, MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER))
-        {
-            return NULL;
-        }
-    }
-
-    PVOID result = placeholderStart;
-    placeholderStart = (char*)placeholderStart + size;
-
-    return result;
-}
-
-static SIZE_T OffsetWithinPage(SIZE_T addr)
-{
-    return addr & (minipal_getpagesize() - 1);
-}
-
-static SIZE_T RoundToPage(SIZE_T size, SIZE_T offset)
-{
-    size_t result = size + OffsetWithinPage(offset);
-    _ASSERTE(result >= size);
-    return ROUND_UP_TO_PAGE(result);
-}
-
-void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
+void* FlatImageLayout::LoadImageByMappingParts(PEImagePart* imageParts) const
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
+        PRECONDITION(CheckNTFormat());
     }
     CONTRACTL_END;
 
-    if (!HavePlaceholderAPI() || m_pOwner->IsCompressed())
+    if (!VMToOSInterface::SupportsPlaceholderMapping() || m_pOwner->IsCompressed())
     {
-        return NULL;
+        return nullptr;
     }
 
-    _ASSERTE(HasNTHeaders());
+    UINT32 pageSize = static_cast<UINT32>(minipal_getpagesize());
+    UINT64 offset = static_cast<UINT64>(m_pOwner->GetOffset());
+    SIZE_T offsetInPage = static_cast<SIZE_T>(offset & (pageSize - 1));
+    UINT32 sectionAlignment = VAL32(FindNTHeaders()->OptionalHeader.SectionAlignment);
+    SIZE_T alignment = max(pageSize, sectionAlignment);
+    SIZE_T headerSize = VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders);
+    COUNT_T sectionCount = GetNumberOfSections();
+    IMAGE_SECTION_HEADER* sections = FindFirstSection();
 
-    // offset in m_FileMap is nonzero when the data is in a singlefile bundle.
-    SIZE_T offset = (SIZE_T)m_pOwner->GetOffset();
-    int imagePartIndex = 0;
-    PVOID pReserved = NULL;
-    PVOID reservedEnd = NULL;
-    IMAGE_NT_HEADERS* ntHeader = FindNTHeaders();
+    // Each section can contribute a hole, a mapped view, and a copied tail. Keep one slot for the end boundary.
+    if (static_cast<UINT64>(sectionCount) * 3 + 3 >= ConvertedImageLayout::MAX_PARTS)
+        return nullptr;
 
-    if  ((ntHeader->OptionalHeader.FileAlignment < minipal_getpagesize()) &&
-         (ntHeader->OptionalHeader.FileAlignment != ntHeader->OptionalHeader.SectionAlignment))
+    S_SIZE_T imageSize(GetVirtualSize());
+    imageSize += S_SIZE_T(offsetInPage);
+    imageSize.AlignUp(pageSize);
+    S_SIZE_T reserveSize(imageSize);
+    reserveSize += S_SIZE_T(alignment - pageSize);
+    if (imageSize.IsOverflow() || reserveSize.IsOverflow())
+        ThrowOutOfMemory();
+
+    S_SIZE_T previousEnd(headerSize);
+    previousEnd += S_SIZE_T(offsetInPage);
+    previousEnd.AlignUp(pageSize);
+    if (previousEnd.IsOverflow() || previousEnd.Value() > imageSize.Value()
+        || static_cast<UINT64>(previousEnd.Value()) > static_cast<UINT64>(GetSize()) + offsetInPage)
     {
-        goto UNSUPPORTED;
+        return nullptr;
     }
 
-    if (this->GetSize() < minipal_getpagesize() * 2)
+    for (COUNT_T i = 0; i < sectionCount; i++)
     {
-        goto UNSUPPORTED;
+        const IMAGE_SECTION_HEADER& section = sections[i];
+        SIZE_T rawSize = VAL32(section.SizeOfRawData);
+        SIZE_T virtualSize = VAL32(section.Misc.VirtualSize);
+        if (virtualSize == 0 && rawSize == 0)
+            continue;
+        SIZE_T rva = VAL32(section.VirtualAddress);
+        SIZE_T rawOffset = VAL32(section.PointerToRawData);
+        S_SIZE_T sectionEnd(rva);
+        sectionEnd += S_SIZE_T(offsetInPage);
+        sectionEnd += S_SIZE_T(rawSize);
+        sectionEnd.AlignUp(pageSize);
+        if (virtualSize > rawSize || sectionEnd.IsOverflow() || sectionEnd.Value() > imageSize.Value()
+            || ((rva - rawOffset) & (pageSize - 1)) != 0
+            || ALIGN_DOWN(rva + offsetInPage, pageSize) < previousEnd.Value())
+        {
+            return nullptr;
+        }
+        previousEnd = sectionEnd;
     }
 
-    SIZE_T preferredBase = ntHeader->OptionalHeader.ImageBase;
-    SIZE_T virtualSize = ntHeader->OptionalHeader.SizeOfImage;
-    SIZE_T reserveSize = RoundToPage(virtualSize, offset);
-
-    PVOID usedBaseAddr = NULL;
+    void* usedBaseAddr = nullptr;
 #ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
     if (g_useDefaultBaseAddr)
-    {
-        usedBaseAddr = (PVOID)preferredBase;
-    }
+        usedBaseAddr = const_cast<void*>(GetPreferredBase());
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
-    pReserved = AllocPlaceholder(usedBaseAddr, reserveSize);
-    if (pReserved == NULL)
-        goto FAILED;
+    void* reserved = VMToOSInterface::ReserveMemoryPlaceholder(usedBaseAddr, reserveSize.Value(), true);
+    if (reserved == nullptr && usedBaseAddr != nullptr)
+        reserved = VMToOSInterface::ReserveMemoryPlaceholder(nullptr, reserveSize.Value(), true);
+    if (reserved == nullptr)
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
-    reservedEnd = (char*)pReserved + reserveSize;
-    IMAGE_DOS_HEADER* loadedHeader = (IMAGE_DOS_HEADER*)((SIZE_T)pReserved + OffsetWithinPage(offset));
-    _ASSERTE(OffsetWithinPage(offset) == OffsetWithinPage((SIZE_T)loadedHeader));
-
-    //first, map the PE header to the first page in the image.
-    SIZE_T dataStart = offset;
-    SIZE_T mapFrom = ROUND_DOWN_TO_PAGE(dataStart);
-    SIZE_T dataEnd = dataStart + ntHeader->OptionalHeader.SizeOfHeaders;
-    SIZE_T mapEnd  = ROUND_UP_TO_PAGE(dataEnd);
-    SIZE_T mapSize = mapEnd - mapFrom;
-    PVOID  pMapped = SplitPlaceholder(pReserved, reservedEnd, mapSize);
-    if (!pMapped)
-        goto FAILED;
-
-    pMapped = MapIntoPlaceholder(m_FileMap, mapFrom, pMapped, mapSize, PAGE_READONLY);
-    if (!pMapped)
-        goto FAILED;
-
-    m_imageParts[imagePartIndex++] = MappedPart(pMapped);
-
-    //Get pointers to the section headers
-    IMAGE_SECTION_HEADER* firstSection = (IMAGE_SECTION_HEADER*)(((SIZE_T)loadedHeader)
-        + loadedHeader->e_lfanew
-        + offsetof(IMAGE_NT_HEADERS, OptionalHeader)
-        + VAL16(ntHeader->FileHeader.SizeOfOptionalHeader));
-
-    unsigned numSections = ntHeader->FileHeader.NumberOfSections;
-    // in a worst case we need 2 parts for every section and a header + 1 for unused tail.
-    if ((numSections + 1) * 2 + 1 > ConvertedImageLayout::MAX_PARTS)
+    VMToOSInterface::MemoryReservationHolder remaining;
+    remaining.Assign(reserved, reserveSize.Value());
+    int imagePartIndex = 0;
+    auto takePart = [&](SIZE_T partSize) -> void*
     {
-        // too many sections. we do not expect this and do not want to handle here, but it is not an error.
-        _ASSERTE(!"too many sections");
-        goto UNSUPPORTED;
-    }
-
-    for (unsigned i = 0; i < numSections; ++i)
+        void* part = remaining.ExtractPrefix(partSize);
+        if (part == nullptr)
+            ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+        _ASSERTE(imagePartIndex + 1 < ConvertedImageLayout::MAX_PARTS);
+        imageParts[imagePartIndex++] = PEImagePart::Allocated(part);
+        imageParts[imagePartIndex] = PEImagePart::Mapped(static_cast<BYTE*>(part) + partSize);
+        return part;
+    };
+    auto mapPart = [&](UINT64 fileOffset, SIZE_T partSize, VMToOSInterface::MemoryProtection protection, bool shared) -> bool
     {
-        //for each section, map the section of the file to the correct virtual offset.
-        IMAGE_SECTION_HEADER& currentHeader = firstSection[i];
-        SIZE_T sectionBase = (SIZE_T)loadedHeader + currentHeader.VirtualAddress;
-        SIZE_T sectionBaseAligned = ROUND_DOWN_TO_PAGE(sectionBase);
-
-        if ((SIZE_T)pReserved > sectionBaseAligned)
+        void* part = takePart(partSize);
+        if (VMToOSInterface::MapMemory(m_fileMapping.GetValue(), fileOffset, part, partSize, protection, shared) == nullptr)
         {
-            // can't allow section mappings to overlap.
-            // this could happen with legacy bundles and sub-page aligned data
-            // we can't handle such cases here, but it is not an error.
-            _ASSERTE(!"can't allow section mappings to overlap");
-            goto UNSUPPORTED;
+            HRESULT error = VMToOSInterface::GetLastMemoryMappingError();
+            if (!VMToOSInterface::MappingFailureAllowsCopyFallback)
+                ThrowHR(error);
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Mapping failed (0x%08x), loading by copying\n", static_cast<unsigned>(error)));
+            return false;
         }
+        imageParts[imagePartIndex - 1] = PEImagePart::Mapped(part);
+        return true;
+    };
 
-        // Is there space between the previous section and this one? If so, split an unmapped placeholder to cover it.
-        if ((SIZE_T)pReserved < sectionBaseAligned)
+    BYTE* alignedBase = reinterpret_cast<BYTE*>(ALIGN_UP(reinterpret_cast<SIZE_T>(reserved), alignment));
+    SIZE_T prefixSize = alignedBase - static_cast<BYTE*>(reserved);
+    if (prefixSize != 0)
+        takePart(prefixSize);
+    BYTE* imageBase = alignedBase + offsetInPage;
+    bool shareReadOnly = VMToOSInterface::UseSharedReadOnlyMapping(sectionAlignment);
+    SIZE_T headerMapSize = ALIGN_UP(headerSize + offsetInPage, pageSize);
+    if (!mapPart(offset - offsetInPage, headerMapSize, VMToOSInterface::MemoryProtection::ReadOnly, shareReadOnly))
+        return nullptr;
+
+    for (COUNT_T i = 0; i < sectionCount; i++)
+    {
+        const IMAGE_SECTION_HEADER& section = sections[i];
+        SIZE_T rawSize = VAL32(section.SizeOfRawData);
+        if (rawSize == 0)
+            continue;
+        BYTE* sectionStart = imageBase + VAL32(section.VirtualAddress);
+        BYTE* sectionPage = reinterpret_cast<BYTE*>(ALIGN_DOWN(reinterpret_cast<SIZE_T>(sectionStart), pageSize));
+        SIZE_T holeSize = sectionPage - static_cast<BYTE*>(remaining.GetValue());
+        if (holeSize != 0)
+            takePart(holeSize);
+
+        DWORD characteristics = VAL32(section.Characteristics);
+        bool executable = (characteristics & IMAGE_SCN_MEM_EXECUTE) != 0;
+        bool writable = (characteristics & IMAGE_SCN_MEM_WRITE) != 0;
+        VMToOSInterface::MemoryProtection protection = executable
+            ? (writable ? VMToOSInterface::MemoryProtection::ExecuteReadWrite : VMToOSInterface::MemoryProtection::ExecuteRead)
+            : (writable ? VMToOSInterface::MemoryProtection::ReadWrite : VMToOSInterface::MemoryProtection::ReadOnly);
+        UINT64 dataStart = offset + VAL32(section.PointerToRawData);
+        UINT64 dataEnd = dataStart + rawSize;
+        UINT64 mapStart = AlignDown(dataStart, pageSize);
+        UINT64 mapEnd = min(AlignUp(dataEnd, pageSize), AlignDown(offset + GetSize(), pageSize));
+        if (mapEnd > mapStart)
         {
-            // we can handle a hole between sections, but it may indicate a noncompliant R2R PE.
-            _ASSERTE(!"Hole between sections");
-
-            SIZE_T holeSize = (SIZE_T)sectionBaseAligned - (SIZE_T)pReserved;
-            _ASSERTE((char*)pReserved + holeSize <= reservedEnd);
-            PVOID pHole = SplitPlaceholder(pReserved, reservedEnd, holeSize);
-            if (!pHole)
-                goto FAILED;
-
-            // can't MEM_RELEASE the unused part yet, since the image must be contiguous. (see AssociateMemoryWithLoaderAllocator)
-            m_imageParts[imagePartIndex++] = AllocatedPart(pHole);
+            if (!mapPart(mapStart, static_cast<SIZE_T>(mapEnd - mapStart), protection, shareReadOnly && !writable))
+                return nullptr;
         }
-
-        DWORD pageProtection = currentHeader.Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-            PAGE_EXECUTE_READ :
-            currentHeader.Characteristics & IMAGE_SCN_MEM_WRITE ?
-                PAGE_WRITECOPY :
-                PAGE_READONLY;
-
-        dataStart = offset + currentHeader.PointerToRawData;
-        mapFrom = ROUND_DOWN_TO_PAGE(dataStart);
-        dataEnd = dataStart + currentHeader.SizeOfRawData;
-        mapEnd  = ROUND_UP_TO_PAGE(dataEnd);
-
-        // the aligned end could extend beyond the end of the file.
-        // then map only the aligned chunk that fits, the rest we will copy.
-        while (mapEnd > offset + this->GetSize())
+        else
         {
-            mapEnd -= minipal_getpagesize();
+            mapEnd = mapStart;
         }
-
-        // if we have something to map at page granularity, map it
-        if (mapEnd > mapFrom)
-        {
-            mapSize = mapEnd - mapFrom;
-            _ASSERTE((char*)pReserved + mapSize <= reservedEnd);
-            pMapped = SplitPlaceholder(pReserved, reservedEnd, mapSize);
-            if (!pMapped)
-                goto FAILED;
-
-            pMapped = MapIntoPlaceholder(m_FileMap, mapFrom, pMapped, mapSize, pageProtection);
-            if (!pMapped)
-                goto FAILED;
-
-            m_imageParts[imagePartIndex++] = MappedPart(pMapped);
-        }
-
-        // if we have something left, copy it
         if (mapEnd < dataEnd)
         {
-            SIZE_T toCopy = dataEnd - mapEnd;
-            SIZE_T toAllocate = ROUND_UP_TO_PAGE(toCopy);
-            _ASSERTE((char*)pReserved + toAllocate <= reservedEnd);
-            PVOID pAllocated = SplitPlaceholder(pReserved, reservedEnd, toAllocate);
-            if (!pAllocated)
-                goto FAILED;
-
-            pAllocated = CommitIntoPlaceholder(pAllocated, toAllocate, PAGE_READWRITE);
-            if (!pAllocated)
-                goto FAILED;
-
-            m_imageParts[imagePartIndex++] = AllocatedPart(pAllocated);
-
-            CopyMemory(pAllocated, (char*)this->GetBase() + mapEnd - offset, toCopy);
-            VirtualProtect(pAllocated, toAllocate, pageProtection, &pageProtection);
+            SIZE_T copySize = static_cast<SIZE_T>(dataEnd - mapEnd);
+            SIZE_T allocationSize = ALIGN_UP(copySize, pageSize);
+            void* copied = takePart(allocationSize);
+            if (!VMToOSInterface::PopulateMemoryPlaceholder(copied, allocationSize,
+                static_cast<BYTE*>(m_fileView.GetValue()) +
+                    static_cast<SIZE_T>(mapEnd - AlignDown(offset, g_SystemInfo.dwAllocationGranularity)),
+                copySize, protection))
+            {
+                ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+            }
         }
     }
 
-    // Is there reserved space that we did not use?
-    if (pReserved < reservedEnd)
-    {
-        // we can handle an image that request extra VM size, but it may indicate a noncompliant R2R PE.
-        _ASSERTE(!"Unused part of an image.");
-        // can't MEM_RELEASE the unused part yet, since the image must be contiguous. (see AssociateMemoryWithLoaderAllocator)
-        m_imageParts[imagePartIndex++] = AllocatedPart(pReserved);
-    }
-
-    return loadedHeader;
-
-FAILED:
-    _ASSERTE(!"FAILED");
-    if (pReserved && pReserved < reservedEnd)
-        m_imageParts[imagePartIndex++] = AllocatedPart(pReserved);
-
-    ThrowLastError();
-
-UNSUPPORTED:
-    if (pReserved && pReserved < reservedEnd)
-        m_imageParts[imagePartIndex++] = AllocatedPart(pReserved);
-
-    return NULL;
+    if (remaining.GetSize() != 0)
+        takePart(remaining.GetSize());
+    return imageBase;
 }
 
-#endif //TARGET_WINDOWS
+#endif // !TARGET_WASM
 
+#ifdef TARGET_WINDOWS
 NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
 {
-    PVOID loadedImage;
-#if TARGET_UNIX
-    {
-        HANDLE fileHandle = WszCreateFile(
-            fullPath,
-            GENERIC_READ,
-            FILE_SHARE_READ | FILE_SHARE_DELETE,
-            NULL,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            NULL);
-
-        if (fileHandle == INVALID_HANDLE_VALUE)
-        {
-            ThrowLastError();
-        }
-
-        loadedImage = PAL_LOADLoadPEFile(fileHandle, 0);
-    }
-#else
-    loadedImage = CLRLoadLibraryEx(fullPath, NULL, GetLoadWithAlteredSearchPathFlag());
-#endif
+    PVOID loadedImage = CLRLoadLibraryEx(fullPath, NULL, GetLoadWithAlteredSearchPathFlag());
 
     if (loadedImage == NULL)
     {
@@ -1412,14 +1223,9 @@ NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
     }
 
 
-#if TARGET_UNIX
-    m_peDecoder.Init(loadedImage, /* relocated */ false);
-    // Unix specifies write sharing at map time (i.e. MAP_PRIVATE implies writecopy).
-    ApplyBaseRelocations(/* relocationMustWriteCopy*/ false);
-#else // TARGET_UNIX
     m_peDecoder.Init(loadedImage, /* relocated */ true);
-#endif // TARGET_UNIX
 }
+#endif // TARGET_WINDOWS
 #endif // !DACESS_COMPILE
 
 #ifdef DACCESS_COMPILE
