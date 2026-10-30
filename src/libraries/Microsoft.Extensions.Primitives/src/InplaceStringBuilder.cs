@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="offset">The starting position of the substring within value.</param>
         /// <param name="count">The number of characters in value to append.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void Append(string? value, int offset, int count)
+        public void Append(string? value, int offset, int count)
         {
             EnsureValueIsInitialized();
 
@@ -94,7 +94,11 @@ namespace Microsoft.Extensions.Primitives
             fixed (char* destination = _value)
             fixed (char* source = value)
             {
-                Unsafe.CopyBlockUnaligned(destination + _offset, source + offset, (uint)count * 2);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    Unsafe.CopyBlockUnaligned(destination + _offset, source + offset, (uint)count * 2);
+                }
                 _offset += count;
             }
         }
@@ -104,7 +108,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="c">The character to append.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void Append(char c)
+        public void Append(char c)
         {
             EnsureValueIsInitialized();
 
@@ -115,7 +119,11 @@ namespace Microsoft.Extensions.Primitives
 
             fixed (char* destination = _value)
             {
-                destination[_offset++] = c;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    destination[_offset++] = c;
+                }
             }
         }
 
