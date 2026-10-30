@@ -3994,12 +3994,8 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
 //   true if the tree is a runtime lookup helper call that may be hoisted speculatively.
 //
 // Notes:
-//   The cost estimate for these calls is that of a cheap call, but each one performs a
-//   generic dictionary lookup (for ReadyToRun, an indirect call through a delay-load cell).
-//   They are modeled as pure and non-throwing. A lookup can still fail to load a type, but
-//   CoreCLR already reports such failures early: for unshared code the JIT resolves the same
-//   type at compile time, even on paths that never execute. NativeAOT instead compiles failed
-//   lookups into helpers that throw only when invoked, so speculation is not allowed there.
+//   Runtime lookups are costed like cheap calls, but each performs a dictionary lookup.
+//   NativeAOT lookups that failed to build throw only when invoked, so don't speculate them there.
 //
 bool Compiler::optIsHoistableRuntimeLookup(GenTree* tree)
 {
@@ -4008,15 +4004,8 @@ bool Compiler::optIsHoistableRuntimeLookup(GenTree* tree)
         return false;
     }
 
-    switch (tree->AsCall()->GetHelperNum())
-    {
-        case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
-        case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-        case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
-            return true;
-        default:
-            return false;
-    }
+    GenTreeCall* call = tree->AsCall();
+    return call->IsRuntimeLookupHelperCall(this) || (call->GetHelperNum() == CORINFO_HELP_READYTORUN_GENERIC_HANDLE);
 }
 
 bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
