@@ -1004,16 +1004,21 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         else
         {
+            string assemblyPath;
             if (string.IsNullOrEmpty(WorkingDirectory))
             {
-                processArgs.Add('"' + assemblyFilename + '"');
+                // Pass the full assembly path to the AOT compiler to support long paths (> MAX_PATH)
+                assemblyPath = assembly;
             }
             else
             {
                 // If WorkingDirectory is supplied, the caller could be passing in a relative path
-                // Use the original ItemSpec that was passed in.
-                processArgs.Add('"' + assemblyItem.ItemSpec + '"');
+                // Convert to absolute path to ensure long path support works correctly
+                assemblyPath = Path.IsPathFullyQualified(assemblyItem.ItemSpec)
+                    ? assemblyItem.ItemSpec
+                    : Path.GetFullPath(Path.Combine(WorkingDirectory, assemblyItem.ItemSpec));
             }
+            processArgs.Add('"' + assemblyPath + '"');
         }
 
         monoPaths = $"{assemblyDir}{Path.PathSeparator}{monoPaths}";
