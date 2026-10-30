@@ -44,17 +44,14 @@ namespace System.IO
                     if (readResult == -1 && ShouldFallBackToNonOffsetSyscall(errorInfo))
                     {
                         handle.SupportsRandomAccess = false;
+                        return TryCompleteReadAt(handle, useOffset: false, offset, buffer, out readResult, out errorInfo, strategy);
                     }
-                    else
-                    {
-                        strategy?.OnIncompleteOperation(buffer.Length - Math.Max(readResult, 0), 0);
-                        return true;
-                    }
+
+                    strategy?.OnIncompleteOperation(buffer.Length - Math.Max(readResult, 0), 0);
+                    return true;
                 }
-                else
-                {
-                    return false;
-                }
+
+                return false;
             }
 
             return TryCompleteReadAt(handle, useOffset: false, offset, buffer, out readResult, out errorInfo, strategy);
@@ -125,16 +122,13 @@ namespace System.IO
                     if (readResult == -1 && ShouldFallBackToNonOffsetSyscall(errorInfo))
                     {
                         handle.SupportsRandomAccess = false;
+                        return TryCompleteReadAt(handle, useOffset: false, offset, buffers, out readResult, out errorInfo);
                     }
-                    else
-                    {
-                        return true;
-                    }
+
+                    return true;
                 }
-                else
-                {
-                    return false;
-                }
+
+                return false;
             }
 
             return TryCompleteReadAt(handle, useOffset: false, offset, buffers, out readResult, out errorInfo);
@@ -322,17 +316,14 @@ namespace System.IO
                     if (bytesWritten == 0 && ShouldFallBackToNonOffsetSyscall(errorInfo))
                     {
                         handle.SupportsRandomAccess = false;
+                        return TryCompleteWriteAt(handle, useOffset: false, offset, buffer, out bytesWritten, out errorInfo, strategy);
                     }
-                    else
-                    {
-                        strategy?.OnIncompleteOperation(buffer.Length - bytesWritten, 0);
-                        return true;
-                    }
+
+                    strategy?.OnIncompleteOperation(buffer.Length - bytesWritten, 0);
+                    return true;
                 }
-                else
-                {
-                    return false;
-                }
+
+                return false;
             }
 
             return TryCompleteWriteAt(handle, useOffset: false, offset, buffer, out bytesWritten, out errorInfo, strategy);
@@ -417,16 +408,13 @@ namespace System.IO
                     if (errorInfo.Error != Interop.Error.SUCCESS && ShouldFallBackToNonOffsetSyscall(errorInfo))
                     {
                         handle.SupportsRandomAccess = false;
+                        return TryCompleteWriteAt(handle, useOffset: false, ref offset, buffers, ref bufferIndex, ref bufferOffset, out errorInfo);
                     }
-                    else
-                    {
-                        return true;
-                    }
+
+                    return true;
                 }
-                else
-                {
-                    return false;
-                }
+
+                return false;
             }
 
             return TryCompleteWriteAt(handle, useOffset: false, ref offset, buffers, ref bufferIndex, ref bufferOffset, out errorInfo);
