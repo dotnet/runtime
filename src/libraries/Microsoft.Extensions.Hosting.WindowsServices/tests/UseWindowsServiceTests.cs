@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Reflection;
 using System.ServiceProcess;
 using Microsoft.DotNet.RemoteExecutor;
@@ -50,6 +51,62 @@ namespace Microsoft.Extensions.Hosting
 
             var status = serviceTester.QueryServiceStatus();
             Assert.Equal(0, status.win32ExitCode);
+        }
+
+        [ConditionalTheory(typeof(UseWindowsServiceTests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void CanDisposeServiceWithoutStarting(bool failToStart)
+        {
+            string serviceName = $"{nameof(CanDisposeServiceWithoutStarting)}_{Guid.NewGuid():N}";
+            using WindowsServiceTester serviceTester = WindowsServiceTester.Create(static () => { }, serviceName);
+            bool disposed = false;
+            serviceTester.Disposed += (_, _) => disposed = true;
+
+            if (failToStart)
+            {
+                Assert.Throws<ArgumentNullException>("args", () =>
+                {
+                    using (serviceTester)
+                    {
+                        serviceTester.Start(null);
+                    }
+                });
+            }
+            else
+            {
+                serviceTester.Dispose();
+            }
+
+            Assert.True(disposed);
+            AssertServiceDeleted(serviceName);
+        }
+
+        [ConditionalFact(typeof(UseWindowsServiceTests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        public void CanDeleteServiceWhenRemoteProcessFails()
+        {
+            string serviceName = $"{nameof(CanDeleteServiceWhenRemoteProcessFails)}_{Guid.NewGuid():N}";
+            using WindowsServiceTester serviceTester = WindowsServiceTester.Create(static () =>
+            {
+                using IHost host = new HostBuilder()
+                    .UseWindowsService()
+                    .Build();
+                host.Run();
+
+                return RemoteExecutor.SuccessExitCode + 1;
+            }, serviceName);
+            bool disposed = false;
+            serviceTester.Disposed += (_, _) => disposed = true;
+
+            serviceTester.Start();
+            serviceTester.WaitForStatus(ServiceControllerStatus.Running);
+            serviceTester.Stop();
+            serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);
+
+            RemoteExecutionException exception = Assert.Throws<RemoteExecutionException>(serviceTester.Dispose);
+            Assert.Contains($"Exit code was {RemoteExecutor.SuccessExitCode + 1}", exception.Message);
+            Assert.True(disposed);
+            AssertServiceDeleted(serviceName);
         }
 
         [Fact]
@@ -115,6 +172,14 @@ namespace Microsoft.Extensions.Hosting
 
             var lifetime = host.Services.GetRequiredService<IHostLifetime>();
             Assert.IsType<WindowsServiceLifetime>(lifetime);
+        }
+
+        private static void AssertServiceDeleted(string serviceName)
+        {
+            using var controller = new ServiceController(serviceName);
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => controller.Status);
+            Win32Exception win32Exception = Assert.IsType<Win32Exception>(exception.InnerException);
+            Assert.Equal(Interop.Errors.ERROR_SERVICE_DOES_NOT_EXIST, win32Exception.NativeErrorCode);
         }
 
         private void AddWindowsServiceLifetime(IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure = null)
