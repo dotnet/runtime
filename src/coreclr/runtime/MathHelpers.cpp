@@ -160,24 +160,9 @@ FCIMPLEND
 // Math and MathF FCalls. On targets other than x86 and wasm, NativeAOT calls the CRT directly instead,
 // except for SinCos.
 
-// The default compilation mode is /fp:precise, which disables floating-point intrinsics. This
-// default compilation mode has previously caused performance regressions in floating-point code.
+// The default compilation mode is /fp:precise, which disables floating-point intrinsics.
 // We enable /fp:fast semantics for the majority of the math functions, as it will speed up performance
 // and is really unlikely to cause any other code regressions.
-
-// Sin, Cos, and Tan on AMD64 Windows were previously implemented in vm\amd64\JitHelpers_Fast.asm
-// by calling x87 floating point code (fsin, fcos, fptan) because the CRT helpers were too slow. This
-// is no longer the case and the CRT call is used on all platforms.
-
-// Log, Log10 and Exp were previously slower with /fp:fast on SSE2 enabled hardware (see #500373).
-// This is no longer the case and they now consume use the /fp:fast versions.
-
-// Exp(+/-INFINITY) did not previously return the expected results of +0.0 (for -INFINITY)
-// and +INFINITY (for +INFINITY) so these cases were handled specially. As this is no longer
-// the case and the expected results are now returned, the special handling has been removed.
-
-// Previously there was more special handling for the x86 Windows version of Pow.
-// This additional handling was unnecessary and has since been removed.
 
 ////////////////////////////////////////////////////////////////////////////////////
 ///
