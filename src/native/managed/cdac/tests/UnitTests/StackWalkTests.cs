@@ -1207,6 +1207,23 @@ public unsafe class StackWalkTests
         Assert.Equal(expected, new FrameHelpers(target).GetExactGenericArgsToken(new TargetPointer(0x1000)).Value);
     }
 
+    // Wasm maps carry no stack pop, and position 0 is the first argument slot (0x2010).
+    // { 0x3d } and { 0x1d } encode Ref at 0, then TypeParam or MethodParam at 1. { 0x07 } encodes MethodParam at 0.
+    [Theory]
+    [InlineData(nameof(Data.ExternalMethodFrame), new byte[] { 0x3d }, null, GenericContextLoc.InstArgMethodTable, 0x2222_0000UL)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), new byte[] { 0x1d }, null, GenericContextLoc.InstArgMethodDesc, 0x2222_0000UL)]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), null, new byte[] { 0x07 }, GenericContextLoc.InstArgMethodDesc, 0x1111_0000UL)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), null, null, GenericContextLoc.ThisPtr, 0x9000UL)]
+    public void WasmTransitionFrame_ExactGenericArgsTokenUsesTransitionBlockSlots(
+        string frameType, byte[]? gcRefMap, byte[]? signatureBlob, GenericContextLoc context, ulong expected)
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            frameType, gcRefMap, hasMethodDesc: true, signatureBlob: signatureBlob,
+            architecture: RuntimeInfoArchitecture.Wasm, genericContext: context);
+
+        Assert.Equal(expected, new FrameHelpers(target).GetExactGenericArgsToken(new TargetPointer(0x1000)).Value);
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
@@ -1401,6 +1418,7 @@ public unsafe class StackWalkTests
         }
         Mock<IObject> objectContract = new(MockBehavior.Strict);
         objectContract.Setup(o => o.GetMethodTableAddress(new TargetPointer(0x2222_0000))).Returns(new TargetPointer(0x8000));
+        objectContract.Setup(o => o.GetMethodTableAddress(new TargetPointer(0x1111_0000))).Returns(new TargetPointer(0x9000));
 
         Dictionary<DataType, Target.TypeInfo> types = new()
         {
@@ -1412,7 +1430,8 @@ public unsafe class StackWalkTests
                 (nameof(Data.FramedMethodFrame.TransitionBlockPtr), 8), (nameof(Data.FramedMethodFrame.MethodDescPtr), 12)),
             [DataType.TransitionBlock] = CreateTypeInfo(
                 (nameof(Data.TransitionBlock.CalleeSavedRegisters), 0), (nameof(Data.TransitionBlock.ReturnAddress), 24),
-                (nameof(Data.TransitionBlock.ArgumentRegisters), 16)) with { Size = X86TransitionBlockSize },
+                (nameof(Data.TransitionBlock.ArgumentRegisters), 16), (nameof(Data.TransitionBlock.FirstGCRefMapSlot), 16))
+                with { Size = X86TransitionBlockSize },
             [DataType.CalleeSavedRegisters] = CreateTypeInfo(
                 (nameof(X86Context.Ebp), 0), (nameof(X86Context.Ebx), 4), (nameof(X86Context.Edi), 8), (nameof(X86Context.Esi), 12)),
             [DataType.Module] = CreateTypeInfo((nameof(Data.Module.ReadyToRunInfo), 0)),
