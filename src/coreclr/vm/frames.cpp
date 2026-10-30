@@ -720,6 +720,8 @@ BOOL InlinedCallFrame::IsInInterpreter()
 //---------------------------------------------------------------
 // Get the extra param for shared generic code.
 //---------------------------------------------------------------
+static UINT OffsetFromGCRefMapPos(int pos);
+
 PTR_VOID TransitionFrame::GetParamTypeArg()
 {
     CONTRACTL
@@ -742,6 +744,30 @@ PTR_VOID TransitionFrame::GetParamTypeArg()
 
     MethodDesc *pFunction = GetFunction();
     _ASSERTE (pFunction->RequiresInstArg());
+
+    // A target prepared with a GCRefMap need not have loaded the signature types
+    // that ArgIterator requires, so locate the argument through the map instead.
+    FrameIdentifier frame = GetFrameIdentifier();
+    PTR_BYTE pGCRefMap = nullptr;
+    if (frame == FrameIdentifier::ExternalMethodFrame)
+        pGCRefMap = dac_cast<PTR_ExternalMethodFrame>(this)->GetGCRefMap();
+    else if (frame == FrameIdentifier::PrestubMethodFrame || frame == FrameIdentifier::CallCountingHelperFrame)
+        pGCRefMap = GetGCRefMapFromMethodDesc(nullptr);
+
+    if (pGCRefMap != nullptr)
+    {
+        GCRefMapDecoder decoder(pGCRefMap);
+#ifdef TARGET_X86
+        decoder.ReadStackPop();
+#endif
+        while (!decoder.AtEnd())
+        {
+            int pos = decoder.CurrentPos();
+            int token = decoder.ReadToken();
+            if (token == GCREFMAP_METHOD_PARAM || token == GCREFMAP_TYPE_PARAM)
+                return PTR_VOID(*PTR_TADDR(GetTransitionBlock() + OffsetFromGCRefMapPos(pos)));
+        }
+    }
 
     MetaSig msig(pFunction);
     ArgIterator argit (&msig);

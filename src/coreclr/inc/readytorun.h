@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 33
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 33
 
@@ -85,6 +85,7 @@
 // R2R Version 33 requires contextual THIS_REF/THIS_BYREF tokens in instance-call
 // GCRefMaps, moves VASIG_COOKIE from 5 to 7, and prefixes map-bearing import
 // signatures with their GCRefMaps.
+// R2R Version 33.1 adds READYTORUN_HELPER_WasmProfSamplepoint (used on WebAssembly)
 
 struct READYTORUN_CORE_HEADER
 {
@@ -532,6 +533,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_InitClass                 = 0x116,
     READYTORUN_HELPER_InitInstClass             = 0x117,
     READYTORUN_HELPER_R2RToInterpreter          = 0x118,
+    READYTORUN_HELPER_WasmProfSamplepoint       = 0x119,
 };
 
 #include "readytoruninstructionset.h"

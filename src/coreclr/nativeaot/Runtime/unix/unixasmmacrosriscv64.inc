@@ -3,158 +3,7 @@
 
 #include "AsmOffsets.inc"
 
-.macro NESTED_ENTRY Name, Section, Handler
-        LEAF_ENTRY \Name, \Section
-        .ifnc \Handler, NoHandler
-        .cfi_personality 0x1b, C_FUNC(\Handler) // 0x1b == DW_EH_PE_pcrel | DW_EH_PE_sdata4 (standard across most platforms)
-        .endif
-.endm
-
-.macro NESTED_END Name, Section
-        LEAF_END \Name, \Section
-.endm
-
-.macro PATCH_LABEL Name
-        .global C_FUNC(\Name)
-C_FUNC(\Name):
-.endm
-
-.macro ALTERNATE_ENTRY Name
-        .global C_FUNC(\Name)
-        .hidden C_FUNC(\Name)
-C_FUNC(\Name):
-.endm
-
-.macro LABELED_RETURN_ADDRESS Name
-        .global C_FUNC(\Name)
-        .hidden C_FUNC(\Name)
-C_FUNC(\Name):
-.endm
-
-.macro LEAF_ENTRY Name, Section
-    .global C_FUNC(\Name)
-    .type \Name, %function
-C_FUNC(\Name):
-    .cfi_startproc
-.endm
-
-.macro LEAF_END Name, Section
-    .size \Name, .-\Name
-    .cfi_endproc
-.endm
-
-.macro PREPARE_EXTERNAL_VAR Name, HelperReg
-    la \HelperReg, C_FUNC(\Name) // Resolves the address in one step
-.endm
-
-.macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
-    la \HelperReg, C_FUNC(\Name)
-    lw \HelperReg, 0(\HelperReg)
-.endm
-
-.macro PROLOG_STACK_ALLOC Size
-    // If Size is larger than 2047, split it into multiple instructions
-    .if (\Size > 2047) || (\Size < -2048)
-        li t0, -\Size
-        add sp, sp, t0
-    .else
-        addi sp, sp, -\Size
-    .endif
-.endm
-
-.macro EPILOG_STACK_FREE Size
-    // If Size is larger than 2047 or smaller than -2048, split into multiple instructions
-    .if (\Size > 2047) || (\Size < -2048)
-        li t0, \Size           // Load the large Size value into a temporary register
-        add sp, sp, t0         // Use the add instruction for full 64-bit addition
-        .cfi_adjust_cfa_offset -\Size
-    .else
-        addi sp, sp, \Size     // Handle small immediate directly with addi
-        .cfi_adjust_cfa_offset -\Size
-    .endif
-.endm
-
-.macro EPILOG_STACK_RESTORE
-    mv  sp, fp
-    .cfi_restore  fp
-.endm
-
-.macro PROLOG_SAVE_REG reg, ofs
-    sd  \reg, \ofs(sp)
-    .cfi_rel_offset \reg, \ofs
-.endm
-
-.macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs
-    sd  \reg1, \ofs(sp)
-    sd  \reg2, \ofs + 8(sp)
-    .cfi_rel_offset  \reg1, \ofs
-    .cfi_rel_offset  \reg2, \ofs + 8
-    .ifc  \reg1, fp
-    mv  fp, sp
-    .cfi_def_cfa_register  fp
-    .endif
-.endm
-
-.macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
-    addi  sp, sp, -\ssize
-    .cfi_adjust_cfa_offset  \ssize
-
-    sd  \reg1, 0(sp)
-    sd  \reg2, 8(sp)
-
-    .cfi_rel_offset  \reg1, 0
-    .cfi_rel_offset  \reg2, 8
-    .if (\__def_cfa_save ==  1)
-      mv  fp, sp
-      .cfi_def_cfa_register  fp
-    .endif
-.endm
-
-.macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ssize
-    addi  sp, sp, -\ssize
-    .cfi_adjust_cfa_offset  \ssize
-
-    sd  \reg1, 0(sp)
-    sd  \reg2, 8(sp)
-
-    .cfi_rel_offset  \reg1, 0
-    .cfi_rel_offset  \reg2, 8
-.endm
-
-.macro EPILOG_RESTORE_REG reg, ofs
-        ld \reg, \ofs(sp)
-        .cfi_restore \reg
-.endm
-
-.macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
-        ld \reg1, \ofs(sp)
-        ld \reg2, \ofs+8(sp)
-        .cfi_restore \reg1
-        .cfi_restore \reg2
-.endm
-
-.macro EPILOG_RESTORE_REG_PAIR_INDEXED reg1, reg2, ofs
-        ld \reg1, (sp)
-        ld \reg2, 8(sp)
-        addi sp, sp, \ofs
-        .cfi_restore \reg1
-        .cfi_restore \reg2
-        .cfi_adjust_cfa_offset -\ofs
-.endm
-
-.macro EPILOG_RETURN
-        ret
-.endm
-
-.macro EMIT_BREAKPOINT
-        ebreak
-.endm
-
-.macro EPILOG_BRANCH_REG reg
-        jalr \reg
-.endm
-
-#include <riscv64/InlineTls.inc>
+#include <riscv64/AsmMacros_Unix.inc>
 
 // Inlined version of RhpGetThread. Target cannot be x0.
 .macro INLINE_GETTHREAD target
@@ -166,10 +15,6 @@ C_FUNC(\Name):
     // global dynamic TLS, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#global-dynamic
     la.tls.gd a0, C_FUNC(tls_CurrentThread)
     call C_FUNC(__tls_get_addr)
-.endm
-
-.macro InterlockedOperationBarrier
-    fence rw, rw
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
@@ -197,7 +42,7 @@ C_FUNC(\Name):
 #define DEFAULT_FRAME_SAVE_FLAGS PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
-    PROLOG_SAVE_REG_PAIR_INDEXED   s0, ra, 128      // Push down stack pointer and store s0 (fp) and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 128      // Push down stack pointer and store FP and RA
 
     // 16 bytes reserved for Thread* and flags
 
@@ -228,7 +73,7 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR   s7, s8, 80
     EPILOG_RESTORE_REG_PAIR   s9, s10, 96
     EPILOG_RESTORE_REG        s11, 112
-    EPILOG_RESTORE_REG_PAIR_INDEXED   s0, ra, 128
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 128
 .endm
 
 //
