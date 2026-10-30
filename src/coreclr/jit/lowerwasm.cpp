@@ -711,23 +711,47 @@ void Lowering::RemoveRedundantLocalCopies()
 
     struct LocalRefs
     {
-        unsigned Count;
-        bool     AddressTaken;
+        unsigned    Count;
+        bool        AddressTaken;
+        BasicBlock* UseBlock;
     };
 
-    const unsigned lclCount = m_compiler->lvaCount;
-    LocalRefs*     refs     = new (m_compiler, CMK_Lower) LocalRefs[lclCount]{};
+    const unsigned          lclCount = m_compiler->lvaCount;
+    LocalRefs*              refs     = new (m_compiler, CMK_Lower) LocalRefs[lclCount]{};
+    ArrayStack<BasicBlock*> copyBlocks(m_compiler->getAllocator(CMK_Lower));
     for (BasicBlock* block : m_compiler->Blocks())
     {
+        bool blockHasCopy = false;
         for (GenTree* node : LIR::AsRange(block))
         {
-            if (node->OperIsAnyLocal())
+            if (!node->OperIsAnyLocal())
             {
-                LocalRefs& lclRefs = refs[node->AsLclVarCommon()->GetLclNum()];
-                lclRefs.Count++;
-                lclRefs.AddressTaken |= node->OperIs(GT_LCL_ADDR);
+                continue;
+            }
+
+            LocalRefs& lclRefs = refs[node->AsLclVarCommon()->GetLclNum()];
+            lclRefs.Count++;
+            lclRefs.AddressTaken |= node->OperIs(GT_LCL_ADDR);
+
+            if (node->OperIs(GT_LCL_VAR))
+            {
+                lclRefs.UseBlock = block;
+            }
+            else if (node->OperIs(GT_STORE_LCL_VAR) && node->AsLclVar()->Data()->OperIs(GT_LCL_VAR))
+            {
+                blockHasCopy = true;
             }
         }
+
+        if (blockHasCopy)
+        {
+            copyBlocks.Push(block);
+        }
+    }
+
+    if (copyBlocks.Empty())
+    {
+        return;
     }
 
     // A local whose address is taken anywhere may be written through it at a point we do not track.
@@ -750,8 +774,9 @@ void Lowering::RemoveRedundantLocalCopies()
         pending.Pop();
     };
 
-    for (BasicBlock* block : m_compiler->Blocks())
+    for (int blockIndex = 0; blockIndex < copyBlocks.Height(); blockIndex++)
     {
+        BasicBlock* block = copyBlocks.Bottom(blockIndex);
         LIR::Range& range = LIR::AsRange(block);
         pending.Reset();
 
@@ -820,10 +845,10 @@ void Lowering::RemoveRedundantLocalCopies()
             LclVarDsc* srcDsc    = m_compiler->lvaGetDesc(srcLclNum);
 
             // Implicitly referenced locals, such as the SP that LCLHEAP updates, have defs not visible in IR.
-            if ((tmpLclNum == srcLclNum) || (refs[tmpLclNum].Count != 2) || tmpDsc->lvIsParam ||
-                tmpDsc->lvIsStructField || tmpDsc->lvImplicitlyReferenced || tmpDsc->IsAddressExposed() ||
-                tmpDsc->lvIsOSRLocal || srcDsc->lvImplicitlyReferenced || srcDsc->IsAddressExposed() ||
-                srcDsc->lvPromoted || isAddressTaken(srcLclNum))
+            if ((tmpLclNum == srcLclNum) || (refs[tmpLclNum].Count != 2) || (refs[tmpLclNum].UseBlock != block) ||
+                tmpDsc->lvIsParam || tmpDsc->lvIsStructField || tmpDsc->lvImplicitlyReferenced ||
+                tmpDsc->IsAddressExposed() || tmpDsc->lvIsOSRLocal || srcDsc->lvImplicitlyReferenced ||
+                srcDsc->IsAddressExposed() || srcDsc->lvPromoted || isAddressTaken(srcLclNum))
             {
                 continue;
             }
