@@ -441,7 +441,7 @@ namespace ILCompiler
 
             MethodDesc genInterfaceMethod = interfaceMethod.GetMethodDefinition();
             MethodDesc method = null;
-            if (genInterfaceMethod.OwningType.IsInterface && constrainedType.IsValueType)
+            if (genInterfaceMethod.OwningType.IsInterface && (isStatic || constrainedType.IsValueType))
             {
                 // Sometimes (when compiling shared generic code)
                 // we don't have enough exact type information at JIT time
@@ -476,7 +476,7 @@ namespace ILCompiler
                             ?? method;
 
                         // See code:#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-                        if (method != null && !method.OwningType.IsValueType)
+                        if (!isStatic && method != null && !method.OwningType.IsValueType)
                         {
                             // We explicitly wouldn't want to abort if we found a default implementation.
                             // The above resolution doesn't consider the default methods.
@@ -638,9 +638,9 @@ namespace ILCompiler
             }
 
             //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-            // Only return a method if the value type itself declares the method,
+            // For instance calls, only return a method if the value type itself declares the method,
             // otherwise we might get a method from Object or System.ValueType
-            if (!method.OwningType.IsValueType)
+            if (!isStatic && !method.OwningType.IsValueType)
             {
                 // Fall back to VSD
                 return null;
@@ -651,16 +651,6 @@ namespace ILCompiler
             if (methodInstantiation.Length != 0)
             {
                 method = method.MakeInstantiatedMethod(methodInstantiation);
-            }
-
-            // It's difficult to discern what runtime determined form the interface method
-            // is on later so fail the resolution if this would be that.
-            // This is pretty conservative and can be narrowed down.
-            if (method.IsCanonicalMethod(CanonicalFormKind.Any)
-                && !method.OwningType.IsValueType)
-            {
-                Debug.Assert(method.Signature.IsStatic);
-                return null;
             }
 
             Debug.Assert(method != null);

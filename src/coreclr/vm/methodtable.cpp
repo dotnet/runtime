@@ -8523,7 +8523,7 @@ MethodTable::TryResolveConstraintMethodApprox(
 
     MethodDesc * pGenInterfaceMD = pInterfaceMD->StripMethodInstantiation();
     MethodDesc * pMD = NULL;
-    if (pGenInterfaceMD->IsInterface() && IsValueType())
+    if (pGenInterfaceMD->IsInterface() && (isStatic || IsValueType()))
     {   // Sometimes (when compiling shared generic code)
         // we don't have enough exact type information at JIT time
         // even to decide whether we will be able to resolve to an unboxed entry point...
@@ -8555,7 +8555,7 @@ MethodTable::TryResolveConstraintMethodApprox(
                     : pCanonMT->GetMethodDescForInterfaceMethod(thPotentialInterfaceType, pGenInterfaceMD, FALSE /* throwOnConflict */);
 
                 // See code:#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-                if ((pMD != NULL) && !pMD->GetMethodTable()->IsValueType() && !pMD->IsInterface())
+                if (!isStatic && (pMD != NULL) && !pMD->GetMethodTable()->IsValueType() && !pMD->IsInterface())
                 {
                     LOG((LF_JIT, LL_INFO10000, "TryResolveConstraintMethodApprox: %s::%s not a value type method\n",
                         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
@@ -8646,7 +8646,7 @@ MethodTable::TryResolveConstraintMethodApprox(
     }
 
     // Preserve static default-interface and reference-type hierarchy resolution when
-    // the value-type scan could not identify an implementation.
+    // the interface scan could not identify an implementation.
     if (isStatic && pMD == NULL)
     {
         _ASSERTE(!thInterfaceType.IsTypeDesc());
@@ -8683,9 +8683,9 @@ MethodTable::TryResolveConstraintMethodApprox(
     if (!pMD->GetMethodTable()->IsInterface())
     {
         //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-        // Only return a method if the value type itself declares the method
+        // For instance calls, only return a method if the value type itself declares the method
         // otherwise we might get a method from Object or System.ValueType
-        if (!pMD->GetMethodTable()->IsValueType())
+        if (!isStatic && !pMD->GetMethodTable()->IsValueType())
         {   // Fall back to VSD
             return NULL;
         }

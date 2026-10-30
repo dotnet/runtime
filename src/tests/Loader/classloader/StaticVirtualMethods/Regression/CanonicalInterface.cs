@@ -53,12 +53,47 @@ public class CanonicalInterface
 
     private readonly struct DefaultFunc : IDefaultFunc<(object, int)> { }
 
+    private class ClassFunc : IFunc<(object, int)>
+    {
+        public int InvokeInstance((object, int) value) => value.Item2 + 10;
+        public static int Invoke((object, int) value) => value.Item2 + 10;
+    }
+
+    private sealed class InheritedClassFunc : ClassFunc { }
+
+    private sealed class ReimplementedClassFunc : ClassFunc, IFunc<(object, int)>
+    {
+        int IFunc<(object, int)>.InvokeInstance((object, int) value) => value.Item2 + 20;
+        static int IFunc<(object, int)>.Invoke((object, int) value) => value.Item2 + 20;
+    }
+
+    private class SharedClassFunc<T> : IFunc<(T, int)>
+    {
+        public int InvokeInstance((T, int) value) => Invoke(value);
+        public static int Invoke((T, int) value) => value.Item2 + (typeof(T) == typeof(object) ? 30 : 40);
+    }
+
+    private sealed class InheritedSharedClassFunc<T> : SharedClassFunc<T> { }
+
+    private sealed class MultipleClassFunc<T> : IFunc<(object, int)>, IFunc<(string, int)>
+    {
+        int IFunc<(object, int)>.InvokeInstance((object, int) value) => value.Item2 + 1;
+        int IFunc<(string, int)>.InvokeInstance((string, int) value) => value.Item2 + 2;
+        static int IFunc<(object, int)>.Invoke((object, int) value) => value.Item2 + (typeof(T) == typeof(object) ? 1 : 3);
+        static int IFunc<(string, int)>.Invoke((string, int) value) => value.Item2 + (typeof(T) == typeof(object) ? 2 : 4);
+    }
+
+    private sealed class DefaultClassFunc : IDefaultFunc<(object, int)> { }
+
     private interface ICovariantFunc<out T>
     {
         static virtual Type GetArgument() => typeof(T);
     }
 
     private readonly struct CovariantFunc : ICovariantFunc<string> { }
+
+    private sealed class CovariantClassFunc : ICovariantFunc<string> { }
+    private sealed class MultipleDefaultClassFunc : ICovariantFunc<string>, ICovariantFunc<object> { }
 
     private readonly struct MultipleDefaultFunc : ICovariantFunc<string>, ICovariantFunc<object> { }
 
@@ -71,6 +106,12 @@ public class CanonicalInterface
     }
 
     private readonly struct GenericFunc : IGenericFunc<(object, int)>
+    {
+        public Type GetInstanceArgument<TArg>((object, int) value) => typeof(TArg);
+        public static Type GetArgument<TArg>((object, int) value) => typeof(TArg);
+    }
+
+    private sealed class GenericClassFunc : IGenericFunc<(object, int)>
     {
         public Type GetInstanceArgument<TArg>((object, int) value) => typeof(TArg);
         public static Type GetArgument<TArg>((object, int) value) => typeof(TArg);
@@ -170,6 +211,38 @@ public class CanonicalInterface
     private static int CallInstanceOther<TFunc, T>(TFunc func, T value) where TFunc : struct, IFunc<T>
         => func.InvokeInstance(value);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int CallClass<TFunc, T>(T value) where TFunc : class, IFunc<T>
+        => TFunc.Invoke(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedClass<T>((T, int) value)
+        => CallClass<SharedClassFunc<T>, (T, int)>(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallInheritedSharedClass<T>((T, int) value)
+        => CallClass<InheritedSharedClassFunc<T>, (T, int)>(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallMultipleClassObject<T>((object, int) value)
+        => CallClass<MultipleClassFunc<T>, (object, int)>(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallMultipleClassString<T>((string, int) value)
+        => CallClass<MultipleClassFunc<T>, (string, int)>(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Func<T, int> GetClassDelegate<TFunc, T>() where TFunc : class, IFunc<T>
+        => TFunc.Invoke;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Type CallClassCovariant<TFunc, T>() where TFunc : class, ICovariantFunc<T>
+        => TFunc.GetArgument();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Type CallClassGeneric<TFunc, T, TArg>(T value) where TFunc : class, IGenericFunc<T>
+        => TFunc.GetArgument<TArg>(value);
+
     [Theory]
     [InlineData(0)]
     [InlineData(42)]
@@ -178,6 +251,30 @@ public class CanonicalInterface
     {
         (object, int) objectState = (new object(), value);
         (string, int) stringState = ("state", value);
+
+        Assert.Equal(value + 10, CallClass<ClassFunc, (object, int)>(objectState));
+        Assert.Equal(value + 10, CallClass<InheritedClassFunc, (object, int)>(objectState));
+        Assert.Equal(value + 20, CallClass<ReimplementedClassFunc, (object, int)>(objectState));
+        Assert.Equal(value + 30, CallSharedClass(objectState));
+        Assert.Equal(value + 40, CallSharedClass(stringState));
+        Assert.Equal(value + 30, CallInheritedSharedClass(objectState));
+        Assert.Equal(value + 40, CallInheritedSharedClass(stringState));
+        Assert.Equal(value + 1, CallMultipleClassObject<object>(objectState));
+        Assert.Equal(value + 2, CallMultipleClassString<object>(stringState));
+        Assert.Equal(value + 3, CallMultipleClassObject<string>(objectState));
+        Assert.Equal(value + 4, CallMultipleClassString<string>(stringState));
+        Assert.Equal(value + 1, CallMultipleClassObject<object>(objectState));
+        Assert.Equal(7, CallClass<DefaultClassFunc, (object, int)>(objectState));
+        Assert.Equal(value + 10, GetClassDelegate<InheritedClassFunc, (object, int)>()(objectState));
+        Assert.Equal(value + 20, GetClassDelegate<ReimplementedClassFunc, (object, int)>()(objectState));
+        Assert.Equal(value + 30, GetClassDelegate<SharedClassFunc<object>, (object, int)>()(objectState));
+        Assert.Equal(value + 40, GetClassDelegate<SharedClassFunc<string>, (string, int)>()(stringState));
+        Assert.Equal(7, GetClassDelegate<DefaultClassFunc, (object, int)>()(objectState));
+        Assert.Equal(typeof(string), CallClassCovariant<CovariantClassFunc, object>());
+        Assert.Equal(typeof(string), CallClassCovariant<MultipleDefaultClassFunc, string>());
+        Assert.Equal(typeof(object), CallClassCovariant<MultipleDefaultClassFunc, object>());
+        Assert.Equal(typeof(string), CallClassGeneric<GenericClassFunc, (object, int), string>(objectState));
+        Assert.Equal(typeof(object), CallClassGeneric<GenericClassFunc, (object, int), object>(objectState));
 
         Assert.Equal(value, CallUnique<TupleFunc, (object, int)>(objectState));
         Assert.Equal(value, CallInstance(default(TupleFunc), objectState));
