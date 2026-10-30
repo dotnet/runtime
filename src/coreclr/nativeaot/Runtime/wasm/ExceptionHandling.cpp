@@ -103,7 +103,7 @@ static void ThrowException(uintptr_t callerSP, Object* exception, bool rethrow, 
     // Allocate space for the ExInfo and context; init the exception object to null.
     WasmThrowFrame frame = {};
     frame.m_context.SP = callerSP; // save the SP of the throw site
-    frame.m_context.IP = WasmCodeManager::GetVirtualIP(callerSP);
+    frame.m_context.IP = ICodeManager::GetIPFromSP(callerSP);
     // set the exception context field on the ExInfo
     frame.m_exInfo.m_pExContext = &frame.m_context;
     frame.m_exInfo.m_kind =

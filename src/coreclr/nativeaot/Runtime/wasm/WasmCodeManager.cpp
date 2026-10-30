@@ -65,7 +65,7 @@ WasmCodeManager::WasmCodeManager(const WasmRuntimeFunction* pFunctions, uint32_t
 // RyuJIT's shadow frame begins with an identity and a virtual IP. With localloc, SP
 // instead points at an indirection to FP. Funclet identities point at the establishing
 // frame, tagged with 2; ordinary NativeAOT identities are (method start virtual IP << 1) | 1.
-uintptr_t WasmCodeManager::GetFramePointer(uintptr_t shadowSP)
+uintptr_t ICodeManager::GetFramePointerFromSP(uintptr_t shadowSP)
 {
     uintptr_t fp = GetPhysicalFramePointer(shadowSP);
     ASSERT(fp != 0);
@@ -81,15 +81,25 @@ uintptr_t WasmCodeManager::GetFramePointer(uintptr_t shadowSP)
     return fp;
 }
 
-uintptr_t WasmCodeManager::GetVirtualIP(uintptr_t shadowSP)
+uintptr_t ICodeManager::GetIPFromSP(uintptr_t shadowSP)
 {
     uintptr_t fp = GetPhysicalFramePointer(shadowSP);
     if (*reinterpret_cast<uintptr_t*>(fp) == WasmEHFrame::Identity)
         return reinterpret_cast<WasmEHFrame*>(fp)->m_returnIP;
     uint32_t virtualIP = *reinterpret_cast<uint32_t*>(fp + sizeof(uintptr_t));
-    uintptr_t identity = *reinterpret_cast<uintptr_t*>(GetFramePointer(shadowSP));
+    uintptr_t identity = *reinterpret_cast<uintptr_t*>(GetFramePointerFromSP(shadowSP));
     ASSERT((identity & 1) != 0 && identity != 1);
     return (identity >> 1) + virtualIP;
+}
+
+void ICodeManager::UnwindEHHelperFrame(REGDISPLAY* pRegisterSet)
+{
+    WasmEHFrame* pFrame = reinterpret_cast<WasmEHFrame*>(pRegisterSet->GetSP());
+    ASSERT(pFrame->m_identity == WasmEHFrame::Identity);
+    uintptr_t callerSP = pFrame->m_callerSP;
+    pRegisterSet->SetSP(callerSP);
+    pRegisterSet->FP = GetFramePointerFromSP(callerSP);
+    pRegisterSet->SetIP(GetIPFromSP(callerSP));
 }
 
 const WasmRuntimeFunction* WasmCodeManager::FindRuntimeFunction(uintptr_t address)
@@ -205,8 +215,8 @@ bool WasmCodeManager::UnwindStackFrame(MethodInfo* pMethodInfo, uint32_t flags,
     uintptr_t callerSP = fp + pWasmMethodInfo->m_frameSize;
     ASSERT(callerSP > pRegisterSet->GetSP());
     pRegisterSet->SetSP(callerSP);
-    pRegisterSet->FP = GetFramePointer(callerSP);
-    pRegisterSet->SetIP(GetVirtualIP(callerSP));
+    pRegisterSet->FP = GetFramePointerFromSP(callerSP);
+    pRegisterSet->SetIP(GetIPFromSP(callerSP));
     return true;
 }
 

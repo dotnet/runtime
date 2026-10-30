@@ -28,11 +28,6 @@
 
 #include "NativeContext.h"
 
-#ifdef TARGET_WASM
-#include "wasm/WasmCodeManager.h"
-#include "wasm/ExceptionHandling.h"
-#endif
-
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
 #pragma warning(disable:4061)
 
@@ -329,10 +324,10 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
     if (pFrame->m_Flags & PTFF_SAVE_RA) { m_RegDisplay.pRA = pPreservedRegsCursor++; }
 
-#elif defined(TARGET_WASM)
+#elif defined(FEATURE_PORTABLE_HELPERS)
     m_RegDisplay.SP = pFrame->m_ShadowSP;
-    m_RegDisplay.FP = WasmCodeManager::GetFramePointer(m_RegDisplay.SP);
-    m_RegDisplay.SetIP(WasmCodeManager::GetVirtualIP(m_RegDisplay.SP));
+    m_RegDisplay.FP = ICodeManager::GetFramePointerFromSP(m_RegDisplay.SP);
+    m_RegDisplay.SetIP(ICodeManager::GetIPFromSP(m_RegDisplay.SP));
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
 #else // TARGET_ARM
@@ -631,8 +626,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
 #endif // TARGET_AMD64
-#elif defined(TARGET_WASM)
-    m_RegDisplay.FP = WasmCodeManager::GetFramePointer(m_RegDisplay.SP);
+#elif defined(FEATURE_PORTABLE_HELPERS)
+    m_RegDisplay.FP = ICodeManager::GetFramePointerFromSP(m_RegDisplay.SP);
 #else
     PORTABILITY_ASSERT("StackFrameIterator::InternalInit");
 #endif // TARGET_ARM
@@ -1078,17 +1073,15 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(FEATURE_PORTABLE_HELPERS) && !defined(TARGET_WASM) // @TODO: Currently no funclet invoke defined in a portable way
-    return;
-#else // defined(FEATURE_PORTABLE_HELPERS) && !defined(TARGET_WASM)
     ASSERT((CategorizeUnadjustedReturnAddress(m_ControlPC) == InFuncletInvokeThunk) ||
            (CategorizeUnadjustedReturnAddress(m_ControlPC) == InFilterFuncletInvokeThunk));
 
+#ifdef FEATURE_PORTABLE_HELPERS
+    ICodeManager::UnwindEHHelperFrame(&m_RegDisplay);
+#else // FEATURE_PORTABLE_HELPERS
     PTR_uintptr_t SP;
 
-#if !defined(TARGET_WASM)
     bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
-#endif // !defined(TARGET_WASM)
 
 #if defined(UNIX_AMD64_ABI)
     SP = (PTR_uintptr_t)(m_RegDisplay.SP);
@@ -1366,29 +1359,22 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pS10  = SP++;
     m_RegDisplay.pS11  = SP++;
 
-#elif defined(TARGET_WASM)
-    WasmEHFrame* pFrame = reinterpret_cast<WasmEHFrame*>(m_RegDisplay.SP);
-    ASSERT(pFrame->m_identity == WasmEHFrame::Identity);
-    SP = reinterpret_cast<PTR_uintptr_t>(pFrame->m_callerSP);
-    m_RegDisplay.FP = WasmCodeManager::GetFramePointer(pFrame->m_callerSP);
-    m_RegDisplay.IP = WasmCodeManager::GetVirtualIP(pFrame->m_callerSP);
-
 #else
     SP = (PTR_uintptr_t)(m_RegDisplay.SP);
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     m_RegDisplay.SetIP(PCODEToPINSTR(*SP++));
 #endif
 
     m_RegDisplay.SetSP((uintptr_t)dac_cast<TADDR>(SP));
+#endif // FEATURE_PORTABLE_HELPERS
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
     // We expect to be called by the runtime's C# EH implementation, and since this function's notion of how
     // to unwind through the stub is brittle relative to the stub itself, we want to check as soon as we can.
     ASSERT(m_pInstance->IsManaged(m_ControlPC) && "unwind from funclet invoke stub failed");
-#endif // defined(FEATURE_PORTABLE_HELPERS) && !defined(TARGET_WASM)
 }
 
 // For a given target architecture, the layout of this structure must precisely match the
@@ -1719,12 +1705,11 @@ void StackFrameIterator::UnwindThrowSiteThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(FEATURE_PORTABLE_HELPERS) && !defined(TARGET_WASM) // @TODO: no portable version of throw helpers
-    return;
-#else // defined(FEATURE_PORTABLE_HELPERS) && !defined(TARGET_WASM)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InThrowSiteThunk);
 
-#if !defined(TARGET_WASM)
+#ifdef FEATURE_PORTABLE_HELPERS
+    ICodeManager::UnwindEHHelperFrame(&m_RegDisplay);
+#else // FEATURE_PORTABLE_HELPERS
     const uintptr_t STACKSIZEOF_ExInfo = ((sizeof(ExInfo) + (STACK_ALIGN_SIZE-1)) & ~(STACK_ALIGN_SIZE-1));
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     const uintptr_t SIZEOF_OutgoingScratch = 0x20;
@@ -1734,8 +1719,6 @@ void StackFrameIterator::UnwindThrowSiteThunk()
 
     PTR_PAL_LIMITED_CONTEXT pContext = (PTR_PAL_LIMITED_CONTEXT)
                                         (m_RegDisplay.SP + SIZEOF_OutgoingScratch + STACKSIZEOF_ExInfo);
-#endif // !defined(TARGET_WASM)
-
 #if defined(UNIX_AMD64_ABI)
     m_RegDisplay.pRbp = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, Rbp);
     m_RegDisplay.pRbx = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, Rbx);
@@ -1810,26 +1793,18 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pS10 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, S10);
     m_RegDisplay.pS11 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, S11);
     m_RegDisplay.pFP = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, FP);
-#elif defined(TARGET_WASM)
-    WasmEHFrame* pFrame = reinterpret_cast<WasmEHFrame*>(m_RegDisplay.SP);
-    ASSERT(pFrame->m_identity == WasmEHFrame::Identity);
-    m_RegDisplay.SP = pFrame->m_callerSP;
-    m_RegDisplay.FP = WasmCodeManager::GetFramePointer(m_RegDisplay.SP);
-    m_RegDisplay.IP = WasmCodeManager::GetVirtualIP(m_RegDisplay.SP);
 #else
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
 
-#if !defined(TARGET_WASM)
     m_RegDisplay.SetIP(ReturnAddressToCanonicalPC(pContext->IP));
     m_RegDisplay.SetSP(pContext->GetSp());
-#endif // !defined(TARGET_WASM)
+#endif // FEATURE_PORTABLE_HELPERS
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
     // We expect the throw site to be in managed code, and since this function's notion of how to unwind
     // through the stub is brittle relative to the stub itself, we want to check as soon as we can.
     ASSERT(m_pInstance->IsManaged(m_ControlPC) && "unwind from throw site stub failed");
-#endif // defined(FEATURE_PORTABLE_HELPERS) && !defined(TARGET_WASM)
 }
 
 bool StackFrameIterator::IsValid()

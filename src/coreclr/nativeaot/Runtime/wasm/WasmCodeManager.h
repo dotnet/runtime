@@ -26,8 +26,6 @@ public:
     WasmCodeManager(const WasmRuntimeFunction* pFunctions, uint32_t nFunctions,
         void** pClasslibFunctions, uint32_t nClasslibFunctions);
 
-    static uintptr_t GetFramePointer(uintptr_t shadowSP);
-    static uintptr_t GetVirtualIP(uintptr_t shadowSP);
     uintptr_t GetFuncletAddress(uintptr_t virtualIP);
 
     bool FindMethodInfo(PTR_VOID controlPC, MethodInfo* pMethodInfoOut) override;
