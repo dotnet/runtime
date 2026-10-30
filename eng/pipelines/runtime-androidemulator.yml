@@ -54,17 +54,15 @@ extends:
               runtimeFlavor: coreclr
               nameSuffix: API29_Parity_CoreCLR
               buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests+host+packs -c Release /p:ArchiveTests=true
-              timeoutInMinutes: 240
+              timeoutInMinutes: 480
               helixQueues:
                 - Ubuntu.2204.Amd64.Android.29.Open
                 - $(androidContainerHelixQueue)
               postBuildSteps:
                 - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
-                  parameters:
-                    testBuildArgs: test JIT/Directed/Directed_r.csproj
                 - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
                   parameters:
-                    displayName: Run CoreCLR JIT tests on API 29 legacy and container queues
+                    displayName: Run CoreCLR tests on API 29 legacy and container queues
                     creator: $(Build.DefinitionName)
                     helixBuild: $(Build.BuildNumber)
                     helixSource: ci/dotnet/runtime/$(Build.SourceBranch)
@@ -73,8 +71,8 @@ extends:
                     useHelixMonitor: true
                     scenarios:
                       - normal
-                    timeoutPerTestInMinutes: 10
-                    timeoutPerTestCollectionInMinutes: 30
+                    timeoutPerTestInMinutes: 60
+                    timeoutPerTestCollectionInMinutes: 180
                     helixProjectArguments: $(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj
                 - template: /eng/pipelines/libraries/helix.yml
                   parameters:
