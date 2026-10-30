@@ -394,6 +394,7 @@
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
     <Compile Include="PortableCallHelpers\PortableCallHelpersGenerator.cs" />
     <Compile Include="PortableCallHelpers\InteropSignature.cs" />
+    <Compile Include="PortableCallHelpers\MarshalledSignature.cs" />
     <Compile Include="PortableCallHelpers\InternalCallSignatureCollector.cs" />
     <Compile Include="PortableCallHelpers\InterpToNativeGenerator.cs" />
     <Compile Include="PortableCallHelpers\PInvokeCollector.cs" />

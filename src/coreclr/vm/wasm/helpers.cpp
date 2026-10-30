@@ -10,6 +10,7 @@
 #include "callingconvention.h"
 #include "cgensys.h"
 #include "readytorun.h"
+#include "fieldmarshaler.h"
 
 #define WASM_STRINGIFY_HELPER(value) #value
 #define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
@@ -895,10 +896,26 @@ namespace
         }
     }
 
+    static bool TryLowerNativeSingleScalar(MethodTable* pMT, uint32_t size, ConvertResult* pResult);
+
     static ConvertResult LowerTypeHandle(TypeHandle th)
     {
         uint32_t size = th.GetSize();
         CorElementType elemType = th.GetSignatureCorElementType();
+
+        // The unmanaged view of a non-blittable value type, which the built-in IL marshalers use for the
+        // native side of an IL stub. It has no MethodTable of its own: its size and alignment are the
+        // native ones, and the BasicCABI single-scalar rule applies to its native fields.
+        if (th.IsNativeValueType())
+        {
+            ConvertResult result;
+            if (TryLowerNativeSingleScalar(th.AsNativeValueType(), size, &result))
+            {
+                return result;
+            }
+
+            return { ConvertType::ToStruct, size, CEEInfo::getClassAlignmentRequirementStatic(th) > INTERP_STACK_SLOT_SIZE };
+        }
 
         if ((elemType != ELEMENT_TYPE_VALUETYPE) && (elemType != ELEMENT_TYPE_TYPEDBYREF))
         {
@@ -950,6 +967,86 @@ namespace
         }
 
         return { ConvertType::ToStruct, size, CEEInfo::getClassAlignmentRequirementStatic(th) > INTERP_STACK_SLOT_SIZE };
+    }
+
+    // Applies the BasicCABI single-scalar rule to the native layout of pMT, whose native size is size.
+    // Succeeds when the native layout is one field that fills the struct and recursively holds a single
+    // scalar, the case clang passes as that scalar; otherwise the struct is passed by reference.
+    static bool TryLowerNativeSingleScalar(MethodTable* pMT, uint32_t size, ConvertResult* pResult)
+    {
+        // GetSignatureKey is NOTHROW. The marshaler built this layout, and the native layouts of its
+        // nested structs, when it sized the native struct, so read it without initializing.
+        EEClassNativeLayoutInfo const* pNativeLayoutInfo = pMT->GetClass()->GetNativeLayoutInfo();
+        _ASSERTE(pNativeLayoutInfo != nullptr);
+        if (pNativeLayoutInfo->GetNumFields() != 1)
+        {
+            return false;
+        }
+
+        NativeFieldDescriptor const* pNFD = pNativeLayoutInfo->GetNativeFieldDescriptors();
+        if (pNFD->NativeSize() != size)
+        {
+            // One field with padding, or a fixed buffer that repeats its only field.
+            return false;
+        }
+
+        switch (pNFD->GetCategory())
+        {
+            case NativeFieldCategory::INTEGER:
+                if (size <= sizeof(int32_t))
+                {
+                    *pResult = { ConvertType::ToI32, 0 };
+                    return true;
+                }
+                if (size == sizeof(int64_t))
+                {
+                    *pResult = { ConvertType::ToI64, 0 };
+                    return true;
+                }
+                return false;
+
+            case NativeFieldCategory::FLOAT:
+                if (size == sizeof(float))
+                {
+                    *pResult = { ConvertType::ToF32, 0 };
+                    return true;
+                }
+                if (size == sizeof(double))
+                {
+                    *pResult = { ConvertType::ToF64, 0 };
+                    return true;
+                }
+                return false;
+
+            case NativeFieldCategory::NESTED:
+            {
+                MethodTable* pNestedMT = pNFD->GetNestedNativeMethodTable();
+                if ((pNestedMT == nullptr) || (pNFD->GetNumElements() != 1))
+                {
+                    return false;
+                }
+
+                // A blittable value type, primitives included, has the same native and managed layout.
+                // Anything else (a non-blittable value type, or a layout class embedded by value) has
+                // to be lowered over its native layout.
+                if (pNestedMT->IsValueType() && (!pNestedMT->HasLayout() || pNestedMT->IsBlittable()))
+                {
+                    ConvertResult nested = LowerTypeHandle(TypeHandle(pNestedMT));
+                    if (nested.type == ConvertType::ToStruct)
+                    {
+                        return false;
+                    }
+
+                    *pResult = nested;
+                    return true;
+                }
+
+                return pNestedMT->HasLayout() && TryLowerNativeSingleScalar(pNestedMT, size, pResult);
+            }
+
+            default:
+                return false;
+        }
     }
 
     static ConvertResult ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)

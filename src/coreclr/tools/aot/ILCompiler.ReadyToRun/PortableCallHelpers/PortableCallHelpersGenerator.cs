@@ -91,8 +91,6 @@ namespace ILCompiler.PortableCallHelpers
 
                 log.Verbose($"Scanning {simpleName} for pinvokes{(scanInternalCalls ? " and InternalCall methods" : "")}");
 
-                int pinvokesFromOtherModules = pinvokes.Count;
-
                 foreach (MetadataType type in module.GetAllTypes())
                 {
                     if (type is not EcmaType ecmaType)
@@ -102,18 +100,6 @@ namespace ILCompiler.PortableCallHelpers
 
                     if (scanInternalCalls)
                         internalCallCollector.ScanType(ecmaType);
-                }
-
-                // WASM-TODO: The helpers describe every P/Invoke with the signature the type system
-                // reports, which is what native sees only when the module disables runtime
-                // marshalling. Make this check per-P/Invoke and marshalling-aware (see
-                // Marshaller.IsMarshallingRequired), then raise it to a warning. It stays a message
-                // while it names whole framework assemblies, which ship prebuilt and would fail
-                // builds nobody can fix. Tracked by https://github.com/dotnet/runtime/issues/133190.
-                if (pinvokes.Count != pinvokesFromOtherModules && MarshalHelpers.IsRuntimeMarshallingEnabled(module))
-                {
-                    log.InfoHigh("WASM0065",
-                        $"'{simpleName}' declares P/Invokes without [assembly: DisableRuntimeMarshalling]; the generated helpers assume its signatures cross to native unmarshalled.");
                 }
             }
 

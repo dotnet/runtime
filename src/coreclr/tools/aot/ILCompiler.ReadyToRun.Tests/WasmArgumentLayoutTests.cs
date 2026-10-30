@@ -1197,6 +1197,95 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
+    /// The runtime keys an interop IL stub's thunk by the native signature the stub calls, so where
+    /// runtime marshalling changes how a struct crosses, the generator has to emit that native
+    /// signature rather than the managed one. Blittable signatures keep their managed encoding.
+    /// </summary>
+    [Theory]
+    // Blittable: the managed encoding.
+    [InlineData("[DllImport(\"lib\")] static extern int F(IntPair p, double d, long l);", "MiS8dl")]
+    // A bool becomes a 4-byte BOOL: {bool, short, int} is 8 bytes managed and 12 native.
+    [InlineData("[DllImport(\"lib\")] static extern bool F(ShortAndBool s, short x, bool b);", "MiS12ii")]
+    // Two 12-byte structs inline, where the managed field is an array reference.
+    [InlineData("[DllImport(\"lib\")] static extern bool F(InnerArray s);", "MiS24")]
+    // A single native scalar is passed as that scalar, through nested non-blittable structs.
+    [InlineData("[DllImport(\"lib\")] static extern int F(OuterBool s, double d, long l);", "Miidl")]
+    // Native alignment above 8 selects the aligned slot; five bools grow by 15 bytes.
+    [InlineData("[DllImport(\"lib\")] static extern int F(VectorAndBools s);", "MiA48")]
+    // Off Windows, CharSet.Auto means Ansi: each char is one byte natively.
+    [InlineData("[DllImport(\"lib\")] static extern int F(AutoChars s, double d, long l);", "MiS2dl")]
+    // ArrayWithOffset crosses as a pointer.
+    [InlineData("[DllImport(\"lib\")] static extern int F(ArrayWithOffset a, double d, float f);", "Miidf")]
+    // A struct return crosses through the hidden buffer at its native size.
+    [InlineData("[DllImport(\"lib\")] static extern ShortAndBool F(int x);", "MS12i")]
+    // A delegate called over a native function pointer.
+    [InlineData("[UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate bool D(ShortAndBool s, double d);", "MiS12d")]
+    // A delegate a P/Invoke returns is called through its own IL stub.
+    [InlineData("delegate void D(InnerArray s, float f); [DllImport(\"lib\")] static extern D F();", "MvS24f")]
+    // A delegate passed to native code never wraps a native function pointer, so it gets no thunk.
+    [InlineData("delegate void D(InnerArray s, double d); [DllImport(\"lib\")] static extern void F(D d);", "MvS24d", false)]
+    public void PortableCallHelpersGeneratorEncodesTheMarshalledNativeSignature(string declaration, string expectedKey, bool expectThunk = true)
+    {
+        string source = $$"""
+            using System;
+            using System.Runtime.InteropServices;
+            using System.Runtime.Intrinsics;
+
+            public struct IntPair { public int A; public int B; }
+            public struct ShortAndBool { public bool B; public short S; int _padding; }
+            public struct InnerSequential { public int I; public float F; public string S; }
+            public struct InnerArray { [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)] public InnerSequential[] Items; }
+            public struct InnerBool { public bool B; }
+            public struct OuterBool { public InnerBool Inner; }
+            public struct VectorAndBools { public Vector128<int> V; public bool B0, B1, B2, B3, B4; }
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+            public struct AutoChars { public char A; public char B; }
+
+            public static class Imports
+            {
+                {{declaration}}
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Imports.dll"));
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "lib" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            Assert.True(exitCode == 0, log.ToString());
+            string thunks = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-interp-to-managed.cpp"));
+            if (expectThunk)
+                Assert.Contains($"\"{expectedKey}\"", thunks);
+            else
+                Assert.DoesNotContain($"\"{expectedKey}\"", thunks);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
     /// The generated wrapper only needs to reach the R2R native entrypoint for callbacks exported by
     /// name: native code calls the extern "C" export (and thus the wrapper) directly. Every other
     /// reverse thunk is handed out by the runtime, which already prefers R2R code before falling back to

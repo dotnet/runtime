@@ -92,6 +92,26 @@ namespace Internal.TypeSystem.Interop
             return IsCoreNamedType(context, type, "System.Runtime.InteropServices"u8, "HandleRef"u8);
         }
 
+        public static bool IsSystemArrayWithOffset(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Runtime.InteropServices"u8, "ArrayWithOffset"u8);
+        }
+
+        public static bool IsSystemRuntimeTypeHandle(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System"u8, "RuntimeTypeHandle"u8);
+        }
+
+        public static bool IsSystemRuntimeFieldHandle(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System"u8, "RuntimeFieldHandle"u8);
+        }
+
+        public static bool IsSystemRuntimeMethodHandle(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System"u8, "RuntimeMethodHandle"u8);
+        }
+
         public static bool IsSystemDateTime(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System"u8, "DateTime"u8);

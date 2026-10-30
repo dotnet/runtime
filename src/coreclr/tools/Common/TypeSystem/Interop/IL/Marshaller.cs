@@ -455,9 +455,14 @@ namespace Internal.TypeSystem.Interop
 
         public static Marshaller[] GetMarshallersForSignature(MethodSignature methodSig, ParameterMetadata[] paramMetadata, ModuleDesc moduleContext)
         {
+            return GetMarshallersForSignature(methodSig, new PInvokeFlags(PInvokeAttributes.None), paramMetadata, moduleContext);
+        }
+
+        public static Marshaller[] GetMarshallersForSignature(MethodSignature methodSig, PInvokeFlags flags, ParameterMetadata[] paramMetadata, ModuleDesc moduleContext)
+        {
             return GetMarshallers(
                 methodSig,
-                new PInvokeFlags(PInvokeAttributes.None),
+                flags,
                 paramMetadata,
                 MarshalHelpers.IsRuntimeMarshallingEnabled(moduleContext));
         }
