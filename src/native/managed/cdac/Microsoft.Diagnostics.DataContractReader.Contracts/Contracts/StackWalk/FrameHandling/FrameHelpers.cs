@@ -267,6 +267,115 @@ internal sealed class FrameHelpers
         return (definition.Attributes & MethodAttributes.RTSpecialName) == 0 || !metadata.StringComparer.Equals(definition.Name, ".ctor");
     }
 
+    /// <summary>
+    /// Recovers the exact generic context of a transition frame's method. Port of native
+    /// CrawlFrame::GetExactGenericArgsToken (stackwalk.cpp) for a non-frameless CrawlFrame, which uses
+    /// CrawlFrame::GetThisPointer and TransitionFrame::GetParamTypeArg (frames.cpp).
+    /// </summary>
+    public TargetPointer GetExactGenericArgsToken(TargetPointer frameAddress)
+    {
+        FrameType frameType = GetFrameType(_target.ProcessedData.GetOrAdd<Data.Frame>(frameAddress).Identifier);
+        if (frameType is not (FrameType.FramedMethodFrame or FrameType.DynamicHelperFrame or FrameType.ExternalMethodFrame
+            or FrameType.PrestubMethodFrame or FrameType.CallCountingHelperFrame or FrameType.StubDispatchFrame))
+            return TargetPointer.Null;
+
+        TargetPointer method = GetMethodDescPtr(frameAddress);
+        if (method == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        MethodDescHandle md = _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(method);
+        GenericContextLoc contextLoc = _target.Contracts.RuntimeTypeSystem.GetGenericContextLoc(md);
+        if (contextLoc == GenericContextLoc.None)
+            return TargetPointer.Null;
+
+        Data.FramedMethodFrame frame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
+        Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(frame.TransitionBlockPtr);
+        if (contextLoc == GenericContextLoc.ThisPtr)
+        {
+            // Native CrawlFrame::GetThisPointer does not recover a transition frame's receiver on AMD64.
+            if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X64)
+                return TargetPointer.Null;
+
+            TargetPointer thisObject = _target.ReadPointer(GetArgumentSlotAddress(tb, 0));
+            return thisObject == TargetPointer.Null
+                ? TargetPointer.Null
+                : _target.Contracts.Object.GetMethodTableAddress(thisObject);
+        }
+
+        // A target prepared with a GCRefMap need not have loaded the signature types that the
+        // calling-convention walk requires, so locate the argument through the map first.
+        // StubDispatchFrame maps omit the instantiation argument.
+        TargetPointer gcRefMap = frameType switch
+        {
+            FrameType.ExternalMethodFrame => FindGCRefMap(_target.ProcessedData.GetOrAdd<Data.ExternalMethodFrame>(frameAddress).Indirection),
+            FrameType.PrestubMethodFrame or FrameType.CallCountingHelperFrame => GetGCRefMapForFrame(frameAddress),
+            _ => TargetPointer.Null,
+        };
+        if (gcRefMap != TargetPointer.Null)
+        {
+            GCRefMapDecoder decoder = new(_target, gcRefMap);
+            if (TryReadParamTypeArg(ref decoder, tb, out TargetPointer token))
+                return token;
+        }
+
+        // The signature-based layout declines rather than loading types the target lacks.
+        if (!_target.Contracts.CallingConvention.TryComputeArgGCRefMapBlob(md, out byte[] blob))
+            return TargetPointer.Null;
+
+        GCRefMapDecoder signatureDecoder = new(blob, legacyTokens: GCRefMapDecoder.UsesLegacyTokens(_target));
+        return TryReadParamTypeArg(ref signatureDecoder, tb, out TargetPointer signatureToken)
+            ? signatureToken
+            : TargetPointer.Null;
+    }
+
+    private bool TryReadParamTypeArg(ref GCRefMapDecoder decoder, Data.TransitionBlock tb, out TargetPointer token)
+    {
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
+            decoder.ReadStackPop();
+
+        while (!decoder.AtEnd)
+        {
+            int pos = decoder.CurrentPos;
+            if (decoder.ReadToken() is GCRefMapToken.MethodParam or GCRefMapToken.TypeParam)
+            {
+                token = _target.ReadPointer(GetGCRefMapSlotAddress(tb, pos));
+                return true;
+            }
+        }
+
+        token = TargetPointer.Null;
+        return false;
+    }
+
+    /// <summary>
+    /// Returns the transition block address of a GCRefMap position. Port of native OffsetFromGCRefMapPos (frames.cpp).
+    /// </summary>
+    public TargetPointer GetGCRefMapSlotAddress(Data.TransitionBlock tb, int pos)
+    {
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
+            return GetArgumentSlotAddress(tb, pos);
+        return new TargetPointer(tb.FirstGCRefMapSlot.Value + (ulong)(pos * _target.PointerSize));
+    }
+
+    /// <summary>
+    /// Returns the transition block address of an argument slot; index zero is the slot that holds <c>this</c>.
+    /// </summary>
+    public TargetPointer GetArgumentSlotAddress(Data.TransitionBlock tb, int argIndex)
+    {
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
+        {
+            const int x86NumArgRegs = 2;
+            if (argIndex < x86NumArgRegs)
+            {
+                int offset = (x86NumArgRegs - 1 - argIndex) * _target.PointerSize;
+                return new TargetPointer(tb.ArgumentRegisters.Value + (ulong)offset);
+            }
+            int stackOffset = (argIndex - x86NumArgRegs) * _target.PointerSize;
+            return new TargetPointer(tb.OffsetOfArgs.Value + (ulong)stackOffset);
+        }
+        return new TargetPointer(tb.ArgumentRegisters.Value + (ulong)(argIndex * _target.PointerSize));
+    }
+
     public bool ThisIsInterior(TargetPointer frameAddress, bool fallback)
     {
         FrameType kind = GetFrameType(_target.ProcessedData.GetOrAdd<Data.Frame>(frameAddress).Identifier);

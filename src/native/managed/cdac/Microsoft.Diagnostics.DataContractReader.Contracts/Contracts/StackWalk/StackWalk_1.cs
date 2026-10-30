@@ -1156,6 +1156,10 @@ internal partial class StackWalk_1 : IStackWalk
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
 
+        TargetPointer framePtr = ((IStackWalk)this).GetFrameAddress(handle);
+        if (framePtr != TargetPointer.Null)
+            return _frameHelpers.GetExactGenericArgsToken(framePtr);
+
         if (handle.State != StackWalkState.Frameless)
             return TargetPointer.Null;
 

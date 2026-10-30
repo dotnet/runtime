@@ -760,7 +760,7 @@ If no Frame in the chain produces a usable context (thread is not running manage
 
 `GetFuncletRootId` returns the caller stack pointer for a non-funclet frame and sets `parentNativeOffset` to zero. For a funclet, it performs a secondary stack walk that skips intervening funclets and returns the caller stack pointer and relative native offset of the parent method frame. If that parent cannot be located because it has already been unwound, the method returns the current frame's caller stack pointer and sets `parentNativeOffset` to zero.
 
-`GetExactGenericArgsToken` recovers the exact generic instantiation context for the current frameless managed frame, mirroring native `CrawlFrame::GetExactGenericArgsToken`. It returns `TargetPointer.Null` unless the frame is `Frameless`, has a `MethodDesc`, and that method is shared by generic instantiations (`GetGenericContextLoc != None`). When applicable it:
+`GetExactGenericArgsToken` recovers the exact generic instantiation context for the current frame, mirroring native `CrawlFrame::GetExactGenericArgsToken`. For a capital-F Frame (the `Frame` or `SkippedFrame` state) it uses the transition-frame algorithm below. Otherwise it returns `TargetPointer.Null` unless the frame is `Frameless`, has a `MethodDesc`, and that method is shared by generic instantiations (`GetGenericContextLoc != None`). When applicable it:
 
 1. Selects the platform GC-info decoder, or the interpreter GC-info decoder for `CodeKind.Interpreter`, and requests the location through `IGCInfo.TryGetGenericContextStorage`.
 2. Reads the returned location through one common path:
@@ -776,7 +776,11 @@ The architecture-specific storage lookup preserves the native paths:
 * x86 rejects prolog and epilog offsets. Explicit instantiation arguments use the named EBP-relative native `GetParamTypeArgOffset` calculation. Context-from-`this` replays the fully or partially interruptible transition stream to recover `thisPtrResult`; if a register currently describes `this`, its numeric x86 register identifier is returned. Otherwise, it uses the first untracked slot and the same EBP/ESP plus pushed-depth address calculation as `EECodeManager::GetInstance`.
 * Interpreted explicit contexts use the GC-info offset relative to the interpreter argument block. Context-from-`this` uses offset zero, matching `InterpreterCodeManager::GetInstance`'s `*(OBJECTREF*)frame->pStack`.
 
-Explicit runtime `FramedMethodFrame` recovery remains outside this API. Native uses `FramedMethodFrame::GetThis` / `GetParamTypeArg`, whose signature-dependent `ArgIterator` placement is not currently represented by the cDAC contracts.
+For a transition Frame (`FramedMethodFrame`, `DynamicHelperFrame`, `ExternalMethodFrame`, `PrestubMethodFrame`, `CallCountingHelperFrame`, or `StubDispatchFrame`), native uses `CrawlFrame::GetThisPointer` and `TransitionFrame::GetParamTypeArg`. The contract returns `TargetPointer.Null` for any other Frame type, when the Frame has no `MethodDesc`, or when `GetGenericContextLoc` is `None`. Otherwise:
+
+1. For a `ThisPtr` context, it returns `TargetPointer.Null` on x64, where native does not recover a transition frame's receiver. On other architectures it reads the receiver from the transition block's first argument slot (`ECX` on x86) and returns its `MethodTable`, or `TargetPointer.Null` for a null receiver.
+2. For `InstArgMethodDesc` and `InstArgMethodTable`, it looks for a `MethodParam` or `TypeParam` token in the Frame's GCRefMap and returns the pointer stored at that token's transition-block slot. `ExternalMethodFrame` resolves its map through `FindGCRefMap` on the Frame's `Indirection`; `PrestubMethodFrame` and `CallCountingHelperFrame` use the same method-entry map resolution as GC scanning. `StubDispatchFrame` does not use its map, because dispatch maps omit the instantiation argument. A ReadyToRun target that has a GCRefMap need not have loaded the signature types the calling-convention walk requires, so this path does not inspect the signature.
+3. If the Frame has no map, or its map has no instantiation token, it decodes the same tokens from `CallingConvention.TryComputeArgGCRefMapBlob`. If the target lacks the signature layout information, the result is `TargetPointer.Null`.
 
 
 #### CreateStackWalk with a caller-provided CONTEXT

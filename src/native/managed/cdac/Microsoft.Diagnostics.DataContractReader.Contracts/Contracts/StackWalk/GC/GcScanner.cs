@@ -217,7 +217,7 @@ internal class GcScanner
         {
             int pos = decoder.CurrentPos;
             GCRefMapToken token = decoder.ReadToken();
-            TargetPointer slotAddress = AddressFromGCRefMapPos(tb, pos);
+            TargetPointer slotAddress = _frameHelpers.GetGCRefMapSlotAddress(tb, pos);
 
             switch (token)
             {
@@ -261,12 +261,12 @@ internal class GcScanner
 
         if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg) != 0)
         {
-            scanContext.GCReportCallback(ArgSlotAddress(tb, 0), GcScanFlags.None);
+            scanContext.GCReportCallback(_frameHelpers.GetArgumentSlotAddress(tb, 0), GcScanFlags.None);
         }
 
         if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg2) != 0)
         {
-            scanContext.GCReportCallback(ArgSlotAddress(tb, 1), GcScanFlags.None);
+            scanContext.GCReportCallback(_frameHelpers.GetArgumentSlotAddress(tb, 1), GcScanFlags.None);
         }
     }
 
@@ -294,29 +294,6 @@ internal class GcScanner
         Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(fmf.TransitionBlockPtr);
         GCRefMapDecoder decoder = new(blob, legacyTokens: GCRefMapDecoder.UsesLegacyTokens(_target));
         EnumerateGCRefMapTokens(ref decoder, tb, scanContext);
-    }
-
-    private TargetPointer AddressFromGCRefMapPos(Data.TransitionBlock tb, int pos)
-    {
-        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
-            return ArgSlotAddress(tb, pos);
-        return new TargetPointer(tb.FirstGCRefMapSlot.Value + (ulong)(pos * _target.PointerSize));
-    }
-
-    private TargetPointer ArgSlotAddress(Data.TransitionBlock tb, int argIndex)
-    {
-        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
-        {
-            const int x86NumArgRegs = 2;
-            if (argIndex < x86NumArgRegs)
-            {
-                int offset = (x86NumArgRegs - 1 - argIndex) * _target.PointerSize;
-                return new TargetPointer(tb.ArgumentRegisters.Value + (ulong)offset);
-            }
-            int stackOffset = (argIndex - x86NumArgRegs) * _target.PointerSize;
-            return new TargetPointer(tb.OffsetOfArgs.Value + (ulong)stackOffset);
-        }
-        return new TargetPointer(tb.ArgumentRegisters.Value + (ulong)(argIndex * _target.PointerSize));
     }
 
     private TargetPointer GetCallerSP(IPlatformAgnosticContext context, ref TargetPointer? cached)

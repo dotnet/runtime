@@ -1140,6 +1140,73 @@ public unsafe class StackWalkTests
         Assert.Equal(expectedSlots, scanContext.StackRefs.Select(reference => reference.Address.Value));
     }
 
+    // The x86 transition block holds 0x2222_0000 in ECX (position 0), 0x1111_0000 in EDX
+    // (position 1), and 0x3333_0000 in the first stack argument (position 2).
+    // { 0xf4, 0x01 } and { 0x74 } encode no stack pop, Ref at 0, then TypeParam or MethodParam at 1.
+    // { 0x14 } encodes no stack pop and two Refs. { 0xc1, 0x03 } encodes one stack pop and MethodParam at 2.
+    [Theory]
+    [InlineData(nameof(Data.ExternalMethodFrame), GenericContextLoc.InstArgMethodTable, new byte[] { 0xf4, 0x01 })]
+    [InlineData(nameof(Data.ExternalMethodFrame), GenericContextLoc.InstArgMethodDesc, new byte[] { 0x74 })]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), GenericContextLoc.InstArgMethodTable, new byte[] { 0xf4, 0x01 })]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), GenericContextLoc.InstArgMethodDesc, new byte[] { 0x74 })]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), GenericContextLoc.InstArgMethodDesc, new byte[] { 0x74 })]
+    public void TransitionFrame_ExactGenericArgsTokenUsesGCRefMapWithoutSignature(
+        string frameType, GenericContextLoc context, byte[] gcRefMap)
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            frameType, gcRefMap, hasMethodDesc: true, genericContext: context);
+
+        Assert.Equal(0x1111_0000UL, new FrameHelpers(target).GetExactGenericArgsToken(new TargetPointer(0x1000)).Value);
+    }
+
+    [Theory]
+    [InlineData(nameof(Data.FramedMethodFrame), null)]
+    [InlineData(nameof(Data.DynamicHelperFrame), null)]
+    [InlineData(nameof(Data.ExternalMethodFrame), null)]
+    [InlineData(nameof(Data.ExternalMethodFrame), new byte[] { 0x14 })]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), null)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), new byte[] { 0x14 })]
+    [InlineData(nameof(FrameType.CallCountingHelperFrame), null)]
+    [InlineData(nameof(Data.StubDispatchFrame), null)]
+    [InlineData(nameof(Data.StubDispatchFrame), new byte[] { 0x74 })]
+    public void TransitionFrame_ExactGenericArgsTokenFallsBackToSignature(string frameType, byte[]? gcRefMap)
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            frameType, gcRefMap, hasMethodDesc: true, signatureBlob: [0xc1, 0x03],
+            genericContext: GenericContextLoc.InstArgMethodDesc);
+
+        Assert.Equal(0x3333_0000UL, new FrameHelpers(target).GetExactGenericArgsToken(new TargetPointer(0x1000)).Value);
+    }
+
+    [Theory]
+    [InlineData(nameof(Data.ExternalMethodFrame), null, GenericContextLoc.InstArgMethodDesc, true)]
+    [InlineData(nameof(Data.ExternalMethodFrame), new byte[] { 0x14 }, GenericContextLoc.InstArgMethodTable, true)]
+    [InlineData(nameof(FrameType.PrestubMethodFrame), null, GenericContextLoc.InstArgMethodDesc, true)]
+    [InlineData(nameof(Data.StubDispatchFrame), new byte[] { 0x74 }, GenericContextLoc.InstArgMethodDesc, true)]
+    [InlineData(nameof(Data.ExternalMethodFrame), new byte[] { 0x74 }, GenericContextLoc.None, true)]
+    [InlineData(nameof(Data.ExternalMethodFrame), new byte[] { 0x74 }, GenericContextLoc.InstArgMethodDesc, false)]
+    public void TransitionFrame_ExactGenericArgsTokenIsNullWithoutContextSource(
+        string frameType, byte[]? gcRefMap, GenericContextLoc context, bool hasMethodDesc)
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            frameType, gcRefMap, hasMethodDesc, genericContext: context);
+
+        Assert.Equal(TargetPointer.Null, new FrameHelpers(target).GetExactGenericArgsToken(new TargetPointer(0x1000)));
+    }
+
+    [Theory]
+    [InlineData(RuntimeInfoArchitecture.X86, 0x8000UL)]
+    [InlineData(RuntimeInfoArchitecture.X64, 0UL)]
+    public void TransitionFrame_ExactGenericArgsTokenFromThisMatchesNativeArchitectures(
+        RuntimeInfoArchitecture architecture, ulong expected)
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            nameof(FrameType.PrestubMethodFrame), gcRefMap: null, hasMethodDesc: true,
+            architecture: architecture, genericContext: GenericContextLoc.ThisPtr);
+
+        Assert.Equal(expected, new FrameHelpers(target).GetExactGenericArgsToken(new TargetPointer(0x1000)).Value);
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
@@ -1207,7 +1274,8 @@ public unsafe class StackWalkTests
         string frameType, byte[]? gcRefMap, bool hasMethodDesc, byte[]? signatureBlob = null,
         uint? representativeMethodDescAddress = null, bool hasUnresolvedIndirection = false,
         RuntimeInfoArchitecture architecture = RuntimeInfoArchitecture.X86, bool hasCodeData = true,
-        bool hasGCRefMapField = true, bool? valueType = null, bool unboxing = false, bool inlineGCRefMap = true)
+        bool hasGCRefMapField = true, bool? valueType = null, bool unboxing = false, bool inlineGCRefMap = true,
+        GenericContextLoc? genericContext = null)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
         TestPlaceholderTarget.Builder builder = new(arch);
@@ -1323,6 +1391,16 @@ public unsafe class StackWalkTests
             runtimeTypeSystem.Setup(r => r.GetMethodDescHandle(new TargetPointer(MethodDescAddress))).Returns(method);
             callingConvention.Setup(c => c.TryComputeArgGCRefMapBlob(method, out signatureBlob)).Returns(true);
         }
+        if (genericContext.HasValue)
+        {
+            MethodDescHandle method = new(new TargetPointer(MethodDescAddress));
+            runtimeTypeSystem.Setup(r => r.GetMethodDescHandle(new TargetPointer(MethodDescAddress))).Returns(method);
+            runtimeTypeSystem.Setup(r => r.GetGenericContextLoc(method)).Returns(genericContext.Value);
+            if (signatureBlob is null)
+                callingConvention.Setup(c => c.TryComputeArgGCRefMapBlob(method, out signatureBlob)).Returns(false);
+        }
+        Mock<IObject> objectContract = new(MockBehavior.Strict);
+        objectContract.Setup(o => o.GetMethodTableAddress(new TargetPointer(0x2222_0000))).Returns(new TargetPointer(0x8000));
 
         Dictionary<DataType, Target.TypeInfo> types = new()
         {
@@ -1368,6 +1446,7 @@ public unsafe class StackWalkTests
             .AddMockContract(executionManager)
             .AddMockContract(runtimeTypeSystem)
             .AddMockContract(callingConvention)
+            .AddMockContract(objectContract)
             .AddMockContract(Mock.Of<IGC>())
             .AddMockContract(Mock.Of<IGCInfo>())
             .AddMockContract(runtimeInfo)
