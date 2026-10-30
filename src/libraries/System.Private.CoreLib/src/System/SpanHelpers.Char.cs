@@ -475,6 +475,7 @@ namespace System
 
             nuint minLength = (nuint)(((uint)firstLength < (uint)secondLength) ? (uint)firstLength : (uint)secondLength);
             nuint i = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
+            nuint differentBits;
 
             if (minLength >= (nuint)(sizeof(nuint) / sizeof(char)))
             {
@@ -495,10 +496,12 @@ namespace System
 
                 while (minLength >= (i + (nuint)(sizeof(nuint) / sizeof(char))))
                 {
-                    if (Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) !=
-                        Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i))))
+                    nuint firstChars = Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i)));
+                    nuint secondChars = Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i)));
+                    if (firstChars != secondChars)
                     {
-                        break;
+                        differentBits = firstChars ^ secondChars;
+                        goto Difference;
                     }
                     i += (nuint)(sizeof(nuint) / sizeof(char));
                 }
@@ -507,11 +510,14 @@ namespace System
 #if TARGET_64BIT
             if (minLength >= (i + sizeof(int) / sizeof(char)))
             {
-                if (Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) ==
-                    Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i))))
+                uint firstChars = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i)));
+                uint secondChars = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i)));
+                if (firstChars != secondChars)
                 {
-                    i += sizeof(int) / sizeof(char);
+                    differentBits = firstChars ^ secondChars;
+                    goto Difference;
                 }
+                i += sizeof(int) / sizeof(char);
             }
 #endif
 
@@ -525,6 +531,22 @@ namespace System
 
         Equal:
             return lengthDelta;
+
+        Difference:
+            // The chars at i onwards differ within the bits in differentBits; find the first differing char.
+            if (BitConverter.IsLittleEndian)
+            {
+                i += (uint)BitOperations.TrailingZeroCount(differentBits) / (8 * sizeof(char));
+            }
+            else
+            {
+                while (Unsafe.Add(ref first, (nint)i) == Unsafe.Add(ref second, (nint)i))
+                {
+                    i++;
+                }
+            }
+
+            return Unsafe.Add(ref first, (nint)i).CompareTo(Unsafe.Add(ref second, (nint)i));
         }
 
         // IndexOfNullCharacter processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
