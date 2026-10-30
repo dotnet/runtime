@@ -229,8 +229,14 @@ namespace System.Text.RegularExpressions
 
                 // If there is no literal after the loop, use whatever set we got.
                 // If there is a literal after the loop, consider it to be better than a negated set and better than a set with many characters.
+                // Chars may hold up to 128 characters (so that such sets can be searched with SearchValues), but a set with more than a few
+                // characters (e.g. [a-z0-9._-]) typically matches far more often than the literal, making it a much less selective filter,
+                // unless the literal might itself be common.
+                const int MaxSetCharsPreferredOverLiteralAfterLoop = 5; // max efficiently optimized by IndexOfAny
                 if (literalAfterLoop is null ||
-                    (fixedDistanceSets[0].Chars is not null && !fixedDistanceSets[0].Negated))
+                    (fixedDistanceSets[0].Chars is char[] setChars &&
+                     !fixedDistanceSets[0].Negated &&
+                     (setChars.Length <= MaxSetCharsPreferredOverLiteralAfterLoop || !IsLiteralRarerThanSet(literalAfterLoop.Value.Literal, setChars))))
                 {
                     // Determine whether to do searching based on one or more sets or on a single literal. Compiled engines
                     // don't need to special-case literals as they already do codegen to create the optimal lookup based on
@@ -910,6 +916,42 @@ namespace System.Text.RegularExpressions
             // IndexOfAny with rare characters is already an effective filter and is preferred.
             const float HighFrequencyThreshold = 0.6f;
             return totalFrequency >= HighFrequencyThreshold * chars.Length;
+        }
+
+        /// <summary>
+        /// Determines whether the literal following a leading loop is expected to occur much less often in typical text than
+        /// the characters of the set, making it clearly the more selective thing to search for. Returns false if that can't be determined.
+        /// </summary>
+        private static bool IsLiteralRarerThanSet((char Char, string? String, StringComparison StringComparison, char[]? Chars) literal, char[] setChars)
+        {
+            ReadOnlySpan<float> frequency = RegexPrefixAnalyzer.Frequency;
+
+            // Only consider literals starting with ASCII punctuation or symbols (e.g. '@', ':', '(', '=', ',').  How common letters, digits
+            // and whitespace are varies too much between kinds of input (e.g. prose vs. code) for the frequency table to be relied on.
+            float literalFrequency = 0;
+            foreach (char c in literal.Chars ?? [literal.String is not null ? literal.String[0] : literal.Char])
+            {
+                if (c <= ' ' || c >= frequency.Length || (uint)((c | 0x20) - 'a') <= 'z' - 'a' || (uint)(c - '0') <= '9' - '0')
+                {
+                    return false;
+                }
+
+                literalFrequency += frequency[c];
+            }
+
+            float setFrequency = 0;
+            foreach (char c in setChars)
+            {
+                if (c < frequency.Length)
+                {
+                    setFrequency += frequency[c];
+                }
+            }
+
+            // Require a clear margin: the frequencies are only an approximation of any particular input, and searching
+            // for a set that's only slightly more common than the literal can still be the faster choice.
+            const float MinSetToLiteralFrequencyRatio = 4;
+            return literalFrequency * MinSetToLiteralFrequencyRatio < setFrequency;
         }
     }
 
