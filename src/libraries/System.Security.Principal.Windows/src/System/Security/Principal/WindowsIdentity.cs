@@ -167,9 +167,9 @@ namespace System.Security.Principal
                     // and do the marshalling into this buffer by hand.
                     //
                     int authenticationInfoLength = checked(sizeof(KERB_S4U_LOGON) + upnBytes.Length);
-                    using (SafeNativeMemoryHandle authenticationInfo = SafeNativeMemoryHandle.Alloc(authenticationInfoLength))
+                    KERB_S4U_LOGON* pKerbS4uLogin = (KERB_S4U_LOGON*)NativeMemory.Alloc((nuint)authenticationInfoLength);
+                    try
                     {
-                        KERB_S4U_LOGON* pKerbS4uLogin = (KERB_S4U_LOGON*)(authenticationInfo.DangerousGetHandle());
                         pKerbS4uLogin->MessageType = KERB_LOGON_SUBMIT_TYPE.KerbS4ULogon;
                         pKerbS4uLogin->Flags = KerbS4uLogonFlags.None;
 
@@ -183,17 +183,16 @@ namespace System.Security.Principal
                         pKerbS4uLogin->ClientRealm.Buffer = IntPtr.Zero;
 
                         ushort sourceNameLength = checked((ushort)(sourceName.Length));
-                        using (SafeNativeMemoryHandle sourceNameBuffer = SafeNativeMemoryHandle.Alloc(sourceNameLength))
+                        fixed (byte* pSourceName = sourceName)
                         {
-                            sourceName.CopyTo(new Span<byte>((void*)sourceNameBuffer.DangerousGetHandle(), sourceName.Length));
-                            LSA_STRING lsaOriginName = new LSA_STRING(sourceNameBuffer.DangerousGetHandle(), sourceNameLength);
+                            LSA_STRING lsaOriginName = new LSA_STRING((IntPtr)pSourceName, sourceNameLength);
 
                             int ntStatus = Interop.SspiCli.LsaLogonUser(
                                 lsaHandle,
                                 lsaOriginName,
                                 SECURITY_LOGON_TYPE.Network,
                                 packageId,
-                                authenticationInfo.DangerousGetHandle(),
+                                (IntPtr)pKerbS4uLogin,
                                 authenticationInfoLength,
                                 IntPtr.Zero,
                                 sourceContext,
@@ -224,6 +223,10 @@ namespace System.Security.Principal
 
                             _safeTokenHandle = accessTokenHandle;
                         }
+                    }
+                    finally
+                    {
+                        NativeMemory.Free(pKerbS4uLogin);
                     }
                 }
             }
