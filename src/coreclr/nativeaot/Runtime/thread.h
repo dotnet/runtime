@@ -307,7 +307,6 @@ public:
 
     PInvokeTransitionFrame* GetTransitionFrameForStackTrace();
     PInvokeTransitionFrame* GetTransitionFrameForSampling();
-    void *              GetCurrentThreadPInvokeReturnAddress();
 
     //
     // The set of operations used to support unmanaged code running in cooperative mode
@@ -315,8 +314,8 @@ public:
     void                EnablePreemptiveMode();
     void                DisablePreemptiveMode();
 
-    // Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame
-    // in assembly code. Do not use anywhere else.
+    // Record the managed caller's transition frame for GC allocation helpers that remain in
+    // cooperative mode, so the GC can walk the managed stack. Do not use anywhere else.
     void                SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransitionFrame);
 
     // Setup the m_pDeferredTransitionFrame field for GC helpers entered via regular PInvoke.
