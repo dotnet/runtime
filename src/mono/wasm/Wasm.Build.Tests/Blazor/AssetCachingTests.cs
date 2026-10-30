@@ -301,6 +301,31 @@ public class AssetCachingTests : BlazorWasmTestBase
     {
         string extraProperties = "", extraItems = "", insertAtEnd = "";
         AddCoreClrProjectProperties(ref extraProperties, ref extraItems, ref insertAtEnd);
+        if (IsMonoRuntime)
+        {
+            string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
+            extraProperties += "<UseMonoRuntime>true</UseMonoRuntime>";
+            insertAtEnd +=
+                $$"""
+                <Target Name="_UseCurrentMonoRuntimeForCacheTests" BeforeTargets="ProcessFrameworkReferences"
+                        Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+                    <ItemGroup>
+                        <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                                                 Condition="'%(KnownFrameworkReference.TargetFramework)' == '$(TargetFramework)'">
+                            <LatestRuntimeFrameworkVersion>{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
+                        </KnownFrameworkReference>
+                        <KnownRuntimePack Update="@(KnownRuntimePack)"
+                                          Condition="'%(KnownRuntimePack.TargetFramework)' == '$(TargetFramework)' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">
+                            <LatestRuntimeFrameworkVersion>{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
+                        </KnownRuntimePack>
+                        <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)"
+                                                 Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '$(TargetFramework)'">
+                            <WebAssemblySdkPackVersion>{{runtimePackVersion}}</WebAssemblySdkPackVersion>
+                        </KnownWebAssemblySdkPack>
+                    </ItemGroup>
+                </Target>
+                """;
+        }
         UpdateProjectFile(
             Path.GetFullPath(Path.Combine(_projectDir, "..", "BlazorWebWasm.Client", "BlazorWebWasm.Client.csproj")),
             runAnalyzers: true, extraProperties, extraItems, insertAtEnd);
