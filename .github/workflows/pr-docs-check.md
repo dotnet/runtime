@@ -8,13 +8,6 @@ description: >
 max-turns: 50
 
 on:
-  pull_request_target:
-    types: [closed]
-    branches: [main]
-    acknowledge-risk: true
-    allowed-checkouts:
-      - repository: dotnet/docs
-        ref: main
   workflow_dispatch:
     inputs:
       source_repository:
