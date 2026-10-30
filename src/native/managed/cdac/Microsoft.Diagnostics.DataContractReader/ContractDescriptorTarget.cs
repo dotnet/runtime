@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -37,7 +38,11 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     private readonly Configuration _config;
     private readonly TargetPointer _runtimeImageBase;
-    private readonly PageCache _pageCache;
+    private readonly PageCache? _pageCache;
+
+    [FeatureSwitchDefinition("Microsoft.Diagnostics.DataContractReader.PageCache.Enabled")]
+    private static bool IsPageCacheEnabled { get; } =
+        !AppContext.TryGetSwitch("Microsoft.Diagnostics.DataContractReader.PageCache.Enabled", out bool enabled) || enabled;
 
     private DataTargetDelegates _dataTargetDelegates;
 
@@ -154,8 +159,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         _config = mainDescriptor.Config;
         _runtimeImageBase = runtimeImageBase;
-        _dataTargetDelegates = dataTargetDelegates.WithPageCache(out PageCache pageCache);
-        _pageCache = pageCache;
+        _dataTargetDelegates = dataTargetDelegates;
+        if (IsPageCacheEnabled)
+        {
+            _dataTargetDelegates = dataTargetDelegates.WithPageCache(out PageCache pageCache);
+            _pageCache = pageCache;
+        }
 
         AddDescriptor(mainDescriptor);
         BuildDescriptors(forceBuild: true);
@@ -202,7 +211,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override void Flush(FlushScope scope)
     {
-        _pageCache.Clear();
+        _pageCache?.Clear();
         base.Flush(scope);
 
         BuildDescriptors();
@@ -1043,10 +1052,16 @@ public sealed unsafe class ContractDescriptorTarget : Target
         }
     }
 
-    private sealed class PageCache(ReadFromTargetDelegate reader, WriteToTargetDelegate writer)
+    private sealed class PageCache
     {
-        private const int PageSize = 4096;
-        private const int PageCount = 32;
+        private const int DefaultPageSize = 4096;
+        private const int DefaultPageCount = 32;
+        private const string PageSizeSetting = "Microsoft.Diagnostics.DataContractReader.PageCache.PageSize";
+        private const string PageCountSetting = "Microsoft.Diagnostics.DataContractReader.PageCache.PageCount";
+
+        private readonly ReadFromTargetDelegate _reader;
+        private readonly WriteToTargetDelegate _writer;
+        private readonly int _pageSize;
 
         private struct Page
         {
@@ -1054,38 +1069,70 @@ public sealed unsafe class ContractDescriptorTarget : Target
             public bool Available;
         }
 
-        private readonly Dictionary<ulong, int> _pageIndices = new(PageCount);
-        private readonly Page[] _pages = new Page[PageCount];
-        private readonly byte[] _data = new byte[PageCount * PageSize];
+        private readonly Dictionary<ulong, int> _pageIndices;
+        private readonly Page[] _pages;
+        private readonly byte[] _data;
         private int _nextPage;
+
+        public PageCache(ReadFromTargetDelegate reader, WriteToTargetDelegate writer)
+        {
+            _reader = reader;
+            _writer = writer;
+            _pageSize = ReadPositiveInt32Setting(PageSizeSetting, DefaultPageSize);
+            if (!int.IsPow2(_pageSize))
+                throw new ArgumentOutOfRangeException(PageSizeSetting, _pageSize, null);
+
+            int pageCount = ReadPositiveInt32Setting(PageCountSetting, DefaultPageCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(pageCount, Array.MaxLength / _pageSize, PageCountSetting);
+            _pageIndices = new(pageCount);
+            _pages = new Page[pageCount];
+            _data = new byte[pageCount * _pageSize];
+        }
+
+        private static int ReadPositiveInt32Setting(string name, int defaultValue)
+        {
+            object? value = AppContext.GetData(name);
+            int result = value switch
+            {
+                null => defaultValue,
+                int integer => integer,
+                uint integer when integer <= int.MaxValue => (int)integer,
+                string text when int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int integer) => integer,
+                _ => throw new ArgumentOutOfRangeException(name, value, null)
+            };
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(result, name);
+            return result;
+        }
 
         public int Read(ulong address, Span<byte> buffer)
         {
-            int offset = (int)(address & (PageSize - 1));
+            int offset = (int)(address & (uint)(_pageSize - 1));
             // Leave large, empty, and boundary-crossing reads to the underlying reader.
-            if (buffer.IsEmpty || buffer.Length > PageSize - offset)
-                return reader(address, buffer);
+            if (buffer.IsEmpty || buffer.Length > _pageSize - offset)
+                return _reader(address, buffer);
 
-            ulong pageAddress = address & ~(ulong)(PageSize - 1);
+            ulong pageAddress = address & ~(ulong)(_pageSize - 1);
             if (!_pageIndices.TryGetValue(pageAddress, out int pageIndex))
             {
                 pageIndex = _nextPage;
                 ref Page page = ref _pages[pageIndex];
                 // Remove the old mapping before a failed read can overwrite its bytes.
-                if (_pageIndices.Count == PageCount)
+                if (_pageIndices.Count == _pages.Length)
                     _pageIndices.Remove(page.Address);
 
                 page.Available = false;
-                page.Available = reader(pageAddress, _data.AsSpan(pageIndex * PageSize, PageSize)) >= 0;
+                page.Available = _reader(pageAddress, _data.AsSpan(pageIndex * _pageSize, _pageSize)) >= 0;
                 page.Address = pageAddress;
                 _pageIndices.Add(pageAddress, pageIndex);
-                _nextPage = (pageIndex + 1) % PageCount;
+                _nextPage = pageIndex + 1;
+                if (_nextPage == _pages.Length)
+                    _nextPage = 0;
             }
 
             if (!_pages[pageIndex].Available)
-                return reader(address, buffer);
+                return _reader(address, buffer);
 
-            _data.AsSpan(pageIndex * PageSize + offset, buffer.Length).CopyTo(buffer);
+            _data.AsSpan(pageIndex * _pageSize + offset, buffer.Length).CopyTo(buffer);
             return 0;
         }
 
@@ -1093,7 +1140,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         {
             // A failed write can still modify target memory.
             Clear();
-            return writer(address, buffer);
+            return _writer(address, buffer);
         }
 
         public void Clear()

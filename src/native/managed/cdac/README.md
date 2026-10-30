@@ -52,6 +52,41 @@ ISOSDacInterface* / IXCLRDataProcess (COM-style API surface)
 | `mscordaccore_enummemory` | Dump enumerator entrypoint; produces `mscordaccore` |
 | `tests` | Unit tests with mock memory infrastructure |
 
+## Target memory page cache
+
+The `Microsoft.Diagnostics.DataContractReader` managed package enables a per-target
+memory cache by default, with 32 pages of 4096 bytes each. A consuming application
+can configure it directly in its project file using `RuntimeHostConfigurationOption`:
+
+```xml
+<ItemGroup>
+  <RuntimeHostConfigurationOption
+      Include="Microsoft.Diagnostics.DataContractReader.PageCache.Enabled"
+      Value="true"
+      Trim="true" />
+  <RuntimeHostConfigurationOption
+      Include="Microsoft.Diagnostics.DataContractReader.PageCache.PageSize"
+      Value="4096" />
+  <RuntimeHostConfigurationOption
+      Include="Microsoft.Diagnostics.DataContractReader.PageCache.PageCount"
+      Value="32" />
+</ItemGroup>
+```
+
+Omitted settings use the defaults shown above. The enable switch is captured
+on first use of `ContractDescriptorTarget`; dimensions are captured
+when each cache is constructed. Page size must be a positive power of two, page
+count must be positive, and their product must fit in a managed byte array.
+Invalid dimensions throw `ArgumentOutOfRangeException` identifying the setting.
+When disabled, reads and writes go directly to the host without allocating cache
+storage; dimension settings are ignored.
+
+The native `mscordaccore_universal` and `mscordaccore_enummemory` projects define
+the same configuration items directly. Change their values in the publishing
+project to tune a native DAC build. NativeAOT embeds the settings in the native
+library at publish time; a debugger's runtime configuration does not reconfigure
+a separately published DAC.
+
 ## Contract specifications
 
 Each contract has a specification document in

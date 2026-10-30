@@ -55,6 +55,16 @@
                                     Condition="'$(_TargetHostArchitecture)' != 'x86'" />
   </ItemGroup>
 
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.PageCache.Enabled"
+                                    Value="true"
+                                    Trim="true" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.PageCache.PageCount"
+                                    Value="32" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.PageCache.PageSize"
+                                    Value="4096" />
+  </ItemGroup>
+
   <!-- Custom Windows Version Resource is required. -->
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
     <Win32Resource>$(IntermediateOutputPath)mscordaccore.version.res</Win32Resource>
