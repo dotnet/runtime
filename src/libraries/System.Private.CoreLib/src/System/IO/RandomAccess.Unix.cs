@@ -47,7 +47,7 @@ namespace System.IO
                         return TryCompleteReadAt(handle, useOffset: false, offset, buffer, out readResult, out errorInfo, strategy);
                     }
 
-                    strategy?.OnIncompleteOperation(buffer.Length - Math.Max(readResult, 0), 0);
+                    strategy?.OnIncompleteOperation(buffer.Length, Math.Max(readResult, 0));
                     return true;
                 }
 
@@ -96,7 +96,7 @@ namespace System.IO
             }
 
             errorInfo = default;
-            strategy?.OnIncompleteOperation(buffer.Length - readResult, 0);
+            strategy?.OnIncompleteOperation(buffer.Length, readResult);
             return true;
         }
 
@@ -319,7 +319,7 @@ namespace System.IO
                         return TryCompleteWriteAt(handle, useOffset: false, offset, buffer, out bytesWritten, out errorInfo, strategy);
                     }
 
-                    strategy?.OnIncompleteOperation(buffer.Length - bytesWritten, 0);
+                    strategy?.OnIncompleteOperation(buffer.Length, bytesWritten);
                     return true;
                 }
 
