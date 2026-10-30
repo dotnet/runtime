@@ -51,10 +51,6 @@ void PEImage::Startup()
     PEImageLayout::Startup();
 #endif // TARGET_WASM
 
-#ifdef TARGET_WASM
-    PEImageLayout::Startup();
-#endif // TARGET_WASM
-
     _ASSERTE(CheckStartup());
 }
 
@@ -97,8 +93,14 @@ PEImage::~PEImage()
 
     if (m_pLayoutLock)
         delete m_pLayoutLock;
-    if(m_hFile!=INVALID_HANDLE_VALUE)
-        CloseHandle(m_hFile);
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
+    {
+        if (!VMToOSInterface::CloseFile(m_hFile))
+        {
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not close file (0x%08x)\n",
+                static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
+        }
+    }
 
     for (unsigned int i=0;i<ARRAY_SIZE(m_pLayouts);i++)
     {
@@ -551,7 +553,7 @@ PEImage::PEImage(const WCHAR* path):
     m_refCount(1),
     m_bInHashMap(FALSE),
     m_probeExtensionResult(),
-    m_hFile(INVALID_HANDLE_VALUE),
+    m_hFile(VMToOSInterface::InvalidFileHandle),
     m_dwPEKind(0),
     m_dwMachine(0),
     m_pMDImport(NULL)
@@ -762,7 +764,7 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
 }
 #endif // !TARGET_UNIX
 
-HANDLE PEImage::GetFileHandle()
+VMToOSInterface::MemoryMapHandle PEImage::GetFileHandle()
 {
     CONTRACTL
     {
@@ -771,14 +773,11 @@ HANDLE PEImage::GetFileHandle()
     }
     CONTRACTL_END;
 
-    if (m_hFile!=INVALID_HANDLE_VALUE)
-        return m_hFile;
-
-    HRESULT hr = TryOpenFile(/*takeLock*/ false);
-
-    if (m_hFile == INVALID_HANDLE_VALUE)
+    if (m_hFile == VMToOSInterface::InvalidFileHandle)
     {
-        EEFileLoadException::Throw(GetPathToLoad(), hr);
+        HRESULT hr = TryOpenFile(/* takeLock */ false);
+        if (FAILED(hr))
+            EEFileLoadException::Throw(GetPathToLoad(), hr);
     }
 
     return m_hFile;
@@ -792,30 +791,17 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
 
     SimpleWriteLockHolder lock(m_pLayoutLock, takeLock);
 
-    if (m_hFile != INVALID_HANDLE_VALUE)
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
         return S_OK;
 
     ErrorModeHolder mode{};
-    m_hFile = WszCreateFile((LPCWSTR)GetPathToLoad(),
-                          GENERIC_READ
-#if TARGET_WINDOWS
-                          // the file may have native code sections, make sure we are allowed to execute the file
-                          | GENERIC_EXECUTE
-#endif
-                          ,
-                          FILE_SHARE_READ|FILE_SHARE_DELETE,
-                          NULL,
-                          OPEN_EXISTING,
-                          FILE_ATTRIBUTE_NORMAL,
-                          NULL);
-    if (m_hFile != INVALID_HANDLE_VALUE)
-            return S_OK;
+    m_hFile = VMToOSInterface::OpenFile(
+        reinterpret_cast<const char16_t*>(static_cast<LPCWSTR>(GetPathToLoad())));
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
+        return S_OK;
 
-    DWORD dwLastError = GetLastError();
-    if (dwLastError != 0)
-        return HRESULT_FROM_WIN32(dwLastError);
-
-    return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+    HRESULT error = VMToOSInterface::GetLastMemoryMappingError();
+    return error != S_OK ? error : HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 }
 
 #endif // !DACCESS_COMPILE

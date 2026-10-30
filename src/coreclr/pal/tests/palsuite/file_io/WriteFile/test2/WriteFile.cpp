@@ -14,6 +14,8 @@
 
 
 #include <palsuite.h>
+#include <sys/mman.h>
+
 
 
 char* writeBuffer_WriteFile_test2;
@@ -68,28 +70,25 @@ PALTEST(file_io_WriteFile_test2_paltest_writefile_test2, "file_io/WriteFile/test
     const int BUFFER_SIZE = 2 * PAGESIZE;
     int j;
     BOOL bRc = FALSE;
-    DWORD oldProt;
 
     if (0 != PAL_Initialize(argc,argv))
     {
         return FAIL;
     }
 
-    /* allocate read-write memery for writeBuffer_WriteFile_test2 */
-    if (!(writeBuffer_WriteFile_test2 = (char*) VirtualAlloc(NULL, BUFFER_SIZE, MEM_COMMIT,
-                                             PAGE_READWRITE)))
+    writeBuffer_WriteFile_test2 = (char*)mmap(NULL, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    if (writeBuffer_WriteFile_test2 == MAP_FAILED)
     {
-        Fail("VirtualAlloc failed: GetLastError returns %d\n", GetLastError());
+        Fail("mmap failed for writeBuffer\n");
         return FAIL;
     }
 
     memset((void*) writeBuffer_WriteFile_test2, '.', BUFFER_SIZE);
     strcpy(writeBuffer_WriteFile_test2, testString);
 
-    /* write protect the second page of writeBuffer_WriteFile_test2 */
-    if (!VirtualProtect(&writeBuffer_WriteFile_test2[PAGESIZE], PAGESIZE, PAGE_NOACCESS, &oldProt))
+    if (mprotect(&writeBuffer_WriteFile_test2[PAGESIZE], PAGESIZE, PROT_NONE) != 0)
     {
-        Fail("VirtualProtect failed: GetLastError returns %d\n", GetLastError());
+        Fail("mprotect failed for writeBuffer\n");
         return FAIL;
     }
 
@@ -102,6 +101,7 @@ PALTEST(file_io_WriteFile_test2_paltest_writefile_test2, "file_io/WriteFile/test
         }
     }
 
+    munmap(writeBuffer_WriteFile_test2, BUFFER_SIZE);
     PAL_Terminate();
     return PASS;
 }

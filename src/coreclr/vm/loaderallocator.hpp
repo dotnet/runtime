@@ -314,6 +314,7 @@ protected:
 
     DAC_ALIGNAS(UINT64) // Align the first member to alignof(m_nLoaderAllocator). Windows does this by default, force Linux to match.
     BYTE *              m_InitialReservedMemForLoaderHeaps;
+    size_t              m_InitialReservedMemForLoaderHeapsSize;
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
 #ifdef HAS_FIXUP_PRECODE

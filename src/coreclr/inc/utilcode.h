@@ -200,31 +200,6 @@ typedef LPSTR   LPUTF8;
 // Under normal circumstances, we should never get anywhere near this limit.
 #define MAKE_MAX_LENGTH 0x1fffff00
 
-#ifndef MAKE_TOOLONGACTION
-#define MAKE_TOOLONGACTION ThrowHR(COR_E_OVERFLOW)
-#endif
-
-#ifndef MAKE_TRANSLATIONFAILED
-#define MAKE_TRANSLATIONFAILED ThrowWin32(ERROR_NO_UNICODE_TRANSLATION)
-#endif
-
-// This version does best fit character mapping and also allows the use
-// of the default char ('?') for any Unicode character that isn't
-// representable.  This is reasonable for writing to the console, but
-// shouldn't be used for most string conversions.
-#define MAKE_MULTIBYTE_FROMWIDE_BESTFIT(ptrname, widestr, codepage) \
-    int __l##ptrname = (int)u16_strlen(widestr);        \
-    if (__l##ptrname > MAKE_MAX_LENGTH)         \
-        MAKE_TOOLONGACTION;                     \
-    __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
-    CQuickBytes __CQuickBytes##ptrname; \
-    __CQuickBytes##ptrname.AllocThrows(__l##ptrname); \
-    DWORD __cBytes##ptrname = WideCharToMultiByte(codepage, 0, widestr, -1, (LPSTR)__CQuickBytes##ptrname.Ptr(), __l##ptrname, NULL, NULL); \
-    if (__cBytes##ptrname == 0 && __l##ptrname != 0) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    LPSTR ptrname = (LPSTR)__CQuickBytes##ptrname.Ptr()
-
 // ptrname will be deleted when it goes out of scope.
 #define MAKE_UTF8PTR_FROMWIDE(ptrname, widestr) CQuickBytes _##ptrname; _##ptrname.ConvertUnicode_Utf8(widestr); LPSTR ptrname = (LPSTR) _##ptrname.Ptr();
 
@@ -474,16 +449,6 @@ inline BOOL RunningInWow64()
 #else
 BOOL RunningInWow64();
 #endif
-
-//
-// Allocate free memory within the range [pMinAddr..pMaxAddr] using
-// ClrVirtualQuery to find free memory and ClrVirtualAlloc to allocate it.
-//
-BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
-                                   const BYTE *pMaxAddr,
-                                   SIZE_T dwSize,
-                                   DWORD flAllocationType,
-                                   DWORD flProtect);
 
 #ifdef HOST_WINDOWS
 
