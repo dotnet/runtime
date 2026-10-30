@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
@@ -102,6 +103,24 @@ namespace TypeSystemTests
 
             Assert.False(isCriticalHandle ? InteropTypes.IsCriticalHandle(_context, type) : InteropTypes.IsSafeHandle(_context, type));
             Assert.Throws<InvalidOperationException>(() => isCriticalHandle ? InteropTypes.GetCriticalHandle(_context) : InteropTypes.GetSafeHandle(_context));
+        }
+
+        [Theory]
+        [InlineData("System.Runtime.InteropServices", "SafeHandle", true, false)]
+        [InlineData("Microsoft.Win32.SafeHandles", "SafeHandleZeroOrMinusOneIsInvalid", true, false)]
+        [InlineData("System.Runtime.InteropServices", "CriticalHandle", false, true)]
+        [InlineData("Microsoft.Win32.SafeHandles", "CriticalHandleZeroOrMinusOneIsInvalid", false, true)]
+        [InlineData("System", "Object", false, false)]
+        public void IsHandleType_PresentHandleTypes_ClassifiesAncestry(string typeNamespace, string typeName, bool isSafeHandle, bool isCriticalHandle)
+        {
+            var context = new TestTypeSystemContext(TargetArchitecture.X64);
+            using Stream coreLibStream = File.OpenRead(typeof(object).Assembly.Location);
+            ModuleDesc coreLib = context.CreateModuleForSimpleName("System.Private.CoreLib", coreLibStream);
+            context.SetSystemModule(coreLib);
+            TypeDesc type = coreLib.GetType(Encoding.UTF8.GetBytes(typeNamespace), Encoding.UTF8.GetBytes(typeName));
+
+            Assert.Equal(isSafeHandle, InteropTypes.IsSafeHandle(context, type));
+            Assert.Equal(isCriticalHandle, InteropTypes.IsCriticalHandle(context, type));
         }
 
         [Theory]
