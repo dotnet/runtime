@@ -211,7 +211,6 @@ public:
     ~ForbidGC();
 };
 
-        // FC_COMMON_PROLOG is used for both FCalls and HCalls
 #define FC_COMMON_PROLOG()                      \
         /* The following line has to be first.  We do not want to trash last error */ \
         DWORD __lastError = ::GetLastError();   \
@@ -279,12 +278,15 @@ public:
 
 #define FCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { FCIMPL_PROLOG(funcname)
 #define FCIMPL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(int /* EAX */, int /* EDX */, a1) { FCIMPL_PROLOG(funcname)
+#define FCIMPL1_RAW(rettype, funcname, a1) rettype F_CALL_CONV funcname(int /* EAX */, int /* EDX */, a1) {
 #define FCIMPL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(int /* EAX */, int /* EDX */, int /* ECX */, a1) { FCIMPL_PROLOG(funcname)
 #define FCIMPL2(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1) { FCIMPL_PROLOG(funcname)
+#define FCIMPL2_RAW(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1) {
 #define FCIMPL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(int /* EAX */, int /* EDX */, int /* ECX */, a2, a1) { FCIMPL_PROLOG(funcname)
 #define FCIMPL2_VI(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(int /* EAX */, int /* EDX */, a2, a1) { FCIMPL_PROLOG(funcname)
 #define FCIMPL2_IV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(int /* EAX */, int /* EDX */, a1, a2) { FCIMPL_PROLOG(funcname)
 #define FCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a3) { FCIMPL_PROLOG(funcname)
+#define FCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a3) {
 #define FCIMPL3_IIV(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a3) { FCIMPL_PROLOG(funcname)
 #define FCIMPL3_VII(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(int /* EAX */, a3, a2, a1) { FCIMPL_PROLOG(funcname)
 #define FCIMPL3_IVV(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(int /* EAX */, int /* EDX */, a1, a3, a2) { FCIMPL_PROLOG(funcname)
@@ -303,10 +305,12 @@ public:
     rettype F_CALL_CONV funcname() { FCIMPL_PROLOG(funcname)
 #define FCIMPL1(rettype, funcname, a1) FCSIGCHECK(funcname, #rettype "," #a1) \
     rettype F_CALL_CONV funcname(a1) { FCIMPL_PROLOG(funcname)
+#define FCIMPL1_RAW(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) {
 #define FCIMPL1_V(rettype, funcname, a1) FCSIGCHECK(funcname, #rettype "," "V" #a1) \
     rettype F_CALL_CONV funcname(a1) { FCIMPL_PROLOG(funcname)
 #define FCIMPL2(rettype, funcname, a1, a2) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2) \
     rettype F_CALL_CONV funcname(a1, a2) { FCIMPL_PROLOG(funcname)
+#define FCIMPL2_RAW(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2) {
 #define FCIMPL2VA(rettype, funcname, a1, a2) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2 "," "...") \
     rettype F_CALL_VA_CONV funcname(a1, a2, ...) { FCIMPL_PROLOG(funcname)
 #define FCIMPL2_VV(rettype, funcname, a1, a2) FCSIGCHECK(funcname, #rettype "," "V" #a1 "," "V" #a2) \
@@ -317,6 +321,7 @@ public:
     rettype F_CALL_CONV funcname(a1, a2) { FCIMPL_PROLOG(funcname)
 #define FCIMPL3(rettype, funcname, a1, a2, a3) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2 "," #a3) \
     rettype F_CALL_CONV funcname(a1, a2, a3) { FCIMPL_PROLOG(funcname)
+#define FCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) {
 #define FCIMPL3_IIV(rettype, funcname, a1, a2, a3) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2 "," "V" #a3) \
     rettype F_CALL_CONV funcname(a1, a2, a3) { FCIMPL_PROLOG(funcname)
 #define FCIMPL3_VII(rettype, funcname, a1, a2, a3) FCSIGCHECK(funcname, #rettype "," "V" #a1 "," #a2 "," #a3) \
@@ -413,15 +418,16 @@ public:
 
 #define FCIMPL0(rettype, funcname) WASM_CALLABLE_FUNC_1(rettype, funcname, PCODE portableEntryPointContext) { FCIMPL_PROLOG(funcname)
 #define FCIMPL1(rettype, funcname, a1) WASM_CALLABLE_FUNC_2(rettype, funcname, a1, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL1_RAW(rettype, funcname, a1) rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext); WASM_CALLABLE_FUNC_2(rettype, funcname, a1, PCODE portableEntryPointContext) {
 #define FCIMPL1_V(rettype, funcname, a1) WASM_CALLABLE_FUNC_2(rettype, funcname, a1, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL2(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
-#define FCIMPL2_RAW(rettype, funcname, a1, a2) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2) \
-    rettype F_CALL_CONV funcname(a1, a2) { FCIMPL_PROLOG(funcname)
+#define FCIMPL2_RAW(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext); WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {
 #define FCIMPL2VA(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL2_VV(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL2_VI(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL2_IV(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL3(rettype, funcname, a1, a2, a3) WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext); WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {
 #define FCIMPL3_IIV(rettype, funcname, a1, a2, a3) WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL3_IVV(rettype, funcname, a1, a2, a3) WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL3_VII(rettype, funcname, a1, a2, a3) WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
@@ -438,13 +444,16 @@ public:
 
 #define FCIMPL0(rettype, funcname) rettype funcname() { FCIMPL_PROLOG(funcname)
 #define FCIMPL1(rettype, funcname, a1) rettype funcname(a1) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL1_RAW(rettype, funcname, a1) rettype funcname(a1) {
 #define FCIMPL1_V(rettype, funcname, a1) rettype funcname(a1) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL2(rettype, funcname, a1, a2) rettype funcname(a1, a2) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL2_RAW(rettype, funcname, a1, a2) rettype funcname(a1, a2) {
 #define FCIMPL2VA(rettype, funcname, a1, a2) rettype funcname(a1, a2, ...) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL2_VV(rettype, funcname, a1, a2) rettype funcname(a1, a2) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL2_VI(rettype, funcname, a1, a2) rettype funcname(a1, a2) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL2_IV(rettype, funcname, a1, a2) rettype funcname(a1, a2) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL3(rettype, funcname, a1, a2, a3) rettype funcname(a1, a2, a3) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype funcname(a1, a2, a3) {
 #define FCIMPL3_IIV(rettype, funcname, a1, a2, a3) rettype funcname(a1, a2, a3) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL3_IVV(rettype, funcname, a1, a2, a3) rettype funcname(a1, a2, a3) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL3_VII(rettype, funcname, a1, a2, a3) rettype funcname(a1, a2, a3) {  FCIMPL_PROLOG(funcname)
@@ -464,67 +473,6 @@ public:
 //==============================================================================================
 
 #define FCIMPLEND }
-
-#define HCIMPL_PROLOG(funcname) FC_COMMON_PROLOG()
-
-// HCIMPL macros are used to implement JIT helpers. The only difference is that
-// HCIMPL methods are not mapped to a managed method in CoreLib in ecalllist.h.
-
-#ifdef SWIZZLE_STKARG_ORDER
-#ifdef SWIZZLE_REGARG_ORDER
-
-#define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname)
-#define HCIMPL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(int /* EAX */, int /* EDX */, a1) { HCIMPL_PROLOG(funcname)
-#define HCIMPL1_RAW(rettype, funcname, a1) rettype F_CALL_CONV funcname(int /* EAX */, int /* EDX */, a1) {
-#define HCIMPL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(int /* EAX */, int /* EDX */, int /* ECX */, a1) { HCIMPL_PROLOG(funcname)
-#define HCIMPL2(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1) { HCIMPL_PROLOG(funcname)
-#define HCIMPL2_RAW(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1) {
-#define HCIMPL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(int /* EAX */, int /* EDX */, int /* ECX */, a2, a1) { HCIMPL_PROLOG(funcname)
-#define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a3) { HCIMPL_PROLOG(funcname)
-#define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a3) {
-#else // SWIZZLE_REGARG_ORDER
-
-#define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname)
-#define HCIMPL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) { HCIMPL_PROLOG(funcname)
-#define HCIMPL1_RAW(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) {
-#define HCIMPL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) { HCIMPL_PROLOG(funcname)
-#define HCIMPL2(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2) { HCIMPL_PROLOG(funcname)
-#define HCIMPL2_RAW(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2) {
-#define HCIMPL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a2, a1) { HCIMPL_PROLOG(funcname)
-#define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) { HCIMPL_PROLOG(funcname)
-#define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) {
-#endif // !SWIZZLE_REGARG_ORDER
-#elif defined(TARGET_WASM)
-
-#define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, PCODE portableEntryPointContext); WASM_CALLABLE_FUNC_1(rettype, funcname, PCODE portableEntryPointContext) { HCIMPL_PROLOG(funcname)
-#define HCIMPL1(rettype, funcname, a1) rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext); WASM_CALLABLE_FUNC_2(rettype, funcname, a1, PCODE portableEntryPointContext) { HCIMPL_PROLOG(funcname)
-#define HCIMPL1_RAW(rettype, funcname, a1) rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext); WASM_CALLABLE_FUNC_2(rettype, funcname, a1, PCODE portableEntryPointContext) {
-#define HCIMPL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext); WASM_CALLABLE_FUNC_2(rettype, funcname, a1, PCODE portableEntryPointContext) { HCIMPL_PROLOG(funcname)
-#define HCIMPL2(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext); WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) { HCIMPL_PROLOG(funcname)
-#define HCIMPL2_RAW(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext); WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {
-#define HCIMPL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext); WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) { HCIMPL_PROLOG(funcname)
-#define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext); WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) { HCIMPL_PROLOG(funcname)
-#define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext); WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {
-
-#else // SWIZZLE_STKARG_ORDER
-
-#define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname)
-#define HCIMPL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) { HCIMPL_PROLOG(funcname)
-#define HCIMPL1_RAW(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) {
-#define HCIMPL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1) { HCIMPL_PROLOG(funcname)
-#define HCIMPL2(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2) { HCIMPL_PROLOG(funcname)
-#define HCIMPL2_RAW(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2) {
-#define HCIMPL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2) { HCIMPL_PROLOG(funcname)
-#define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) { HCIMPL_PROLOG(funcname)
-#define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) {
-#endif // !SWIZZLE_STKARG_ORDER
-
-#define HCIMPLEND_RAW }
-#define HCIMPLEND }
-
-#ifndef FCIMPL2_RAW
-#define FCIMPL2_RAW(rettype, funcname, a1, a2) FCIMPL2(rettype, funcname, a1, a2)
-#endif
 
 // The managed calling convention expects returned small types (e.g. bool) to be
 // widened to 32-bit on return. The C/C++ calling convention does not guarantee returned

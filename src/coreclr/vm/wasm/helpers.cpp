@@ -501,7 +501,7 @@ EXTERN_C bool SamplingProfiler_ShouldSample();
 EXTERN_C void SamplingProfiler_CollectSample();
 #endif
 
-HCIMPL0(void, JIT_WasmProfSamplepoint)
+FCIMPL0(void, JIT_WasmProfSamplepoint)
 {
     FCALL_CONTRACT;
 
@@ -528,7 +528,7 @@ HCIMPL0(void, JIT_WasmProfSamplepoint)
     UNREFERENCED_PARAMETER(callersStackPointer);
 #endif // FEATURE_PERFTRACING && PERFTRACING_DISABLE_THREADS
 }
-HCIMPLEND
+FCIMPLEND
 
 void InitJITHelpers1()
 {
