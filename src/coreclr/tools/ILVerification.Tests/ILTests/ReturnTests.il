@@ -543,6 +543,159 @@
     }
 }
 
+.class interface public abstract auto ansi sealed IOpus2e46Sealed
+{
+    .method public hidebysig newslot abstract virtual instance int32& Borrow(int32& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.ScopedRefAttribute::.ctor() = ( 01 00 00 00 )
+    }
+
+    .method public hidebysig newslot abstract virtual instance void Read([in] object& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+    }
+}
+
+.class interface public abstract auto ansi IOpus2e46Final
+{
+    .method public hidebysig newslot virtual final instance int32& Borrow(int32& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.ScopedRefAttribute::.ctor() = ( 01 00 00 00 )
+        ldsflda int32 Opus2e46Holder::Value
+        ret
+    }
+}
+
+.class public auto ansi abstract sealed Opus2e46Holder extends [System.Runtime]System.Object
+{
+    .field public static int32 Value
+}
+
+.class public auto ansi sealed Opus2e46Implementation extends [System.Runtime]System.Object
+        implements IOpus2e46Sealed, IOpus2e46Final
+{
+    .method public hidebysig newslot virtual final instance int32& Borrow(int32& input) cil managed
+    {
+        ldarg.1
+        ret
+    }
+
+    .method public hidebysig newslot virtual final instance void Read(object& input) cil managed
+    {
+        ldarg.1
+        newobj instance void [System.Runtime]System.Object::.ctor()
+        stind.ref
+        ret
+    }
+}
+
+.class public auto ansi sealed Opus2e46ReadonlyDelegate extends [System.Runtime]System.MulticastDelegate
+{
+    .method public hidebysig specialname rtspecialname instance void .ctor(object target, native int fn) runtime managed {}
+    .method public hidebysig newslot virtual instance void Invoke([in] object& input) runtime managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+    }
+}
+
+.class public sequential ansi sealed beforefieldinit Opus2e46ValueImplementation
+        extends [System.Runtime]System.ValueType implements IOpus2e46Sealed
+{
+    .method public hidebysig newslot virtual final instance int32& Borrow(int32& input) cil managed
+    {
+        ldarg.1
+        ret
+    }
+
+    .method public hidebysig newslot virtual final instance void Read(object& input) cil managed
+    {
+        ret
+    }
+}
+
+.class public sequential ansi sealed beforefieldinit Opus2e46MalformedCarrier extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+    .field public int32& Item
+
+    .method public hidebysig instance void SetBadToken(int32& input) cil managed
+    {
+        .emitbyte 0x02
+        .emitbyte 0x03
+        .emitbyte 0x7D
+        .emitbyte 0xFF
+        .emitbyte 0xFF
+        .emitbyte 0x00
+        .emitbyte 0x04
+        .emitbyte 0x2A
+    }
+
+    .method public hidebysig instance void SetMissingField(int32& input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stfld int32& Opus2e46MalformedCarrier::Missing
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit Opus2e46ReturnBase extends [System.Runtime]System.Object
+{
+    .method public hidebysig newslot virtual instance object& Reference(object[] input) cil managed
+    {
+        ldarg.1
+        ldc.i4.0
+        ldelema [System.Runtime]System.Object
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit Opus2e46ReturnOverride extends Opus2e46ReturnBase
+{
+    .method public hidebysig virtual instance object& Reference(object[] input) cil managed
+    {
+        .param [0]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.1
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        ret
+    }
+
+    .method public hidebysig instance object& 'special.Opus2e46VirtualAttributeReturn.Reference_Invalid_StackUnexpected'(object[] input) cil managed { ret }
+
+    .method public hidebysig newslot virtual instance object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) RequiredReference(object[] input) cil managed
+    {
+        .param [0]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.1
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        ret
+    }
+
+    .method public hidebysig instance object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) 'special.Opus2e46VirtualRequiredReturn.RequiredReference_Valid'(object[] input) cil managed { ret }
+
+    .method public hidebysig instance object& NonvirtualReference(object[] input) cil managed
+    {
+        .param [0]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.1
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        ret
+    }
+
+    .method public hidebysig instance object& 'special.Opus2e46NonvirtualAttributeReturn.NonvirtualReference_Valid'(object[] input) cil managed { ret }
+}
+
 .class public auto ansi beforefieldinit ReturnTestsType
         extends [System.Runtime]System.Object
 {
@@ -551,6 +704,82 @@
     .field private static valuetype RefCarrier invalidStaticCarrier
 
     .field private valuetype Struct instanceStruct
+
+    .method public hidebysig static int32& Return.Opus2e46EscapeSealedInterface_Invalid_Unverifiable(class IOpus2e46Sealed target) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        ldloca.s 0
+        callvirt instance int32& IOpus2e46Sealed::Borrow(int32&)
+        ret
+    }
+
+    .method public hidebysig static int32& Return.Opus2e46EscapeFinalInterface_Invalid_Unverifiable(class IOpus2e46Final target) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        ldloca.s 0
+        callvirt instance int32& IOpus2e46Final::Borrow(int32&)
+        ret
+    }
+
+    .method public hidebysig static void Return.Opus2e46ReadonlySealedInterface_Invalid_StackUnexpected(class IOpus2e46Sealed target, object[] input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        callvirt instance void IOpus2e46Sealed::Read(object&)
+        ret
+    }
+
+    .method public hidebysig static class Opus2e46ReadonlyDelegate Return.Opus2e46DelegateSealedInterface_Invalid_DelegateCtor(class IOpus2e46Sealed target) cil managed
+    {
+        ldarg.0
+        dup
+        ldvirtftn instance void IOpus2e46Sealed::Read(object&)
+        newobj instance void Opus2e46ReadonlyDelegate::.ctor(object, native int)
+        ret
+    }
+
+    .method public hidebysig static void Return.Opus2e46MalformedSetterCaller_Valid(int32& input) cil managed
+    {
+        .locals init ([0] valuetype Opus2e46MalformedCarrier)
+        ldloca.s 0
+        ldarg.0
+        call instance void Opus2e46MalformedCarrier::SetBadToken(int32&)
+        ret
+    }
+
+    .method public hidebysig static void Return.Opus2e46MissingFieldSetterCaller_Valid(int32& input) cil managed
+    {
+        .locals init ([0] valuetype Opus2e46MalformedCarrier)
+        ldloca.s 0
+        ldarg.0
+        call instance void Opus2e46MalformedCarrier::SetMissingField(int32&)
+        ret
+    }
+
+    .method public hidebysig static int32& Return.Opus2e46ResolvedSealedInterface_Valid(int32& input) cil managed
+    {
+        .locals init ([0] valuetype Opus2e46ValueImplementation)
+        ldloca.s 0
+        ldarg.0
+        constrained. Opus2e46ValueImplementation
+        callvirt instance int32& IOpus2e46Sealed::Borrow(int32&)
+        ret
+    }
+
+    .method public hidebysig static int32& Return.Opus2e46ResolvedInterfaceLocalEscape_Invalid_ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] valuetype Opus2e46ValueImplementation, [1] int32)
+        ldloca.s 0
+        ldloca.s 1
+        constrained. Opus2e46ValueImplementation
+        callvirt instance int32& IOpus2e46Sealed::Borrow(int32&)
+        ret
+    }
 
     .method private hidebysig static void Round776StringPair(string left, string right) cil managed
     {

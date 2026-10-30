@@ -186,7 +186,7 @@ namespace Internal.IL
                     {
                         bool readOnly = HasLifetimeMarker(reader, parameter.GetCustomAttributes(),
                             "System.Runtime.CompilerServices", "IsReadOnlyAttribute", contract);
-                        contract.ReadOnlyReturn |= signature.ReturnType.IsByRef && readOnly;
+                        contract.ReadOnlyReturn |= signature.ReturnType.IsByRef && !method.IsVirtual && readOnly;
                         continue;
                     }
                     int index = parameter.SequenceNumber - 1;
@@ -249,26 +249,37 @@ namespace Internal.IL
                 !HasLifetimeContents(method.OwningType) || signature.Length != 1 || !signature.ReturnType.IsVoid)
                 return null;
 
-            MethodIL body = EcmaMethodIL.Create(definition);
-            if (body is null || body.GetExceptionRegions().Length != 0)
-                return null;
+            try
+            {
+                MethodIL body = EcmaMethodIL.Create(definition);
+                if (body is null || body.GetExceptionRegions().Length != 0)
+                    return null;
 
-            // Only a literal field assignment proves that the call does not read
-            // uninitialized receiver contents or write any sibling fields.
-            const int FieldStoreLength = 8;
-            ReadOnlySpan<byte> il = body.GetILBytes();
-            if (il.Length == FieldStoreLength + 1 && il[0] == (byte)ILOpcode.nop)
-                il = il.Slice(1);
-            if (il.Length != FieldStoreLength || il[0] != (byte)ILOpcode.ldarg_0 ||
-                il[1] != (byte)ILOpcode.ldarg_1 || il[2] != (byte)ILOpcode.stfld ||
-                il[^1] != (byte)ILOpcode.ret)
-                return null;
+                // Only a literal field assignment proves that the call does not read
+                // uninitialized receiver contents or write any sibling fields.
+                const int FieldStoreLength = 8;
+                ReadOnlySpan<byte> il = body.GetILBytes();
+                if (il.Length == FieldStoreLength + 1 && il[0] == (byte)ILOpcode.nop)
+                    il = il.Slice(1);
+                if (il.Length != FieldStoreLength || il[0] != (byte)ILOpcode.ldarg_0 ||
+                    il[1] != (byte)ILOpcode.ldarg_1 || il[2] != (byte)ILOpcode.stfld ||
+                    il[^1] != (byte)ILOpcode.ret)
+                    return null;
 
-            int token = BinaryPrimitives.ReadInt32LittleEndian(il.Slice(3));
-            if (method != definition)
-                body = new InstantiatedMethodIL(method, body);
-            return body.GetObject(token) is FieldDesc field && !field.IsStatic &&
-                field.OwningType == method.OwningType && field.FieldType == signature[0] ? field : null;
+                int token = BinaryPrimitives.ReadInt32LittleEndian(il.Slice(3));
+                if (method != definition)
+                    body = new InstantiatedMethodIL(method, body);
+                return body.GetObject(token) is FieldDesc field && !field.IsStatic &&
+                    field.OwningType == method.OwningType && field.FieldType == signature[0] ? field : null;
+            }
+            catch (BadImageFormatException)
+            {
+                return null;
+            }
+            catch (TypeSystemException)
+            {
+                return null;
+            }
         }
 
         static bool HasReadOnlySignatureModifier(MethodSignature signature, int parameterIndex)
@@ -726,18 +737,21 @@ namespace Internal.IL
             return false;
         }
 
-        static bool HasFixedMethodTarget(MethodDesc method) => !method.IsVirtual || method.IsFinal ||
-            method.OwningType is MetadataType { IsSealed: true };
+        static bool HasFixedMethodTarget(MethodDesc method) => !method.OwningType.IsDelegate &&
+            (!method.IsVirtual || !method.OwningType.IsInterface &&
+                (method.IsFinal || method.OwningType is MetadataType { IsSealed: true }));
 
         bool CanPassReadOnlyReference(MethodDesc method, int slot, bool exactTarget)
         {
+            // Reflection and unverified code can bypass delegate construction checks.
+            if (method.OwningType.IsDelegate)
+                return false;
             LifetimeContract contract = GetLifetimeContract(method);
             if (!contract.Valid || !contract.ReadOnly[slot])
                 return false;
 
-            // Delegate construction checks the bound target's readonly promises.
-            // Other unresolved bindings need a modifier that signature matching preserves.
-            if (exactTarget || method.OwningType.IsDelegate)
+            // Unresolved bindings need a modifier that signature matching preserves.
+            if (exactTarget)
                 return true;
             int firstParameter = method.Signature.IsStatic ? 0 : 1;
             return slot >= firstParameter &&
@@ -812,7 +826,7 @@ namespace Internal.IL
                 result.SetIsReadOnly();
             if (needsLifetimeContract)
                 LifetimeCheck(contract.Valid && !method.OwningType.IsDelegate &&
-                    (!method.IsVirtual || method.IsFinal || exactTarget));
+                    (HasFixedMethodTarget(method) || exactTarget));
             if (exactTarget && contract.Valid && contract.StoredField is FieldDesc field)
             {
                 LifetimeCheck(!contract.ReadOnly[0] && !arguments[0].IsReadOnly, VerifierError.ReadOnlyIllegalWrite);

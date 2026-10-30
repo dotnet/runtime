@@ -1286,18 +1286,30 @@ namespace Internal.IL
                 }
             }
 
-            bool exactTarget = HasFixedMethodTarget(targetMethod) ||
-                !targetMethod.Signature.IsStatic && _delegateCreateStart.HasValue &&
-                _currentInstructionOffset - _delegateCreateStart.Value == 6 &&
-                GetOpcodeAt(_delegateCreateStart.Value) == ILOpcode.ldftn;
+            bool exactTarget = !targetMethod.OwningType.IsDelegate &&
+                (HasFixedMethodTarget(targetMethod) ||
+                 !targetMethod.Signature.IsStatic && _delegateCreateStart.HasValue &&
+                 _currentInstructionOffset - _delegateCreateStart.Value == 6 &&
+                 GetOpcodeAt(_delegateCreateStart.Value) == ILOpcode.ldftn);
             for (int i = 0; i < invokeMethod.Signature.Length; i++)
             {
                 if (!invokeMethod.Signature[i].IsByRef)
                     continue;
                 invokeContract ??= GetLifetimeContract(invokeMethod);
-                if (invokeContract.ReadOnly[i + 1] && (!invokeContract.Valid ||
-                    !CanPassReadOnlyReference(targetMethod, i + (isOpenDelegate ? 0 : 1), exactTarget)))
-                    return false;
+                if (invokeContract.ReadOnly[i + 1])
+                {
+                    if (!invokeContract.Valid)
+                        return false;
+                    int slot = i + (isOpenDelegate ? 0 : 1);
+                    LifetimeContract targetContract = GetLifetimeContract(targetMethod);
+                    // This is a construction-time compatibility check, not permission
+                    // to pass a readonly actual to the delegate's Invoke method.
+                    bool compatible = targetMethod.OwningType.IsDelegate ?
+                        targetContract.Valid && targetContract.ReadOnly[slot] :
+                        CanPassReadOnlyReference(targetMethod, slot, exactTarget);
+                    if (!compatible)
+                        return false;
+                }
             }
             return true;
         }
@@ -1665,7 +1677,7 @@ namespace Internal.IL
 
             bool needsLifetimeContract = NeedsCallLifetimes(method, constrained);
             MethodDesc lifetimeTarget = null;
-            bool exactTarget = constrained is null &&
+            bool exactTarget = !method.OwningType.IsDelegate && constrained is null &&
                 (opcode != ILOpcode.callvirt || HasFixedMethodTarget(method));
             StackValue[] lifetimeArguments = needsLifetimeContract || HasTypedReferenceArguments(method) ?
                 new StackValue[sig.Length + firstLifetimeParameter] : null;

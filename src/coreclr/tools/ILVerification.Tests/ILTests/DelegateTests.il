@@ -248,7 +248,7 @@
         ret
     }
 
-    .method public hidebysig static void Delegate.Round776CovariantDelegateChain_Invalid_DelegateCtor(object[] input) cil managed
+    .method public hidebysig static void Delegate.Round776CovariantDelegateChain_Invalid_DelegateCtor.StackUnexpected(object[] input) cil managed
     {
         ldnull
         ldftn void Round776DelegateCases::Write(object&, object)
@@ -262,7 +262,7 @@
         ret
     }
 
-    .method public hidebysig static void Delegate.Round776ReadonlyInvoke_Valid(class Round776RequiredDelegate action, object[] input) cil managed
+    .method public hidebysig static void Delegate.Round776ReadonlyInvoke_Invalid_StackUnexpected(class Round776RequiredDelegate action, object[] input) cil managed
     {
         ldarg.0
         ldarg.1
@@ -365,6 +365,78 @@
         ldftn object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) Round776DelegateCases::ReadonlyReturn()
         newobj instance void Round776WritableReturnDelegate::.ctor(object, native int)
         pop
+        ret
+    }
+}
+
+.class public auto ansi abstract sealed Opus2e46ReflectionCases extends [System.Runtime]System.Object
+{
+    .method public hidebysig static void Write(object& input) cil managed
+    {
+        ldarg.0
+        ldnull
+        stind.ref
+        ret
+    }
+
+    .method public hidebysig static void WritePair(object& input, object replacement) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stind.ref
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Opus2e46ReflectionDelegate_Invalid_StackUnexpected(object[] input) cil managed
+    {
+        ldtoken Round776SingleReadonlyDelegate
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        ldtoken method void Opus2e46ReflectionCases::Write(object&)
+        call class [System.Runtime]System.Reflection.MethodBase [System.Runtime]System.Reflection.MethodBase::GetMethodFromHandle(valuetype [System.Runtime]System.RuntimeMethodHandle)
+        castclass [System.Runtime]System.Reflection.MethodInfo
+        call class [System.Runtime]System.Delegate [System.Runtime]System.Delegate::CreateDelegate(class [System.Runtime]System.Type, class [System.Runtime]System.Reflection.MethodInfo)
+        castclass Round776SingleReadonlyDelegate
+        ldarg.0
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        callvirt instance void Round776SingleReadonlyDelegate::Invoke(object&)
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Opus2e46ReflectionDelegateModreq_Invalid_StackUnexpected(object[] input) cil managed
+    {
+        ldtoken Round776RequiredDelegate
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        ldtoken method void Opus2e46ReflectionCases::WritePair(object&, object)
+        call class [System.Runtime]System.Reflection.MethodBase [System.Runtime]System.Reflection.MethodBase::GetMethodFromHandle(valuetype [System.Runtime]System.RuntimeMethodHandle)
+        castclass [System.Runtime]System.Reflection.MethodInfo
+        call class [System.Runtime]System.Delegate [System.Runtime]System.Delegate::CreateDelegate(class [System.Runtime]System.Type, class [System.Runtime]System.Reflection.MethodInfo)
+        castclass Round776RequiredDelegate
+        ldarg.0
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        newobj instance void [System.Runtime]System.Object::.ctor()
+        callvirt instance void Round776RequiredDelegate::Invoke(object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute), object)
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Opus2e46MutableInvoke_Valid(class Round776RequiredDelegate action, object& input, object replacement) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        ldarg.2
+        callvirt instance void Round776RequiredDelegate::Invoke(object& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute), object)
+        ret
+    }
+
+    .method public hidebysig static class Round776SingleReadonlyDelegate Delegate.Opus2e46RebindInvoke_Valid(class Round776SingleReadonlyDelegate action) cil managed
+    {
+        ldarg.0
+        dup
+        ldvirtftn instance void Round776SingleReadonlyDelegate::Invoke(object&)
+        newobj instance void Round776SingleReadonlyDelegate::.ctor(object, native int)
         ret
     }
 }
