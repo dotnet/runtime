@@ -50,6 +50,9 @@ internal interface IGCInfoTraits
 
     static abstract bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA { get; }
 
+    // False for encodings whose code is never interruptible (Wasm R2R).
+    static virtual bool HAS_INTERRUPTIBLE_RANGES => true;
+
     /// <summary>
     /// Returns true if the given register is a scratch (volatile) register.
     /// Scratch register slots should only be reported for the active (leaf) stack frame.

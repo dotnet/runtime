@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
 // threadsuspend.CPP
 //
 // This file contains the implementation of thread suspension. The implementation of thread suspension
 // used to be spread through multiple places. That is why, many methods still live in their own homes
 // (class Thread, class ThreadStore, etc.). They should be eventually refactored into class ThreadSuspend.
-//
 
 #include "common.h"
 #include "CLREventBase.h"
@@ -335,12 +333,12 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
                             if ((tries++) % 20 != 0) {
                                 YieldProcessorNormalized(); // play nice on hyperthreaded CPUs
                             } else {
-                                __SwitchToThread(0, ++dwSwitchCount);
+                                minipal_switch_to_thread(++dwSwitchCount);
                             }
                         }
                         else
                         {
-                            __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
+                            minipal_switch_to_thread(++dwSwitchCount); // don't spin on uniproc machines
                         }
                     }
                 }
@@ -402,7 +400,7 @@ retry:
 #endif // _DEBUG
 
         // Allow the target thread to run in order to make some progress.
-        // On multi processor machines we saw the suspending thread resuming immediately after the __SwitchToThread()
+        // On multi processor machines we saw the suspending thread resuming immediately after minipal_switch_to_thread()
         // because it has another few processors available.  As a consequence the target thread was being Resumed and
         // Suspended right away, w/o a real chance to make any progress.
         if (g_SystemInfo.dwNumberOfProcessors > 1 && (tries++) % 20 != 0)
@@ -411,7 +409,7 @@ retry:
         }
         else
         {
-            __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
+            minipal_switch_to_thread(++dwSwitchCount); // don't spin on uniproc machines
         }
     }
 
@@ -657,7 +655,13 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         // we can't use it to directly compare against the EH ranges because we
         // may be in an cloned finally which has a call as the last instruction.
 
-        offs--;
+#ifdef TARGET_WASM
+        // On Wasm, R2R code with virtual ips should not have its ip adjusted
+        if (!ExecutionManager::IsVirtualIP(GetControlPC(pCf->GetRegisterSet())))
+#endif
+        {
+            offs--;
+        }
     }
 
     if (pData->fWriteToStressLog)
@@ -813,51 +817,6 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
             UNREACHABLE();
     }
     return action;
-}
-
-// Is the current thread currently executing within a constrained execution region?
-BOOL Thread::IsExecutingWithinCer()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (!g_fEEStarted)
-        return FALSE;
-
-    Thread *pThread = GetThread();
-    StackCrawlContext sContext = { pThread,
-                                   StackCrawlContext::SCC_CheckWithinCer,
-        FALSE,
-        FALSE,
-        FALSE,
-        FALSE,
-        FALSE,
-        FALSE};
-
-    pThread->StackWalkFrames(TAStackCrawlCallBack, &sContext);
-
-#ifdef STRESS_LOG
-    if (sContext.fWithinCer && StressLog::StressLogOn(~0u, 0))
-    {
-        // If stress log is on, write info to stress log
-        StackCrawlContext sContext1 = { pThread,
-                                        StackCrawlContext::SCC_CheckWithinCer,
-            FALSE,
-            FALSE,
-            FALSE,
-            FALSE,
-            TRUE,
-            FALSE};
-
-        pThread->StackWalkFrames(TAStackCrawlCallBack, &sContext1);
-    }
-#endif
-
-    return sContext.fWithinCer;
 }
 
 #if defined(TARGET_AMD64) && defined(FEATURE_HIJACK)
@@ -1157,6 +1116,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     {
         THROWS;
         GC_TRIGGERS; // For GetXxxException
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1419,7 +1379,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
             case STR_UnstartedOrDead:
             case STR_NoStressLog:
                 checkForAbort.Release();
-                __SwitchToThread(0, ++dwSwitchCount);
+                minipal_switch_to_thread(++dwSwitchCount);
                 continue;
 
             default:
@@ -1653,7 +1613,7 @@ void Thread::LockAbortRequest(Thread* pThread)
         if (InterlockedCompareExchange(&(pThread->m_AbortRequestLock),1,0) == 0) {
             return;
         }
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
     }
 }
 
@@ -1860,7 +1820,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
 #endif
 }
 
-void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSPEND_REASON reason)
+void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSPEND_REASON reason) noexcept
 {
     CONTRACTL {
         NOTHROW;
@@ -2050,7 +2010,7 @@ extern void WaitForEndOfShutdown();
 // currently in progress.  This is the situation when returning back into
 // the EE from outside.  See the comments in DisablePreemptiveGC() to understand
 // why we Enable GC here!
-void Thread::RareDisablePreemptiveGC()
+void Thread::RareDisablePreemptiveGC() noexcept
 {
     PreserveLastErrorHolder preserveLastError;
 
@@ -2377,7 +2337,7 @@ void ThreadStore::IncrementTrapReturningThreads()
         // we can't forbid suspension while we are sleeping and don't hold the lock
         // this will trigger an assert on SQLCLR but is a general issue
         suspend.Release();
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
         suspend.Acquire();
     }
 
@@ -2415,7 +2375,7 @@ void ThreadStore::DecrementTrapReturningThreads()
         // we can't forbid suspension while we are sleeping and don't hold the lock
         // this will trigger an assert on SQLCLR but is a general issue
         suspend.Release();
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
         suspend.Acquire();
     }
 
@@ -2450,7 +2410,7 @@ bool ThreadStore::IsTrappingThreadsForSuspension()
 
 #ifdef FEATURE_HIJACK
 
-void RedirectedThreadFrame::ExceptionUnwind_Impl()
+void RedirectedThreadFrame::ExceptionUnwind_Impl() noexcept
 {
     CONTRACTL
     {
@@ -3571,6 +3531,12 @@ void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
     // you may have to change routine GCHeapUtilities::SafeToRestartManagedThreads
     // as well.
     //
+    // Fire the "restart end" event right before the threads are released. Once they are released,
+    // this thread may be preempted for a long time under CPU load, which would be wrongly reported
+    // as a part of the EE suspension.
+    //
+    FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
+
     ThreadStore::UnsetThreadTrapForSuspension();
     g_pSuspensionThread    = 0;
 
@@ -4008,7 +3974,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
                     if (!thread->CheckForAndDoRedirectForDbg())
                     {
                         thread->ResumeThread();
-                        __SwitchToThread(0, ++dwSwitchCount);
+                        minipal_switch_to_thread(++dwSwitchCount);
                         goto RetrySuspension;
                     }
                 }
@@ -4248,7 +4214,7 @@ RetrySuspension:
                 if (!thread->CheckForAndDoRedirectForDbg())
                 {
                     thread->ResumeThread();
-                    __SwitchToThread(0, ++dwSwitchCount);
+                    minipal_switch_to_thread(++dwSwitchCount);
                     goto RetrySuspension;
                 }
 
@@ -4667,6 +4633,13 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     }
 #endif // TARGET_X86
 
+    // On 32-bit targets and in IL stubs the InlinedCallFrame stays linked for the whole method, and
+    // it is reported before the method that contains it. Skip it when it has no active call.
+    if (!pCF->IsFrameless() && !InlinedCallFrame::FrameHasActiveCall(pCF->GetFrame()))
+    {
+        return SWA_CONTINUE;
+    }
+
     // This will help factor out some repeated code.
     bool notJittedCase = false;
 
@@ -4850,9 +4823,11 @@ HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args 
 
 void STDCALL OnHijackWorker(HijackArgs * pArgs)
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -5394,10 +5369,13 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
 
     //
     // SyncClean::CleanUp reclaims resources that are safe to free only
-    // when no threads are running managed code. Since the EE is
-    // suspended at this point, we know it's safe to clean up here.
+    // when no threads are running managed code, so it can only run after
+    // the EE was successfully suspended.
     //
-    SyncClean::CleanUp();
+    if (SuspendSucceeded)
+    {
+        SyncClean::CleanUp();
+    }
 
 #ifdef PROFILING_SUPPORTED
     // If a profiler is keeping track suspend events, notify it.  This notification
@@ -5468,6 +5446,7 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
     }
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_MULTITHREADING
     //
     // If we raised this thread's priority in SuspendRuntime, we restore it here.
     //
@@ -5479,8 +5458,7 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
             pCurThread->m_Priority = INVALID_THREAD_PRIORITY;
         }
     }
-
-    FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
+#endif // FEATURE_MULTITHREADING
 
 #ifdef TIME_SUSPEND
     g_SuspendStatistics.EndRestart();
@@ -5592,6 +5570,7 @@ retry_for_debugger:
     }
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_MULTITHREADING
     //
     // If this thread is running at low priority, boost its priority.  We remember the old
     // priority so that we can restore it in ResumeEE.
@@ -5606,6 +5585,7 @@ retry_for_debugger:
             pCurThread->SetThreadPriority(THREAD_PRIORITY_NORMAL);
         }
     }
+#endif // FEATURE_MULTITHREADING
 
     //
     // Now that we've instructed all threads to please stop,
@@ -5692,7 +5672,7 @@ retry_for_debugger:
         else
         {
             // otherwise, just yield so the debugger can finish what it's doing.
-            __SwitchToThread(0, ++dwSwitchCount);
+            minipal_switch_to_thread(++dwSwitchCount);
         }
 
         goto retry_for_debugger;

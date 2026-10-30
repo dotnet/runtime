@@ -121,14 +121,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return (argit, transitionBlock);
         }
 
-        public void GetCallRefMap(MethodDesc method, bool isUnboxingStub)
+        /// <summary>
+        /// Builds the argument layout the GC ref map of a call to <paramref name="method"/> describes.
+        /// </summary>
+        internal static (ArgIterator<TypeHandle>, TransitionBlock) BuildCallRefMapArgIterator(MethodDesc method, bool isUnboxingStub)
         {
-            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = BuildArgIterator(method.Signature, method.Context,
+            return BuildArgIterator(method.Signature, method.Context,
                 methodRequiresInstArg: method.RequiresInstArg(),
                 isUnboxingStub: isUnboxingStub,
                 methodIsArrayAddressMethod: method.IsArrayAddressMethod(),
                 methodIsStringConstructor: method.OwningType.IsString && method.IsConstructor,
                 methodIsAsyncCall: method.IsAsyncCall());
+        }
+
+        public void GetCallRefMap(MethodDesc method, bool isUnboxingStub)
+        {
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = BuildCallRefMapArgIterator(method, isUnboxingStub);
 
             int nStackBytes = argit.SizeOfFrameArgumentArray();
 
@@ -190,12 +198,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 frame[argit.GetAsyncContinuationArgOffset()] = CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF;
             }
 
-            // If the function has a this pointer, add it to the mask
+            // Keep every receiver contextual, even for nonvirtual reference-type methods:
+            // cached maps can flow through interface declarations to unboxed value-type entries,
+            // and dispatch relationships can change across versions. Plain REF/INTERIOR tokens
+            // would freeze the receiver kind instead of letting each frame interpret it.
             if (argit.HasThis)
             {
-                bool interior = method.OwningType.IsValueType && !isUnboxingStub;
-
-                frame[_transitionBlock.ThisOffset] = (interior ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF);
+                frame[_transitionBlock.ThisOffset] = method.OwningType.IsValueType && !isUnboxingStub
+                    ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_BYREF
+                    : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS_REF;
             }
 
             if (argit.IsVarArg)

@@ -432,6 +432,11 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_BULK_WRITEBARRIER,
 
+    // Same as CORINFO_HELP_BULK_WRITEBARRIER, but it is the raw worker: it does not split the copy
+    // into chunks and does not poll for GC afterwards. The JIT is only allowed to use it when the
+    // size is a small compile-time constant, so that the copy cannot starve the GC.
+    CORINFO_HELP_BULK_WRITEBARRIER_SMALL,
+
     /* Accessing fields */
 
     CORINFO_HELP_GETFIELDADDR,
@@ -460,6 +465,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE,
     CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE,
+    CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED,
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED,
     CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR,
     CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR,
     CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR,
@@ -918,6 +925,7 @@ enum class CorInfoReloc
                                            // e.g. in R2R scenarios as an offset from __image_base
     WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
     WASM_METHOD_RELATIVE_VIRTUAL_IP_I32, // Wasm: the current method's virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
+    WASM_METHOD_FRAME_IDENTITY_SLEB, // Wasm: the current method's runtime-specific shadow-frame identity, encoded as a 5-byte varint32.
 };
 
 enum CorInfoGCType
@@ -2374,11 +2382,6 @@ public:
             CORINFO_METHOD_HANDLE       method
             ) = 0;
 
-    // load and restore the method
-    virtual void methodMustBeLoadedBeforeCodeIsRun(
-            CORINFO_METHOD_HANDLE       method
-            ) = 0;
-
     // Returns the global cookie for the /GS unsafe buffer checks
     // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
     virtual void getGSCookie(
@@ -2519,6 +2522,12 @@ public:
 
     // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_VALUECLASS, except faster.
     virtual bool isValueClass(CORINFO_CLASS_HANDLE cls) = 0;
+
+    // Quick check whether the type is byref-like. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_BYREF_LIKE, except faster.
+    virtual bool isByRefLike(CORINFO_CLASS_HANDLE cls) = 0;
+
+    // Quick check whether the type is shared by generic instantiations. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_SHAREDINST, except faster.
+    virtual bool isSharedInst(CORINFO_CLASS_HANDLE cls) = 0;
 
     // return flags (a bitfield of CorInfoFlags values)
     virtual uint32_t getClassAttribs (
@@ -2780,20 +2789,6 @@ public:
             CORINFO_METHOD_HANDLE   method,         // Method referencing the field or prolog
                                                     // NULL - method being compiled
             CORINFO_CONTEXT_HANDLE  context         // Exact context of method
-            ) = 0;
-
-    // This used to be called "loadClass".  This records the fact
-    // that the class must be loaded (including restored if necessary) before we execute the
-    // code that we are currently generating.  When jitting code
-    // the function loads the class immediately.  When zapping code
-    // the zapper will if necessary use the call to record the fact that we have
-    // to do a fixup/restore before running the method currently being generated.
-    //
-    // This is typically used to ensure value types are loaded before zapped
-    // code that manipulates them is executed, so that the GC can access information
-    // about those value types.
-    virtual void classMustBeLoadedBeforeCodeIsRun(
-            CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
     // returns the class handle for the special builtin classes
@@ -3544,9 +3539,11 @@ public:
             ) = 0;
 
     // Notify EE about intent to use or not to use instruction set in the method. Returns true if the instruction set is supported unconditionally.
+    // preserveNegativeDependency requests that the absence of the instruction set be preserved as a prerequisite.
     virtual bool notifyInstructionSetUsage(
             CORINFO_InstructionSet      instructionSet,
-            bool                        supportEnabled
+            bool                        supportEnabled,
+            bool                        preserveNegativeDependency
             ) = 0;
 
     // Notify EE that JIT needs an entry-point that is tail-callable.

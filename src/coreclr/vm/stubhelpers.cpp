@@ -13,7 +13,6 @@
 #include "fieldmarshaler.h"
 #include "comdelegate.h"
 #include "eventtrace.h"
-#include "comdatetime.h"
 #include "gcheaputilities.h"
 #include "interoputil.h"
 #include "../debug/ee/debugger.h"
@@ -369,6 +368,24 @@ extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnS
     {
         OleVariant::MarshalOleVariantForObject(&pSrc, pDest);
     }
+
+    GCPROTECT_END();
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNativeVariantArrayElement(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF pSrc = pSrcUNSAFE.Get();
+    GCPROTECT_BEGIN(pSrc);
+
+    OleVariant::MarshalVariantArrayElementForObject(&pSrc, pDest);
 
     GCPROTECT_END();
 

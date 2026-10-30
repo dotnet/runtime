@@ -1,0 +1,17 @@
+<linker>
+  <assembly fullname="Microsoft.Composition.Demos.ExtendedCollectionImports">
+    <type fullname="Microsoft.Composition.Demos.ExtendedCollectionImports.KeyByMetadataAttribute" preserve="all" />
+    <type fullname="Microsoft.Composition.Demos.ExtendedCollectionImports.OrderedImportManyAttribute" preserve="all" />
+  </assembly>
+  <assembly fullname="System.Composition.AttributedModel">
+    <type fullname="System.Composition.ExportMetadataAttribute" preserve="all" />
+    <type fullname="System.Composition.SharedAttribute" preserve="all" />
+    <type fullname="System.Composition.SharingBoundaryAttribute" preserve="all" />
+  </assembly>
+  <assembly fullname="TestLibrary">
+    <type fullname="TestLibrary.ClassWithDependency" preserve="all" />
+    <type fullname="TestLibrary.ClassWithDependencyAndSameBaseType" preserve="all" />
+    <type fullname="TestLibrary.IDependency" preserve="all" />
+    <type fullname="TestLibrary.TestDependency" preserve="all" />
+  </assembly>
+</linker>

@@ -1,0 +1,42 @@
+<Project>
+  <PropertyGroup>
+    <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' == ''">$(TargetRid)</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(IsInBuildToolProject)' == 'true'">$(NETCoreSdkRuntimeIdentifier)</PackageTargetRuntime>
+    <!-- IncludeBuildOutput is required for native symbols; this target filters it to published files. -->
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);ExcludeNativeAotToolBuildOutput</TargetsForTfmSpecificBuildOutput>
+    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);ExcludeNativeAotToolDebugOutput</TargetsForTfmSpecificDebugSymbolsInPackage>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>$(AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder);.pdb;.dbg;.dwarf</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
+    <BeforePack>$(BeforePack);GetNativeAotToolPackageFiles</BeforePack>
+  </PropertyGroup>
+
+  <Target Name="ExcludeNativeAotToolBuildOutput">
+    <ItemGroup>
+      <BuiltProjectOutputGroupOutput Remove="@(BuiltProjectOutputGroupOutput)" />
+      <DocumentationProjectOutputGroupOutput Remove="@(DocumentationProjectOutputGroupOutput)" />
+      <SatelliteDllsProjectOutputGroupOutput Remove="@(SatelliteDllsProjectOutputGroupOutput)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ExcludeNativeAotToolDebugOutput">
+    <ItemGroup>
+      <DebugSymbolsProjectOutputGroupOutput Remove="@(DebugSymbolsProjectOutputGroupOutput)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetNativeAotToolPackageFiles" DependsOnTargets="Publish;PublishItemsOutputGroup">
+    <ItemGroup>
+      <_NativeAotToolPackageFile Include="@(PublishItemsOutputGroupOutputs->'%(OutputPath)')">
+        <PackagePath>runtimes/$(PackageTargetRuntime)/native/%(PublishItemsOutputGroupOutputs.TargetPath)</PackagePath>
+        <IsSymbolFile Condition="'%(Extension)' == '.pdb' or '%(Extension)' == '.dbg' or '%(Extension)' == '.dwarf'">true</IsSymbolFile>
+      </_NativeAotToolPackageFile>
+      <Content Include="@(_NativeAotToolPackageFile)" Pack="true" Condition="'%(_NativeAotToolPackageFile.IsSymbolFile)' != 'true'" />
+      <_TargetPathsToSymbols Include="@(_NativeAotToolPackageFile)"
+                             Condition="'%(_NativeAotToolPackageFile.IsSymbolFile)' == 'true'"
+                             FinalOutputPath="%(_NativeAotToolPackageFile.Identity)"
+                             TargetPath="/%(_NativeAotToolPackageFile.PackagePath)"
+                             TargetFramework="$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
+</Project>

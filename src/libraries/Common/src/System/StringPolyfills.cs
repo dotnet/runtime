@@ -6,7 +6,7 @@
 namespace System
 {
     /// <summary>Provides downlevel polyfills for string extension methods.</summary>
-    internal static class StringPolyfills
+    internal static partial class StringPolyfills
     {
         public static bool StartsWith(this string s, char value) =>
             s.Length > 0 && s[0] == value;

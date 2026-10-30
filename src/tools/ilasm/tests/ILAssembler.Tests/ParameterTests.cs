@@ -14,7 +14,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
 namespace ILAssembler.Tests
 {
@@ -195,6 +194,69 @@ namespace ILAssembler.Tests
 
             var param = reader.GetParameter(MetadataTokens.ParameterHandle(1));
             Assert.True(param.Attributes.HasFlag(ParameterAttributes.In));
+        }
+
+        [Fact]
+        public void ParameterAttributeForms_EmitExpectedFlags()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M(
+                        [in] int32 input,
+                        [out] int32 output,
+                        [opt] int32 optional,
+                        [7] int32 rawFlags) cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.GetMethodDefinition(Assert.Single(reader.MethodDefinitions));
+            var parameters = method.GetParameters()
+                .Select(reader.GetParameter)
+                .ToDictionary(parameter => reader.GetString(parameter.Name));
+
+            Assert.Equal(ParameterAttributes.In, parameters["input"].Attributes);
+            Assert.Equal(ParameterAttributes.Out, parameters["output"].Attributes);
+            Assert.Equal(ParameterAttributes.Optional, parameters["optional"].Attributes);
+            Assert.Equal((ParameterAttributes)8, parameters["rawFlags"].Attributes);
+        }
+
+        [Theory]
+        [InlineData("System.Runtime.InteropServices.InAttribute", ParameterAttributes.In)]
+        [InlineData("System.Runtime.InteropServices.OutAttribute", ParameterAttributes.Out)]
+        [InlineData("System.Runtime.InteropServices.OptionalAttribute", ParameterAttributes.Optional)]
+        public void PseudoCustomAttribute_OnParameter_LowersToFlagAndDropsAttribute(string attributeType, ParameterAttributes expected)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M(int32 x) cil managed
+                    {
+                        .param [1]
+                        .custom instance void [mscorlib]{{attributeType}}::.ctor() = ( 01 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+            var parameter = reader.GetParameter(Assert.Single(method.GetParameters()));
+
+            Assert.Equal(expected, parameter.Attributes & expected);
+            Assert.Empty(parameter.GetCustomAttributes());
         }
 
         [Fact]

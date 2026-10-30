@@ -4,13 +4,13 @@
 #ifndef LOADERHEAP_SHARED
 #define LOADERHEAP_SHARED
 
-void ReleaseReservedMemory(BYTE* value);
+void ReleaseReservedMemory(BYTE* value) noexcept;
 
 struct ReservedMemoryTraits final
 {
     using Type = BYTE*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type value)
+    static void Free(Type value) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
         ReleaseReservedMemory(value);
