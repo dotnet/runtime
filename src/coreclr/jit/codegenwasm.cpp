@@ -4661,10 +4661,11 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
         maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
     }
 
-    // Runtime wants us to report twice the actual Virtual IP range as code size.
+    // CoreCLR doubles virtual IPs to preserve the low-bit tag on virtual code addresses.
+    // NativeAOT uses unscaled virtual IPs.
     // Use 1 as the prolog size.
     //
-    codeSize   = 2 * maxVirtualIP;
+    codeSize   = m_compiler->IsNativeAot() ? maxVirtualIP : 2 * maxVirtualIP;
     prologSize = 1;
 
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).

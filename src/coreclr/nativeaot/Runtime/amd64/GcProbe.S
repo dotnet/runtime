@@ -45,14 +45,7 @@
     alloc_stack     0x80 + 0
 
     // save FP argument registers in case they contain live values at the hijack point
-    movdqa          [rsp + 0x70], xmm0
-    movdqa          [rsp + 0x60], xmm1
-    movdqa          [rsp + 0x50], xmm2
-    movdqa          [rsp + 0x40], xmm3
-    movdqa          [rsp + 0x30], xmm4
-    movdqa          [rsp + 0x20], xmm5
-    movdqa          [rsp + 0x10], xmm6
-    movdqa          [rsp + 0x00], xmm7
+    SAVE_FLOAT_ARGUMENT_REGISTERS 0
 
     // link the frame into the Thread
     mov             [\threadReg + OFFSETOF__Thread__m_pDeferredTransitionFrame], \trashReg
@@ -63,14 +56,7 @@
 // registers and return value to their values from before the probe was called (while also updating any
 // object refs or byrefs).
 .macro POP_PROBE_FRAME
-    movdqa      xmm7, [rsp + 0x00]
-    movdqa      xmm6, [rsp + 0x10]
-    movdqa      xmm5, [rsp + 0x20]
-    movdqa      xmm4, [rsp + 0x30]
-    movdqa      xmm3, [rsp + 0x40]
-    movdqa      xmm2, [rsp + 0x50]
-    movdqa      xmm1, [rsp + 0x60]
-    movdqa      xmm0, [rsp + 0x70]
+    RESTORE_FLOAT_ARGUMENT_REGISTERS 0
     free_stack  0x80 + 8               // skip xmm0..xmm7 and discard RIP
     pop_nonvol_reg rbp
     pop_register rax                   // discard Thread*
@@ -119,28 +105,14 @@
         alloc_stack 0x88
 
         // save FP argument registers that would be clobbered by INLINE_GETTHREAD call
-        movdqa      [rsp + 0x70], xmm0
-        movdqa      [rsp + 0x60], xmm1
-        movdqa      [rsp + 0x50], xmm2
-        movdqa      [rsp + 0x40], xmm3
-        movdqa      [rsp + 0x30], xmm4
-        movdqa      [rsp + 0x20], xmm5
-        movdqa      [rsp + 0x10], xmm6
-        movdqa      [rsp + 0x00], xmm7
+        SAVE_FLOAT_ARGUMENT_REGISTERS 0
 
         // rax = GetThread(), makes nested calls
         INLINE_GETTHREAD
         mov r11, rax
 
         // restore FP argument registers
-        movdqa      xmm7, [rsp + 0x00]
-        movdqa      xmm6, [rsp + 0x10]
-        movdqa      xmm5, [rsp + 0x20]
-        movdqa      xmm4, [rsp + 0x30]
-        movdqa      xmm3, [rsp + 0x40]
-        movdqa      xmm2, [rsp + 0x50]
-        movdqa      xmm1, [rsp + 0x60]
-        movdqa      xmm0, [rsp + 0x70]
+        RESTORE_FLOAT_ARGUMENT_REGISTERS 0
 
         free_stack 0x88
 

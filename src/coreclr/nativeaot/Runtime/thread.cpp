@@ -164,9 +164,7 @@ void Thread::ResetCachedTransitionFrame()
 void Thread::EnablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
-#if !defined(HOST_WASM)
     ASSERT(m_pDeferredTransitionFrame != NULL);
-#endif
 
     // set preemptive mode
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, m_pDeferredTransitionFrame);
@@ -204,21 +202,6 @@ void Thread::SetDeferredTransitionFrameForNativeHelperThread()
     {
         RhFailFast();
     }
-}
-#endif // !DACCESS_COMPILE
-
-//
-// This is used by the EH system to find the place where execution left managed code when an exception leaks out of a
-// pinvoke and we need to FailFast via the appropriate class library.
-//
-// May only be used from the same thread and while in preemptive mode with an active pinvoke on the stack.
-//
-#ifndef DACCESS_COMPILE
-void * Thread::GetCurrentThreadPInvokeReturnAddress()
-{
-    ASSERT(ThreadStore::GetCurrentThread() == this);
-    ASSERT(!IsCurrentThreadInCooperativeMode());
-    return ((PInvokeTransitionFrame*)m_pTransitionFrame)->m_RIP;
 }
 #endif // !DACCESS_COMPILE
 
@@ -364,10 +347,8 @@ void Thread::GcScanRoots(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackDat
 {
     this->CrossThreadUnhijack();
 
-#ifndef HOST_WASM
     StackFrameIterator frameIterator(this, GetTransitionFrame());
     GcScanRootsWorker(pfnEnumCallback, pvCallbackData, frameIterator);
-#endif
 }
 
 #endif // !DACCESS_COMPILE
@@ -407,7 +388,6 @@ bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token
 }
 #endif //DACCESS_COMPILE
 
-#ifndef TARGET_WASM
 void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData, StackFrameIterator & frameIterator)
 {
     PTR_OBJECTREF    pHijackedReturnValue = NULL;
@@ -441,6 +421,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
             PInvokeTransitionFrame* pTransitionFrame = GetTransitionFrame();
             ASSERT(pTransitionFrame != NULL);
 
+#ifndef FEATURE_PORTABLE_HELPERS
             if (pTransitionFrame == INTERRUPTED_THREAD_MARKER)
             {
                 GetInterruptedContext()->ForEachPossibleObjectRef
@@ -451,6 +432,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
                     }
                 );
             }
+#endif // !FEATURE_PORTABLE_HELPERS
 
             if (pTransitionFrame < pLowerBound)
                 pLowerBound = pTransitionFrame;
@@ -530,7 +512,6 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
         }
     }
 }
-#endif // !TARGET_WASM
 
 #ifndef DACCESS_COMPILE
 
@@ -906,7 +887,9 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 // Standard calling convention variant and actual implementation for RhpGcPoll
 EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 {
+#ifndef FEATURE_PORTABLE_HELPERS
     ASSERT(!Thread::IsHijackTarget(pFrame->m_RIP));
+#endif // !FEATURE_PORTABLE_HELPERS
 
     Thread* pThread = ThreadStore::GetCurrentThread();
     pFrame->m_pThread = pThread;
