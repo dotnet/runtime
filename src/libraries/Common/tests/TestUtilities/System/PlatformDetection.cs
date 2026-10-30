@@ -176,6 +176,9 @@ namespace System
         public static bool IsWasmThreadingSupported => IsWasm && IsMultithreadingSupported;
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
 
+        // Whether managed cleanup of externally created threads is deferred to the finalizer thread.
+        public static bool ManagedThreadCleanupOnFinalizerThread => IsCoreCLR || IsMonoRuntime;
+
         private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);
         public static bool IsBinaryFormatterSupported => s_isBinaryFormatterSupported.Value;
 
