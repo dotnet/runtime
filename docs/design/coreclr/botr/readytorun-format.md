@@ -231,6 +231,7 @@ struct READYTORUN_IMPORT_SECTION
 | ReadyToRunImportSectionFlags::None     | 0x0000  | None
 | ReadyToRunImportSectionFlags::Eager    | 0x0001 | Set if the slots in the section have to be initialized at image load time. It is used to avoid lazy initialization when it cannot be done or when it would have undesirable reliability or performance effects (unexpected failure or GC trigger points, overhead of lazy initialization).
 | ReadyToRunImportSectionFlags::PCode    | 0x0004  | Section contains pointers to code
+| ReadyToRunImportSectionFlags::GCRefMap | 0x0008 | Each signature RVA points to a GC reference map followed immediately by the fixup signature (R2R 33 and later).
 
 
 Module-eager fixups in `System.Private.CoreLib`, including composite images containing
@@ -388,10 +389,23 @@ Because this fixup depends on the target entry point already being registered, i
 
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
-For slots resolved lazily via `READYTORUN_HELPER_DelayLoad_MethodCall` helper, auxiliary data are
-compressed argument maps that allow precise GC stack scanning while the helper is running. The CoreCLR runtime class [`GCRefMapDecoder`](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/inc/gcrefmap.h#L158) is used to parse this information. This data would not be required for runtimes that allow conservative stack scanning.
+For slots resolved lazily via `READYTORUN_HELPER_DelayLoad_MethodCall`, compressed argument maps
+allow precise GC stack scanning while the helper is running. The CoreCLR runtime class [`GCRefMapDecoder`](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/inc/gcrefmap.h#L158) is used to parse this information. This data would not be required for runtimes that allow conservative stack scanning.
 
-The auxiliary data table contains the exact same number of GC ref map records as there are method entries in the import section. To accelerate GC ref map lookup, the auxiliary data section starts with a lookup table holding the offset of every 1024-th method in the runtime function table within the linearized GC ref map.
+Starting with R2R 33, import sections with `ReadyToRunImportSectionFlags::GCRefMap` store each
+argument map immediately before its fixup signature. The per-cell signature RVA points to the
+start of the map. To decode the fixup signature, skip bytes through the first byte whose high
+bit is clear, inclusive. This also skips the x86 stack-pop information, which is part of the same
+map encoding. Individual maps require only byte alignment.
+
+The GC reads the map directly through the cell's signature RVA; there is no separate map table
+or sparse lookup index, and `AuxiliaryData` is zero. Cells that already share a signature also
+share its map. References that do not need a map can point directly to the signature tail.
+Keeping the map before the signature also lets cDAC locate and decode it without parsing the
+fixup signature format.
+
+In earlier versions, `AuxiliaryData` points to a table with one map per import entry, prefixed
+by offsets for every 1024th entry:
 
 |     Offset in auxiliary data | Size | Content
 |-----------------------------:|-----:|:-------
@@ -411,7 +425,33 @@ position of the reference in the stack frame and `token` is type of GC reference
 | GCREFMAP_INTERIOR          |     2 | Pointer to a GC reference
 | GCREFMAP_METHOD_PARAM      |     3 | Hidden method instantiation argument to generic method
 | GCREFMAP_TYPE_PARAM        |     4 | Hidden type instantiation argument to generic method
-| GCREFMAP_VASIG_COOKIE      |     5 | VARARG signature cookie
+| GCREFMAP_THIS_REF          |     5 | Contextual receiver; the original callsite uses an object reference
+| GCREFMAP_THIS_BYREF        |     6 | Contextual receiver; the original callsite uses an interior reference
+| GCREFMAP_VASIG_COOKIE      |     7 | VARARG signature cookie
+
+Before R2R 33, `GCREFMAP_VASIG_COOKIE` had value 5 and there were no contextual receiver
+tokens. R2R 33 reassigns value 5 and moves the cookie to 7. Both receiver tokens use six
+stream bits; the less common cookie uses ten. No receiver-kind bit follows either token.
+
+Starting with R2R 33, every instance receiver slot present in a map uses `GCREFMAP_THIS_REF`
+or `GCREFMAP_THIS_BYREF`, including receivers of nonvirtual methods and methods declared on
+reference types. The choice of token preserves the original callsite's receiver kind for an
+unresolved external-method frame, which does not yet have a target `MethodDesc`. A stub-dispatch
+frame instead treats the receiver as an object reference, while a prestub or call-counting frame
+derives its kind from the target method, including whether the target is an unboxing stub.
+
+The contextual token is required because a map is not confined to its original callsite.
+Maps can be cached on `MethodDesc`s and shared through virtual slots and interface declarations.
+For example, a map acquired from a reference-type implementation can be found through an
+interface declaration and subsequently reused for an unboxed value-type implementation.
+Encoding that receiver as an ordinary `GCREFMAP_REF` would incorrectly report the interior
+receiver at the value-type method's entry as an object reference.
+
+The decision must not depend only on the method's current virtualness or declaring type.
+Dispatch relationships can also change across versions, for example when a nonvirtual method
+becomes virtual, without changing its argument signature. Using a contextual token for every
+receiver preserves the information needed to interpret the map in each frame; omitting it
+would require additional restrictions on map sharing and versioning.
 
 The position values are calculated in `size_t` aka `IntPtr` units (4 bytes for 32-bit architectures vs. 8 bytes for 64-bit architectures) starting at the first position in the transition frame that may contain GC references. For all architectures except for **arm64** this is the beginning of the array of spilled argument registers. On arm64 it is the offset of the `X8` register used to pass the location to be filled in with the return value by the called method.
 

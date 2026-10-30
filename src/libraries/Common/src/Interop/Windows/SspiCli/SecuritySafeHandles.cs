@@ -1077,9 +1077,29 @@ namespace System.Net.Security
                 return null;
             }
 
-            var bytes = new byte[_size];
-            Marshal.Copy(handle, bytes, 0, bytes.Length);
-            return BitConverter.ToString(bytes).Replace('-', ' ');
+            bool refAdded = false;
+            try
+            {
+                // Keeps the buffer from being freed by Dispose or finalization while it's being read.
+                DangerousAddRef(ref refAdded);
+
+                unsafe
+                {
+                    var bytes = new ReadOnlySpan<byte>((void*)handle, _size);
+                    return BitConverter.ToString(bytes.ToArray()).Replace('-', ' ');
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                return null;
+            }
+            finally
+            {
+                if (refAdded)
+                {
+                    DangerousRelease();
+                }
+            }
         }
     }
 

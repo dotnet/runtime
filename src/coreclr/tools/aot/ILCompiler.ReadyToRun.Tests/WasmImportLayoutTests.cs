@@ -12,6 +12,7 @@ using crossgen2::ILCompiler;
 using crossgen2::ILCompiler.DependencyAnalysis;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::ILCompiler.Win32Resources;
+using crossgen2::Internal.JitInterface;
 using crossgen2::Internal.ReadyToRunConstants;
 using crossgen2::Internal.Text;
 using ILCompiler.DependencyAnalysisFramework;
@@ -169,7 +170,7 @@ public class WasmImportLayoutTests
     {
         NodeFactory factory = CreateFactory();
         ImportSectionNode table = new("EmittedImports", ReadyToRunImportSectionType.Unknown,
-            0, 4, emitPrecode: true, emitGCRefMap: true);
+            0, 4, emitPrecode: true, emitGCRefMap: false);
         Import[] imports = Enumerable.Range(1, count).Select(id =>
             new Import(table, new TestSignature(id))).ToArray();
         HashSet<Import> coldImports = imports.Where((_, index) => index % 2 == 0).ToHashSet();
@@ -188,10 +189,9 @@ public class WasmImportLayoutTests
         List<ObjectNode> tables = new();
         while (dependencies.MoveNext())
             tables.Add(Assert.IsAssignableFrom<ObjectNode>(dependencies.Dependency));
-        ObjectNode cells = Assert.Single(tables, node => node is not GCRefMapNode && node != table.SignatureArray);
+        ObjectNode cells = Assert.Single(tables, node => node != table.SignatureArray);
         ObjectNode.ObjectData cellData = cells.GetData(factory);
         ObjectNode.ObjectData signatureData = ((ObjectNode)table.SignatureArray).GetData(factory);
-        ObjectNode.ObjectData map = Assert.Single(tables.OfType<GCRefMapNode>()).GetData(factory);
 
         Assert.Equal(4, cellData.Alignment);
         Assert.Equal(count * 4, cellData.Data.Length);
@@ -215,21 +215,6 @@ public class WasmImportLayoutTests
         if (count > 2)
             Assert.True(emittedRuns < originalRuns,
                 "The emitted table must have fewer cold-owned ranges than the unpartitioned order.");
-        if (count == 0)
-        {
-            Assert.Empty(map.Data);
-        }
-        else
-        {
-            int headerSize = (count / GCRefMapNode.GCREFMAP_LOOKUP_STRIDE + 1) * 4;
-            Assert.Equal(headerSize, BinaryPrimitives.ReadInt32LittleEndian(map.Data));
-            Assert.Equal(headerSize + count, map.Data.Length);
-            Assert.All(map.Data.Skip(headerSize), value => Assert.Equal(0, value));
-            if (count > GCRefMapNode.GCREFMAP_LOOKUP_STRIDE)
-                Assert.Equal(headerSize + GCRefMapNode.GCREFMAP_LOOKUP_STRIDE,
-                    BinaryPrimitives.ReadInt32LittleEndian(map.Data.AsSpan(4)));
-        }
-
         table.InitializeIndexFromBeginningOfArray(3);
         EcmaModule module = factory.TypeSystemContext.GetModuleFromPath(typeof(WasmImportLayoutTests).Assembly.Location);
         MethodWithGCInfo method = new(module.GetType("ILCompiler.ReadyToRun.Tests"u8, "WasmImportLayoutTests"u8)
@@ -251,8 +236,10 @@ public class WasmImportLayoutTests
         }
     }
 
-    [Fact]
-    public void GCMapsFollowCellsIncludingGenericMethodsAndNonMethodRecords()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GCMapsFollowSignaturesAcrossPartitionsAndSharing(bool instantiatingStub)
     {
         NodeFactory factory = CreateFactory(hostTarget: true);
         CompilerTypeSystemContext context = factory.TypeSystemContext;
@@ -262,41 +249,41 @@ public class WasmImportLayoutTests
             new Instantiation(context.GetWellKnownType(WellKnownType.Object)));
         ImportSectionNode table = new("GCImports", ReadyToRunImportSectionType.StubDispatch, 0, 8,
             emitPrecode: false, emitGCRefMap: true);
-        Import[] imports =
-        [
-            new MethodImport(table, new TestSignature(1), type.GetMethod("ObjectArgument"u8, null)),
-            new MethodImport(table, new TestSignature(2), type.GetMethod("IntegerArgument"u8, null)),
-            new MethodImport(table, new TestSignature(3), generic),
-            new Import(table, new TestSignature(4)),
-            new Import(table, new TestSignature(5)),
-        ];
+        MethodDesc[] methods = [type.GetMethod("ObjectArgument"u8, null),
+            type.GetMethod("IntegerArgument"u8, null), generic];
+        MethodFixupSignature[] signatures = methods.Select(method =>
+            new MethodFixupSignature(ReadyToRunFixupKind.MethodEntry,
+                new MethodWithToken(method,
+                    new ModuleToken(module, ((EcmaMethod)method.GetTypicalMethodDefinition()).Handle),
+                    constrainedType: null, unboxing: false, genericContextObject: null),
+                instantiatingStub)).ToArray();
+        Import[] imports = [new(table, signatures[0]), new(table, signatures[1]),
+            new(table, signatures[2]), new(table, signatures[0])];
         WasmImportLayout layout = new();
         for (int index = 0; index < imports.Length; index++)
         {
             table.AddImport(factory, imports[index]);
             layout.AddImport(imports[index]);
-            layout.AddUse(imports[index], cold: index % 2 == 0);
+            layout.AddUse(imports[index], cold: index >= 2);
         }
         layout.Complete(symbol => symbol);
-        SortableDependencyNode.DependencySink sink = new();
-        table.AddStaticDependencies(sink, factory);
-        using var dependencies = sink.Drain();
-        GCRefMapNode? map = null;
-        while (dependencies.MoveNext())
-        {
-            if (dependencies.Dependency is GCRefMapNode gcMap)
-                map = gcMap;
-        }
-        Assert.NotNull(map);
-        GCRefMapBuilder expected = new(factory.Target, relocsOnly: false);
+        Assert.Same(signatures[2], Assert.Single(layout.ColdSignatures));
+        ObjectNode.ObjectData signatureData = ((ObjectNode)table.SignatureArray).GetData(factory);
+        int indexInArray = 0;
         foreach (Import import in imports.OrderBy(import => import, s_comparer))
         {
-            if (import is IMethodNode method)
-                expected.GetCallRefMap(method.Method, isUnboxingStub: false);
-            else
-                expected.Flush();
+            MethodFixupSignature signature = Assert.IsType<MethodFixupSignature>(import.Signature);
+            Assert.True(signature.EmitGCRefMap);
+            GCRefMapBuilder expected = new(factory.Target, relocsOnly: false);
+            expected.GetCallRefMap(signature.Method, instantiatingStub);
+            byte[] map = signature.GetGCRefMap(factory);
+            Assert.Equal(expected.Builder.ToObjectData().Data, map);
+            Assert.Equal(map.Length, signature.Offset);
+            Assert.Same(signature, signatureData.Relocs[indexInArray].Target);
+            Assert.Equal(-map.Length,
+                BinaryPrimitives.ReadInt32LittleEndian(signatureData.Data.AsSpan(indexInArray * sizeof(int))));
+            indexInArray++;
         }
-        Assert.Equal(expected.Builder.ToObjectData().Data, map.GetData(factory).Data.AsSpan(4).ToArray());
     }
 
     private static void ObjectArgument(object value) { }
@@ -305,12 +292,17 @@ public class WasmImportLayoutTests
 
     private static NodeFactory CreateFactory(bool hostTarget = false)
     {
-        CompilerTypeSystemContext context = new(new TargetDetails(
-            hostTarget ? TargetArchitecture.X64 : TargetArchitecture.Wasm32,
+        TargetArchitecture architecture = hostTarget ? TargetArchitecture.X64 : TargetArchitecture.Wasm32;
+        TargetDetails target = new(architecture,
             hostTarget ? TargetOS.Linux : TargetOS.Browser,
-            TargetAbi.NativeAot), SharedGenericsMode.CanonicalReferenceTypes);
+            TargetAbi.NativeAot);
+        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes,
+            bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: hostTarget,
+            targetIsSingleThreaded: !hostTarget, new InstructionSetSupport(default, default, architecture),
+            oldTypeSystemContext: null);
         if (hostTarget)
         {
+            context.InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             context.ReferenceFilePaths = Directory.GetFiles(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "*.dll")
                 .ToDictionary(path => Path.GetFileNameWithoutExtension(path), StringComparer.OrdinalIgnoreCase);
             context.SetSystemModule(context.GetModuleFromPath(typeof(object).Assembly.Location));
@@ -324,15 +316,9 @@ public class WasmImportLayoutTests
             VersionBubbleModuleSet = [],
             CrossModuleInlineable = [],
         });
+        context.SetCompilationGroup(group);
         return new NodeFactory(context, group, null!, null!, null!, null!, new ResourceData(module),
             0, default, ReadyToRunContainerFormat.Wasm, 0, module, -1, -1);
-    }
-
-    private sealed class MethodImport(ImportSectionNode table, Signature signature, MethodDesc method)
-        : Import(table, signature), IMethodNode
-    {
-        public MethodDesc Method => method;
-        public override int ClassCode => 173201195;
     }
 
     private sealed class TestSignature(int id) : Signature

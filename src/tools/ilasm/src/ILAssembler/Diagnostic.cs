@@ -52,6 +52,7 @@ public static class DiagnosticIds
     public const string MissingExportedTypeImplementation = "ILA0031";
     public const string KeyFileError = "ILA0032";
     public const string TooManyGenericParameters = "ILA0033";
+    public const string DuplicateField = "ILA0034";
     public const string GenericParameterConstraintOwnerOutOfRange = "ILA0035";
     public const string InvalidExportOrdinal = "ILA0036";
     public const string ExportOrdinalRangeTooLarge = "ILA0037";
@@ -152,4 +153,5 @@ internal static class DiagnosticMessageTemplates
     public const string SequencePointLineDeltaOutOfRange = "The start line difference from the previous non-hidden sequence point must be between -0x10000000 and 0x0fffffff";
     public const string DuplicateEntryPoint = "Multiple entry points declared";
     public const string InstanceEntryPoint = "Entry point method must be static";
+    public const string DuplicateField = "Duplicate field definition '{0}'";
 }

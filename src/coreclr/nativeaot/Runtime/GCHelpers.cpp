@@ -655,6 +655,7 @@ EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, intptr_t numEle
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
+#ifndef FEATURE_PORTABLE_HELPERS
     // The allocation fast path is an asm helper that runs in coop mode and handles most allocation cases.
     // The helper can also be tail-called. That is desirable for the fast path.
     //
@@ -680,6 +681,7 @@ EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, intptr_t numEle
     ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
 
 #endif
+#endif // !FEATURE_PORTABLE_HELPERS
 
     pThread->SetDeferredTransitionFrame(pTransitionFrame);
 
@@ -779,31 +781,3 @@ FCIMPL1(uint32_t, RhGetGCDescSize, MethodTable* pMT)
 }
 FCIMPLEND
 
-#ifdef FEATURE_GC_STRESS
-
-// static
-EXTERN_C UInt32_BOOL g_fGcStressStarted;
-UInt32_BOOL g_fGcStressStarted = UInt32_FALSE; // UInt32_BOOL because asm code reads it
-
-// static
-EXTERN_C void F_CALL_CONV RhpStressGc()
-{
-    // The GarbageCollect operation below may trash the last win32 error. We save the error here so that it can be
-    // restored after the GC operation;
-    int32_t lastErrorOnEntry = PalGetLastError();
-
-    if (g_fGcStressStarted && !ThreadStore::GetCurrentThread()->IsSuppressGcStressSet() && !ThreadStore::GetCurrentThread()->IsDoNotTriggerGcSet())
-    {
-        GCHeapUtilities::GetGCHeap()->GarbageCollect();
-    }
-
-    // Restore the saved error
-    PalSetLastError(lastErrorOnEntry);
-}
-
-FCIMPL0(void, RhpInitializeGcStress)
-{
-    g_fGcStressStarted = UInt32_TRUE;
-}
-FCIMPLEND
-#endif // FEATURE_GC_STRESS

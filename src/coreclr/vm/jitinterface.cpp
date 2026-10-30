@@ -3655,6 +3655,48 @@ bool CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 /*********************************************************************/
+bool CEEInfo::isByRefLike(CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    _ASSERTE(clsHnd);
+    result = TypeHandle(clsHnd).IsByRefLike();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+/*********************************************************************/
+bool CEEInfo::isSharedInst(CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    _ASSERTE(clsHnd);
+    result = TypeHandle(clsHnd).IsCanonicalSubtype();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+/*********************************************************************/
 uint32_t CEEInfo::getClassAttribs (CORINFO_CLASS_HANDLE clsHnd)
 {
     STANDARD_VM_CONTRACT;
@@ -3918,45 +3960,6 @@ exit: ;
     EE_TO_JIT_TRANSITION();
 
     return (CorInfoInitClassResult)result;
-}
-
-
-
-void CEEInfo::classMustBeLoadedBeforeCodeIsRun (CORINFO_CLASS_HANDLE typeToLoadHnd)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    TypeHandle th = TypeHandle(typeToLoadHnd);
-
-    // Type handles returned to JIT at runtime are always fully loaded. Verify that it is the case.
-    _ASSERTE(th.IsFullyLoaded());
-
-    EE_TO_JIT_TRANSITION_LEAF();
-}
-
-/*********************************************************************/
-void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    MethodDesc *pMD = (MethodDesc*) methHnd;
-
-    // MethodDescs returned to JIT at runtime are always fully loaded. Verify that it is the case.
-    _ASSERTE(pMD->GetMethodTable()->IsFullyLoaded());
-
-    EE_TO_JIT_TRANSITION_LEAF();
 }
 
 /*********************************************************************/
@@ -5852,8 +5855,6 @@ CorInfoHelpFunc CEEInfo::getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
 CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 {
     LIMITED_METHOD_CONTRACT;
-
-    classMustBeLoadedBeforeCodeIsRun(clsHnd);
 
     TypeHandle VMClsHnd(clsHnd);
     if (Nullable::IsNullableType(VMClsHnd))
@@ -9514,11 +9515,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
             // NOTE: in some IJW cases, when the type pointed at is unmanaged,
             // the GetTypeHandle may fail, because there is no TypeDef for such type.
             // Usage of GetTypeHandleThrowing would lead to class load exception
-            TypeHandle thPtr = ptr.GetTypeHandleNT(pModule, &typeContext);
-            if(!thPtr.IsNull())
-            {
-                classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(thPtr.AsPtr()));
-            }
+            ptr.GetTypeHandleNT(pModule, &typeContext);
         }
         FALLTHROUGH;
 
@@ -14057,7 +14054,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             _ASSERTE(pInfoModule->IsFullModule());
             pMD = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pInfoModule), MethodDef, FALSE);
 
-            pMD->PrepareForUseAsADependencyOfANativeImage();
+            pMD->PrepareForUseAsACallTargetOfANativeImage();
 
             if (g_fEEStarted)
             {
@@ -14078,7 +14075,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             MemberLoader::GetDescFromMemberRef(pInfoModule, MemberRef, &pMD, &pFD, &typeContext, FALSE /* strict metadata checks */, &th);
             _ASSERTE(pMD != NULL);
 
-            pMD->PrepareForUseAsADependencyOfANativeImage();
+            pMD->PrepareForUseAsACallTargetOfANativeImage();
 
             if (g_fEEStarted)
             {
@@ -14092,6 +14089,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     case READYTORUN_FIXUP_MethodEntry:
         {
             pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+            pMD->PrepareForUseAsACallTargetOfANativeImage();
 
             if (g_fEEStarted)
             {
@@ -14107,6 +14105,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     case READYTORUN_FIXUP_MethodEntry_ReadyToRun:
         {
             pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+            if (pMD->IsWrapperStub() || pMD->IsVtableMethod())
+                pMD->PrepareForUseAsADependencyOfANativeImage();
 
             if (!pMD->GetModule()->IsReadyToRun())
             {

@@ -6,3 +6,9 @@
 #include "asmconstants.h"
 #include "unixasmmacros.inc"
 
+.macro TAILCALL_GC_POLL_RARE
+        PREPARE_EXTERNAL_VAR g_pPollGC, rax
+        mov     rax, [rax]
+        jmp     rax
+.endm
+

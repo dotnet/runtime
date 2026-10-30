@@ -182,16 +182,16 @@ internal sealed partial class WebCilObjectWriter
                 }
             }
             foreach (ISymbolNode signature in _importLayout.ColdSignatures)
-                AddSymbolRange(signature, length: 0);
+                AddSymbolRange(signature, length: 0, prefixLength: ((Signature)signature).Offset);
         }
 
-        void AddSymbolRange(ISymbolNode symbol, int length)
+        void AddSymbolRange(ISymbolNode symbol, int length, int prefixLength = 0)
         {
             if (_definedSymbols.TryGetValue(GetMangledName(symbol), out SymbolDefinition definition))
             {
                 WebcilSection section = (WebcilSection)_sections[definition.SectionIndex];
-                Add(checked((int)section.Header.VirtualAddress + (int)definition.Value),
-                    length == 0 ? definition.Size : length, entryPoints: false);
+                Add(checked((int)section.Header.VirtualAddress + (int)definition.Value - prefixLength),
+                    length == 0 ? checked(definition.Size + prefixLength) : length, entryPoints: false);
             }
         }
     }
@@ -433,12 +433,11 @@ internal sealed partial class WebCilObjectWriter
                 foreach (int ordinal in kept)
                 {
                     WasmSymbol symbol = functions[ordinal];
-                    names.Add(new WasmSymbol(symbol.Name, WasmIndexSpace.Function,
-                        _physicalFunctionIndices[symbol.Index], IsImport: false));
+                    names.Add(symbol with { Index = _physicalFunctionIndices[symbol.Index] });
                 }
                 if (physicalModule != 0)
                     names.Add(new WasmSymbol(new Utf8String("ActivateModule"), WasmIndexSpace.Function,
-                        functionImports + kept.Count, IsImport: false));
+                        functionImports + kept.Count, IsImport: false, HasExplicitName: false));
                 new WasmNameSection(names).EmitToStream(output);
             }
 
