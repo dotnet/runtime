@@ -69,6 +69,9 @@ already loaded its base, so unrelated signatures need not load either base type.
 handle marshalling still uses the strict binder field/class lookups. Mandatory
 `StubHelpers` and `HandleMarshaler` method signatures independently retain `SafeHandle`;
 its conditional declaration expresses intent rather than guaranteeing a size reduction.
+The compiler's interop classification also allows either handle base type to be absent,
+including during ReadyToRun blittability checks after trimming. Compiler lookups for
+actual handle marshalling remain strict.
 
 `DynamicMethod`, `DynamicResolver`, and `Resolver` are conditional together. The reflection
 caller stack walker checks `DynamicMethod` without loading it for unrelated frames.
