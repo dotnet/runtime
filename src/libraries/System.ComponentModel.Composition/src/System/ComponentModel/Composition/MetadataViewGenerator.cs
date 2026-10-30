@@ -214,14 +214,8 @@ namespace System.ComponentModel.Composition
                 string propertyName = propertyInfo.Name;
 
                 Type[] propertyTypeArguments = new Type[] { propertyInfo.PropertyType };
-                Type[]? optionalModifiers = null;
-                Type[]? requiredModifiers = null;
-
-                // PropertyInfo does not support GetOptionalCustomModifiers and GetRequiredCustomModifiers on Silverlight
-                optionalModifiers = propertyInfo.GetOptionalCustomModifiers();
-                requiredModifiers = propertyInfo.GetRequiredCustomModifiers();
-                Array.Reverse(optionalModifiers);
-                Array.Reverse(requiredModifiers);
+                Type[] optionalModifiers = propertyInfo.GetOptionalCustomModifiers();
+                Type[] requiredModifiers = propertyInfo.GetRequiredCustomModifiers();
 
                 // Generate field
                 FieldBuilder proxyFieldBuilder = proxyTypeBuilder.DefineField(
