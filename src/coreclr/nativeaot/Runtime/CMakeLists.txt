@@ -27,6 +27,7 @@ set(GC_WKS_SVR_SOURCES
 set(COMMON_RUNTIME_SOURCES
     AsmOffsetsVerify.cpp
     rhassert.cpp
+    ${RUNTIME_DIR}/MathHelpers.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
     MethodTable.cpp
@@ -41,7 +42,6 @@ set(COMMON_RUNTIME_SOURCES
     gcenv.ee.cpp
     HandleTableHelpers.cpp
     interoplibinterface_java.cpp
-    MathHelpers.cpp
     MiscHelpers.cpp
     TypeManager.cpp
     ObjectLayout.cpp
@@ -207,6 +207,7 @@ else()
     list(APPEND COMMON_RUNTIME_SOURCES
       wasm/MiscStubs.cpp
       wasm/PInvoke.cpp
+      wasm/WasmCodeManager.cpp
       ${RUNTIME_DIR}/wasm/writebarriers.cpp
       ${GC_DIR}/wasm/gcenv.cpp
     )
@@ -299,12 +300,6 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
-
-if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_I386)
-  list(APPEND RUNTIME_SOURCES_ARCH_ASM
-    ${ARCH_SOURCES_DIR}/MathHelpers.asm
-  )
-endif()
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
   list(APPEND RUNTIME_SOURCES_ARCH_ASM

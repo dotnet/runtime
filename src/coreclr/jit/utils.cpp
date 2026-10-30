@@ -1759,6 +1759,11 @@ void HelperCallProperties::init()
                 exceptions = ExceptionSetFlags::None;
                 break;
 
+            case CORINFO_HELP_WASM_PROF_SAMPLEPOINT:
+                isNoGC     = true;
+                exceptions = ExceptionSetFlags::None;
+                break;
+
             case CORINFO_HELP_TAILCALL: // Never present on stack at the time of GC.
             case CORINFO_HELP_STACK_PROBE:
             case CORINFO_HELP_CHECK_OBJ:

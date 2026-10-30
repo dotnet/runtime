@@ -22,9 +22,9 @@ namespace System.Net.WebSockets.Client.Tests
             yield return Throw(options => options.Credentials = new NetworkCredential());
             yield return Throw(options => options.Proxy = new WebProxy());
 
-            // Will result in an exception on apple mobile platforms
+            // Will result in an exception on apple mobile platforms and platforms without TLS support
             // and crash the test.
-            if (PlatformDetection.IsNotAppleMobile)
+            if (PlatformDetection.IsNotAppleMobile && PlatformDetection.IsTlsSupported)
             {
                 yield return Throw(options => options.ClientCertificates.Add(Test.Common.Configuration.Certificates.GetClientCertificate()));
             }
@@ -58,6 +58,12 @@ namespace System.Net.WebSockets.Client.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
         public async Task ConnectAsync_CustomInvokerWithIncompatibleWebSocketOptions_ThrowsArgumentException(Action<ClientWebSocketOptions> configureOptions, bool shouldThrow)
         {
+            if (!shouldThrow && !PlatformDetection.IsTlsSupported)
+            {
+                // Connecting to a wss:// endpoint requires TLS, which is not supported on this platform
+                return;
+            }
+
             using var invoker = new HttpMessageInvoker(new SocketsHttpHandler
             {
                 ConnectCallback = (_, _) => ValueTask.FromException<Stream>(new Exception("ConnectCallback"))
