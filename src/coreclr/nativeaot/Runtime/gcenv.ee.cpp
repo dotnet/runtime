@@ -71,8 +71,6 @@ void GCToEEInterface::RestartEE(bool /* bUnused */)
     GetThreadStore()->ResumeAllThreads(true);
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(FALSE);
     GetThreadStore()->UnlockThreadStore();
-
-    FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 }
 
 void GCToEEInterface::GcStartWork(int condemned, int /*max_gen*/)

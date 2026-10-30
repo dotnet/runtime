@@ -15,7 +15,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = Microsoft.DotNet.ILAssembler.Tests.DocumentCompilerTestHelpers;
 
 namespace Microsoft.DotNet.ILAssembler.Tests
 {

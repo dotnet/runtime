@@ -10,7 +10,6 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using Antlr4.Runtime;
 using Xunit;
-using DocumentCompilerTestHelpers = Microsoft.DotNet.ILAssembler.Tests.DocumentCompilerTestHelpers;
 
 namespace Microsoft.DotNet.ILAssembler.Tests
 {

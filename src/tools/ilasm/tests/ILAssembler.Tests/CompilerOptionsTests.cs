@@ -12,7 +12,6 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using Xunit;
-using DocumentCompilerTestHelpers = Microsoft.DotNet.ILAssembler.Tests.DocumentCompilerTestHelpers;
 
 namespace Microsoft.DotNet.ILAssembler.Tests
 {

@@ -63,12 +63,6 @@
     <SupportedNETCoreAppTargetFramework Include=".NETCoreApp,Version=v$(NETCoreAppMaximumVersion)" DisplayName=".NET $(NETCoreAppMaximumVersion)" Alias="net$(NETCoreAppMaximumVersion)" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <!-- Define properties that depend on the host SDK RID here. -->
-    <BuildHostTools Condition="'$(DotNetBuildFromVMR)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'">true</BuildHostTools>
-    <BuildHostILTools Condition="'$(BuildHostTools)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))">true</BuildHostILTools>
-  </PropertyGroup>
-
   <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
        This is required to show all the files corresponding to all target frameworks in VS. -->
   <ItemGroup Condition="'$(DefaultLanguageSourceExtension)' != '' and

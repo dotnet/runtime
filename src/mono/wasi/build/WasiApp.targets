@@ -62,6 +62,11 @@
 
     <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
 
+    <!-- HttpClientHandler defaults to the wasi:http based handler. Setting this lets the SDK pass the
+         System.Net.Http.UseNativeHttpHandler feature switch to the trimmer so that the unused handler
+         is removed. Set it to false to use SocketsHttpHandler over wasi:sockets instead. -->
+    <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">true</UseNativeHttpHandler>
+
     <!--<WasiBundleAssemblies Condition="'$(WasiBundleAssemblies)' == ''">true</WasiBundleAssemblies>-->
     <!-- FIXME: rename to WasmHost?? -->
     <!--<WasiRunner Condition="'$(WasiRunner)' == ''">wasmtime</WasiRunner>-->

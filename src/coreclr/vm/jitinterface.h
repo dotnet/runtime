@@ -96,6 +96,11 @@ EXTERN_C FCDECL1(PCODE, JIT_PatchpointForced, int ilOffset);
 
 EXTERN_C FCDECL0(void, RhpGcPoll);
 
+#ifdef TARGET_WASM
+// WASM EventPipe CPU-sampling samplepoint helper (defined in vm/wasm/helpers.cpp).
+EXTERN_C void JIT_WasmProfSamplepoint(uintptr_t callersStackPointer, PCODE portableEntryPointContext);
+#endif // TARGET_WASM
+
 #ifdef FEATURE_IJW
 EXTERN_C FCDECL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField);
 #endif // FEATURE_IJW
@@ -165,20 +170,96 @@ extern "C" FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
 
 extern "C" FCDECL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 
-EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
+// Math helpers implemented in runtime/MathHelpers.cpp
+EXTERN_C FCDECL1_D(uint64_t, RhpDbl2ULng, double val);
+EXTERN_C FCDECL1_D(int64_t, RhpDbl2Lng, double val);
+EXTERN_C FCDECL2_DD(double, Rhp_fmod, double x, double y);
+EXTERN_C FCDECL2_FF(float, Rhp_fmodf, float x, float y);
 
-#ifndef HOST_64BIT
+EXTERN_C FCDECL1_D(double, Rhp_acos, double x);
+EXTERN_C FCDECL1_F(float, Rhp_acosf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_acosh, double x);
+EXTERN_C FCDECL1_F(float, Rhp_acoshf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_asin, double x);
+EXTERN_C FCDECL1_F(float, Rhp_asinf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_asinh, double x);
+EXTERN_C FCDECL1_F(float, Rhp_asinhf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_atan, double x);
+EXTERN_C FCDECL1_F(float, Rhp_atanf, float x);
+EXTERN_C FCDECL2_DD(double, Rhp_atan2, double y, double x);
+EXTERN_C FCDECL2_FF(float, Rhp_atan2f, float y, float x);
+EXTERN_C FCDECL1_D(double, Rhp_atanh, double x);
+EXTERN_C FCDECL1_F(float, Rhp_atanhf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_cbrt, double x);
+EXTERN_C FCDECL1_F(float, Rhp_cbrtf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_ceil, double x);
+EXTERN_C FCDECL1_F(float, Rhp_ceilf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_cos, double x);
+EXTERN_C FCDECL1_F(float, Rhp_cosf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_cosh, double x);
+EXTERN_C FCDECL1_F(float, Rhp_coshf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_exp, double x);
+EXTERN_C FCDECL1_F(float, Rhp_expf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_floor, double x);
+EXTERN_C FCDECL1_F(float, Rhp_floorf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_log, double x);
+EXTERN_C FCDECL1_F(float, Rhp_logf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_log2, double x);
+EXTERN_C FCDECL1_F(float, Rhp_log2f, float x);
+EXTERN_C FCDECL1_D(double, Rhp_log10, double x);
+EXTERN_C FCDECL1_F(float, Rhp_log10f, float x);
+EXTERN_C FCDECL2_DD(double, Rhp_pow, double x, double y);
+EXTERN_C FCDECL2_FF(float, Rhp_powf, float x, float y);
+EXTERN_C FCDECL1_D(double, Rhp_sin, double x);
+EXTERN_C FCDECL1_F(float, Rhp_sinf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_sinh, double x);
+EXTERN_C FCDECL1_F(float, Rhp_sinhf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_sqrt, double x);
+EXTERN_C FCDECL1_F(float, Rhp_sqrtf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_tan, double x);
+EXTERN_C FCDECL1_F(float, Rhp_tanf, float x);
+EXTERN_C FCDECL1_D(double, Rhp_tanh, double x);
+EXTERN_C FCDECL1_F(float, Rhp_tanhf, float x);
+EXTERN_C FCDECL3_DDD(double, Rhp_fma, double x, double y, double z);
+EXTERN_C FCDECL3_FFF(float, Rhp_fmaf, float x, float y, float z);
+EXTERN_C FCDECL2_DI(double, Rhp_modf, double x, double* intptr);
+EXTERN_C FCDECL2_FI(float, Rhp_modff, float x, float* intptr);
+EXTERN_C FCDECL3_DII(void, Rhp_sincos, double x, double* pSin, double* pCos);
+EXTERN_C FCDECL3_FII(void, Rhp_sincosf, float x, float* pSin, float* pCos);
+
+#ifdef TARGET_32BIT
+EXTERN_C FCDECL2_LL(int64_t, DivInt64Internal, int64_t i, int64_t j);
+EXTERN_C FCDECL2_LL(uint64_t, DivUInt64Internal, uint64_t i, uint64_t j);
+EXTERN_C FCDECL2_LL(int64_t, ModInt64Internal, int64_t i, int64_t j);
+EXTERN_C FCDECL2_LL(uint64_t, ModUInt64Internal, uint64_t i, uint64_t j);
+EXTERN_C FCDECL2(int32_t, DivInt32Internal, int32_t i, int32_t j);
+EXTERN_C FCDECL2(uint32_t, DivUInt32Internal, uint32_t i, uint32_t j);
+EXTERN_C FCDECL2(int32_t, ModInt32Internal, int32_t i, int32_t j);
+EXTERN_C FCDECL2(uint32_t, ModUInt32Internal, uint32_t i, uint32_t j);
+
+EXTERN_C FCDECL1_L(double, RhpLng2Dbl, int64_t val);
+EXTERN_C FCDECL1_L(double, RhpULng2Dbl, uint64_t val);
+EXTERN_C FCDECL1_L(float, RhpLng2Flt, int64_t val);
+EXTERN_C FCDECL1_L(float, RhpULng2Flt, uint64_t val);
+
+EXTERN_C FCDECL2_LL(int64_t, RhpLMul, int64_t val1, int64_t val2);
+
 #ifdef TARGET_X86
-// JIThelp.asm
-EXTERN_C void STDCALL JIT_LLsh();
-EXTERN_C void STDCALL JIT_LRsh();
-EXTERN_C void STDCALL JIT_LRsz();
+EXTERN_C void STDCALL RhpLLsh();
+EXTERN_C void STDCALL RhpLRsh();
+EXTERN_C void STDCALL RhpLRsz();
+#ifdef TARGET_WINDOWS
+EXTERN_C FCDECL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor);
+EXTERN_C FCDECL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor);
+EXTERN_C FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor);
+EXTERN_C FCDECL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor);
+#endif // TARGET_WINDOWS
 #else // TARGET_X86
-EXTERN_C FCDECL2_VV(UINT64, JIT_LLsh, UINT64 num, int shift);
-EXTERN_C FCDECL2_VV(INT64, JIT_LRsh, INT64 num, int shift);
-EXTERN_C FCDECL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift);
+EXTERN_C FCDECL2(uint64_t, RhpLLsh, uint64_t num, int32_t shift);
+EXTERN_C FCDECL2(int64_t, RhpLRsh, int64_t num, int32_t shift);
+EXTERN_C FCDECL2(uint64_t, RhpLRsz, uint64_t num, int32_t shift);
 #endif // !TARGET_X86
-#endif // !HOST_64BIT
+#endif // TARGET_32BIT
 
 #ifdef TARGET_X86
 

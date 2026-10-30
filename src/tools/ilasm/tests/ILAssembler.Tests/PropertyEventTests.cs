@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Xunit;
-using DocumentCompilerTestHelpers = Microsoft.DotNet.ILAssembler.Tests.DocumentCompilerTestHelpers;
 
 namespace Microsoft.DotNet.ILAssembler.Tests
 {
