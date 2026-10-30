@@ -12850,6 +12850,7 @@ public partial class CILParser : Parser {
 
 	public partial class MethodDeclContext : ParserRuleContext {
 		public Int32Context value;
+		public IToken directive;
 		public DataDeclContext declaration;
 		public SecDeclContext security;
 		public ExtSourceSpecContext source;
@@ -12972,8 +12973,8 @@ public partial class CILParser : Parser {
 				EnterOuterAlt(_localctx, 5);
 				{
 				State = 2759;
-				Match(ENTRYPOINT);
-				Actions.SetEntryPoint();
+				_localctx.directive = Match(ENTRYPOINT);
+				Actions.SetEntryPoint(_localctx.directive);
 				}
 				break;
 			case ZEROINIT:

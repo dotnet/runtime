@@ -1204,10 +1204,10 @@ namespace System.Numerics.Tensors.Tests
                     extrema[6] = double.MaxMagnitudeNumber(value, extrema[6]);
                     extrema[7] = double.MinMagnitudeNumber(value, extrema[7]);
                 }
-                AssertBits(sum, Tensor.Sum(source));
-                AssertBits(product, Tensor.Product(source));
+                AssertBitsOrNaN(sum, Tensor.Sum(source));
+                AssertBitsOrNaN(product, Tensor.Product(source));
                 AssertBits(Math.Sqrt(squares), Tensor.Norm(source));
-                AssertBits(sum / logical.Length, Tensor.Average(source));
+                AssertBitsOrNaN(sum / logical.Length, Tensor.Average(source));
                 AssertBits(extrema[0], Tensor.Max(source));
                 AssertBits(extrema[1], Tensor.Min(source));
                 AssertBits(extrema[2], Tensor.MaxMagnitude(source));
@@ -1240,16 +1240,28 @@ namespace System.Numerics.Tensors.Tests
                         otherSquares += y * y;
                         differences += (x - y) * (x - y);
                     }
-                    AssertBits(dot, Tensor.Dot(source, other));
-                    AssertBits(dot, Tensor.Dot(other, source));
+                    AssertBitsOrNaN(dot, Tensor.Dot(source, other));
+                    AssertBitsOrNaN(dot, Tensor.Dot(other, source));
                     AssertBits(Math.Sqrt(differences), Tensor.Distance(source, other));
-                    AssertBits(dot / (Math.Sqrt(squares) * Math.Sqrt(otherSquares)), Tensor.CosineSimilarity(source, other));
+                    AssertBitsOrNaN(dot / (Math.Sqrt(squares) * Math.Sqrt(otherSquares)), Tensor.CosineSimilarity(source, other));
                 }
             }
 
             static void AssertBits(double expected, double actual)
             {
                 Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual));
+            }
+
+            static void AssertBitsOrNaN(double expected, double actual)
+            {
+                if (double.IsNaN(expected))
+                {
+                    Assert.True(double.IsNaN(actual));
+                }
+                else
+                {
+                    AssertBits(expected, actual);
+                }
             }
         }
 

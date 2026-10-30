@@ -848,6 +848,14 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, MathImportPrefix + "modff")]
         internal static extern unsafe float modff(float x, float* intptr);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "Rhp_sincos")]
+        internal static extern unsafe void sincos(double x, double* sin, double* cos);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "Rhp_sincosf")]
+        internal static extern unsafe void sincosf(float x, float* sin, float* cos);
+
 #if TARGET_WINDOWS
         [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void RhSetCurrentThreadName(string name);

@@ -75,7 +75,7 @@ jobs:
     - name: crossgenComparisonRunnerDirectory
       value: $(artifactsDirectory)$(dir)crossgen2_comparison_runner
     - name: librariesProductDllDir
-      value: $(Build.SourcesDirectory)$(dir)artifacts$(dir)bin$(dir)runtime$(dir)net11.0-$(osGroup)$(osSubgroup)-$(buildConfig)-$(archType)
+      value: $(Build.SourcesDirectory)$(dir)artifacts$(dir)bin$(dir)runtime$(dir)net12.0-$(osGroup)$(osSubgroup)-$(buildConfig)-$(archType)
 
     - ${{ parameters.variables }}
 

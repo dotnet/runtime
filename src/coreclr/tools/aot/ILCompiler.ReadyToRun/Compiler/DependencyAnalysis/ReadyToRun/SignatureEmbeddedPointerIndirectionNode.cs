@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Internal.Text;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -19,18 +20,18 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => $"Embedded pointer to {Target.GetMangledName(factory.NameMangler)}";
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
-            return new[]
-            {
-                new DependencyListEntry(Target, "reloc"),
-            };
+            sink.Add(Target, "reloc");
         }
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
             dataBuilder.RequireInitialPointerAlignment();
-            dataBuilder.EmitReloc(Target, RelocType.IMAGE_REL_BASED_ADDR32NB);
+            int delta = _import.Table.EmitGCRefMap && !relocsOnly
+                ? -((MethodFixupSignature)Target).GetGCRefMap(factory).Length
+                : 0;
+            dataBuilder.EmitReloc(Target, RelocType.IMAGE_REL_BASED_ADDR32NB, delta);
         }
     
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
