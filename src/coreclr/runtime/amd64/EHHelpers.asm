@@ -67,17 +67,17 @@ endm
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; UINT_PTR CallEHFunclet(Object* pThrowable, PCODE pFunclet, EHFuncletRegs* pRegs, UINT_PTR* pFuncletCallerSP)
+;; UINT_PTR CallEHFunclet(Object* pThrowable, PCODE pFunclet, void* pRegs, UINT_PTR* pFuncletCallerSP)
 ;;
-;; Calls a catch or finally funclet with the preserved registers of the parent frame loaded through the
-;; register pointers in pRegs (the REGDISPLAY on NativeAOT), and XMM6-15 loaded from pRegs.
+;; Calls a catch or finally funclet with the preserved registers of the parent frame, including XMM6-15,
+;; loaded from pRegs (the CONTEXT on CoreCLR, the REGDISPLAY on NativeAOT) by LOAD_FUNCLET_REGISTER.
 ;;
 ;; On NativeAOT, the funclet runs with TSF_DoNotTriggerGc cleared, and the preserved general purpose registers
-;; are written back through pRegs after it returns since a GC during the funclet may have updated them.
+;; are written back through the REGDISPLAY after it returns since a GC during the funclet may have updated them.
 ;;
 ;; INPUT:  RCX:  exception object (null for finally funclets)
 ;;         RDX:  funclet address
-;;         R8:   register pointers
+;;         R8:   CONTEXT* on CoreCLR, REGDISPLAY* on NativeAOT
 ;;         R9:   address where the SP of this helper (the funclet's caller) is saved
 ;;
 ;; OUTPUT: RAX:  resume address for catch funclets
@@ -102,33 +102,25 @@ ifdef FEATURE_NATIVEAOT
         lock and            dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
 endif
 
-        mov     rax, [r8 + OFFSETOF__EHFuncletRegs__pRbx]
-        mov     rbx, [rax]
-        mov     rax, [r8 + OFFSETOF__EHFuncletRegs__pRbp]
-        mov     rbp, [rax]
-        mov     rax, [r8 + OFFSETOF__EHFuncletRegs__pRsi]
-        mov     rsi, [rax]
-        mov     rax, [r8 + OFFSETOF__EHFuncletRegs__pRdi]
-        mov     rdi, [rax]
-        mov     rax, [r8 + OFFSETOF__EHFuncletRegs__pR12]
-        mov     r12, [rax]
-        mov     rax, [r8 + OFFSETOF__EHFuncletRegs__pR13]
-        mov     r13, [rax]
-        mov     rax, [r8 + OFFSETOF__EHFuncletRegs__pR14]
-        mov     r14, [rax]
-        mov     rax, [r8 + OFFSETOF__EHFuncletRegs__pR15]
-        mov     r15, [rax]
+        LOAD_FUNCLET_REGISTER r8, Rbx, rax
+        LOAD_FUNCLET_REGISTER r8, Rbp, rax
+        LOAD_FUNCLET_REGISTER r8, Rsi, rax
+        LOAD_FUNCLET_REGISTER r8, Rdi, rax
+        LOAD_FUNCLET_REGISTER r8, R12, rax
+        LOAD_FUNCLET_REGISTER r8, R13, rax
+        LOAD_FUNCLET_REGISTER r8, R14, rax
+        LOAD_FUNCLET_REGISTER r8, R15, rax
 
-        movdqa  xmm6, [r8 + OFFSETOF__EHFuncletRegs__Xmm + 0*10h]
-        movdqa  xmm7, [r8 + OFFSETOF__EHFuncletRegs__Xmm + 1*10h]
-        movdqa  xmm8, [r8 + OFFSETOF__EHFuncletRegs__Xmm + 2*10h]
-        movdqa  xmm9, [r8 + OFFSETOF__EHFuncletRegs__Xmm + 3*10h]
-        movdqa  xmm10,[r8 + OFFSETOF__EHFuncletRegs__Xmm + 4*10h]
-        movdqa  xmm11,[r8 + OFFSETOF__EHFuncletRegs__Xmm + 5*10h]
-        movdqa  xmm12,[r8 + OFFSETOF__EHFuncletRegs__Xmm + 6*10h]
-        movdqa  xmm13,[r8 + OFFSETOF__EHFuncletRegs__Xmm + 7*10h]
-        movdqa  xmm14,[r8 + OFFSETOF__EHFuncletRegs__Xmm + 8*10h]
-        movdqa  xmm15,[r8 + OFFSETOF__EHFuncletRegs__Xmm + 9*10h]
+        LOAD_FUNCLET_XMM_REGISTER r8, 6
+        LOAD_FUNCLET_XMM_REGISTER r8, 7
+        LOAD_FUNCLET_XMM_REGISTER r8, 8
+        LOAD_FUNCLET_XMM_REGISTER r8, 9
+        LOAD_FUNCLET_XMM_REGISTER r8, 10
+        LOAD_FUNCLET_XMM_REGISTER r8, 11
+        LOAD_FUNCLET_XMM_REGISTER r8, 12
+        LOAD_FUNCLET_XMM_REGISTER r8, 13
+        LOAD_FUNCLET_XMM_REGISTER r8, 14
+        LOAD_FUNCLET_XMM_REGISTER r8, 15
 
         call    rdx
 
@@ -136,22 +128,14 @@ ALTERNATE_ENTRY CallEHFunclet2
 
 ifdef FEATURE_NATIVEAOT
         mov     rdx, [rsp + rsp_offsetof_regs]
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pRbx]
-        mov     [rcx], rbx
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pRbp]
-        mov     [rcx], rbp
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pRsi]
-        mov     [rcx], rsi
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pRdi]
-        mov     [rcx], rdi
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pR12]
-        mov     [rcx], r12
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pR13]
-        mov     [rcx], r13
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pR14]
-        mov     [rcx], r14
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pR15]
-        mov     [rcx], r15
+        STORE_FUNCLET_REGISTER rdx, Rbx, rcx
+        STORE_FUNCLET_REGISTER rdx, Rbp, rcx
+        STORE_FUNCLET_REGISTER rdx, Rsi, rcx
+        STORE_FUNCLET_REGISTER rdx, Rdi, rcx
+        STORE_FUNCLET_REGISTER rdx, R12, rcx
+        STORE_FUNCLET_REGISTER rdx, R13, rcx
+        STORE_FUNCLET_REGISTER rdx, R14, rcx
+        STORE_FUNCLET_REGISTER rdx, R15, rcx
 
         ;; XMM6-15 do not need copy-back (no GC adjustment required).
 

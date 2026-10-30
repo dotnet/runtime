@@ -7,16 +7,20 @@ include AsmMacros.inc
 
 G_TRAP_THREADS TEXTEQU <RhpTrapThreads>
 
-;; CallEHFunclet accesses the preserved registers through the REGDISPLAY
-OFFSETOF__EHFuncletRegs__pRbx   equ OFFSETOF__REGDISPLAY__pRbx
-OFFSETOF__EHFuncletRegs__pRbp   equ OFFSETOF__REGDISPLAY__pRbp
-OFFSETOF__EHFuncletRegs__pRsi   equ OFFSETOF__REGDISPLAY__pRsi
-OFFSETOF__EHFuncletRegs__pRdi   equ OFFSETOF__REGDISPLAY__pRdi
-OFFSETOF__EHFuncletRegs__pR12   equ OFFSETOF__REGDISPLAY__pR12
-OFFSETOF__EHFuncletRegs__pR13   equ OFFSETOF__REGDISPLAY__pR13
-OFFSETOF__EHFuncletRegs__pR14   equ OFFSETOF__REGDISPLAY__pR14
-OFFSETOF__EHFuncletRegs__pR15   equ OFFSETOF__REGDISPLAY__pR15
-OFFSETOF__EHFuncletRegs__Xmm    equ OFFSETOF__REGDISPLAY__Xmm
+;; CallEHFunclet loads and writes back the preserved registers of the parent frame through the REGDISPLAY
+LOAD_FUNCLET_REGISTER macro base, reg, scratch
+        mov     scratch, [base + OFFSETOF__REGDISPLAY__p&reg]
+        mov     reg, [scratch]
+        endm
+
+STORE_FUNCLET_REGISTER macro base, reg, scratch
+        mov     scratch, [base + OFFSETOF__REGDISPLAY__p&reg]
+        mov     [scratch], reg
+        endm
+
+LOAD_FUNCLET_XMM_REGISTER macro base, index
+        movdqa  xmm&index, [base + OFFSETOF__REGDISPLAY__Xmm + (index - 6) * 10h]
+        endm
 
 EXTERN RhpGcPollRare : PROC
 

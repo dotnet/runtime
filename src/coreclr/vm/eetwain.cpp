@@ -1726,11 +1726,7 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
 #ifndef TARGET_WASM
 
 // This is an assembly helper that enables us to call into EH funclets.
-#ifdef TARGET_AMD64
-EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, EHFuncletRegs *pRegs, UINT_PTR *pFuncletCallerSP);
-#else
 EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP);
-#endif
 
 // This is an assembly helper that enables us to call into EH filter funclets.
 EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
@@ -1793,28 +1789,10 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     }
     else
     {
-#ifdef TARGET_AMD64
-        // Point at the CONTEXT rather than at pRD->pCurrentContextPointers, which can have NULL entries
-        // (e.g. after unwinding through an InlinedCallFrame).
-        CONTEXT *pContext = pRD->pCurrentContext;
-        EHFuncletRegs regs;
-#define CALLEE_SAVED_REGISTER(regname) regs.p##regname = &pContext->regname;
-        ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-#ifndef UNIX_AMD64_ABI
-        memcpy(regs.Xmm, &pContext->Xmm6, sizeof(regs.Xmm));
-#endif
-
-        dwResult = CallEHFunclet(OBJECTREFToObject(throwable),
-                                 CastHandlerFn(pfnHandler),
-                                 &regs,
-                                 pFuncletCallerSP);
-#else
         dwResult = CallEHFunclet(OBJECTREFToObject(throwable),
                                  CastHandlerFn(pfnHandler),
                                  pRD->pCurrentContext,
                                  pFuncletCallerSP);
-#endif
     }
 
 #endif // TARGET_WASM

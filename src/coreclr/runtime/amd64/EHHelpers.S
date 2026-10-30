@@ -40,17 +40,17 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// UINT_PTR CallEHFunclet(Object* pThrowable, PCODE pFunclet, EHFuncletRegs* pRegs, UINT_PTR* pFuncletCallerSP)
+// UINT_PTR CallEHFunclet(Object* pThrowable, PCODE pFunclet, void* pRegs, UINT_PTR* pFuncletCallerSP)
 //
-// Calls a catch or finally funclet with the preserved registers of the parent frame loaded through the
-// register pointers in pRegs (the REGDISPLAY on NativeAOT).
+// Calls a catch or finally funclet with the preserved registers of the parent frame loaded from pRegs
+// (the CONTEXT on CoreCLR, the REGDISPLAY on NativeAOT) by LOAD_FUNCLET_REGISTER.
 //
 // On NativeAOT, the funclet runs with TSF_DoNotTriggerGc cleared, and the preserved registers are written back
-// through pRegs after it returns since a GC during the funclet may have updated them.
+// through the REGDISPLAY after it returns since a GC during the funclet may have updated them.
 //
 // INPUT:  RDI:  exception object (null for finally funclets)
 //         RSI:  funclet address
-//         RDX:  register pointers
+//         RDX:  CONTEXT* on CoreCLR, REGDISPLAY* on NativeAOT
 //         RCX:  address where the SP of this helper (the funclet's caller) is saved
 //
 // OUTPUT: RAX:  resume address for catch funclets
@@ -81,18 +81,12 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         mov     rdx, [rsp + locRegs]
 #endif
 
-        mov     rax, [rdx + OFFSETOF__EHFuncletRegs__pRbx]
-        mov     rbx, [rax]
-        mov     rax, [rdx + OFFSETOF__EHFuncletRegs__pRbp]
-        mov     rbp, [rax]
-        mov     rax, [rdx + OFFSETOF__EHFuncletRegs__pR12]
-        mov     r12, [rax]
-        mov     rax, [rdx + OFFSETOF__EHFuncletRegs__pR13]
-        mov     r13, [rax]
-        mov     rax, [rdx + OFFSETOF__EHFuncletRegs__pR14]
-        mov     r14, [rax]
-        mov     rax, [rdx + OFFSETOF__EHFuncletRegs__pR15]
-        mov     r15, [rax]
+        LOAD_FUNCLET_REGISTER(rdx, Rbx, rax)
+        LOAD_FUNCLET_REGISTER(rdx, Rbp, rax)
+        LOAD_FUNCLET_REGISTER(rdx, R12, rax)
+        LOAD_FUNCLET_REGISTER(rdx, R13, rax)
+        LOAD_FUNCLET_REGISTER(rdx, R14, rax)
+        LOAD_FUNCLET_REGISTER(rdx, R15, rax)
 
         call    rsi
 
@@ -100,18 +94,12 @@ ALTERNATE_ENTRY CallEHFunclet2
 
 #ifdef FEATURE_NATIVEAOT
         mov     rdx, [rsp + locRegs]
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pRbx]
-        mov     [rcx], rbx
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pRbp]
-        mov     [rcx], rbp
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pR12]
-        mov     [rcx], r12
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pR13]
-        mov     [rcx], r13
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pR14]
-        mov     [rcx], r14
-        mov     rcx, [rdx + OFFSETOF__EHFuncletRegs__pR15]
-        mov     [rcx], r15
+        STORE_FUNCLET_REGISTER(rdx, Rbx, rcx)
+        STORE_FUNCLET_REGISTER(rdx, Rbp, rcx)
+        STORE_FUNCLET_REGISTER(rdx, R12, rcx)
+        STORE_FUNCLET_REGISTER(rdx, R13, rcx)
+        STORE_FUNCLET_REGISTER(rdx, R14, rcx)
+        STORE_FUNCLET_REGISTER(rdx, R15, rcx)
 
         // Suppress GC again until the dispatcher calls the next funclet or resumes after the catch.
         mov     rcx, [rsp + locThread]
