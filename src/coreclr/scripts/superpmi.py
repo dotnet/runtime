@@ -313,6 +313,7 @@ collect_parser.add_argument("--nativeaot", action="store_true", help="Run native
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
 collect_parser.add_argument("-crossgen2_reference_directory", help="Directory containing the assemblies crossgen2 should resolve references against. Optional; defaults to the Core_Root directory. Used for cross-target crossgen2 collections, where the assemblies being compiled are built for the target and not for the host.")
 collect_parser.add_argument("--crossgen2_composite", action="store_true", help="Run crossgen2 in composite mode: compile all the assemblies in one invocation, with the whole reference set in the version bubble, so cross-assembly generic instantiations are compiled as well. Slower, but collects many more method contexts.")
+collect_parser.add_argument("-crossgen2_timeout", type=int, help="Timeout in seconds for each crossgen2 invocation. An invocation that times out is killed and its method contexts are dropped. Optional; default is no timeout.")
 collect_parser.add_argument("-ilc_rsps", dest="ilc_rsps", nargs="+", default=[], help="For --nativeaot only. A list of 'ilc.rsp' files.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
@@ -1190,16 +1191,44 @@ class SuperPMICollect:
                         stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
                         stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
 
+                        # With a timeout, give the invocation its own shim log directory, so a killed
+                        # invocation's (possibly partially written) .mc file can be dropped.
+                        timeout = self.coreclr_args.crossgen2_timeout
+                        shim_log_directory = None
+                        process_env = None
+                        if timeout:
+                            # Keep the name short: the shim limits the length of the .mc file path.
+                            shim_log_directory = tempfile.mkdtemp(prefix="mc", dir=self.temp_location)
+                            process_env = os.environ.copy()
+                            process_env["SuperPMIShimLogPath"] = shim_log_directory
+
                         # Avoid shell splitting when the crossgen2 or response-file path contains spaces.
                         proc = await asyncio.create_subprocess_exec(
                             *command,
                             stdout=stdout_file_handle,
-                            stderr=stderr_file_handle)
+                            stderr=stderr_file_handle,
+                            env=process_env)
 
-                        await proc.communicate()
+                        timed_out = False
+                        try:
+                            await asyncio.wait_for(proc.communicate(), timeout=timeout if timeout else None)
+                        except asyncio.TimeoutError:
+                            timed_out = True
+                            proc.kill()
+                            await proc.wait()
 
                         os.close(stdout_file_handle)
                         os.close(stderr_file_handle)
+
+                        if shim_log_directory is not None:
+                            if timed_out:
+                                logging.warning("%scrossgen2 timed out after %s seconds and was killed; dropping its method contexts: %s",
+                                                print_prefix, timeout, " ".join(input_assemblies))
+                            else:
+                                for item in os.listdir(shim_log_directory):
+                                    if item.endswith(".mc"):
+                                        shutil.move(os.path.join(shim_log_directory, item), os.path.join(self.temp_location, item))
+                            shutil.rmtree(shim_log_directory, ignore_errors=True)
 
                         # No need to keep zero-length files
                         if is_zero_length_file(stdout_filepath):
@@ -5518,6 +5547,11 @@ def setup_args(args):
                             "crossgen2_composite",
                             lambda unused: True,
                             "Unable to set crossgen2_composite")
+
+        coreclr_args.verify(args,
+                            "crossgen2_timeout",
+                            lambda timeout: timeout is None or timeout > 0,
+                            "crossgen2_timeout must be a positive number of seconds")
 
         coreclr_args.verify(args,
                             "nativeaot",

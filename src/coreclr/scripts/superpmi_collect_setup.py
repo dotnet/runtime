@@ -33,6 +33,7 @@
 
 import argparse
 import os
+import re
 import shutil
 import stat
 
@@ -347,9 +348,16 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
 
     Args:
         src_directory (string): Path of directory to enumerate.
-        exclude_directories ([string]): Directory names to exclude.
+        exclude_directories ([string]): Directory names to exclude. Names containing '/' are
+            paths relative to src_directory, and exclude only that directory.
         exclude_files ([string]): File names to exclude.
     """
+
+    def is_excluded_directory(parent, name):
+        if name in exclude_directories:
+            return True
+        relative_path = os.path.relpath(os.path.join(parent, name), src_directory)
+        return relative_path.replace(os.sep, "/") in exclude_directories
 
     def sorter_by_size(pair):
         """ Sorts the pair (file_name, file_size) tuple in descending order of file_size
@@ -365,7 +373,7 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
 
     for file_path, dirs, files in os.walk(src_directory, topdown=True):
         # Credit: https://stackoverflow.com/a/19859907
-        dirs[:] = [d for d in dirs if d not in exclude_directories]
+        dirs[:] = [d for d in dirs if not is_excluded_directory(file_path, d)]
         for name in files:
             # Make the exclude check case-insensitive
             if name.lower() in exclude_files_lower:
@@ -873,6 +881,12 @@ def main(main_args):
                 print('Staging coreclr test infrastructure assemblies from {} -> {}'.format(coreclr_args.input_directory, crossgen2_reference_directory))
                 stage_coreclr_test_infrastructure_assemblies(coreclr_args.input_directory, crossgen2_reference_directory)
                 exclude_files += [name for name in os.listdir(crossgen2_reference_directory) if name.endswith(".dll")]
+                # The Arm and x86 hardware intrinsics tests are large and on wasm mostly compile
+                # their software fallbacks; keep the General and Wasm ones.
+                hardware_intrinsics_directory = os.path.join(coreclr_args.input_directory, "HardwareIntrinsics")
+                if os.path.isdir(hardware_intrinsics_directory):
+                    exclude_directories += ["HardwareIntrinsics/" + name for name in os.listdir(hardware_intrinsics_directory)
+                                            if re.match(r"(HardwareIntrinsics_)?(Arm|X86)", name)]
                 # crossgen2 resolves a test's other dependencies from its own directory, so don't
                 # split directories across work items.
                 keep_directories_together = True
