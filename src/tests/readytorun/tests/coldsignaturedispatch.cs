@@ -65,6 +65,20 @@ public class ColdSignatureDispatch
         {
             return target.Transform<T>(value);
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static T InvokeGenericContext(T value) => GenericContextCallee.Wrap(value).Value;
+    }
+
+    public struct GenericContextValue<T>
+    {
+        public T Value;
+    }
+
+    public static class GenericContextCallee
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static GenericContextValue<T> Wrap<T>(T value) => new GenericContextValue<T> { Value = value };
     }
 
     // A cold shared-generic interface call must prepare signature types before GC scans its
@@ -84,5 +98,9 @@ public class ColdSignatureDispatch
         GenericVirtualSignatureValue genericVirtualResult = new Caller<string>().InvokeGenericVirtual(
             new GenericVirtualTransformImpl(), new GenericVirtualSignatureValue { Reference = reference });
         Assert.Same(reference, genericVirtualResult.Reference);
+
+        // GC in the callee's fixup reports the generic-context argument of its call frame. The
+        // callee's return type is not loaded, so its offset must come from the GCRefMap.
+        Assert.Same(reference, Caller<object>.InvokeGenericContext(reference));
     }
 }
