@@ -7,15 +7,25 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn);CS3021</NoWarn>
+    <!-- SDK pack omits legacy nuspec reference groups even when ref assets are present. -->
+    <NoWarn>$(NoWarn);CS3021;NU5131</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsAotCompatible>true</IsAotCompatible>
     <IsPackable>true</IsPackable>
     <IsShipping>false</IsShipping>
+    <EnableDefaultPackageReadmeFile>true</EnableDefaultPackageReadmeFile>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="$(Antlr4RuntimeStandardVersion)" />
   </ItemGroup>
+
+  <Target Name="_AddReferenceAssemblyToPackage">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(TargetRefPath)" PackagePath="ref\$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
 
 </Project>
