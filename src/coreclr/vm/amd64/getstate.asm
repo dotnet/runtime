@@ -22,13 +22,6 @@ LEAF_ENTRY GetCurrentIP, _TEXT
 LEAF_END GetCurrentIP, _TEXT
 
 
-LEAF_ENTRY GetRBP, _TEXT
-
-        mov rax, rbp
-        ret
-
-LEAF_END GetRBP, _TEXT
-
 ;// @dbgtodo inspection: remove this function when we remove the ipc event to load the float state
 
 ; extern "C" double FPFillR8(void* fpContextSlot);
