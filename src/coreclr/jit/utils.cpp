@@ -1636,6 +1636,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
@@ -1754,6 +1756,11 @@ void HelperCallProperties::init()
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
             case CORINFO_HELP_JIT_RESUME_AFTER_CATCH:
+                exceptions = ExceptionSetFlags::None;
+                break;
+
+            case CORINFO_HELP_WASM_PROF_SAMPLEPOINT:
+                isNoGC     = true;
                 exceptions = ExceptionSetFlags::None;
                 break;
 

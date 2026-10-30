@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime;
-using System.Text;
 
 using Xunit;
 using TestLibrary;
@@ -37,39 +36,31 @@ public class TestConfigTester
                 continue;
             }
 
-            using Process process = new();
-
-            StringBuilder arguments = new();
+            ProcessStartInfo startInfo = new(corerunPath);
+            startInfo.InheritedHandles = [];
 
             foreach (Attribute cp in configProperties)
             {
                 TestConfig.ConfigPropertyAttribute configProp = (TestConfig.ConfigPropertyAttribute)cp;
-                arguments.Append($"-p {configProp.Name}={configProp.Value} ");
+                startInfo.ArgumentList.Add("-p");
+                startInfo.ArgumentList.Add($"{configProp.Name}={configProp.Value}");
             }
 
-            arguments.Append($"\"{testConfigApp}\" {mi.Name}");
+            startInfo.ArgumentList.Add(testConfigApp);
+            startInfo.ArgumentList.Add(mi.Name);
 
-            process.StartInfo.FileName = corerunPath;
-            process.StartInfo.Arguments = arguments.ToString();
-
-            foreach (string key in Environment.GetEnvironmentVariables().Keys)
-            {
-                process.StartInfo.EnvironmentVariables[key] = Environment.GetEnvironmentVariable(key);
-            }
-
-            Console.WriteLine($"Running: {process.StartInfo.Arguments}");
+            Console.WriteLine($"Running: {string.Join(" ", startInfo.ArgumentList)}");
             foreach (Attribute ev in envVariables)
             {
                 TestConfig.EnvVarAttribute envVar = (TestConfig.EnvVarAttribute)ev;
-                process.StartInfo.EnvironmentVariables[envVar.Name] = envVar.Value;
+                startInfo.EnvironmentVariables[envVar.Name] = envVar.Value;
                 Console.WriteLine($"    set {envVar.Name}={envVar.Value}");
             }
 
-            process.Start();
-            process.WaitForExit();
-            if (process.ExitCode != TestConfig.Success)
+            ProcessExitStatus status = Process.Run(startInfo);
+            if (status.ExitCode != TestConfig.Success)
             {
-                throw new Exception($"Failed: {mi.Name}: exit code = {process.ExitCode}");
+                throw new Exception($"Failed: {mi.Name}: exit code = {status.ExitCode}");
             }
         }
     }

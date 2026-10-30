@@ -354,9 +354,9 @@ EXTERN_C void JIT_CheckedWriteBarrier_End()
     PORTABILITY_ASSERT("JIT_CheckedWriteBarrier_End is not implemented on wasm");
 }
 
-EXTERN_C void JIT_StackProbe_End()
+EXTERN_C void RhpStackProbe_End()
 {
-    PORTABILITY_ASSERT("JIT_StackProbe_End is not implemented on wasm");
+    PORTABILITY_ASSERT("RhpStackProbe_End is not implemented on wasm");
 }
 
 EXTERN_C VOID STDCALL ResetCurrentContext()
@@ -448,9 +448,9 @@ extern "C" void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 }
 #endif
 
-extern "C" void STDCALL JIT_StackProbe()
+extern "C" void STDCALL RhpStackProbe()
 {
-    PORTABILITY_ASSERT("JIT_StackProbe is not implemented on wasm");
+    PORTABILITY_ASSERT("RhpStackProbe is not implemented on wasm");
 }
 
 EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
@@ -471,8 +471,8 @@ EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
     }
 }
 
-EXTERN_C FCDECL0(void, JIT_PollGC);
-EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
+EXTERN_C FCDECL0(void, RhpGcPoll);
+EXTERN_C __attribute__((naked)) void F_CALL_CONV RhpGcPoll(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
 {
     asm(
         "i32.const 0\n"
@@ -491,6 +491,45 @@ EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersSta
         :: [g_TrapReturningThreads] "i" (&g_TrapReturningThreads),
            [JIT_PollGCRarePath] "i" (JIT_PollGCRarePath));
 }
+
+// EventPipe CPU-sampling samplepoint helper for R2R (native wasm) code on single-threaded WASM.
+// Emitted by the JIT at method entry and loop back-edges when a method matches the
+// WasmPerformanceInstrumentation filter. Cooperative throughout; when a sample is due it
+// anchors a managed stack walk with an InlinedCallFrame derived from the caller's shadow SP, then
+// delegates to the shared sample collection implementation.
+#if defined(FEATURE_PERFTRACING) && defined(PERFTRACING_DISABLE_THREADS)
+EXTERN_C bool SamplingProfiler_ShouldSample();
+EXTERN_C void SamplingProfiler_CollectSample();
+#endif
+
+HCIMPL0(void, JIT_WasmProfSamplepoint)
+{
+    FCALL_CONTRACT;
+
+#if defined(FEATURE_PERFTRACING) && defined(PERFTRACING_DISABLE_THREADS)
+    if (!SamplingProfiler_ShouldSample())
+        return;
+
+    Thread* pThread = GetThread();
+
+    // Anchor the walk with a cooperative InlinedCallFrame (JIT_PInvokeBeginImpl's setup minus the
+    // preemptive transition): StackWalkFrames starts from a zeroed context and walks the Frame chain.
+    InlinedCallFrame inlinedCallFrame;
+    ::new ((void*)&inlinedCallFrame) InlinedCallFrame();
+    inlinedCallFrame.m_pCallSiteSP          = (void*)callersStackPointer;
+    inlinedCallFrame.m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R;
+    inlinedCallFrame.m_pCalleeSavedFP       = 0;
+    inlinedCallFrame.m_pThread              = pThread;
+    inlinedCallFrame.Push();
+
+    SamplingProfiler_CollectSample();
+
+    inlinedCallFrame.Pop();
+#else
+    UNREFERENCED_PARAMETER(callersStackPointer);
+#endif // FEATURE_PERFTRACING && PERFTRACING_DISABLE_THREADS
+}
+HCIMPLEND
 
 void InitJITHelpers1()
 {
@@ -761,10 +800,10 @@ namespace
                ((pVector512MT != nullptr) && pMT->HasSameTypeDefAs(pVector512MT));
     }
 
-    // Walks a known multi-slot CoreLib type's first fields down to the wasm value type its slots use,
-    // and reports that slot's width. This is safe only after IsWasmMultiSlotTypeHandle succeeds: the
-    // known integer and decimal types have homogeneous uint64 fields, and the known vectors have
-    // homogeneous vector fields. It is not valid for an arbitrary aggregate.
+    // Only IsWasmMultiSlotTypeHandle's homogeneous CoreLib types reach this function:
+    // Int128/UInt128/Decimal128 use i64 slots, and Vector256<T>/Vector512<T> use v128 slots.
+    // Recursing through their first field identifies the slot width; arbitrary aggregates
+    // must not be classified this way.
     static bool GetWasmSlotSize(TypeHandle th, uint32_t* pSlotSize)
     {
         _ASSERTE(IsWasmMultiSlotTypeHandle(th));
@@ -810,10 +849,51 @@ namespace
                 return false;
             }
 
-            th = pMT->GetApproxFieldDescListRaw()->GetApproxFieldTypeHandleThrowing();
+            // GetSignatureKey is NOTHROW/GC_NOTRIGGER. Signature preparation supplies value-type
+            // layouts, but need not load MethodTables for their primitive fields. Read primitive
+            // kinds directly and use existing handles for nested value types to avoid type loading.
+            FieldDesc* pField = pMT->GetApproxFieldDescListRaw();
+            CorElementType fieldType = pField->GetFieldType();
+            if (fieldType == ELEMENT_TYPE_I8 || fieldType == ELEMENT_TYPE_U8)
+            {
+                *pSlotSize = 8;
+                return true;
+            }
+            if (fieldType != ELEMENT_TYPE_VALUETYPE)
+            {
+                return false;
+            }
+
+            th = pField->LookupApproxFieldTypeHandle();
+            _ASSERTE(!th.IsNull());
         }
 
         return false;
+    }
+
+    static ConvertResult LowerPrimitiveType(CorElementType elemType)
+    {
+        switch (elemType)
+        {
+            case ELEMENT_TYPE_I4: case ELEMENT_TYPE_U4:
+            case ELEMENT_TYPE_I2: case ELEMENT_TYPE_U2:
+            case ELEMENT_TYPE_I1: case ELEMENT_TYPE_U1:
+            case ELEMENT_TYPE_BOOLEAN: case ELEMENT_TYPE_CHAR:
+            case ELEMENT_TYPE_I: case ELEMENT_TYPE_U:
+            case ELEMENT_TYPE_PTR: case ELEMENT_TYPE_BYREF:
+            case ELEMENT_TYPE_FNPTR:
+            case ELEMENT_TYPE_CLASS: case ELEMENT_TYPE_STRING:
+            case ELEMENT_TYPE_ARRAY: case ELEMENT_TYPE_SZARRAY:
+                return { ConvertType::ToI32, 0 };
+            case ELEMENT_TYPE_I8: case ELEMENT_TYPE_U8:
+                return { ConvertType::ToI64, 0 };
+            case ELEMENT_TYPE_R4:
+                return { ConvertType::ToF32, 0 };
+            case ELEMENT_TYPE_R8:
+                return { ConvertType::ToF64, 0 };
+            default:
+                return { ConvertType::NotConvertible, 0 };
+        }
     }
 
     static bool TryLowerNativeSingleScalar(MethodTable* pMT, uint32_t size, ConvertResult* pResult);
@@ -839,27 +919,7 @@ namespace
 
         if ((elemType != ELEMENT_TYPE_VALUETYPE) && (elemType != ELEMENT_TYPE_TYPEDBYREF))
         {
-            switch (elemType)
-            {
-                case ELEMENT_TYPE_I4: case ELEMENT_TYPE_U4:
-                case ELEMENT_TYPE_I2: case ELEMENT_TYPE_U2:
-                case ELEMENT_TYPE_I1: case ELEMENT_TYPE_U1:
-                case ELEMENT_TYPE_BOOLEAN: case ELEMENT_TYPE_CHAR:
-                case ELEMENT_TYPE_I: case ELEMENT_TYPE_U:
-                case ELEMENT_TYPE_PTR: case ELEMENT_TYPE_BYREF:
-                case ELEMENT_TYPE_FNPTR:
-                case ELEMENT_TYPE_CLASS: case ELEMENT_TYPE_STRING:
-                case ELEMENT_TYPE_ARRAY: case ELEMENT_TYPE_SZARRAY:
-                    return { ConvertType::ToI32, 0 };
-                case ELEMENT_TYPE_I8: case ELEMENT_TYPE_U8:
-                    return { ConvertType::ToI64, 0 };
-                case ELEMENT_TYPE_R4:
-                    return { ConvertType::ToF32, 0 };
-                case ELEMENT_TYPE_R8:
-                    return { ConvertType::ToF64, 0 };
-                default:
-                    return { ConvertType::NotConvertible, 0 };
-            }
+            return LowerPrimitiveType(elemType);
         }
 
         MethodTable* pMT = th.AsMethodTable();
@@ -890,11 +950,18 @@ namespace
         if (numInstanceFields == 1)
         {
             FieldDesc* pField = pMT->GetApproxFieldDescListRaw();
-            TypeHandle fieldType = pField->GetApproxFieldTypeHandleThrowing();
-            if (fieldType.GetSize() == size)
+            CorElementType fieldElementType = pField->GetFieldType();
+            if (fieldElementType != ELEMENT_TYPE_VALUETYPE && fieldElementType != ELEMENT_TYPE_TYPEDBYREF)
             {
-                // Single field, no padding — unwrap recursively
-                return LowerTypeHandle(fieldType);
+                if (pField->GetSize() == size)
+                    return LowerPrimitiveType(fieldElementType);
+            }
+            else
+            {
+                TypeHandle fieldType = pField->LookupApproxFieldTypeHandle();
+                _ASSERTE(!fieldType.IsNull());
+                if (fieldType.GetSize() == size)
+                    return LowerTypeHandle(fieldType);
             }
             // One field with padding — treat as multi-field struct
         }
@@ -907,7 +974,10 @@ namespace
     // scalar, the case clang passes as that scalar; otherwise the struct is passed by reference.
     static bool TryLowerNativeSingleScalar(MethodTable* pMT, uint32_t size, ConvertResult* pResult)
     {
-        EEClassNativeLayoutInfo const* pNativeLayoutInfo = pMT->GetNativeLayoutInfo();
+        // GetSignatureKey is NOTHROW. The marshaler built this layout, and the native layouts of its
+        // nested structs, when it sized the native struct, so read it without initializing.
+        EEClassNativeLayoutInfo const* pNativeLayoutInfo = pMT->GetClass()->GetNativeLayoutInfo();
+        _ASSERTE(pNativeLayoutInfo != nullptr);
         if (pNativeLayoutInfo->GetNumFields() != 1)
         {
             return false;
@@ -1544,7 +1614,7 @@ InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD)
 
     MetaSig metaSig(pMD);
 
-    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
+    if (pMD->IsStringCtor())
     {
         const char *thunkKey = nullptr;
 
@@ -1654,7 +1724,7 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     MetaSig sig(pMD);
     void* thunk;
 
-    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
+    if (pMD->IsStringCtor())
     {
         const char *thunkKey = nullptr;
 

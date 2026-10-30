@@ -467,6 +467,11 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_pNativeImage = NULL;
     if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
     {
+#ifdef TARGET_WASM
+        // Direct R2R calls can execute before assembly activation. Register virtual IPs as soon as
+        // the R2R info is installed so stack walks can resolve those frames.
+        m_pReadyToRunInfo->RegisterVirtualIPRange(this);
+#endif
         if (m_pReadyToRunInfo->SkipTypeValidation())
             m_dwPersistedFlags = m_dwPersistedFlags | SKIP_TYPE_VALIDATION; // Skip type validation on System
 
@@ -2343,7 +2348,7 @@ Module::GetAssemblyIfLoaded(
 #endif //!DACCESS_COMPILE
 
     // When walking the stack or computing GC information this function should never fail.
-    _ASSERTE((pAssembly != NULL) || !(IsStackWalkerThread() || IsGCThread()));
+    _ASSERTE_ALL_BUILDS((pAssembly != NULL) || !(IsStackWalkerThread() || IsGCThread()));
 
 #ifdef DACCESS_COMPILE
 

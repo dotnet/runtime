@@ -106,7 +106,11 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await connection.ReadRequestHeaderAsync();
                     await connection.WriteStringAsync($"HTTP/1.1 200 OK\r\nContent-Encoding: {encodingName}\r\n\r\n");
+#if NETFRAMEWORK
                     using (Stream compressedStream = compress(connection.Stream))
+#else
+                    await using (Stream compressedStream = compress(connection.Stream))
+#endif
                     {
                         await compressedStream.WriteAsync(expectedContent);
                     }
@@ -325,11 +329,13 @@ namespace System.Net.Http.Functional.Tests
                     var countingStream = new ByteCountingStream(connection.Stream);
                     try
                     {
-                        using var brotliStream = new BrotliStream(countingStream, CompressionLevel.Optimal, leaveOpen: true);
+                        await using var brotliStream = new BrotliStream(countingStream, CompressionLevel.Optimal, leaveOpen: true);
                         while (true)
                         {
                             await brotliStream.WriteAsync(chunk);
                             await brotliStream.FlushAsync();
+                            // Writes of compressed zeros can complete synchronously; yield so a single-threaded client can run.
+                            await Task.Yield();
                         }
                     }
                     catch (IOException) { }
