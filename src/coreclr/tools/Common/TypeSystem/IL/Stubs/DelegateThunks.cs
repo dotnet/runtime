@@ -310,109 +310,73 @@ namespace Internal.IL.Stubs
             ILEmitter emitter = new ILEmitter();
             ILCodeStream codeStream = emitter.NewCodeStream();
 
-            TypeDesc delegateWrapperType = ((MetadataType)SystemDelegateType).GetKnownNestedType("Wrapper"u8);
-            ArrayType invocationListArrayType = delegateWrapperType.MakeArrayType();
+            TypeDesc wrapper = ((MetadataType)SystemDelegateType).GetKnownNestedType("Wrapper"u8);
+            ByRefType wrapperRef = wrapper.MakeByRefType();
+            ILLocalVariable currentRef = emitter.NewLocal(wrapperRef);
+            ILLocalVariable endRef = emitter.NewLocal(wrapperRef);
 
-            ILLocalVariable delegateArrayLocal = emitter.NewLocal(invocationListArrayType);
-            ILLocalVariable invocationCountLocal = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
-            ILLocalVariable iteratorLocal = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
+            bool returns = !Signature.ReturnType.IsVoid;
+            ILLocalVariable returnLocal = returns ? emitter.NewLocal(Signature.ReturnType) : 0;
 
-            ILLocalVariable returnValueLocal = 0;
-            if (!Signature.ReturnType.IsVoid)
-            {
-                returnValueLocal = emitter.NewLocal(Signature.ReturnType);
-            }
-
-            // Fill in delegateArrayLocal
-            // Delegate.Wrapper[] delegateArrayLocal = (Delegate.Wrapper[])this._helperObject
-
-            // ldarg.0 (this pointer)
-            // ldfld Delegate._helperObject
-            // castclass Delegate.Wrapper[] (omitted - generate unsafe cast assuming the delegate is well-formed)
-            // stloc delegateArrayLocal
+            // Load start and end refs
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(HelperObjectField));
-            // codeStream.Emit(ILOpcode.castclass, emitter.NewToken(invocationListArrayType));
-            codeStream.EmitStLoc(delegateArrayLocal);
 
-            // Fill in invocationCountLocal
-            // int invocationCountLocal = this._extraFunctionPointerOrData
+            // We need GADR to get the start
+            TypeDesc signatureVariable = Context.GetSignatureVariable(0, method: true);
+            MethodSignature signature = new(MethodSignatureFlags.Static, 1, signatureVariable.MakeByRefType(), [signatureVariable.MakeArrayType()]);
+            MethodDesc gadr = Context.GetCoreLibEntryPoint("System.Runtime.InteropServices"u8, "MemoryMarshal"u8, "GetArrayDataReference"u8, signature);
 
-            // ldarg.0 (this pointer)
-            // ldfld Delegate._extraFunctionPointerOrData
-            // stloc invocationCountLocal
+            // Get start ref
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(gadr.MakeInstantiatedMethod(wrapper)));
+            codeStream.EmitStLoc(currentRef);
+
+            // Get end ref from adding count
+            codeStream.EmitLdLoc(currentRef);
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
-            codeStream.EmitStLoc(invocationCountLocal);
+            codeStream.EmitLdc(wrapper.GetElementSize().AsInt);
+            codeStream.Emit(ILOpcode.mul);
+            codeStream.Emit(ILOpcode.add);
+            codeStream.EmitStLoc(endRef);
 
-            // Fill in iteratorLocal
-            // int iteratorLocal = 0;
+            ILCodeLabel nextDelegate = emitter.NewCodeLabel();
+            // Label_nextDelegate:
+            codeStream.EmitLabel(nextDelegate);
 
-            // ldc.0
-            // stloc iteratorLocal
-            codeStream.EmitLdc(0);
-            codeStream.EmitStLoc(iteratorLocal);
+            // Load the delegate
+            codeStream.EmitLdLoc(currentRef);
+            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(wrapper.GetKnownField("Value"u8)));
 
-            // Loop across every element of the array.
-            ILCodeLabel startOfLoopLabel = emitter.NewCodeLabel();
-            codeStream.EmitLabel(startOfLoopLabel);
-
-            // Implement as do/while loop. We only have this stub in play if we're in the multicast situation
-            // Find the delegate to call
-            // delegateArrayLocal[iteratorLocal].Value
-
-            // ldloc delegateArrayLocal
-            // ldloc iteratorLocal
-            // ldelema Delegate.Wrapper
-            // ldfld Delegate.Wrapper.Value
-            codeStream.EmitLdLoc(delegateArrayLocal);
-            codeStream.EmitLdLoc(iteratorLocal);
-            codeStream.Emit(ILOpcode.ldelema, emitter.NewToken(delegateWrapperType));
-            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(delegateWrapperType.GetKnownField("Value"u8)));
-
-            // Call the delegate
-            // delegateArrayLocal[iteratorLocal].Value(...)
-
-            // ldarg 1, n
-            // callvirt DelegateType.Invoke(...)
-            // IF there is a return value
-            // stloc returnValueLocal
-
-            for (int i = 0; i < Signature.Length; i++)
+            // Load the arguments
+            for (int param = 0; param < Signature.Length; param++)
             {
-                codeStream.EmitLdArg(i + 1);
+                codeStream.EmitLdArg(param + 1);
             }
 
-            codeStream.Emit(ILOpcode.callvirt, emitter.NewToken(_delegateInfo.InvokeMethod.InstantiateAsOpen()));
+            // Call the delegate
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(_delegateInfo.InvokeMethod.InstantiateAsOpen()));
 
-            if (returnValueLocal != 0)
-                codeStream.EmitStLoc(returnValueLocal);
+            // Save return value.
+            if (returnLocal != 0)
+                codeStream.EmitStLoc(returnLocal);
 
-            // Increment iteratorLocal
-            // ++iteratorLocal;
-
-            // ldloc iteratorLocal
-            // ldc.i4.1
-            // add
-            // stloc iteratorLocal
-            codeStream.EmitLdLoc(iteratorLocal);
-            codeStream.EmitLdc(1);
+            // Increment the ref
+            codeStream.EmitLdLoc(currentRef);
+            codeStream.EmitLdc(wrapper.GetElementSize().AsInt);
             codeStream.Emit(ILOpcode.add);
-            codeStream.EmitStLoc(iteratorLocal);
+            codeStream.EmitStLoc(currentRef);
 
-            // Check to see if the loop is done
-            codeStream.EmitLdLoc(invocationCountLocal);
-            codeStream.EmitLdLoc(iteratorLocal);
-            codeStream.Emit(ILOpcode.bne_un, startOfLoopLabel);
+            // Compare start ref with end. If less than branch to nextDelegate
+            codeStream.EmitLdLoc(currentRef);
+            codeStream.EmitLdLoc(endRef);
+            codeStream.Emit(ILOpcode.blt_un, nextDelegate);
 
-            // Return to caller. If the delegate has a return value, be certain to return that.
-            // return returnValueLocal;
+            // Load the return value, return value from the last delegate call is returned
+            if (returns)
+                codeStream.EmitLdLoc(returnLocal);
 
-            // ldloc returnValueLocal
-            // ret
-            if (returnValueLocal != 0)
-                codeStream.EmitLdLoc(returnValueLocal);
-
+            // Return
             codeStream.Emit(ILOpcode.ret);
 
             return emitter.Link(this);
