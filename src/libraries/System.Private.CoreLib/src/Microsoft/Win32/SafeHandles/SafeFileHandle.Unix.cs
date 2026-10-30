@@ -2,25 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Strategies;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
-using AsyncResult = System.Threading.UnixHandleAsyncContext.AsyncResult;
 
 namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        // IovStackThreshold matches Linux's UIO_FASTIOV, which is the number of 'struct iovec'
-        // that get stackalloced in the Linux kernel.
-        private const int IovStackThreshold = 8;
-
         private const UnixFileMode PermissionMask =
             UnixFileMode.UserRead |
             UnixFileMode.UserWrite |
@@ -104,13 +95,13 @@ namespace Microsoft.Win32.SafeHandles
         // Perform read/write operations on the ThreadPool so that multiple can happen in parallel.
         // Pipe and Socket support non-blocking and do not support random access.
         // Character devices may support non-blocking and may support random access.
-        private bool SupportsNonBlocking
+        internal bool SupportsNonBlocking
             => UnixHandleAsyncContext.IsSupported // Needed for readiness notifications.
                 && Type is FileHandleType.Socket or FileHandleType.Pipe or FileHandleType.CharacterDevice;
-        private bool UseThreadPoolForAsync
+        internal bool UseThreadPoolForAsync
             => !SupportsNonBlocking;
 
-        private bool IsBlocking
+        internal bool IsBlocking
         {
             get
             {
@@ -149,7 +140,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private UnixHandleAsyncContext AsyncContext
+        internal UnixHandleAsyncContext AsyncContext
         {
             get
             {
@@ -163,19 +154,19 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private ReadOperation RentReadOperation()
+        internal ReadOperation RentReadOperation()
             => Interlocked.Exchange(ref _cachedOp, null) is ReadOperation cached ? cached : new ReadOperation(this);
 
-        private WriteOperation RentWriteOperation()
+        internal WriteOperation RentWriteOperation()
             => Interlocked.Exchange(ref _cachedOp, null) is WriteOperation cached ? cached : new WriteOperation(this);
 
-        private void ReturnReadOperation(ReadOperation op)
+        internal void ReturnReadOperation(ReadOperation op)
         {
             op.Reset();
             Volatile.Write(ref _cachedOp, op);
         }
 
-        private void ReturnWriteOperation(WriteOperation op)
+        internal void ReturnWriteOperation(WriteOperation op)
         {
             op.Reset();
             Volatile.Write(ref _cachedOp, op);
@@ -690,583 +681,6 @@ namespace Microsoft.Win32.SafeHandles
             int result = Interop.Sys.FStat(this, out Interop.Sys.FileStatus status);
             FileStreamHelpers.CheckFileCall(result, Path);
             return status.Size;
-        }
-
-        internal ValueTask<int> ReadAtAsync(long offset, Memory<byte> destination, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
-            => UseThreadPoolForAsync
-                ? ReadAtAsyncThreadPool(offset, destination, cancellationToken, strategy)
-                : ReadAtAsyncPollable(offset, destination, cancellationToken, strategy);
-
-        private ValueTask<int> ReadAtAsyncThreadPool(long offset, Memory<byte> destination, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
-        {
-            ReadOperation op = RentReadOperation();
-            op.Init(offset, destination, cancellationToken, strategy);
-            op.QueueToThreadPool();
-            return new ValueTask<int>(op, op.Version);
-        }
-
-        private ValueTask<int> ReadAtAsyncPollable(long offset, Memory<byte> destination, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
-        {
-            int sequenceNumber;
-            if (AsyncContext.IsReadReady(out sequenceNumber))
-            {
-                if (TryCompleteReadAt(offset, destination.Span, out int readResult, out Interop.ErrorInfo errorInfo, strategy))
-                {
-                    return new ValueTask<int>(CheckFileCall(readResult, errorInfo));
-                }
-            }
-
-            ReadOperation op = RentReadOperation();
-            op.Init(offset, destination, cancellationToken, strategy);
-
-            AsyncResult result = AsyncContext.StartAsyncRead(op, sequenceNumber, cancellationToken);
-
-            if (result == AsyncResult.Pending)
-            {
-                return new ValueTask<int>(op, op.Version);
-            }
-            else if (result == AsyncResult.Completed) // The operation completed synchronously.
-            {
-                int completedResult = (int)op.ReadResult;
-                Exception? exception = op.Exception;
-
-                ReturnReadOperation(op);
-
-                if (exception != null)
-                {
-                    throw exception;
-                }
-                return new ValueTask<int>(completedResult);
-            }
-
-            throw new OperationCanceledException(cancellationToken);
-        }
-
-        internal ValueTask WriteAtAsync(long offset, ReadOnlyMemory<byte> source, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
-            => UseThreadPoolForAsync
-                ? WriteAtAsyncThreadPool(offset, source, cancellationToken, strategy)
-                : WriteAtAsyncPollable(offset, source, cancellationToken, strategy);
-
-        private ValueTask WriteAtAsyncThreadPool(long offset, ReadOnlyMemory<byte> source, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
-        {
-            if (source.IsEmpty)
-            {
-                return default;
-            }
-
-            WriteOperation op = RentWriteOperation();
-            op.Init(offset, source, cancellationToken, strategy);
-            op.QueueToThreadPool();
-            return new ValueTask(op, op.Version);
-        }
-
-        private ValueTask WriteAtAsyncPollable(long offset, ReadOnlyMemory<byte> source, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
-        {
-            if (source.IsEmpty)
-            {
-                return default;
-            }
-
-            int sequenceNumber;
-            if (AsyncContext.IsWriteReady(out sequenceNumber))
-            {
-                if (TryCompleteWriteAt(offset, source.Span, out int bytesWritten, out Interop.ErrorInfo writeResult, strategy))
-                {
-                    CheckFileCall(writeResult);
-                    return default;
-                }
-
-                source = source.Slice(bytesWritten);
-                offset += bytesWritten;
-            }
-
-            WriteOperation op = RentWriteOperation();
-            op.Init(offset, source, cancellationToken, strategy);
-
-            AsyncResult result = AsyncContext.StartAsyncWrite(op, sequenceNumber, cancellationToken);
-
-            if (result == AsyncResult.Pending)
-            {
-                return new ValueTask(op, op.Version);
-            }
-            else if (result == AsyncResult.Completed) // The operation completed synchronously.
-            {
-                Exception? exception = op.Exception;
-
-                ReturnWriteOperation(op);
-
-                if (exception != null)
-                {
-                    throw exception;
-                }
-                return default;
-            }
-
-            throw new OperationCanceledException(cancellationToken);
-        }
-
-        internal ValueTask<long> ReadAtAsync(long offset, IReadOnlyList<Memory<byte>> buffers, CancellationToken cancellationToken)
-            => UseThreadPoolForAsync
-                ? ReadAtAsyncThreadPool(offset, buffers, cancellationToken)
-                : ReadAtAsyncPollable(offset, buffers, cancellationToken);
-
-        private ValueTask<long> ReadAtAsyncThreadPool(long offset, IReadOnlyList<Memory<byte>> buffers, CancellationToken cancellationToken)
-        {
-            ReadOperation op = RentReadOperation();
-            op.Init(offset, buffers, cancellationToken);
-            op.QueueToThreadPool();
-            return new ValueTask<long>(op, op.Version);
-        }
-
-        private ValueTask<long> ReadAtAsyncPollable(long offset, IReadOnlyList<Memory<byte>> buffers, CancellationToken cancellationToken)
-        {
-            int sequenceNumber;
-            if (AsyncContext.IsReadReady(out sequenceNumber) &&
-                TryCompleteReadAt(offset, buffers, out long readResult, out Interop.ErrorInfo errorInfo))
-            {
-                return new ValueTask<long>(CheckFileCall(readResult, errorInfo));
-            }
-
-            ReadOperation op = RentReadOperation();
-            op.Init(offset, buffers, cancellationToken);
-
-            AsyncResult result = AsyncContext.StartAsyncRead(op, sequenceNumber, cancellationToken);
-
-            if (result == AsyncResult.Pending)
-            {
-                return new ValueTask<long>(op, op.Version);
-            }
-            else if (result == AsyncResult.Completed) // The operation completed synchronously.
-            {
-                long completedResult = op.ReadResult;
-                Exception? exception = op.Exception;
-
-                ReturnReadOperation(op);
-
-                if (exception != null)
-                {
-                    throw exception;
-                }
-                return new ValueTask<long>(completedResult);
-            }
-
-            throw new OperationCanceledException(cancellationToken);
-        }
-
-        internal ValueTask WriteAtAsync(long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken)
-            => UseThreadPoolForAsync
-                ? WriteAtAsyncThreadPool(offset, buffers, cancellationToken)
-                : WriteAtAsyncPollable(offset, buffers, cancellationToken);
-
-        private ValueTask WriteAtAsyncThreadPool(long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken)
-        {
-            WriteOperation op = RentWriteOperation();
-            op.Init(offset, buffers, 0, 0, cancellationToken);
-            op.QueueToThreadPool();
-            return new ValueTask(op, op.Version);
-        }
-
-        private ValueTask WriteAtAsyncPollable(long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken)
-        {
-            int bufferIndex = 0;
-            int bufferOffset = 0;
-            int sequenceNumber;
-            if (AsyncContext.IsWriteReady(out sequenceNumber))
-            {
-                if (TryCompleteWriteAt(ref offset, buffers, ref bufferIndex, ref bufferOffset, out Interop.ErrorInfo writeResult))
-                {
-                    CheckFileCall(writeResult);
-                    return default;
-                }
-            }
-
-            WriteOperation op = RentWriteOperation();
-            op.Init(offset, buffers, bufferIndex, bufferOffset, cancellationToken);
-
-            AsyncResult result = AsyncContext.StartAsyncWrite(op, sequenceNumber, cancellationToken);
-
-            if (result == AsyncResult.Pending)
-            {
-                return new ValueTask(op, op.Version);
-            }
-            else if (result == AsyncResult.Completed) // The operation completed synchronously.
-            {
-                Exception? exception = op.Exception;
-
-                ReturnWriteOperation(op);
-
-                if (exception != null)
-                {
-                    throw exception;
-                }
-                return default;
-            }
-
-            throw new OperationCanceledException(cancellationToken);
-        }
-
-        internal bool TryCompleteReadAt(long offset, IReadOnlyList<Memory<byte>> buffers, out long readResult, out Interop.ErrorInfo errorInfo)
-        {
-            if (SupportsRandomAccess)
-            {
-                if (TryCompleteReadAt(useOffset: true, offset, buffers, out readResult, out errorInfo))
-                {
-                    if (readResult == -1 && ShouldFallBackToNonOffsetSyscall(errorInfo))
-                    {
-                        SupportsRandomAccess = false;
-                    }
-                    else
-                    {
-                        return true;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            return TryCompleteReadAt(useOffset: false, offset, buffers, out readResult, out errorInfo);
-        }
-
-        private unsafe bool TryCompleteReadAt(bool useOffset, long offset, IReadOnlyList<Memory<byte>> buffers, out long readResult, out Interop.ErrorInfo errorInfo)
-        {
-            int count = buffers.Count;
-            MemoryHandle[] memHandles = new MemoryHandle[count];
-            Span<Interop.Sys.IOVector> vectors = count <= IovStackThreshold
-                ? stackalloc Interop.Sys.IOVector[IovStackThreshold].Slice(0, count)
-                : new Interop.Sys.IOVector[count];
-
-            try
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    Memory<byte> buffer = buffers[i];
-                    MemoryHandle mh = buffer.Pin();
-                    vectors[i] = new Interop.Sys.IOVector { Base = (byte*)mh.Pointer, Count = (UIntPtr)buffer.Length };
-                    memHandles[i] = mh;
-                }
-
-                fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
-                {
-                    long read = useOffset
-                        ? Interop.Sys.PReadV(this, pinnedVectors, count, offset)
-                        : Interop.Sys.ReadV(this, pinnedVectors, count);
-                    if (read < 0)
-                    {
-                        errorInfo = Interop.Sys.GetLastErrorInfo();
-                        if (IsPending(errorInfo))
-                        {
-                            readResult = 0;
-                            return false;
-                        }
-                        readResult = -1;
-                        return true;
-                    }
-
-                    readResult = read;
-                    errorInfo = default;
-                    return true;
-                }
-            }
-            finally
-            {
-                foreach (MemoryHandle mh in memHandles)
-                {
-                    mh.Dispose();
-                }
-            }
-        }
-
-        internal bool TryCompleteReadAt(long offset, Span<byte> buffer, out int readResult, out Interop.ErrorInfo errorInfo, OSFileStreamStrategy? strategy = null)
-        {
-            if (SupportsRandomAccess)
-            {
-                if (TryCompleteReadAt(useOffset: true, offset, buffer, out readResult, out errorInfo, strategy: null))
-                {
-                    if (readResult == -1 && ShouldFallBackToNonOffsetSyscall(errorInfo))
-                    {
-                        SupportsRandomAccess = false;
-                    }
-                    else
-                    {
-                        strategy?.OnIncompleteOperation(buffer.Length - Math.Max(readResult, 0), 0);
-                        return true;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            return TryCompleteReadAt(useOffset: false, offset, buffer, out readResult, out errorInfo, strategy);
-        }
-
-        private unsafe bool TryCompleteReadAt(bool useOffset, long offset, Span<byte> buffer, out int readResult, out Interop.ErrorInfo errorInfo, OSFileStreamStrategy? strategy = null)
-        {
-            if (buffer.Length == 0 && SupportsNonBlocking)
-            {
-                Interop.Error err = Interop.Sys.Poll(this, Interop.PollEvents.POLLIN, IsBlocking ? -1 : 0, out Interop.PollEvents events);
-
-                if (err != Interop.Error.SUCCESS)
-                {
-                    readResult = -1;
-                    errorInfo = new Interop.ErrorInfo(err);
-                    strategy?.OnIncompleteOperation(buffer.Length, 0);
-                    return true;
-                }
-
-                readResult = 0;
-                errorInfo = default;
-                return events != Interop.PollEvents.POLLNONE;
-            }
-
-            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
-            {
-                readResult = useOffset
-                    ? Interop.Sys.PRead(this, p, buffer.Length, offset)
-                    : Interop.Sys.Read(this, p, buffer.Length);
-            }
-
-            if (readResult < 0)
-            {
-                errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (IsPending(errorInfo))
-                {
-                    readResult = 0;
-                    return false;
-                }
-                strategy?.OnIncompleteOperation(buffer.Length, 0);
-                return true;
-            }
-
-            errorInfo = default;
-            strategy?.OnIncompleteOperation(buffer.Length - readResult, 0);
-            return true;
-        }
-
-        internal bool TryCompleteWriteAt(ref long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, ref int bufferIndex, ref int bufferOffset, out Interop.ErrorInfo errorInfo)
-        {
-            if (SupportsRandomAccess)
-            {
-                if (TryCompleteWriteAt(useOffset: true, ref offset, buffers, ref bufferIndex, ref bufferOffset, out errorInfo))
-                {
-                    if (errorInfo.Error != Interop.Error.SUCCESS && ShouldFallBackToNonOffsetSyscall(errorInfo))
-                    {
-                        SupportsRandomAccess = false;
-                    }
-                    else
-                    {
-                        return true;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            return TryCompleteWriteAt(useOffset: false, ref offset, buffers, ref bufferIndex, ref bufferOffset, out errorInfo);
-        }
-
-        private unsafe bool TryCompleteWriteAt(bool useOffset, ref long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, ref int bufferIndex, ref int bufferOffset, out Interop.ErrorInfo errorInfo)
-        {
-            Span<Interop.Sys.IOVector> stackVectors = stackalloc Interop.Sys.IOVector[IovStackThreshold];
-            while (true)
-            {
-                // Skip zero-length buffers.
-                while (bufferIndex < buffers.Count && buffers[bufferIndex].Length == 0)
-                {
-                    bufferIndex++;
-                }
-
-                if (bufferIndex >= buffers.Count)
-                {
-                    errorInfo = default;
-                    return true;
-                }
-
-                int remaining = buffers.Count - bufferIndex;
-                MemoryHandle[] memHandles = new MemoryHandle[remaining];
-                Span<Interop.Sys.IOVector> vectors = remaining <= IovStackThreshold
-                    ? stackVectors.Slice(0, remaining)
-                    : new Interop.Sys.IOVector[remaining];
-
-                try
-                {
-                    long totalToWrite = 0;
-                    for (int i = 0; i < remaining; i++)
-                    {
-                        ReadOnlyMemory<byte> buf = buffers[bufferIndex + i];
-                        MemoryHandle mh = buf.Pin();
-                        byte* ptr = (byte*)mh.Pointer;
-                        int len = buf.Length;
-                        if (i == 0 && bufferOffset > 0)
-                        {
-                            ptr += bufferOffset;
-                            len -= bufferOffset;
-                        }
-                        vectors[i] = new Interop.Sys.IOVector { Base = ptr, Count = (UIntPtr)len };
-                        memHandles[i] = mh;
-                        totalToWrite += len;
-                    }
-
-                    fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
-                    {
-                        long bytesWritten = useOffset
-                            ? Interop.Sys.PWriteV(this, pinnedVectors, remaining, offset)
-                            : Interop.Sys.WriteV(this, pinnedVectors, remaining);
-                        if (bytesWritten < 0)
-                        {
-                            errorInfo = Interop.Sys.GetLastErrorInfo();
-                            return !IsPending(errorInfo);
-                        }
-
-                        errorInfo = default;
-                        offset += bytesWritten;
-
-                        if (bytesWritten == totalToWrite)
-                        {
-                            return true;
-                        }
-
-                        long written = bytesWritten;
-                        while (written > 0)
-                        {
-                            int currentLen = buffers[bufferIndex].Length - bufferOffset;
-                            if (written >= currentLen)
-                            {
-                                written -= currentLen;
-                                bufferIndex++;
-                                bufferOffset = 0;
-                            }
-                            else
-                            {
-                                bufferOffset += (int)written;
-                                written = 0;
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    foreach (MemoryHandle mh in memHandles)
-                    {
-                        mh.Dispose();
-                    }
-                }
-            }
-        }
-
-        internal bool TryCompleteWriteAt(long offset, ReadOnlySpan<byte> buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo, OSFileStreamStrategy? strategy = null)
-        {
-            if (SupportsRandomAccess)
-            {
-                if (TryCompleteWriteAt(useOffset: true, offset, buffer, out bytesWritten, out errorInfo, strategy: null))
-                {
-                    if (bytesWritten == 0 && ShouldFallBackToNonOffsetSyscall(errorInfo))
-                    {
-                        SupportsRandomAccess = false;
-                    }
-                    else
-                    {
-                        strategy?.OnIncompleteOperation(buffer.Length - bytesWritten, 0);
-                        return true;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            return TryCompleteWriteAt(useOffset: false, offset, buffer, out bytesWritten, out errorInfo, strategy);
-        }
-
-        private unsafe bool TryCompleteWriteAt(bool useOffset, long offset, ReadOnlySpan<byte> buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo, OSFileStreamStrategy? strategy = null)
-        {
-            int totalBytesWritten = 0;
-            while (true)
-            {
-                int toWrite = GetNumberOfBytesToWrite(buffer.Length);
-                int written;
-                fixed (byte* p = &MemoryMarshal.GetReference(buffer))
-                {
-                    written = useOffset
-                        ? Interop.Sys.PWrite(this, p, toWrite, offset)
-                        : Interop.Sys.Write(this, p, toWrite);
-                }
-
-                if (written < 0)
-                {
-                    errorInfo = Interop.Sys.GetLastErrorInfo();
-                    bytesWritten = totalBytesWritten;
-                    if (IsPending(errorInfo))
-                    {
-                        return false;
-                    }
-                    strategy?.OnIncompleteOperation(buffer.Length, 0);
-                    return true;
-                }
-
-                totalBytesWritten += written;
-                buffer = buffer.Slice(written);
-                offset += written;
-
-                if (buffer.Length == 0)
-                {
-                    errorInfo = default;
-                    bytesWritten = totalBytesWritten;
-                    return true;
-                }
-            }
-        }
-
-        internal int CheckFileCall(int result, Interop.ErrorInfo errorInfo)
-        {
-            if (result == -1)
-            {
-                throw Interop.GetExceptionForIoErrno(errorInfo, Path);
-            }
-            return result;
-        }
-
-        internal long CheckFileCall(long result, Interop.ErrorInfo errorInfo)
-        {
-            if (result == -1)
-            {
-                throw Interop.GetExceptionForIoErrno(errorInfo, Path);
-            }
-            return result;
-        }
-
-        internal void CheckFileCall(Interop.ErrorInfo errorInfo)
-        {
-            if (errorInfo.Error != Interop.Error.SUCCESS)
-            {
-                throw Interop.GetExceptionForIoErrno(errorInfo, Path);
-            }
-        }
-
-        private static bool ShouldFallBackToNonOffsetSyscall(Interop.ErrorInfo errorInfo)
-            => errorInfo.Error is Interop.Error.ENXIO or Interop.Error.ESPIPE;
-
-        private static bool IsPending(Interop.ErrorInfo errorInfo)
-            => errorInfo.Error is Interop.Error.EAGAIN or Interop.Error.EWOULDBLOCK;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetNumberOfBytesToWrite(int byteCount)
-        {
-#if DEBUG
-            // In debug only, to assist with testing, simulate writing fewer than the requested number of bytes.
-            if (byteCount > 1 &&  // ensure we don't turn the write into a zero-byte write
-                byteCount < 512)  // avoid on larger buffers that might have a length used to meet an alignment requirement
-            {
-                byteCount /= 2;
-            }
-#endif
-            return byteCount;
         }
     }
 }

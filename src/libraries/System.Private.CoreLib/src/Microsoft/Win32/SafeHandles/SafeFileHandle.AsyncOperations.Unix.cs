@@ -15,7 +15,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle
     {
-        private sealed class ReadOperation : UnixHandleAsyncContext.Operation, IValueTaskSource<int>, IValueTaskSource<long>
+        internal sealed class ReadOperation : UnixHandleAsyncContext.Operation, IValueTaskSource<int>, IValueTaskSource<long>
         {
             private readonly SafeFileHandle _owner;
             private ManualResetValueTaskSourceCore<long> _mrvtsc;
@@ -122,7 +122,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (_buffers != null)
                 {
-                    if (!_owner.TryCompleteReadAt(_offset, _buffers, out readResult, out errorInfo))
+                    if (!RandomAccess.TryCompleteReadAt(_owner, _offset, _buffers, out readResult, out errorInfo))
                     {
                         return false;
                     }
@@ -135,7 +135,7 @@ namespace Microsoft.Win32.SafeHandles
                         return true;
                     }
 
-                    if (!_owner.TryCompleteReadAt(_offset, _buffer.Span, out int intReadResult, out errorInfo, _strategy))
+                    if (!RandomAccess.TryCompleteReadAt(_owner, _offset, _buffer.Span, out int intReadResult, out errorInfo, _strategy))
                     {
                         return false;
                     }
@@ -211,7 +211,7 @@ namespace Microsoft.Win32.SafeHandles
                 => GetResultAndPool(token);
         }
 
-        private sealed class WriteOperation : UnixHandleAsyncContext.Operation, IValueTaskSource
+        internal sealed class WriteOperation : UnixHandleAsyncContext.Operation, IValueTaskSource
         {
             private readonly SafeFileHandle _owner;
             private ManualResetValueTaskSourceCore<bool> _mrvtsc;
@@ -322,7 +322,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (_buffers != null)
                 {
-                    if (_owner.TryCompleteWriteAt(ref _offset, _buffers, ref _bufferIndex, ref _bufferOffset, out errorInfo))
+                    if (RandomAccess.TryCompleteWriteAt(_owner, ref _offset, _buffers, ref _bufferIndex, ref _bufferOffset, out errorInfo))
                     {
                         if (errorInfo.Error != Interop.Error.SUCCESS)
                         {
@@ -336,7 +336,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 Debug.Assert(!_buffer.IsEmpty);
 
-                if (_owner.TryCompleteWriteAt(_offset, _buffer.Span, out int bytesWritten, out errorInfo, _strategy))
+                if (RandomAccess.TryCompleteWriteAt(_owner, _offset, _buffer.Span, out int bytesWritten, out errorInfo, _strategy))
                 {
                     if (errorInfo.Error != Interop.Error.SUCCESS)
                     {
