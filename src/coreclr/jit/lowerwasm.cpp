@@ -818,9 +818,11 @@ void Lowering::RemoveRedundantLocalCopies()
             LclVarDsc* tmpDsc    = m_compiler->lvaGetDesc(tmpLclNum);
             LclVarDsc* srcDsc    = m_compiler->lvaGetDesc(srcLclNum);
 
+            // The shadow stack pointer is also redefined by LCLHEAP without an IR local def.
             if ((tmpLclNum == srcLclNum) || (refs[tmpLclNum].Count != 2) || tmpDsc->lvIsParam ||
                 tmpDsc->lvIsStructField || tmpDsc->lvImplicitlyReferenced || tmpDsc->IsAddressExposed() ||
-                tmpDsc->lvIsOSRLocal || srcDsc->IsAddressExposed() || srcDsc->lvPromoted || isAddressTaken(srcLclNum))
+                tmpDsc->lvIsOSRLocal || (srcLclNum == m_compiler->lvaWasmSpArg) || srcDsc->lvImplicitlyReferenced ||
+                srcDsc->IsAddressExposed() || srcDsc->lvPromoted || isAddressTaken(srcLclNum))
             {
                 continue;
             }
