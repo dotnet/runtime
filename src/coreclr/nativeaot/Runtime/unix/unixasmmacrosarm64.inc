@@ -182,7 +182,8 @@ C_FUNC(\Name):
 #include <arm64/InlineTls.inc>
 
 // Inlined version of RhpGetThread. Target cannot be x0.
-// Preserves all other registers, except x16 and x17 on Apple.
+// Preserves all other general-purpose registers, except x16 and x17 on Apple.
+// Can trash volatile FP/SIMD registers.
 .macro INLINE_GETTHREAD target
     PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
     INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)

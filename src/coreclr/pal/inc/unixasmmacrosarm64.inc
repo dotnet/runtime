@@ -392,7 +392,7 @@ C_FUNC(\Name\()_End):
                 .error "target cannot be x2"
         .endif
 
-#if defined(FEATURE_EMULATED_TLS) || defined(__APPLE__)
+#ifdef FEATURE_EMULATED_TLS
         PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x30
         PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
         PROLOG_SAVE_REG                   x2, 0x20
@@ -405,7 +405,7 @@ C_FUNC(\Name\()_End):
         EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x30
 #else
         PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
-        INLINE_GET_TLS_VAR \target, t_runtime_thread_locals
+        INLINE_GET_TLS_VAR \target, C_FUNC(t_runtime_thread_locals)
 
         .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
                 add     \target, \target, OFFSETOF__RuntimeThreadLocals__ee_alloc_context

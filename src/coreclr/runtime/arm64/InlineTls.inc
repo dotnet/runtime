@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Loads the address of a thread-local variable into the target register,
-// which cannot be x0. Trashes x0 and lr, and also x16 and x17 on Apple.
+// which cannot be x0. Trashes x0 and lr, and also x16 and x17 on Apple. Can trash volatile FP/SIMD registers.
 .macro INLINE_GET_TLS_VAR target, var
     .ifc \target, x0
         .error "target cannot be x0"
