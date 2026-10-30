@@ -55,6 +55,7 @@
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <!-- Linux specific tests -->
+    <Compile Include="OpenSslErrorTests.cs" />
     <Compile Include="SslStreamCertificateContextOcspLinuxTests.cs" />
 
     <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.Linux.cs" />
