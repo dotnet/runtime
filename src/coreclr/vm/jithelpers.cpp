@@ -69,11 +69,7 @@ using std::isnan;
 // This file contains implementation of all JIT helpers. The helpers are
 // divided into following categories:
 //
-//      INTEGER ARITHMETIC HELPERS
-//      FLOATING POINT HELPERS
-//      INSTANCE FIELD HELPERS
 //      STATIC FIELD HELPERS
-//      SHARED STATIC FIELD HELPERS
 //      CASTING HELPERS
 //      ALLOCATION HELPERS
 //      STRING HELPERS
@@ -87,182 +83,11 @@ using std::isnan;
 //
 //========================================================================
 
-
-
 //========================================================================
 //
-//      INTEGER ARITHMETIC HELPERS
+//      STATIC FIELD HELPERS
 //
 //========================================================================
-
-#include <optsmallperfcritical.h>
-
-//
-// helper macro to get high 32-bit of 64-bit int
-//
-#define Hi32Bits(a)         ((UINT32)((UINT64)(a) >> 32))
-
-//
-// helper macro to check whether 64-bit signed int fits into 32-bit signed (compiles into one 32-bit compare)
-//
-#define Is32BitSigned(a)    (Hi32Bits(a) == Hi32Bits((INT64)(INT32)(a)))
-
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
-{
-    FCALL_CONTRACT;
-
-    return (val1 * val2);
-}
-HCIMPLEND
-#endif // !TARGET_X86 || TARGET_UNIX
-
-/*********************************************************************/
-extern "C" FCDECL2(INT32, JIT_Div, INT32 dividend, INT32 divisor);
-extern "C" FCDECL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor);
-extern "C" FCDECL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor);
-extern "C" FCDECL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor);
-extern "C" FCDECL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor);
-extern "C" FCDECL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor);
-extern "C" FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor);
-extern "C" FCDECL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor);
-
-#if !defined(HOST_64BIT) && !defined(TARGET_X86)
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_LLsh, UINT64 num, int shift)
-{
-    FCALL_CONTRACT;
-    return num << (shift & 0x3F);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LRsh, INT64 num, int shift)
-{
-    FCALL_CONTRACT;
-    return num >> (shift & 0x3F);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift)
-{
-    FCALL_CONTRACT;
-    return num >> (shift & 0x3F);
-}
-HCIMPLEND
-#endif // !HOST_64BIT && !TARGET_X86
-
-#include <optdefault.h>
-
-
-//========================================================================
-//
-//      FLOATING POINT HELPERS
-//
-//========================================================================
-
-#include <optsmallperfcritical.h>
-
-/*********************************************************************/
-HCIMPL1_V(float, JIT_ULng2Flt, uint64_t val)
-{
-    FCALL_CONTRACT;
-    return (float)val;
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(double, JIT_ULng2Dbl, uint64_t val)
-{
-    FCALL_CONTRACT;
-    return (double)val;
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(float, JIT_Lng2Flt, int64_t val)
-{
-    FCALL_CONTRACT;
-    return (float)val;
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(double, JIT_Lng2Dbl, int64_t val)
-{
-    FCALL_CONTRACT;
-    return (double)val;
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(int64_t, JIT_Dbl2Lng, double val)
-{
-    FCALL_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM)
-    const double int64_min = -2147483648.0 * 4294967296.0;
-    const double int64_max = 2147483648.0 * 4294967296.0;
-    return (val != val) ? 0 : (val <= int64_min) ? INT64_MIN : (val >= int64_max) ? INT64_MAX : (int64_t)val;
-#else
-    return (int64_t)val;
-#endif
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(uint64_t, JIT_Dbl2ULng, double val)
-{
-    FCALL_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
-    // Note that this expression also works properly for val = NaN case
-    return (val >= 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val) : 0;
-#else
-    return (uint64_t)val;
-#endif
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
-{
-    FCALL_CONTRACT;
-
-    return fmodf(dividend, divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
-{
-    FCALL_CONTRACT;
-
-    return fmod(dividend, divisor);
-}
-HCIMPLEND
-
-#include <optdefault.h>
-
-#ifdef FEATURE_IJW
-HCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(pField->IsStatic() && pField->IsRVA());
-
-    Module* pModule = pField->GetModule();
-    DWORD fieldRva = pField->GetOffset();
-    _ASSERTE(pModule->IsRvaFieldTls(fieldRva));
-
-    uint8_t** pTlsArray = static_cast<uint8_t**>(NtCurrentTeb()->ThreadLocalStoragePointer);
-    return pTlsArray[pModule->GetTlsIndex()] + pModule->GetFieldTlsOffset(fieldRva);
-}
-HCIMPLEND
-#endif // FEATURE_IJW
 
 // Helper for the managed InitClass implementations
 extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallExceptionStatus* qcallError)
@@ -275,12 +100,6 @@ extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallExceptionStatus
     pMT->CheckRunClassInitThrowing();
     END_QCALL;
 }
-
-//========================================================================
-//
-//      SHARED STATIC FIELD HELPERS
-//
-//========================================================================
 
 #include <optsmallperfcritical.h>
 
@@ -408,6 +227,23 @@ HCIMPLEND
 #endif // FEATURE_MULTITHREADING
 
 #include <optdefault.h>
+
+#ifdef FEATURE_IJW
+HCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(pField->IsStatic() && pField->IsRVA());
+
+    Module* pModule = pField->GetModule();
+    DWORD fieldRva = pField->GetOffset();
+    _ASSERTE(pModule->IsRvaFieldTls(fieldRva));
+
+    uint8_t** pTlsArray = static_cast<uint8_t**>(NtCurrentTeb()->ThreadLocalStoragePointer);
+    return pTlsArray[pModule->GetTlsIndex()] + pModule->GetFieldTlsOffset(fieldRva);
+}
+HCIMPLEND
+#endif // FEATURE_IJW
 
 //========================================================================
 //
@@ -748,18 +584,15 @@ extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
     // This can happen if the method was converted from virtual to non-virtual after the R2R image was created.
     // While this is not a common scenario and is documented as a breaking change, we should still handle it
     // as we have no good scheme for reporting an actionable error here.
-    if (!pStaticMD->IsVtableMethod())
+    MethodTable *pMTObjRef = objRef->GetMethodTable();
     {
-        addr = pStaticMD->GetMultiCallableAddrOfCode();
-        _ASSERTE(addr);
-    }
-    else
-    {
-        MethodTable *pMTObjRef = objRef->GetMethodTable();
         GCX_PREEMP();
-        // This is the new way of resolving a virtual call, including generic virtual methods.
-        // The code is now also used by reflection, remoting etc.
-        addr = pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, pMTObjRef, staticTH);
+        MethodDesc* pTargetMD = pStaticMD->IsVtableMethod()
+            ? pStaticMD->GetMethodDescOfVirtualizedCode(&objRef, pMTObjRef, staticTH)
+            : pStaticMD;
+        // A GC in the target's prestub may scan its signature.
+        pTargetMD->PrepareForUseAsACallTargetOfANativeImage();
+        addr = pTargetMD->GetMultiCallableAddrOfCode();
         _ASSERTE(addr);
     }
 

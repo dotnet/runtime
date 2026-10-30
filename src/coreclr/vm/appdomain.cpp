@@ -61,9 +61,6 @@
 #include "../binder/inc/defaultassemblybinder.h"
 #include "../binder/inc/assemblybindercommon.hpp"
 
-// this file handles string conversion errors for itself
-#undef  MAKE_TRANSLATIONFAILED
-
 // Define these macro's to do strict validation for jit lock and class
 // init entry leaks.  This defines determine if the asserts that
 // verify for these leaks are defined or not.  These asserts can
@@ -1663,12 +1660,12 @@ void AppDomain::AddAssembly(Assembly * assem)
         CrstHolder ch(GetAssemblyListLock());
 
         // Attempt to find empty space in assemblies list
-        DWORD asmCount = m_Assemblies.GetCount_Unlocked();
-        for (DWORD i = 0; i < asmCount; ++i)
+        ArrayList::Iterator i = m_Assemblies.GetArrayListIterator();
+        while (i.Next())
         {
-            if (m_Assemblies.Get_UnlockedNoReference(i) == NULL)
+            if (i.GetElement() == nullptr)
             {
-                m_Assemblies.Set_Unlocked(i, assem);
+                m_Assemblies.Set_Unlocked(i.GetIndex(), assem);
                 return;
             }
         }
@@ -1688,12 +1685,12 @@ void AppDomain::RemoveAssembly(Assembly * pAsm)
     CONTRACTL_END;
 
     CrstHolder ch(GetAssemblyListLock());
-    DWORD asmCount = m_Assemblies.GetCount_Unlocked();
-    for (DWORD i = 0; i < asmCount; ++i)
+    ArrayList::Iterator i = m_Assemblies.GetArrayListIterator();
+    while (i.Next())
     {
-        if (m_Assemblies.Get_UnlockedNoReference(i) == pAsm)
+        if (i.GetElement() == pAsm)
         {
-            m_Assemblies.Set_Unlocked(i, NULL);
+            m_Assemblies.Set_Unlocked(i.GetIndex(), nullptr);
             return;
         }
     }

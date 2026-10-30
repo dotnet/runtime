@@ -245,46 +245,6 @@ int main()
 set(CMAKE_REQUIRED_LIBRARIES)
 
 check_cxx_source_runs("
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#ifndef MAP_ANON
-#define MAP_ANON MAP_ANONYMOUS
-#endif
-
-void *handle_signal(int signal) {
-  /* If we reach this, we've crashed due to mmap honoring
-  PROT_NONE. */
-  _exit(1);
-}
-
-int main(void) {
-  int *ptr;
-  struct sigaction action;
-
-  ptr = (int *) mmap(NULL, getpagesize(), PROT_NONE,
-                     MAP_ANON | MAP_PRIVATE, -1, 0);
-  if (ptr == (int *) MAP_FAILED) {
-    exit(0);
-  }
-  action.sa_handler = &handle_signal;
-  action.sa_flags = 0;
-  sigemptyset(&action.sa_mask);
-  if (sigaction(SIGBUS, &action, NULL) != 0) {
-    exit(0);
-  }
-  if (sigaction(SIGSEGV, &action, NULL) != 0) {
-    exit(0);
-  }
-  /* This will drop us into the signal handler if PROT_NONE
-     is honored. */
-  *ptr = 123;
-  exit(0);
-}" MMAP_ANON_IGNORES_PROTECTION)
-check_cxx_source_runs("
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
