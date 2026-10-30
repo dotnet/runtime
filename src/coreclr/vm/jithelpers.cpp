@@ -69,9 +69,7 @@ using std::isnan;
 // This file contains implementation of all JIT helpers. The helpers are
 // divided into following categories:
 //
-//      INSTANCE FIELD HELPERS
 //      STATIC FIELD HELPERS
-//      SHARED STATIC FIELD HELPERS
 //      CASTING HELPERS
 //      ALLOCATION HELPERS
 //      STRING HELPERS
@@ -85,24 +83,11 @@ using std::isnan;
 //
 //========================================================================
 
-
-
-#ifdef FEATURE_IJW
-HCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(pField->IsStatic() && pField->IsRVA());
-
-    Module* pModule = pField->GetModule();
-    DWORD fieldRva = pField->GetOffset();
-    _ASSERTE(pModule->IsRvaFieldTls(fieldRva));
-
-    uint8_t** pTlsArray = static_cast<uint8_t**>(NtCurrentTeb()->ThreadLocalStoragePointer);
-    return pTlsArray[pModule->GetTlsIndex()] + pModule->GetFieldTlsOffset(fieldRva);
-}
-HCIMPLEND
-#endif // FEATURE_IJW
+//========================================================================
+//
+//      STATIC FIELD HELPERS
+//
+//========================================================================
 
 // Helper for the managed InitClass implementations
 extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallExceptionStatus* qcallError)
@@ -115,12 +100,6 @@ extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallExceptionStatus
     pMT->CheckRunClassInitThrowing();
     END_QCALL;
 }
-
-//========================================================================
-//
-//      SHARED STATIC FIELD HELPERS
-//
-//========================================================================
 
 #include <optsmallperfcritical.h>
 
@@ -248,6 +227,23 @@ HCIMPLEND
 #endif // FEATURE_MULTITHREADING
 
 #include <optdefault.h>
+
+#ifdef FEATURE_IJW
+HCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(pField->IsStatic() && pField->IsRVA());
+
+    Module* pModule = pField->GetModule();
+    DWORD fieldRva = pField->GetOffset();
+    _ASSERTE(pModule->IsRvaFieldTls(fieldRva));
+
+    uint8_t** pTlsArray = static_cast<uint8_t**>(NtCurrentTeb()->ThreadLocalStoragePointer);
+    return pTlsArray[pModule->GetTlsIndex()] + pModule->GetFieldTlsOffset(fieldRva);
+}
+HCIMPLEND
+#endif // FEATURE_IJW
 
 //========================================================================
 //
