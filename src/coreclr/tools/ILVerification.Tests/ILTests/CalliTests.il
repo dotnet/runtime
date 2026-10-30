@@ -18,6 +18,30 @@
 .class public auto ansi beforefieldinit CalliTests
         extends [System.Runtime]System.Object
 {
+    .method public hidebysig static void Lifetime.Round776ExternalSetterPartial_Invalid_Unverifiable.Unverifiable.Unverifiable([out] valuetype [ReturnTests]FollowupSetterCarrier& output, valuetype [ReturnTests]RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        call instance void [ReturnTests]FollowupSetterCarrier::SetA(valuetype [ReturnTests]RefCarrier)
+        ldarg.0
+        ldarg.1
+        call instance void [ReturnTests]FollowupSetterCarrier::SetB(valuetype [ReturnTests]RefCarrier)
+        ret
+    }
+
+    .method public hidebysig static void Lifetime.Round776ExternalSetterInitialized_Valid([out] valuetype [ReturnTests]FollowupSetterCarrier& output, valuetype [ReturnTests]RefCarrier input) cil managed
+    {
+        ldarg.0
+        initobj [ReturnTests]FollowupSetterCarrier
+        ldarg.0
+        ldarg.1
+        call instance void [ReturnTests]FollowupSetterCarrier::SetA(valuetype [ReturnTests]RefCarrier)
+        ldarg.0
+        ldarg.1
+        call instance void [ReturnTests]FollowupSetterCarrier::SetB(valuetype [ReturnTests]RefCarrier)
+        ret
+    }
+
     .method private hidebysig static void StaticTarget(int32 x) cil managed
     {
         ret

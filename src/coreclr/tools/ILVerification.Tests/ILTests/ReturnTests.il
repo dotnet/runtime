@@ -523,6 +523,26 @@
     }
 }
 
+.class public auto ansi beforefieldinit Round776WriterBase extends [System.Runtime]System.Object
+{
+    .method public hidebysig newslot virtual instance valuetype [System.Runtime]System.Span`1<int32> GetSpan() cil managed
+    {
+        .locals init ([0] valuetype [System.Runtime]System.Span`1<int32>)
+        ldloc.0
+        ret
+    }
+}
+
+.class public auto ansi sealed Round776SealedWriter extends Round776WriterBase
+{
+    .method public hidebysig virtual instance valuetype [System.Runtime]System.Span`1<int32> GetSpan() cil managed
+    {
+        .locals init ([0] valuetype [System.Runtime]System.Span`1<int32>)
+        ldloc.0
+        ret
+    }
+}
+
 .class public auto ansi beforefieldinit ReturnTestsType
         extends [System.Runtime]System.Object
 {
@@ -531,6 +551,50 @@
     .field private static valuetype RefCarrier invalidStaticCarrier
 
     .field private valuetype Struct instanceStruct
+
+    .method private hidebysig static void Round776StringPair(string left, string right) cil managed
+    {
+        ret
+    }
+
+    .method public hidebysig static void Return.Round776DuplicateArgumentErrors_Invalid_StackUnexpected.StackUnexpected() cil managed
+    {
+        ldc.i4.0
+        ldc.i4.0
+        call void ReturnTestsType::Round776StringPair(string, string)
+        ret
+    }
+
+    .method public hidebysig static valuetype RefCarrier Return.Round776DuplicateArgumentRevisit_Invalid_StackUnexpected.StackUnexpected.ReturnPtrToStack(bool repeat, valuetype RefCarrier input, int32 source) cil managed
+    {
+    again:
+        ldarg.0
+        brtrue.s mutate
+        ldc.i4.0
+        ldc.i4.0
+        call void ReturnTestsType::Round776StringPair(string, string)
+        ldarg.1
+        ret
+    mutate:
+        ldarga.s 1
+        ldarga.s 2
+        stfld int32& RefCarrier::Item
+        br.s again
+    }
+
+    .method public hidebysig static valuetype [System.Runtime]System.Span`1<int32> Return.Round776SealedVirtualResult_Valid(class Round776SealedWriter writer) cil managed
+    {
+        ldarg.0
+        callvirt instance valuetype [System.Runtime]System.Span`1<int32> Round776SealedWriter::GetSpan()
+        ret
+    }
+
+    .method public hidebysig static valuetype [System.Runtime]System.Span`1<int32> Return.Round776BaseDeclaredVirtual_Invalid_Unverifiable(class Round776SealedWriter writer) cil managed
+    {
+        ldarg.0
+        callvirt instance valuetype [System.Runtime]System.Span`1<int32> Round776WriterBase::GetSpan()
+        ret
+    }
 
     .method public hidebysig static void Return.Round5706ReadPair_Valid([in] valuetype RefPairCarrier& input) cil managed
     {

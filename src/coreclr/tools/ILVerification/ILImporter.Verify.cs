@@ -94,7 +94,9 @@ namespace Internal.IL
         TypeDesc _constrained;
 
         int _currentInstructionOffset;
-        HashSet<(int Offset, VerifierError Error, string Found, string Expected)> _verificationErrors;
+        Dictionary<(int Offset, VerifierError Error, string Found, string Expected),
+            (int Visit, int Count, int Reported)> _verificationErrors;
+        int _verificationVisit;
 
         class BasicBlock
         {
@@ -553,9 +555,16 @@ namespace Internal.IL
 
             string foundText = found?.ToString();
             string expectedText = expected?.ToString();
-            if (_currentBasicBlock is not null &&
-                !(_verificationErrors ??= new()).Add((_currentInstructionOffset, error, foundText, expectedText)))
-                return;
+            if (_currentBasicBlock is not null)
+            {
+                var key = (_currentInstructionOffset, error, foundText, expectedText);
+                _verificationErrors ??= new();
+                _verificationErrors.TryGetValue(key, out var state);
+                int count = state.Visit == _verificationVisit ? state.Count + 1 : 1;
+                _verificationErrors[key] = (_verificationVisit, count, Math.Max(count, state.Reported));
+                if (count <= state.Reported)
+                    return;
+            }
 
             var args = new ErrorArgument[expected is not null ? 3 : found is not null ? 2 : 1];
             args[0] = new ErrorArgument("Offset", _currentInstructionOffset);
@@ -1184,6 +1193,9 @@ namespace Internal.IL
                 return false;
             }
 
+            if (!IsDelegateReadOnlyCompatible(targetMethod, invokeMethod, isOpenDelegate))
+                return false;
+
             // An open static delegate which takes no arguments. In that case we're done.
             if (totalTargetArgs == 0)
             {
@@ -1251,6 +1263,38 @@ namespace Internal.IL
                     return false;
             }
 
+            return true;
+        }
+
+        bool IsDelegateReadOnlyCompatible(MethodDesc targetMethod, MethodDesc invokeMethod, bool isOpenDelegate)
+        {
+            // ECMA-335 II.14.6.1 ignores custom modifiers when binding delegates.
+            // Readonly promises therefore need an explicit compatibility check.
+            LifetimeContract invokeContract = null;
+            if (targetMethod.Signature.ReturnType.IsByRef)
+            {
+                LifetimeContract targetContract = GetLifetimeContract(targetMethod);
+                if (targetContract.ReadOnlyReturn)
+                {
+                    invokeContract = GetLifetimeContract(invokeMethod);
+                    if (!targetContract.Valid || !invokeContract.Valid || !invokeContract.ReadOnlyReturn)
+                        return false;
+                }
+            }
+
+            bool exactTarget = HasFixedMethodTarget(targetMethod) ||
+                !targetMethod.Signature.IsStatic && _delegateCreateStart.HasValue &&
+                _currentInstructionOffset - _delegateCreateStart.Value == 6 &&
+                GetOpcodeAt(_delegateCreateStart.Value) == ILOpcode.ldftn;
+            for (int i = 0; i < invokeMethod.Signature.Length; i++)
+            {
+                if (!invokeMethod.Signature[i].IsByRef)
+                    continue;
+                invokeContract ??= GetLifetimeContract(invokeMethod);
+                if (invokeContract.ReadOnly[i + 1] && (!invokeContract.Valid ||
+                    !CanPassReadOnlyReference(targetMethod, i + (isOpenDelegate ? 0 : 1), exactTarget)))
+                    return false;
+            }
             return true;
         }
 
@@ -1341,6 +1385,7 @@ namespace Internal.IL
 
         void StartImportingBasicBlock(BasicBlock basicBlock)
         {
+            _verificationVisit++;
             _currentInstructionOffset = basicBlock.StartOffset;
             _delegateCreateStart = null;
             _isThisInitialized = basicBlock.IsThisInitialized;
@@ -1615,6 +1660,9 @@ namespace Internal.IL
             }
 
             bool needsLifetimeContract = NeedsCallLifetimes(method, constrained);
+            MethodDesc lifetimeTarget = null;
+            bool exactTarget = constrained is null &&
+                (opcode != ILOpcode.callvirt || HasFixedMethodTarget(method));
             StackValue[] lifetimeArguments = needsLifetimeContract || HasTypedReferenceArguments(method) ?
                 new StackValue[sig.Length + firstLifetimeParameter] : null;
 
@@ -1669,9 +1717,14 @@ namespace Internal.IL
                     if (lifetimeArguments is not null)
                         lifetimeArguments[firstLifetimeParameter + i] = actual;
                     var declared = StackValue.CreateFromType(sig[i]);
-                    if (declared.Kind == StackValueKind.ByRef && (lifetimeArguments is not null || actual.IsReadOnly) &&
-                        GetLifetimeContract(method).ReadOnly[firstLifetimeParameter + i])
-                        declared.SetIsReadOnly();
+                    if (declared.Kind == StackValueKind.ByRef && (lifetimeArguments is not null || actual.IsReadOnly))
+                    {
+                        if (!exactTarget && constrained is not null)
+                            lifetimeTarget ??= ResolveLifetimeTarget(method, constrained);
+                        if (CanPassReadOnlyReference(lifetimeTarget ?? method, firstLifetimeParameter + i,
+                            exactTarget || lifetimeTarget is not null))
+                            declared.SetIsReadOnly();
+                    }
 
                     CheckIsAssignable(actual, declared);
 
@@ -1805,10 +1858,11 @@ namespace Internal.IL
                 lifetimeArguments[0] = StackValue.CreateByRef(methodType).WithLifetime(
                     LifetimeScope.Function, LifetimeScope.Unknown, -1, true, LifetimeScope.Function);
             }
-            MethodDesc lifetimeTarget = lifetimeArguments is null ? null : ResolveLifetimeTarget(method, constrained);
+            if (lifetimeArguments is not null)
+                lifetimeTarget ??= ResolveLifetimeTarget(method, constrained);
             StackValue lifetimeResult = ApplyCallLifetimes(lifetimeTarget ?? method, lifetimeArguments,
                 opcode == ILOpcode.newobj ? methodType : returnType,
-                lifetimeTarget is not null || opcode == ILOpcode.call && constrained is null, needsLifetimeContract);
+                lifetimeTarget is not null || exactTarget, needsLifetimeContract);
 
             // now push on the result
             if (opcode == ILOpcode.newobj)

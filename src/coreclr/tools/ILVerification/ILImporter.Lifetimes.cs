@@ -151,6 +151,8 @@ namespace Internal.IL
                 TypeDesc type = receiver ? method.OwningType : signature[i - firstParameter];
                 contract.HasTypedReference |= IsTypedReference(type);
                 bool byRef = receiver ? type.IsValueType : type.IsByRef;
+                if (!receiver && byRef)
+                    contract.ReadOnly[i] = HasReadOnlySignatureModifier(signature, i - firstParameter + 1);
                 contract.References[i] = !byRef || receiver ? LifetimeScope.Function :
                     modern ? LifetimeScope.ReturnOnly : LifetimeScope.Caller;
                 contract.Contents[i] = receiver && method.IsConstructor && type.IsValueType ?
@@ -195,7 +197,7 @@ namespace Internal.IL
                     bool byRef = signature[index].IsByRef;
                     bool output = byRef && (parameter.Attributes & (ParameterAttributes.In | ParameterAttributes.Out)) ==
                         ParameterAttributes.Out;
-                    contract.ReadOnly[slot] = IsReadOnlyLifetimeParameter(signature, index, reader, parameter, contract);
+                    contract.ReadOnly[slot] |= IsReadOnlyLifetimeParameter(signature, index, reader, parameter, contract);
                     bool scoped = HasLifetimeMarker(reader, parameter.GetCustomAttributes(),
                         "System.Runtime.CompilerServices", "ScopedRefAttribute", contract);
                     bool unscoped = HasLifetimeMarker(reader, parameter.GetCustomAttributes(),
@@ -232,13 +234,16 @@ namespace Internal.IL
                 "System.Runtime.CompilerServices", "IsReadOnlyAttribute", contract);
             readOnly |= HasLifetimeMarker(reader, parameter.GetCustomAttributes(),
                 "System.Runtime.CompilerServices", "RequiresLocationAttribute", contract);
-            return signature[index].IsByRef &&
-                (parameter.Attributes & (ParameterAttributes.In | ParameterAttributes.Out)) == ParameterAttributes.In &&
-                (readOnly || HasReadOnlySignatureModifier(signature, index + 1));
+            return signature[index].IsByRef && (HasReadOnlySignatureModifier(signature, index + 1) ||
+                (parameter.Attributes & (ParameterAttributes.In | ParameterAttributes.Out)) == ParameterAttributes.In && readOnly);
         }
 
-        static FieldDesc GetLifetimeFieldStore(MethodDesc method, EcmaMethod definition)
+        FieldDesc GetLifetimeFieldStore(MethodDesc method, EcmaMethod definition)
         {
+            // External implementations can change without changing their declared contract.
+            if (_method.GetTypicalMethodDefinition() is not EcmaMethod current || definition.Module != current.Module)
+                return null;
+
             MethodSignature signature = method.Signature;
             if (signature.IsStatic || method.IsConstructor || !method.OwningType.IsValueType ||
                 !HasLifetimeContents(method.OwningType) || signature.Length != 1 || !signature.ReturnType.IsVoid)
@@ -719,6 +724,24 @@ namespace Internal.IL
                 }
             }
             return false;
+        }
+
+        static bool HasFixedMethodTarget(MethodDesc method) => !method.IsVirtual || method.IsFinal ||
+            method.OwningType is MetadataType { IsSealed: true };
+
+        bool CanPassReadOnlyReference(MethodDesc method, int slot, bool exactTarget)
+        {
+            LifetimeContract contract = GetLifetimeContract(method);
+            if (!contract.Valid || !contract.ReadOnly[slot])
+                return false;
+
+            // Delegate construction checks the bound target's readonly promises.
+            // Other unresolved bindings need a modifier that signature matching preserves.
+            if (exactTarget || method.OwningType.IsDelegate)
+                return true;
+            int firstParameter = method.Signature.IsStatic ? 0 : 1;
+            return slot >= firstParameter &&
+                HasReadOnlySignatureModifier(method.Signature, slot - firstParameter + 1);
         }
 
         bool NeedsCallLifetimes(MethodDesc method, TypeDesc constrained)
