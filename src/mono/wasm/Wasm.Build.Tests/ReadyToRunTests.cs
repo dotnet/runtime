@@ -80,15 +80,22 @@ namespace Wasm.Build.Tests
             => PublishRunAllPagesCore(config, trimmed, nativeRelink: true, composite: false);
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-        [InlineData(Configuration.Debug, false, null, null, "", false, false)]
-        [InlineData(Configuration.Release, false, null, null, "", true, true)]
-        [InlineData(Configuration.Release, true, null, null, "", false, false)]
-        [InlineData(Configuration.Release, true, "true", "false", "", true, false)]
-        [InlineData(Configuration.Release, true, "false", "true", "", false, true)]
-        [InlineData(Configuration.Debug, false, "true", "true", "--optimize", true, true)]
+        [InlineData(Configuration.Debug, false, false, null, null, "", false, false)]
+        [InlineData(Configuration.Release, false, false, null, null, "", true, true)]
+        [InlineData(Configuration.Release, false, true, null, null, "", false, false)]
+        [InlineData(Configuration.Release, false, true, "true", "false", "", true, false)]
+        [InlineData(Configuration.Release, false, true, "false", "true", "", false, true)]
+        [InlineData(Configuration.Debug, false, false, "true", "true", "--optimize", true, true)]
+        [InlineData(Configuration.Debug, true, false, null, null, "", false, false)]
+        [InlineData(Configuration.Release, true, false, null, null, "", true, true)]
+        [InlineData(Configuration.Release, true, true, null, null, "", false, false)]
+        [InlineData(Configuration.Release, true, true, "true", "false", "", true, false)]
+        [InlineData(Configuration.Release, true, true, "false", "true", "", false, true)]
+        [InlineData(Configuration.Debug, true, false, "true", "true", "--optimize", true, true)]
         [TestCategory("no-workload")]
         public void PublishCrossgen2ArgumentsReflectWasmDebugInfoProperties(
             Configuration config,
+            bool composite,
             bool debuggerSupport,
             string? stripInliningInfo,
             string? stripDebugInfo,
@@ -96,13 +103,19 @@ namespace Wasm.Build.Tests
             bool expectStripInliningInfo,
             bool expectStripDebugInfo)
         {
-            string extraProperties = $"<PublishReadyToRun>true</PublishReadyToRun><DebuggerSupport>{debuggerSupport.ToString().ToLowerInvariant()}</DebuggerSupport>";
+            string extraProperties = $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{composite.ToString().ToLowerInvariant()}</PublishReadyToRunComposite><DebuggerSupport>{debuggerSupport.ToString().ToLowerInvariant()}</DebuggerSupport>";
             if (extraCrossgen2Args.Length > 0)
                 extraProperties += $"<PublishReadyToRunCrossgen2ExtraArgs>{extraCrossgen2Args}</PublishReadyToRunCrossgen2ExtraArgs>";
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_args",
                 extraProperties: extraProperties);
 
-            List<string> extraBuildArgs = [GetR2RBuildArgs(config, composite: false)];
+            string r2rBuildArgs = GetR2RBuildArgs(config, composite);
+            if (composite)
+            {
+                Assert.Contains("-p:Crossgen2SdkOverridePropsPath=", r2rBuildArgs);
+                Assert.Contains("-p:Crossgen2SdkOverrideTargetsPath=", r2rBuildArgs);
+            }
+            List<string> extraBuildArgs = [r2rBuildArgs];
             if (stripInliningInfo is not null)
                 extraBuildArgs.Add($"-p:PublishReadyToRunStripInliningInfo={stripInliningInfo}");
             if (stripDebugInfo is not null)
