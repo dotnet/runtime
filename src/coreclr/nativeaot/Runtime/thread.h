@@ -113,7 +113,9 @@ struct ee_alloc_context
     uint8_t m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
 
     gc_alloc_context* GetGCAllocContext();
-    uint8_t* GetCombinedLimit();
+    uint8_t* getCombinedLimit();
+    uint8_t* getAllocPtr();
+    void setAllocPtr(uint8_t* ptr);
     void UpdateCombinedLimit(bool samplingEnabled);
     static bool IsRandomizedSamplingEnabled();
     static uint32_t ComputeGeometricRandom();
