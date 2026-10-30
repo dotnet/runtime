@@ -3983,6 +3983,42 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     return numHoisted > 0;
 }
 
+//------------------------------------------------------------------------
+// optIsHoistableRuntimeLookup: Check if a tree is a generic runtime lookup
+//   that is worth hoisting even when it does not execute on every loop iteration.
+//
+// Arguments:
+//   tree - the tree to check
+//
+// Return Value:
+//   true if the tree is a runtime lookup helper call that may be hoisted speculatively.
+//
+// Notes:
+//   The cost estimate for these calls is that of a cheap call, but each one performs a
+//   generic dictionary lookup (for ReadyToRun, an indirect call through a delay-load cell).
+//   They are modeled as pure and non-throwing. A lookup can still fail to load a type, but
+//   CoreCLR already reports such failures early: for unshared code the JIT resolves the same
+//   type at compile time, even on paths that never execute. NativeAOT instead compiles failed
+//   lookups into helpers that throw only when invoked, so speculation is not allowed there.
+//
+bool Compiler::optIsHoistableRuntimeLookup(GenTree* tree)
+{
+    if (IsNativeAot() || !tree->IsHelperCall())
+    {
+        return false;
+    }
+
+    switch (tree->AsCall()->GetHelperNum())
+    {
+        case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
+        case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
+        case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
                                           FlowGraphNaturalLoop* loop,
                                           LoopHoistContext*     hoistCtxt,
@@ -4066,7 +4102,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
     // If this tree isn't guaranteed to execute every loop iteration,
     // consider hoisting it only if it is expensive.
     //
-    if (!defExecuted && (tree->GetCostEx() < (IND_COST_EX * 16)))
+    if (!defExecuted && (tree->GetCostEx() < (IND_COST_EX * 16)) && !optIsHoistableRuntimeLookup(tree))
     {
         return false;
     }
