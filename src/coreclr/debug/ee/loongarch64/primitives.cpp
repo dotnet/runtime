@@ -11,14 +11,14 @@ void CopyREGDISPLAY(REGDISPLAY* pDst, REGDISPLAY* pSrc)
     CopyRegDisplay(pSrc, pDst, &tmp);
 }
 
-void SetSSFlag(DT_CONTEXT *, Thread *pThread)
+void SetSSFlag(T_CONTEXT *, Thread *pThread)
 {
     _ASSERTE(pThread != NULL);
 
     pThread->EnableSingleStep();
 }
 
-void UnsetSSFlag(DT_CONTEXT *, Thread *pThread)
+void UnsetSSFlag(T_CONTEXT *, Thread *pThread)
 {
     _ASSERTE(pThread != NULL);
 
@@ -26,7 +26,7 @@ void UnsetSSFlag(DT_CONTEXT *, Thread *pThread)
 }
 
 // Check if single stepping is enabled.
-bool IsSSFlagEnabled(DT_CONTEXT *, Thread *pThread)
+bool IsSSFlagEnabled(T_CONTEXT *, Thread *pThread)
 {
     _ASSERTE(pThread != NULL);
 

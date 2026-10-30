@@ -58,8 +58,13 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
 // CORDbgCopyThreadContext() does an intelligent copy from pSrc to pDst,
 // respecting the ContextFlags of both contexts.
 //
+// The source and destination are opaque byte buffers with an associated size.
+// They only need to be at least sizeof(DT_CONTEXT) bytes and may be larger
+// (for example a full T_CONTEXT that carries trailing XSTATE/SVE state which is
+// not part of DT_CONTEXT); only the DT_CONTEXT portion is ever read or written.
+//
 
-extern void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc);
+extern void CORDbgCopyThreadContext(BYTE* pDst, ULONG32 cbDst, const BYTE* pSrc, ULONG32 cbSrc);
 
 //---------------------------------------------------------------------------------------
 //
