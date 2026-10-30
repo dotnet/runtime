@@ -17,11 +17,6 @@
     .cfi_adjust_cfa_offset -\Size
 .endm
 
-.macro EPILOG_STACK_RESTORE
-    ori  sp, fp, 0
-    .cfi_restore sp
-.endm
-
 .macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs, __def_cfa_save=0
     sd \reg1, \ofs(sp)
     sd \reg2, (\ofs+8)(sp)
@@ -63,10 +58,6 @@
 
     addi  sp, sp, \ssize
     .cfi_adjust_cfa_offset -\ssize
-.endm
-
-.macro EPILOG_BRANCH_REG reg
-    jr \reg
 .endm
 
 //-----------------------------------------------------------------------------
@@ -288,8 +279,6 @@
 // TODO RISCV NYI
     sw  ra, 0(zero)
 .endm
-
-#include <riscv64/InlineTls.inc>
 
 // Inlined version of RhpGetThread
 .macro INLINE_GETTHREAD target

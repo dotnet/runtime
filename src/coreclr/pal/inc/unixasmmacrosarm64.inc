@@ -13,10 +13,6 @@
 C_FUNC(\Name):
 .endm
 
-.macro EMIT_BREAKPOINT
-        brk #0xf000
-.endm
-
 //-----------------------------------------------------------------------------
 // Define the prolog for a TransitionFrame-based method. This macro should be called first in the method and
 // comprises the entire prolog (i.e. don't modify SP after calling this).The locals must be 8 byte aligned

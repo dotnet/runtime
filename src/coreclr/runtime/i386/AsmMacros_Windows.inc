@@ -37,3 +37,8 @@ PATCH_LABEL macro labelName
 endm
 
 __tls_array     equ 2Ch     ;; offsetof(TEB, ThreadLocalStoragePointer)
+
+;; GC type flags
+GC_ALLOC_FINALIZE               equ 1
+GC_ALLOC_ALIGN8_BIAS            equ 4
+GC_ALLOC_ALIGN8                 equ 8

@@ -31,11 +31,6 @@
     .endif
 .endm
 
-.macro EPILOG_STACK_RESTORE
-    mv  sp, fp
-    .cfi_restore  fp
-.endm
-
 .macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs
     sd  \reg1, \ofs(sp)
     sd  \reg2, \ofs + 8(sp)
@@ -77,12 +72,6 @@
         .cfi_restore \reg2
         .cfi_adjust_cfa_offset -\ofs
 .endm
-
-.macro EPILOG_BRANCH_REG reg
-        jalr \reg
-.endm
-
-#include <riscv64/InlineTls.inc>
 
 // Inlined version of RhpGetThread. Target cannot be x0.
 .macro INLINE_GETTHREAD target

@@ -120,23 +120,6 @@
 
 .endm
 
-.macro INLINE_GET_TLS_VAR Var
-       .att_syntax
-#if defined(__APPLE__)
-        movq    _\Var@TLVP(%rip), %rdi
-        callq   *(%rdi)
-#else
-        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
-        leaq    \Var@TLSGD(%rip), %rdi
-        .byte 0x66  //
-        .byte 0x66  //
-        .byte 0x48  // rex.W prefix, also for padding
-        callq   __tls_get_addr@PLT
-#endif
-       .intel_syntax noprefix
-.endm
-
-
 // Inlined version of GetThreadEEAllocContext. Trashes volatile registers.
 .macro INLINE_GET_ALLOC_CONTEXT_BASE
 #ifdef FEATURE_EMULATED_TLS

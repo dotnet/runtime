@@ -55,6 +55,12 @@ C_FUNC(\Name):
 C_FUNC(\Name):
 .endm
 
+.macro PREPARE_EXTERNAL_VAR Name, HelperReg
+        movw \HelperReg, #:lower16:C_FUNC(\Name) - (. + 12)
+        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 8)
+        add \HelperReg, pc
+.endm
+
 .macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
         movw \HelperReg, #:lower16:C_FUNC(\Name) - (. + 12)
         movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 8)
@@ -85,6 +91,10 @@ C_FUNC(\Name):
         .pad #(\Size)
 .endm
 
+.macro free_stack Size
+        add sp, sp, (\Size)
+.endm
+
 .macro POP_CALLEE_SAVED_REGISTERS
         pop_nonvol_reg "{r4-r11, lr}"
 .endm
@@ -99,6 +109,11 @@ C_FUNC(\Name):
 
 .macro push_argument_register Reg
         push_register \Reg
+.endm
+
+.macro PUSH_ARGUMENT_REGISTERS
+        push {r0-r3}
+        .save {r0-r3}
 .endm
 
 .macro pop_register Reg
@@ -153,6 +168,11 @@ C_FUNC(\Name):
         mov sp, \Register
 .endm
 
+.macro EPILOG_STACK_FREE Size
+        add sp, sp, #\Size
+        .pad #-\Size
+.endm
+
 .macro EPILOG_BRANCH Target
         b \Target
 .endm
@@ -192,4 +212,23 @@ C_FUNC(\Name):
 .macro MOV32 DestReg, Constant
         movw \DestReg, #((\Constant) & 0xFFFF)
         movt \DestReg, #((\Constant) >> 16)
+.endm
+
+// thumb with PIC version
+.macro INLINE_GET_TLS_VAR Var
+        ldr     r0, 2f
+1:
+        add     r0, pc, r0
+        bl      __tls_get_addr
+        b       3f
+
+        // Inline data
+        // LLVM assembler has no concept of subsections and this is not expressible as
+        // cross-section relocation.
+        .p2align 2
+2:
+        .extern \Var
+        .type \Var, tls_object
+        .long  \Var(TLSGD) + (2b - 1b - 4)
+3:
 .endm

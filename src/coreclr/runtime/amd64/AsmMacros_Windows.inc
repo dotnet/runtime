@@ -139,6 +139,20 @@ Section ends
 
         endm
 
+LEAF_END_MARKED macro Name, section
+        public Name&_End
+Name&_End label qword
+
+Name    endp
+
+        ; this nop is important to keep the label in
+        ; the right place in the face of BBT
+        nop
+
+Section ends
+
+        endm
+
 NESTED_ENTRY macro Name, Section, Handler
 
 Section segment para 'CODE'
@@ -326,3 +340,6 @@ endif
     add         destReg, trashReg
 
 endm
+
+;; GC type flags
+GC_ALLOC_FINALIZE               equ 1

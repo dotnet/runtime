@@ -74,6 +74,10 @@ C_FUNC(\Name\()_End):
         nop
 .endm
 
+.macro EMIT_BREAKPOINT
+        brk #0xf000
+.endm
+
 .macro LABELED_RETURN_ADDRESS Name
         .global C_FUNC(\Name)
 #if !defined(__APPLE__)

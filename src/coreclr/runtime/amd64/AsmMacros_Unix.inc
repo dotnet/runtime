@@ -242,6 +242,22 @@ C_FUNC(\Name\()_End):
         mov \HelperReg, [rip + C_FUNC(\Name)@GOTPCREL]
 .endm
 
+.macro INLINE_GET_TLS_VAR Var
+       .att_syntax
+#if defined(__APPLE__)
+        movq    _\Var@TLVP(%rip), %rdi
+        callq   *(%rdi)
+#else
+        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
+        leaq    \Var@TLSGD(%rip), %rdi
+        .byte 0x66  //
+        .byte 0x66  //
+        .byte 0x48  // rex.W prefix, also for padding
+        callq   __tls_get_addr@PLT
+#endif
+       .intel_syntax noprefix
+.endm
+
 .macro NOP_6_BYTE
         .byte 0x66
         .byte 0x0F
