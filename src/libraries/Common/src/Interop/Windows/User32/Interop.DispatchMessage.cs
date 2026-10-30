@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.User32)]
-        public static partial int DispatchMessageW(ref MSG msg);
+        public static unsafe partial int DispatchMessageW(ref MSG msg);
     }
 }

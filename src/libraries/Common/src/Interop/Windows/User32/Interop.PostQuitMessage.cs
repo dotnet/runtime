@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.User32)]
-        public static partial void PostQuitMessage(int exitCode);
+        public static unsafe partial void PostQuitMessage(int exitCode);
     }
 }

@@ -70,11 +70,16 @@ namespace Microsoft.Win32
         // to somewhere that we can use it... rip this!
         private static volatile IntPtr s_processWinStation = IntPtr.Zero;
         private static volatile bool s_isUserInteractive;
-        private static unsafe bool UserInteractive
+        private static bool UserInteractive
         {
             get
             {
-                IntPtr hwinsta = Interop.User32.GetProcessWindowStation();
+                IntPtr hwinsta;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    hwinsta = Interop.User32.GetProcessWindowStation();
+                }
                 if (hwinsta != IntPtr.Zero && s_processWinStation != hwinsta)
                 {
                     s_isUserInteractive = true;
@@ -82,11 +87,15 @@ namespace Microsoft.Win32
                     uint dummy = 0;
                     Interop.User32.USEROBJECTFLAGS flags = default;
 
-                    if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, &flags, (uint)sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
+                    // SAFETY: To be audited
+                    unsafe
                     {
-                        if ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0)
+                        if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, &flags, (uint)sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
                         {
-                            s_isUserInteractive = false;
+                            if ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0)
+                            {
+                                s_isUserInteractive = false;
+                            }
                         }
                     }
                     s_processWinStation = hwinsta;
@@ -371,7 +380,11 @@ namespace Microsoft.Win32
             {
                 if (s_defWindowProc == IntPtr.Zero)
                 {
-                    s_defWindowProc = Interop.Kernel32.GetProcAddress(Interop.Kernel32.GetModuleHandle("user32.dll"), "DefWindowProcW");
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        s_defWindowProc = Interop.Kernel32.GetProcAddress(Interop.Kernel32.GetModuleHandle("user32.dll"), "DefWindowProcW");
+                    }
                 }
                 return s_defWindowProc;
             }
@@ -388,8 +401,13 @@ namespace Microsoft.Win32
             }
 
             EnsureSystemEvents(requireHandle: true);
-            IntPtr timerId = Interop.User32.SendMessageW(s_systemEvents!._windowHandle,
-                                                        Interop.User32.WM_CREATETIMER, (IntPtr)interval, IntPtr.Zero);
+            IntPtr timerId;
+            // SAFETY: To be audited
+            unsafe
+            {
+                timerId = Interop.User32.SendMessageW(s_systemEvents!._windowHandle,
+                                                            Interop.User32.WM_CREATETIMER, (IntPtr)interval, IntPtr.Zero);
+            }
             GC.KeepAlive(s_systemEvents);
 
             if (timerId == IntPtr.Zero)
@@ -405,7 +423,11 @@ namespace Microsoft.Win32
             {
                 if (s_registeredSessionNotification)
                 {
-                    Interop.Wtsapi32.WTSUnRegisterSessionNotification(s_systemEvents!._windowHandle);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        Interop.Wtsapi32.WTSUnRegisterSessionNotification(s_systemEvents!._windowHandle);
+                    }
                     GC.KeepAlive(s_systemEvents);
                 }
 
@@ -414,42 +436,50 @@ namespace Microsoft.Win32
 
                 // We check IsWindow because our broadcast window may have been destroyed.
 
-                if (Interop.User32.IsWindow(handle) && DefWndProc != IntPtr.Zero)
+                // SAFETY: To be audited
+                unsafe
                 {
-                    // We used to use this as a sentinel to identify window classes we created on
-                    // other appdomains. We still want to set to the default WNDPROC to prevent
-                    // messages coming back to managed code if our callback gets collected.
-
-                    if (IntPtr.Size == 4)
+                    if (Interop.User32.IsWindow(handle) && DefWndProc != IntPtr.Zero)
                     {
-                        // In a 32-bit process we must call the non-'ptr' version of these APIs
-                        Interop.User32.SetWindowLongW(handle, Interop.User32.GWL_WNDPROC, DefWndProc);
-                        Interop.User32.SetClassLongW(handle, Interop.User32.GCL_WNDPROC, DefWndProc);
+                        // We used to use this as a sentinel to identify window classes we created on
+                        // other appdomains. We still want to set to the default WNDPROC to prevent
+                        // messages coming back to managed code if our callback gets collected.
+
+                        if (IntPtr.Size == 4)
+                        {
+                            // In a 32-bit process we must call the non-'ptr' version of these APIs
+                            Interop.User32.SetWindowLongW(handle, Interop.User32.GWL_WNDPROC, DefWndProc);
+                            Interop.User32.SetClassLongW(handle, Interop.User32.GCL_WNDPROC, DefWndProc);
+                        }
+                        else
+                        {
+                            Interop.User32.SetWindowLongPtrW(handle, Interop.User32.GWL_WNDPROC, DefWndProc);
+                            Interop.User32.SetClassLongPtrW(handle, Interop.User32.GCL_WNDPROC, DefWndProc);
+                        }
+                    }
+
+                    if (Interop.User32.IsWindow(handle) && !Interop.User32.DestroyWindow(handle))
+                    {
+                        // We may not have been able to destroy the window if we're shutdown from another thread.
+                        // Attempt to close the window by posting a WM_CLOSE message instead. (Messages always
+                        // fire on the same thread.)
+                        Interop.User32.PostMessageW(handle, Interop.User32.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
                     }
                     else
                     {
-                        Interop.User32.SetWindowLongPtrW(handle, Interop.User32.GWL_WNDPROC, DefWndProc);
-                        Interop.User32.SetClassLongPtrW(handle, Interop.User32.GCL_WNDPROC, DefWndProc);
+                        IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
+                        Interop.User32.UnregisterClassW(s_className!, hInstance);
                     }
-                }
-
-                if (Interop.User32.IsWindow(handle) && !Interop.User32.DestroyWindow(handle))
-                {
-                    // We may not have been able to destroy the window if we're shutdown from another thread.
-                    // Attempt to close the window by posting a WM_CLOSE message instead. (Messages always
-                    // fire on the same thread.)
-                    Interop.User32.PostMessageW(handle, Interop.User32.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
-                }
-                else
-                {
-                    IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
-                    Interop.User32.UnregisterClassW(s_className!, hInstance);
                 }
             }
 
             if (_consoleHandler != null)
             {
-                Interop.Kernel32.SetConsoleCtrlHandler(_consoleHandler, false);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    Interop.Kernel32.SetConsoleCtrlHandler(_consoleHandler, false);
+                }
                 _consoleHandler = null;
             }
         }
@@ -504,14 +534,23 @@ namespace Microsoft.Win32
         {
             if (!s_registeredSessionNotification)
             {
-                IntPtr retval = Interop.Kernel32.LoadLibrary(Interop.Libraries.Wtsapi32);
+                IntPtr retval;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    retval = Interop.Kernel32.LoadLibrary(Interop.Libraries.Wtsapi32);
+                }
 
                 if (retval != IntPtr.Zero)
                 {
-                    Interop.Wtsapi32.WTSRegisterSessionNotification(s_systemEvents!._windowHandle, Interop.Wtsapi32.NOTIFY_FOR_THIS_SESSION);
-                    GC.KeepAlive(s_systemEvents);
-                    s_registeredSessionNotification = true;
-                    Interop.Kernel32.FreeLibrary(retval);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        Interop.Wtsapi32.WTSRegisterSessionNotification(s_systemEvents!._windowHandle, Interop.Wtsapi32.NOTIFY_FOR_THIS_SESSION);
+                        GC.KeepAlive(s_systemEvents);
+                        s_registeredSessionNotification = true;
+                        Interop.Kernel32.FreeLibrary(retval);
+                    }
                 }
             }
         }
@@ -522,116 +561,120 @@ namespace Microsoft.Win32
 
             if (msg == Interop.User32.WM_SETTINGCHANGE)
             {
-                if (lParam != 0 && Marshal.PtrToStringUni(lParam)!.Equals("Policy"))
+                // SAFETY: To be audited
+                unsafe
                 {
-                    pref = UserPreferenceCategory.Policy;
-                }
-                else if (lParam != 0 && Marshal.PtrToStringUni(lParam)!.Equals("intl"))
-                {
-                    pref = UserPreferenceCategory.Locale;
-                }
-                else
-                {
-                    switch ((int)wParam)
+                    if (lParam != 0 && Marshal.PtrToStringUni(lParam)!.Equals("Policy"))
                     {
-                        case Interop.User32.SPI_SETACCESSTIMEOUT:
-                        case Interop.User32.SPI_SETFILTERKEYS:
-                        case Interop.User32.SPI_SETHIGHCONTRAST:
-                        case Interop.User32.SPI_SETMOUSEKEYS:
-                        case Interop.User32.SPI_SETSCREENREADER:
-                        case Interop.User32.SPI_SETSERIALKEYS:
-                        case Interop.User32.SPI_SETSHOWSOUNDS:
-                        case Interop.User32.SPI_SETSOUNDSENTRY:
-                        case Interop.User32.SPI_SETSTICKYKEYS:
-                        case Interop.User32.SPI_SETTOGGLEKEYS:
-                            pref = UserPreferenceCategory.Accessibility;
-                            break;
+                        pref = UserPreferenceCategory.Policy;
+                    }
+                    else if (lParam != 0 && Marshal.PtrToStringUni(lParam)!.Equals("intl"))
+                    {
+                        pref = UserPreferenceCategory.Locale;
+                    }
+                    else
+                    {
+                        switch ((int)wParam)
+                        {
+                            case Interop.User32.SPI_SETACCESSTIMEOUT:
+                            case Interop.User32.SPI_SETFILTERKEYS:
+                            case Interop.User32.SPI_SETHIGHCONTRAST:
+                            case Interop.User32.SPI_SETMOUSEKEYS:
+                            case Interop.User32.SPI_SETSCREENREADER:
+                            case Interop.User32.SPI_SETSERIALKEYS:
+                            case Interop.User32.SPI_SETSHOWSOUNDS:
+                            case Interop.User32.SPI_SETSOUNDSENTRY:
+                            case Interop.User32.SPI_SETSTICKYKEYS:
+                            case Interop.User32.SPI_SETTOGGLEKEYS:
+                                pref = UserPreferenceCategory.Accessibility;
+                                break;
 
-                        case Interop.User32.SPI_SETDESKWALLPAPER:
-                        case Interop.User32.SPI_SETFONTSMOOTHING:
-                        case Interop.User32.SPI_SETCURSORS:
-                        case Interop.User32.SPI_SETDESKPATTERN:
-                        case Interop.User32.SPI_SETGRIDGRANULARITY:
-                        case Interop.User32.SPI_SETWORKAREA:
-                            pref = UserPreferenceCategory.Desktop;
-                            break;
+                            case Interop.User32.SPI_SETDESKWALLPAPER:
+                            case Interop.User32.SPI_SETFONTSMOOTHING:
+                            case Interop.User32.SPI_SETCURSORS:
+                            case Interop.User32.SPI_SETDESKPATTERN:
+                            case Interop.User32.SPI_SETGRIDGRANULARITY:
+                            case Interop.User32.SPI_SETWORKAREA:
+                                pref = UserPreferenceCategory.Desktop;
+                                break;
 
-                        case Interop.User32.SPI_ICONHORIZONTALSPACING:
-                        case Interop.User32.SPI_ICONVERTICALSPACING:
-                        case Interop.User32.SPI_SETICONMETRICS:
-                        case Interop.User32.SPI_SETICONS:
-                        case Interop.User32.SPI_SETICONTITLELOGFONT:
-                        case Interop.User32.SPI_SETICONTITLEWRAP:
-                            pref = UserPreferenceCategory.Icon;
-                            break;
+                            case Interop.User32.SPI_ICONHORIZONTALSPACING:
+                            case Interop.User32.SPI_ICONVERTICALSPACING:
+                            case Interop.User32.SPI_SETICONMETRICS:
+                            case Interop.User32.SPI_SETICONS:
+                            case Interop.User32.SPI_SETICONTITLELOGFONT:
+                            case Interop.User32.SPI_SETICONTITLEWRAP:
+                                pref = UserPreferenceCategory.Icon;
+                                break;
 
-                        case Interop.User32.SPI_SETDOUBLECLICKTIME:
-                        case Interop.User32.SPI_SETDOUBLECLKHEIGHT:
-                        case Interop.User32.SPI_SETDOUBLECLKWIDTH:
-                        case Interop.User32.SPI_SETMOUSE:
-                        case Interop.User32.SPI_SETMOUSEBUTTONSWAP:
-                        case Interop.User32.SPI_SETMOUSEHOVERHEIGHT:
-                        case Interop.User32.SPI_SETMOUSEHOVERTIME:
-                        case Interop.User32.SPI_SETMOUSESPEED:
-                        case Interop.User32.SPI_SETMOUSETRAILS:
-                        case Interop.User32.SPI_SETSNAPTODEFBUTTON:
-                        case Interop.User32.SPI_SETWHEELSCROLLLINES:
-                        case Interop.User32.SPI_SETCURSORSHADOW:
-                        case Interop.User32.SPI_SETHOTTRACKING:
-                        case Interop.User32.SPI_SETTOOLTIPANIMATION:
-                        case Interop.User32.SPI_SETTOOLTIPFADE:
-                            pref = UserPreferenceCategory.Mouse;
-                            break;
+                            case Interop.User32.SPI_SETDOUBLECLICKTIME:
+                            case Interop.User32.SPI_SETDOUBLECLKHEIGHT:
+                            case Interop.User32.SPI_SETDOUBLECLKWIDTH:
+                            case Interop.User32.SPI_SETMOUSE:
+                            case Interop.User32.SPI_SETMOUSEBUTTONSWAP:
+                            case Interop.User32.SPI_SETMOUSEHOVERHEIGHT:
+                            case Interop.User32.SPI_SETMOUSEHOVERTIME:
+                            case Interop.User32.SPI_SETMOUSESPEED:
+                            case Interop.User32.SPI_SETMOUSETRAILS:
+                            case Interop.User32.SPI_SETSNAPTODEFBUTTON:
+                            case Interop.User32.SPI_SETWHEELSCROLLLINES:
+                            case Interop.User32.SPI_SETCURSORSHADOW:
+                            case Interop.User32.SPI_SETHOTTRACKING:
+                            case Interop.User32.SPI_SETTOOLTIPANIMATION:
+                            case Interop.User32.SPI_SETTOOLTIPFADE:
+                                pref = UserPreferenceCategory.Mouse;
+                                break;
 
-                        case Interop.User32.SPI_SETKEYBOARDDELAY:
-                        case Interop.User32.SPI_SETKEYBOARDPREF:
-                        case Interop.User32.SPI_SETKEYBOARDSPEED:
-                        case Interop.User32.SPI_SETLANGTOGGLE:
-                            pref = UserPreferenceCategory.Keyboard;
-                            break;
+                            case Interop.User32.SPI_SETKEYBOARDDELAY:
+                            case Interop.User32.SPI_SETKEYBOARDPREF:
+                            case Interop.User32.SPI_SETKEYBOARDSPEED:
+                            case Interop.User32.SPI_SETLANGTOGGLE:
+                                pref = UserPreferenceCategory.Keyboard;
+                                break;
 
-                        case Interop.User32.SPI_SETMENUDROPALIGNMENT:
-                        case Interop.User32.SPI_SETMENUFADE:
-                        case Interop.User32.SPI_SETMENUSHOWDELAY:
-                        case Interop.User32.SPI_SETMENUANIMATION:
-                        case Interop.User32.SPI_SETSELECTIONFADE:
-                            pref = UserPreferenceCategory.Menu;
-                            break;
+                            case Interop.User32.SPI_SETMENUDROPALIGNMENT:
+                            case Interop.User32.SPI_SETMENUFADE:
+                            case Interop.User32.SPI_SETMENUSHOWDELAY:
+                            case Interop.User32.SPI_SETMENUANIMATION:
+                            case Interop.User32.SPI_SETSELECTIONFADE:
+                                pref = UserPreferenceCategory.Menu;
+                                break;
 
-                        case Interop.User32.SPI_SETLOWPOWERACTIVE:
-                        case Interop.User32.SPI_SETLOWPOWERTIMEOUT:
-                        case Interop.User32.SPI_SETPOWEROFFACTIVE:
-                        case Interop.User32.SPI_SETPOWEROFFTIMEOUT:
-                            pref = UserPreferenceCategory.Power;
-                            break;
+                            case Interop.User32.SPI_SETLOWPOWERACTIVE:
+                            case Interop.User32.SPI_SETLOWPOWERTIMEOUT:
+                            case Interop.User32.SPI_SETPOWEROFFACTIVE:
+                            case Interop.User32.SPI_SETPOWEROFFTIMEOUT:
+                                pref = UserPreferenceCategory.Power;
+                                break;
 
-                        case Interop.User32.SPI_SETSCREENSAVEACTIVE:
-                        case Interop.User32.SPI_SETSCREENSAVERRUNNING:
-                        case Interop.User32.SPI_SETSCREENSAVETIMEOUT:
-                            pref = UserPreferenceCategory.Screensaver;
-                            break;
+                            case Interop.User32.SPI_SETSCREENSAVEACTIVE:
+                            case Interop.User32.SPI_SETSCREENSAVERRUNNING:
+                            case Interop.User32.SPI_SETSCREENSAVETIMEOUT:
+                                pref = UserPreferenceCategory.Screensaver;
+                                break;
 
-                        case Interop.User32.SPI_SETKEYBOARDCUES:
-                        case Interop.User32.SPI_SETCOMBOBOXANIMATION:
-                        case Interop.User32.SPI_SETLISTBOXSMOOTHSCROLLING:
-                        case Interop.User32.SPI_SETGRADIENTCAPTIONS:
-                        case Interop.User32.SPI_SETUIEFFECTS:
-                        case Interop.User32.SPI_SETACTIVEWINDOWTRACKING:
-                        case Interop.User32.SPI_SETACTIVEWNDTRKZORDER:
-                        case Interop.User32.SPI_SETACTIVEWNDTRKTIMEOUT:
-                        case Interop.User32.SPI_SETANIMATION:
-                        case Interop.User32.SPI_SETBORDER:
-                        case Interop.User32.SPI_SETCARETWIDTH:
-                        case Interop.User32.SPI_SETDRAGFULLWINDOWS:
-                        case Interop.User32.SPI_SETDRAGHEIGHT:
-                        case Interop.User32.SPI_SETDRAGWIDTH:
-                        case Interop.User32.SPI_SETFOREGROUNDFLASHCOUNT:
-                        case Interop.User32.SPI_SETFOREGROUNDLOCKTIMEOUT:
-                        case Interop.User32.SPI_SETMINIMIZEDMETRICS:
-                        case Interop.User32.SPI_SETNONCLIENTMETRICS:
-                        case Interop.User32.SPI_SETSHOWIMEUI:
-                            pref = UserPreferenceCategory.Window;
-                            break;
+                            case Interop.User32.SPI_SETKEYBOARDCUES:
+                            case Interop.User32.SPI_SETCOMBOBOXANIMATION:
+                            case Interop.User32.SPI_SETLISTBOXSMOOTHSCROLLING:
+                            case Interop.User32.SPI_SETGRADIENTCAPTIONS:
+                            case Interop.User32.SPI_SETUIEFFECTS:
+                            case Interop.User32.SPI_SETACTIVEWINDOWTRACKING:
+                            case Interop.User32.SPI_SETACTIVEWNDTRKZORDER:
+                            case Interop.User32.SPI_SETACTIVEWNDTRKTIMEOUT:
+                            case Interop.User32.SPI_SETANIMATION:
+                            case Interop.User32.SPI_SETBORDER:
+                            case Interop.User32.SPI_SETCARETWIDTH:
+                            case Interop.User32.SPI_SETDRAGFULLWINDOWS:
+                            case Interop.User32.SPI_SETDRAGHEIGHT:
+                            case Interop.User32.SPI_SETDRAGWIDTH:
+                            case Interop.User32.SPI_SETFOREGROUNDFLASHCOUNT:
+                            case Interop.User32.SPI_SETFOREGROUNDLOCKTIMEOUT:
+                            case Interop.User32.SPI_SETMINIMIZEDMETRICS:
+                            case Interop.User32.SPI_SETNONCLIENTMETRICS:
+                            case Interop.User32.SPI_SETSHOWIMEUI:
+                                pref = UserPreferenceCategory.Window;
+                                break;
+                        }
                     }
                 }
             }
@@ -647,17 +690,26 @@ namespace Microsoft.Win32
             return pref;
         }
 
-        private unsafe void Initialize()
+        private void Initialize()
         {
             _consoleHandler = new Interop.Kernel32.ConsoleCtrlHandlerRoutine(ConsoleHandlerProc);
 
-            if (!Interop.Kernel32.SetConsoleCtrlHandler(_consoleHandler, true))
+            // SAFETY: To be audited
+            unsafe
             {
-                Debug.Fail("Failed to install console handler.");
-                _consoleHandler = null;
+                if (!Interop.Kernel32.SetConsoleCtrlHandler(_consoleHandler, true))
+                {
+                    Debug.Fail("Failed to install console handler.");
+                    _consoleHandler = null;
+                }
             }
 
-            IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
+            IntPtr hInstance;
+            // SAFETY: To be audited
+            unsafe
+            {
+                hInstance = Interop.Kernel32.GetModuleHandle(null);
+            }
 
             s_className = $".NET-BroadcastEventWindow.{AppDomain.CurrentDomain.GetHashCode():x}.0";
 
@@ -668,29 +720,33 @@ namespace Microsoft.Win32
 
                 _windowProc = WindowProc;
 
-                Interop.User32.WNDCLASS windowClass = new Interop.User32.WNDCLASS
+                // SAFETY: To be audited
+                unsafe
                 {
-                    hbrBackground = (IntPtr)(Interop.User32.COLOR_WINDOW + 1),
-                    lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_windowProc),
-                    lpszClassName = className,
-                    hInstance = hInstance
-                };
+                    Interop.User32.WNDCLASS windowClass = new Interop.User32.WNDCLASS
+                    {
+                        hbrBackground = (IntPtr)(Interop.User32.COLOR_WINDOW + 1),
+                        lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_windowProc),
+                        lpszClassName = className,
+                        hInstance = hInstance
+                    };
 
-                if (Interop.User32.RegisterClassW(ref windowClass) == 0)
-                {
-                    _windowProc = null;
-                    Debug.WriteLine("Unable to register broadcast window class: {0}", Marshal.GetLastPInvokeError());
-                }
-                else
-                {
-                    // And create an instance of the window.
-                    _windowHandle = Interop.User32.CreateWindowExW(
-                        0,
-                        s_className,
-                        s_className,
-                        Interop.User32.WS_POPUP,
-                        0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero,
-                        hInstance, IntPtr.Zero);
+                    if (Interop.User32.RegisterClassW(ref windowClass) == 0)
+                    {
+                        _windowProc = null;
+                        Debug.WriteLine("Unable to register broadcast window class: {0}", Marshal.GetLastPInvokeError());
+                    }
+                    else
+                    {
+                        // And create an instance of the window.
+                        _windowHandle = Interop.User32.CreateWindowExW(
+                            0,
+                            s_className,
+                            s_className,
+                            Interop.User32.WS_POPUP,
+                            0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero,
+                            hInstance, IntPtr.Zero);
+                    }
                 }
             }
         }
@@ -766,7 +822,11 @@ namespace Microsoft.Win32
                 {
                     if (s_threadCallbackList is null)
                     {
-                        s_threadCallbackMessage = Interop.User32.RegisterWindowMessageW("SystemEventsThreadCallbackMessage");
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            s_threadCallbackMessage = Interop.User32.RegisterWindowMessageW("SystemEventsThreadCallbackMessage");
+                        }
                         s_threadCallbackList = new Queue<Delegate>();
                     }
                 }
@@ -779,7 +839,11 @@ namespace Microsoft.Win32
                 s_threadCallbackList.Enqueue(method);
             }
 
-            Interop.User32.PostMessageW(s_systemEvents!._windowHandle, s_threadCallbackMessage, IntPtr.Zero, IntPtr.Zero);
+            // SAFETY: To be audited
+            unsafe
+            {
+                Interop.User32.PostMessageW(s_systemEvents!._windowHandle, s_threadCallbackMessage, IntPtr.Zero, IntPtr.Zero);
+            }
         }
 
         /// <summary>
@@ -790,8 +854,13 @@ namespace Microsoft.Win32
             EnsureSystemEvents(requireHandle: true);
             if (s_systemEvents!._windowHandle != IntPtr.Zero)
             {
-                int res = (int)Interop.User32.SendMessageW(s_systemEvents._windowHandle,
-                                                                Interop.User32.WM_KILLTIMER, timerId, IntPtr.Zero);
+                int res;
+                // SAFETY: To be audited
+                unsafe
+                {
+                    res = (int)Interop.User32.SendMessageW(s_systemEvents._windowHandle,
+                                                                    Interop.User32.WM_KILLTIMER, timerId, IntPtr.Zero);
+                }
                 GC.KeepAlive(s_systemEvents);
 
                 if (res == 0)
@@ -806,7 +875,12 @@ namespace Microsoft.Win32
         private IntPtr OnCreateTimer(nint wParam)
         {
             IntPtr timerId = (IntPtr)s_randomTimerId.Next();
-            IntPtr res = Interop.User32.SetTimer(_windowHandle, timerId, (int)wParam, IntPtr.Zero);
+            IntPtr res;
+            // SAFETY: To be audited
+            unsafe
+            {
+                res = Interop.User32.SetTimer(_windowHandle, timerId, (int)wParam, IntPtr.Zero);
+            }
             return (res == IntPtr.Zero ? IntPtr.Zero : timerId);
         }
 
@@ -844,7 +918,12 @@ namespace Microsoft.Win32
         /// </summary>
         private bool OnKillTimer(IntPtr wParam)
         {
-            bool res = Interop.User32.KillTimer(_windowHandle, wParam);
+            bool res;
+            // SAFETY: To be audited
+            unsafe
+            {
+                res = Interop.User32.KillTimer(_windowHandle, wParam);
+            }
             return res;
         }
 
@@ -1080,13 +1159,21 @@ namespace Microsoft.Win32
                     IntPtr newStringPtr = lParam;
                     if (lParam != 0)
                     {
-                        newString = Marshal.PtrToStringUni(lParam);
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            newString = Marshal.PtrToStringUni(lParam);
+                        }
                         if (newString != null)
                         {
                             newStringPtr = Marshal.StringToHGlobalUni(newString);
                         }
                     }
-                    Interop.User32.PostMessageW(_windowHandle, Interop.User32.WM_REFLECT + msg, wParam, newStringPtr);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        Interop.User32.PostMessageW(_windowHandle, Interop.User32.WM_REFLECT + msg, wParam, newStringPtr);
+                    }
                     break;
                 case Interop.User32.WM_WTSSESSION_CHANGE:
                     OnSessionSwitch((int)wParam);
@@ -1099,7 +1186,11 @@ namespace Microsoft.Win32
                 case Interop.User32.WM_TIMECHANGE:
                 case Interop.User32.WM_TIMER:
                 case Interop.User32.WM_THEMECHANGED:
-                    Interop.User32.PostMessageW(_windowHandle, Interop.User32.WM_REFLECT + msg, wParam, lParam);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        Interop.User32.PostMessageW(_windowHandle, Interop.User32.WM_REFLECT + msg, wParam, lParam);
+                    }
                     break;
 
                 case Interop.User32.WM_CREATETIMER:
@@ -1120,7 +1211,11 @@ namespace Microsoft.Win32
                         {
                             if (lParam != 0)
                             {
-                                Marshal.FreeHGlobal(lParam);
+                                // SAFETY: To be audited
+                                unsafe
+                                {
+                                    Marshal.FreeHGlobal(lParam);
+                                }
                             }
                         }
                         catch (Exception e)
@@ -1177,7 +1272,11 @@ namespace Microsoft.Win32
                     break;
 
                 case Interop.User32.WM_DESTROY:
-                    Interop.User32.PostQuitMessage(0);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        Interop.User32.PostQuitMessage(0);
+                    }
                     _windowHandle = IntPtr.Zero;
                     break;
 
@@ -1191,7 +1290,11 @@ namespace Microsoft.Win32
                     break;
             }
 
-            return Interop.User32.DefWindowProcW(hWnd, msg, wParam, lParam);
+            // SAFETY: To be audited
+            unsafe
+            {
+                return Interop.User32.DefWindowProcW(hWnd, msg, wParam, lParam);
+            }
         }
 
         /// <summary>
@@ -1211,10 +1314,14 @@ namespace Microsoft.Win32
                 {
                     Interop.User32.MSG msg = default;
 
-                    while (Interop.User32.GetMessageW(ref msg, _windowHandle, 0, 0) > 0)
+                    // SAFETY: To be audited
+                    unsafe
                     {
-                        Interop.User32.TranslateMessage(ref msg);
-                        Interop.User32.DispatchMessageW(ref msg);
+                        while (Interop.User32.GetMessageW(ref msg, _windowHandle, 0, 0) > 0)
+                        {
+                            Interop.User32.TranslateMessage(ref msg);
+                            Interop.User32.DispatchMessageW(ref msg);
+                        }
                     }
                 }
 

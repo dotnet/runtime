@@ -9,6 +9,6 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.User32, StringMarshalling = StringMarshalling.Utf16)]
-        public static partial int RegisterWindowMessageW(string msg);
+        public static unsafe partial int RegisterWindowMessageW(string msg);
     }
 }

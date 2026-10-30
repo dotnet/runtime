@@ -9,6 +9,6 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.User32, SetLastError = true)]
-        public static partial short RegisterClassW(ref WNDCLASS wc);
+        public static unsafe partial short RegisterClassW(ref WNDCLASS wc);
     }
 }
