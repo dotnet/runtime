@@ -33,7 +33,13 @@ namespace Internal.Win32.SafeHandles
         }
 
         /// <inheritdoc/>
-        protected override bool ReleaseHandle() =>
-            Interop.Advapi32.RegCloseKey(handle) == Interop.Errors.ERROR_SUCCESS;
+        protected override bool ReleaseHandle()
+        {
+            // SAFETY: To be audited
+            unsafe
+            {
+                return Interop.Advapi32.RegCloseKey(handle) == Interop.Errors.ERROR_SUCCESS;
+            }
+        }
     }
 }
