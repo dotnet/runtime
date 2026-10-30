@@ -1490,8 +1490,7 @@ namespace Internal.IL
             var stackValue = StackValue.CreateFromType(varType);
             if (_lifetimeMemory.Length != 0)
                 stackValue = stackValue.CopyLifetime(_lifetimeMemory[VariableCell(index, argument)]);
-            if (argument && stackValue.Kind == StackValueKind.ByRef && HasLifetimeContents(stackValue.Type) &&
-                _lifetimeContract?.ReadOnly[index] == true)
+            if (argument && stackValue.Kind == StackValueKind.ByRef && _lifetimeContract?.ReadOnly[index] == true)
                 stackValue.SetIsReadOnly();
             if (index == 0 && argument && _thisType != null)
             {
@@ -1670,7 +1669,7 @@ namespace Internal.IL
                     if (lifetimeArguments is not null)
                         lifetimeArguments[firstLifetimeParameter + i] = actual;
                     var declared = StackValue.CreateFromType(sig[i]);
-                    if (declared.Kind == StackValueKind.ByRef && lifetimeArguments is not null &&
+                    if (declared.Kind == StackValueKind.ByRef && (lifetimeArguments is not null || actual.IsReadOnly) &&
                         GetLifetimeContract(method).ReadOnly[firstLifetimeParameter + i])
                         declared.SetIsReadOnly();
 
@@ -2034,7 +2033,16 @@ namespace Internal.IL
                     Check(_stackTop == 1, VerifierError.ReturnEmpty);
 
                     var actualReturnType = Pop();
-                    CheckIsAssignable(actualReturnType, StackValue.CreateFromType(expectedReturnType));
+                    StackValue declared = StackValue.CreateFromType(expectedReturnType);
+                    if (declared.Kind == StackValueKind.ByRef)
+                    {
+                        LifetimeContract contract = GetLifetimeContract(_method);
+                        if (_lifetimeContract is null && contract.ReadOnlyReturn)
+                            LifetimeCheck(contract.Valid);
+                        if (contract.ReadOnlyReturn)
+                            declared.SetIsReadOnly();
+                    }
+                    CheckIsAssignable(actualReturnType, declared);
 
                     if (HasLifetime(expectedReturnType))
                     {
@@ -2343,7 +2351,10 @@ namespace Internal.IL
 
             if (HasLifetime(field.FieldType))
                 LifetimeCheck(contentsScope != LifetimeScope.Unknown);
-            Push(StackValue.CreateFromType(field.FieldType).WithLifetime(contentsScope));
+            StackValue value = StackValue.CreateFromType(field.FieldType).WithLifetime(contentsScope);
+            if (IsReadOnlyLifetimeField(field))
+                value.SetIsReadOnly();
+            Push(value);
         }
 
         void ImportAddressOfField(int token, bool isStatic)
@@ -2466,7 +2477,10 @@ namespace Internal.IL
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
-            CheckIsAssignable(value, StackValue.CreateFromType(field.FieldType));
+            StackValue declared = StackValue.CreateFromType(field.FieldType);
+            if (IsReadOnlyLifetimeField(field))
+                declared.SetIsReadOnly();
+            CheckIsAssignable(value, declared);
             StoreFieldLifetime(lifetimeAddress, value, field);
         }
 

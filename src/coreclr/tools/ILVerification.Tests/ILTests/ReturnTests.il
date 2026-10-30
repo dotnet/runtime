@@ -20,6 +20,15 @@
         extends [System.Runtime]System.ValueType
 {
     .field public int32 instanceField
+
+    .method public hidebysig instance void Return.Round5706ReadonlyStructWrite_Invalid_StackUnexpected() cil managed
+    {
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldc.i4.1
+        stfld int32 Struct::instanceField
+        ret
+    }
 }
 
 .class public sequential ansi sealed beforefieldinit IntCarrier
@@ -27,6 +36,15 @@
 {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
     .field public int32 Value
+
+    .method public hidebysig instance int32 Return.Round5706ReadonlyScalarForward_Valid() cil managed
+    {
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldflda int32 IntCarrier::Value
+        call int32 ReturnTestsType::Return.Round5706ReadScalar_Valid(int32&)
+        ret
+    }
 }
 
 .class interface public abstract auto ansi IRefMutator
@@ -43,6 +61,23 @@
 {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
     .field public int32& Item
+
+    .method public hidebysig specialname instance int32& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) get_Item(int32 index) cil managed
+    {
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        .param [0]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldfld int32& RefCarrier::Item
+        ret
+    }
+
+    .property instance int32& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) ItemAt(int32)
+    {
+        .get instance int32& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) RefCarrier::get_Item(int32)
+    }
+
+    .method public hidebysig instance int32& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) 'special.Round5706ReadonlyIndexer.get_Item_Valid'(int32 index) cil managed { ret }
 
     .method public hidebysig instance void Return.Followup5705ReadonlyReceiverToRefReadonly_Valid() cil managed
     {
@@ -427,6 +462,67 @@
     }
 }
 
+.class public sequential ansi sealed beforefieldinit Round5706InitCarrier extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+    .field public initonly valuetype RefCarrier Value
+
+    .method public hidebysig specialname instance void modreq([System.Runtime]System.Runtime.CompilerServices.IsExternalInit) set_Value(valuetype RefCarrier input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        stfld valuetype RefCarrier Round5706InitCarrier::Value
+        ldarg.0
+        ldfld valuetype RefCarrier Round5706InitCarrier::Value
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void modreq([System.Runtime]System.Runtime.CompilerServices.IsExternalInit) 'special.Round5706InitAccessorBody.set_Value_Valid'(valuetype RefCarrier input) cil managed { ret }
+}
+
+.class public sequential ansi sealed beforefieldinit Round5706ReadonlyFieldCarrier extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+    .field public int32& Item
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+
+    .method public hidebysig specialname rtspecialname instance void .ctor([in] int32& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldarg.1
+        stfld int32& Round5706ReadonlyFieldCarrier::Item
+        ret
+    }
+
+    .method public hidebysig instance void 'special.Round5706ReadonlyRefFieldConstructor..ctor_Valid'([in] int32& input) cil managed { ret }
+}
+
+.class interface public abstract auto ansi IRound5706ScalarReader
+{
+    .method public hidebysig newslot abstract virtual instance int32 Read([in] int32& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+    }
+}
+
+.class public auto ansi sealed Round5706ScalarReader extends [System.Runtime]System.Object implements IRound5706ScalarReader
+{
+    .method public hidebysig newslot virtual final instance int32 Read([in] int32& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) input) cil managed
+    {
+        .override method instance int32 IRound5706ScalarReader::Read(int32& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute))
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.1
+        ldind.i4
+        ret
+    }
+}
+
 .class public auto ansi beforefieldinit ReturnTestsType
         extends [System.Runtime]System.Object
 {
@@ -435,6 +531,304 @@
     .field private static valuetype RefCarrier invalidStaticCarrier
 
     .field private valuetype Struct instanceStruct
+
+    .method public hidebysig static void Return.Round5706ReadPair_Valid([in] valuetype RefPairCarrier& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldfld int32& RefPairCarrier::Second
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706MergedOutputReadonlyRead_Invalid_Unverifiable(bool choose, [out] valuetype RefPairCarrier& first, [out] valuetype RefPairCarrier& second) cil managed
+    {
+        ldarg.0
+        brtrue.s takeFirst
+        ldarg.2
+        br.s selected
+    takeFirst:
+        ldarg.1
+    selected:
+        call void ReturnTestsType::Return.Round5706ReadPair_Valid(valuetype RefPairCarrier&)
+        ldarg.1
+        initobj RefPairCarrier
+        ldarg.2
+        initobj RefPairCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706MergedInitializedReadonlyRead_Valid(bool choose, [out] valuetype RefPairCarrier& first, [out] valuetype RefPairCarrier& second) cil managed
+    {
+        ldarg.1
+        initobj RefPairCarrier
+        ldarg.2
+        initobj RefPairCarrier
+        ldarg.0
+        brtrue.s takeFirst
+        ldarg.2
+        br.s selected
+    takeFirst:
+        ldarg.1
+    selected:
+        call void ReturnTestsType::Return.Round5706ReadPair_Valid(valuetype RefPairCarrier&)
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706WeakMergedOutputReadonlyRead_Invalid_Unverifiable(bool choose, [out] valuetype RefPairCarrier& first, [out] valuetype RefPairCarrier& second) cil managed
+    {
+        .locals init ([0] valuetype RefPairCarrier&)
+        .try
+        {
+            ldarg.0
+            brtrue.s takeFirst
+            ldarg.2
+            br.s selected
+        takeFirst:
+            ldarg.1
+        selected:
+            stloc.0
+            ldloc.0
+            call void ReturnTestsType::Return.Round5706ReadPair_Valid(valuetype RefPairCarrier&)
+            leave.s done
+        }
+        finally
+        {
+            endfinally
+        }
+    done:
+        ldarg.1
+        initobj RefPairCarrier
+        ldarg.2
+        initobj RefPairCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706ReadonlyObjectWrite_Invalid_ReadOnlyIllegalWrite([in] object& destination, object replacement, valuetype RefCarrier& other) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldarg.1
+        stind.ref
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706CovariantReadonlyCaller_Valid(object[] input) cil managed
+    {
+        .locals init ([0] valuetype RefCarrier)
+        ldarg.0
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Object
+        newobj instance void [System.Runtime]System.Object::.ctor()
+        ldloca.s 0
+        call void ReturnTestsType::Return.Round5706ReadonlyObjectWrite_Invalid_ReadOnlyIllegalWrite(object&, object, valuetype RefCarrier&)
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706ReadonlyScalarWrite_Invalid_ReadOnlyIllegalWrite([in] int32& destination) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldc.i4.1
+        stind.i4
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706ReadonlyScalarAliasWrite_Invalid_ReadOnlyIllegalWrite([in] int32& destination) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequiresLocationAttribute::.ctor() = ( 01 00 00 00 )
+        .locals init ([0] int32&)
+        ldarg.0
+        stloc.0
+        ldloc.0
+        ldc.i4.1
+        stind.i4
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706ReboundReadonlyWrite_Invalid_ReadOnlyIllegalWrite([in] object& destination, object& other) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.1
+        starg.s 0
+        ldarg.0
+        ldnull
+        stind.ref
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706ReadonlyParameterAddress_Invalid_ByrefOfByref([in] int32& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarga.s 0
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706BareInScalarWrite_Valid([in] int32& destination) cil managed
+    {
+        ldarg.0
+        ldc.i4.1
+        stind.i4
+        ret
+    }
+
+    .method public hidebysig static valuetype Round5706InitCarrier Return.Round5706InitCallerLocalEscape_Invalid_ReturnPtrToStack() cil managed
+    {
+        .locals init ([0] int32, [1] valuetype Round5706InitCarrier)
+        ldloca.s 1
+        ldloca.s 0
+        newobj instance void RefCarrier::.ctor(int32&)
+        call instance void modreq([System.Runtime]System.Runtime.CompilerServices.IsExternalInit) Round5706InitCarrier::set_Value(valuetype RefCarrier)
+        ldloc.1
+        ret
+    }
+
+    .method public hidebysig static valuetype RefCarrier& Return.Round5706ReadonlyIdentity_Valid([in] valuetype RefCarrier& input) cil managed
+    {
+        .param [0]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ret
+    }
+
+    .method public hidebysig static valuetype RefCarrier& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) Return.Round5706ReadonlyModifierIdentity_Valid([in] valuetype RefCarrier& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ret
+    }
+
+    .method public hidebysig static int32& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) Return.Round5706ReadonlyScalarIdentity_Valid([in] int32& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ret
+    }
+
+    .method public hidebysig static valuetype RefCarrier& Return.Round5706WritableReturnFromReadonly_Invalid_StackUnexpected([in] valuetype RefCarrier& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706ReadonlyResultWrite_Invalid_ReadOnlyIllegalWrite(valuetype RefCarrier& input, valuetype RefCarrier replacement) cil managed
+    {
+        ldarg.0
+        call valuetype RefCarrier& ReturnTestsType::Return.Round5706ReadonlyIdentity_Valid(valuetype RefCarrier&)
+        ldarg.1
+        stobj RefCarrier
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706ReadonlyScalarResultWrite_Invalid_ReadOnlyIllegalWrite(int32& input) cil managed
+    {
+        ldarg.0
+        call int32& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) ReturnTestsType::Return.Round5706ReadonlyScalarIdentity_Valid(int32&)
+        ldc.i4.1
+        stind.i4
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706ConditionalDefaultThenFields_Valid(bool condition, [out] valuetype RefPairCarrier& output, int32& input) cil managed
+    {
+        ldarg.0
+        brfalse.s assigned
+        ldarg.1
+        initobj RefPairCarrier
+    assigned:
+        ldarg.1
+        ldarg.2
+        stfld int32& RefPairCarrier::First
+        ldarg.1
+        ldarg.2
+        stfld int32& RefPairCarrier::Second
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706ConditionalDefaultLocalEscape_Invalid_Unverifiable.Unverifiable(bool condition, [out] valuetype RefPairCarrier& output, int32& input) cil managed
+    {
+        .locals init ([0] int32)
+        ldarg.0
+        brfalse.s safe
+        ldarg.1
+        initobj RefPairCarrier
+        ldarg.1
+        ldloca.s 0
+        stfld int32& RefPairCarrier::Second
+        br.s assigned
+    safe:
+        ldarg.1
+        ldarg.2
+        stfld int32& RefPairCarrier::Second
+    assigned:
+        ldarg.1
+        ldarg.2
+        stfld int32& RefPairCarrier::First
+        ret
+    }
+
+    .method public hidebysig static int32 Return.Round5706ReadScalar_Valid([in] int32& input) cil managed
+    {
+        .param [1]
+        .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ldarg.0
+        ldind.i4
+        ret
+    }
+
+    .method public hidebysig static int32 Return.Round5706ReadonlyPrefixScalarForward_Valid(int32[] input) cil managed
+    {
+        ldarg.0
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Int32
+        call int32 ReturnTestsType::Return.Round5706ReadScalar_Valid(int32&)
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706ReadonlyRefFieldWrite_Invalid_ReadOnlyIllegalWrite(valuetype Round5706ReadonlyFieldCarrier input) cil managed
+    {
+        ldarg.0
+        ldfld int32& Round5706ReadonlyFieldCarrier::Item
+        ldc.i4.1
+        stind.i4
+        ret
+    }
+
+    .method public hidebysig static void Return.Round5706ReadonlyIndexerResultWrite_Invalid_ReadOnlyIllegalWrite(valuetype RefCarrier& input) cil managed
+    {
+        ldarg.0
+        ldc.i4.0
+        call instance int32& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute) RefCarrier::get_Item(int32)
+        ldc.i4.1
+        stind.i4
+        ret
+    }
+
+    .method public hidebysig static int32 Return.Round5706ScalarVirtualPrefix_Valid(class Round5706ScalarReader reader, int32[] input) cil managed
+    {
+        ldarg.0
+        ldarg.1
+        ldc.i4.0
+        readonly.
+        ldelema [System.Runtime]System.Int32
+        callvirt instance int32 Round5706ScalarReader::Read(int32& modreq([System.Runtime]System.Runtime.InteropServices.InAttribute))
+        ret
+    }
 
     .method public hidebysig static void Return.Followup5705RefReadonlyRead_Valid([in] valuetype RefCarrier& input) cil managed
     {
