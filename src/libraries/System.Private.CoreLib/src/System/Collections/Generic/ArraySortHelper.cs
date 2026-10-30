@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 #pragma warning disable CA1822
 
@@ -303,9 +304,8 @@ namespace System.Collections.Generic
                             keys = keys.Slice(nanLeft);
                         }
 
-                        if (IsPrimitiveInteger)
+                        if (IsPrimitiveInteger && keys.Length > BranchlessSortMinLength && TrySortUnpredictable(keys))
                         {
-                            BranchlessSort(keys);
                             return;
                         }
 
@@ -515,12 +515,21 @@ namespace System.Collections.Generic
         /// compare equal are bitwise identical, so the order in which an unstable sort leaves them is unobservable
         /// and any correct sorting algorithm produces exactly the same result.
         /// </summary>
-        private static bool IsPrimitiveInteger =>
-            typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte) ||
-            typeof(T) == typeof(ushort) || typeof(T) == typeof(short) ||
-            typeof(T) == typeof(uint) || typeof(T) == typeof(int) ||
-            typeof(T) == typeof(ulong) || typeof(T) == typeof(long) ||
-            typeof(T) == typeof(nuint) || typeof(T) == typeof(nint);
+        private static bool IsPrimitiveInteger
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get =>
+                typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte) ||
+                typeof(T) == typeof(ushort) || typeof(T) == typeof(short) ||
+                typeof(T) == typeof(uint) || typeof(T) == typeof(int) ||
+                typeof(T) == typeof(ulong) || typeof(T) == typeof(long) ||
+                typeof(T) == typeof(nuint) || typeof(T) == typeof(nint);
+        }
+
+        // Inputs at or below this size are always sorted with the introsort. Branch predictors can learn the complete branch history
+        // of sorting an input of up to roughly a thousand elements, so when the same small input is sorted repeatedly, the introsort
+        // stops mispredicting and the branchless sort no longer has an edge.
+        private const int BranchlessSortMinLength = 2048;
 
         // Partitions at or below this size are finished with an insertion sort.
         private const int BranchlessSortSmallThreshold = 20;
@@ -528,62 +537,135 @@ namespace System.Collections.Generic
         // Inputs at or above this size choose their pivot with a recursive pseudo-median rather than a median of three.
         private const int PseudoMedianRecursionThreshold = 64;
 
+        // The number of pairs of adjacent elements sampled to estimate how predictable the introsort's branches would be,
+        // and how many of them have to fall on different sides of a reference value for the input to count as unpredictable.
+        private const int PredictabilitySampleCount = 32;
+        private const int UnpredictableMinSampleFlips = PredictabilitySampleCount / 4;
+
+        // The number of pairs of adjacent elements at the end of the input checked for order before checking whether the whole input is sorted.
+        private const int SortedTailSampleCount = 8;
+
         /// <summary>
-        /// Sorts primitive integers with a quicksort that partitions without data-dependent branches.
+        /// Sorts primitive integers whose order is unpredictable with a quicksort that partitions without data-dependent
+        /// branches, and sorts inputs that are already sorted or strictly descending in O(n).
         /// </summary>
+        /// <returns><see langword="false"/> if the input is predictable enough that it should be sorted with the introsort.</returns>
         /// <remarks>
         /// The introsort partition loop branches on every comparison, which on unordered input is mispredicted about half the time.
-        /// This is a variant of pattern-defeating quicksort, closely following the ipnsort algorithm used by Rust's slice::sort_unstable:
+        /// The branchless sort is a variant of pattern-defeating quicksort, closely following the ipnsort algorithm used by Rust's
+        /// slice::sort_unstable:
         /// - a branchless Lomuto partition, so the cost per element doesn't depend on how predictable the input is;
         /// - a recursive pseudo-median pivot selection that is robust against structured inputs;
         /// - when the pivot is equal to the pivot of the parent partition, it's the smallest element of this partition,
         ///   so all elements equal to it are split off at once, making inputs with many duplicates O(n log k) for k distinct values;
-        /// - an up-front check for input that is already sorted or in strictly descending order;
         /// - a heapsort fallback after too many imbalanced partitions, keeping the worst case O(n log n).
-        /// It is only used for primitive integers (see <see cref="IsPrimitiveInteger"/>), where it's unobservable that the
+        /// On input that is nearly sorted, the introsort's branches are mostly predicted correctly and it does less work per element,
+        /// so it remains faster there.
+        /// This is only used for primitive integers (see <see cref="IsPrimitiveInteger"/>), where it's unobservable that the
         /// order of equal elements differs from the one <see cref="IntroSort"/> would produce.
         /// </remarks>
-        private static void BranchlessSort(Span<T> keys)
+        [MethodImpl(MethodImplOptions.NoInlining)] // keep the common path through Sort for small inputs lean
+        private static bool TrySortUnpredictable(Span<T> keys)
+        {
+            Debug.Assert(IsPrimitiveInteger);
+            Debug.Assert(keys.Length > BranchlessSortMinLength);
+
+            // The introsort's partitioning loops compare each element to the pivot from both sides, and they mispredict whenever
+            // consecutive elements fall on different sides of the pivot in a pattern the branch predictor can't follow. Estimate how often
+            // that happens by checking pairs of adjacent elements sampled across the input against a reference value. A reference far from
+            // the median makes the input look more predictable than it is, which errs on the side of the introsort.
+            ref T zeroRef = ref MemoryMarshal.GetReference(keys);
+            T reference = keys[MedianOfThree(keys, keys.Length / 4, keys.Length / 2, keys.Length / 4 * 3)];
+            nuint sampleStep = (uint)(keys.Length - 1) / PredictabilitySampleCount;
+            int sampleFlips = 0, sampleDescents = 0;
+            for (nuint i = 0, sampleIndex = 0; i < PredictabilitySampleCount; i++, sampleIndex += sampleStep)
+            {
+                // Written with integer arithmetic rather than conditions, so that the loop doesn't branch on the data.
+                ref T first = ref Unsafe.Add(ref zeroRef, sampleIndex);
+                ref T second = ref Unsafe.Add(ref first, 1);
+                int firstIsBelow = LessThan(ref first, ref reference) ? 1 : 0;
+                int secondIsBelow = LessThan(ref second, ref reference) ? 1 : 0;
+                int firstIsAbove = LessThan(ref reference, ref first) ? 1 : 0;
+                int secondIsAbove = LessThan(ref reference, ref second) ? 1 : 0;
+                sampleFlips += (firstIsBelow ^ secondIsBelow) | (firstIsAbove ^ secondIsAbove);
+                sampleDescents += LessThan(ref second, ref first) ? 1 : 0;
+            }
+
+            if (sampleFlips >= UnpredictableMinSampleFlips)
+            {
+                BranchlessQuickSort(keys, ancestorPivot: default!, hasAncestorPivot: false, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
+                return true;
+            }
+
+            // The input is predictable. Check whether it's already sorted or strictly descending; a strictly descending input can be
+            // reversed without reordering equal elements. Elements appended to a sorted input are a common reason for it not to be sorted,
+            // so also look at the last few pairs before scanning the whole input.
+            for (nuint sampleIndex = (uint)(keys.Length - 1 - SortedTailSampleCount); sampleIndex < (uint)(keys.Length - 1); sampleIndex++)
+            {
+                sampleDescents += LessThan(ref Unsafe.Add(ref zeroRef, sampleIndex + 1), ref Unsafe.Add(ref zeroRef, sampleIndex)) ? 1 : 0;
+            }
+
+            if (sampleDescents == 0)
+            {
+                return IsSortedRun(keys, strictlyDescending: false);
+            }
+
+            if (sampleDescents == PredictabilitySampleCount + SortedTailSampleCount && IsSortedRun(keys, strictlyDescending: true))
+            {
+                keys.Reverse();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns whether every element of <paramref name="keys"/> is less than the previous one (if <paramref name="strictlyDescending"/>
+        /// is set) or isn't less than the previous one (otherwise).
+        /// </summary>
+        private static bool IsSortedRun(Span<T> keys, bool strictlyDescending)
         {
             Debug.Assert(IsPrimitiveInteger);
 
-            if (keys.Length <= BranchlessSortSmallThreshold)
-            {
-                InsertionSort(keys);
-                return;
-            }
-
-            // Find the length of the run at the start of the input that is either non-descending or strictly descending.
-            // A strictly descending run can be reversed without reordering equal elements.
+            // Each step compares the elements at [i, i + count) with the ones at [i + 1, i + 1 + count).
             ref T zeroRef = ref MemoryMarshal.GetReference(keys);
-            int runLength = 2;
-            if (LessThan(ref Unsafe.Add(ref zeroRef, 1), ref zeroRef))
-            {
-                while (runLength < keys.Length && LessThan(ref Unsafe.Add(ref zeroRef, runLength), ref Unsafe.Add(ref zeroRef, runLength - 1)))
-                {
-                    runLength++;
-                }
+            nuint lastIndex = (uint)(keys.Length - 1);
+            nuint i = 0;
 
-                if (runLength == keys.Length)
+            if (Vector256.IsHardwareAccelerated && lastIndex >= (uint)Vector256<T>.Count)
+            {
+                for (; i <= lastIndex - (uint)Vector256<T>.Count; i += (uint)Vector256<T>.Count)
                 {
-                    keys.Reverse();
-                    return;
+                    Vector256<T> current = Vector256.LoadUnsafe(ref zeroRef, i);
+                    Vector256<T> next = Vector256.LoadUnsafe(ref zeroRef, i + 1);
+                    if (strictlyDescending ? Vector256.GreaterThanOrEqualAny(next, current) : Vector256.LessThanAny(next, current))
+                    {
+                        return false;
+                    }
                 }
             }
-            else
+            else if (Vector128.IsHardwareAccelerated && lastIndex >= (uint)Vector128<T>.Count)
             {
-                while (runLength < keys.Length && !LessThan(ref Unsafe.Add(ref zeroRef, runLength), ref Unsafe.Add(ref zeroRef, runLength - 1)))
+                for (; i <= lastIndex - (uint)Vector128<T>.Count; i += (uint)Vector128<T>.Count)
                 {
-                    runLength++;
-                }
-
-                if (runLength == keys.Length)
-                {
-                    return;
+                    Vector128<T> current = Vector128.LoadUnsafe(ref zeroRef, i);
+                    Vector128<T> next = Vector128.LoadUnsafe(ref zeroRef, i + 1);
+                    if (strictlyDescending ? Vector128.GreaterThanOrEqualAny(next, current) : Vector128.LessThanAny(next, current))
+                    {
+                        return false;
+                    }
                 }
             }
 
-            BranchlessQuickSort(keys, ancestorPivot: default!, hasAncestorPivot: false, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
+            for (; i < lastIndex; i++)
+            {
+                if (LessThan(ref Unsafe.Add(ref zeroRef, i + 1), ref Unsafe.Add(ref zeroRef, i)) != strictlyDescending)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         // BranchlessQuickSort is recursive; block it from being inlined into itself as
