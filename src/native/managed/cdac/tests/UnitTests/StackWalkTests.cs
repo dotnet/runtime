@@ -1207,21 +1207,38 @@ public unsafe class StackWalkTests
         Assert.Equal(expected, new FrameHelpers(target).GetExactGenericArgsToken(new TargetPointer(0x1000)).Value);
     }
 
-    // Wasm maps carry no stack pop, and position 0 is the first argument slot (0x2010).
+    // Non-x86 maps carry no stack pop, and position 0 is FirstGCRefMapSlot. On wasm that is the first argument slot
+    // (0x2010); on ARM64 it is the X8 return-buffer slot (0x200c) just before the argument registers.
     // { 0x3d } and { 0x1d } encode Ref at 0, then TypeParam or MethodParam at 1. { 0x07 } encodes MethodParam at 0.
+    // A this-derived context always reads the first argument register (0x2010, receiver 0x1111_0000).
     [Theory]
-    [InlineData(nameof(Data.ExternalMethodFrame), new byte[] { 0x3d }, null, GenericContextLoc.InstArgMethodTable, 0x2222_0000UL)]
-    [InlineData(nameof(FrameType.PrestubMethodFrame), new byte[] { 0x1d }, null, GenericContextLoc.InstArgMethodDesc, 0x2222_0000UL)]
-    [InlineData(nameof(FrameType.CallCountingHelperFrame), null, new byte[] { 0x07 }, GenericContextLoc.InstArgMethodDesc, 0x1111_0000UL)]
-    [InlineData(nameof(FrameType.PrestubMethodFrame), null, null, GenericContextLoc.ThisPtr, 0x9000UL)]
-    public void WasmTransitionFrame_ExactGenericArgsTokenUsesTransitionBlockSlots(
-        string frameType, byte[]? gcRefMap, byte[]? signatureBlob, GenericContextLoc context, ulong expected)
+    [InlineData(RuntimeInfoArchitecture.Wasm, nameof(Data.ExternalMethodFrame), new byte[] { 0x3d }, null, GenericContextLoc.InstArgMethodTable, 0x2222_0000UL)]
+    [InlineData(RuntimeInfoArchitecture.Wasm, nameof(FrameType.PrestubMethodFrame), new byte[] { 0x1d }, null, GenericContextLoc.InstArgMethodDesc, 0x2222_0000UL)]
+    [InlineData(RuntimeInfoArchitecture.Wasm, nameof(FrameType.CallCountingHelperFrame), null, new byte[] { 0x07 }, GenericContextLoc.InstArgMethodDesc, 0x1111_0000UL)]
+    [InlineData(RuntimeInfoArchitecture.Wasm, nameof(FrameType.PrestubMethodFrame), null, null, GenericContextLoc.ThisPtr, 0x9000UL)]
+    [InlineData(RuntimeInfoArchitecture.Arm64, nameof(Data.ExternalMethodFrame), new byte[] { 0x3d }, null, GenericContextLoc.InstArgMethodTable, 0x1111_0000UL)]
+    [InlineData(RuntimeInfoArchitecture.Arm64, nameof(FrameType.PrestubMethodFrame), new byte[] { 0x1d }, null, GenericContextLoc.InstArgMethodDesc, 0x1111_0000UL)]
+    [InlineData(RuntimeInfoArchitecture.Arm64, nameof(FrameType.CallCountingHelperFrame), null, new byte[] { 0x07 }, GenericContextLoc.InstArgMethodDesc, 0x4444_4444UL)]
+    [InlineData(RuntimeInfoArchitecture.Arm64, nameof(FrameType.PrestubMethodFrame), null, null, GenericContextLoc.ThisPtr, 0x9000UL)]
+    public void NonX86TransitionFrame_ExactGenericArgsTokenUsesFirstGCRefMapSlot(
+        RuntimeInfoArchitecture architecture, string frameType, byte[]? gcRefMap, byte[]? signatureBlob,
+        GenericContextLoc context, ulong expected)
     {
         (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
-            frameType, gcRefMap, hasMethodDesc: true, signatureBlob: signatureBlob,
-            architecture: RuntimeInfoArchitecture.Wasm, genericContext: context);
+            frameType, gcRefMap, hasMethodDesc: true, signatureBlob: signatureBlob, architecture: architecture,
+            genericContext: context, firstGCRefMapSlotOffset: architecture is RuntimeInfoArchitecture.Arm64 ? 12 : 16);
 
         Assert.Equal(expected, new FrameHelpers(target).GetExactGenericArgsToken(new TargetPointer(0x1000)).Value);
+    }
+
+    [Fact]
+    public void StubDispatchFrame_ExactGenericArgsTokenUsesRepresentativeMethod()
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            nameof(Data.StubDispatchFrame), gcRefMap: null, hasMethodDesc: false, signatureBlob: [0xc1, 0x03],
+            representativeMethodDescAddress: 0x6000, genericContext: GenericContextLoc.InstArgMethodDesc);
+
+        Assert.Equal(0x3333_0000UL, new FrameHelpers(target).GetExactGenericArgsToken(new TargetPointer(0x1000)).Value);
     }
 
     [Theory]
@@ -1292,7 +1309,7 @@ public unsafe class StackWalkTests
         uint? representativeMethodDescAddress = null, bool hasUnresolvedIndirection = false,
         RuntimeInfoArchitecture architecture = RuntimeInfoArchitecture.X86, bool hasCodeData = true,
         bool hasGCRefMapField = true, bool? valueType = null, bool unboxing = false, bool inlineGCRefMap = true,
-        GenericContextLoc? genericContext = null)
+        GenericContextLoc? genericContext = null, int firstGCRefMapSlotOffset = 16)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
         TestPlaceholderTarget.Builder builder = new(arch);
@@ -1430,7 +1447,7 @@ public unsafe class StackWalkTests
                 (nameof(Data.FramedMethodFrame.TransitionBlockPtr), 8), (nameof(Data.FramedMethodFrame.MethodDescPtr), 12)),
             [DataType.TransitionBlock] = CreateTypeInfo(
                 (nameof(Data.TransitionBlock.CalleeSavedRegisters), 0), (nameof(Data.TransitionBlock.ReturnAddress), 24),
-                (nameof(Data.TransitionBlock.ArgumentRegisters), 16), (nameof(Data.TransitionBlock.FirstGCRefMapSlot), 16))
+                (nameof(Data.TransitionBlock.ArgumentRegisters), 16), (nameof(Data.TransitionBlock.FirstGCRefMapSlot), firstGCRefMapSlotOffset))
                 with { Size = X86TransitionBlockSize },
             [DataType.CalleeSavedRegisters] = CreateTypeInfo(
                 (nameof(X86Context.Ebp), 0), (nameof(X86Context.Ebx), 4), (nameof(X86Context.Edi), 8), (nameof(X86Context.Esi), 12)),
@@ -2319,6 +2336,74 @@ public unsafe class StackWalkTests
 
         Assert.InRange(frames.Length, 1, 2);
         Assert.Equal(icfAddr, stackWalk.GetFrameAddress(frames[^1]).Value);
+    }
+
+    // A walk that reaches a transition Frame reports the Frame's exact generic context through
+    // IStackWalk, while an InlinedCallFrame reached the same way has none. { 0x07 } encodes
+    // MethodParam at position 0, the first argument slot after the wasm TransitionBlock.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CreateStackWalk_WasmFrameReportsExactGenericArgsToken(bool transitionFrame)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const ulong MethodDescAddress = 0x6000;
+        const ulong GenericContext = 0xabcd_0000;
+
+        MockThread? thread = null;
+        ulong frameAddr = 0;
+        MockFramedMethodFrame? framedMethodFrame = null;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => thread = threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                if (transitionFrame)
+                {
+                    framedMethodFrame = frameBuilder.AddFramedMethodFrame(MethodDescAddress);
+                    frameAddr = framedMethodFrame.Address;
+                }
+                else
+                {
+                    frameAddr = frameBuilder.AddInlinedCallFrame(0x0004_2000, datum: 0, callSiteSP: 0x800).Address;
+                }
+            },
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0010_0000, 0x0010_4000);
+                AddWasmR2RFunction(targetBuilder, allocator, functionTableIndex: 5, minVirtualIP: 0x0005_0000, functionBeginAddress: 0x100);
+                AddWasmNullDebugger(targetBuilder, allocator);
+                if (framedMethodFrame is not null)
+                {
+                    MockMemorySpace.HeapFragment transitionBlock = allocator.Allocate(3 * sizeof(uint), "TransitionBlock with argument");
+                    helpers.WritePointer(transitionBlock.Data.AsSpan(0, sizeof(uint)), 0x0004_2000);
+                    helpers.WritePointer(transitionBlock.Data.AsSpan(2 * sizeof(uint), sizeof(uint)), GenericContext);
+                    helpers.WritePointer(
+                        framedMethodFrame.Memory.Span.Slice(framedMethodFrame.Layout.GetField("TransitionBlockPtr").Offset, helpers.PointerSize),
+                        transitionBlock.Address);
+                    targetBuilder.AddTypes(CreateWasmTransitionBlockTypes(helpers.PointerSize));
+                }
+
+                MethodDescHandle method = new(new TargetPointer(MethodDescAddress));
+                Mock<IRuntimeTypeSystem> runtimeTypeSystem = new();
+                runtimeTypeSystem.Setup(r => r.GetMethodDescHandle(new TargetPointer(MethodDescAddress))).Returns(method);
+                runtimeTypeSystem.Setup(r => r.GetGenericContextLoc(method)).Returns(GenericContextLoc.InstArgMethodDesc);
+                byte[] signatureBlob = [0x07];
+                Mock<ICallingConvention> callingConvention = new();
+                callingConvention.Setup(c => c.TryComputeArgGCRefMapBlob(method, out signatureBlob)).Returns(true);
+                targetBuilder.AddMockContract(runtimeTypeSystem).AddMockContract(callingConvention);
+            });
+        thread!.Frame = frameAddr;
+
+        IStackWalk stackWalk = target.Contracts.StackWalk;
+        ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread.Address));
+        IStackDataFrameHandle frame = Assert.Single(
+            stackWalk.CreateStackWalk(threadData).Take(16),
+            handle => stackWalk.GetFrameAddress(handle).Value == frameAddr);
+
+        Assert.Equal(transitionFrame ? GenericContext : 0, stackWalk.GetExactGenericArgsToken(frame).Value);
     }
 
     // An interpreted P/Invoke pushes an active InlinedCallFrame whose CallSiteSP is the top
