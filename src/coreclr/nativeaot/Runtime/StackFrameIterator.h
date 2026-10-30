@@ -81,7 +81,7 @@ public:
 
     // Implementations of RhpSfiInit and RhpSfiNext called from managed code
     bool             Init(PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault);
-    // WASM EH walks return false with pfUnwoundReversePInvoke set at a native
+    // Portable EH walks return false with pfUnwoundReversePInvoke set at a native
     // boundary, since no native caller frame can be exposed.
     bool             Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundReversePInvoke);
 
@@ -173,6 +173,7 @@ private:
         StackTraceStackWalkFlags = GcStackWalkFlags
     };
 
+#ifndef FEATURE_PORTABLE_HELPERS
     struct PreservedRegPtrs
     {
 #ifdef TARGET_ARM
@@ -240,6 +241,7 @@ private:
 #endif // TARGET_AMD64
 #endif // TARGET_ARM
     };
+#endif // !FEATURE_PORTABLE_HELPERS
 
 protected:
     Thread *            m_pThread;
@@ -260,9 +262,11 @@ protected:
     uint32_t            m_dwFlags;
     PTR_ExInfo          m_pNextExInfo;
     PTR_VOID            m_pendingFuncletFramePointer;
+#ifndef FEATURE_PORTABLE_HELPERS
     PreservedRegPtrs    m_funcletPtrs;  // @TODO: Placing the 'scratch space' in the StackFrameIterator is not
                                         // preferred because not all StackFrameIterators require this storage
                                         // space.  However, the implementation simpler by doing it this way.
+#endif // !FEATURE_PORTABLE_HELPERS
     PTR_VOID            m_OriginalControlPC;
     PTR_PInvokeTransitionFrame m_pPreviousTransitionFrame;
 };

@@ -632,7 +632,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR11 = NULL;
 #endif // TARGET_AMD64
 #elif defined(TARGET_WASM)
-    m_RegDisplay.FP = pCtx->GetFp();
+    m_RegDisplay.FP = WasmCodeManager::GetFramePointer(m_RegDisplay.SP);
 #else
     PORTABILITY_ASSERT("StackFrameIterator::InternalInit");
 #endif // TARGET_ARM
@@ -974,7 +974,9 @@ PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
 void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSourceIterator)
 {
     ASSERT(m_pendingFuncletFramePointer == NULL);
+#ifndef FEATURE_PORTABLE_HELPERS
     PreservedRegPtrs thisFuncletPtrs = this->m_funcletPtrs;
+#endif // !FEATURE_PORTABLE_HELPERS
 
     // Blast over 'this' with everything from the 'source'.
     *this = *pSourceIterator;
@@ -985,6 +987,7 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     // therefore has no meaning in the context of the current stack walk.
     m_pendingFuncletFramePointer = NULL;
 
+#ifndef FEATURE_PORTABLE_HELPERS
     // Then, put back the pointers to the funclet's preserved registers (since those are the correct values
     // until the funclet completes, at which point the values will be copied back to the ExInfo's REGDISPLAY).
 
@@ -1058,11 +1061,10 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pR14 = thisFuncletPtrs.pR14;
     m_RegDisplay.pR15 = thisFuncletPtrs.pR15;
 #endif // TARGET_AMD64
-#elif defined(TARGET_WASM)
-    // WASM has no preserved machine registers to merge.
 #else
     PORTABILITY_ASSERT("StackFrameIterator::UpdateFromExceptionDispatch");
 #endif
+#endif // !FEATURE_PORTABLE_HELPERS
 }
 
 #ifdef TARGET_AMD64
@@ -1869,8 +1871,8 @@ UnwindOutOfCurrentManagedFrame:
     uintptr_t DEBUG_preUnwindSP = m_RegDisplay.GetSP();
 #endif
 
-#ifdef TARGET_WASM
-    // WASM cannot unwind native frames. Skipping walks reconnect through the
+#ifdef FEATURE_PORTABLE_HELPERS
+    // Portable stack walks cannot unwind native frames. Skipping walks reconnect through the
     // saved transition frame; EH reports UnwoundReversePInvoke and ends the
     // iterator without presenting the retained registers as a native frame.
     ASSERT((m_dwFlags & SkipNativeFrames) != 0 ||
@@ -1882,7 +1884,7 @@ UnwindOutOfCurrentManagedFrame:
     {
         unwindFlags |= USFF_StopUnwindOnTransitionFrame;
     }
-#endif // TARGET_WASM
+#endif // FEATURE_PORTABLE_HELPERS
 
     if ((m_dwFlags & GcStackWalkFlags) == GcStackWalkFlags)
     {
@@ -1919,13 +1921,13 @@ UnwindOutOfCurrentManagedFrame:
             ASSERT(m_pInstance->IsManaged(m_ControlPC));
         }
     }
-#ifdef TARGET_WASM
+#ifdef FEATURE_PORTABLE_HELPERS
     else if (m_pPreviousTransitionFrame != NULL)
     {
         ASSERT(!doingFuncletUnwind);
         SetControlPC(0);
     }
-#endif // TARGET_WASM
+#endif // FEATURE_PORTABLE_HELPERS
     else
     {
         // if the thread is safe to walk, it better not have a hijack in place.
@@ -2475,11 +2477,11 @@ bool StackFrameIterator::Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundRev
     ExInfo * pCurExInfo = m_pNextExInfo;
     Next();
     bool isValid = IsValid();
-#ifdef TARGET_WASM
+#ifdef FEATURE_PORTABLE_HELPERS
     ASSERT_MSG(!isValid ||
         (m_dwFlags & (SkipNativeFrames | UnwoundReversePInvoke)) != UnwoundReversePInvoke,
-        "WASM reverse P/Invoke boundary must terminate a non-skipping walk");
-#endif // TARGET_WASM
+        "Portable reverse P/Invoke boundary must terminate a non-skipping walk");
+#endif // FEATURE_PORTABLE_HELPERS
     if (isValid)
         CalculateCurrentMethodState();
 
