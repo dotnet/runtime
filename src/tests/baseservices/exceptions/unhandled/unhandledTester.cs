@@ -169,6 +169,7 @@ namespace TestUnhandledExceptionTester
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80356", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsX64Process))]
         [ActiveIssue("System.Diagnostics.Process is not supported", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [ActiveIssue("Test expects being run with corerun", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [SkipOnMono("Tests CoreCLR-specific fatal-error reporting.")]
         [Theory]
         [InlineData("A", 1100, false, "utf-8")]
         [InlineData("\u00E9", 1100, false, "utf-8")]
