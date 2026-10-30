@@ -61,6 +61,16 @@ C_FUNC(\Name\()_End):
         ld.w  \HelperReg, \HelperReg, 0
 .endm
 
+.macro PROLOG_STACK_ALLOC Size
+        addi.d  $sp, $sp, -\Size
+        .cfi_adjust_cfa_offset \Size
+.endm
+
+.macro EPILOG_STACK_FREE Size
+        addi.d  $sp, $sp, \Size
+        .cfi_adjust_cfa_offset -\Size
+.endm
+
 .macro EPILOG_STACK_RESTORE
         ori  $sp, $fp, 0
         .cfi_restore 3
@@ -72,6 +82,33 @@ C_FUNC(\Name\()_End):
         .cfi_rel_offset \reg, \ofs
 .endm
 
+////NOTE: reg1 and reg2 must be the number and GPR type !!!
+.macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs, __def_cfa_save=0
+        st.d  $r\reg1, $sp, \ofs
+        st.d  $r\reg2, $sp, \ofs + 8
+        .cfi_rel_offset  \reg1, \ofs
+        .cfi_rel_offset  \reg2, \ofs + 8
+        .if (\__def_cfa_save == 1)
+        ori  $fp, $sp, 0
+        .cfi_def_cfa_register  22
+        .endif
+.endm
+
+////NOTE: reg1 and reg2 must be the number and GPR type !!!
+.macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
+        addi.d  $sp, $sp, -\ssize
+        .cfi_adjust_cfa_offset  \ssize
+
+        st.d  $r\reg1, $sp, 0
+        st.d  $r\reg2, $sp, 8
+        .cfi_rel_offset  \reg1, 0
+        .cfi_rel_offset  \reg2, 8
+        .if (\__def_cfa_save == 1)
+        ori  $fp, $sp, 0
+        .cfi_def_cfa_register  22
+        .endif
+.endm
+
 .macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ssize
         addi.d  $sp, $sp, -\ssize
         .cfi_adjust_cfa_offset  \ssize
@@ -80,6 +117,36 @@ C_FUNC(\Name\()_End):
         st.d  $r\reg2, $sp, 8
         .cfi_rel_offset  \reg1, 0
         .cfi_rel_offset  \reg2, 8
+.endm
+
+.macro EPILOG_RESTORE_REG reg, ofs
+        ld.d  $r\reg, $sp, \ofs
+        .cfi_restore  \reg
+.endm
+
+// Restoring $fp requires $sp == $fp if $fp is the CFA register.
+.macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
+        .ifc  \reg1, 22
+        .cfi_def_cfa_register  3
+        .endif
+        ld.d  $r\reg2, $sp, \ofs + 8
+        ld.d  $r\reg1, $sp, \ofs
+        .cfi_restore  \reg2
+        .cfi_restore  \reg1
+.endm
+
+// Restoring $fp requires $sp == $fp if $fp is the CFA register.
+.macro EPILOG_RESTORE_REG_PAIR_INDEXED reg1, reg2, ssize
+        .ifc  \reg1, 22
+        .cfi_def_cfa_register  3
+        .endif
+        ld.d  $r\reg2, $sp, 8
+        ld.d  $r\reg1, $sp, 0
+        .cfi_restore  \reg2
+        .cfi_restore  \reg1
+
+        addi.d  $sp, $sp, \ssize
+        .cfi_adjust_cfa_offset  -\ssize
 .endm
 
 .macro EPILOG_RETURN

@@ -3,11 +3,6 @@
 
 #include <amd64/AsmMacros_Unix.inc>
 
-.macro PATCH_LABEL Name
-        .global C_FUNC(\Name)
-C_FUNC(\Name):
-.endm
-
 //
 // CONSTANTS -- INTEGER
 //

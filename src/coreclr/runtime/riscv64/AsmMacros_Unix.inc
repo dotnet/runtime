@@ -49,14 +49,66 @@ C_FUNC(\Name):
 C_FUNC(\Name):
 .endm
 
+.macro PREPARE_EXTERNAL_VAR Name, HelperReg
+    lla \HelperReg, C_FUNC(\Name)
+.endm
+
 .macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
     la \HelperReg, C_FUNC(\Name)
     lw \HelperReg, 0(\HelperReg)
 .endm
 
+// Sizes outside the 12-bit immediate range trash t0.
+.macro PROLOG_STACK_ALLOC Size
+    .if (\Size > 2047) || (\Size < -2048)
+        li t0, -\Size
+        add sp, sp, t0
+    .else
+        addi sp, sp, -\Size
+    .endif
+    .cfi_adjust_cfa_offset \Size
+.endm
+
+// Sizes outside the 12-bit immediate range trash t0.
+.macro EPILOG_STACK_FREE Size
+    .if (\Size > 2047) || (\Size < -2048)
+        li t0, \Size
+        add sp, sp, t0
+    .else
+        addi sp, sp, \Size
+    .endif
+    .cfi_adjust_cfa_offset -\Size
+.endm
+
 .macro PROLOG_SAVE_REG reg, ofs
     sd \reg, \ofs(sp)
     .cfi_rel_offset \reg, \ofs
+.endm
+
+.macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs, __def_cfa_save=0
+    sd \reg1, \ofs(sp)
+    sd \reg2, (\ofs+8)(sp)
+    .cfi_rel_offset \reg1, \ofs
+    .cfi_rel_offset \reg2, \ofs + 8
+    .if (\__def_cfa_save == 1)
+        mv fp, sp
+        .cfi_def_cfa_register fp
+    .endif
+.endm
+
+.macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
+    addi sp, sp, -\ssize
+    .cfi_adjust_cfa_offset \ssize
+
+    sd \reg1, 0(sp)
+    sd \reg2, 8(sp)
+
+    .cfi_rel_offset \reg1, 0
+    .cfi_rel_offset \reg2, 8
+    .if (\__def_cfa_save == 1)
+        mv fp, sp
+        .cfi_def_cfa_register fp
+    .endif
 .endm
 
 .macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ssize
@@ -78,6 +130,31 @@ C_FUNC(\Name):
 .macro EPILOG_RESTORE_REG reg, ofs
     ld  \reg, (\ofs)(sp)
     .cfi_restore \reg
+.endm
+
+// Restoring fp requires sp == fp if fp is the CFA register.
+.macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
+    .ifc \reg1, fp
+        .cfi_def_cfa_register sp
+    .endif
+    ld  \reg2, (\ofs+8)(sp)
+    ld  \reg1, (\ofs)(sp)
+    .cfi_restore \reg2
+    .cfi_restore \reg1
+.endm
+
+// Restoring fp requires sp == fp if fp is the CFA register.
+.macro EPILOG_RESTORE_REG_PAIR_INDEXED reg1, reg2, ssize
+    .ifc \reg1, fp
+        .cfi_def_cfa_register sp
+    .endif
+    ld  \reg2, 8(sp)
+    ld  \reg1, 0(sp)
+    .cfi_restore \reg2
+    .cfi_restore \reg1
+
+    addi  sp, sp, \ssize
+    .cfi_adjust_cfa_offset -\ssize
 .endm
 
 .macro EPILOG_RETURN

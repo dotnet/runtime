@@ -5,11 +5,6 @@
 
 #include <arm64/AsmMacros_Unix.inc>
 
-.macro PATCH_LABEL Name
-        .global C_FUNC(\Name)
-C_FUNC(\Name):
-.endm
-
 // Loads the address of a thread-local variable into the target register,
 // which cannot be x0. Preserves all other registers.
 .macro INLINE_GET_TLS_VAR target, var
