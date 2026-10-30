@@ -30,14 +30,8 @@ namespace Wasm.Build.NativeRebuild.Tests
             string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
             pathsDict.UpdateTo(unchanged: false, mainAssembly);
-            bool dotnetNativeFilesUnchanged = !aot && !(IsCoreClrRuntime && nativeRelink);
+            bool dotnetNativeFilesUnchanged = !aot;
             pathsDict.UpdateTo(unchanged: dotnetNativeFilesUnchanged, "dotnet.native.wasm", "dotnet.native.js");
-            if (IsCoreClrRuntime)
-            {
-                pathsDict.UpdateTo(unchanged: dotnetNativeFilesUnchanged, "dotnet.native.js.symbols");
-                if (nativeRelink)
-                    pathsDict.UpdateTo(unchanged: false, "callhelpers-pinvoke.cpp", "callhelpers-pinvoke.o");
-            }
 
             if (aot)
                 pathsDict.UpdateTo(unchanged: false, $"{info.ProjectName}.dll.bc", $"{info.ProjectName}.dll.o");
