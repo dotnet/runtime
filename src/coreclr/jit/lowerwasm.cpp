@@ -736,6 +736,7 @@ void Lowering::RemoveRedundantLocalCopies()
         return refs[lclNum].AddressTaken || (varDsc->lvIsStructField && refs[varDsc->lvParentLcl].AddressTaken);
     };
 
+    // GC refs are excluded: forwarding could extend a wasm-local GC ref's lifetime across a safepoint.
     auto isCopyableType = [](var_types type) {
         return varTypeIsEnregisterable(type) && !varTypeIsStruct(type) && !varTypeIsGC(type) && !varTypeIsSmall(type);
     };
@@ -818,11 +819,11 @@ void Lowering::RemoveRedundantLocalCopies()
             LclVarDsc* tmpDsc    = m_compiler->lvaGetDesc(tmpLclNum);
             LclVarDsc* srcDsc    = m_compiler->lvaGetDesc(srcLclNum);
 
-            // The shadow stack pointer is also redefined by LCLHEAP without an IR local def.
+            // Implicitly referenced locals, such as the SP that LCLHEAP updates, have defs not visible in IR.
             if ((tmpLclNum == srcLclNum) || (refs[tmpLclNum].Count != 2) || tmpDsc->lvIsParam ||
                 tmpDsc->lvIsStructField || tmpDsc->lvImplicitlyReferenced || tmpDsc->IsAddressExposed() ||
-                tmpDsc->lvIsOSRLocal || (srcLclNum == m_compiler->lvaWasmSpArg) || srcDsc->lvImplicitlyReferenced ||
-                srcDsc->IsAddressExposed() || srcDsc->lvPromoted || isAddressTaken(srcLclNum))
+                tmpDsc->lvIsOSRLocal || srcDsc->lvImplicitlyReferenced || srcDsc->IsAddressExposed() ||
+                srcDsc->lvPromoted || isAddressTaken(srcLclNum))
             {
                 continue;
             }
