@@ -31,7 +31,6 @@ FRAME_TYPE_NAME(ResolveHelperFrame)
 #endif // FEATURE_RESOLVE_HELPER_DISPATCH
 FRAME_TYPE_NAME(ExternalMethodFrame)
 FRAME_TYPE_NAME(DynamicHelperFrame)
-FRAME_TYPE_NAME(ProtectValueClassFrame)
 FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)
 FRAME_TYPE_NAME(DebuggerExitFrame)
 FRAME_TYPE_NAME(DebuggerU2MCatchHandlerFrame)
