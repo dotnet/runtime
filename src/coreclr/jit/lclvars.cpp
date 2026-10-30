@@ -554,16 +554,17 @@ void Compiler::lvaAllocWasmStackPtr()
 //
 // Notes:
 //   The managed calling convention for Wasm passes a pointer to the portable entry point as the last arg.
-//   This arg is currently unused in the JIT, and we may not need to model it.
+//   Ordinary managed methods store this argument as their unwindable frame identity.
 //
 void Compiler::lvaInitWasmPortableEntryPtr(unsigned* curVarNum)
 {
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
     {
-        LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
-        varDsc->lvType    = TYP_I_IMPL;
-        varDsc->lvIsParam = 1;
-        varDsc->lvOnFrame = true;
+        lvaWasmPortableEntryPointArg = *curVarNum;
+        LclVarDsc* varDsc            = lvaGetDesc(*curVarNum);
+        varDsc->lvType               = TYP_I_IMPL;
+        varDsc->lvIsParam            = 1;
+        varDsc->lvOnFrame            = true;
         (*curVarNum)++;
     }
 }
@@ -2943,6 +2944,27 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
         return genTypeStSz(varType) * sizeof(int);
     }
 
+#ifdef TARGET_ARM64
+    if (lvaIsUnknownSizeLocal(varNum))
+    {
+        assert(lvaIsOSRLocal(varNum));
+        unsigned size = 0;
+        switch (varDsc->lvType)
+        {
+            case TYP_SIMD:
+                size = getRuntimeVectorTByteLength();
+                break;
+            case TYP_MASK:
+                size = getRuntimeVectorTByteLength() / 8;
+                break;
+            default:
+                unreached();
+        }
+        assert(size != 0);
+        return size;
+    }
+#endif
+
     if (varDsc->lvIsParam && !varDsc->lvIsStructField)
     {
         // If this parameter was passed on the stack then we often reuse that
@@ -4418,6 +4440,15 @@ void Compiler::lvaAssignFrameOffsets(FrameLayoutState curState)
     {
         assert(curState == FINAL_FRAME_LAYOUT);
         unkSizeFrame.Finalize();
+
+        if (compUsesUnknownSizeFrame)
+        {
+            JITDUMP("*** Final UnknownSizeFrame ***\n");
+            JITDUMP("Total Size in VL: %d\n", unkSizeFrame.VectorBlockSize());
+            JITDUMP("Vector Count    : %d\n", unkSizeFrame.nVector);
+            JITDUMP("Mask Count      : %d\n", unkSizeFrame.nMask);
+            JITDUMP("Start offset    : %d\n", -codeGen->genTotalFrameSize());
+        }
     }
 #endif
 }
@@ -4531,7 +4562,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         // Can't be relative to EBP unless we have an EBP
         noway_assert(!varDsc->lvFramePointerBased || codeGen->doubleAlignOrFramePointerUsed());
 
-        if (lvaIsUnknownSizeLocal(lclNum))
+        if (lvaLocalIsOnUnknownSizeFrame(lclNum))
         {
             continue;
         }
@@ -4736,7 +4767,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         int startOffset;
         if (lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(lclNum, &startOffset))
         {
-            assert(!lvaIsUnknownSizeLocal(lclNum));
+            assert(!lvaLocalIsOnUnknownSizeFrame(lclNum));
 
             dsc->SetStackOffset(startOffset + relativeZero);
             JITDUMP("Set V%02u to offset %d\n", lclNum, startOffset);
@@ -5356,7 +5387,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
                 continue;
             }
-            else if (lvaIsUnknownSizeLocal(lclNum))
+            else if (lvaLocalIsOnUnknownSizeFrame(lclNum))
             {
                 // Reserve dynamic stack space for this variable.
                 lvaAllocUnknownSizeLocal(lclNum);
@@ -6360,7 +6391,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
     int       printed = 0;
 
 #ifdef TARGET_ARM64
-    if (lvaIsUnknownSizeLocal(lclNum))
+    if (lvaLocalIsOnUnknownSizeFrame(lclNum))
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
         offset            = unkSizeFrame.GetAddressingOffset(varDsc);
@@ -6589,6 +6620,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (lvaIsOSRLocal(lclNum) && varDsc->lvOnFrame)
     {
         printf(" tier0-frame");
+    }
+    if (lvaLocalIsOnUnknownSizeFrame(lclNum))
+    {
+        printf(" unknown-size-frame");
     }
     if (varDsc->lvIsHoist)
     {

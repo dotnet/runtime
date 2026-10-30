@@ -123,11 +123,13 @@ namespace System.Threading
     }
 
     // Layout mirrors wasi-libc (WASIp2) tcp_socket_t from
-    // https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/headers/private/wasi/tcp.h
+    // https://github.com/WebAssembly/wasi-libc/blob/2e6fb9d8ee0c/libc-bottom-half/headers/private/wasi/tcp.h
     // Only `socket`, `state` and `socket_pollable` are read; trailing fields are modelled for completeness.
+    // The `lock` field that follows `refcnt` is empty in the single-threaded wasm32-wasip2 libc.
     [StructLayout(LayoutKind.Sequential)]
     internal struct tcp_socket_t
     {
+        public uint refcnt;
         public tcp_own_tcp_socket_t socket;
         public tcp_socket_state_t state;
         public poll_own_pollable_t socket_pollable;
@@ -197,15 +199,19 @@ namespace System.Threading
     }
 
     // Layout mirrors wasi-libc (WASIp2) udp_socket_t from
-    // https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/sources/udp.c
+    // https://github.com/WebAssembly/wasi-libc/blob/2e6fb9d8ee0c/libc-bottom-half/sources/udp.c
+    // The `lock` field that follows `refcnt` is empty in the single-threaded wasm32-wasip2 libc.
     [StructLayout(LayoutKind.Sequential)]
     internal struct udp_socket_t
     {
+        public uint refcnt;
         public udp_own_udp_socket_t socket;
         public poll_own_pollable_t socket_pollable;
         public byte blocking;
         public byte family;
         public udp_socket_state_t state;
+        public ulong send_timeout;
+        public ulong recv_timeout;
     }
 
     public sealed partial class UnixHandleAsyncContext
@@ -330,8 +336,18 @@ namespace System.Threading
                             pollableHandles.Add(EnsurePollable(SubscribeKindTcpSocket, socket->socket.handle, ref socket->socket_pollable.handle));
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECTED:
-                            pollableHandles.Add(EnsurePollable(SubscribeKindInputStream, socket->state.state.connected.input.handle, ref socket->state.state.connected.input_pollable.handle));
-                            pollableHandles.Add(EnsurePollable(SubscribeKindOutputStream, socket->state.state.connected.output.handle, ref socket->state.state.connected.output_pollable.handle));
+                            // Only wait on directions that have a pending operation. An idle connected socket's
+                            // output stream is almost always writable, so always subscribing to it would keep
+                            // the event loop from ever blocking. The hook runs before every poll, so operations
+                            // enqueued later are picked up on the next iteration.
+                            if (asyncContext._readQueue.IsWaiting)
+                            {
+                                pollableHandles.Add(EnsurePollable(SubscribeKindInputStream, socket->state.state.connected.input.handle, ref socket->state.state.connected.input_pollable.handle));
+                            }
+                            if (asyncContext._writeQueue.IsWaiting)
+                            {
+                                pollableHandles.Add(EnsurePollable(SubscribeKindOutputStream, socket->state.state.connected.output.handle, ref socket->state.state.connected.output_pollable.handle));
+                            }
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECT_FAILED:
                             asyncContext.HandleEventsInline(Sys.HandleEvents.Error);

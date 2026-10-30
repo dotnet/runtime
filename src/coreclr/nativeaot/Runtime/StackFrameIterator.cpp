@@ -28,6 +28,10 @@
 
 #include "NativeContext.h"
 
+#ifdef TARGET_WASM
+#include "wasm/WasmCodeManager.h"
+#endif
+
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
 #pragma warning(disable:4061)
 
@@ -91,9 +95,11 @@ StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransition
     }
     else
     {
-        uint32_t flags = (pInitialTransitionFrame->m_Flags & PTFF_THREAD_HIJACK) == 0 ?
-            GcStackWalkFlags :
-            GcStackWalkFlags | ActiveStackFrame;
+        uint32_t flags = GcStackWalkFlags;
+#ifndef FEATURE_PORTABLE_HELPERS
+        if ((pInitialTransitionFrame->m_Flags & PTFF_THREAD_HIJACK) != 0)
+            flags |= ActiveStackFrame;
+#endif // !FEATURE_PORTABLE_HELPERS
 
         InternalInit(pThreadToWalk, pInitialTransitionFrame, flags);
     }
@@ -174,12 +180,13 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     // properly walk it in parallel.
     ResetNextExInfoForSP((uintptr_t)dac_cast<TADDR>(pFrame));
 
-#if !defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable version of regdisplay
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
+#ifndef FEATURE_PORTABLE_HELPERS
     m_RegDisplay.SetIP(ReturnAddressToCanonicalPC(dac_cast<TADDR>(pFrame->m_RIP)));
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
     PTR_uintptr_t pPreservedRegsCursor = (PTR_uintptr_t)PTR_HOST_MEMBER_TADDR(PInvokeTransitionFrame, pFrame, m_PreservedRegs);
+#endif // !FEATURE_PORTABLE_HELPERS
 
 #ifdef TARGET_ARM
     m_RegDisplay.pLR = (PTR_uintptr_t)PTR_HOST_MEMBER_TADDR(PInvokeTransitionFrame, pFrame, m_RIP);
@@ -321,6 +328,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
     if (pFrame->m_Flags & PTFF_SAVE_RA) { m_RegDisplay.pRA = pPreservedRegsCursor++; }
 
+#elif defined(TARGET_WASM)
+    m_RegDisplay.SP = pFrame->m_ShadowSP;
+    m_RegDisplay.FP = WasmCodeManager::GetFramePointer(m_RegDisplay.SP);
+    m_RegDisplay.SetIP(WasmCodeManager::GetVirtualIP(m_RegDisplay.SP));
+    SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
+
 #else // TARGET_ARM
     if (pFrame->m_Flags & PTFF_SAVE_RBX)  { m_RegDisplay.pRbx = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_RSI)  { m_RegDisplay.pRsi = pPreservedRegsCursor++; }
@@ -367,7 +380,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
     // adjust for thunks, if needed
     EnsureInitializedToManagedFrame();
-#endif // !defined(FEATURE_PORTABLE_HELPERS)
 
     STRESS_LOG1(LF_STACKWALK, LL_INFO10000, "   %p\n", m_ControlPC);
 }
@@ -862,6 +874,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
 
 void StackFrameIterator::EnsureInitializedToManagedFrame()
 {
+#ifndef FEATURE_PORTABLE_HELPERS
     // This function guarantees that the final initialized context will refer to a managed
     // frame.  In the rare case where the PC does not refer to managed code (and refers to an
     // assembly thunk instead), unwind through the thunk sequence to find the nearest managed
@@ -884,6 +897,7 @@ void StackFrameIterator::EnsureInitializedToManagedFrame()
     {
         FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY("Unadjusted initial PC points to an unexpected assembly thunk kind.");
     }
+#endif // !FEATURE_PORTABLE_HELPERS
 }
 
 PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)

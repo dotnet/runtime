@@ -165,7 +165,6 @@ LEAF_END_MARKED StubPrecodeCode, _TEXT
 
 LEAF_ENTRY FixupPrecodeCode, _TEXT
         jmp    [rip + DATA_SLOT(FixupPrecode, Target)]
-PATCH_LABEL FixupPrecodeCode_Fixup
         mov    r10, [rip + DATA_SLOT(FixupPrecode, MethodDesc)]
         jmp    [rip + DATA_SLOT(FixupPrecode, PrecodeFixupThunk)]
 LEAF_END_MARKED FixupPrecodeCode, _TEXT

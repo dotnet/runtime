@@ -40,39 +40,26 @@ HRESULT _FillMDDefaultValue(
 __checkReturn
 HRESULT TranslateSigHelper(                 // S_OK or error.
     IMDInternalImport*      pImport,        // [IN] import scope.
-    IMDInternalImport*      pAssemImport,   // [IN] import assembly scope.
-    const void*             pbHashValue,    // [IN] hash value for the import assembly.
-    ULONG                   cbHashValue,    // [IN] count of bytes in the hash value.
     PCCOR_SIGNATURE         pbSigBlob,      // [IN] signature in the importing scope
     ULONG                   cbSigBlob,      // [IN] count of bytes of signature
-    IMetaDataAssemblyEmit*  pAssemEmit,     // [IN] assembly emit scope.
-    IMetaDataEmit*          emit,           // [IN] emit interface
+    IMDInternalEmit*        emit,           // [IN] emit interface
     CQuickBytes*            pqkSigEmit,     // [OUT] buffer to hold translated signature
     ULONG*                  pcbSig)         // [OUT] count of bytes in the translated signature
 {
 #ifdef FEATURE_METADATA_EMIT
     HRESULT hr = S_OK;
     IMetaModelCommon *pCommon = pImport->GetMetaModelCommon();
-    RegMeta     *pAssemEmitRM = static_cast<RegMeta*>(pAssemEmit);
-    RegMeta     *pEmitRM      = static_cast<RegMeta*>(emit);
+    RegMeta *pEmitRM = static_cast<RegMeta*>(emit);
 
-    CMiniMdRW *pMiniMdAssemEmit = pAssemEmitRM ? &pAssemEmitRM->m_pStgdb->m_MiniMd : NULL;
-    CMiniMdRW *pMiniMdEmit      = &(pEmitRM->m_pStgdb->m_MiniMd);
-
-    IMetaModelCommon *pCommonAssemImport = pAssemImport ? pAssemImport->GetMetaModelCommon() : NULL;
+    CMiniMdRW *pMiniMdEmit = &(pEmitRM->m_pStgdb->m_MiniMd);
 
     CMDReadWriteLock lockHolder(pEmitRM->m_pReadWriteLock COMMA_INDEBUG(pMiniMdEmit));
     IfFailGo(lockHolder.LockWrite());
 
     hr = ImportHelper::MergeUpdateTokenInSig(
-                pMiniMdAssemEmit,   // The assembly emit scope.
                 pMiniMdEmit,        // The emit scope.
-                pCommonAssemImport, // Assembly scope where the signature is from.
-                pbHashValue,        // Hash value for the import scope.
-                cbHashValue,        // Size in bytes.
                 pCommon,            // The scope where signature is from.
                 pbSigBlob,          // signature from the imported scope
-                NULL,               // Internal OID mapping structure.
                 pqkSigEmit,         // [OUT] translated signature
                 0,               // start from first byte of the signature
                 NULL,               // don't care how many bytes consumed
@@ -623,24 +610,16 @@ ErrExit:
 //*****************************************************************************
 __checkReturn
 HRESULT MDInternalRW::TranslateSigWithScope(
-    IMDInternalImport*      pAssemImport,   // [IN] import assembly scope.
-    const void*             pbHashValue,    // [IN] hash value for the import assembly.
-    ULONG                   cbHashValue,    // [IN] count of bytes in the hash value.
     PCCOR_SIGNATURE         pbSigBlob,      // [IN] signature in the importing scope
     ULONG                   cbSigBlob,      // [IN] count of bytes of signature
-    IMetaDataAssemblyEmit*  pAssemEmit,     // [IN] assembly emit scope.
-    IMetaDataEmit*          emit,           // [IN] emit interface
+    IMDInternalEmit*        emit,           // [IN] emit interface
     CQuickBytes*            pqkSigEmit,     // [OUT] buffer to hold translated signature
     ULONG*                  pcbSig)         // [OUT] count of bytes in the translated signature
 {
     return TranslateSigHelper(
                 this,
-                pAssemImport,
-                pbHashValue,
-                cbHashValue,
                 pbSigBlob,
                 cbSigBlob,
-                pAssemEmit,
                 emit,
                 pqkSigEmit,
                 pcbSig);
@@ -905,40 +884,6 @@ MDInternalRW::EnumMethodImplNext(  // return hresult
     return EnumNext(phEnumDecl, ptkDecl) ? S_OK : S_FALSE;
 } // MDInternalRW::EnumMethodImplNext
 
-//*****************************************
-// Reset the enumerator to the beginning.
-//*****************************************
-void MDInternalRW::EnumMethodImplReset(
-    HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-    HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
-{
-    _ASSERTE((phEnumBody->m_tkKind >> 24) == TBL_MethodImpl &&
-             (phEnumDecl->m_tkKind >> 24) == TBL_MethodImpl);
-    _ASSERTE(phEnumBody->m_EnumType == MDDynamicArrayEnum &&
-             phEnumDecl->m_EnumType == MDDynamicArrayEnum);
-    _ASSERTE(phEnumBody->m_ulCount == phEnumDecl->m_ulCount);
-
-    EnumReset(phEnumBody);
-    EnumReset(phEnumDecl);
-} // MDInternalRW::EnumMethodImplReset
-
-
-//*****************************************
-// Close the enumerator.
-//*****************************************
-void MDInternalRW::EnumMethodImplClose(
-    HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-    HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
-{
-    _ASSERTE((phEnumBody->m_tkKind >> 24) == TBL_MethodImpl &&
-             (phEnumDecl->m_tkKind >> 24) == TBL_MethodImpl);
-    _ASSERTE(phEnumBody->m_EnumType == MDDynamicArrayEnum &&
-             phEnumDecl->m_EnumType == MDDynamicArrayEnum);
-    _ASSERTE(phEnumBody->m_ulCount == phEnumDecl->m_ulCount);
-
-    EnumClose(phEnumBody);
-    EnumClose(phEnumDecl);
-} // MDInternalRW::EnumMethodImplClose
 #endif //!DACCESS_COMPILE
 
 //******************************************************************************
@@ -1356,11 +1301,6 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
         phEnum->u.m_ulStart = 1;
         phEnum->u.m_ulEnd = m_pStgdb->m_MiniMd.getCountManifestResources() + 1;
         break;
-    case mdtModuleRef:
-        _ASSERTE(IsNilToken(tkParent));
-        phEnum->u.m_ulStart = 1;
-        phEnum->u.m_ulEnd = m_pStgdb->m_MiniMd.getCountModuleRefs() + 1;
-        break;
     default:
         _ASSERTE(!"ENUM INIT not implemented for the uncompressed format!");
         IfFailGo(E_NOTIMPL);
@@ -1404,14 +1344,6 @@ HRESULT MDInternalRW::EnumAllInit(      // return S_FALSE if record not found
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeRefs();
         break;
 
-    case mdtMemberRef:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountMemberRefs();
-        break;
-
-    case mdtSignature:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountStandAloneSigs();
-        break;
-
     case mdtMethodDef:
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountMethods();
         break;
@@ -1420,32 +1352,12 @@ HRESULT MDInternalRW::EnumAllInit(      // return S_FALSE if record not found
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountMethodSpecs();
         break;
 
-    case mdtFieldDef:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountFields();
-        break;
-
     case mdtTypeSpec:
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeSpecs();
         break;
 
     case mdtAssemblyRef:
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountAssemblyRefs();
-        break;
-
-    case mdtModuleRef:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountModuleRefs();
-        break;
-
-    case mdtTypeDef:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeDefs();
-        break;
-
-    case mdtFile:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountFiles();
-        break;
-
-    case mdtCustomAttribute:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountCustomAttributes();
         break;
 
     default:
@@ -2045,6 +1957,8 @@ HRESULT MDInternalRW::FindTypeRefByName(  // S_OK or error.
     mdToken     tkResolutionScope,      // [IN] Resolution Scope fo the TypeRef.
     mdTypeRef   *ptk)                   // [OUT] TypeRef token returned.
 {
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    // ILDasm uses this API to resolve TypeRefs by name.
     HRESULT     hr = NOERROR;
     ULONG       cTypeRefRecs;
     TypeRefRec *pTypeRefRec;
@@ -2094,6 +2008,9 @@ HRESULT MDInternalRW::FindTypeRefByName(  // S_OK or error.
     hr = CLDB_E_RECORD_NOTFOUND;
 ErrExit:
     return hr;
+#else
+    return E_NOTIMPL;
+#endif
 } // MDInternalRW::FindTypeRefByName
 
 //*****************************************************************************

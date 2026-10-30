@@ -4,6 +4,9 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <!-- The test has its own entry point, so the WASI ReadyToRun failure is skipped here.
+         ActiveIssue https://github.com/dotnet/runtime/issues/134949 -->
+    <R2RIncompatible Condition="'$(TargetOS)' == 'wasi'">true</R2RIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

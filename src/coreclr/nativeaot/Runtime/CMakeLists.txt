@@ -39,7 +39,6 @@ set(COMMON_RUNTIME_SOURCES
     gcheaputilities.cpp
     GCMemoryHelpers.cpp
     gcenv.ee.cpp
-    GcStressControl.cpp
     HandleTableHelpers.cpp
     interoplibinterface_java.cpp
     MathHelpers.cpp
@@ -200,11 +199,16 @@ else()
     ${RUNTIME_DIR}/unix/CLREventBase.cpp
     unix/PalUnix.cpp
     unix/PalCreateDump.cpp
+    unix/cgroupcpu.cpp
     ${GC_DIR}/unix/events.cpp
   )
 
   if(CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND COMMON_RUNTIME_SOURCES
+      wasm/MiscStubs.cpp
+      wasm/PInvoke.cpp
+      wasm/WasmCodeManager.cpp
+      ${RUNTIME_DIR}/wasm/writebarriers.cpp
       ${GC_DIR}/wasm/gcenv.cpp
     )
     include_directories(${GC_DIR}/unix)
@@ -217,7 +221,6 @@ else()
   endif()
 
   list(APPEND FULL_RUNTIME_SOURCES
-    unix/cgroupcpu.cpp
     unix/HardwareExceptions.cpp
     unix/NativeContext.cpp
     unix/UnixSignals.cpp
@@ -292,12 +295,17 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/DispatchResolve.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
+  ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/PInvoke.${ASM_SUFFIX}
-  ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
+
+if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_I386)
+  list(APPEND RUNTIME_SOURCES_ARCH_ASM
+    ${ARCH_SOURCES_DIR}/MathHelpers.asm
+  )
+endif()
 
 # Add architecture specific folder for looking up headers.
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
@@ -329,7 +337,6 @@ if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_WASM)
   add_definitions(-DFEATURE_64BIT_ALIGNMENT)
 endif()
 
-add_compile_definitions($<$<CONFIG:Debug,Checked>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DNATIVEAOT)

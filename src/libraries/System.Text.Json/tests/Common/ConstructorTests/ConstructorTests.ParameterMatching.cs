@@ -1483,6 +1483,8 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual(json, await Serializer.SerializeWrapper(obj));
         }
 
+// ActiveIssue https://github.com/dotnet/runtime/issues/132855
+#if !WASM_READYTORUN
         [Fact]
         public async Task TestClassWithManyConstructorParameters()
         {
@@ -1493,6 +1495,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(value, result); // Type is C# record that implements structural equality.
         }
+#endif
 
         public class ClassWithDefaultCtorParams
         {

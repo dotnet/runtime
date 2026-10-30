@@ -34,18 +34,24 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct DNS_QUERY_CANCEL
+        internal struct DNS_QUERY_CANCEL
         {
-            public fixed byte Reserved[32];
+            public ReservedBuffer Reserved;
+
+            [InlineArray(32)]
+            internal struct ReservedBuffer
+            {
+                private byte _element0;
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct DNS_ADDR
+        internal struct DNS_ADDR
         {
             // SOCKET_ADDRESS-like: 32 bytes of SOCKADDR_STORAGE-ish + extras.
             // DnsApi documents this struct as 64 bytes total with the first 32
             // being the SOCKADDR (IPv4/IPv6 SOCKADDR fits within).
-            public fixed byte MaxSa[32];
+            public MaxSaBuffer MaxSa;
             public uint DnsAddrUserDword0;
             public uint DnsAddrUserDword1;
             public uint DnsAddrUserDword2;
@@ -54,6 +60,12 @@ internal static partial class Interop
             public uint DnsAddrUserDword5;
             public uint DnsAddrUserDword6;
             public uint DnsAddrUserDword7;
+
+            [InlineArray(32)]
+            internal struct MaxSaBuffer
+            {
+                private byte _element0;
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]

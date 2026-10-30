@@ -130,7 +130,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     stubmgr.cpp
     syncblk.cpp
     threads.cpp
-    threadstatics.cpp
     tieredcompilation.cpp
     typectxt.cpp
     typedesc.cpp
@@ -237,7 +236,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     syncblk.h
     threads.h
     threads.inl
-    threadstatics.h
     typectxt.h
     typedesc.h
     typedesc.inl
@@ -274,6 +272,15 @@ if(FEATURE_READYTORUN)
         readytoruninfo.h
     )
 endif(FEATURE_READYTORUN)
+
+if(FEATURE_MULTITHREADING)
+    list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
+        threadstatics.cpp
+    )
+    list(APPEND VM_HEADERS_DAC_AND_WKS_COMMON
+        threadstatics.h
+    )
+endif(FEATURE_MULTITHREADING)
 
 list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
     pregeneratedstringthunks.cpp
@@ -315,7 +322,6 @@ set(VM_SOURCES_WKS
     callstubgenerator.cpp
     clrconfignative.cpp
     clrex.cpp
-    comdatetime.cpp
     comdelegate.cpp
     comdependenthandle.cpp
     comdynamic.cpp
@@ -362,8 +368,6 @@ set(VM_SOURCES_WKS
     marshalnative.cpp
     methodtablebuilder.cpp
     mlinfo.cpp
-    multicorejit.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
-    multicorejitplayer.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
@@ -395,6 +399,13 @@ set(VM_SOURCES_WKS
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
 )
+
+if (FEATURE_MULTICOREJIT)
+    list(APPEND VM_SOURCES_WKS
+        multicorejit.cpp
+        multicorejitplayer.cpp
+    )
+endif()
 
 if (FEATURE_VARARGS)
     list(APPEND VM_SOURCES_WKS
@@ -430,7 +441,6 @@ set(VM_HEADERS_WKS
     ceemain.h
     clrconfignative.h
     clrex.h
-    comdatetime.h
     comdelegate.h
     comdependenthandle.h
     comdynamic.h
@@ -697,6 +707,7 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
         )
 
@@ -713,6 +724,7 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
             ${ARCH_SOURCES_DIR}/thunktemplates.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
             )
 
@@ -731,6 +743,7 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.asm
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
             )
 
@@ -764,6 +777,7 @@ else()
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
         )
@@ -777,6 +791,7 @@ else()
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
             )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM)
@@ -788,6 +803,7 @@ else()
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
@@ -802,6 +818,7 @@ else()
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
@@ -812,6 +829,7 @@ else()
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
@@ -822,6 +840,7 @@ else()
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     endif()

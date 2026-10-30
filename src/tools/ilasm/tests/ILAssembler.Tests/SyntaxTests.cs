@@ -7,21 +7,17 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Text;
 using System.Threading.Tasks;
 using Internal.IL;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
 namespace ILAssembler.Tests
 {
     public class SyntaxTests
     {
-
         [Theory]
         [InlineData("\"hello\"", "hello")]
         [InlineData("\"hello\\tworld\"", "hello\tworld")]
@@ -36,7 +32,6 @@ namespace ILAssembler.Tests
             var result = StringHelpers.ParseQuotedString(input);
             Assert.Equal(expected, result);
         }
-
 
         [Fact]
         public void Diagnostic_LiteralOutOfRange()
@@ -55,6 +50,90 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
+        [Theory]
+        [InlineData("4294967296")]
+        [InlineData("4294967297")]
+        [InlineData("-2147483649")]
+        [InlineData("-4294967295")]
+        [InlineData("0x100000000")]
+        [InlineData("-0x80000001")]
+        [InlineData("-0xffffffff")]
+        [InlineData("040000000000")]
+        [InlineData("037777777777777777777777777777777777777777777777777")]
+        [InlineData("-037777777777777777777777777777777777777777777777777")]
+        [InlineData("-020000000001")]
+        [InlineData("18446744073709551615")]
+        [InlineData("-18446744073709551615")]
+        [InlineData("0xffffffffffffffff")]
+        [InlineData("-0xffffffffffffffff")]
+        [InlineData("0x10000000000000000")]
+        [InlineData("0x10000000000000001")]
+        [InlineData("02000000000000000000000")]
+        [InlineData("-02000000000000000000000")]
+        public void Int32Literal_OutOfRange_ReportsDiagnostic(string literal)
+        {
+            string[] sources =
+            [
+                DocumentCompilerTestHelpers.MethodSource($"ldc.i4 {literal}\nret"),
+                DocumentCompilerTestHelpers.MethodSource($".maxstack {literal}\nret"),
+                $".class public Test {{ .pack {literal} }}",
+                $".corflags {literal}",
+            ];
+
+            foreach (string source in sources)
+            {
+                var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options());
+                Diagnostic error = Assert.Single(diagnostics);
+                Assert.Equal(DiagnosticIds.LiteralOutOfRange, error.Id);
+                Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+                Assert.Equal($"The value '{literal}' is out of range", error.Message);
+                Assert.NotNull(error.Location);
+                Assert.Equal(new SourceSpan(source.IndexOf(literal, StringComparison.Ordinal), literal.Length), error.Location.Span);
+                Assert.Null(result);
+            }
+        }
+
+        [Theory]
+        [InlineData("018")]
+        [InlineData("09")]
+        [InlineData("-018")]
+        [InlineData("02000000000000000000008")]
+        [InlineData("037777777777777777777777777777777777777777777777778")]
+        [InlineData("-037777777777777777777777777777777777777777777777779")]
+        public void InvalidOctalIntegerLiteral_ReportsDiagnostic(string literal)
+        {
+            string source = $$"""
+                .class public auto ansi beforefieldinit Test
+                {
+                    .pack {{literal}}
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.InvalidOctalLiteral, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Equal($"The value '{literal}' is not a valid octal literal", error.Message);
+        }
+
+        [Fact]
+        public void OctalIntegerLiteral_ParsesValidDigits()
+        {
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                """
+                .class public auto ansi beforefieldinit Test
+                {
+                    .pack 010
+                }
+                """,
+                new Options());
+
+            var reader = pe.GetMetadataReader();
+            var type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+
+            Assert.Equal(8, type.GetLayout().PackingSize);
+        }
 
         [Fact]
         public void Diagnostic_FileNotFound()
@@ -308,16 +387,36 @@ namespace ILAssembler.Tests
             }
             """)]
         [InlineData(".permission demand class X (Name = )")]
+        [InlineData(".class public auto ansi Test { .field public static literal bool F = bool(invalid true) }")]
         [InlineData(".class extern { }")]
         [InlineData(".class public auto ansi Test { .export public { } }")]
         [InlineData(".assembly extern Name { .ver : }")]
+        [InlineData(".method static void M() cil managed { ldc.r8 not-a-number ret }")]
+        [InlineData(".method static void M() cil managed { ldc.r8 -not-a-number ret }")]
+        [InlineData(".class public Test { .field public static literal bool F = bool(invalid) }")]
+        [InlineData(".file nometadata")]
+        [InlineData(".permission invalid class Test ()")]
+        [InlineData(".vtfixup [1] invalid at D")]
+        [InlineData(".mresource invalid Resource { }")]
+        [InlineData(".assembly invalid Test { }")]
+        [InlineData(".class extern invalid Test { .assembly extern Dependency }")]
         public void MalformedTypedGrammarValues_ReportParserDiagnosticsInsteadOfThrowing(string source)
         {
             var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
                 source,
                 new Options { ErrorTolerant = true });
 
-            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.Parser);
+            AssertDiagnosticSpansInSource(diagnostics, source.Length);
+        }
+
+        private static void AssertDiagnosticSpansInSource(ImmutableArray<Diagnostic> diagnostics, int sourceLength)
+        {
+            Assert.All(diagnostics, diagnostic =>
+            {
+                Assert.InRange(diagnostic.Location.Span.Start, 0, sourceLength);
+                Assert.InRange(diagnostic.Location.Span.Length, 0, sourceLength - diagnostic.Location.Span.Start);
+            });
         }
 
         public static TheoryData<string, bool> TruncatedDirectiveMutations
@@ -383,6 +482,7 @@ namespace ILAssembler.Tests
             Assert.Contains(
                 diagnostics,
                 diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+            AssertDiagnosticSpansInSource(diagnostics, source.Length);
         }
 
         [Theory]
@@ -447,7 +547,7 @@ namespace ILAssembler.Tests
 
             var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
             // Parser should report a syntax error for the repeated int32 tokens
-            Assert.Contains(diagnostics, d => d.Id == "Parser");
+            Assert.Contains(diagnostics, d => d.Id == DiagnosticIds.Parser);
         }
 
     }
