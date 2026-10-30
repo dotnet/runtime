@@ -388,16 +388,21 @@ C_FUNC(\Name\()_End):
         .ifc  \target, x1
                 .error "target cannot be x1"
         .endif
+        .ifc  \target, x2
+                .error "target cannot be x2"
+        .endif
 
 #if defined(FEATURE_EMULATED_TLS) || defined(__APPLE__)
-        PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x20
+        PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x30
         PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
+        PROLOG_SAVE_REG                   x2, 0x20
 
         bl      C_FUNC(GetThreadEEAllocContext)
         mov     \target, x0
 
+        EPILOG_RESTORE_REG                x2, 0x20
         EPILOG_RESTORE_REG_PAIR           x0, x1, 0x10
-        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
+        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x30
 #else
         PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
         INLINE_GET_TLS_VAR \target, t_runtime_thread_locals

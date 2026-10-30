@@ -137,6 +137,7 @@
     // INLINE_GETTHREAD makes blr calls that trash volatile FP registers.
     // Save and restore q0-q7 around the call.
     sub         sp, sp, #0x80
+    .cfi_adjust_cfa_offset 0x80
     stp         q0, q1, [sp, #0x00]
     stp         q2, q3, [sp, #0x20]
     stp         q4, q5, [sp, #0x40]
@@ -149,6 +150,7 @@
     ldp         q2, q3, [sp, #0x20]
     ldp         q0, q1, [sp, #0x00]
     add         sp, sp, #0x80
+    .cfi_adjust_cfa_offset -0x80
 #endif
 
     //

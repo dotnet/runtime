@@ -181,40 +181,40 @@ C_FUNC(\Name):
 
 #include <arm64/InlineTls.inc>
 
-// Loads the address of a thread-local variable into the target register,
-// which cannot be x0. Preserves all other registers, except x16 and x17 on Apple.
-.macro INLINE_GET_TLS_VAR_PRESERVE_REGS target, var
-    stp     x0, lr, [sp,#-0x10]!
-    INLINE_GET_TLS_VAR \target, \var
-    ldp     x0, lr, [sp],#0x10
-.endm
-
 // Inlined version of RhpGetThread. Target cannot be x0.
+// Preserves all other registers, except x16 and x17 on Apple.
 .macro INLINE_GETTHREAD target
-    INLINE_GET_TLS_VAR_PRESERVE_REGS \target, C_FUNC(tls_CurrentThread)
+    PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
+    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   x0, lr, 0x10
 .endm
 
-// Target cannot be x0.
+// Target cannot be x0 or x2. Preserves x0-x2, which the allocation helpers keep live across it.
 .macro INLINE_GET_ALLOC_CONTEXT_BASE target
     .ifc \target, x0
         .error "target cannot be x0"
     .endif
+    .ifc \target, x2
+        .error "target cannot be x2"
+    .endif
 
 #ifdef FEATURE_EMULATED_TLS
-    PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x20
+    PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x30
     PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
+    PROLOG_SAVE_REG                   x2, 0x20
 
     bl C_FUNC(RhpGetThread)
     mov         \target, x0
 
+    EPILOG_RESTORE_REG                x2, 0x20
     .ifc \target, x1
     EPILOG_RESTORE_REG_PAIR           x0, xzr, 0x10
     .else
     EPILOG_RESTORE_REG_PAIR           x0, x1, 0x10
     .endif
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x30
 #else
-    INLINE_GET_TLS_VAR_PRESERVE_REGS \target, C_FUNC(tls_CurrentThread)
+    INLINE_GETTHREAD \target
 #endif
 .endm
 
