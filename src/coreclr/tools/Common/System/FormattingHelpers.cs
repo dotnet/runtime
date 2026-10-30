@@ -16,5 +16,7 @@ namespace System
         {
             return value.ToString(format, CultureInfo.InvariantCulture);
         }
+
+        public static int CountDigits(uint value) => 1 + (int)uint.Log10(value);
     }
 }
