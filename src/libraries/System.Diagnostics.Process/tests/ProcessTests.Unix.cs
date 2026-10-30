@@ -1268,16 +1268,22 @@ namespace System.Diagnostics.Tests
 
                     p.Refresh();
                     int before = p.HandleCount;
+                    int during;
 
                     using (var one = new FileStream(path, FileMode.Open, FileAccess.Read))
                     using (var two = new FileStream(path, FileMode.Open, FileAccess.Read))
                     {
                         p.Refresh();
-                        Assert.Equal(before + 2, p.HandleCount);
+                        during = p.HandleCount;
                     }
 
                     p.Refresh();
-                    Assert.Equal(before, p.HandleCount);
+                    int after = p.HandleCount;
+
+                    // Assert only once all of the measurements have been taken. The first call to an assertion
+                    // method can load assemblies, and each assembly that is loaded holds file descriptors open.
+                    Assert.Equal(before + 2, during);
+                    Assert.Equal(before, after);
                 }
                 finally
                 {
