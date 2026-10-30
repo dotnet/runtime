@@ -458,7 +458,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(Tan_RangeReductionInputs))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/135117", typeof(Helpers), nameof(Helpers.IsWasmWithAcceleratedVector128))]
         public void Tan_RangeReduction(int length, int inputKind)
         {
             using BoundedMemory<T> source = CreateTensor(length);
@@ -611,7 +610,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/135117", typeof(Helpers), nameof(Helpers.IsWasmWithAcceleratedVector128))]
         public void SpanDestinationFunctions_InPlace(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>

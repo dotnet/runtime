@@ -9,6 +9,8 @@
     <PublishTrimmed>true</PublishTrimmed>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <AotOrSingleFile>true</AotOrSingleFile>
+    <HostBundleIdentifier>com.microsoft.dotnet.crossgen2</HostBundleIdentifier>
+    <HostBundleName>crossgen2</HostBundleName>
     <UseBootstrapLayout Condition="'$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
   </PropertyGroup>
 

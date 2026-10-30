@@ -94,7 +94,16 @@ EXTERN_C FCDECL1(PCODE, JIT_PatchpointForced, int ilOffset);
 // The portable helper is used if the platform does not provide optimized implementation.
 //
 
-EXTERN_C FCDECL0(void, JIT_PollGC);
+EXTERN_C FCDECL0(void, RhpGcPoll);
+
+#ifdef TARGET_WASM
+// WASM EventPipe CPU-sampling samplepoint helper (defined in vm/wasm/helpers.cpp).
+EXTERN_C void JIT_WasmProfSamplepoint(uintptr_t callersStackPointer, PCODE portableEntryPointContext);
+#endif // TARGET_WASM
+
+#ifdef FEATURE_IJW
+EXTERN_C FCDECL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField);
+#endif // FEATURE_IJW
 
 #ifndef JIT_GetGCStaticBaseNoCtor
 #define JIT_GetGCStaticBaseNoCtor JIT_GetGCStaticBaseNoCtor_Portable
@@ -216,10 +225,12 @@ extern "C"
     void STDCALL JIT_TailCall();                    // JIThelp.asm
 #endif // defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 
+#ifdef PROFILING_SUPPORTED
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
+#endif // PROFILING_SUPPORTED
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     // TODO: implement stack probing for other architectures https://github.com/dotnet/runtime/issues/13519
-    void STDCALL JIT_StackProbe();
+    void STDCALL RhpStackProbe();
 #endif // !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 };
 

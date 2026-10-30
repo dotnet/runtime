@@ -1552,11 +1552,17 @@ void HelperCallProperties::init()
             case CORINFO_HELP_ISINSTANCEOFCLASS:
             case CORINFO_HELP_ISINSTANCEOFANY:
             case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
-            case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
 
                 isPure     = true;
                 exceptions = ExceptionSetFlags::None; // These return null for a failing cast
+                break;
+
+            case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
+                // Public default-handle null handling bypasses this internal, non-null-returning helper.
+                isPure        = true;
+                exceptions    = ExceptionSetFlags::None;
+                nonNullReturn = true;
                 break;
 
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
@@ -1593,7 +1599,9 @@ void HelperCallProperties::init()
                 break;
 
             case CORINFO_HELP_LDELEMA_REF:
-                isPure = true;
+                // The returned slot address cannot be null; the object stored there can be.
+                isPure        = true;
+                nonNullReturn = true;
                 break;
 
             // GETREFANY is pure up to the value of the struct argument. We
@@ -1628,6 +1636,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
@@ -1749,6 +1759,11 @@ void HelperCallProperties::init()
                 exceptions = ExceptionSetFlags::None;
                 break;
 
+            case CORINFO_HELP_WASM_PROF_SAMPLEPOINT:
+                isNoGC     = true;
+                exceptions = ExceptionSetFlags::None;
+                break;
+
             case CORINFO_HELP_TAILCALL: // Never present on stack at the time of GC.
             case CORINFO_HELP_STACK_PROBE:
             case CORINFO_HELP_CHECK_OBJ:
@@ -1762,6 +1777,7 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_VIRTUAL_FUNC_PTR:
             case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+            case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
             case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
                 mutatesHeap = false;
                 isPure      = true;

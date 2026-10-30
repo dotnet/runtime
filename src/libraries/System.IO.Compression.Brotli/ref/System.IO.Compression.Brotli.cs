@@ -16,9 +16,15 @@ namespace System.IO.Compression
     {
         private object _dummy;
         private int _dummyPrimitive;
+        public BrotliDecoder(System.IO.Compression.BrotliDecompressionOptions decompressionOptions) { throw null; }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public sealed partial class BrotliDecompressionOptions
+    {
+        public BrotliDecompressionOptions() { }
+        public int MaxWindowLog2 { get { throw null; } set { } }
     }
     public partial struct BrotliEncoder : System.IDisposable
     {
@@ -35,6 +41,7 @@ namespace System.IO.Compression
     public sealed partial class BrotliStream : System.IO.Stream
     {
         public BrotliStream(System.IO.Stream stream, System.IO.Compression.BrotliCompressionOptions compressionOptions, bool leaveOpen = false) { }
+        public BrotliStream(System.IO.Stream stream, System.IO.Compression.BrotliDecompressionOptions decompressionOptions, bool leaveOpen = false) { }
         public BrotliStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel) { }
         public BrotliStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel, bool leaveOpen) { }
         public BrotliStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode) { }

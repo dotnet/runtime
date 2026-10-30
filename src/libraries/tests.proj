@@ -67,10 +67,11 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\Net8Tests\System.Numerics.Tensors.Net8.Tests.csproj" />
   </ItemGroup>
 
-  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <ProjectExclusions Include="$(MonoProjectRoot)sample/wasm/**/*.csproj" />
-    <ProjectExclusions Include="$(RepoRoot)src/tests/FunctionalTests/WebAssembly/Browser/HotReload/WebAssembly.Browser.HotReload.Test.csproj" />
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Mono -->
+    <ProjectExclusions Include="$(RepoRoot)src/tests/FunctionalTests/WebAssembly/Browser/HotReload/WebAssembly.Browser.HotReload.Test.csproj"
+                       Condition="'$(RuntimeFlavor)' == 'Mono'" />
   </ItemGroup>
 
   <!-- Samples that require a multi-threaded runtime -->
@@ -398,11 +399,6 @@
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51708 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RunDisabledWasiTests)' != 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets\tests\System.Net.WebSockets.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisabledWasiTests)' != 'true'">

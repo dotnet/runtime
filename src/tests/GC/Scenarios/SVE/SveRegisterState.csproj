@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <Optimize>True</Optimize>
+    <NoWarn>$(NoWarn);SYSLIB5003</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SveRegisterState.cs" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+  </ItemGroup>
+</Project>

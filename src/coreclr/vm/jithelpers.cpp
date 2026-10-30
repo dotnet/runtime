@@ -42,7 +42,9 @@
 #include "array.h"
 #include "debuginfostore.h"
 #include "safemath.h"
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
@@ -245,6 +247,23 @@ HCIMPLEND
 
 #include <optdefault.h>
 
+#ifdef FEATURE_IJW
+HCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(pField->IsStatic() && pField->IsRVA());
+
+    Module* pModule = pField->GetModule();
+    DWORD fieldRva = pField->GetOffset();
+    _ASSERTE(pModule->IsRvaFieldTls(fieldRva));
+
+    uint8_t** pTlsArray = static_cast<uint8_t**>(NtCurrentTeb()->ThreadLocalStoragePointer);
+    return pTlsArray[pModule->GetTlsIndex()] + pModule->GetFieldTlsOffset(fieldRva);
+}
+HCIMPLEND
+#endif // FEATURE_IJW
+
 // Helper for the managed InitClass implementations
 extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallExceptionStatus* qcallError)
 {
@@ -313,6 +332,7 @@ HCIMPLEND
 //
 //========================================================================
 
+#ifdef FEATURE_MULTITHREADING
 // Using compiler specific thread local storage directives due to linkage issues.
 #ifdef _MSC_VER
 __declspec(selectany)
@@ -385,6 +405,7 @@ HCIMPL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase)
     return (void*)((uint8_t*)&(((ThreadLocalData*)&t_ThreadStatics)->pThread) - OFFSETOF__CORINFO_Array__data);
 }
 HCIMPLEND
+#endif // FEATURE_MULTITHREADING
 
 #include <optdefault.h>
 
@@ -727,18 +748,15 @@ extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
     // This can happen if the method was converted from virtual to non-virtual after the R2R image was created.
     // While this is not a common scenario and is documented as a breaking change, we should still handle it
     // as we have no good scheme for reporting an actionable error here.
-    if (!pStaticMD->IsVtableMethod())
+    MethodTable *pMTObjRef = objRef->GetMethodTable();
     {
-        addr = pStaticMD->GetMultiCallableAddrOfCode();
-        _ASSERTE(addr);
-    }
-    else
-    {
-        MethodTable *pMTObjRef = objRef->GetMethodTable();
         GCX_PREEMP();
-        // This is the new way of resolving a virtual call, including generic virtual methods.
-        // The code is now also used by reflection, remoting etc.
-        addr = pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, pMTObjRef, staticTH);
+        MethodDesc* pTargetMD = pStaticMD->IsVtableMethod()
+            ? pStaticMD->GetMethodDescOfVirtualizedCode(&objRef, pMTObjRef, staticTH)
+            : pStaticMD;
+        // A GC in the target's prestub may scan its signature.
+        pTargetMD->PrepareForUseAsACallTargetOfANativeImage();
+        addr = pTargetMD->GetMultiCallableAddrOfCode();
         _ASSERTE(addr);
     }
 
