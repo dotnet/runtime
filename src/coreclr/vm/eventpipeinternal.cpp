@@ -104,7 +104,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
 
     BEGIN_QCALL;
 
-    pProvider = EventPipeAdapter::CreateProvider(providerName, pCallbackFunc, pCallbackContext);
+    pProvider = EventPipeAdapter::CreateProvider(providerName, pCallbackFunc, pCallbackContext, true);
 
     END_QCALL;
 
