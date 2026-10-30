@@ -10,11 +10,7 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace ILLink.CodeFix.UnsafeContext
 {
-    /// <summary>
-    /// Groups the operations of each scope into regions and orders each region's candidates by the coverage rule:
-    /// proportionate blocks first, then the alternatives (wrappers or finer regions), then disproportionate blocks
-    /// with the fewest unrelated leaves.
-    /// </summary>
+    /// <summary>Groups each scope's operations into regions, preferring valid blocks over expression wrappers.</summary>
     internal sealed class UnsafeContextPlanner(PlanningContext context)
     {
         /// <summary>Returns the regions for <paramref name="targets"/>, one or more per scope.</summary>
@@ -44,13 +40,11 @@ namespace ILLink.CodeFix.UnsafeContext
             return PlanList(scope, list, targets, set, parent: null);
         }
 
-        /// <summary>
-        /// Expression bodies and initializers keep their form: the narrowest wrapper first. An expression body is
-        /// converted to a block body only when no wrapper is valid.
-        /// </summary>
+        /// <summary>Plans block-body conversion and expression wrappers in policy order.</summary>
         private UnsafeContextRegion PlanExpressionScope(UnsafeScope scope, ImmutableArray<UnsafeTarget> targets)
         {
-            List<RegionCandidate> candidates = [.. ExpressionWrapPlanner.Create(targets, scope, scope.Body.Parent!, context).Select(RegionCandidate.ForEdit)];
+            var wrappers = ExpressionWrapPlanner.Create(targets, scope, scope.Body.Parent!, context).Select(RegionCandidate.ForEdit);
+            ImmutableArray<UnsafeContextEdit> blocks = [];
 
             // A block body would put nested lambdas and local functions in the unsafe context, would separate
             // directives between `=>` and the end of the member from their counterparts, and would nest any wrapper.
@@ -62,10 +56,10 @@ namespace ILLink.CodeFix.UnsafeContext
                 bool asStatement = UnsafeContextSemantics.RequiresStatementExpressionBody(scope.Owner, context.Model, context.CancellationToken);
                 int position = scope.Owner is LambdaExpressionSyntax ? scope.Owner.SpanStart : scope.Owner.FirstTokenAfterAttributes.SpanStart;
                 string indentation = context.Formatting.GetIndentation(position);
-                candidates.Add(RegionCandidate.ForEdit(new ExpressionBodyBlockEdit(scope.Owner, (ExpressionSyntax)scope.Body, asStatement, indentation)));
+                blocks = [new ExpressionBodyBlockEdit(scope.Owner, (ExpressionSyntax)scope.Body, asStatement, indentation)];
             }
 
-            return new UnsafeContextRegion(targets, [.. candidates], parent: null);
+            return new UnsafeContextRegion(targets, Order(blocks, wrappers), parent: null);
         }
 
         /// <summary>Creates a region whose first candidates wrap the whole body, refining to the default plan.</summary>
@@ -250,14 +244,14 @@ namespace ILLink.CodeFix.UnsafeContext
             }
         }
 
-        /// <summary>Orders candidates by the coverage rule, or alternatives first for <see cref="UnsafeContextPolicy.ExpressionFirst"/>.</summary>
+        /// <summary>Ranks blocks by coverage, using alternatives only as a fallback unless explicitly preferred.</summary>
         private ImmutableArray<RegionCandidate> Order(ImmutableArray<UnsafeContextEdit> blocks, IEnumerable<RegionCandidate> alternatives)
         {
             var proportionate = blocks.Where(static b => b.IsProportionate).Select(RegionCandidate.ForEdit);
             var others = blocks.Where(static b => !b.IsProportionate).OrderBy(static b => b.UnrelatedLeaves).Select(RegionCandidate.ForEdit);
             return context.Policy == UnsafeContextPolicy.ExpressionFirst
                 ? [.. alternatives, .. proportionate, .. others]
-                : [.. proportionate, .. alternatives, .. others];
+                : [.. proportionate, .. others, .. alternatives];
         }
     }
 }
