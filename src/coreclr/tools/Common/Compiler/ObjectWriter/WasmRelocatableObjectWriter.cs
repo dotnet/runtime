@@ -19,6 +19,8 @@ namespace ILCompiler.ObjectWriter
     {
         private WasmDataSection _dataSection;
         private DwarfBuilder _dwarfBuilder;
+        private SectionWriter _pdataSectionWriter;
+        private SectionWriter _xdataSectionWriter;
         private uint _nextVirtualIP = 1; // Zero marks an invalid stack frame.
         private readonly Dictionary<Utf8String, uint> _methodStartVirtualIPs = new();
 
@@ -81,6 +83,13 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
+            if (_options.HasFlag(ObjectWritingOptions.GenerateUnwindInfo))
+            {
+                _pdataSectionWriter.WriteLittleEndian<uint>(_nextVirtualIP);
+                _pdataSectionWriter.WriteLittleEndian<uint>(0);
+                _pdataSectionWriter.EmitSymbolDefinition(new Utf8String("__pdata_end"), global: true);
+            }
+
             List<IWasmDataSegment> dataSegments = new();
             foreach (SectionDataEmitter section in _sections.Sections)
             {
@@ -610,18 +619,43 @@ namespace ILCompiler.ObjectWriter
             }
 
             _methodStartVirtualIPs.Add(currentSymbolName, _nextVirtualIP);
+            Span<byte> indexBuffer = stackalloc byte[16];
             for (int i = 0; i < frames.Length; i++)
             {
                 FrameInfo frame = frames[i];
-                DwarfHelper.ReadULEB128(frame.BlobData, out int bytesRead);
+                uint frameSize = checked((uint)DwarfHelper.ReadULEB128(frame.BlobData, out int bytesRead));
+                Debug.Assert(frameSize % _nodeFactory.Target.PointerSize == 0);
                 uint virtualSize = checked((uint)DwarfHelper.ReadULEB128(frame.BlobData.AsSpan(bytesRead)));
                 Debug.Assert(virtualSize != 0);
-                _nextVirtualIP = checked(_nextVirtualIP + virtualSize);
+                uint virtualStart = _nextVirtualIP;
+                _nextVirtualIP = checked(virtualStart + virtualSize);
+
+                _utf8StringBuilder.Clear()
+                    .Append("_unwind"u8)
+                    .Append(FormatUtf8Int(indexBuffer, i))
+                    .Append(currentSymbolName);
+                Utf8String unwindSymbolName = _utf8StringBuilder.ToUtf8String();
+                _xdataSectionWriter.EmitSymbolDefinition(unwindSymbolName);
+                _xdataSectionWriter.WriteUnsigned(frameSize / (uint)_nodeFactory.Target.PointerSize);
+                _xdataSectionWriter.WriteByte((byte)frame.Flags);
+
+                if (i == 0)
+                {
+                    _xdataSectionWriter.Write(nodeWithCodeInfo.GCInfo);
+                }
+
+                // Keep in sync with WasmRuntimeFunction in the NativeAOT code manager.
+                _pdataSectionWriter.WriteLittleEndian<uint>(virtualStart);
+                _pdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, unwindSymbolName);
             }
         }
 
         private protected override void CreateEhSections()
         {
+            _pdataSectionWriter = GetOrCreateSection(new ObjectNodeSection(".pdata", SectionType.ReadOnly));
+            _pdataSectionWriter.EmitAlignment(sizeof(uint));
+            _pdataSectionWriter.EmitSymbolDefinition(new Utf8String("__pdata_start"), global: true);
+            _xdataSectionWriter = GetOrCreateSection(new ObjectNodeSection(".xdata", SectionType.ReadOnly));
         }
     }
 }
