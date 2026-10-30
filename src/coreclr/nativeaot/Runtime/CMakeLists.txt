@@ -207,6 +207,7 @@ else()
     list(APPEND COMMON_RUNTIME_SOURCES
       wasm/MiscStubs.cpp
       wasm/PInvoke.cpp
+      wasm/WasmCodeManager.cpp
       ${RUNTIME_DIR}/wasm/writebarriers.cpp
       ${GC_DIR}/wasm/gcenv.cpp
     )
@@ -296,7 +297,6 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/PInvoke.${ASM_SUFFIX}
-  ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
