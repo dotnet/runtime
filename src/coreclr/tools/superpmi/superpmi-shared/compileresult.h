@@ -139,9 +139,6 @@ public:
     void recMessageLog(const char* fmt, ...);
     void dmpMessageLog(DWORD key, DWORD value);
 
-    void recClassMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls);
-    void dmpClassMustBeLoadedBeforeCodeIsRun(DWORD key, DWORDLONG value);
-
     void recReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,
                                    CORINFO_METHOD_HANDLE inlineeHnd,
                                    CorInfoInline         inlineResult,
@@ -166,9 +163,6 @@ public:
     void recSetMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs);
     void dmpSetMethodAttribs(DWORDLONG key, DWORD value);
     CorInfoMethodRuntimeFlags repSetMethodAttribs(CORINFO_METHOD_HANDLE ftn);
-
-    void recMethodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method);
-    void dmpMethodMustBeLoadedBeforeCodeIsRun(DWORD key, DWORDLONG value);
 
     void recReportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,
                                    CORINFO_METHOD_HANDLE calleeHnd,

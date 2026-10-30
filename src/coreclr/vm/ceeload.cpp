@@ -2343,7 +2343,7 @@ Module::GetAssemblyIfLoaded(
 #endif //!DACCESS_COMPILE
 
     // When walking the stack or computing GC information this function should never fail.
-    _ASSERTE((pAssembly != NULL) || !(IsStackWalkerThread() || IsGCThread()));
+    _ASSERTE_ALL_BUILDS((pAssembly != NULL) || !(IsStackWalkerThread() || IsGCThread()));
 
 #ifdef DACCESS_COMPILE
 

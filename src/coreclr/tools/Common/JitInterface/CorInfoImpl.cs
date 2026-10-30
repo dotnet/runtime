@@ -1900,12 +1900,6 @@ namespace Internal.JitInterface
         private PatchpointInfo* getOSRInfo(ref uint ilOffset)
         { throw new NotImplementedException("getOSRInfo"); }
 
-#pragma warning disable CA1822 // Mark members as static
-        private void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_STRUCT_* method)
-#pragma warning restore CA1822 // Mark members as static
-        {
-        }
-
         private static object ResolveTokenWithSubstitution(MethodILScope methodIL, mdToken token, Instantiation typeInst, Instantiation methodInst)
         {
             // Grab the generic definition of the method IL, resolve the token within the definition,
@@ -2331,6 +2325,16 @@ namespace Internal.JitInterface
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
         {
             return HandleToObject(cls).IsValueType;
+        }
+
+        private bool isByRefLike(CORINFO_CLASS_STRUCT_* cls)
+        {
+            return HandleToObject(cls).IsByRefLike;
+        }
+
+        private bool isSharedInst(CORINFO_CLASS_STRUCT_* cls)
+        {
+            return HandleToObject(cls).IsCanonicalSubtype(CanonicalFormKind.Any);
         }
 
         private uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)
@@ -4731,6 +4735,7 @@ namespace Internal.JitInterface
                 CorInfoReloc.WASM_TYPE_INDEX_LEB => RelocType.WASM_TYPE_INDEX_LEB,
                 CorInfoReloc.WASM_GLOBAL_INDEX_LEB => RelocType.WASM_GLOBAL_INDEX_LEB,
                 CorInfoReloc.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB => RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB,
+                CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB => RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
             };
 
