@@ -3983,31 +3983,6 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     return numHoisted > 0;
 }
 
-//------------------------------------------------------------------------
-// optIsHoistableRuntimeLookup: Check if a tree is a generic runtime lookup
-//   that is worth hoisting even when it does not execute on every loop iteration.
-//
-// Arguments:
-//   tree - the tree to check
-//
-// Return Value:
-//   true if the tree is a runtime lookup helper call that may be hoisted speculatively.
-//
-// Notes:
-//   Runtime lookups are costed like cheap calls, but each performs a dictionary lookup.
-//   NativeAOT lookups that failed to build throw only when invoked, so don't speculate them there.
-//
-bool Compiler::optIsHoistableRuntimeLookup(GenTree* tree)
-{
-    if (IsNativeAot() || !tree->IsHelperCall())
-    {
-        return false;
-    }
-
-    GenTreeCall* call = tree->AsCall();
-    return call->IsRuntimeLookupHelperCall(this) || (call->GetHelperNum() == CORINFO_HELP_READYTORUN_GENERIC_HANDLE);
-}
-
 bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
                                           FlowGraphNaturalLoop* loop,
                                           LoopHoistContext*     hoistCtxt,
@@ -4091,7 +4066,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
     // If this tree isn't guaranteed to execute every loop iteration,
     // consider hoisting it only if it is expensive.
     //
-    if (!defExecuted && (tree->GetCostEx() < (IND_COST_EX * 16)) && !optIsHoistableRuntimeLookup(tree))
+    if (!defExecuted && (tree->GetCostEx() < (IND_COST_EX * 16)))
     {
         return false;
     }
