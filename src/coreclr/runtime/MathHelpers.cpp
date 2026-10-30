@@ -157,7 +157,38 @@ FCIMPLEND
 #endif // !TARGET_X86
 #endif // TARGET_32BIT
 
-// Math and MathF FCalls. On targets other than x86 and wasm, NativeAOT calls the CRT directly instead.
+// Math and MathF FCalls. On targets other than x86 and wasm, NativeAOT calls the CRT directly instead,
+// except for SinCos.
+
+// The default compilation mode is /fp:precise, which disables floating-point intrinsics. This
+// default compilation mode has previously caused performance regressions in floating-point code.
+// We enable /fp:fast semantics for the majority of the math functions, as it will speed up performance
+// and is really unlikely to cause any other code regressions.
+
+// Sin, Cos, and Tan on AMD64 Windows were previously implemented in vm\amd64\JitHelpers_Fast.asm
+// by calling x87 floating point code (fsin, fcos, fptan) because the CRT helpers were too slow. This
+// is no longer the case and the CRT call is used on all platforms.
+
+// Log, Log10 and Exp were previously slower with /fp:fast on SSE2 enabled hardware (see #500373).
+// This is no longer the case and they now consume use the /fp:fast versions.
+
+// Exp(+/-INFINITY) did not previously return the expected results of +0.0 (for -INFINITY)
+// and +INFINITY (for +INFINITY) so these cases were handled specially. As this is no longer
+// the case and the expected results are now returned, the special handling has been removed.
+
+// Previously there was more special handling for the x86 Windows version of Pow.
+// This additional handling was unnecessary and has since been removed.
+
+////////////////////////////////////////////////////////////////////////////////////
+///
+///                         beginning of /fp:fast scope
+///
+////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef _MSC_VER
+#pragma float_control(push)
+#pragma float_control(precise, off)
+#endif
 
 FCIMPL1_D(double, Rhp_acos, double x)
     return acos(x);
@@ -223,6 +254,13 @@ FCIMPL1_F(float, Rhp_cbrtf, float x)
     return cbrtf(x);
 FCIMPLEND
 
+#if defined(_MSC_VER) && defined(TARGET_AMD64)
+// The /fp:fast form of `ceil` and `ceilf` for AMD64 does not correctly handle: `-1.0 < value <= -0.0`
+// https://github.com/dotnet/runtime/issues/11003
+#pragma float_control(push)
+#pragma float_control(precise, on)
+#endif
+
 FCIMPL1_D(double, Rhp_ceil, double x)
     return ceil(x);
 FCIMPLEND
@@ -230,6 +268,10 @@ FCIMPLEND
 FCIMPL1_F(float, Rhp_ceilf, float x)
     return ceilf(x);
 FCIMPLEND
+
+#if defined(_MSC_VER) && defined(TARGET_AMD64)
+#pragma float_control(pop)
+#endif
 
 FCIMPL1_D(double, Rhp_cos, double x)
     return cos(x);
@@ -255,9 +297,20 @@ FCIMPL1_F(float, Rhp_expf, float x)
     return expf(x);
 FCIMPLEND
 
+#if defined(_MSC_VER) && defined(TARGET_X86)
+// The /fp:fast form of `floor` for x86 does not correctly handle: `-0.0`
+// https://github.com/dotnet/runtime/issues/11003
+#pragma float_control(push)
+#pragma float_control(precise, on)
+#endif
+
 FCIMPL1_D(double, Rhp_floor, double x)
     return floor(x);
 FCIMPLEND
+
+#if defined(_MSC_VER) && defined(TARGET_X86)
+#pragma float_control(pop)
+#endif
 
 FCIMPL1_F(float, Rhp_floorf, float x)
     return floorf(x);
@@ -371,9 +424,14 @@ FCIMPL2_FI(float, Rhp_modff, float x, float* intptr)
     return modff(x, intptr);
 FCIMPLEND
 
-#ifndef FEATURE_NATIVEAOT
-// NativeAOT implements Math.SinCos and MathF.SinCos in managed code.
-FCIMPL3_VII(void, Rhp_sincos, double x, double* pSin, double* pCos)
+#if defined(_MSC_VER)
+// The /fp:fast form of `sincos` for xarch returns sin twice, rather than sincos
+// https://developercommunity.visualstudio.com/t/MSVCs-sincos-implementation-is-incorrec/10582378
+#pragma float_control(push)
+#pragma float_control(precise, on)
+#endif
+
+FCIMPL3_DII(void, Rhp_sincos, double x, double* pSin, double* pCos)
 #ifdef _MSC_VER
     *pSin = sin(x);
     *pCos = cos(x);
@@ -384,7 +442,7 @@ FCIMPL3_VII(void, Rhp_sincos, double x, double* pSin, double* pCos)
 #endif
 FCIMPLEND
 
-FCIMPL3_VII(void, Rhp_sincosf, float x, float* pSin, float* pCos)
+FCIMPL3_FII(void, Rhp_sincosf, float x, float* pSin, float* pCos)
 #ifdef _MSC_VER
     *pSin = sinf(x);
     *pCos = cosf(x);
@@ -394,4 +452,17 @@ FCIMPL3_VII(void, Rhp_sincosf, float x, float* pSin, float* pCos)
     sincosf(x, pSin, pCos);
 #endif
 FCIMPLEND
-#endif // !FEATURE_NATIVEAOT
+
+#if defined(_MSC_VER)
+#pragma float_control(pop)
+#endif
+
+#ifdef _MSC_VER
+#pragma float_control(pop)
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////
+///
+///                         End of /fp:fast scope
+///
+////////////////////////////////////////////////////////////////////////////////////

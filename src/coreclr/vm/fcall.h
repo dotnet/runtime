@@ -206,6 +206,8 @@
 #define FCDECL2_FI FCDECL2_VI
 #define FCDECL3_DDD FCDECL3_VVV
 #define FCDECL3_FFF FCDECL3_VVV
+#define FCDECL3_DII FCDECL3_VII
+#define FCDECL3_FII FCDECL3_VII
 
 #if defined(ENABLE_CONTRACTS)
 #define FC_CAN_TRIGGER_GC()         FCallGCCanTrigger::Enter()
@@ -481,6 +483,8 @@ public:
 #define FCIMPL2_FI FCIMPL2_VI
 #define FCIMPL3_DDD FCIMPL3_VVV
 #define FCIMPL3_FFF FCIMPL3_VVV
+#define FCIMPL3_DII FCIMPL3_VII
+#define FCIMPL3_FII FCIMPL3_VII
 
 //==============================================================================================
 // Use this to terminte an FCIMPLEND.

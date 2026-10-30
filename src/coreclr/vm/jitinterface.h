@@ -219,8 +219,8 @@ EXTERN_C FCDECL3_DDD(double, Rhp_fma, double x, double y, double z);
 EXTERN_C FCDECL3_FFF(float, Rhp_fmaf, float x, float y, float z);
 EXTERN_C FCDECL2_DI(double, Rhp_modf, double x, double* intptr);
 EXTERN_C FCDECL2_FI(float, Rhp_modff, float x, float* intptr);
-EXTERN_C FCDECL3_VII(void, Rhp_sincos, double x, double* pSin, double* pCos);
-EXTERN_C FCDECL3_VII(void, Rhp_sincosf, float x, float* pSin, float* pCos);
+EXTERN_C FCDECL3_DII(void, Rhp_sincos, double x, double* pSin, double* pCos);
+EXTERN_C FCDECL3_FII(void, Rhp_sincosf, float x, float* pSin, float* pCos);
 
 #ifdef TARGET_32BIT
 EXTERN_C FCDECL2_LL(int64_t, DivInt64Internal, int64_t i, int64_t j);
