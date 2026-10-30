@@ -1040,9 +1040,9 @@ namespace System.Diagnostics.Tracing
                     {
                         byte* toFree = buffer;
                         buffer = null;
-                        Marshal.FreeHGlobal((IntPtr)toFree);
+                        NativeMemory.Free(toFree);
                     }
-                    buffer = (byte*)Marshal.AllocHGlobal(buffSize);
+                    buffer = (byte*)NativeMemory.Alloc((nuint)buffSize);
                 }
 
                 var providerInfos = (Interop.Advapi32.TRACE_GUID_INFO*)buffer;
@@ -1069,7 +1069,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (buffer != null && buffer != stackSpace)
                 {
-                    Marshal.FreeHGlobal((IntPtr)buffer);
+                    NativeMemory.Free(buffer);
                 }
             }
         }

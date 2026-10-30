@@ -167,7 +167,7 @@ namespace System.Security.Principal
                     // and do the marshalling into this buffer by hand.
                     //
                     int authenticationInfoLength = checked(sizeof(KERB_S4U_LOGON) + upnBytes.Length);
-                    using (SafeLocalAllocHandle authenticationInfo = SafeLocalAllocHandle.LocalAlloc(authenticationInfoLength))
+                    using (SafeNativeMemoryHandle authenticationInfo = SafeNativeMemoryHandle.Alloc(authenticationInfoLength))
                     {
                         KERB_S4U_LOGON* pKerbS4uLogin = (KERB_S4U_LOGON*)(authenticationInfo.DangerousGetHandle());
                         pKerbS4uLogin->MessageType = KERB_LOGON_SUBMIT_TYPE.KerbS4ULogon;
@@ -183,7 +183,7 @@ namespace System.Security.Principal
                         pKerbS4uLogin->ClientRealm.Buffer = IntPtr.Zero;
 
                         ushort sourceNameLength = checked((ushort)(sourceName.Length));
-                        using (SafeLocalAllocHandle sourceNameBuffer = SafeLocalAllocHandle.LocalAlloc(sourceNameLength))
+                        using (SafeNativeMemoryHandle sourceNameBuffer = SafeNativeMemoryHandle.Alloc(sourceNameLength))
                         {
                             sourceName.CopyTo(new Span<byte>((void*)sourceNameBuffer.DangerousGetHandle(), sourceName.Length));
                             LSA_STRING lsaOriginName = new LSA_STRING(sourceNameBuffer.DangerousGetHandle(), sourceNameLength);
@@ -602,7 +602,7 @@ namespace System.Security.Principal
 
                 if (_owner == null)
                 {
-                    using (SafeLocalAllocHandle tokenOwner = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenOwner, nullOnInvalidParam: false)!)
+                    using (SafeNativeMemoryHandle tokenOwner = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenOwner, nullOnInvalidParam: false)!)
                     {
                         _owner = new SecurityIdentifier(tokenOwner.Read<IntPtr>(0));
                     }
@@ -622,7 +622,7 @@ namespace System.Security.Principal
 
                 if (_user == null)
                 {
-                    using (SafeLocalAllocHandle tokenUser = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenUser, nullOnInvalidParam: false)!)
+                    using (SafeNativeMemoryHandle tokenUser = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenUser, nullOnInvalidParam: false)!)
                     {
                         _user = new SecurityIdentifier(tokenUser!.Read<IntPtr>(0));
                     }
@@ -643,7 +643,7 @@ namespace System.Security.Principal
                 if (_groups == null)
                 {
                     IdentityReferenceCollection groups = new IdentityReferenceCollection();
-                    using (SafeLocalAllocHandle pGroups = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenGroups, nullOnInvalidParam: false)!)
+                    using (SafeNativeMemoryHandle pGroups = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenGroups, nullOnInvalidParam: false)!)
                     {
                         Interop.TOKEN_GROUPS tokenGroups = pGroups!.Read<Interop.TOKEN_GROUPS>(0);
                         Interop.SID_AND_ATTRIBUTES[] groupDetails = new Interop.SID_AND_ATTRIBUTES[tokenGroups.GroupCount];
@@ -888,7 +888,7 @@ namespace System.Security.Principal
         {
             Debug.Assert(!_safeTokenHandle.IsInvalid && !_safeTokenHandle.IsClosed, "!m_safeTokenHandle.IsInvalid && !m_safeTokenHandle.IsClosed");
 
-            using (SafeLocalAllocHandle information = GetTokenInformation(_safeTokenHandle, tokenInformationClass, nullOnInvalidParam: false)!)
+            using (SafeNativeMemoryHandle information = GetTokenInformation(_safeTokenHandle, tokenInformationClass, nullOnInvalidParam: false)!)
             {
                 Debug.Assert(information!.ByteLength >= (ulong)sizeof(T),
                                 "information.ByteLength >= (ulong)sizeof(T)");
@@ -899,21 +899,21 @@ namespace System.Security.Principal
 
         private static Interop.LUID GetLogonAuthId(SafeAccessTokenHandle safeTokenHandle)
         {
-            using (SafeLocalAllocHandle pStatistics = GetTokenInformation(safeTokenHandle, TokenInformationClass.TokenStatistics, nullOnInvalidParam: false)!)
+            using (SafeNativeMemoryHandle pStatistics = GetTokenInformation(safeTokenHandle, TokenInformationClass.TokenStatistics, nullOnInvalidParam: false)!)
             {
                 Interop.TOKEN_STATISTICS statistics = pStatistics!.Read<Interop.TOKEN_STATISTICS>(0);
                 return statistics.AuthenticationId;
             }
         }
 
-        private static SafeLocalAllocHandle? GetTokenInformation(SafeAccessTokenHandle tokenHandle, TokenInformationClass tokenInformationClass, bool nullOnInvalidParam = false)
+        private static SafeNativeMemoryHandle? GetTokenInformation(SafeAccessTokenHandle tokenHandle, TokenInformationClass tokenInformationClass, bool nullOnInvalidParam = false)
         {
-            SafeLocalAllocHandle safeLocalAllocHandle = SafeLocalAllocHandle.InvalidHandle;
+            SafeNativeMemoryHandle safeAllocHandle = new SafeNativeMemoryHandle();
             try
             {
                 Interop.Advapi32.GetTokenInformation(tokenHandle,
                                                               (uint)tokenInformationClass,
-                                                              safeLocalAllocHandle,
+                                                              safeAllocHandle,
                                                               0,
                                                               out uint dwLength);
                 int dwErrorCode = Marshal.GetLastPInvokeError();
@@ -921,12 +921,12 @@ namespace System.Security.Principal
                 {
                     case Interop.Errors.ERROR_BAD_LENGTH: // special case for TokenSessionId. Falling through
                     case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
-                        safeLocalAllocHandle.Dispose();
-                        safeLocalAllocHandle = SafeLocalAllocHandle.LocalAlloc(checked((int)dwLength));
+                        safeAllocHandle.Dispose();
+                        safeAllocHandle = SafeNativeMemoryHandle.Alloc(checked((int)dwLength));
 
                         bool result = Interop.Advapi32.GetTokenInformation(tokenHandle,
                                                                  (uint)tokenInformationClass,
-                                                                 safeLocalAllocHandle,
+                                                                 safeAllocHandle,
                                                                  dwLength,
                                                                  out _);
                         if (!result)
@@ -941,7 +941,7 @@ namespace System.Security.Principal
                     case Interop.Errors.ERROR_INVALID_PARAMETER:
                         if (nullOnInvalidParam)
                         {
-                            safeLocalAllocHandle.Dispose();
+                            safeAllocHandle.Dispose();
                             return null;
                         }
 
@@ -951,11 +951,11 @@ namespace System.Security.Principal
                         throw new SecurityException(Marshal.GetPInvokeErrorMessage(dwErrorCode));
                 }
 
-                return safeLocalAllocHandle;
+                return safeAllocHandle;
             }
             catch
             {
-                safeLocalAllocHandle.Dispose();
+                safeAllocHandle.Dispose();
                 throw;
             }
         }
@@ -1086,8 +1086,8 @@ namespace System.Security.Principal
             if (_safeTokenHandle.IsInvalid)
                 return;
 
-            SafeLocalAllocHandle? safeAllocHandle = null;
-            SafeLocalAllocHandle? safeAllocHandlePrimaryGroup = null;
+            SafeNativeMemoryHandle? safeAllocHandle = null;
+            SafeNativeMemoryHandle? safeAllocHandlePrimaryGroup = null;
             try
             {
                 // Retrieve the primary group sid
@@ -1156,7 +1156,7 @@ namespace System.Security.Principal
             if (_safeTokenHandle.IsInvalid)
                 return;
 
-            SafeLocalAllocHandle? safeAllocHandle = null;
+            SafeNativeMemoryHandle? safeAllocHandle = null;
             try
             {
                 safeAllocHandle = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenUser);
@@ -1190,7 +1190,7 @@ namespace System.Security.Principal
             if (_safeTokenHandle.IsInvalid)
                 return;
 
-            SafeLocalAllocHandle? safeAllocHandle = null;
+            SafeNativeMemoryHandle? safeAllocHandle = null;
             try
             {
                 // Retrieve all group sids
@@ -1242,7 +1242,7 @@ namespace System.Security.Principal
             if (_safeTokenHandle.IsInvalid)
                 return;
 
-            SafeLocalAllocHandle? safeAllocHandle = null;
+            SafeNativeMemoryHandle? safeAllocHandle = null;
 
             try
             {
