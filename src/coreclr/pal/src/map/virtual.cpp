@@ -1458,6 +1458,7 @@ VirtualQuery(
     PCMI     pEntry = NULL;
     UINT_PTR StartBoundary = 0;
     CPalThread * pthrCurrent;
+    bool     queryFileMaps = false;
 
     PERF_ENTRY(VirtualQuery);
     ENTRY("VirtualQuery(lpAddress=%p, lpBuffer=%p, dwLength=%u)\n",
@@ -1514,20 +1515,8 @@ VirtualQuery(
     if ( !pEntry )
     {
         /* Can't find a match, or no list present. */
-        /* Next, looking for this region in file maps */
-        if (!MAPGetRegionInfo((LPVOID)StartBoundary, lpBuffer))
-        {
-            // When all else fails, call vm_region() if it's available.
-
-            // Initialize the State to be MEM_FREE, in which case AllocationBase, AllocationProtect,
-            // Protect, and Type are all undefined.
-            lpBuffer->BaseAddress = (LPVOID)StartBoundary;
-            lpBuffer->RegionSize = 0;
-            lpBuffer->State = MEM_FREE;
-#if HAVE_VM_ALLOCATE
-            VM_ALLOCATE_VirtualQuery(lpAddress, lpBuffer);
-#endif
-        }
+        /* The file maps are queried after virtual_critsec is released. */
+        queryFileMaps = true;
     }
     else
     {
@@ -1546,6 +1535,26 @@ VirtualQuery(
 ExitVirtualQuery:
 
     minipal_mutex_leave(&virtual_critsec);
+
+    // MAPGetRegionInfo takes mapping_critsec. MAPMapPEFile holds mapping_critsec while it
+    // takes virtual_critsec, so virtual_critsec must not be held when mapping_critsec is taken.
+    if (queryFileMaps)
+    {
+        /* Next, looking for this region in file maps */
+        if (!MAPGetRegionInfo((LPVOID)StartBoundary, lpBuffer))
+        {
+            // When all else fails, call vm_region() if it's available.
+
+            // Initialize the State to be MEM_FREE, in which case AllocationBase, AllocationProtect,
+            // Protect, and Type are all undefined.
+            lpBuffer->BaseAddress = (LPVOID)StartBoundary;
+            lpBuffer->RegionSize = 0;
+            lpBuffer->State = MEM_FREE;
+#if HAVE_VM_ALLOCATE
+            VM_ALLOCATE_VirtualQuery(lpAddress, lpBuffer);
+#endif
+        }
+    }
 
     LOGEXIT( "VirtualQuery returning %d.\n", sizeof( *lpBuffer ) );
     PERF_EXIT(VirtualQuery);
