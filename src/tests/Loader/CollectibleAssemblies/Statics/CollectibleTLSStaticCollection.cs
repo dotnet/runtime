@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 namespace CollectibleThreadStaticShutdownRace
 {
@@ -111,7 +114,95 @@ namespace CollectibleThreadStaticShutdownRace
 
         }
 
-        [Fact]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static WeakReference RunInCollectibleAlc(string assemblyPath, string typeName, string methodName)
+        {
+            AssemblyLoadContext context = new AssemblyLoadContext(typeName, isCollectible: true);
+            Assembly assembly = context.LoadFromAssemblyPath(assemblyPath);
+            assembly.GetType(typeName)!.GetMethod(methodName)!.Invoke(null, null);
+            context.Unload();
+            return new WeakReference(context);
+        }
+
+        private static void CollectContext(WeakReference context)
+        {
+            for (int i = 0; i < 100 && context.IsAlive; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            Assert.False(context.IsAlive);
+
+            // Native LoaderAllocator cleanup must finish before its TLS index can be reused.
+            for (int i = 0; i < 5; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
+        public static void ReuseCollectibleThreadStaticIndex()
+        {
+            string assemblyPath = Path.Combine(AppContext.BaseDirectory, "StaticsUnloaded.dll");
+            WeakReference context = RunInCollectibleAlc(
+                assemblyPath,
+                nameof(ThreadStaticInFlightDataBeforeUnload),
+                nameof(ThreadStaticInFlightDataBeforeUnload.Touch));
+
+            CollectContext(context);
+
+            RunInCollectibleAlc(
+                assemblyPath,
+                nameof(ThreadStaticInFlightDataAfterUnload),
+                nameof(ThreadStaticInFlightDataAfterUnload.Set));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
+        public static void CleanupCollectibleThreadStaticsWhileStartingThreads()
+        {
+            using var stop = new ManualResetEventSlim();
+            using var started = new ManualResetEventSlim();
+            Thread thread = new Thread(() =>
+            {
+                do
+                {
+                    Thread worker = new Thread(static () => { });
+                    worker.Start();
+                    worker.Join();
+                    started.Set();
+                }
+                while (!stop.IsSet);
+            });
+
+            thread.Start();
+            started.Wait();
+
+            try
+            {
+                string assemblyPath = Path.Combine(AppContext.BaseDirectory, "StaticsUnloaded.dll");
+                for (int i = 0; i < 20; i++)
+                {
+                    WeakReference context = RunInCollectibleAlc(
+                        assemblyPath,
+                        nameof(ThreadStaticInFlightDataBeforeUnload),
+                        nameof(ThreadStaticInFlightDataBeforeUnload.Touch));
+
+                    CollectContext(context);
+                }
+            }
+            finally
+            {
+                stop.Set();
+                thread.Join();
+            }
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
         public static void TestEntryPoint()
         {
             s_getAnIntField = typeof(CollectibleThreadStaticShutdownRace).GetField("s_getAnInt");
@@ -121,4 +212,3 @@ namespace CollectibleThreadStaticShutdownRace
         }
     }
 }
-
