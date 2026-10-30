@@ -24,7 +24,11 @@ namespace Microsoft.Win32.SystemEventsTests
             {
                 if (freeMemory)
                 {
-                    Marshal.FreeHGlobal(areaPtr);
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        Marshal.FreeHGlobal(areaPtr);
+                    }
                 }
             }
         }
