@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <MemorySafetyRulesVersion Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">2</MemorySafetyRulesVersion>
     <RootNamespace>Microsoft.Extensions.FileProviders.Physical</RootNamespace>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IncludePlatformAttributes>false</IncludePlatformAttributes>
