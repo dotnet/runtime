@@ -197,10 +197,15 @@
 
 // Variants for 64-bit and floating point arguments named after the NativeAOT FCDECL/FCIMPL macros.
 #define FCDECL1_D FCDECL1_V
+#define FCDECL1_F FCDECL1_V
 #define FCDECL1_L FCDECL1_V
 #define FCDECL2_DD FCDECL2_VV
 #define FCDECL2_FF FCDECL2_VV
 #define FCDECL2_LL FCDECL2_VV
+#define FCDECL2_DI FCDECL2_VI
+#define FCDECL2_FI FCDECL2_VI
+#define FCDECL3_DDD FCDECL3_VVV
+#define FCDECL3_FFF FCDECL3_VVV
 
 #if defined(ENABLE_CONTRACTS)
 #define FC_CAN_TRIGGER_GC()         FCallGCCanTrigger::Enter()
@@ -467,10 +472,15 @@ public:
 #endif // !SWIZZLE_STKARG_ORDER
 
 #define FCIMPL1_D FCIMPL1_V
+#define FCIMPL1_F FCIMPL1_V
 #define FCIMPL1_L FCIMPL1_V
 #define FCIMPL2_DD FCIMPL2_VV
 #define FCIMPL2_FF FCIMPL2_VV
 #define FCIMPL2_LL FCIMPL2_VV
+#define FCIMPL2_DI FCIMPL2_VI
+#define FCIMPL2_FI FCIMPL2_VI
+#define FCIMPL3_DDD FCIMPL3_VVV
+#define FCIMPL3_FFF FCIMPL3_VVV
 
 //==============================================================================================
 // Use this to terminte an FCIMPLEND.

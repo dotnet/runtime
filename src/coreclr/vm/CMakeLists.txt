@@ -344,8 +344,6 @@ set(VM_SOURCES_WKS
     fcall.cpp
     fieldmarshaler.cpp
     finalizerthread.cpp
-    floatdouble.cpp
-    floatsingle.cpp
     cdacstress.cpp
     frozenobjectheap.cpp
     gccover.cpp
@@ -464,8 +462,6 @@ set(VM_HEADERS_WKS
     fcall.h
     fieldmarshaler.h
     finalizerthread.h
-    floatdouble.h
-    floatsingle.h
     frozenobjectheap.h
     gcenv.h
     gcenv.os.h

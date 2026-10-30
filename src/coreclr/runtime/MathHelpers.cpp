@@ -157,203 +157,241 @@ FCIMPLEND
 #endif // !TARGET_X86
 #endif // TARGET_32BIT
 
-// CoreCLR implements Math and MathF with the COMDouble and COMSingle FCalls instead.
-#if defined(FEATURE_NATIVEAOT) && (defined(TARGET_X86) || defined(TARGET_WASM))
-
-#undef min
-#undef max
-#include <cmath>
+// Math and MathF FCalls. On targets other than x86 and wasm, NativeAOT calls the CRT directly instead.
 
 FCIMPL1_D(double, Rhp_acos, double x)
-    return std::acos(x);
+    return acos(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_acosf, float x)
-    return std::acosf(x);
+    return acosf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_acosh, double x)
-    return std::acosh(x);
+    return acosh(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_acoshf, float x)
-    return std::acoshf(x);
+    return acoshf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_asin, double x)
-    return std::asin(x);
+    return asin(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_asinf, float x)
-    return std::asinf(x);
+    return asinf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_asinh, double x)
-    return std::asinh(x);
+    return asinh(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_asinhf, float x)
-    return std::asinhf(x);
+    return asinhf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_atan, double x)
-    return std::atan(x);
+    return atan(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_atanf, float x)
-    return std::atanf(x);
+    return atanf(x);
 FCIMPLEND
 
-FCIMPL2_DD(double, Rhp_atan2, double x, double y)
-    return std::atan2(x, y);
+FCIMPL2_DD(double, Rhp_atan2, double y, double x)
+    return atan2(y, x);
 FCIMPLEND
 
-FCIMPL2_FF(float, Rhp_atan2f, float x, float y)
-    return std::atan2f(x, y);
+FCIMPL2_FF(float, Rhp_atan2f, float y, float x)
+    return atan2f(y, x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_atanh, double x)
-    return std::atanh(x);
+    return atanh(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_atanhf, float x)
-    return std::atanhf(x);
+    return atanhf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_cbrt, double x)
-    return std::cbrt(x);
+    return cbrt(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_cbrtf, float x)
-    return std::cbrtf(x);
+    return cbrtf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_ceil, double x)
-    return std::ceil(x);
+    return ceil(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_ceilf, float x)
-    return std::ceilf(x);
+    return ceilf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_cos, double x)
-    return std::cos(x);
+    return cos(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_cosf, float x)
-    return std::cosf(x);
+    return cosf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_cosh, double x)
-    return std::cosh(x);
+    return cosh(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_coshf, float x)
-    return std::coshf(x);
+    return coshf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_exp, double x)
-    return std::exp(x);
+    return exp(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_expf, float x)
-    return std::expf(x);
+    return expf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_floor, double x)
-    return std::floor(x);
+    return floor(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_floorf, float x)
-    return std::floorf(x);
+    return floorf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_log, double x)
-    return std::log(x);
+    return log(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_logf, float x)
-    return std::logf(x);
+    return logf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_log2, double x)
-    return std::log2(x);
+    return log2(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_log2f, float x)
-    return std::log2f(x);
+    return log2f(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_log10, double x)
-    return std::log10(x);
+    return log10(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_log10f, float x)
-    return std::log10f(x);
+    return log10f(x);
 FCIMPLEND
 
 FCIMPL2_DD(double, Rhp_pow, double x, double y)
-    return std::pow(x, y);
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // The ARM/ARM64 CRT implementation of `pow` returns `0` rather than `x` for
+    // subnormal `x` when `y` is exactly `1`; `pow(x, 1)` is `x` for all `x`
+    // https://github.com/dotnet/runtime/issues/12139
+    if (y == 1.0)
+    {
+        return x;
+    }
+#endif
+
+    return pow(x, y);
 FCIMPLEND
 
 FCIMPL2_FF(float, Rhp_powf, float x, float y)
-    return std::powf(x, y);
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // The ARM/ARM64 CRT implementation of `powf` returns `0` rather than `x` for
+    // subnormal `x` when `y` is exactly `1`; `powf(x, 1)` is `x` for all `x`
+    // https://github.com/dotnet/runtime/issues/12139
+    if (y == 1.0f)
+    {
+        return x;
+    }
+#endif
+
+    return powf(x, y);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_sin, double x)
-    return std::sin(x);
+    return sin(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_sinf, float x)
-    return std::sinf(x);
+    return sinf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_sinh, double x)
-    return std::sinh(x);
+    return sinh(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_sinhf, float x)
-    return std::sinhf(x);
+    return sinhf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_sqrt, double x)
-    return std::sqrt(x);
+    return sqrt(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_sqrtf, float x)
-    return std::sqrtf(x);
+    return sqrtf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_tan, double x)
-    return std::tan(x);
+    return tan(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_tanf, float x)
-    return std::tanf(x);
+    return tanf(x);
 FCIMPLEND
 
 FCIMPL1_D(double, Rhp_tanh, double x)
-    return std::tanh(x);
+    return tanh(x);
 FCIMPLEND
 
 FCIMPL1_F(float, Rhp_tanhf, float x)
-    return std::tanhf(x);
+    return tanhf(x);
 FCIMPLEND
 
 FCIMPL3_DDD(double, Rhp_fma, double x, double y, double z)
-    return std::fma(x, y, z);
+    return fma(x, y, z);
 FCIMPLEND
 
 FCIMPL3_FFF(float, Rhp_fmaf, float x, float y, float z)
-    return std::fmaf(x, y, z);
+    return fmaf(x, y, z);
 FCIMPLEND
 
 FCIMPL2_DI(double, Rhp_modf, double x, double* intptr)
-    return std::modf(x, intptr);
+    return modf(x, intptr);
 FCIMPLEND
 
 FCIMPL2_FI(float, Rhp_modff, float x, float* intptr)
-    return std::modff(x, intptr);
+    return modff(x, intptr);
 FCIMPLEND
 
-#endif // FEATURE_NATIVEAOT && (TARGET_X86 || TARGET_WASM)
+#ifndef FEATURE_NATIVEAOT
+// NativeAOT implements Math.SinCos and MathF.SinCos in managed code.
+FCIMPL3_VII(void, Rhp_sincos, double x, double* pSin, double* pCos)
+#ifdef _MSC_VER
+    *pSin = sin(x);
+    *pCos = cos(x);
+#elif defined(__APPLE__)
+    __sincos(x, pSin, pCos);
+#else
+    sincos(x, pSin, pCos);
+#endif
+FCIMPLEND
+
+FCIMPL3_VII(void, Rhp_sincosf, float x, float* pSin, float* pCos)
+#ifdef _MSC_VER
+    *pSin = sinf(x);
+    *pCos = cosf(x);
+#elif defined(__APPLE__)
+    __sincosf(x, pSin, pCos);
+#else
+    sincosf(x, pSin, pCos);
+#endif
+FCIMPLEND
+#endif // !FEATURE_NATIVEAOT
