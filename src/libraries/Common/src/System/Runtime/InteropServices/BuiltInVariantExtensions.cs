@@ -14,14 +14,18 @@ namespace System.Runtime.InteropServices
         // VARIANT_BOOL constants.
         internal const short VARIANT_TRUE = -1;
         internal const short VARIANT_FALSE = 0;
-        private static unsafe ref T GetByRefDataRef<T>(this ref ComVariant variant)
+        private static ref T GetByRefDataRef<T>(this ref ComVariant variant)
             where T : unmanaged
         {
             Debug.Assert(variant.VarType.HasFlag(VarEnum.VT_BYREF));
-            return ref Unsafe.AsRef<T>((void*)variant.GetRawDataRef<nint>());
+            // SAFETY: To be audited
+            unsafe
+            {
+                return ref Unsafe.AsRef<T>((void*)variant.GetRawDataRef<nint>());
+            }
         }
 
-        public static unsafe void CopyFromIndirect(this ref ComVariant variant, object? value)
+        public static void CopyFromIndirect(this ref ComVariant variant, object? value)
         {
             VarEnum vt = (VarEnum)(((int)variant.VarType) & ~((int)VarEnum.VT_BYREF));
 
@@ -29,7 +33,11 @@ namespace System.Runtime.InteropServices
             {
                 if (vt == VarEnum.VT_DISPATCH || vt == VarEnum.VT_UNKNOWN || vt == VarEnum.VT_BSTR)
                 {
-                    variant.GetRawDataRef<IntPtr>() = IntPtr.Zero;
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        variant.GetRawDataRef<IntPtr>() = IntPtr.Zero;
+                    }
                 }
                 return;
             }
@@ -37,8 +45,12 @@ namespace System.Runtime.InteropServices
             if ((vt & VarEnum.VT_ARRAY) != 0)
             {
                 ComVariant vArray;
-                Marshal.GetNativeVariantForObject(value, (IntPtr)(void*)&vArray);
-                variant.GetRawDataRef<IntPtr>() = vArray.GetRawDataRef<IntPtr>();
+                // SAFETY: To be audited
+                unsafe
+                {
+                    Marshal.GetNativeVariantForObject(value, (IntPtr)(void*)&vArray);
+                    variant.GetRawDataRef<IntPtr>() = vArray.GetRawDataRef<IntPtr>();
+                }
                 return;
             }
 
@@ -119,7 +131,11 @@ namespace System.Runtime.InteropServices
                     break;
 
                 case VarEnum.VT_VARIANT:
-                    Marshal.GetNativeVariantForObject(value, variant.GetRawDataRef<IntPtr>());
+                    // SAFETY: To be audited
+                    unsafe
+                    {
+                        Marshal.GetNativeVariantForObject(value, variant.GetRawDataRef<IntPtr>());
+                    }
                     break;
 
                 default:
@@ -133,38 +149,46 @@ namespace System.Runtime.InteropServices
         /// <returns></returns>
         public static object? ToObject(this ref ComVariant variant)
         {
-            return variant.VarType switch
+            // SAFETY: To be audited
+            unsafe
             {
-                VarEnum.VT_EMPTY => null,
-                VarEnum.VT_NULL => DBNull.Value,
-                VarEnum.VT_I1 => variant.As<sbyte>(),
-                VarEnum.VT_I2 => variant.As<short>(),
-                VarEnum.VT_I4 => variant.As<int>(),
-                VarEnum.VT_I8 => variant.As<long>(),
-                VarEnum.VT_UI1 => variant.As<byte>(),
-                VarEnum.VT_UI2 => variant.As<ushort>(),
-                VarEnum.VT_UI4 => variant.As<uint>(),
-                VarEnum.VT_UI8 => variant.As<ulong>(),
-                VarEnum.VT_INT => variant.As<int>(),
-                VarEnum.VT_UINT => variant.As<uint>(),
-                VarEnum.VT_BOOL => variant.As<bool>(),
-                VarEnum.VT_ERROR => variant.As<int>(),
-                VarEnum.VT_R4 => variant.As<float>(),
-                VarEnum.VT_R8 => variant.As<double>(),
-                VarEnum.VT_DECIMAL => variant.As<decimal>(),
-                VarEnum.VT_CY => decimal.FromOACurrency(variant.GetRawDataRef<long>()),
-                VarEnum.VT_DATE => variant.As<DateTime>(),
-                VarEnum.VT_BSTR => variant.GetRawDataRef<nint>() is 0 ? null : Marshal.PtrToStringBSTR(variant.GetRawDataRef<nint>()),
-                VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH => variant.GetRawDataRef<nint>() is 0 ? null : Marshal.GetObjectForIUnknown(variant.GetRawDataRef<nint>()),
-                _ => GetObjectFromNativeVariant(ref variant),
-            };
+                return variant.VarType switch
+                {
+                    VarEnum.VT_EMPTY => null,
+                    VarEnum.VT_NULL => DBNull.Value,
+                    VarEnum.VT_I1 => variant.As<sbyte>(),
+                    VarEnum.VT_I2 => variant.As<short>(),
+                    VarEnum.VT_I4 => variant.As<int>(),
+                    VarEnum.VT_I8 => variant.As<long>(),
+                    VarEnum.VT_UI1 => variant.As<byte>(),
+                    VarEnum.VT_UI2 => variant.As<ushort>(),
+                    VarEnum.VT_UI4 => variant.As<uint>(),
+                    VarEnum.VT_UI8 => variant.As<ulong>(),
+                    VarEnum.VT_INT => variant.As<int>(),
+                    VarEnum.VT_UINT => variant.As<uint>(),
+                    VarEnum.VT_BOOL => variant.As<bool>(),
+                    VarEnum.VT_ERROR => variant.As<int>(),
+                    VarEnum.VT_R4 => variant.As<float>(),
+                    VarEnum.VT_R8 => variant.As<double>(),
+                    VarEnum.VT_DECIMAL => variant.As<decimal>(),
+                    VarEnum.VT_CY => decimal.FromOACurrency(variant.GetRawDataRef<long>()),
+                    VarEnum.VT_DATE => variant.As<DateTime>(),
+                    VarEnum.VT_BSTR => variant.GetRawDataRef<nint>() is 0 ? null : Marshal.PtrToStringBSTR(variant.GetRawDataRef<nint>()),
+                    VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH => variant.GetRawDataRef<nint>() is 0 ? null : Marshal.GetObjectForIUnknown(variant.GetRawDataRef<nint>()),
+                    _ => GetObjectFromNativeVariant(ref variant),
+                };
+            }
         }
 
-        private static unsafe object? GetObjectFromNativeVariant(ref ComVariant variant)
+        private static object? GetObjectFromNativeVariant(ref ComVariant variant)
         {
             fixed (void* pVariant = &variant)
             {
-                return Marshal.GetObjectForNativeVariant((nint)pVariant);
+                // SAFETY: To be audited
+                unsafe
+                {
+                    return Marshal.GetObjectForNativeVariant((nint)pVariant);
+                }
             }
         }
     }

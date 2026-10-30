@@ -118,7 +118,7 @@ namespace System.Runtime.InteropServices
         private const VarEnum VT_TYPEMASK = (VarEnum)0x0fff;
         private const VarEnum VT_BYREF_TYPEMASK = VT_TYPEMASK | VarEnum.VT_BYREF;
 
-        private static unsafe ref ComVariant GetVariant(ref ComVariant pSrc)
+        private static ref ComVariant GetVariant(ref ComVariant pSrc)
         {
             if (pSrc.VarType == VT_BYREF_VARIANT)
             {
@@ -126,17 +126,21 @@ namespace System.Runtime.InteropServices
                 // contains another VARIANT with VT_BYREF | VT_VARIANT, then we need to extract the
                 // inner VARIANT and use it instead of the outer one. Note that if the inner VARIANT
                 // is VT_BYREF | VT_VARIANT | VT_ARRAY, it will pass the below test too.
-                ref ComVariant pByRefVariant = ref *(ComVariant*)(pSrc.GetRawDataRef<nint>().ToPointer());
-                if ((pByRefVariant.VarType & VT_BYREF_TYPEMASK) == VT_BYREF_VARIANT)
+                // SAFETY: To be audited
+                unsafe
                 {
-                    return ref pByRefVariant;
+                    ref ComVariant pByRefVariant = ref *(ComVariant*)(pSrc.GetRawDataRef<nint>().ToPointer());
+                    if ((pByRefVariant.VarType & VT_BYREF_TYPEMASK) == VT_BYREF_VARIANT)
+                    {
+                        return ref pByRefVariant;
+                    }
                 }
             }
 
             return ref pSrc;
         }
 
-        unsafe void IDispatch.Invoke(
+        void IDispatch.Invoke(
             int dispid,
             ref Guid riid,
             int lcid,
@@ -161,72 +165,76 @@ namespace System.Runtime.InteropServices
             bool[] usedArgs = new bool[pDispParams.cArgs];
 
             int totalCount = pDispParams.cNamedArgs + pDispParams.cArgs;
-            var vars = new Span<ComVariant>(pDispParams.rgvarg.ToPointer(), totalCount);
-            var namedArgs = new Span<int>(pDispParams.rgdispidNamedArgs.ToPointer(), totalCount);
-
-            // copy the named args (positional) as specified
-            int i;
-            int pos;
-            for (i = 0; i < pDispParams.cNamedArgs; i++)
+            // SAFETY: To be audited
+            unsafe
             {
-                pos = namedArgs[i];
-                ref ComVariant pvar = ref GetVariant(ref vars[i]);
-                args[pos] = pvar.ToObject()!;
-                usedArgs[pos] = true;
+                var vars = new Span<ComVariant>(pDispParams.rgvarg.ToPointer(), totalCount);
+                var namedArgs = new Span<int>(pDispParams.rgdispidNamedArgs.ToPointer(), totalCount);
 
-                int byrefIdx = InvalidIdx;
-                if (pvar.VarType.HasFlag(VarEnum.VT_BYREF))
+                // copy the named args (positional) as specified
+                int i;
+                int pos;
+                for (i = 0; i < pDispParams.cNamedArgs; i++)
                 {
-                    byrefIdx = i;
+                    pos = namedArgs[i];
+                    ref ComVariant pvar = ref GetVariant(ref vars[i]);
+                    args[pos] = pvar.ToObject()!;
+                    usedArgs[pos] = true;
+
+                    int byrefIdx = InvalidIdx;
+                    if (pvar.VarType.HasFlag(VarEnum.VT_BYREF))
+                    {
+                        byrefIdx = i;
+                    }
+
+                    byrefsMap[pos] = byrefIdx;
                 }
 
-                byrefsMap[pos] = byrefIdx;
-            }
-
-            // copy the rest of the arguments in the reverse order
-            pos = 0;
-            for (; i < pDispParams.cArgs; i++)
-            {
-                // find the next unassigned argument
-                while (usedArgs[pos])
+                // copy the rest of the arguments in the reverse order
+                pos = 0;
+                for (; i < pDispParams.cArgs; i++)
                 {
+                    // find the next unassigned argument
+                    while (usedArgs[pos])
+                    {
+                        pos++;
+                    }
+
+                    ref ComVariant pvar = ref GetVariant(ref vars[pDispParams.cArgs - 1 - i]);
+                    args[pos] = pvar.ToObject()!;
+
+                    int byrefIdx = InvalidIdx;
+                    if (pvar.VarType.HasFlag(VarEnum.VT_BYREF))
+                    {
+                        byrefIdx = pDispParams.cArgs - 1 - i;
+                    }
+
+                    byrefsMap[pos] = byrefIdx;
+
                     pos++;
                 }
 
-                ref ComVariant pvar = ref GetVariant(ref vars[pDispParams.cArgs - 1 - i]);
-                args[pos] = pvar.ToObject()!;
+                // Do the actual delegate invocation
+                object? result = method.Invoke(args);
 
-                int byrefIdx = InvalidIdx;
-                if (pvar.VarType.HasFlag(VarEnum.VT_BYREF))
+                // convert result to VARIANT
+                if (pVarResult != IntPtr.Zero)
                 {
-                    byrefIdx = pDispParams.cArgs - 1 - i;
+                    Marshal.GetNativeVariantForObject(result, pVarResult);
                 }
 
-                byrefsMap[pos] = byrefIdx;
-
-                pos++;
-            }
-
-            // Do the actual delegate invocation
-            object? result = method.Invoke(args);
-
-            // convert result to VARIANT
-            if (pVarResult != IntPtr.Zero)
-            {
-                Marshal.GetNativeVariantForObject(result, pVarResult);
-            }
-
-            // Now we need to marshal all the byrefs back
-            for (i = 0; i < pDispParams.cArgs; i++)
-            {
-                int idxToPos = byrefsMap[i];
-                if (idxToPos == InvalidIdx)
+                // Now we need to marshal all the byrefs back
+                for (i = 0; i < pDispParams.cArgs; i++)
                 {
-                    continue;
-                }
+                    int idxToPos = byrefsMap[i];
+                    if (idxToPos == InvalidIdx)
+                    {
+                        continue;
+                    }
 
-                ref ComVariant pvar = ref GetVariant(ref vars[idxToPos]);
-                pvar.CopyFromIndirect(args[i]);
+                    ref ComVariant pvar = ref GetVariant(ref vars[idxToPos]);
+                    pvar.CopyFromIndirect(args[i]);
+                }
             }
         }
 
