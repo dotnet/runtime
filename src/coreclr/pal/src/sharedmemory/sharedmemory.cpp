@@ -258,7 +258,7 @@ bool SharedMemoryHelpers::InitializeUserSpecificSharedFilesPath()
     }
 #endif
 
-    if (path.IsEmpty())
+    if (path.GetCount() == 0)
     {
         if (!GetHomeDirectory(path) || !AppendPathComponent(path, ".dotnet"))
         {
@@ -404,166 +404,15 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
     _ASSERTE(!isGlobalLockAcquired || SharedMemoryManager::IsCreationDeletionFileLockAcquired());
 
-    mode_t permissionsMask =
-        id->IsUserScope() ? PermissionsMask_OwnerUser_ReadWriteExecute : PermissionsMask_AllUsers_ReadWriteExecute;
-
-    // Check if the directory already exists.
-    // Use lstat so we don't automatically follow symlinks.
-    struct stat statInfo;
-    int statResult = lstat(path, &statInfo);
-    if (statResult != 0 && errno == ENOENT)
+    // Do not publish directories with rename(): it can replace an empty directory another process is already locking.
+    int directoryFileDescriptor = EnsureDirectoryExistsAt(errors, AT_FDCWD, path, path, id, createIfNotExist);
+    if (directoryFileDescriptor == -1)
     {
-        if (!createIfNotExist)
-        {
-            return false;
-        }
-
-        // The path does not exist, create the directory. The permissions mask passed to mkdir() is filtered by the process'
-        // permissions umask, so mkdir() may not set all of the requested permissions. We need to use chmod() to set the proper
-        // permissions. That creates a race when there is no global lock acquired when creating the directory. Another user's
-        // process may create the directory and this user's process may try to use it before the other process sets the full
-        // permissions. In that case, create a temporary directory first, set the permissions, and rename it to the actual
-        // directory name.
-        if (isGlobalLockAcquired)
-        {
-            if (mkdir(path, permissionsMask) != 0)
-            {
-                if (errors != nullptr)
-                {
-                    int errorCode = errno;
-                    errors->Append(
-                        "mkdir(\"%s\", %s_ReadWriteExecute) == -1; errno == %s;",
-                        path,
-                        id->IsUserScope() ? "OwnerUser" : "AllUsers",
-                        GetFriendlyErrorCodeString(errorCode));
-                }
-
-                throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-            }
-
-            int directoryFileDescriptor = -1;
-            try
-            {
-                directoryFileDescriptor = Open(errors, path, O_RDONLY | O_NOFOLLOW | O_DIRECTORY | O_CLOEXEC);
-            }
-            catch (SharedMemoryException)
-            {
-                // Avoid leaving a newly-created directory with permissions filtered by umask.
-                rmdir(path);
-                throw;
-            }
-
-            if (directoryFileDescriptor == -1)
-            {
-                if (errors != nullptr)
-                {
-                    errors->Append(
-                        "open(\"%s\", O_RDONLY | O_NOFOLLOW | O_DIRECTORY | O_CLOEXEC) == -1; errno == %s;",
-                        path,
-                        GetFriendlyErrorCodeString(errno));
-                }
-
-                throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-            }
-
-            int operationResult;
-            do
-            {
-                operationResult = fchmod(directoryFileDescriptor, permissionsMask);
-            } while (operationResult != 0 && errno == EINTR);
-
-            int errorCode = errno;
-            CloseFile(directoryFileDescriptor);
-            if (operationResult != 0)
-            {
-                if (errors != nullptr)
-                {
-                    errors->Append(
-                        "fchmod(directoryFileDescriptor, %s_ReadWriteExecute) == %d; errno == %s;",
-                        id->IsUserScope() ? "OwnerUser" : "AllUsers",
-                        operationResult,
-                        GetFriendlyErrorCodeString(errorCode));
-                }
-
-                // Remove the newly-created directory to avoid leaving a directory with permissions filtered by umask.
-                rmdir(path);
-
-                throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-            }
-
-            return true;
-        }
-
-        PathCharString tempPath;
-        VerifyStringOperation(
-            BuildSharedFilesSystemPath(tempPath, id) &&
-            AppendPathComponent(tempPath, SHARED_MEMORY_UNIQUE_TEMP_NAME_TEMPLATE));
-
-        if (mkdtemp(tempPath.OpenStringBuffer()) == nullptr)
-        {
-            if (errors != nullptr)
-            {
-                int errorCode = errno;
-                errors->Append(
-                    "mkdtemp(\"%s\") == nullptr; errno == %s;",
-                    (const char *)tempPath,
-                    GetFriendlyErrorCodeString(errorCode));
-            }
-
-            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-        }
-
-        int directoryFileDescriptor = Open(errors, tempPath, O_RDONLY | O_NOFOLLOW | O_DIRECTORY | O_CLOEXEC);
-        if (directoryFileDescriptor == -1)
-        {
-            rmdir(tempPath);
-            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-        }
-
-        int operationResult = fchmod(directoryFileDescriptor, permissionsMask);
-        int errorCode = errno;
-        CloseFile(directoryFileDescriptor);
-        if (operationResult != 0)
-        {
-            if (errors != nullptr)
-            {
-                errors->Append(
-                    "fchmod(directoryFileDescriptor, %s_ReadWriteExecute) == %d; errno == %s;",
-                    id->IsUserScope() ? "OwnerUser" : "AllUsers",
-                    operationResult,
-                    GetFriendlyErrorCodeString(errorCode));
-            }
-
-            rmdir(tempPath);
-            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-        }
-
-        if (rename(tempPath, path) == 0)
-        {
-            return true;
-        }
-
-        rmdir(tempPath);
-        statResult = lstat(path, &statInfo);
+        return false;
     }
 
-    if (statResult == 0)
-    {
-        // Directory exists, no need to create it
-        return true;
-    }
-
-    int errorCode = errno;
-    if (errors != nullptr)
-    {
-        errors->Append(
-            "lstat(\"%s\", ...) == %d; errno == %s;",
-            path,
-            statResult,
-            GetFriendlyErrorCodeString(errorCode));
-    }
-
-    throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+    CloseFile(directoryFileDescriptor);
+    return true;
 }
 
 int SharedMemoryHelpers::Open(SharedMemorySystemCallErrors *errors, LPCSTR path, int flags, mode_t mode)
@@ -678,6 +527,7 @@ int SharedMemoryHelpers::OpenAt(
             GetFriendlyErrorCodeString(openErrorCode));
     }
 
+    errno = openErrorCode;
     throw SharedMemoryException(static_cast<DWORD>(sharedMemoryError));
 }
 
@@ -706,79 +556,115 @@ int SharedMemoryHelpers::EnsureDirectoryExistsAt(
     _ASSERTE(path[0] != '\0');
     _ASSERTE(id != nullptr);
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
-    _ASSERTE(SharedMemoryManager::IsCreationDeletionFileLockAcquired());
 
-    int directoryFileDescriptor =
-        OpenAt(errors, parentDirectoryFileDescriptor, name, path, O_RDONLY | O_NOFOLLOW | O_DIRECTORY);
-    if (directoryFileDescriptor != -1)
+    const int TransientRetryCount = 10;
+    for (int transientRetryCount = 0; ; ++transientRetryCount)
     {
-        return directoryFileDescriptor;
-    }
-    _ASSERTE(errno == ENOENT);
-    if (!createIfNotExist)
-    {
-        return -1;
-    }
+        int directoryFileDescriptor;
+        try
+        {
+            directoryFileDescriptor =
+                OpenAt(errors, parentDirectoryFileDescriptor, name, path, O_RDONLY | O_NOFOLLOW | O_DIRECTORY);
+        }
+        catch (SharedMemoryException)
+        {
+            if (errno == EACCES && transientRetryCount < TransientRetryCount)
+            {
+                // Another creator may not have finished restoring permissions filtered by its umask.
+                Sleep(1);
+                continue;
+            }
 
-    mode_t permissionsMask =
-        id->IsUserScope() ? PermissionsMask_OwnerUser_ReadWriteExecute : PermissionsMask_AllUsers_ReadWriteExecute;
-    int operationResult;
-    do
-    {
-        operationResult = mkdirat(parentDirectoryFileDescriptor, name, permissionsMask);
-    } while (operationResult != 0 && errno == EINTR);
+            throw;
+        }
 
-    if (operationResult != 0)
-    {
-        if (errors != nullptr)
+        if (directoryFileDescriptor != -1)
+        {
+            return directoryFileDescriptor;
+        }
+        _ASSERTE(errno == ENOENT);
+        if (!createIfNotExist)
+        {
+            return -1;
+        }
+
+        mode_t permissionsMask =
+            id->IsUserScope() ? PermissionsMask_OwnerUser_ReadWriteExecute : PermissionsMask_AllUsers_ReadWriteExecute;
+        int operationResult;
+        do
+        {
+            operationResult = mkdirat(parentDirectoryFileDescriptor, name, permissionsMask);
+        } while (operationResult != 0 && errno == EINTR);
+
+        if (operationResult != 0)
         {
             int errorCode = errno;
-            errors->Append(
-                "mkdirat(%d, \"%s\", %s_ReadWriteExecute) == -1; errno == %s;",
-                parentDirectoryFileDescriptor,
-                path,
-                id->IsUserScope() ? "OwnerUser" : "AllUsers",
-                GetFriendlyErrorCodeString(errorCode));
+            if (errorCode == EEXIST && transientRetryCount < TransientRetryCount)
+            {
+                // Open the directory the other process created instead of replacing it.
+                Sleep(1);
+                continue;
+            }
+
+            if (errors != nullptr)
+            {
+                errors->Append(
+                    "mkdirat(%d, \"%s\", %s_ReadWriteExecute) == -1; errno == %s;",
+                    parentDirectoryFileDescriptor,
+                    path,
+                    id->IsUserScope() ? "OwnerUser" : "AllUsers",
+                    GetFriendlyErrorCodeString(errorCode));
+            }
+
+            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
         }
 
-        throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-    }
-
-    try
-    {
-        directoryFileDescriptor =
-            OpenAt(errors, parentDirectoryFileDescriptor, name, path, O_RDONLY | O_NOFOLLOW | O_DIRECTORY);
-    }
-    catch (SharedMemoryException)
-    {
-        unlinkat(parentDirectoryFileDescriptor, name, AT_REMOVEDIR);
-        throw;
-    }
-
-    _ASSERTE(directoryFileDescriptor != -1);
-    do
-    {
-        operationResult = fchmod(directoryFileDescriptor, permissionsMask);
-    } while (operationResult != 0 && errno == EINTR);
-
-    if (operationResult != 0)
-    {
-        int errorCode = errno;
-        if (errors != nullptr)
+        try
         {
-            errors->Append(
-                "fchmod(directoryFileDescriptor, %s_ReadWriteExecute) == %d; errno == %s;",
-                id->IsUserScope() ? "OwnerUser" : "AllUsers",
-                operationResult,
-                GetFriendlyErrorCodeString(errorCode));
+            directoryFileDescriptor =
+                OpenAt(errors, parentDirectoryFileDescriptor, name, path, O_RDONLY | O_NOFOLLOW | O_DIRECTORY);
+        }
+        catch (SharedMemoryException)
+        {
+            unlinkat(parentDirectoryFileDescriptor, name, AT_REMOVEDIR);
+            throw;
         }
 
-        CloseFile(directoryFileDescriptor);
-        unlinkat(parentDirectoryFileDescriptor, name, AT_REMOVEDIR);
-        throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-    }
+        if (directoryFileDescriptor == -1)
+        {
+            if (errors != nullptr)
+            {
+                errors->Append("openat(%d, \"%s\", ...) == -1; errno == ENOENT;", parentDirectoryFileDescriptor, path);
+            }
 
-    return directoryFileDescriptor;
+            unlinkat(parentDirectoryFileDescriptor, name, AT_REMOVEDIR);
+            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+        }
+
+        do
+        {
+            operationResult = fchmod(directoryFileDescriptor, permissionsMask);
+        } while (operationResult != 0 && errno == EINTR);
+
+        if (operationResult != 0)
+        {
+            int errorCode = errno;
+            if (errors != nullptr)
+            {
+                errors->Append(
+                    "fchmod(directoryFileDescriptor, %s_ReadWriteExecute) == %d; errno == %s;",
+                    id->IsUserScope() ? "OwnerUser" : "AllUsers",
+                    operationResult,
+                    GetFriendlyErrorCodeString(errorCode));
+            }
+
+            CloseFile(directoryFileDescriptor);
+            unlinkat(parentDirectoryFileDescriptor, name, AT_REMOVEDIR);
+            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+        }
+
+        return directoryFileDescriptor;
+    }
 }
 
 int SharedMemoryHelpers::CreateOrOpenFileAt(
@@ -1253,14 +1139,17 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
     SharedMemorySharedDataHeader requiredSharedDataHeader,
     SIZE_T sharedDataByteCount,
     bool createIfNotExist,
-    bool *createdRef)
+    bool *createdRef,
+    int *runtimeDirectoryFileDescriptorRef)
 {
     _ASSERTE(name != nullptr);
     _ASSERTE(sharedDataByteCount != 0);
     _ASSERTE(!createIfNotExist || createdRef != nullptr);
+    _ASSERTE(runtimeDirectoryFileDescriptorRef != nullptr);
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
     _ASSERTE(!SharedMemoryManager::IsCreationDeletionFileLockAcquired());
 
+    *runtimeDirectoryFileDescriptorRef = -1;
     if (createdRef != nullptr)
     {
         *createdRef = false;
@@ -1360,6 +1249,7 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
 
     SharedMemoryManager::AcquireCreationDeletionFileLock(errors, &id);
     autoCleanup.m_acquiredCreationDeletionFileLockForId = &id;
+    *runtimeDirectoryFileDescriptorRef = SharedMemoryManager::GetRuntimeDirectoryFileDescriptor(&id);
     int sharedMemoryDirectoryFileDescriptor =
         SharedMemoryManager::GetCreationDeletionLockFileDescriptor(&id);
     autoCleanup.m_sharedMemoryDirectoryFileDescriptor = sharedMemoryDirectoryFileDescriptor;
@@ -1485,6 +1375,8 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
         }
     }
 
+    processDataHeader = SharedMemoryProcessDataHeader::New(&id, fileDescriptor, sharedDataHeader, sharedDataTotalByteCount);
+
     // When *createdRef is true, the creation/deletion file lock will remain locked upon returning for the caller to initialize
     // the shared data. The caller must release the file lock afterwards.
     if (!createdFile)
@@ -1492,8 +1384,6 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
         autoCleanup.m_acquiredCreationDeletionFileLockForId = nullptr;
         SharedMemoryManager::ReleaseCreationDeletionFileLock(&id);
     }
-
-    processDataHeader = SharedMemoryProcessDataHeader::New(&id, fileDescriptor, sharedDataHeader, sharedDataTotalByteCount);
 
     SharedMemoryHelpers::CloseFile(sessionDirectoryFileDescriptor);
     autoCleanup.m_sessionDirectoryFileDescriptor = -1;
@@ -1889,7 +1779,9 @@ void SharedMemoryManager::AcquireCreationDeletionFileLock(SharedMemorySystemCall
             _ASSERTE(errno == ENOENT);
             if (errors != nullptr)
             {
-                errors->Append("lstat(\"%s\", ...) == -1; errno == ENOENT;", (const char *)dirPath);
+                errors->Append(
+                    "openat(AT_FDCWD, \"%s\", O_RDONLY | O_NOFOLLOW | O_DIRECTORY | O_CLOEXEC) == -1; errno == ENOENT;",
+                    (const char *)dirPath);
             }
 
             throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));

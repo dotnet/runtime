@@ -28,8 +28,6 @@ static_assert_no_msg(STRING_LENGTH(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) >= S
 #define SHARED_MEMORY_GLOBAL_DIRECTORY_NAME "global"
 #define SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX "session"
 
-#define SHARED_MEMORY_UNIQUE_TEMP_NAME_TEMPLATE ".dotnet.XXXXXX"
-
 // This maximum does not include the system directory path, which is determined at runtime.
 #define SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT \
     ( \
@@ -231,7 +229,7 @@ private:
     SharedMemoryProcessDataHeader *m_nextInProcessDataHeaderList;
 
 public:
-    static SharedMemoryProcessDataHeader *CreateOrOpen(SharedMemorySystemCallErrors *errors, LPCSTR name, bool isUserScope, SharedMemorySharedDataHeader requiredSharedDataHeader, SIZE_T sharedDataByteCount, bool createIfNotExist, bool *createdRef);
+    static SharedMemoryProcessDataHeader *CreateOrOpen(SharedMemorySystemCallErrors *errors, LPCSTR name, bool isUserScope, SharedMemorySharedDataHeader requiredSharedDataHeader, SIZE_T sharedDataByteCount, bool createIfNotExist, bool *createdRef, int *runtimeDirectoryFileDescriptorRef);
 
 public:
     static SharedMemoryProcessDataHeader *PalObject_GetProcessDataHeader(CorUnix::IPalObject *object);
