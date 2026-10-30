@@ -1268,6 +1268,10 @@ namespace Internal.IL
 
         bool IsDelegateReadOnlyCompatible(MethodDesc targetMethod, MethodDesc invokeMethod, bool isOpenDelegate)
         {
+            // Delegate Invoke must be an instance method (ECMA-335 II.14.6).
+            if (invokeMethod.Signature.IsStatic)
+                return false;
+
             // ECMA-335 II.14.6.1 ignores custom modifiers when binding delegates.
             // Readonly promises therefore need an explicit compatibility check.
             LifetimeContract invokeContract = null;

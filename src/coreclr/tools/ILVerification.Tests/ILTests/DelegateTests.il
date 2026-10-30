@@ -39,6 +39,12 @@
     }
 }
 
+.class public auto ansi sealed Round776StaticInvokeDelegate extends [System.Runtime]System.MulticastDelegate
+{
+    .method public hidebysig specialname rtspecialname instance void .ctor(object target, native int fn) runtime managed {}
+    .method public hidebysig static void Invoke(int32& 'value') runtime managed {}
+}
+
 .class public auto ansi sealed Round776WritableReturnDelegate extends [System.Runtime]System.MulticastDelegate
 {
     .method public hidebysig specialname rtspecialname instance void .ctor(object target, native int fn) runtime managed {}
@@ -172,6 +178,11 @@
     {
         .param [2]
         .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor() = ( 01 00 00 00 )
+        ret
+    }
+
+    .method public hidebysig static void IntTarget(int32& 'value') cil managed
+    {
         ret
     }
 
@@ -335,6 +346,15 @@
         newobj instance void [System.Runtime]System.Object::.ctor()
         ldftn void Round776DelegateCases::ClosedWrite(object, object&)
         newobj instance void Round776SingleReadonlyDelegate::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method public hidebysig static void Delegate.Round776StaticInvoke_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn void Round776DelegateCases::IntTarget(int32&)
+        newobj instance void Round776StaticInvokeDelegate::.ctor(object, native int)
         pop
         ret
     }
