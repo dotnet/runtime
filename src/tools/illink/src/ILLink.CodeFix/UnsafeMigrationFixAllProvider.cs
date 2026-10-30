@@ -120,7 +120,9 @@ namespace ILLink.CodeFix
                 {
                     Document newDocument = changed.GetDocument(id)!;
                     Document oldDocument = original.GetDocument(id)!;
-                    List<TextChange> changes = [.. await newDocument.GetTextChangesAsync(oldDocument, cancellationToken).ConfigureAwait(false)];
+                    SourceText oldText = await oldDocument.GetTextAsync(cancellationToken).ConfigureAwait(false);
+                    SourceText newText = await newDocument.GetTextAsync(cancellationToken).ConfigureAwait(false);
+                    List<TextChange> changes = [GetChange(oldText, newText)];
                     List<TextChange> existing = accepted.TryGetValue(id, out List<TextChange>? list) ? list : [];
 
                     changes.RemoveAll(existing.Contains);
@@ -139,8 +141,30 @@ namespace ILLink.CodeFix
             }
         }
 
+        /// <summary>
+        /// Returns the single edit that turns <paramref name="oldText"/> into <paramref name="newText"/>, found by
+        /// trimming their common prefix and suffix. The syntax-tree differ behind <c>Document.GetTextChangesAsync</c>
+        /// mis-aligns repeated declarations (such as consecutive overloads) into scattered edits that conflict with
+        /// the edits of other diagnostics, and <c>SourceText.GetTextChanges</c> returns the whole document.
+        /// </summary>
+        private static TextChange GetChange(SourceText oldText, SourceText newText)
+        {
+            int max = System.Math.Min(oldText.Length, newText.Length);
+            int prefix = 0;
+            while (prefix < max && oldText[prefix] == newText[prefix])
+                prefix++;
+
+            int suffix = 0;
+            while (suffix < max - prefix && oldText[oldText.Length - 1 - suffix] == newText[newText.Length - 1 - suffix])
+                suffix++;
+
+            return new TextChange(
+                TextSpan.FromBounds(prefix, oldText.Length - suffix),
+                newText.ToString(TextSpan.FromBounds(prefix, newText.Length - suffix)));
+        }
+
         private static bool Conflicts(TextChange change, TextChange other) =>
-            change.Span.OverlapsWith(other.Span)
+            (change.Span.Start < other.Span.End && other.Span.Start < change.Span.End)
             || (change.Span.Start == other.Span.Start && (change.Span.IsEmpty || other.Span.IsEmpty));
     }
 }
