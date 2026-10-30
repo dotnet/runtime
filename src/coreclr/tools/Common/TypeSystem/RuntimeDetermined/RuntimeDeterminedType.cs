@@ -38,7 +38,7 @@ namespace Internal.TypeSystem
             _rawCanonType = rawCanonType;
             _runtimeDeterminedDetailsType = runtimeDeterminedDetailsType;
             int index = _runtimeDeterminedDetailsType.Index;
-            _utf8Prefix = new byte[1 + FormattingHelpers.CountDigits((uint)index)];
+            _utf8Prefix = new byte[2 + (int)uint.Log10((uint)index)];
             _utf8Prefix[0] = (byte)(_runtimeDeterminedDetailsType.Kind == GenericParameterKind.Type ? 'T' : 'M');
             for (int position = _utf8Prefix.Length - 1; position > 0; position--)
             {
